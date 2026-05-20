@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, type WorkspaceDoc } from "@/lib/db/models";
+import { User, Workspace, type WorkspaceDoc, type UserDoc } from "@/lib/db/models";
 
 export type OrgContext = {
   userId: string;
@@ -10,14 +10,26 @@ export type OrgContext = {
   workspace: WorkspaceDoc;
 };
 
-export async function requireOrg(): Promise<OrgContext> {
+export async function requireOrg(opts: { allowDuringOnboarding?: boolean } = {}): Promise<OrgContext> {
   const session = await auth();
   if (!session.userId) redirect("/sign-in");
   if (!session.orgId) redirect("/onboarding");
 
   await connectDB();
-  const workspace = await Workspace.findOne({ clerkOrgId: session.orgId }).lean<WorkspaceDoc>();
+
+  const [user, workspace] = await Promise.all([
+    User.findOne({ clerkUserId: session.userId })
+      .select({ onboardingStep: 1, onboardingCompletedAt: 1 })
+      .lean<Pick<UserDoc, "onboardingStep" | "onboardingCompletedAt">>(),
+    Workspace.findOne({ clerkOrgId: session.orgId }).lean<WorkspaceDoc>(),
+  ]);
+
   if (!workspace) redirect("/onboarding");
+
+  if (!opts.allowDuringOnboarding) {
+    const done = user?.onboardingStep === "done" || Boolean(user?.onboardingCompletedAt);
+    if (!done) redirect("/onboarding");
+  }
 
   const role: "owner" | "staff" =
     session.orgRole === "org:admin" || workspace.ownerUserId === session.userId

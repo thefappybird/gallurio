@@ -1,5 +1,12 @@
-export { Workspace, type WorkspaceDoc } from "./Workspace";
-export { User, type UserDoc } from "./User";
+export {
+  Workspace,
+  PLAN_TIERS,
+  PUBLIC_PAGE_TEMPLATES,
+  type PlanTier,
+  type PublicPageTemplate,
+  type WorkspaceDoc,
+} from "./Workspace";
+export { User, ONBOARDING_STEPS, type OnboardingStep, type UserDoc } from "./User";
 export { Client, type ClientDoc } from "./Client";
 export { Booking, BOOKING_STATUSES, type BookingDoc } from "./Booking";
 export { Inquiry, INQUIRY_STATUSES, type InquiryDoc } from "./Inquiry";
