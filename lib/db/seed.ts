@@ -101,8 +101,8 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
     ownerUserId: w.ownerUserId,
     clerkOrgId: w.clerkOrgId,
     businessType: w.businessType,
-    country: "US",
-    timezone: "America/Los_Angeles",
+    country: "PH",
+    timezone: "Asia/Manila",
     branding: {
       primaryColor: w.primaryColor,
       secondaryColor: "#f5f5f5",
@@ -145,8 +145,8 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
       status: ["inquiry", "quoted", "booked", "completed"][i],
       startAt: daysFromNow((i + 1) * 14),
       endAt: daysFromNow((i + 1) * 14),
-      location: { address: `${100 + i} Market St, San Francisco, CA` },
-      amount: { total: 4500 + i * 1500, deposit: 1500, currency: "USD" },
+      location: { address: `${100 + i} Ayala Ave, Makati, Metro Manila` },
+      amount: { total: 45000 + i * 15000, deposit: 15000, currency: "PHP" },
     }))
   );
 
@@ -202,10 +202,10 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
         workspaceId: workspace._id,
         bookingId: b._id,
         clientId: b.clientId,
-        amount: 1500,
-        currency: "USD",
+        amount: 15000,
+        currency: "PHP",
         type: "deposit",
-        method: "stripe",
+        method: "hitpay",
         paidAt: daysFromNow(-5),
       }))
   );
@@ -221,6 +221,16 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
   return workspace;
 }
 
+async function syncAllIndexes() {
+  for (const name of mongoose.modelNames()) {
+    const model = mongoose.model(name);
+    const dropped = await model.syncIndexes();
+    if (dropped.length > 0) {
+      console.log(`  ✓ ${name}: dropped ${dropped.length} stale → ${dropped.join(", ")}`);
+    }
+  }
+}
+
 async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Refusing to seed in NODE_ENV=production");
@@ -228,6 +238,9 @@ async function main() {
 
   console.log("→ Connecting to MongoDB…");
   await connectDB();
+
+  console.log("→ Syncing indexes (drops stale, rebuilds from schemas)…");
+  await syncAllIndexes();
 
   console.log("→ Dropping tenant collections…");
   await dropTenantCollections();

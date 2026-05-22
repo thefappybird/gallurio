@@ -6,7 +6,7 @@ const transactionSchema = new Schema(
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking", default: null },
     clientId: { type: Schema.Types.ObjectId, ref: "Client", default: null },
     amount: { type: Number, required: true },
-    currency: { type: String, default: "USD" },
+    currency: { type: String, default: "PHP" },
     type: {
       type: String,
       enum: ["deposit", "balance", "refund", "subscription", "other"],
@@ -14,11 +14,13 @@ const transactionSchema = new Schema(
     },
     method: {
       type: String,
-      enum: ["stripe", "cash", "transfer", "other"],
-      default: "stripe",
+      enum: ["hitpay", "cash", "transfer", "other"],
+      default: "hitpay",
     },
-    stripePaymentIntentId: { type: String, default: null, index: true, sparse: true },
-    stripeInvoiceId: { type: String, default: null },
+    // HitPay identifiers. paymentId covers one-off charges; recurringBillingId
+    // covers subscription cycles.
+    hitpayPaymentId: { type: String, default: null, index: true, sparse: true },
+    hitpayRecurringBillingId: { type: String, default: null },
     notes: { type: String, default: "" },
     paidAt: { type: Date, default: null },
   },

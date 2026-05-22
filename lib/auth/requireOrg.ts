@@ -27,8 +27,7 @@ export async function requireOrg(opts: { allowDuringOnboarding?: boolean } = {})
   if (!workspace) redirect("/onboarding");
 
   if (!opts.allowDuringOnboarding) {
-    const done = user?.onboardingStep === "done" || Boolean(user?.onboardingCompletedAt);
-    if (!done) redirect("/onboarding");
+    if (!user?.onboardingCompletedAt) redirect("/onboarding");
   }
 
   const role: "owner" | "staff" =

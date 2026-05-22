@@ -16,6 +16,25 @@ export const BUSINESS_TYPE_VALUES = [
   "other",
 ] as const;
 
+// HitPay's supported merchant markets (sandbox + live).
+// Source: https://hitpay.zendesk.com/hc/en-us/articles/18100524521241
+// PH leads because that's Gallurio's MVP launch market. en-only markets
+// (AU/CA/NZ/UK/US) get the English locale; SEA markets get their primary
+// language — see lib/i18n/localeForCountry.ts.
+export const HITPAY_COUNTRY_VALUES = [
+  "PH",
+  "SG",
+  "MY",
+  "ID",
+  "TH",
+  "AU",
+  "CA",
+  "NZ",
+  "GB",
+  "US",
+] as const;
+export type HitpayCountry = (typeof HITPAY_COUNTRY_VALUES)[number];
+
 const hexColor = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Use a 6-digit hex like #1a1a1a");
@@ -26,7 +45,9 @@ export const businessStepSchema = z.object({
   name: z.string().min(2, "At least 2 characters").max(80, "At most 80 characters").trim(),
   slug: slugSchema,
   businessType: z.enum(BUSINESS_TYPE_VALUES),
-  country: z.string().min(2, "Pick a country").max(2, "Use a 2-letter country code"),
+  country: z.enum(HITPAY_COUNTRY_VALUES, {
+    errorMap: () => ({ message: "Pick a country where HitPay operates" }),
+  }),
   timezone: z.string().min(1, "Pick a timezone"),
 });
 export type BusinessStepInput = z.infer<typeof businessStepSchema>;

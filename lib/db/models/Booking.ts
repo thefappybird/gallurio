@@ -26,7 +26,7 @@ const bookingSchema = new Schema(
     amount: {
       total: { type: Number, default: 0 },
       deposit: { type: Number, default: 0 },
-      currency: { type: String, default: "USD" },
+      currency: { type: String, default: "PHP" },
     },
     staffIds: { type: [Schema.Types.ObjectId], default: [] },
     notes: { type: String, default: "" },

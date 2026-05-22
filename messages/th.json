@@ -1,0 +1,188 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "CRM สำหรับธุรกิจอีเวนต์",
+    "description": "การจอง ลูกค้า แกลเลอรี และคำถาม — ในที่ทำงานเดียว สร้างขึ้นสำหรับช่างภาพ สถานที่จัดงาน นักวางแผน และสไตลิสต์ที่เบื่อสเปรดชีต",
+    "getStarted": "เริ่มต้น",
+    "signIn": "เข้าสู่ระบบ"
+  },
+  "auth": {
+    "signInTitle": "เข้าสู่ระบบ",
+    "signUpTitle": "สร้างบัญชี"
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "subtitle": "นี่คือสิ่งที่กำลังเกิดขึ้นในวันนี้",
+      "stats": {
+        "totalBookings": "การจองทั้งหมด",
+        "activeClients": "ลูกค้าที่ใช้งานอยู่",
+        "newInquiries": "คำถามใหม่",
+        "eventsThisMonth": "งานในเดือนนี้"
+      },
+      "upcoming": {
+        "title": "การจองที่จะมาถึง",
+        "empty": "ยังไม่มีการจองที่จะมาถึง",
+        "createOne": "สร้างหนึ่งรายการ"
+      }
+    },
+    "sidebar": {
+      "dashboard": "แดชบอร์ด",
+      "bookings": "การจอง",
+      "clients": "ลูกค้า",
+      "calendar": "ปฏิทิน",
+      "inquiries": "คำถาม",
+      "gallery": "แกลเลอรี",
+      "settings": "การตั้งค่า",
+      "account": "บัญชี",
+      "logOut": "ออกจากระบบ"
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "ขั้นตอนที่ {current} จาก {total}",
+      "previous": "ก่อนหน้า",
+      "continue": "ดำเนินการต่อ",
+      "saving": "กำลังบันทึก…"
+    },
+    "steps": {
+      "business": "ธุรกิจ",
+      "branding": "การสร้างแบรนด์",
+      "template": "เทมเพลต",
+      "plan": "แผน",
+      "done": "เสร็จสิ้น"
+    },
+    "business": {
+      "title": "บอกเราเกี่ยวกับธุรกิจของคุณ",
+      "description": "ชื่อของคุณ ข้อมูลพื้นฐานของธุรกิจ และสถานที่ที่คุณดำเนินงาน",
+      "firstName": "ชื่อ",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "นามสกุล",
+      "lastNamePlaceholder": "Bell",
+      "optional": "ไม่บังคับ",
+      "businessName": "ชื่อธุรกิจ",
+      "businessNamePlaceholder": "เช่น Sarah Bell Photography",
+      "workspaceUrl": "URL ที่ทำงาน",
+      "workspaceUrlNote": "(ที่อยู่หน้าสาธารณะของคุณ)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "ประเภทธุรกิจ",
+      "country": "ประเทศ",
+      "timezone": "เขตเวลา",
+      "businessTypes": {
+        "photographer": "ช่างภาพ",
+        "venue": "สถานที่จัดงาน",
+        "planner": "นักวางแผนงานแต่งงาน / อีเวนต์",
+        "stylist": "สไตลิสต์",
+        "catering": "เคเทอริง",
+        "entertainer": "นักแสดง / ดีเจ / วงดนตรี",
+        "other": "อื่นๆ"
+      }
+    },
+    "branding": {
+      "title": "ทำให้เป็นของคุณ",
+      "description": "เพิ่มโลโก้ เลือกสี และเขียนแท็กไลน์หนึ่งบรรทัด คุณสามารถเปลี่ยนทั้งหมดนี้ได้ในภายหลัง",
+      "noLogo": "ไม่มีโลโก้",
+      "brandLogo": "โลโก้แบรนด์",
+      "logoHint": "PNG / JPG / SVG สูงสุด 5 MB",
+      "uploading": "กำลังอัปโหลด…",
+      "upload": "อัปโหลด",
+      "replace": "แทนที่",
+      "remove": "ลบออก",
+      "primaryColor": "สีหลัก",
+      "secondaryColor": "สีรอง",
+      "tagline": "แท็กไลน์",
+      "taglinePlaceholder": "การถ่ายภาพงานแต่งงานในกรุงเทพฯ",
+      "shortDescription": "คำอธิบายสั้น",
+      "descriptionPlaceholder": "ประโยคไม่กี่ประโยคเกี่ยวกับธุรกิจของคุณ — แสดงบนหน้าสาธารณะของคุณ",
+      "skipForNow": "ข้ามไปก่อน",
+      "errors": {
+        "notImage": "โลโก้ต้องเป็นรูปภาพ",
+        "tooLarge": "โลโก้ต้องน้อยกว่า 5 MB",
+        "uploadFailed": "การอัปโหลดล้มเหลว"
+      }
+    },
+    "template": {
+      "title": "เลือกเทมเพลตเริ่มต้น",
+      "description": "เลือกรูปลักษณ์สำหรับหน้าสาธารณะของคุณ — คุณสามารถปรับแต่งทุกบล็อกได้ในภายหลัง",
+      "templates": {
+        "default": {
+          "name": "คลาสสิก",
+          "description": "ฮีโร่กึ่งกลาง กริดบริการ แบบฟอร์มติดต่อ"
+        },
+        "editorial": {
+          "name": "บทบรรณาธิการ",
+          "description": "ตัวอักษรขนาดใหญ่ แกลเลอรีเต็มหน้าจอ ความรู้สึกแบบนิตยสาร"
+        },
+        "studio": {
+          "name": "สตูดิโอ",
+          "description": "การนำทางด้านข้าง กริดโครงการ กรอบที่เรียบง่าย"
+        }
+      }
+    },
+    "plan": {
+      "title": "เลือกแผนที่เหมาะสม",
+      "description": "คุณสามารถเปลี่ยนแผนหรือยกเลิกได้ทุกเมื่อจากการตั้งค่าที่ทำงาน",
+      "popular": "ยอดนิยม",
+      "cadence": {
+        "forever": "ตลอดกาล",
+        "monthly": "/ เดือน"
+      },
+      "checkoutNote": "คุณจะถูกนำไปยัง HitPay เพื่อกรอกรายละเอียดบัตรของคุณ (Visa หรือ Mastercard) รอบแรกจะถูกเรียกเก็บเงินทันทีและจะต่ออายุทุกเดือนจนกว่าคุณจะยกเลิก",
+      "ctaFree": "ดำเนินการต่อด้วย Free",
+      "ctaPaid": "สมัคร — {price} / เดือน",
+      "settingUp": "กำลังตั้งค่า…",
+      "opening": "กำลังเปิด HitPay…",
+      "dev": {
+        "label": "ทางลัด dev",
+        "description": "ข้าม HitPay และทำเครื่องหมาย {planName} เป็นใช้งานอยู่ Dev เท่านั้น",
+        "activate": "เปิดใช้งาน {planName} (dev)"
+      }
+    },
+    "done": {
+      "title": "คุณพร้อมแล้ว {workspaceName}",
+      "description": "แผน {planLabel} ของคุณใช้งานอยู่ อีกหนึ่งสิ่งก่อนที่เราจะพาคุณเข้าสู่แดชบอร์ด",
+      "seedToggle": {
+        "label": "เริ่มต้นด้วยข้อมูลตัวอย่าง",
+        "description": "เราจะเพิ่มลูกค้าตัวอย่าง 5 ราย การจองตัวอย่าง 3 รายการ และคำถามตัวอย่าง 1 รายการเพื่อให้คุณสามารถสำรวจแอปได้ ทุกอย่างถูกแท็กด้วย sample เพื่อให้คุณสามารถลบได้ในคลิกเดียว"
+      },
+      "settingUp": "กำลังตั้งค่าแดชบอร์ดของคุณ…",
+      "goToDashboard": "ไปยังแดชบอร์ดของคุณ"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "เริ่มต้นฟรี",
+      "tagline": "ลองใช้ผลิตภัณฑ์ ไม่ต้องใช้บัตร",
+      "features": {
+        "workspace": "1 ที่ทำงาน",
+        "bookings": "การจองสูงสุด 10 รายการ",
+        "storage": "พื้นที่เก็บภาพ 1 GB",
+        "publicPage": "หน้าแรกสาธารณะ"
+      }
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "สำหรับเจ้าของคนเดียวที่เริ่มต้น",
+      "tagline": "สำหรับเจ้าของคนเดียวที่เริ่มต้น",
+      "features": {
+        "unlimitedBookings": "การจองไม่จำกัด",
+        "storage": "พื้นที่เก็บภาพ 5 GB",
+        "brandedForm": "แบบฟอร์มสอบถามแบรนด์",
+        "acceptPayments": "รับ GCash, Maya, บัตรจากลูกค้า"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "โดเมนกำหนดเอง + ใบแจ้งหนี้",
+      "tagline": "โดเมนกำหนดเอง + ใบแจ้งหนี้",
+      "features": {
+        "everythingStarter": "ทุกอย่างใน Starter",
+        "customDomain": "โดเมนกำหนดเอง",
+        "storage": "พื้นที่เก็บข้อมูล 50 GB",
+        "invoicePdfs": "PDF ใบแจ้งหนี้",
+        "removeBranding": "ลบแบรนด์ Gallurio"
+      }
+    }
+  }
+}

@@ -8,11 +8,12 @@ const membershipSchema = new Schema(
   { _id: false }
 );
 
+// "payments" step removed when marketplace was dropped from MVP — tenants no
+// longer onboard a payment sub-account during signup.
 export const ONBOARDING_STEPS = [
   "business",
   "branding",
   "template",
-  "payments",
   "plan",
   "done",
 ] as const;

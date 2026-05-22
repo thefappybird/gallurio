@@ -10,6 +10,7 @@ import {
   Client,
   Booking,
   Inquiry,
+  ONBOARDING_STEPS,
   type OnboardingStep,
 } from "@/lib/db/models";
 import {
@@ -25,10 +26,13 @@ type ActionResult = { error?: string; ok?: boolean };
 type BusinessStepResult = ActionResult & { orgIdToActivate?: string };
 
 async function setUserStep(clerkUserId: string, step: OnboardingStep) {
+  // Only advance — never regress. If the user is already at a later step
+  // (e.g., they went back to edit), keep the existing furthest step.
+  const idx = ONBOARDING_STEPS.indexOf(step);
+  const earlierSteps = ONBOARDING_STEPS.slice(0, idx);
   await User.findOneAndUpdate(
-    { clerkUserId },
-    { $set: { onboardingStep: step } },
-    { upsert: false }
+    { clerkUserId, onboardingStep: { $in: earlierSteps } },
+    { $set: { onboardingStep: step } }
   );
 }
 
@@ -90,12 +94,17 @@ export async function businessStepAction(
   await User.findOneAndUpdate(
     { clerkUserId: session.userId },
     {
-      $set: { onboardingStep: "branding", name: fullName },
-      $setOnInsert: { clerkUserId: session.userId, email: "" },
+      $set: { name: fullName },
+      $setOnInsert: {
+        clerkUserId: session.userId,
+        email: "",
+        onboardingStep: "business",
+      },
       $addToSet: { memberships: { workspaceId: workspace._id, role: "owner" } },
     },
     { upsert: true }
   );
+  await setUserStep(session.userId, "branding");
 
   try {
     await clerk.users.updateUser(session.userId, {
@@ -148,25 +157,22 @@ export async function templateStepAction(input: TemplateStepInput): Promise<Acti
     { clerkOrgId: session.orgId },
     { $set: { "publicPage.templateId": parsed.data.templateId } }
   );
-  await setUserStep(session.userId, "payments");
-  return { ok: true };
-}
-
-export async function skipPaymentsStepAction(): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  await connectDB();
   await setUserStep(session.userId, "plan");
   return { ok: true };
 }
 
-export async function advanceFromPaymentsAction(): Promise<ActionResult> {
-  // Called after the Connect onboarding return URL — the step status route
-  // already updated workspace flags. We just bump the step.
+export async function selectFreePlanAction(): Promise<ActionResult> {
+  // Free plan path: no HitPay checkout, just record the choice and advance.
   const session = await auth();
   if (!session.userId) return { error: "Not authenticated" };
+  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
+
   await connectDB();
-  await setUserStep(session.userId, "plan");
+  await Workspace.updateOne(
+    { clerkOrgId: session.orgId },
+    { $set: { plan: "free", hitpayRecurringStatus: null, hitpayCurrentPeriodEnd: null } }
+  );
+  await setUserStep(session.userId, "done");
   return { ok: true };
 }
 
@@ -261,7 +267,7 @@ async function seedSampleData(workspaceId: string) {
       status: "booked",
       startAt: day(28),
       endAt: day(28),
-      amount: { total: 6500, deposit: 2000, currency: "USD" },
+      amount: { total: 65000, deposit: 20000, currency: "PHP" },
     },
     {
       workspaceId,
@@ -272,7 +278,7 @@ async function seedSampleData(workspaceId: string) {
       status: "quoted",
       startAt: day(14),
       endAt: day(14),
-      amount: { total: 1500, deposit: 500, currency: "USD" },
+      amount: { total: 15000, deposit: 5000, currency: "PHP" },
     },
     {
       workspaceId,
@@ -283,7 +289,7 @@ async function seedSampleData(workspaceId: string) {
       status: "inquiry",
       startAt: day(70),
       endAt: day(70),
-      amount: { total: 9000, deposit: 3000, currency: "USD" },
+      amount: { total: 90000, deposit: 30000, currency: "PHP" },
     },
   ]);
 

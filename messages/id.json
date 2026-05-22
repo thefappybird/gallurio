@@ -1,0 +1,188 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "CRM untuk bisnis acara.",
+    "description": "Pemesanan, klien, galeri, dan pertanyaan — dalam satu ruang kerja. Dibangun untuk fotografer, venue, perencana, dan stylist yang lelah dengan spreadsheet.",
+    "getStarted": "Mulai",
+    "signIn": "Masuk"
+  },
+  "auth": {
+    "signInTitle": "Masuk",
+    "signUpTitle": "Buat akun"
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "subtitle": "Berikut yang terjadi hari ini.",
+      "stats": {
+        "totalBookings": "Total pemesanan",
+        "activeClients": "Klien aktif",
+        "newInquiries": "Pertanyaan baru",
+        "eventsThisMonth": "Acara bulan ini"
+      },
+      "upcoming": {
+        "title": "Pemesanan mendatang",
+        "empty": "Belum ada pemesanan mendatang.",
+        "createOne": "Buat satu"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Dasbor",
+      "bookings": "Pemesanan",
+      "clients": "Klien",
+      "calendar": "Kalender",
+      "inquiries": "Pertanyaan",
+      "gallery": "Galeri",
+      "settings": "Pengaturan",
+      "account": "Akun",
+      "logOut": "Keluar"
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Langkah {current} dari {total}",
+      "previous": "Sebelumnya",
+      "continue": "Lanjutkan",
+      "saving": "Menyimpan…"
+    },
+    "steps": {
+      "business": "Bisnis",
+      "branding": "Branding",
+      "template": "Templat",
+      "plan": "Paket",
+      "done": "Selesai"
+    },
+    "business": {
+      "title": "Ceritakan tentang bisnis Anda",
+      "description": "Nama Anda, dasar-dasar bisnis, dan tempat Anda beroperasi.",
+      "firstName": "Nama depan",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Nama belakang",
+      "lastNamePlaceholder": "Bell",
+      "optional": "opsional",
+      "businessName": "Nama bisnis",
+      "businessNamePlaceholder": "mis. Sarah Bell Photography",
+      "workspaceUrl": "URL ruang kerja",
+      "workspaceUrlNote": "(alamat halaman publik Anda)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "Jenis bisnis",
+      "country": "Negara",
+      "timezone": "Zona waktu",
+      "businessTypes": {
+        "photographer": "Fotografer",
+        "venue": "Venue",
+        "planner": "Perencana Pernikahan / Acara",
+        "stylist": "Stylist",
+        "catering": "Katering",
+        "entertainer": "Penghibur / DJ / Band",
+        "other": "Lainnya"
+      }
+    },
+    "branding": {
+      "title": "Buat menjadi milik Anda",
+      "description": "Tambahkan logo, pilih warna, dan tulis tagline satu baris. Anda dapat mengubah semuanya nanti.",
+      "noLogo": "Tidak ada logo",
+      "brandLogo": "Logo merek",
+      "logoHint": "PNG / JPG / SVG hingga 5 MB",
+      "uploading": "Mengunggah…",
+      "upload": "Unggah",
+      "replace": "Ganti",
+      "remove": "Hapus",
+      "primaryColor": "Warna utama",
+      "secondaryColor": "Warna sekunder",
+      "tagline": "Tagline",
+      "taglinePlaceholder": "Fotografi pernikahan di Jakarta",
+      "shortDescription": "Deskripsi singkat",
+      "descriptionPlaceholder": "Beberapa kalimat tentang bisnis Anda — ditampilkan di halaman publik Anda.",
+      "skipForNow": "Lewati dulu",
+      "errors": {
+        "notImage": "Logo harus berupa gambar.",
+        "tooLarge": "Logo harus di bawah 5 MB.",
+        "uploadFailed": "Unggah gagal"
+      }
+    },
+    "template": {
+      "title": "Pilih templat awal",
+      "description": "Pilih tampilan untuk halaman publik Anda — Anda dapat menyesuaikan setiap blok nanti.",
+      "templates": {
+        "default": {
+          "name": "Klasik",
+          "description": "Hero terpusat, grid layanan, formulir kontak."
+        },
+        "editorial": {
+          "name": "Editorial",
+          "description": "Tipografi besar, galeri penuh, nuansa majalah."
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "Navigasi samping, grid proyek, bingkai minimal."
+        }
+      }
+    },
+    "plan": {
+      "title": "Pilih paket yang sesuai",
+      "description": "Anda dapat mengubah paket atau membatalkan kapan saja dari pengaturan ruang kerja Anda.",
+      "popular": "Populer",
+      "cadence": {
+        "forever": "selamanya",
+        "monthly": "/ bulan"
+      },
+      "checkoutNote": "Anda akan diarahkan ke HitPay untuk memasukkan detail kartu Anda (Visa atau Mastercard). Siklus pertama akan ditagih segera dan diperbarui setiap bulan sampai Anda membatalkan.",
+      "ctaFree": "Lanjutkan dengan Free",
+      "ctaPaid": "Berlangganan — {price} / bulan",
+      "settingUp": "Menyiapkan…",
+      "opening": "Membuka HitPay…",
+      "dev": {
+        "label": "Pintasan dev",
+        "description": "Lewati HitPay dan tandai {planName} sebagai aktif. Hanya dev.",
+        "activate": "Aktifkan {planName} (dev)"
+      }
+    },
+    "done": {
+      "title": "Anda sudah siap, {workspaceName}.",
+      "description": "Paket {planLabel} Anda aktif. Satu hal terakhir sebelum kami bawa Anda ke dasbor.",
+      "seedToggle": {
+        "label": "Mulai dengan data contoh",
+        "description": "Kami akan menambah 5 klien demo, 3 pemesanan demo, dan 1 pertanyaan demo agar Anda dapat menjelajahi aplikasi. Semuanya ditandai sample agar dapat dihapus dengan satu klik."
+      },
+      "settingUp": "Menyiapkan dasbor Anda…",
+      "goToDashboard": "Pergi ke dasbor Anda"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Mulai secara gratis",
+      "tagline": "Coba produk, tidak perlu kartu.",
+      "features": {
+        "workspace": "1 ruang kerja",
+        "bookings": "Hingga 10 pemesanan",
+        "storage": "Penyimpanan gambar 1 GB",
+        "publicPage": "Halaman pendaratan publik"
+      }
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Untuk pemilik solo yang baru memulai.",
+      "tagline": "Untuk pemilik solo yang baru memulai.",
+      "features": {
+        "unlimitedBookings": "Pemesanan tanpa batas",
+        "storage": "Penyimpanan gambar 5 GB",
+        "brandedForm": "Formulir pertanyaan bermerek",
+        "acceptPayments": "Terima GCash, Maya, kartu dari klien"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Domain kustom + faktur.",
+      "tagline": "Domain kustom + faktur.",
+      "features": {
+        "everythingStarter": "Semua di Starter",
+        "customDomain": "Domain kustom",
+        "storage": "Penyimpanan 50 GB",
+        "invoicePdfs": "PDF faktur",
+        "removeBranding": "Hilangkan branding Gallurio"
+      }
+    }
+  }
+}

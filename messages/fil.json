@@ -1,0 +1,188 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "Ang CRM para sa mga event business.",
+    "description": "Mga booking, kliyente, gallery, at inquiries — sa isang workspace lamang. Ginawa para sa mga photographer, venue, planner, at stylist na pagod na sa spreadsheet.",
+    "getStarted": "Magsimula",
+    "signIn": "Mag-sign in"
+  },
+  "auth": {
+    "signInTitle": "Mag-sign in",
+    "signUpTitle": "Gumawa ng account"
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "subtitle": "Narito ang nangyayari ngayon.",
+      "stats": {
+        "totalBookings": "Kabuuang mga booking",
+        "activeClients": "Aktibong kliyente",
+        "newInquiries": "Mga bagong inquiry",
+        "eventsThisMonth": "Mga event ngayong buwan"
+      },
+      "upcoming": {
+        "title": "Mga paparating na booking",
+        "empty": "Wala pang paparating na booking.",
+        "createOne": "Gumawa ng isa"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "bookings": "Mga booking",
+      "clients": "Mga kliyente",
+      "calendar": "Kalendaryo",
+      "inquiries": "Mga inquiry",
+      "gallery": "Gallery",
+      "settings": "Mga setting",
+      "account": "Account",
+      "logOut": "Mag-log out"
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Hakbang {current} ng {total}",
+      "previous": "Nakaraan",
+      "continue": "Magpatuloy",
+      "saving": "Sine-save…"
+    },
+    "steps": {
+      "business": "Negosyo",
+      "branding": "Branding",
+      "template": "Template",
+      "plan": "Plano",
+      "done": "Tapos"
+    },
+    "business": {
+      "title": "Sabihin sa amin ang tungkol sa iyong negosyo",
+      "description": "Ang pangalan mo, mga pangunahing detalye ng negosyo, at kung saan ka nag-ooperate.",
+      "firstName": "Pangalan",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Apelyido",
+      "lastNamePlaceholder": "Bell",
+      "optional": "opsyonal",
+      "businessName": "Pangalan ng negosyo",
+      "businessNamePlaceholder": "hal. Sarah Bell Photography",
+      "workspaceUrl": "URL ng workspace",
+      "workspaceUrlNote": "(ang address ng iyong pampublikong pahina)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "Uri ng negosyo",
+      "country": "Bansa",
+      "timezone": "Timezone",
+      "businessTypes": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Wedding / Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer / DJ / Band",
+        "other": "Iba pa"
+      }
+    },
+    "branding": {
+      "title": "Gawin itong sariling-sarili mo",
+      "description": "Magdagdag ng logo, pumili ng mga kulay, at magsulat ng isang-pangungusap na tagline. Maaaring baguhin lahat ng ito mamaya.",
+      "noLogo": "Walang logo",
+      "brandLogo": "Logo ng brand",
+      "logoHint": "PNG / JPG / SVG hanggang 5 MB",
+      "uploading": "Ina-upload…",
+      "upload": "Mag-upload",
+      "replace": "Palitan",
+      "remove": "Alisin",
+      "primaryColor": "Pangunahing kulay",
+      "secondaryColor": "Pangalawang kulay",
+      "tagline": "Tagline",
+      "taglinePlaceholder": "Wedding photography sa Maynila",
+      "shortDescription": "Maikling paglalarawan",
+      "descriptionPlaceholder": "Ilang pangungusap tungkol sa iyong negosyo — ipapakita sa iyong pampublikong pahina.",
+      "skipForNow": "Laktawan muna",
+      "errors": {
+        "notImage": "Ang logo ay dapat na imahe.",
+        "tooLarge": "Ang logo ay dapat mas maliit sa 5 MB.",
+        "uploadFailed": "Hindi matagumpay ang pag-upload"
+      }
+    },
+    "template": {
+      "title": "Pumili ng panimulang template",
+      "description": "Pumili ng disenyo para sa iyong pampublikong pahina — magagawa mong i-customize ang bawat bloke mamaya.",
+      "templates": {
+        "default": {
+          "name": "Classic",
+          "description": "Nakasentrong hero, services grid, contact form."
+        },
+        "editorial": {
+          "name": "Editorial",
+          "description": "Malaking typography, full-bleed gallery, magasin na pakiramdam."
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "Sidebar nav, project grid, payak na frame."
+        }
+      }
+    },
+    "plan": {
+      "title": "Pumili ng planong angkop",
+      "description": "Maaari kang magpalit ng plano o magkansela anumang oras mula sa mga setting ng iyong workspace.",
+      "popular": "Popular",
+      "cadence": {
+        "forever": "habambuhay",
+        "monthly": "/ buwan"
+      },
+      "checkoutNote": "Ire-redirect ka sa HitPay upang ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
+      "ctaFree": "Magpatuloy sa Free",
+      "ctaPaid": "Mag-subscribe — {price} / buwan",
+      "settingUp": "Sine-set up…",
+      "opening": "Binubuksan ang HitPay…",
+      "dev": {
+        "label": "Dev shortcut",
+        "description": "Laktawan ang HitPay at markahan ang {planName} bilang aktibo. Dev-only.",
+        "activate": "I-activate ang {planName} (dev)"
+      }
+    },
+    "done": {
+      "title": "Handa ka na, {workspaceName}.",
+      "description": "Aktibo na ang iyong planong {planLabel}. Isang huling bagay bago ka pumunta sa dashboard.",
+      "seedToggle": {
+        "label": "Magsimula gamit ang sample data",
+        "description": "Magdadagdag kami ng 5 demo client, 3 demo booking, at 1 demo inquiry para makapaglibot ka sa app. Lahat ay may tag na sample para mabura mo sa isang click."
+      },
+      "settingUp": "Sine-set up ang iyong dashboard…",
+      "goToDashboard": "Pumunta sa iyong dashboard"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Magsimula nang libre",
+      "tagline": "Subukan ang produkto, hindi kailangan ng card.",
+      "features": {
+        "workspace": "1 workspace",
+        "bookings": "Hanggang 10 booking",
+        "storage": "1 GB image storage",
+        "publicPage": "Pampublikong landing page"
+      }
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Para sa mga solong may-ari na nagsisimula.",
+      "tagline": "Para sa mga solong may-ari na nagsisimula.",
+      "features": {
+        "unlimitedBookings": "Walang limitasyon na booking",
+        "storage": "5 GB image storage",
+        "brandedForm": "Branded inquiry form",
+        "acceptPayments": "Tumanggap ng GCash, Maya, card mula sa mga kliyente"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Custom domain + invoice.",
+      "tagline": "Custom domain + invoice.",
+      "features": {
+        "everythingStarter": "Lahat ng nasa Starter",
+        "customDomain": "Custom domain",
+        "storage": "50 GB storage",
+        "invoicePdfs": "Mga invoice PDF",
+        "removeBranding": "Alisin ang branding ng Gallurio"
+      }
+    }
+  }
+}

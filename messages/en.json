@@ -1,0 +1,188 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "The CRM for event businesses.",
+    "description": "Bookings, clients, galleries, and inquiries — in one workspace. Built for photographers, venues, planners, and stylists who are tired of spreadsheets.",
+    "getStarted": "Get started",
+    "signIn": "Sign in"
+  },
+  "auth": {
+    "signInTitle": "Sign in",
+    "signUpTitle": "Create account"
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "subtitle": "Here's what's happening today.",
+      "stats": {
+        "totalBookings": "Total bookings",
+        "activeClients": "Active clients",
+        "newInquiries": "New inquiries",
+        "eventsThisMonth": "Events this month"
+      },
+      "upcoming": {
+        "title": "Upcoming bookings",
+        "empty": "No upcoming bookings yet.",
+        "createOne": "Create one"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "bookings": "Bookings",
+      "clients": "Clients",
+      "calendar": "Calendar",
+      "inquiries": "Inquiries",
+      "gallery": "Gallery",
+      "settings": "Settings",
+      "account": "Account",
+      "logOut": "Log out"
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Step {current} of {total}",
+      "previous": "Previous",
+      "continue": "Continue",
+      "saving": "Saving…"
+    },
+    "steps": {
+      "business": "Business",
+      "branding": "Branding",
+      "template": "Template",
+      "plan": "Plan",
+      "done": "Finish"
+    },
+    "business": {
+      "title": "Tell us about your business",
+      "description": "Your name, your business basics, and where you operate.",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Bell",
+      "optional": "optional",
+      "businessName": "Business name",
+      "businessNamePlaceholder": "e.g. Sarah Bell Photography",
+      "workspaceUrl": "Workspace URL",
+      "workspaceUrlNote": "(your public page address)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "Business type",
+      "country": "Country",
+      "timezone": "Timezone",
+      "businessTypes": {
+        "photographer": "Photographer",
+        "venue": "Venue",
+        "planner": "Wedding / Event Planner",
+        "stylist": "Stylist",
+        "catering": "Catering",
+        "entertainer": "Entertainer / DJ / Band",
+        "other": "Other"
+      }
+    },
+    "branding": {
+      "title": "Make it yours",
+      "description": "Add a logo, pick your colors, and write a one-line tagline. You can change all of this later.",
+      "noLogo": "No logo",
+      "brandLogo": "Brand logo",
+      "logoHint": "PNG / JPG / SVG up to 5 MB",
+      "uploading": "Uploading…",
+      "upload": "Upload",
+      "replace": "Replace",
+      "remove": "Remove",
+      "primaryColor": "Primary color",
+      "secondaryColor": "Secondary color",
+      "tagline": "Tagline",
+      "taglinePlaceholder": "Wedding photography in the Bay Area",
+      "shortDescription": "Short description",
+      "descriptionPlaceholder": "A few sentences about your business — shown on your public page.",
+      "skipForNow": "Skip for now",
+      "errors": {
+        "notImage": "Logo must be an image.",
+        "tooLarge": "Logo must be under 5 MB.",
+        "uploadFailed": "Upload failed"
+      }
+    },
+    "template": {
+      "title": "Pick a starting template",
+      "description": "Choose a look for your public page — you'll be able to customize every block later.",
+      "templates": {
+        "default": {
+          "name": "Classic",
+          "description": "Centered hero, services grid, contact form."
+        },
+        "editorial": {
+          "name": "Editorial",
+          "description": "Large typography, full-bleed gallery, magazine feel."
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "Sidebar nav, project grid, minimal frame."
+        }
+      }
+    },
+    "plan": {
+      "title": "Pick the plan that fits",
+      "description": "You can change plans or cancel anytime from your workspace settings.",
+      "popular": "Popular",
+      "cadence": {
+        "forever": "forever",
+        "monthly": "/ month"
+      },
+      "checkoutNote": "You'll be redirected to HitPay to enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
+      "ctaFree": "Continue with Free",
+      "ctaPaid": "Subscribe — {price} / month",
+      "settingUp": "Setting up…",
+      "opening": "Opening HitPay…",
+      "dev": {
+        "label": "Dev shortcut",
+        "description": "Skip HitPay and mark {planName} as active. Dev-only.",
+        "activate": "Activate {planName} (dev)"
+      }
+    },
+    "done": {
+      "title": "You're all set, {workspaceName}.",
+      "description": "Your {planLabel} plan is active. One last thing before we drop you into the dashboard.",
+      "seedToggle": {
+        "label": "Start with sample data",
+        "description": "We'll add 5 demo clients, 3 demo bookings, and 1 demo inquiry so you can explore the app. Everything is tagged sample so you can delete it in one click."
+      },
+      "settingUp": "Setting up your dashboard…",
+      "goToDashboard": "Go to your dashboard"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Get started for free",
+      "tagline": "Try the product, no card required.",
+      "features": {
+        "workspace": "1 workspace",
+        "bookings": "Up to 10 bookings",
+        "storage": "1 GB image storage",
+        "publicPage": "Public landing page"
+      }
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "For solo owners getting started.",
+      "tagline": "For solo owners getting started.",
+      "features": {
+        "unlimitedBookings": "Unlimited bookings",
+        "storage": "5 GB image storage",
+        "brandedForm": "Branded inquiry form",
+        "acceptPayments": "Accept GCash, Maya, cards from clients"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Custom domain + invoices.",
+      "tagline": "Custom domain + invoices.",
+      "features": {
+        "everythingStarter": "Everything in Starter",
+        "customDomain": "Custom domain",
+        "storage": "50 GB storage",
+        "invoicePdfs": "Invoice PDFs",
+        "removeBranding": "Remove Gallurio branding"
+      }
+    }
+  }
+}

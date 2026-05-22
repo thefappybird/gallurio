@@ -1,0 +1,188 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "CRM untuk perniagaan acara.",
+    "description": "Tempahan, pelanggan, galeri, dan pertanyaan — dalam satu ruang kerja. Dibina untuk jurugambar, tempat acara, perancang, dan penggaya yang sudah jemu dengan hamparan.",
+    "getStarted": "Mulakan",
+    "signIn": "Log masuk"
+  },
+  "auth": {
+    "signInTitle": "Log masuk",
+    "signUpTitle": "Cipta akaun"
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "subtitle": "Inilah apa yang berlaku hari ini.",
+      "stats": {
+        "totalBookings": "Jumlah tempahan",
+        "activeClients": "Pelanggan aktif",
+        "newInquiries": "Pertanyaan baru",
+        "eventsThisMonth": "Acara bulan ini"
+      },
+      "upcoming": {
+        "title": "Tempahan akan datang",
+        "empty": "Tiada tempahan akan datang lagi.",
+        "createOne": "Cipta satu"
+      }
+    },
+    "sidebar": {
+      "dashboard": "Papan pemuka",
+      "bookings": "Tempahan",
+      "clients": "Pelanggan",
+      "calendar": "Kalendar",
+      "inquiries": "Pertanyaan",
+      "gallery": "Galeri",
+      "settings": "Tetapan",
+      "account": "Akaun",
+      "logOut": "Log keluar"
+    }
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "Langkah {current} daripada {total}",
+      "previous": "Sebelumnya",
+      "continue": "Teruskan",
+      "saving": "Menyimpan…"
+    },
+    "steps": {
+      "business": "Perniagaan",
+      "branding": "Penjenamaan",
+      "template": "Templat",
+      "plan": "Pelan",
+      "done": "Selesai"
+    },
+    "business": {
+      "title": "Beritahu kami tentang perniagaan anda",
+      "description": "Nama anda, asas perniagaan, dan di mana anda beroperasi.",
+      "firstName": "Nama pertama",
+      "firstNamePlaceholder": "Sarah",
+      "lastName": "Nama akhir",
+      "lastNamePlaceholder": "Bell",
+      "optional": "pilihan",
+      "businessName": "Nama perniagaan",
+      "businessNamePlaceholder": "cth. Sarah Bell Photography",
+      "workspaceUrl": "URL ruang kerja",
+      "workspaceUrlNote": "(alamat halaman awam anda)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "Jenis perniagaan",
+      "country": "Negara",
+      "timezone": "Zon waktu",
+      "businessTypes": {
+        "photographer": "Jurugambar",
+        "venue": "Tempat acara",
+        "planner": "Perancang Perkahwinan / Acara",
+        "stylist": "Penggaya",
+        "catering": "Katering",
+        "entertainer": "Penghibur / DJ / Kugiran",
+        "other": "Lain-lain"
+      }
+    },
+    "branding": {
+      "title": "Jadikan ia milik anda",
+      "description": "Tambah logo, pilih warna, dan tulis tagline satu baris. Anda boleh mengubah semua ini kemudian.",
+      "noLogo": "Tiada logo",
+      "brandLogo": "Logo jenama",
+      "logoHint": "PNG / JPG / SVG sehingga 5 MB",
+      "uploading": "Memuat naik…",
+      "upload": "Muat naik",
+      "replace": "Ganti",
+      "remove": "Buang",
+      "primaryColor": "Warna utama",
+      "secondaryColor": "Warna kedua",
+      "tagline": "Tagline",
+      "taglinePlaceholder": "Fotografi perkahwinan di Kuala Lumpur",
+      "shortDescription": "Penerangan ringkas",
+      "descriptionPlaceholder": "Beberapa ayat tentang perniagaan anda — ditunjukkan pada halaman awam anda.",
+      "skipForNow": "Langkau dahulu",
+      "errors": {
+        "notImage": "Logo mestilah imej.",
+        "tooLarge": "Logo mestilah kurang daripada 5 MB.",
+        "uploadFailed": "Muat naik gagal"
+      }
+    },
+    "template": {
+      "title": "Pilih templat permulaan",
+      "description": "Pilih rupa untuk halaman awam anda — anda boleh menyesuaikan setiap blok kemudian.",
+      "templates": {
+        "default": {
+          "name": "Klasik",
+          "description": "Hero berpusat, grid perkhidmatan, borang hubungan."
+        },
+        "editorial": {
+          "name": "Editorial",
+          "description": "Tipografi besar, galeri penuh, rasa majalah."
+        },
+        "studio": {
+          "name": "Studio",
+          "description": "Navigasi sisi, grid projek, bingkai minimum."
+        }
+      }
+    },
+    "plan": {
+      "title": "Pilih pelan yang sesuai",
+      "description": "Anda boleh menukar pelan atau membatalkan bila-bila masa dari tetapan ruang kerja anda.",
+      "popular": "Popular",
+      "cadence": {
+        "forever": "selamanya",
+        "monthly": "/ bulan"
+      },
+      "checkoutNote": "Anda akan diarahkan ke HitPay untuk memasukkan butiran kad (Visa atau Mastercard). Kitaran pertama akan dicaj segera dan diperbaharui setiap bulan sehingga anda batal.",
+      "ctaFree": "Teruskan dengan Free",
+      "ctaPaid": "Langgan — {price} / bulan",
+      "settingUp": "Menyediakan…",
+      "opening": "Membuka HitPay…",
+      "dev": {
+        "label": "Pintasan dev",
+        "description": "Langkau HitPay dan tanda {planName} sebagai aktif. Dev sahaja.",
+        "activate": "Aktifkan {planName} (dev)"
+      }
+    },
+    "done": {
+      "title": "Anda sudah sedia, {workspaceName}.",
+      "description": "Pelan {planLabel} anda sudah aktif. Satu lagi perkara sebelum kami bawa anda ke papan pemuka.",
+      "seedToggle": {
+        "label": "Mula dengan data contoh",
+        "description": "Kami akan tambah 5 pelanggan demo, 3 tempahan demo, dan 1 pertanyaan demo supaya anda boleh meneroka aplikasi. Semuanya ditanda sample supaya anda boleh padam dengan satu klik."
+      },
+      "settingUp": "Menyediakan papan pemuka anda…",
+      "goToDashboard": "Pergi ke papan pemuka anda"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Mulakan secara percuma",
+      "tagline": "Cuba produk, tiada kad diperlukan.",
+      "features": {
+        "workspace": "1 ruang kerja",
+        "bookings": "Sehingga 10 tempahan",
+        "storage": "Storan imej 1 GB",
+        "publicPage": "Halaman pendaratan awam"
+      }
+    },
+    "starter": {
+      "name": "Starter",
+      "description": "Untuk pemilik solo yang baru bermula.",
+      "tagline": "Untuk pemilik solo yang baru bermula.",
+      "features": {
+        "unlimitedBookings": "Tempahan tanpa had",
+        "storage": "Storan imej 5 GB",
+        "brandedForm": "Borang pertanyaan berjenama",
+        "acceptPayments": "Terima GCash, Maya, kad daripada pelanggan"
+      }
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Domain tersuai + invois.",
+      "tagline": "Domain tersuai + invois.",
+      "features": {
+        "everythingStarter": "Semua dalam Starter",
+        "customDomain": "Domain tersuai",
+        "storage": "Storan 50 GB",
+        "invoicePdfs": "PDF invois",
+        "removeBranding": "Buang penjenamaan Gallurio"
+      }
+    }
+  }
+}
