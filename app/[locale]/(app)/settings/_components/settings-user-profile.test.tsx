@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import React from "react";
 import { renderWithProviders } from "@/test-utils/render";
-import { SettingsUserProfile, CustomPage } from "./settings-user-profile";
+import { SettingsUserProfile } from "./settings-user-profile";
+import type { SettingsPage } from "./settings-user-profile";
 
 // Stub Clerk's UserProfile so the test doesn't try to boot the full component.
 vi.mock("@clerk/nextjs", () => {
@@ -40,22 +41,39 @@ vi.mock("@clerk/themes", () => ({
 
 const dummyIcon = <span data-testid="dummy-icon" />;
 
+const allPages: SettingsPage[] = [
+  {
+    slug: "customize",
+    label: "Customize",
+    icon: dummyIcon,
+    body: <div>customize content</div>,
+  },
+  {
+    slug: "workspace",
+    label: "Workspace",
+    icon: dummyIcon,
+    ownerOnly: true,
+    body: <div>workspace content</div>,
+  },
+  {
+    slug: "public-page",
+    label: "Public page",
+    icon: dummyIcon,
+    ownerOnly: true,
+    body: <div>public page content</div>,
+  },
+  {
+    slug: "danger",
+    label: "Danger zone",
+    icon: dummyIcon,
+    ownerOnly: true,
+    body: <div>danger content</div>,
+  },
+];
+
 function renderSettings(role: "owner" | "staff") {
   return renderWithProviders(
-    <SettingsUserProfile path="/settings" role={role}>
-      <CustomPage slug="customize" labelKey="customize" labelIcon={dummyIcon}>
-        <div>customize content</div>
-      </CustomPage>
-      <CustomPage slug="workspace" labelKey="workspace" labelIcon={dummyIcon} ownerOnly>
-        <div>workspace content</div>
-      </CustomPage>
-      <CustomPage slug="public-page" labelKey="publicPage" labelIcon={dummyIcon} ownerOnly>
-        <div>public page content</div>
-      </CustomPage>
-      <CustomPage slug="danger" labelKey="danger" labelIcon={dummyIcon} ownerOnly>
-        <div>danger content</div>
-      </CustomPage>
-    </SettingsUserProfile>
+    <SettingsUserProfile path="/settings" role={role} pages={allPages} />
   );
 }
 
@@ -71,11 +89,10 @@ describe("SettingsUserProfile", () => {
       expect(urls).toContain("danger");
     });
 
-    it("renders correct translated labels for each page", () => {
+    it("renders correct labels for each page", () => {
       renderSettings("owner");
       const pages = screen.getAllByTestId("up-page");
       const labels = pages.map((p) => p.getAttribute("data-label"));
-      // en.json: app.settings.tabs.*
       expect(labels).toContain("Customize");
       expect(labels).toContain("Workspace");
       expect(labels).toContain("Public page");

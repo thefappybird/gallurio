@@ -9,12 +9,12 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 // Onboarding step order. The payments step was removed when marketplace was
-// dropped from MVP — keep this list in sync with ONBOARDING_STEPS in
+// dropped from MVP; the template step was moved to Page Builder / workspace
+// settings. Keep this list in sync with ONBOARDING_STEPS in
 // lib/db/models/User.ts.
 export const STEP_META = [
   { key: "business", href: "/onboarding/business" },
   { key: "branding", href: "/onboarding/branding" },
-  { key: "template", href: "/onboarding/template" },
   { key: "plan", href: "/onboarding/plan" },
   { key: "done", href: "/onboarding/done" },
 ] as const;

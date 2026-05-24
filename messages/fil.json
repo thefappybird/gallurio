@@ -150,7 +150,6 @@
     "steps": {
       "business": "Negosyo",
       "branding": "Branding",
-      "template": "Template",
       "plan": "Plano",
       "done": "Tapos"
     },
@@ -201,24 +200,6 @@
         "notImage": "Ang logo ay dapat na imahe.",
         "tooLarge": "Ang logo ay dapat mas maliit sa 5 MB.",
         "uploadFailed": "Hindi matagumpay ang pag-upload"
-      }
-    },
-    "template": {
-      "title": "Pumili ng panimulang template",
-      "description": "Pumili ng disenyo para sa iyong pampublikong pahina — magagawa mong i-customize ang bawat bloke mamaya.",
-      "templates": {
-        "default": {
-          "name": "Classic",
-          "description": "Nakasentrong hero, services grid, contact form."
-        },
-        "editorial": {
-          "name": "Editorial",
-          "description": "Malaking typography, full-bleed gallery, magasin na pakiramdam."
-        },
-        "studio": {
-          "name": "Studio",
-          "description": "Sidebar nav, project grid, payak na frame."
-        }
       }
     },
     "plan": {

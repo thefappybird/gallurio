@@ -16,10 +16,8 @@ import {
 import {
   businessStepSchema,
   brandingStepSchema,
-  templateStepSchema,
   type BusinessStepInput,
   type BrandingStepInput,
-  type TemplateStepInput,
 } from "@/lib/validators/workspace";
 
 type ActionResult = { error?: string; ok?: boolean };
@@ -139,23 +137,6 @@ export async function brandingStepAction(input: BrandingStepInput): Promise<Acti
         "branding.description": parsed.data.description ?? "",
       },
     }
-  );
-  await setUserStep(session.userId, "template");
-  return { ok: true };
-}
-
-export async function templateStepAction(input: TemplateStepInput): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
-
-  const parsed = templateStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  await connectDB();
-  await Workspace.updateOne(
-    { clerkOrgId: session.orgId },
-    { $set: { "publicPage.templateId": parsed.data.templateId } }
   );
   await setUserStep(session.userId, "plan");
   return { ok: true };

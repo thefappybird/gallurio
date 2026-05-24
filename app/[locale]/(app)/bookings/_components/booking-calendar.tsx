@@ -113,65 +113,47 @@ function formatTime(d: Date) {
   });
 }
 
-function formatRangeDate(d: Date) {
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function formatTimeRange(start: Date, end: Date) {
+  return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-/** Month view: compact single line — title • start-time. The bg color lives
- *  here on the candle itself (NOT on rbc's wrapper) so it always renders
- *  reliably regardless of how rbc wraps per-view event components. */
+/** Month view: three-line stacked — title / client / time range. */
 function MonthBookingEvent({ event }: EventProps<CalendarEvent>) {
   const ev = event;
-  const hasTime = ev.start.getHours() !== 0 || ev.start.getMinutes() !== 0;
   const bg = STATUS_COLOR[ev.status];
-  const isMultiDay = !isSameDay(ev.rangeStart, ev.rangeEnd);
+  const clientDisplay = ev.clientName || "—";
+  const timeRange = formatTimeRange(ev.start, ev.end);
   return (
     <span
-      className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 leading-tight text-white ${
+      title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
+      className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
         ev.status === "cancelled" || ev.status === "completed"
           ? "line-through opacity-80"
           : ""
       }`}
       style={{ backgroundColor: bg }}
     >
-      {/* Teams-style striped left edge — diagonal hash pattern */}
       <span
         className="absolute inset-y-0 left-0 w-1"
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="flex items-center gap-1.5 text-xs">
-        <span className="truncate font-semibold">{ev.title}</span>
-        {hasTime ? (
-          <span className="ml-auto shrink-0 text-[10px] opacity-85">
-            {formatTime(ev.start)}
-          </span>
-        ) : null}
-      </span>
-      {isMultiDay ? (
-        <span className="truncate text-[10px] opacity-85">
-          {formatRangeDate(ev.rangeStart)} – {formatRangeDate(ev.rangeEnd)}
-        </span>
-      ) : null}
+      <span className="truncate text-xs font-semibold leading-tight">{ev.title}</span>
+      <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+      <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
     </span>
   );
 }
 
-/** Week/day view: vertical block, height = duration. Title prominent, time
- *  small. Striped left edge mirrors Teams' visual language. */
+/** Week/day view: three-line stacked — title / client / time range. */
 function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
   const ev = event;
   const bg = STATUS_COLOR[ev.status];
+  const clientDisplay = ev.clientName || "—";
+  const timeRange = formatTimeRange(ev.start, ev.end);
   return (
     <div
+      title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
       className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
         ev.status === "cancelled" || ev.status === "completed"
           ? "line-through opacity-80"
@@ -184,17 +166,9 @@ function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="truncate text-sm font-semibold leading-tight">
-        {ev.title}
-      </span>
-      {ev.clientEmail ? (
-        <span className="truncate text-[10px] leading-tight opacity-80">
-          {ev.clientEmail}
-        </span>
-      ) : null}
-      <span className="truncate text-[11px] leading-tight opacity-85">
-        {formatTime(ev.start)} – {formatTime(ev.end)}
-      </span>
+      <span className="truncate text-sm font-semibold leading-tight">{ev.title}</span>
+      <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+      <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
     </div>
   );
 }

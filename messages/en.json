@@ -384,7 +384,6 @@
     "steps": {
       "business": "Business",
       "branding": "Branding",
-      "template": "Template",
       "plan": "Plan",
       "done": "Finish"
     },
@@ -437,24 +436,6 @@
         "notImage": "Logo must be an image.",
         "tooLarge": "Logo must be under 5 MB.",
         "uploadFailed": "Upload failed"
-      }
-    },
-    "template": {
-      "title": "Pick a starting template",
-      "description": "Choose a look for your public page — you'll be able to customize every block later.",
-      "templates": {
-        "default": {
-          "name": "Classic",
-          "description": "Centered hero, services grid, contact form."
-        },
-        "editorial": {
-          "name": "Editorial",
-          "description": "Large typography, full-bleed gallery, magazine feel."
-        },
-        "studio": {
-          "name": "Studio",
-          "description": "Sidebar nav, project grid, minimal frame."
-        }
       }
     },
     "plan": {

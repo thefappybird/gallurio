@@ -150,7 +150,6 @@
     "steps": {
       "business": "Perniagaan",
       "branding": "Penjenamaan",
-      "template": "Templat",
       "plan": "Pelan",
       "done": "Selesai"
     },
@@ -201,24 +200,6 @@
         "notImage": "Logo mestilah imej.",
         "tooLarge": "Logo mestilah kurang daripada 5 MB.",
         "uploadFailed": "Muat naik gagal"
-      }
-    },
-    "template": {
-      "title": "Pilih templat permulaan",
-      "description": "Pilih rupa untuk halaman awam anda — anda boleh menyesuaikan setiap blok kemudian.",
-      "templates": {
-        "default": {
-          "name": "Klasik",
-          "description": "Hero berpusat, grid perkhidmatan, borang hubungan."
-        },
-        "editorial": {
-          "name": "Editorial",
-          "description": "Tipografi besar, galeri penuh, rasa majalah."
-        },
-        "studio": {
-          "name": "Studio",
-          "description": "Navigasi sisi, grid projek, bingkai minimum."
-        }
       }
     },
     "plan": {

@@ -150,7 +150,6 @@
     "steps": {
       "business": "Bisnis",
       "branding": "Branding",
-      "template": "Templat",
       "plan": "Paket",
       "done": "Selesai"
     },
@@ -201,24 +200,6 @@
         "notImage": "Logo harus berupa gambar.",
         "tooLarge": "Logo harus di bawah 5 MB.",
         "uploadFailed": "Unggah gagal"
-      }
-    },
-    "template": {
-      "title": "Pilih templat awal",
-      "description": "Pilih tampilan untuk halaman publik Anda — Anda dapat menyesuaikan setiap blok nanti.",
-      "templates": {
-        "default": {
-          "name": "Klasik",
-          "description": "Hero terpusat, grid layanan, formulir kontak."
-        },
-        "editorial": {
-          "name": "Editorial",
-          "description": "Tipografi besar, galeri penuh, nuansa majalah."
-        },
-        "studio": {
-          "name": "Studio",
-          "description": "Navigasi samping, grid proyek, bingkai minimal."
-        }
       }
     },
     "plan": {
