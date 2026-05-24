@@ -129,8 +129,8 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
           defaultCurrency={defaultCurrency}
         />
         <Button
+          variant="brand"
           size="sm"
-          className="bg-brand text-brand-foreground hover:bg-brand/90"
           render={<Link href={(() => {
             const params = new URLSearchParams(searchParams.toString());
             params.set("add", "1");

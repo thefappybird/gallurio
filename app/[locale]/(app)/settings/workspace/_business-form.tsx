@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   updateWorkspaceBusinessSchema,
   HITPAY_COUNTRY_VALUES,
@@ -67,11 +67,7 @@ export function WorkspaceBusinessForm({
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
-    if (result?.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success(t("savedToast"));
+    if (!toastActionResult(result, t("savedToast"))) return;
     reset(data);
   }
 

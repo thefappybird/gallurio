@@ -8,19 +8,28 @@ import {
 import { Booking, Client, Transaction } from "@/lib/db/models";
 
 const WS_ID = new Types.ObjectId();
+const WS_A = new Types.ObjectId();
+const WS_B = new Types.ObjectId();
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
 
+// requireOrg is mocked as a vi.fn() so individual tests can override the
+// returned workspace context without re-importing the route module.
+const mockRequireOrg = vi.fn();
 vi.mock("@/lib/auth/requireOrg", () => ({
-  requireOrg: async () => ({
-    userId: "user_test",
-    clerkOrgId: "org_test",
-    role: "owner",
-    workspace: { _id: WS_ID, currency: "PHP", name: "Test", slug: "t" },
-  }),
+  requireOrg: (...args: unknown[]) => mockRequireOrg(...args),
 }));
+
+function makeOrgCtx(wsId: Types.ObjectId) {
+  return {
+    userId: "user_test",
+    clerkOrgId: `org_${wsId.toHexString()}`,
+    role: "owner" as const,
+    workspace: { _id: wsId, currency: "PHP", name: "Test", slug: "t" },
+  };
+}
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -30,6 +39,8 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  // Default: WS_ID context (mirrors the original static mock for all existing tests).
+  mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
 });
 
 async function callImport(rows: unknown[]) {
@@ -226,5 +237,43 @@ describe("POST /api/bookings/import", () => {
     expect(body.errors).toHaveLength(1);
     expect(body.errors[0].kind).toBe("validation");
     expect(body.skipped).toBe(1);
+  });
+
+  it("cross-workspace isolation: WS_B import does not contaminate WS_A client", async () => {
+    // Seed workspace A with an existing Alice client.
+    const aliceA = await Client.create({
+      workspaceId: WS_A,
+      name: "Alice",
+      email: "alice@example.com",
+      source: "manual",
+      totalSpent: 5000,
+      bookingsCount: 1,
+    });
+
+    // Switch requireOrg to return workspace B context for the import call.
+    mockRequireOrg.mockResolvedValueOnce(makeOrgCtx(WS_B));
+
+    const res = await callImport([
+      {
+        ...VALID_ROW,
+        clientName: "Alice",
+        clientEmail: "alice@example.com",
+      },
+    ]);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.created).toBe(1);
+
+    // WS_A's Alice must be unchanged.
+    const clientsA = await Client.find({ workspaceId: WS_A }).lean();
+    expect(clientsA).toHaveLength(1);
+    expect(clientsA[0]._id.toString()).toBe(aliceA._id.toString());
+    expect(clientsA[0].bookingsCount ?? 1).toBe(1);
+
+    // WS_B gets its own new client — no cross-contamination.
+    const clientsB = await Client.find({ workspaceId: WS_B }).lean();
+    expect(clientsB).toHaveLength(1);
+    expect(clientsB[0].email).toBe("alice@example.com");
+    expect(clientsB[0].workspaceId.toString()).toBe(WS_B.toString());
   });
 });

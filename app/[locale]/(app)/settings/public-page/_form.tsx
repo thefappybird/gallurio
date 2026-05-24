@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   publicPageSettingsSchema,
   type PublicPageSettingsInput,
@@ -71,11 +72,7 @@ export function PublicPageSettingsForm({
 
   async function onSubmit(data: PublicPageSettingsInput) {
     const result = await updatePublicPageSettingsAction(data);
-    if (result?.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success(t("savedToast"));
+    if (!toastActionResult(result, t("savedToast"))) return;
     reset(data);
   }
 

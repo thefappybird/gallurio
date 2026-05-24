@@ -71,18 +71,29 @@ export async function GET(req: Request) {
     );
 
     // Fall back to denormalized bounds for legacy bookings missing sessions[].
-    const startDate = matchingSession
-      ? new Date(matchingSession.startAt)
-      : b.firstSessionStart
-        ? new Date(b.firstSessionStart)
-        : null;
-    const endDate = matchingSession
-      ? new Date(matchingSession.endAt)
-      : b.lastSessionEnd
-        ? new Date(b.lastSessionEnd)
-        : null;
+    if (!matchingSession) {
+      if (!b.firstSessionStart || !b.lastSessionEnd) return [];
+      const startDate = new Date(b.firstSessionStart);
+      const endDate = new Date(b.lastSessionEnd);
+      // Multi-day booking queried mid-span: the overall window (e.g. Jul 1 09:00
+      // → Jul 3 18:00) is not the correct shift for the queried day. Return an
+      // all-day sentinel so conflict checks always treat this as overlapping.
+      const isMultiDay =
+        startDate.getFullYear() !== endDate.getFullYear() ||
+        startDate.getMonth() !== endDate.getMonth() ||
+        startDate.getDate() !== endDate.getDate();
+      return [
+        {
+          id: b._id.toString(),
+          title: b.title,
+          shiftStart: isMultiDay ? "00:00" : `${String(startDate.getHours()).padStart(2, "0")}:${String(startDate.getMinutes()).padStart(2, "0")}`,
+          shiftEnd: isMultiDay ? "23:59" : `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
+        },
+      ];
+    }
 
-    if (!startDate || !endDate) return [];
+    const startDate = new Date(matchingSession.startAt);
+    const endDate = new Date(matchingSession.endAt);
     return [
       {
         id: b._id.toString(),

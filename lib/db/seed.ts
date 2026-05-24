@@ -28,7 +28,7 @@ import {
   Inquiry,
   GalleryCollection,
   GalleryItem,
-
+  Transaction,
   ActivityLog,
 } from "./models";
 import { recordBookingForClient } from "./clientTransactions";
@@ -262,6 +262,63 @@ async function seedWorkspace(
       },
       source: "seed",
     });
+  }
+
+  // Supplementary transactions for demo variety (does not roll up to Client summaries).
+  // Adds balance payments, refunds, and mixed methods so revenue-by-method and refund
+  // widgets have meaningful data on demo dashboards.
+  const completedBookings = bookings.filter((b) => b.status === "completed");
+  const supplementaryTxs: Array<{
+    workspaceId: mongoose.Types.ObjectId;
+    bookingId: mongoose.Types.ObjectId;
+    clientId: mongoose.Types.ObjectId;
+    amount: number;
+    currency: string;
+    type: "balance" | "refund";
+    method: "hitpay" | "cash" | "transfer";
+    paidAt: Date;
+  }> = [];
+
+  const methods = ["hitpay", "cash", "transfer"] as const;
+
+  // Balance payments for completed bookings.
+  for (const b of completedBookings) {
+    const total = (b.amount as { total: number }).total;
+    const deposit = (b.amount as { deposit: number }).deposit;
+    const balance = Math.floor(total - deposit);
+    if (balance <= 0) continue;
+    const offsetDays = range(-89, -1);
+    supplementaryTxs.push({
+      workspaceId: workspace._id,
+      bookingId: b._id,
+      clientId: b.clientId,
+      amount: balance,
+      currency: workspace.currency,
+      type: "balance",
+      method: pick(methods),
+      paidAt: dayOffset(offsetDays),
+    });
+  }
+
+  // A handful of refunds spread across the trailing 90 days.
+  const refundCount = Math.min(5, completedBookings.length);
+  for (let i = 0; i < refundCount; i += 1) {
+    const b = pick(completedBookings);
+    const total = (b.amount as { total: number }).total;
+    supplementaryTxs.push({
+      workspaceId: workspace._id,
+      bookingId: b._id,
+      clientId: b.clientId,
+      amount: -Math.floor(total * range(5, 20) / 100),
+      currency: workspace.currency,
+      type: "refund",
+      method: pick(methods),
+      paidAt: dayOffset(-range(1, 89)),
+    });
+  }
+
+  if (supplementaryTxs.length > 0) {
+    await Transaction.insertMany(supplementaryTxs);
   }
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).

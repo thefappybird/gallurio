@@ -555,10 +555,10 @@ export function BookingWizardModal({
                 {mode === "edit" ? (
                   <Button
                     type="button"
+                    variant="brand"
                     size="sm"
                     onClick={saveFromAnywhere}
                     disabled={submitting}
-                    className="bg-brand text-brand-foreground hover:bg-brand/90"
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
@@ -585,10 +585,8 @@ export function BookingWizardModal({
                     onClick={nextStep}
                     disabled={submitting || (STEPS[stepIndex].id === "event" && conflictsBySession.some((c) => c.length > 0))}
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
-                    className={cn(
-                      "bg-brand text-brand-foreground hover:bg-brand/90",
-                      stepErrors.has(stepIndex) && "animate-shake"
-                    )}
+                    variant="brand"
+                    className={cn(stepErrors.has(stepIndex) && "animate-shake")}
                   >
                     {t("next")}
                     <ChevronRightIcon className="size-4" />
@@ -596,9 +594,9 @@ export function BookingWizardModal({
                 ) : (
                   <Button
                     type="submit"
+                    variant="brand"
                     size="sm"
                     disabled={submitting}
-                    className="bg-brand text-brand-foreground hover:bg-brand/90"
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />

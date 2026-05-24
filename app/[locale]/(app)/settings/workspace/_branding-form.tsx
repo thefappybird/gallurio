@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   updateWorkspaceBrandingSchema,
   type UpdateWorkspaceBrandingInput,
@@ -75,11 +76,7 @@ export function WorkspaceBrandingForm({
       logoCloudinaryPublicId: logoPublicId,
     };
     const result = await updateWorkspaceBrandingAction(payload);
-    if (result?.error) {
-      toast.error(result.error);
-      return;
-    }
-    toast.success(t("savedToast"));
+    if (!toastActionResult(result, t("savedToast"))) return;
     reset(payload);
   }
 

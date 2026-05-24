@@ -403,10 +403,10 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
               validRows.length > 0 ? (
                 <Button
                   type="button"
+                  variant="brand"
                   size="sm"
                   onClick={runImport}
                   disabled={importing}
-                  className="bg-brand text-brand-foreground hover:bg-brand/90"
                 >
                   {importing ? <Loader2Icon className="size-4 animate-spin" /> : null}
                   {importing ? t("importing") : t("importButton", { count: validRows.length })}
