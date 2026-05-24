@@ -100,7 +100,7 @@ type Props = {
   /** Called when an external drag ends (dropped or cancelled) so the popover can close. */
   onExternalDragEnd?: () => void;
   onDropFromOutside?: (args: DragFromOutsideItemArgs) => void;
-  dragFromOutsideItem?: () => AnyCalendarEvent;
+  dragFromOutsideItem?: () => AnyCalendarEvent | null;
   messages: {
     today: string;
     previous: string;
@@ -735,7 +735,9 @@ export function BookingCalendar({
           onEventDrop={onEventDrop}
           onEventResize={onEventResize}
           onDropFromOutside={onDropFromOutside}
-          dragFromOutsideItem={dragFromOutsideItem ?? undefined}
+          dragFromOutsideItem={
+            (dragFromOutsideItem ?? undefined) as (() => AnyCalendarEvent) | undefined
+          }
           eventPropGetter={(event) => {
             if ("type" in event && (event as OverflowEvent).type === "overflow") {
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };

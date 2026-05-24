@@ -577,31 +577,13 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
     externalDragRef.current = null;
   }, []);
 
-  // dragFromOutsideItem return type matches rbc's TEvent (AnyCalendarEvent).
-  // Return a placeholder OverflowEvent when nothing is being dragged so rbc
-  // doesn't crash — rbc only uses this value for ghost rendering during
-  // drag-over, and never calls onDropFromOutside if it returns falsy.
-  const dragFromOutsideItem = useCallback(() => {
-    return externalDragRef.current ?? {
-      type: "overflow" as const,
-      id: "__external_drag_placeholder__",
-      bookingId: "",
-      title: "",
-      start: new Date(),
-      end: new Date(),
-      status: "booked" as const,
-      clientName: "",
-      clientEmail: null,
-      rangeStart: new Date(),
-      rangeEnd: new Date(),
-      sessionIndex: 0 as const,
-      sessionStartAt: new Date(),
-      sessionEndAt: new Date(),
-      sessionDayCount: 1 as const,
-      sessionPastDayCount: 0 as const,
-      overflowCount: 0,
-      overflowEvents: [],
-    };
+  // Return the actively dragged event so rbc renders a real candle preview at
+  // the hover position. MUST return null when no drag is active — otherwise
+  // any placeholder will be rendered into the target cell. (Earlier versions
+  // returned an OverflowEvent placeholder, which made rbc draw a stray
+  // "+N more" pill in whatever cell the cursor was over.)
+  const dragFromOutsideItem = useCallback((): AnyCalendarEvent | null => {
+    return externalDragRef.current;
   }, []);
 
   /**
