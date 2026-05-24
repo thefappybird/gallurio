@@ -25,7 +25,6 @@ export function WorkspaceBrandingForm({
   const t = useTranslations("app.settings.workspace");
   const tBrand = useTranslations("onboarding.branding");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(defaults.logoUrl ?? null);
   const [logoPublicId, setLogoPublicId] = useState<string | null>(
@@ -50,28 +49,26 @@ export function WorkspaceBrandingForm({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setServerError(tBrand("errors.notImage"));
+      toast.error(tBrand("errors.notImage"));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setServerError(tBrand("errors.tooLarge"));
+      toast.error(tBrand("errors.tooLarge"));
       return;
     }
-    setServerError(null);
     setUploading(true);
     try {
       const res = await uploadToCloudinary(file, { subfolder: "branding" });
       setLogoUrl(res.secure_url);
       setLogoPublicId(res.public_id);
     } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : tBrand("errors.uploadFailed"));
+      toast.error(err instanceof Error ? err.message : tBrand("errors.uploadFailed"));
     } finally {
       setUploading(false);
     }
   }
 
   async function onSubmit(data: UpdateWorkspaceBrandingInput) {
-    setServerError(null);
     const payload: UpdateWorkspaceBrandingInput = {
       ...data,
       logoUrl,
@@ -79,7 +76,7 @@ export function WorkspaceBrandingForm({
     };
     const result = await updateWorkspaceBrandingAction(payload);
     if (result?.error) {
-      setServerError(result.error);
+      toast.error(result.error);
       return;
     }
     toast.success(t("savedToast"));
@@ -202,12 +199,6 @@ export function WorkspaceBrandingForm({
             <p className="text-sm text-destructive">{errors.description.message}</p>
           )}
         </div>
-
-        {serverError && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || uploading || !canSave}>

@@ -45,6 +45,16 @@
       "scrollToTime": "Scroll to time",
       "go": "Go"
     },
+    "bookings": {
+      "wizard": {
+        "conflictDialog": {
+          "title": "ข้อขัดแย้งในการจัดตารางเวลา",
+          "description": "วันที่ด้านล่างทับซ้อนกับการจองที่มีอยู่ คุณสามารถกลับไปและปรับ หรือดำเนินการต่อได้",
+          "proceed": "ดำเนินการต่อ",
+          "cancel": "กลับไปแก้ไข"
+        }
+      }
+    },
     "sidebar": {
       "dashboard": "แดชบอร์ด",
       "bookings": "การจอง",

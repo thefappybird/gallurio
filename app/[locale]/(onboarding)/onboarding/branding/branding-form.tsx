@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import { brandingStepSchema, type BrandingStepInput } from "@/lib/validators/workspace";
 import { brandingStepAction } from "@/lib/actions/onboarding";
@@ -28,7 +29,6 @@ export function BrandingStepForm({
   const tShell = useTranslations("onboarding.shell");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(defaults.logoUrl ?? null);
   const [logoPublicId, setLogoPublicId] = useState<string | null>(
@@ -53,28 +53,26 @@ export function BrandingStepForm({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setServerError(t("errors.notImage"));
+      toast.error(t("errors.notImage"));
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setServerError(t("errors.tooLarge"));
+      toast.error(t("errors.tooLarge"));
       return;
     }
-    setServerError(null);
     setUploading(true);
     try {
       const res = await uploadToCloudinary(file, { subfolder: "branding" });
       setLogoUrl(res.secure_url);
       setLogoPublicId(res.public_id);
     } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : t("errors.uploadFailed"));
+      toast.error(err instanceof Error ? err.message : t("errors.uploadFailed"));
     } finally {
       setUploading(false);
     }
   }
 
   async function onSubmit(data: BrandingStepInput) {
-    setServerError(null);
     const payload: BrandingStepInput = {
       ...data,
       logoUrl,
@@ -82,10 +80,10 @@ export function BrandingStepForm({
     };
     const result = await brandingStepAction(payload);
     if (result?.error) {
-      setServerError(result.error);
+      toast.error(result.error);
       return;
     }
-    startTransition(() => router.push("/onboarding/template"));
+    startTransition(() => router.push("/onboarding/plan"));
   }
 
   function skip() {
@@ -99,10 +97,10 @@ export function BrandingStepForm({
         description: "",
       });
       if (result?.error) {
-        setServerError(result.error);
+        toast.error(result.error);
         return;
       }
-      router.push("/onboarding/template");
+      router.push("/onboarding/plan");
     });
   }
 
@@ -217,12 +215,6 @@ export function BrandingStepForm({
             <p className="text-sm text-destructive">{errors.description.message}</p>
           )}
         </div>
-
-        {serverError && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <StepBackButton from="branding" />
