@@ -289,12 +289,12 @@ export function EventStep({
                 value={field.value}
                 onValueChange={(v) => v && field.onChange(v)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="capitalize">
                   <SelectValue placeholder={t("eventType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {EVENT_TYPES.map((e) => (
-                    <SelectItem key={e} value={e}>
+                    <SelectItem key={e} value={e} className="capitalize">
                       {safe(tEvent, e, e)}
                     </SelectItem>
                   ))}

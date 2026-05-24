@@ -29,41 +29,66 @@ export async function GET(req: Request) {
   const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
   const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
 
-  // Any booking with a session whose range overlaps [dayStart, dayEnd].
+  // Any booking with a session (or legacy firstSessionStart/lastSessionEnd)
+  // whose range overlaps [dayStart, dayEnd].
   const filter: Record<string, unknown> = {
     workspaceId: ctx.workspace._id,
     status: { $ne: "cancelled" },
-    sessions: {
-      $elemMatch: {
-        startAt: { $lte: dayEnd },
-        endAt: { $gte: dayStart },
+    $or: [
+      {
+        sessions: {
+          $elemMatch: {
+            startAt: { $lte: dayEnd },
+            endAt: { $gte: dayStart },
+          },
+        },
       },
-    },
+      {
+        firstSessionStart: { $lte: dayEnd },
+        lastSessionEnd: { $gte: dayStart },
+      },
+    ],
   };
   if (excludeId && /^[a-f0-9]{24}$/i.test(excludeId)) {
     filter._id = { $ne: excludeId };
   }
 
   const bookings = await Booking.find(filter)
-    .select({ _id: 1, title: 1, sessions: 1 })
+    .select({ _id: 1, title: 1, sessions: 1, firstSessionStart: 1, lastSessionEnd: 1 })
     .sort({ firstSessionStart: 1 })
     .limit(20)
     .lean();
 
-  const shifts = bookings.flatMap((b) => {
-    // Return the shift times from the session that actually overlaps this day.
-    const matchingSession = (b.sessions as { startAt: Date; endAt: Date }[]).find(
+  type RawBooking = typeof bookings[number] & {
+    firstSessionStart?: Date;
+    lastSessionEnd?: Date;
+  };
+
+  const shifts = (bookings as RawBooking[]).flatMap((b) => {
+    const sessions = b.sessions as { startAt: Date; endAt: Date }[] | undefined;
+    const matchingSession = sessions?.find(
       (s) => s.startAt <= dayEnd && s.endAt >= dayStart
     );
-    if (!matchingSession) return [];
-    const s = new Date(matchingSession.startAt);
-    const e = new Date(matchingSession.endAt);
+
+    // Fall back to denormalized bounds for legacy bookings missing sessions[].
+    const startDate = matchingSession
+      ? new Date(matchingSession.startAt)
+      : b.firstSessionStart
+        ? new Date(b.firstSessionStart)
+        : null;
+    const endDate = matchingSession
+      ? new Date(matchingSession.endAt)
+      : b.lastSessionEnd
+        ? new Date(b.lastSessionEnd)
+        : null;
+
+    if (!startDate || !endDate) return [];
     return [
       {
         id: b._id.toString(),
         title: b.title,
-        shiftStart: `${String(s.getHours()).padStart(2, "0")}:${String(s.getMinutes()).padStart(2, "0")}`,
-        shiftEnd: `${String(e.getHours()).padStart(2, "0")}:${String(e.getMinutes()).padStart(2, "0")}`,
+        shiftStart: `${String(startDate.getHours()).padStart(2, "0")}:${String(startDate.getMinutes()).padStart(2, "0")}`,
+        shiftEnd: `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
       },
     ];
   });

@@ -192,4 +192,33 @@ describe("GET /api/bookings/shifts-on-date", () => {
     const body = await res.json();
     expect(body.shifts).toHaveLength(0);
   });
+
+  it("returns a shift via firstSessionStart/lastSessionEnd fallback for a legacy booking with empty sessions[]", async () => {
+    // Raw insert bypasses the pre-save hook and schema validation so we can
+    // simulate a legacy doc that has no sessions array but valid denormalised bounds.
+    const { GET } = await load();
+    await Booking.collection.insertOne({
+      workspaceId,
+      clientId,
+      clientName: "Legacy Client",
+      title: "Legacy Booking",
+      status: "booked",
+      sessions: [],
+      firstSessionStart: new Date("2026-08-15T10:00:00"),
+      lastSessionEnd: new Date("2026-08-15T18:00:00"),
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const req = makeReq("2026-08-15");
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(1);
+    expect(body.shifts[0].title).toBe("Legacy Booking");
+    expect(body.shifts[0].shiftStart).toBe("10:00");
+    expect(body.shifts[0].shiftEnd).toBe("18:00");
+  });
 });

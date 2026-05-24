@@ -24,6 +24,7 @@ import { EventStep, type ShiftHit } from "./booking-wizard-steps/event-step";
 import { PricingStep } from "./booking-wizard-steps/pricing-step";
 import { ReviewStep } from "./booking-wizard-steps/review-step";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
+import { ConflictAckDialog } from "./conflict-ack-dialog";
 import type {
   WizardMode,
   WizardValues,
@@ -89,6 +90,7 @@ export function BookingWizardModal({
    *  Next without passing validation. Drives the shake animation. */
   const [shakeKey, setShakeKey] = useState(0);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
+  const [pendingConflictAck, setPendingConflictAck] = useState(false);
   /** Raw shifts per session index — keyed by startDate string.
    *  Re-fetched whenever any session's startDate changes. */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
@@ -281,8 +283,6 @@ export function BookingWizardModal({
       if (!title?.trim()) return false;
       // Every session must have a start date.
       if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
-      // Any session with overlapping conflicts hard-blocks the step.
-      if (conflictsBySession.some((c) => c.length > 0)) return false;
     }
     if (step.id === "pricing") {
       const { total, deposit } = watch("amount");
@@ -319,6 +319,16 @@ export function BookingWizardModal({
     }
     clearStepInvalid(stepIndex);
     setSubmitError(null);
+    // If leaving the event step with conflicts, ask the user to acknowledge.
+    if (STEPS[stepIndex].id === "event" && conflictsBySession.some((c) => c.length > 0)) {
+      setPendingConflictAck(true);
+      return;
+    }
+    setStepIndex((i) => Math.min(STEPS.length - 1, i + 1));
+  }
+
+  function advanceFromConflict() {
+    setPendingConflictAck(false);
     setStepIndex((i) => Math.min(STEPS.length - 1, i + 1));
   }
 
@@ -586,6 +596,7 @@ export function BookingWizardModal({
                     disabled={submitting}
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
                     className={cn(
+                      "bg-brand text-brand-foreground hover:bg-brand/90",
                       stepErrors.has(stepIndex) && "animate-shake"
                     )}
                   >
@@ -593,7 +604,12 @@ export function BookingWizardModal({
                     <ChevronRightIcon className="size-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" size="sm" disabled={submitting}>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={submitting}
+                    className="bg-brand text-brand-foreground hover:bg-brand/90"
+                  >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : null}
@@ -619,6 +635,14 @@ export function BookingWizardModal({
           setUnsavedDialogOpen(false);
           close();
         }}
+      />
+
+      <ConflictAckDialog
+        open={pendingConflictAck}
+        conflicts={conflictsBySession}
+        sessions={watchedSessions ?? []}
+        onCancel={() => setPendingConflictAck(false)}
+        onProceed={advanceFromConflict}
       />
     </Dialog>
   );
