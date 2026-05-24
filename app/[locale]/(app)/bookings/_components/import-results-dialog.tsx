@@ -52,8 +52,8 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
             <span
               className={cn(
                 "text-[10px] font-medium uppercase tracking-wide",
-                entry.kind === "validation" && "text-amber-600 dark:text-amber-400",
-                entry.kind === "lookup" && "text-blue-600 dark:text-blue-400",
+                entry.kind === "validation" && "text-muted-foreground",
+                entry.kind === "lookup" && "text-muted-foreground",
                 entry.kind === "server" && "text-destructive"
               )}
             >

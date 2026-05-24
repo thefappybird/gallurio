@@ -195,8 +195,10 @@ describe("POST /api/bookings/import", () => {
     expect(client?.bookingsCount).toBe(2);
     expect(client?.transactions).toHaveLength(2);
 
+    // Only the row with deposit > 0 creates a Transaction; zero-deposit row does not.
     const txs = await Transaction.find({ workspaceId: WS_ID });
-    expect(txs).toHaveLength(2);
+    expect(txs).toHaveLength(1);
+    expect(txs[0].type).toBe("deposit");
   });
 
   it("invalid row increments skipped and writes no booking or transaction", async () => {

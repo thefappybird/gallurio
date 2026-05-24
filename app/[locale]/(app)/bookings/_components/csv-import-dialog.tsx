@@ -328,7 +328,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                     {t("preview", { total: rows.length })}
                   </span>
                   {validRows.length > 0 ? (
-                    <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                    <span className="text-xs text-foreground">
                       {t("validCount", { count: validRows.length })}
                     </span>
                   ) : null}
@@ -376,7 +376,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                           </td>
                           <td className="px-1 py-1.5">
                             {row.valid ? (
-                              <CheckCircleIcon className="size-3.5 text-emerald-500" />
+                              <CheckCircleIcon className="size-3.5 text-foreground" />
                             ) : (
                               <XCircleIcon className="size-3.5 text-destructive" />
                             )}

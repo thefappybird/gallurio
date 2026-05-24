@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import {
   startInMemoryMongo,
   stopInMemoryMongo,
@@ -9,6 +9,8 @@ import { Client, Transaction } from "@/lib/db/models";
 import { recordBookingForClient } from "./clientTransactions";
 
 const WS_ID = new Types.ObjectId();
+const WS_A = new Types.ObjectId();
+const WS_B = new Types.ObjectId();
 const CLIENT_ID = new Types.ObjectId();
 const BOOKING_ID = new Types.ObjectId();
 
@@ -66,7 +68,7 @@ describe("recordBookingForClient", () => {
     expect(client?.transactions?.[0]?.source).toBe("manual");
   });
 
-  it("uses total amount and type=other when deposit is 0", async () => {
+  it("skips Transaction creation when deposit is 0, records history entry with type=other", async () => {
     await makeClient();
 
     const booking = {
@@ -83,12 +85,18 @@ describe("recordBookingForClient", () => {
     });
 
     const tx = await Transaction.findOne({ bookingId: BOOKING_ID }).lean();
-    expect(tx?.type).toBe("other");
-    expect(tx?.amount).toBe(30_000);
+    expect(tx).toBeNull();
 
     const client = await Client.findById(CLIENT_ID).lean();
-    expect(client?.totalSpent).toBe(30_000);
+    expect(client?.bookingsCount).toBe(1);
+    expect(client?.lastBookingAt?.toISOString()).toBe("2026-07-01T10:00:00.000Z");
+    expect(client?.totalSpent ?? 0).toBe(0);
+    expect(client?.lastPaymentAmount ?? 0).toBe(0);
+    expect(client?.lastPaymentDate ?? null).toBeNull();
+    expect(client?.transactions).toHaveLength(1);
     expect(client?.transactions?.[0]?.type).toBe("other");
+    expect(client?.transactions?.[0]?.amount).toBe(0);
+    expect(client?.transactions?.[0]?.transactionId).toBeNull();
   });
 
   it("appends to existing transactions without duplicating", async () => {
@@ -122,7 +130,7 @@ describe("recordBookingForClient", () => {
         clientId: CLIENT_ID,
         booking: {
           _id: new Types.ObjectId(),
-          amount: { total: 1_000, deposit: 0, currency: "PHP" },
+          amount: { total: 1_000, deposit: 500, currency: "PHP" },
           firstSessionStart: new Date(`2026-01-${String(i % 28 + 1).padStart(2, "0")}T09:00:00.000Z`),
         },
         source: "seed",
@@ -134,7 +142,7 @@ describe("recordBookingForClient", () => {
     expect(client?.bookingsCount).toBe(201);
   });
 
-  it("throws and logs when client is not found", async () => {
+  it("throws when client is not found", async () => {
     const fakeClientId = new Types.ObjectId();
     await expect(
       recordBookingForClient({
@@ -144,5 +152,24 @@ describe("recordBookingForClient", () => {
         source: "manual",
       })
     ).rejects.toThrow("client not found");
+  });
+
+  it("rejects cross-workspace client and does NOT create an orphaned Transaction", async () => {
+    const clientA = await Client.create({ workspaceId: WS_A, name: "A", source: "manual" });
+    await expect(
+      recordBookingForClient({
+        workspaceId: WS_B,
+        clientId: clientA._id,
+        booking: {
+          _id: new mongoose.Types.ObjectId(),
+          amount: { total: 1000, deposit: 500, currency: "PHP" },
+          firstSessionStart: new Date(),
+        },
+        source: "import",
+      })
+    ).rejects.toThrow(/client not found/);
+
+    const orphanCount = await Transaction.countDocuments({});
+    expect(orphanCount).toBe(0);
   });
 });
