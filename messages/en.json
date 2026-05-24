@@ -244,6 +244,12 @@
           "keep": "Keep editing",
           "discard": "Discard and close"
         },
+        "conflictConfirm": {
+          "title": "Scheduling conflicts detected",
+          "description": "One or more sessions overlap with existing bookings. You can submit anyway or go back to adjust the dates.",
+          "confirm": "Submit anyway",
+          "cancel": "Go back"
+        },
         "steps": {
           "client": "Client",
           "event": "Event",

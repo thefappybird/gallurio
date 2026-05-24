@@ -49,6 +49,12 @@
       "wizard": {
         "event": {
           "checkingConflicts": "Memeriksa konflik…"
+        },
+        "conflictConfirm": {
+          "title": "Konflik jadwal terdeteksi",
+          "description": "Satu atau lebih sesi tumpang tindih dengan pemesanan yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
+          "confirm": "Kirim tetap",
+          "cancel": "Kembali"
         }
       },
       "calendar": {

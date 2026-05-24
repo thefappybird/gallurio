@@ -49,6 +49,12 @@
       "wizard": {
         "event": {
           "checkingConflicts": "Menyemak konflik…"
+        },
+        "conflictConfirm": {
+          "title": "Konflik jadual dikesan",
+          "description": "Satu atau lebih sesi bertindih dengan tempahan sedia ada. Anda boleh menghantar juga atau kembali untuk melaraskan tarikh.",
+          "confirm": "Hantar juga",
+          "cancel": "Kembali"
         }
       },
       "calendar": {
