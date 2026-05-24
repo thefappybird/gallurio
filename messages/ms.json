@@ -26,6 +26,25 @@
         "createOne": "Cipta satu"
       }
     },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "jumpTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
     "sidebar": {
       "dashboard": "Papan pemuka",
       "bookings": "Tempahan",
@@ -36,6 +55,89 @@
       "settings": "Tetapan",
       "account": "Akaun",
       "logOut": "Log keluar"
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Cerah",
+      "dark": "Gelap",
+      "system": "Sistem"
+    },
+    "settings": {
+      "title": "Tetapan",
+      "description": "Urus akaun, ruang kerja, dan keutamaan anda.",
+      "tabs": {
+        "account": "Akaun",
+        "security": "Keselamatan",
+        "customize": "Sesuaikan",
+        "workspace": "Ruang kerja",
+        "publicPage": "Halaman awam",
+        "danger": "Zon berbahaya"
+      },
+      "workspace": {
+        "businessSection": "Butiran perniagaan",
+        "businessSectionHint": "Identiti perniagaan anda dan tempat anda beroperasi.",
+        "brandingSection": "Penjenamaan",
+        "brandingSectionHint": "Logo, warna, dan tagline yang digunakan pada halaman awam anda.",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Ruang kerja dikemas kini.",
+        "currencyWarning": "Terpakai untuk tempahan baru. Amaun sedia ada mengekalkan mata wang asal mereka."
+      },
+      "customize": {
+        "themeSection": "Tema",
+        "themeHint": "Mod cerah atau gelap — disimpan pada peranti ini.",
+        "languageSection": "Bahasa",
+        "languageHint": "Menukar antara muka aplikasi. URL akan dikemas kini untuk padan.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "th": "ภาษาไทย"
+        }
+      },
+      "publicPage": {
+        "visibilitySection": "Keterlihatan",
+        "visibilityHint": "Kawal sama ada halaman awam anda boleh dicapai.",
+        "publish": "Terbitkan",
+        "unpublish": "Nyahterbit",
+        "publishedAt": "Diterbitkan {date}",
+        "unpublished": "Belum diterbitkan",
+        "publicUrl": "URL awam anda",
+        "copy": "Salin",
+        "copied": "Disalin",
+        "seoSection": "SEO",
+        "seoSectionHint": "Tajuk dan penerangan yang ditunjukkan apabila halaman anda dikongsi atau diindeks.",
+        "seoTitle": "Tajuk SEO",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Perkahwinan & Potret",
+        "seoDescription": "Penerangan SEO",
+        "seoDescriptionPlaceholder": "Fotografi perkahwinan dan potret di seluruh Kuala Lumpur…",
+        "inquirySection": "Penghalaan pertanyaan",
+        "inquirySectionHint": "Ke mana penghantaran dari borang pertanyaan anda dikemukakan.",
+        "inquiryRecipientEmail": "E-mel penerima",
+        "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
+        "customDomainSection": "Domain tersuai",
+        "customDomainComingSoon": "Tersedia dalam v1.1",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Tetapan halaman awam dikemas kini.",
+        "visibilityUpdatedToast": "Keterlihatan dikemas kini."
+      },
+      "danger": {
+        "exportSection": "Eksport data ruang kerja",
+        "exportHint": "Muat turun salinan tempahan, pelanggan, rujukan galeri, dan pertanyaan anda. Kami akan menghantar pautan melalui e-mel apabila ia sedia.",
+        "exportButton": "Minta eksport",
+        "exportRequestedToast": "Eksport diminta. Kami akan menghantar e-mel apabila ia sedia.",
+        "deleteSection": "Padam ruang kerja",
+        "deleteHint": "Padam ruang kerja ini dan semua kandungannya secara kekal — tempahan, pelanggan, galeri, pertanyaan. Langganan anda akan dibatalkan. Ini tidak boleh dibuat alik.",
+        "deleteOpen": "Padam ruang kerja",
+        "deleteConfirmTitle": "Padam ruang kerja ini?",
+        "deleteConfirmBody": "Ini akan memadam setiap rekod dalam {workspaceName} secara kekal. Taip slug URL ruang kerja untuk mengesahkan:",
+        "deleteConfirmInput": "Slug URL ruang kerja",
+        "deleteCancel": "Batal",
+        "deleteConfirm": "Saya faham, padamkan",
+        "deleting": "Memadam…"
+      }
     }
   },
   "onboarding": {

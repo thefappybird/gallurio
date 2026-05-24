@@ -23,6 +23,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-2: var(--brand-2);
+  --color-brand-3: var(--brand-3);
+  --color-brand-4: var(--brand-4);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -67,11 +72,34 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  /* Off-range surfaces (calendar prev/next-month tiles, other "context" cells).
+     A bridge tier that contrasts both poles. The foreground is the matching
+     text color for the tile itself, NOT the page foreground. */
+  --off-range: oklch(0.85 0 0);
+  --off-range-foreground: oklch(0.2 0 0);
+  /* Gallurio brand — deep teal + 3 supporting shades. Use sparingly (~10–20%
+     of any view) for accents that need to pop above the neutral palette. */
+  --brand: oklch(0.55 0.10 195);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-2: oklch(0.65 0.10 195);
+  --brand-3: oklch(0.78 0.08 195);
+  --brand-4: oklch(0.88 0.05 195);
+  /* Chart palette: mix of brand teals + median greys so categories read as
+     distinct at a glance. See CLAUDE.md → Brand accent. */
+  --chart-1: var(--brand);
+  --chart-2: var(--brand-3);
+  --chart-3: oklch(0.65 0 0);
+  --chart-4: var(--brand-2);
+  --chart-5: oklch(0.45 0 0);
+  /* Event status colors — theme-invariant by design (same in light and dark
+     mode) so calendar events read as a stable vocabulary regardless of the
+     surrounding scheme. Saturated mid-luminance palette: white text always
+     contrasts. */
+  --event-booked: oklch(0.55 0.10 195);    /* teal — confident, primary */
+  --event-quoted: oklch(0.68 0.14 65);     /* amber — pending */
+  --event-inquiry: oklch(0.55 0.07 250);   /* slate blue — new lead */
+  --event-completed: oklch(0.55 0.13 145); /* green — done */
+  --event-cancelled: oklch(0.60 0.18 25);  /* red — cancelled */
   --radius: 0rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -102,11 +130,18 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --off-range: oklch(0.85 0 0);
+  --off-range-foreground: oklch(0.2 0 0);
+  --brand: oklch(0.70 0.12 195);
+  --brand-foreground: oklch(0.145 0 0);
+  --brand-2: oklch(0.62 0.10 195);
+  --brand-3: oklch(0.50 0.10 195);
+  --brand-4: oklch(0.42 0.08 195);
+  --chart-1: var(--brand);
+  --chart-2: var(--brand-2);
+  --chart-3: oklch(0.65 0 0);
+  --chart-4: var(--brand-3);
+  --chart-5: oklch(0.75 0 0);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -127,4 +162,313 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Wizard validation failure shake — re-triggered by remounting the element
+   with a changing key, so the same element shakes on every failed click. */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.animate-shake {
+  animation: shake 380ms ease-in-out;
+}
+
+/* react-big-calendar — flatten to sharp edges + semantic tokens. */
+.rbc-calendar {
+  @apply font-sans text-sm text-foreground;
+}
+.rbc-toolbar {
+  @apply mb-2 flex flex-wrap items-center justify-between gap-2;
+}
+/* rbc's own CSS is unlayered (highest cascade priority among normal rules),
+   so any @apply we use here gets beaten by rbc's `color: #373a3c` regardless
+   of selector specificity. Writing raw CSS to stay in the same cascade tier. */
+.rbc-calendar .rbc-toolbar button {
+  color: var(--foreground);
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+.rbc-calendar .rbc-toolbar button:hover,
+.rbc-calendar .rbc-toolbar button:focus {
+  color: var(--foreground);
+  background-color: var(--muted);
+  border-color: var(--border);
+  outline: none;
+}
+.rbc-calendar .rbc-toolbar button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.rbc-calendar .rbc-toolbar button.rbc-active,
+.rbc-calendar .rbc-toolbar button.rbc-active:hover,
+.rbc-calendar .rbc-toolbar button.rbc-active:focus {
+  color: var(--brand-foreground);
+  background-color: var(--brand);
+  border-color: var(--brand);
+}
+.rbc-calendar .rbc-toolbar .rbc-btn-group > button + button {
+  margin-left: -1px;
+}
+.rbc-toolbar-label {
+  @apply text-base font-semibold;
+}
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  @apply border border-border bg-card;
+  border-radius: 0;
+}
+.rbc-header {
+  @apply border-b border-border bg-muted px-2 py-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground;
+}
+/* The corner piece in the week/day header row (.rbc-time-header-gutter) has no
+   background by default, breaking the visual header bar. Match it to .rbc-header
+   so the muted bar spans the full table width. */
+.rbc-time-header-gutter {
+  background-color: var(--muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.rbc-month-row + .rbc-month-row,
+.rbc-day-bg + .rbc-day-bg,
+.rbc-time-content > * + * > *,
+.rbc-time-header-content,
+.rbc-time-header.rbc-overflowing,
+.rbc-time-content {
+  border-color: var(--border);
+}
+/* Week/day/agenda time-grid lines. rbc's stylesheet is unlayered and uses
+   hardcoded near-black borders that look stark in dark mode; !important
+   because @apply / unprefixed rules lose to unlayered third-party CSS even
+   with higher specificity (same precedent as toolbar button color fix). */
+.rbc-calendar .rbc-time-view,
+.rbc-calendar .rbc-time-content,
+.rbc-calendar .rbc-time-header-content,
+.rbc-calendar .rbc-time-header.rbc-overflowing,
+.rbc-calendar .rbc-time-content > * + * > *,
+.rbc-calendar .rbc-day-slot .rbc-time-slot,
+.rbc-calendar .rbc-timeslot-group,
+.rbc-calendar .rbc-time-header-cell,
+.rbc-calendar .rbc-time-gutter,
+.rbc-calendar .rbc-allday-cell,
+.rbc-calendar .rbc-header + .rbc-header,
+.rbc-calendar .rbc-time-header > .rbc-row,
+.rbc-calendar .rbc-time-header-content > .rbc-row {
+  border-color: var(--border) !important;
+}
+/* rbc ships .rbc-time-content with border-top:2px — our color override above
+   leaves the width at 2px, making it appear thicker than every other 1px grid
+   line. Normalise to 1px so all borders are uniform. */
+.rbc-calendar .rbc-time-content {
+  border-top-width: 1px !important;
+}
+/* Hide the all-day row in week/day views. rbc renders it as the last .rbc-row
+   inside .rbc-time-header-content (distinct from .rbc-time-header-cell which
+   is the date-label row). Hiding both the row and the cells collapses the
+   space cleanly so the date header sits flush above the time grid. */
+.rbc-calendar .rbc-time-header-content > .rbc-row:not(.rbc-time-header-cell):not(.rbc-row-resource),
+.rbc-calendar .rbc-allday-cell {
+  display: none !important;
+}
+/* Off-range cells (prev/next month) use the brand accent — same pattern as
+   the dashboard mini-cal, so the calendar reads as one consistent system.
+   Longer selector chain outranks rbc's bare `.rbc-off-range-bg` on specificity,
+   so hover styles below still apply. */
+.rbc-month-view .rbc-row-bg .rbc-day-bg.rbc-off-range-bg {
+  background-color: var(--brand-4);
+}
+/* Default text inside cells inherits the page foreground.
+   Higher specificity (.rbc-calendar prefix) beats rbc's own CSS which sets
+   .rbc-button-link to a hardcoded near-black that doesn't follow our theme. */
+.rbc-calendar .rbc-button-link,
+.rbc-calendar .rbc-date-cell {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.rbc-calendar .rbc-off-range .rbc-button-link {
+  color: var(--brand);
+  font-weight: 500;
+}
+/* Day cells are clickable — hover shrinks the inner content via inset ring
+   so the affordance is obvious without disturbing the surrounding grid. */
+.rbc-day-bg {
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+.rbc-day-bg:hover {
+  background-color: var(--muted);
+  /* Mid-tier ring color — visible on both light and dark cell backgrounds
+     because --muted-foreground sits between the two poles in either theme.
+     Avoids both eye-strain (polar opposite) and invisibility (token == bg). */
+  box-shadow: inset 0 0 0 2px var(--muted-foreground);
+  transform: scale(0.985);
+}
+.rbc-off-range-bg.rbc-day-bg:hover {
+  background-color: var(--brand-4);
+  box-shadow: inset 0 0 0 2px var(--muted-foreground);
+}
+/* Week/day view: cursor pointer on the column so users know clicking opens
+   the new-booking wizard. isolation:isolate creates a stacking context so the
+   JS-rendered hover highlight div (z-index:-1, in HoverableDayWrapper) stays
+   contained within the column and never bleeds behind the page background. */
+.rbc-calendar .rbc-day-slot {
+  cursor: pointer;
+  isolation: isolate;
+}
+/* Today (month view): solid brand teal fill. Text stays at the general
+   --foreground (set by the .rbc-button-link rule above) which contrasts
+   teal in both themes. Hover keeps teal but adds the same inset-ring +
+   scale as regular cells so the affordance is consistent. */
+.rbc-calendar .rbc-month-view .rbc-today {
+  background-color: var(--brand) !important;
+}
+.rbc-calendar .rbc-month-view .rbc-today.rbc-day-bg:hover {
+  background-color: var(--brand) !important;
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--brand-foreground) 60%, transparent);
+  transform: scale(0.985);
+}
+/* Today (week/day/agenda views): subtle teal wash over the page bg so the
+   time-grid column doesn't read as one giant solid teal block. The wash sits
+   close to the page bg so the day-number text uses --foreground (NOT
+   --brand-foreground, which is designed to contrast solid brand). !important
+   defeats rbc's hardcoded `.rbc-today { background: #eaf6ff }` which loads
+   unlayered and otherwise wins. */
+.rbc-calendar .rbc-time-view .rbc-today,
+.rbc-calendar .rbc-time-header .rbc-today,
+.rbc-calendar .rbc-day-slot.rbc-today {
+  background-color: color-mix(in oklch, var(--brand) 12%, transparent) !important;
+}
+.rbc-calendar .rbc-time-view .rbc-today .rbc-button-link,
+.rbc-calendar .rbc-time-header .rbc-today .rbc-button-link,
+.rbc-calendar .rbc-time-view .rbc-today.rbc-header,
+.rbc-calendar .rbc-time-view .rbc-today .rbc-header {
+  color: var(--foreground);
+}
+.rbc-event,
+.rbc-day-slot .rbc-background-event {
+  border-radius: 0;
+  padding: 2px 4px;
+}
+/* rbc auto-renders an `.rbc-event-label` (the time range) above its content
+   slot. Our custom event component already shows the time, so hide rbc's
+   default label to avoid the duplicate. */
+.rbc-calendar .rbc-event-label {
+  display: none;
+}
+/* Custom event content fills the candle — no extra padding from rbc's content
+   wrapper either, so the striped left edge sits flush at the candle's edge. */
+.rbc-calendar .rbc-event-content {
+  width: 100%;
+  height: 100%;
+}
+.rbc-event.rbc-selected,
+.rbc-event:focus,
+.rbc-day-slot .rbc-selected.rbc-background-event {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+/* DnD addon — theme the drag-over highlight and resize handles so they use
+   our brand/border tokens instead of the addon's hardcoded rgba(0,0,0,0.3). */
+.rbc-addons-dnd .rbc-addons-dnd-over {
+  background-color: color-mix(in oklch, var(--brand) 12%, transparent) !important;
+}
+.rbc-addons-dnd .rbc-addons-dnd-resize-ns-anchor .rbc-addons-dnd-resize-ns-icon {
+  border-top-color: var(--brand-foreground);
+  width: 14px;
+}
+.rbc-addons-dnd .rbc-addons-dnd-resize-ew-anchor .rbc-addons-dnd-resize-ew-icon {
+  border-left-color: var(--brand-foreground);
+}
+/* Ghost of the event being dragged: faint so it reads as "in motion". */
+.rbc-addons-dnd .rbc-addons-dnd-dragged-event {
+  opacity: 0.15 !important;
+}
+/* Non-dragged events dim slightly while a drag is in progress. */
+.rbc-addons-dnd.rbc-addons-dnd-is-dragging
+  .rbc-event:not(.rbc-addons-dnd-dragged-event):not(.rbc-addons-dnd-drag-preview) {
+  opacity: 0.55 !important;
+}
+
+/* "+N more" link: inverted-scheme pill (foreground bg, background text) so it
+   stands out on both light and dark surfaces without relying on the brand color. */
+.rbc-show-more {
+  @apply bg-foreground text-background text-[10px] font-semibold leading-tight;
+  display: block;
+  padding: 1px 6px;
+  margin: 1px 1px 0;
+}
+.rbc-show-more:hover {
+  background-color: color-mix(in oklch, var(--foreground) 80%, transparent);
+}
+/* "+N more" popup: rbc renders this via react-overlays' Portal so it lives
+   outside `.rbc-calendar` — selectors here must NOT scope under `.rbc-calendar`
+   or they will silently fail to match the portaled popup. Force both bg and
+   text to paired tokens so contrast is preserved in light + dark. The
+   :is(html) prefix bumps specificity above the default `.rbc-overlay` rule
+   AND `!important` guards against any future cascade reorder. */
+:is(html) .rbc-overlay,
+.rbc-overlay {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground) 15%, transparent) !important;
+  padding: 8px !important;
+}
+:is(html) .rbc-overlay > *,
+.rbc-overlay > * {
+  color: var(--popover-foreground) !important;
+}
+:is(html) .rbc-overlay-header,
+.rbc-overlay-header {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-weight: 600;
+  padding: 4px 4px 6px !important;
+  margin: 0 0 4px !important;
+}
+/* Events inside the popup are rbc-event nodes that ALSO get the default
+   rbc styling. Make sure the bg comes from our custom event component
+   (it sets bg inline) and the rbc default doesn't repaint over it. */
+.rbc-overlay .rbc-event {
+  background-color: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.rbc-agenda-table {
+  @apply border-collapse;
+}
+.rbc-agenda-table.rbc-agenda-table tbody > tr > td {
+  @apply border-t border-border px-2 py-1.5;
+}
+.rbc-time-slot {
+  border-color: var(--border);
+}
+/* Teams-style: tall hour rows so events have breathing room and don't squish.
+   With step=30 + timeslots=2, each slot = 30 minutes; min-height 30 → 60px/hr.
+   The half-hour line is rendered without a top border so only the hour break
+   is visible (cleaner read). */
+.rbc-calendar .rbc-time-content .rbc-timeslot-group {
+  min-height: 60px;
+}
+.rbc-calendar .rbc-time-slot + .rbc-time-slot {
+  border-top: 0 !important;
+}
+.rbc-calendar .rbc-current-time-indicator {
+  background-color: var(--brand);
+  height: 2px;
 }

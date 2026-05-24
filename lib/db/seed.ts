@@ -10,6 +10,9 @@
  * The two seeded workspaces use fake clerkOrgId / clerkUserId values so the app
  * can render their data when you point requireOrg() at them via Clerk impersonation
  * or by manually editing the active org in the Clerk dashboard during dev.
+ *
+ * Fixtures are deterministic — a seeded PRNG (mulberry32) means re-running gives
+ * identical data, which keeps screenshots and dashboard widgets stable.
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -52,24 +55,39 @@ const DEMO_WORKSPACES = [
   },
 ];
 
-const DEMO_CLIENTS = [
-  { name: "Emma & Liam Carter", email: "emma.carter@example.com", phone: "+1 415 555 0142" },
-  { name: "Priya Shah", email: "priya@example.com", phone: "+1 415 555 0188" },
-  { name: "Ana & Tomás Ribeiro", email: "ana.ribeiro@example.com", phone: null },
-  { name: "Northwood Corp Events", email: "events@northwood.example", phone: "+1 415 555 0211" },
+const CLIENT_NAMES = [
+  "Emma & Liam Carter",
+  "Priya Shah",
+  "Ana & Tomás Ribeiro",
+  "Northwood Corp Events",
+  "Jordan Patel",
+  "Lena Okafor",
+  "Maya Tanaka",
+  "Diego & Sofia Vasquez",
+  "Aiyana Cloud",
+  "The Hendersons",
+  "Olivia Park",
+  "Westridge Holdings",
 ];
 
-const BOOKING_TITLES = [
-  "Carter Wedding — Pier 27",
-  "Shah Engagement Shoot",
-  "Ribeiro Anniversary Vow Renewal",
-  "Northwood Annual Gala",
-];
+const EVENT_TYPES = ["wedding", "corporate", "portrait", "engagement", "anniversary", "other"];
+type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
 
-function daysFromNow(d: number): Date {
-  const x = new Date();
-  x.setDate(x.getDate() + d);
-  return x;
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return function rand() {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = t;
+    r = Math.imul(r ^ (r >>> 15), r | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function dayOffset(days: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d;
 }
 
 async function dropTenantCollections() {
@@ -93,8 +111,16 @@ async function dropTenantCollections() {
   }
 }
 
-async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
+async function seedWorkspace(
+  w: (typeof DEMO_WORKSPACES)[number],
+  seedNumber: number
+) {
   const now = new Date();
+  const rand = mulberry32(0xc0ffee + seedNumber);
+  const pick = <T>(arr: readonly T[]) => arr[Math.floor(rand() * arr.length)];
+  const range = (min: number, max: number) =>
+    Math.floor(rand() * (max - min + 1)) + min;
+
   const workspace = await Workspace.create({
     slug: w.slug,
     name: w.name,
@@ -102,11 +128,12 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
     clerkOrgId: w.clerkOrgId,
     businessType: w.businessType,
     country: "PH",
+    currency: "PHP",
     timezone: "Asia/Manila",
     branding: {
       primaryColor: w.primaryColor,
       secondaryColor: "#f5f5f5",
-      tagline: w.businessType === "venue" ? "Historic venue in the Bay Area" : "Wedding storytelling",
+      tagline: w.businessType === "venue" ? "Historic venue in Metro Manila" : "Wedding storytelling",
       description: `${w.name} — sample seeded workspace.`,
     },
     publicPage: { templateId: "default" },
@@ -123,54 +150,173 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
     onboardingCompletedAt: now,
   });
 
+  // 12 clients with varied totalSpent so "Top clients" has signal.
   const clients = await Client.insertMany(
-    DEMO_CLIENTS.map((c, i) => ({
+    CLIENT_NAMES.map((name, i) => ({
       workspaceId: workspace._id,
-      name: c.name,
-      email: c.email,
-      phone: c.phone,
-      source: i % 2 === 0 ? "form" : "manual",
-      totalSpent: (i + 1) * 1200,
-      tags: i === 0 ? ["VIP"] : [],
+      name,
+      email: `${name.split(/\s+/)[0].toLowerCase()}@example.com`,
+      phone: i % 3 === 0 ? null : `+63 917 555 ${String(1000 + i).padStart(4, "0")}`,
+      source: pick(["form", "manual", "referral", "import"] as const),
+      totalSpent: range(15, 350) * 1000,
+      tags: i === 0 ? ["VIP"] : i % 5 === 0 ? ["repeat"] : [],
+      lastBookingAt: dayOffset(-range(5, 180)),
     }))
   );
 
-  const bookings = await Booking.insertMany(
-    clients.map((c, i) => ({
+  // 25 bookings spread from -90 to +90 days. Guarantee at least 1 on today,
+  // 2-3 in the next 7 days, and a healthy mix of statuses for the pipeline funnel.
+  const bookingPayloads: Array<{
+    workspaceId: mongoose.Types.ObjectId;
+    clientId: mongoose.Types.ObjectId;
+    clientName: string;
+    title: string;
+    eventType: string;
+    status: BookingStatus;
+    sessions: { startAt: Date; endAt: Date }[];
+    firstSessionStart: Date;
+    lastSessionEnd: Date;
+    location: { address: string };
+    amount: { total: number; deposit: number; currency: string };
+  }> = [];
+
+  // Realistic start/end time helper so calendar events render in the time
+  // grid (not the all-day strip). 2–6 hours, business hours.
+  const timedSlot = (dayDelta: number): { start: Date; end: Date } => {
+    const start = new Date();
+    start.setDate(start.getDate() + dayDelta);
+    const startHour = range(9, 17); // 9am – 5pm start
+    const durationHours = range(2, 6);
+    start.setHours(startHour, 0, 0, 0);
+    const end = new Date(start);
+    end.setHours(start.getHours() + durationHours);
+    return { start, end };
+  };
+
+  // Today's event — guaranteed.
+  const todaySlot = timedSlot(0);
+  bookingPayloads.push({
+    workspaceId: workspace._id,
+    clientId: clients[0]._id,
+    clientName: clients[0].name,
+    title: `${clients[0].name.split("&")[0].trim()} — ${w.businessType === "venue" ? "Venue Walkthrough" : "Editorial Shoot"}`,
+    eventType: "wedding",
+    status: "booked",
+    sessions: [{ startAt: todaySlot.start, endAt: todaySlot.end }],
+    firstSessionStart: todaySlot.start,
+    lastSessionEnd: todaySlot.end,
+    location: { address: "100 Ayala Ave, Makati, Metro Manila" },
+    amount: { total: 75_000, deposit: 25_000, currency: workspace.currency },
+  });
+
+  for (let i = 0; i < 24; i += 1) {
+    const dayDelta = range(-90, 90);
+    const client = pick(clients);
+    const status: BookingStatus =
+      dayDelta < -7
+        ? rand() > 0.85
+          ? "cancelled"
+          : "completed"
+        : dayDelta < 0
+          ? "completed"
+          : rand() > 0.7
+            ? "booked"
+            : rand() > 0.4
+              ? "quoted"
+              : "inquiry";
+    const eventType = pick(EVENT_TYPES);
+    const total = range(20, 250) * 1000;
+    const slot = timedSlot(dayDelta);
+    bookingPayloads.push({
       workspaceId: workspace._id,
-      clientId: c._id,
-      clientName: c.name,
-      title: BOOKING_TITLES[i],
-      eventType: i === 3 ? "corporate" : "wedding",
-      status: ["inquiry", "quoted", "booked", "completed"][i],
-      startAt: daysFromNow((i + 1) * 14),
-      endAt: daysFromNow((i + 1) * 14),
+      clientId: client._id,
+      clientName: client.name,
+      title: `${client.name.split("&")[0].trim()} — ${eventType[0].toUpperCase()}${eventType.slice(1)}`,
+      eventType,
+      status,
+      sessions: [{ startAt: slot.start, endAt: slot.end }],
+      firstSessionStart: slot.start,
+      lastSessionEnd: slot.end,
       location: { address: `${100 + i} Ayala Ave, Makati, Metro Manila` },
-      amount: { total: 45000 + i * 15000, deposit: 15000, currency: "PHP" },
-    }))
-  );
+      amount: {
+        total,
+        deposit: Math.floor(total * 0.3),
+        currency: workspace.currency,
+      },
+    });
+  }
 
-  await Inquiry.insertMany([
-    {
+  const bookings = await Booking.insertMany(bookingPayloads);
+
+  // 30 transactions across trailing 90 days, mix of types and methods.
+  const txPayloads: Array<{
+    workspaceId: mongoose.Types.ObjectId;
+    bookingId: mongoose.Types.ObjectId;
+    clientId: mongoose.Types.ObjectId;
+    amount: number;
+    currency: string;
+    type: "deposit" | "balance" | "refund" | "subscription" | "other";
+    method: "hitpay" | "cash" | "transfer" | "other";
+    paidAt: Date;
+  }> = [];
+  const paidBookings = bookings.filter(
+    (b) => b.status === "completed" || b.status === "booked"
+  );
+  for (let i = 0; i < 30; i += 1) {
+    const b = pick(paidBookings);
+    const dayDelta = range(-90, 0);
+    const isRefund = rand() < 0.05;
+    const isDeposit = rand() < 0.5;
+    const type = isRefund ? "refund" : isDeposit ? "deposit" : "balance";
+    const amount = isRefund
+      ? -Math.floor(b.amount.deposit / 2)
+      : isDeposit
+        ? b.amount.deposit
+        : b.amount.total - b.amount.deposit;
+    txPayloads.push({
       workspaceId: workspace._id,
-      name: "Jordan Patel",
-      email: "jordan.patel@example.com",
-      phone: "+1 415 555 0177",
-      message: "Hi! Looking for availability for a small wedding in October.",
-      eventDate: daysFromNow(150),
-      eventType: "wedding",
-      budgetRange: "$3-5k",
-      status: "new",
-    },
-    {
+      bookingId: b._id,
+      clientId: b.clientId,
+      amount,
+      currency: workspace.currency,
+      type,
+      method: pick(["hitpay", "cash", "transfer"] as const),
+      paidAt: dayOffset(dayDelta),
+    });
+  }
+  await Transaction.insertMany(txPayloads);
+
+  // 15 inquiries across trailing 30 days, mix of statuses (some converted).
+  const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
+    const status = pick(["new", "new", "contacted", "converted", "archived"] as const);
+    return {
       workspaceId: workspace._id,
-      name: "Lena Okafor",
-      email: "lena.o@example.com",
-      message: "Brand portrait session for a launch — do you take corporate work?",
-      eventType: "corporate",
-      status: "contacted",
-    },
-  ]);
+      name: pick([
+        "Lena Okafor",
+        "Jordan Patel",
+        "Maya Tanaka",
+        "Diego Vasquez",
+        "Olivia Park",
+        "Aiyana Cloud",
+        "Hiroshi Sato",
+        "Mia Bernal",
+      ]),
+      email: `lead${i}@example.com`,
+      phone: rand() > 0.4 ? `+63 917 555 ${String(2000 + i).padStart(4, "0")}` : null,
+      message: pick([
+        "Hi! Looking for availability later this year.",
+        "Brand portrait session for a launch — do you take corporate work?",
+        "Considering you for our wedding — what's your starting package?",
+        "Need a venue for ~120 guests in October.",
+      ]),
+      eventDate: dayOffset(range(30, 200)),
+      eventType: pick(EVENT_TYPES),
+      budgetRange: pick(["under 50k", "50-100k", "100-250k", "250k+"]),
+      status,
+      createdAt: dayOffset(-range(0, 30)),
+    };
+  });
+  await Inquiry.insertMany(inquiryPayloads);
 
   const collection = await GalleryCollection.create({
     workspaceId: workspace._id,
@@ -195,29 +341,42 @@ async function seedWorkspace(w: (typeof DEMO_WORKSPACES)[number]) {
     }))
   );
 
-  await Transaction.insertMany(
-    bookings
-      .filter((_, i) => i < 2)
-      .map((b) => ({
-        workspaceId: workspace._id,
-        bookingId: b._id,
-        clientId: b.clientId,
-        amount: 15000,
-        currency: "PHP",
-        type: "deposit",
-        method: "hitpay",
-        paidAt: daysFromNow(-5),
-      }))
+  // 20 activity log entries spanning the booking/inquiry/transaction creates.
+  const activityPayloads: Array<{
+    workspaceId: mongoose.Types.ObjectId;
+    actorUserId: string;
+    entity: "booking" | "client" | "inquiry" | "gallery" | "transaction" | "workspace";
+    entityId: mongoose.Types.ObjectId | null;
+    action: "created" | "updated" | "deleted" | "status_changed";
+  }> = [
+    {
+      workspaceId: workspace._id,
+      actorUserId: w.ownerUserId,
+      entity: "workspace",
+      entityId: null,
+      action: "created",
+    },
+  ];
+  for (let i = 0; i < 19; i += 1) {
+    const kind = pick(["booking", "client", "inquiry", "transaction"] as const);
+    activityPayloads.push({
+      workspaceId: workspace._id,
+      actorUserId: w.ownerUserId,
+      entity: kind,
+      entityId:
+        kind === "booking"
+          ? pick(bookings)._id
+          : kind === "client"
+            ? pick(clients)._id
+            : null,
+      action: pick(["created", "updated", "status_changed"] as const),
+    });
+  }
+  await ActivityLog.insertMany(activityPayloads);
+
+  console.log(
+    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings, ${txPayloads.length} transactions, ${inquiryPayloads.length} inquiries`
   );
-
-  await ActivityLog.create({
-    workspaceId: workspace._id,
-    actorUserId: w.ownerUserId,
-    entity: "workspace",
-    action: "created",
-  });
-
-  console.log(`  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings`);
   return workspace;
 }
 
@@ -246,8 +405,8 @@ async function main() {
   await dropTenantCollections();
 
   console.log("→ Seeding demo workspaces…");
-  for (const w of DEMO_WORKSPACES) {
-    await seedWorkspace(w);
+  for (let i = 0; i < DEMO_WORKSPACES.length; i += 1) {
+    await seedWorkspace(DEMO_WORKSPACES[i], i);
   }
 
   console.log("\n✓ Seed complete.");

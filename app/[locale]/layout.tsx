@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { clerkAppearance } from "@/lib/auth/clerkAppearance";
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/app/theme-provider";
 import { routing } from "@/lib/i18n/routing";
 import "../globals.css";
 
@@ -48,17 +48,19 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <ClerkProvider appearance={clerkAppearance}>
-      <html
-        lang={locale}
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      >
-        <body className="min-h-full flex flex-col">
+    <html
+      lang={locale}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider>
           <NextIntlClientProvider>
             <TooltipProvider>{children}</TooltipProvider>
+            <Toaster />
           </NextIntlClientProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

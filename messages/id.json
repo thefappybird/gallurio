@@ -26,6 +26,25 @@
         "createOne": "Buat satu"
       }
     },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "jumpTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
     "sidebar": {
       "dashboard": "Dasbor",
       "bookings": "Pemesanan",
@@ -36,6 +55,89 @@
       "settings": "Pengaturan",
       "account": "Akun",
       "logOut": "Keluar"
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Terang",
+      "dark": "Gelap",
+      "system": "Sistem"
+    },
+    "settings": {
+      "title": "Pengaturan",
+      "description": "Kelola akun, ruang kerja, dan preferensi Anda.",
+      "tabs": {
+        "account": "Akun",
+        "security": "Keamanan",
+        "customize": "Sesuaikan",
+        "workspace": "Ruang kerja",
+        "publicPage": "Halaman publik",
+        "danger": "Zona berbahaya"
+      },
+      "workspace": {
+        "businessSection": "Detail bisnis",
+        "businessSectionHint": "Identitas bisnis Anda dan tempat Anda beroperasi.",
+        "brandingSection": "Branding",
+        "brandingSectionHint": "Logo, warna, dan tagline yang digunakan di halaman publik Anda.",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Ruang kerja diperbarui.",
+        "currencyWarning": "Berlaku untuk pemesanan baru. Jumlah yang sudah ada tetap menggunakan mata uang aslinya."
+      },
+      "customize": {
+        "themeSection": "Tema",
+        "themeHint": "Mode terang atau gelap — disimpan di perangkat ini.",
+        "languageSection": "Bahasa",
+        "languageHint": "Mengganti antarmuka aplikasi. URL akan diperbarui sesuai.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "th": "ภาษาไทย"
+        }
+      },
+      "publicPage": {
+        "visibilitySection": "Visibilitas",
+        "visibilityHint": "Kendalikan apakah halaman publik Anda dapat diakses.",
+        "publish": "Terbitkan",
+        "unpublish": "Batalkan penerbitan",
+        "publishedAt": "Diterbitkan {date}",
+        "unpublished": "Belum diterbitkan",
+        "publicUrl": "URL publik Anda",
+        "copy": "Salin",
+        "copied": "Disalin",
+        "seoSection": "SEO",
+        "seoSectionHint": "Judul dan deskripsi yang ditampilkan saat halaman Anda dibagikan atau diindeks.",
+        "seoTitle": "Judul SEO",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Pernikahan & Potret",
+        "seoDescription": "Deskripsi SEO",
+        "seoDescriptionPlaceholder": "Fotografi pernikahan dan potret di seluruh Jakarta…",
+        "inquirySection": "Perutean pertanyaan",
+        "inquirySectionHint": "Ke mana kiriman dari formulir pertanyaan Anda diteruskan.",
+        "inquiryRecipientEmail": "Email penerima",
+        "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
+        "customDomainSection": "Domain kustom",
+        "customDomainComingSoon": "Tersedia di v1.1",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "savedToast": "Pengaturan halaman publik diperbarui.",
+        "visibilityUpdatedToast": "Visibilitas diperbarui."
+      },
+      "danger": {
+        "exportSection": "Ekspor data ruang kerja",
+        "exportHint": "Unduh salinan pemesanan, klien, referensi galeri, dan pertanyaan Anda. Kami akan mengirimkan tautan melalui email saat sudah siap.",
+        "exportButton": "Minta ekspor",
+        "exportRequestedToast": "Ekspor diminta. Kami akan mengirimkan email saat sudah siap.",
+        "deleteSection": "Hapus ruang kerja",
+        "deleteHint": "Hapus ruang kerja ini dan semua isinya secara permanen — pemesanan, klien, galeri, pertanyaan. Langganan Anda akan dibatalkan. Tindakan ini tidak dapat dibatalkan.",
+        "deleteOpen": "Hapus ruang kerja",
+        "deleteConfirmTitle": "Hapus ruang kerja ini?",
+        "deleteConfirmBody": "Ini akan menghapus setiap catatan di {workspaceName} secara permanen. Ketik slug URL ruang kerja untuk mengonfirmasi:",
+        "deleteConfirmInput": "Slug URL ruang kerja",
+        "deleteCancel": "Batal",
+        "deleteConfirm": "Saya mengerti, hapus",
+        "deleting": "Menghapus…"
+      }
     }
   },
   "onboarding": {

@@ -26,6 +26,25 @@
         "createOne": "Gumawa ng isa"
       }
     },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "jumpTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
     "sidebar": {
       "dashboard": "Dashboard",
       "bookings": "Mga booking",
@@ -36,6 +55,89 @@
       "settings": "Mga setting",
       "account": "Account",
       "logOut": "Mag-log out"
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Maliwanag",
+      "dark": "Madilim",
+      "system": "System"
+    },
+    "settings": {
+      "title": "Mga Setting",
+      "description": "Pamahalaan ang iyong account, workspace, at mga kagustuhan.",
+      "tabs": {
+        "account": "Account",
+        "security": "Seguridad",
+        "customize": "I-customize",
+        "workspace": "Workspace",
+        "publicPage": "Pampublikong pahina",
+        "danger": "Danger zone"
+      },
+      "workspace": {
+        "businessSection": "Mga detalye ng negosyo",
+        "businessSectionHint": "Ang pagkakakilanlan ng iyong negosyo at kung saan ka nag-ooperate.",
+        "brandingSection": "Branding",
+        "brandingSectionHint": "Logo, mga kulay, at tagline na ginagamit sa iyong pampublikong pahina.",
+        "save": "I-save ang mga pagbabago",
+        "saving": "Sine-save…",
+        "savedToast": "Na-update ang workspace.",
+        "currencyWarning": "Nalalapat sa mga bagong booking. Pinapanatili ng mga kasalukuyang halaga ang orihinal na currency."
+      },
+      "customize": {
+        "themeSection": "Tema",
+        "themeHint": "Light o dark mode — naka-save sa device na ito.",
+        "languageSection": "Wika",
+        "languageHint": "Binabago ang interface ng app. Ia-update ang URL para tumugma.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "th": "ภาษาไทย"
+        }
+      },
+      "publicPage": {
+        "visibilitySection": "Visibility",
+        "visibilityHint": "Kontrolin kung naaabot ang iyong pampublikong pahina.",
+        "publish": "I-publish",
+        "unpublish": "I-unpublish",
+        "publishedAt": "Na-publish noong {date}",
+        "unpublished": "Hindi pa nai-publish",
+        "publicUrl": "Ang iyong pampublikong URL",
+        "copy": "Kopyahin",
+        "copied": "Nakopya",
+        "seoSection": "SEO",
+        "seoSectionHint": "Titulo at paglalarawan na ipinapakita kapag ibinabahagi o ino-index ang iyong pahina.",
+        "seoTitle": "Titulo ng SEO",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Kasal at Portrait",
+        "seoDescription": "Paglalarawan ng SEO",
+        "seoDescriptionPlaceholder": "Wedding at portrait photography sa buong Metro Manila…",
+        "inquirySection": "Inquiry routing",
+        "inquirySectionHint": "Kung saan ipinapadala ang mga submission mula sa iyong inquiry form.",
+        "inquiryRecipientEmail": "Email ng tatanggap",
+        "inquiryRecipientEmailPlaceholder": "ikaw@halimbawa.com",
+        "customDomainSection": "Custom domain",
+        "customDomainComingSoon": "Available sa v1.1",
+        "save": "I-save ang mga pagbabago",
+        "saving": "Sine-save…",
+        "savedToast": "Na-update ang mga setting ng pampublikong pahina.",
+        "visibilityUpdatedToast": "Na-update ang visibility."
+      },
+      "danger": {
+        "exportSection": "I-export ang data ng workspace",
+        "exportHint": "Mag-download ng kopya ng iyong mga booking, kliyente, mga reference sa gallery, at mga inquiry. Magpapadala kami ng link sa iyong email kapag handa na.",
+        "exportButton": "Humiling ng export",
+        "exportRequestedToast": "Hiniling ang export. Mag-eemeil kami sa iyo kapag handa na.",
+        "deleteSection": "Burahin ang workspace",
+        "deleteHint": "Permanenteng burahin ang workspace na ito at lahat ng laman nito — mga booking, kliyente, gallery, mga inquiry. Makakansela ang iyong subscription. Hindi na ito mababawi.",
+        "deleteOpen": "Burahin ang workspace",
+        "deleteConfirmTitle": "Burahin ang workspace na ito?",
+        "deleteConfirmBody": "Permanenteng binubura nito ang bawat rekord sa {workspaceName}. I-type ang URL slug ng workspace para kumpirmahin:",
+        "deleteConfirmInput": "URL slug ng workspace",
+        "deleteCancel": "Kanselahin",
+        "deleteConfirm": "Naiintindihan ko, burahin na",
+        "deleting": "Binubura…"
+      }
     }
   },
   "onboarding": {

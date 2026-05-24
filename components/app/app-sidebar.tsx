@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
-  CalendarIcon,
   CameraIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -25,11 +24,11 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 const NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
-  { href: "/calendar" as const, labelKey: "calendar", icon: CalendarIcon },
   { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
   { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
 ];
@@ -84,6 +83,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarSeparator />
         <SidebarMenu>
+          <SidebarMenuItem>
+            <ThemeToggle />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton render={<Link href="/settings" />} tooltip={t("settings")}>
               <SettingsIcon />

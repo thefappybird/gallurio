@@ -8,6 +8,14 @@ export const BOOKING_STATUSES = [
   "cancelled",
 ] as const;
 
+const sessionSchema = new Schema(
+  {
+    startAt: { type: Date, required: true },
+    endAt: { type: Date, required: true },
+  },
+  { _id: false }
+);
+
 const bookingSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
@@ -16,8 +24,21 @@ const bookingSchema = new Schema(
     title: { type: String, required: true, trim: true },
     eventType: { type: String, default: "other" },
     status: { type: String, enum: BOOKING_STATUSES, default: "inquiry", required: true },
-    startAt: { type: Date, required: true },
-    endAt: { type: Date, default: null },
+    // Each booking has one or more sessions. A session is a contiguous date
+    // range with a daily shift-start and shift-end time. Single-session
+    // bookings behave identically to the legacy single startAt/endAt model.
+    sessions: {
+      type: [sessionSchema],
+      required: true,
+      validate: {
+        validator: (v: unknown[]) => Array.isArray(v) && v.length > 0,
+        message: "At least one session is required",
+      },
+    },
+    // Denormalized bounds — recomputed by pre-save hook whenever sessions change.
+    // Kept for efficient index-based range queries without unwinding sessions.
+    firstSessionStart: { type: Date, required: true },
+    lastSessionEnd: { type: Date, required: true },
     location: {
       address: { type: String, default: "" },
       lat: { type: Number, default: null },
@@ -35,9 +56,46 @@ const bookingSchema = new Schema(
   { timestamps: true }
 );
 
-bookingSchema.index({ workspaceId: 1, startAt: 1 });
-bookingSchema.index({ workspaceId: 1, status: 1, startAt: 1 });
+bookingSchema.index({ workspaceId: 1, firstSessionStart: 1 });
+bookingSchema.index({ workspaceId: 1, status: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, clientId: 1 });
+
+function recomputeDenormalized(
+  sessions: { startAt: Date; endAt: Date }[]
+): { firstSessionStart: Date; lastSessionEnd: Date } {
+  const starts = sessions.map((s) => s.startAt.getTime());
+  const ends = sessions.map((s) => s.endAt.getTime());
+  return {
+    firstSessionStart: new Date(Math.min(...starts)),
+    lastSessionEnd: new Date(Math.max(...ends)),
+  };
+}
+
+// pre("save") — fires on doc.save() and Booking.create()
+bookingSchema.pre("save", function (next) {
+  if (this.isModified("sessions") || this.isNew) {
+    const { firstSessionStart, lastSessionEnd } = recomputeDenormalized(
+      this.sessions as { startAt: Date; endAt: Date }[]
+    );
+    this.firstSessionStart = firstSessionStart;
+    this.lastSessionEnd = lastSessionEnd;
+  }
+  next();
+});
+
+// pre("findOneAndUpdate") — fires on Booking.findOneAndUpdate()
+bookingSchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate() as Record<string, unknown> | null;
+  const set = (update?.$set as Record<string, unknown>) ?? {};
+  const sessions = (set.sessions ?? (update as Record<string, unknown> | null)?.sessions) as
+    | { startAt: Date; endAt: Date }[]
+    | undefined;
+  if (sessions && sessions.length > 0) {
+    const { firstSessionStart, lastSessionEnd } = recomputeDenormalized(sessions);
+    this.set({ firstSessionStart, lastSessionEnd });
+  }
+  next();
+});
 
 export type BookingDoc = InferSchemaType<typeof bookingSchema> & { _id: mongoose.Types.ObjectId };
 

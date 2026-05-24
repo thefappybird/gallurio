@@ -1,12 +1,39 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, Client, Inquiry } from "@/lib/db/models";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, UsersIcon, MessageSquareIcon, BookOpenIcon } from "lucide-react";
+import type {
+  BookingDoc,
+  InquiryDoc,
+  ActivityLogDoc,
+} from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { Link } from "@/lib/i18n/navigation";
+import {
+  getKpiSnapshot,
+  getTodaysEvents,
+  getUpcomingWeek,
+  getRecentInquiries,
+  getActivityFeed,
+  getPipelineCounts,
+  getRevenueTrend,
+  getBookingsByDay,
+  getEventTypeBreakdown,
+  getTransactionsByMethod,
+  getBookingsByWeekday,
+  getTopClients,
+} from "./_data/dashboard-metrics";
+import { KpiStrip } from "./_components/kpi-strip";
+import { TodaysEventsList } from "./_components/todays-events-list";
+import { UpcomingWeekList } from "./_components/upcoming-week-list";
+import { RecentInquiriesList } from "./_components/recent-inquiries-list";
+import { ActivityFeed } from "./_components/activity-feed";
+import { QuickAdd } from "./_components/quick-add";
+import { PipelineFunnel } from "./_components/pipeline-funnel";
+import { RevenueTrendChart } from "./_components/revenue-trend-chart";
+import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
+import { EventTypeDonut } from "./_components/event-type-donut";
+import { TopClientsBar } from "./_components/top-clients-bar";
+import { TransactionsByMethodBar } from "./_components/transactions-by-method-bar";
+import { WeeklyBookingsBar } from "./_components/weekly-bookings-bar";
 
 export async function generateMetadata({
   params,
@@ -18,6 +45,14 @@ export async function generateMetadata({
   const t = await getTranslations("app.sidebar");
   return { title: t("dashboard") };
 }
+
+// Mock trends until we wire historical comparison. Keeps the visual story for now.
+const MOCK_TRENDS = {
+  revenue: { value: 12.4, positiveIsGood: true },
+  activeBookings: { value: 5.1, positiveIsGood: true },
+  newInquiries: { value: -2.3, positiveIsGood: true },
+  outstandingBalance: { value: -8.6, positiveIsGood: false },
+};
 
 export default async function DashboardPage({
   params,
@@ -33,89 +68,160 @@ export default async function DashboardPage({
 
   await connectDB();
 
-  const now = new Date();
+  const [
+    snapshot,
+    todays,
+    upcoming,
+    inquiries,
+    activity,
+    pipeline,
+    revenue,
+    monthBookings,
+    eventTypes,
+    txByMethod,
+    weekly,
+    topClients,
+  ] = await Promise.all([
+    getKpiSnapshot(wid),
+    getTodaysEvents(wid),
+    getUpcomingWeek(wid),
+    getRecentInquiries(wid),
+    getActivityFeed(wid),
+    getPipelineCounts(wid),
+    getRevenueTrend(wid, 30),
+    getBookingsByDay(wid, new Date()),
+    getEventTypeBreakdown(wid),
+    getTransactionsByMethod(wid, 90),
+    getBookingsByWeekday(wid),
+    getTopClients(wid, 5),
+  ]);
 
-  const [totalBookings, activeClients, newInquiries, upcomingBookings] =
-    await Promise.all([
-      Booking.countDocuments({ workspaceId: wid }),
-      Client.countDocuments({ workspaceId: wid }),
-      Inquiry.countDocuments({ workspaceId: wid, status: "new" }),
-      Booking.find({
-        workspaceId: wid,
-        status: { $in: ["booked", "inquiry", "quoted"] },
-        startAt: { $gte: now },
-      })
-        .sort({ startAt: 1 })
-        .limit(5)
-        .lean(),
-    ]);
-
-  const stats = [
-    { label: t("stats.totalBookings"), value: totalBookings, icon: BookOpenIcon },
-    { label: t("stats.activeClients"), value: activeClients, icon: UsersIcon },
-    { label: t("stats.newInquiries"), value: newInquiries, icon: MessageSquareIcon },
-    { label: t("stats.eventsThisMonth"), value: 0, icon: CalendarIcon },
-  ];
+  const ownerFirstName = workspace.name.split(" ")[0] ?? "";
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{workspace.name}</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">{t("subtitle")}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("greeting", { name: ownerFirstName })}
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {new Date().toLocaleDateString(locale, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {label}
-              </CardTitle>
-              <Icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <KpiStrip
+        snapshot={snapshot}
+        currency={workspace.currency}
+        locale={locale}
+        labels={{
+          revenueThisMonth: t("kpi.revenueThisMonth"),
+          activeBookings: t("kpi.activeBookings"),
+          newInquiries: t("kpi.newInquiries"),
+          outstandingBalance: t("kpi.outstandingBalance"),
+        }}
+        trends={MOCK_TRENDS}
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <MiniBookingCalendar
+          month={new Date()}
+          days={monthBookings}
+          locale={locale}
+          title={t("sections.calendar")}
+        />
+        <EventTypeDonut
+          data={eventTypes}
+          title={t("sections.eventTypes")}
+          empty={t("empty")}
+        />
+        <TransactionsByMethodBar
+          data={txByMethod}
+          currency={workspace.currency}
+          locale={locale}
+          title={t("sections.transactionsByMethod")}
+          empty={t("empty")}
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("upcoming.title")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {upcomingBookings.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">
-              {t("upcoming.empty")}{" "}
-              <Link href="/bookings/new" className="underline underline-offset-2">
-                {t("upcoming.createOne")}
-              </Link>
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {upcomingBookings.map((b) => (
-                <li
-                  key={String(b._id)}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{b.title}</span>
-                    <span className="text-muted-foreground">
-                      {new Date(b.startAt).toLocaleDateString(locale, {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <Badge variant="secondary">{b.status}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 h-full">
+          <RevenueTrendChart
+            data={revenue}
+            currency={workspace.currency}
+            locale={locale}
+            title={t("sections.revenueTrend")}
+          />
+        </div>
+        <TopClientsBar
+          clients={topClients}
+          currency={workspace.currency}
+          locale={locale}
+          title={t("sections.topClients")}
+          empty={t("empty")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <PipelineFunnel
+          counts={pipeline}
+          title={t("sections.pipeline")}
+          labels={{
+            inquiries: t("pipeline.inquiries"),
+            quoted: t("pipeline.quoted"),
+            booked: t("pipeline.booked"),
+          }}
+        />
+        <WeeklyBookingsBar data={weekly} title={t("sections.weeklyBookings")} />
+        <UpcomingWeekList
+          bookings={upcoming as BookingDoc[]}
+          locale={locale}
+          title={t("sections.upcomingWeek")}
+          empty={t("empty")}
+          viewAll={t("viewAll")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 h-full">
+          <TodaysEventsList
+            bookings={todays as BookingDoc[]}
+            locale={locale}
+            title={t("sections.todaysEvents")}
+            empty={t("empty")}
+          />
+        </div>
+        <RecentInquiriesList
+          inquiries={inquiries as InquiryDoc[]}
+          locale={locale}
+          title={t("sections.recentInquiries")}
+          empty={t("empty")}
+          viewAll={t("viewAll")}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2 h-full">
+          <ActivityFeed
+            activity={activity as ActivityLogDoc[]}
+            locale={locale}
+            title={t("sections.activity")}
+            empty={t("empty")}
+          />
+        </div>
+        <QuickAdd
+          title={t("quickAdd.title")}
+          labels={{
+            booking: t("quickAdd.booking"),
+            client: t("quickAdd.client"),
+            inquiry: t("quickAdd.inquiry"),
+          }}
+        />
+      </div>
     </div>
   );
 }

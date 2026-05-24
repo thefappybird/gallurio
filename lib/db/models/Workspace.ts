@@ -1,4 +1,5 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 
 const publicPageBlockSchema = new Schema(
   {
@@ -43,6 +44,7 @@ const workspaceSchema = new Schema(
     // ISO 3166-1 alpha-2. Drives the locale of the public workspace page —
     // see lib/i18n/localeForCountry.ts.
     country: { type: String, default: null },
+    currency: { type: String, enum: SUPPORTED_CURRENCIES, default: "PHP", required: true },
     timezone: { type: String, default: null },
     branding: {
       logoUrl: { type: String, default: null },
@@ -57,6 +59,9 @@ const workspaceSchema = new Schema(
       data: { type: Schema.Types.Mixed, default: null },
       blocks: { type: [publicPageBlockSchema], default: [] },
       publishedAt: { type: Date, default: null },
+      seoTitle: { type: String, default: "" },
+      seoDescription: { type: String, default: "" },
+      inquiryRecipientEmail: { type: String, default: "" },
     },
     customDomain: { type: String, default: null },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },

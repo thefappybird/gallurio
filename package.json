@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "seed": "tsx lib/db/seed.ts",
     "reindex": "tsx lib/db/reindex.ts",
     "hitpay:sim": "tsx scripts/hitpay-sim.ts"
@@ -15,8 +17,11 @@
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@clerk/nextjs": "^6.36.0",
+    "@clerk/themes": "^2.4.57",
     "@hookform/resolvers": "^3.10.0",
     "@measured/puck": "^0.20.2",
+    "@tanstack/react-table": "^8.21.3",
+    "@types/react-big-calendar": "^1.16.3",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
@@ -26,9 +31,13 @@
     "motion": "^12.39.0",
     "next": "16.2.6",
     "next-intl": "^4.0.0",
+    "next-themes": "^0.4.6",
+    "papaparse": "^5.5.3",
     "react": "19.2.4",
+    "react-big-calendar": "^1.19.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.54.0",
+    "recharts": "^3.8.1",
     "shadcn": "^4.7.0",
     "sonner": "^1.7.1",
     "svix": "^1.94.0",
@@ -38,14 +47,21 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.2",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "happy-dom": "^20.9.0",
+    "mongodb-memory-server": "^11.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.7"
   }
 }

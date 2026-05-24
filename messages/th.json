@@ -26,6 +26,25 @@
         "createOne": "สร้างหนึ่งรายการ"
       }
     },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "jumpTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
     "sidebar": {
       "dashboard": "แดชบอร์ด",
       "bookings": "การจอง",
@@ -36,6 +55,89 @@
       "settings": "การตั้งค่า",
       "account": "บัญชี",
       "logOut": "ออกจากระบบ"
+    },
+    "theme": {
+      "label": "ธีม",
+      "light": "สว่าง",
+      "dark": "มืด",
+      "system": "ระบบ"
+    },
+    "settings": {
+      "title": "การตั้งค่า",
+      "description": "จัดการบัญชี ที่ทำงาน และการตั้งค่าของคุณ",
+      "tabs": {
+        "account": "บัญชี",
+        "security": "ความปลอดภัย",
+        "customize": "ปรับแต่ง",
+        "workspace": "ที่ทำงาน",
+        "publicPage": "หน้าสาธารณะ",
+        "danger": "โซนอันตราย"
+      },
+      "workspace": {
+        "businessSection": "รายละเอียดธุรกิจ",
+        "businessSectionHint": "ตัวตนธุรกิจของคุณและสถานที่ที่คุณดำเนินงาน",
+        "brandingSection": "การสร้างแบรนด์",
+        "brandingSectionHint": "โลโก้ สี และแท็กไลน์ที่ใช้บนหน้าสาธารณะของคุณ",
+        "save": "บันทึกการเปลี่ยนแปลง",
+        "saving": "กำลังบันทึก…",
+        "savedToast": "อัปเดตที่ทำงานแล้ว",
+        "currencyWarning": "ใช้กับการจองใหม่ จำนวนเงินที่มีอยู่จะยังคงใช้สกุลเงินเดิม"
+      },
+      "customize": {
+        "themeSection": "ธีม",
+        "themeHint": "โหมดสว่างหรือมืด — บันทึกบนอุปกรณ์นี้",
+        "languageSection": "ภาษา",
+        "languageHint": "เปลี่ยนอินเทอร์เฟซของแอป URL จะอัปเดตให้ตรงกัน",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "th": "ภาษาไทย"
+        }
+      },
+      "publicPage": {
+        "visibilitySection": "การมองเห็น",
+        "visibilityHint": "ควบคุมว่าหน้าสาธารณะของคุณสามารถเข้าถึงได้หรือไม่",
+        "publish": "เผยแพร่",
+        "unpublish": "ยกเลิกการเผยแพร่",
+        "publishedAt": "เผยแพร่เมื่อ {date}",
+        "unpublished": "ยังไม่ได้เผยแพร่",
+        "publicUrl": "URL สาธารณะของคุณ",
+        "copy": "คัดลอก",
+        "copied": "คัดลอกแล้ว",
+        "seoSection": "SEO",
+        "seoSectionHint": "ชื่อและคำอธิบายที่แสดงเมื่อหน้าของคุณถูกแชร์หรือจัดทำดัชนี",
+        "seoTitle": "ชื่อ SEO",
+        "seoTitlePlaceholder": "Sarah Bell Photography — งานแต่งงานและภาพบุคคล",
+        "seoDescription": "คำอธิบาย SEO",
+        "seoDescriptionPlaceholder": "การถ่ายภาพงานแต่งงานและภาพบุคคลทั่วกรุงเทพฯ…",
+        "inquirySection": "การส่งต่อคำถาม",
+        "inquirySectionHint": "จุดหมายปลายทางที่การส่งแบบฟอร์มคำถามของคุณจะถูกส่งไป",
+        "inquiryRecipientEmail": "อีเมลผู้รับ",
+        "inquiryRecipientEmailPlaceholder": "คุณ@ตัวอย่าง.com",
+        "customDomainSection": "โดเมนกำหนดเอง",
+        "customDomainComingSoon": "พร้อมใช้งานใน v1.1",
+        "save": "บันทึกการเปลี่ยนแปลง",
+        "saving": "กำลังบันทึก…",
+        "savedToast": "อัปเดตการตั้งค่าหน้าสาธารณะแล้ว",
+        "visibilityUpdatedToast": "อัปเดตการมองเห็นแล้ว"
+      },
+      "danger": {
+        "exportSection": "ส่งออกข้อมูลที่ทำงาน",
+        "exportHint": "ดาวน์โหลดสำเนาการจอง ลูกค้า ข้อมูลอ้างอิงแกลเลอรี และคำถามของคุณ เราจะส่งลิงก์ทางอีเมลเมื่อพร้อมแล้ว",
+        "exportButton": "ขอส่งออก",
+        "exportRequestedToast": "ส่งออกแล้ว เราจะส่งอีเมลเมื่อพร้อมแล้ว",
+        "deleteSection": "ลบที่ทำงาน",
+        "deleteHint": "ลบที่ทำงานนี้และทุกสิ่งในนั้นอย่างถาวร — การจอง ลูกค้า แกลเลอรี คำถาม การสมัครสมาชิกของคุณจะถูกยกเลิก ไม่สามารถยกเลิกได้",
+        "deleteOpen": "ลบที่ทำงาน",
+        "deleteConfirmTitle": "ลบที่ทำงานนี้หรือไม่?",
+        "deleteConfirmBody": "การดำเนินการนี้จะลบทุกระเบียนใน {workspaceName} อย่างถาวร พิมพ์ slug URL ที่ทำงานเพื่อยืนยัน:",
+        "deleteConfirmInput": "Slug URL ที่ทำงาน",
+        "deleteCancel": "ยกเลิก",
+        "deleteConfirm": "ฉันเข้าใจ ลบเลย",
+        "deleting": "กำลังลบ…"
+      }
     }
   },
   "onboarding": {

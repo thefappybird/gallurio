@@ -13,17 +13,270 @@
   "app": {
     "dashboard": {
       "title": "{workspaceName}",
-      "subtitle": "Here's what's happening today.",
-      "stats": {
-        "totalBookings": "Total bookings",
-        "activeClients": "Active clients",
+      "greeting": "Welcome back, {name}",
+      "kpi": {
+        "revenueThisMonth": "Revenue this month",
+        "activeBookings": "Active bookings this month",
         "newInquiries": "New inquiries",
-        "eventsThisMonth": "Events this month"
+        "outstandingBalance": "Outstanding balance"
       },
-      "upcoming": {
-        "title": "Upcoming bookings",
-        "empty": "No upcoming bookings yet.",
-        "createOne": "Create one"
+      "sections": {
+        "todaysEvents": "Today's events",
+        "upcomingWeek": "Upcoming this week",
+        "recentInquiries": "Recent inquiries",
+        "activity": "Recent activity",
+        "pipeline": "Pipeline",
+        "revenueTrend": "Revenue (last 30 days)",
+        "calendar": "Booking calendar",
+        "eventTypes": "Event type breakdown",
+        "transactionsByMethod": "Payments by method (90d)",
+        "weeklyBookings": "Bookings by weekday",
+        "topClients": "Top clients by spend"
+      },
+      "pipeline": {
+        "inquiries": "Inquiries",
+        "quoted": "Quoted",
+        "booked": "Booked"
+      },
+      "quickAdd": {
+        "title": "Quick add",
+        "booking": "New booking",
+        "client": "New client",
+        "inquiry": "New inquiry"
+      },
+      "empty": "Nothing here yet.",
+      "viewAll": "View all"
+    },
+    "calendar": {
+      "title": "Calendar",
+      "today": "Today",
+      "previous": "Back",
+      "next": "Next",
+      "date": "Date",
+      "time": "Time",
+      "event": "Event",
+      "noEventsInRange": "No events in this range.",
+      "views": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "agenda": "Agenda"
+      },
+      "jumpTo": "Jump to date",
+      "scrollToTime": "Scroll to time",
+      "go": "Go"
+    },
+    "bookings": {
+      "title": "Bookings",
+      "view": {
+        "table": "Table",
+        "calendar": "Calendar"
+      },
+      "toolbar": {
+        "search": "Search bookings",
+        "statusAll": "All statuses",
+        "showCancelled": "Show cancelled",
+        "import": "Import CSV",
+        "export": "Export CSV",
+        "add": "New booking"
+      },
+      "import": {
+        "title": "Import bookings",
+        "dropzone": "Drop a CSV file here, or click to select",
+        "dropzoneActive": "Drop to upload",
+        "template": "Download CSV template",
+        "preview": "{total} row(s) found",
+        "validCount": "{count} valid",
+        "invalidCount": "{count} with errors",
+        "importButton": "Import {count} booking(s)",
+        "importing": "Importing…",
+        "noValidRows": "No valid rows to import. Fix the errors above.",
+        "success": "Imported {count} booking(s) successfully.",
+        "partialSuccess": "Imported {count} booking(s). {failed} row(s) could not be imported.",
+        "parseError": "Could not read this file. Make sure it's a valid CSV.",
+        "columns": {
+          "row": "#",
+          "title": "Title",
+          "client": "Client",
+          "start": "Start",
+          "error": "Error"
+        }
+      },
+      "table": {
+        "empty": "No bookings match your filters.",
+        "col": {
+          "title": "Booking",
+          "client": "Client",
+          "date": "Date",
+          "status": "Status",
+          "total": "Total",
+          "actions": "Actions"
+        }
+      },
+      "row": {
+        "openMenu": "Open booking actions",
+        "view": "View"
+      },
+      "statusValues": {
+        "inquiry": "Inquiry",
+        "quoted": "Quoted",
+        "booked": "Booked",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "detail": {
+        "tabs": {
+          "details": "Details",
+          "activity": "Notes & activity"
+        },
+        "sections": {
+          "schedule": "Schedule",
+          "pricing": "Pricing",
+          "history": "History"
+        },
+        "fields": {
+          "title": "Title",
+          "titleRequired": "Title can't be empty.",
+          "clientName": "Client name",
+          "status": "Status",
+          "eventType": "Event type",
+          "startAt": "Shift start",
+          "endAt": "Shift end",
+          "location": "Location",
+          "total": "Total",
+          "deposit": "Deposit",
+          "depositExceedsTotal": "Deposit can't exceed total.",
+          "currency": "Currency",
+          "outstanding": "Outstanding balance",
+          "notes": "Notes",
+          "activityEmpty": "No activity yet.",
+          "viewAllHistory": "View all {count} entries",
+          "endBeforeStart": "End can't be before start.",
+          "conflictsLabel": "Shifts already on {date}:"
+        },
+        "cancelConfirm": {
+          "title": "Cancel this booking?",
+          "body": "We'll mark \"{title}\" as cancelled. The booking won't be deleted — you can restore it from this same window if your client comes back. Audit history stays intact either way.",
+          "keep": "Keep booking",
+          "confirm": "Yes, cancel booking"
+        },
+        "history": {
+          "title": "Booking history",
+          "totalCount": "{count} entries",
+          "pageOf": "Page {page} of {total}",
+          "previous": "Previous page",
+          "next": "Next page"
+        },
+        "cancel": "Cancel booking",
+        "restore": "Restore booking",
+        "discardChanges": "Discard changes",
+        "saveChanges": "Save changes",
+        "pendingBadge": "{count} unsaved",
+        "unsavedConfirm": "You have unsaved changes. Discard them?",
+        "savedToast": "Booking updated.",
+        "cancelledToast": "Booking cancelled.",
+        "restoredToast": "Booking restored.",
+        "actionFailed": "Something went wrong. Try again.",
+        "notFound": "Booking not found.",
+        "editAll": "Edit all",
+        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving."
+      },
+      "confirm": {
+        "title": "Apply changes",
+        "body": "This session spans {days} days. What would you like to do?",
+        "thisDay": "Apply to this day only",
+        "wholeSession": "Apply to whole session",
+        "pastNote": "Past {count} day(s) will be preserved.",
+        "cancel": "Cancel"
+      },
+      "dnd": {
+        "pastDateWarning": "Moved to a past date",
+        "pastSplitWarning": "Past days preserved — only future days were updated",
+        "thisDayOnlyOnPast": "Cannot edit a past day",
+        "updateError": "Failed to update booking"
+      },
+      "sessions": {
+        "label": "Session {n}",
+        "add": "Add session",
+        "remove": "Remove session",
+        "reviewLabel": "Sessions"
+      },
+      "wizard": {
+        "createTitle": "New booking",
+        "editTitle": "Edit booking",
+        "loading": "Loading booking…",
+        "previous": "Previous",
+        "next": "Next",
+        "cancel": "Cancel",
+        "create": "Create booking",
+        "creating": "Creating…",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "createdToast": "Booking created.",
+        "savedToast": "Booking updated.",
+        "depositExceedsTotal": "Deposit can't exceed total.",
+        "unsavedConfirm": "You'll lose your progress if you exit now. Are you sure?",
+        "unsaved": {
+          "title": "Discard your changes?",
+          "body": "You'll lose anything you've entered in this booking if you leave now. Your changes haven't been saved.",
+          "keep": "Keep editing",
+          "discard": "Discard and close"
+        },
+        "steps": {
+          "client": "Client",
+          "event": "Event",
+          "pricing": "Pricing",
+          "review": "Review"
+        },
+        "client": {
+          "tabExisting": "Existing client",
+          "tabNew": "Create new",
+          "searchPlaceholder": "Search by name or email",
+          "noResults": "No clients match. Try a different search.",
+          "selectRequired": "Pick a client to continue.",
+          "name": "Name",
+          "namePlaceholder": "e.g. Emma Carter",
+          "email": "Email",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "Phone",
+          "phonePlaceholder": "+63 917 555 0142",
+          "readOnlyLabel": "Client",
+          "readOnlyHint": "Re-assigning a booking to a different client isn't supported in this view yet."
+        },
+        "event": {
+          "title": "Title",
+          "titleRequired": "Give this booking a title.",
+          "titlePlaceholder": "e.g. Carter Wedding — Pier 27",
+          "eventType": "Event type",
+          "startAt": "Shift start date",
+          "startAtRequired": "Pick a start date.",
+          "startTime": "Shift start time",
+          "endAt": "Shift end date",
+          "endTime": "Shift end time",
+          "shiftHint": "Shift hours repeat daily across the date range — they're the daily start and end, not a single 24-hour event.",
+          "conflictsLabel": "Shifts already on {date}:",
+          "singleDay": "Same-day shift — no separate end date",
+          "allowPastDate": "Adding an old booking? Allow past dates",
+          "location": "Location",
+          "locationPlaceholder": "Venue or full address"
+        },
+        "pricing": {
+          "total": "Total",
+          "deposit": "Deposit",
+          "currency": "Currency",
+          "hint": "Pricing in the workspace's default currency. You can change the currency per booking."
+        },
+        "review": {
+          "intro": "Quick check — confirm everything looks right before you save."
+        }
       }
     },
     "sidebar": {
@@ -36,6 +289,89 @@
       "settings": "Settings",
       "account": "Account",
       "logOut": "Log out"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Manage your account, workspace, and preferences.",
+      "tabs": {
+        "account": "Account",
+        "security": "Security",
+        "customize": "Customize",
+        "workspace": "Workspace",
+        "publicPage": "Public page",
+        "danger": "Danger zone"
+      },
+      "workspace": {
+        "businessSection": "Business details",
+        "businessSectionHint": "Your business identity and where you operate.",
+        "brandingSection": "Branding",
+        "brandingSectionHint": "Logo, colors, and a tagline used on your public page.",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "savedToast": "Workspace updated.",
+        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency."
+      },
+      "customize": {
+        "themeSection": "Theme",
+        "themeHint": "Light or dark mode — saved on this device.",
+        "languageSection": "Language",
+        "languageHint": "Switches the app interface. The URL will update to match.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "th": "ภาษาไทย"
+        }
+      },
+      "publicPage": {
+        "visibilitySection": "Visibility",
+        "visibilityHint": "Control whether your public page is reachable.",
+        "publish": "Publish",
+        "unpublish": "Unpublish",
+        "publishedAt": "Published {date}",
+        "unpublished": "Not published",
+        "publicUrl": "Your public URL",
+        "copy": "Copy",
+        "copied": "Copied",
+        "seoSection": "SEO",
+        "seoSectionHint": "Title and description shown when your page is shared or indexed.",
+        "seoTitle": "SEO title",
+        "seoTitlePlaceholder": "Sarah Bell Photography — Wedding & Portrait",
+        "seoDescription": "SEO description",
+        "seoDescriptionPlaceholder": "Wedding and portrait photography across the Bay Area…",
+        "inquirySection": "Inquiry routing",
+        "inquirySectionHint": "Where submissions from your inquiry form are forwarded.",
+        "inquiryRecipientEmail": "Recipient email",
+        "inquiryRecipientEmailPlaceholder": "you@example.com",
+        "customDomainSection": "Custom domain",
+        "customDomainComingSoon": "Available in v1.1",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "savedToast": "Public page settings updated.",
+        "visibilityUpdatedToast": "Visibility updated."
+      },
+      "danger": {
+        "exportSection": "Export workspace data",
+        "exportHint": "Download a copy of your bookings, clients, gallery references, and inquiries. We'll email you a link when it's ready.",
+        "exportButton": "Request export",
+        "exportRequestedToast": "Export requested. We'll email you when it's ready.",
+        "deleteSection": "Delete workspace",
+        "deleteHint": "Permanently delete this workspace and everything in it — bookings, clients, gallery, inquiries. Your subscription will be cancelled. This cannot be undone.",
+        "deleteOpen": "Delete workspace",
+        "deleteConfirmTitle": "Delete this workspace?",
+        "deleteConfirmBody": "This permanently deletes every record in {workspaceName}. Type the workspace URL slug to confirm:",
+        "deleteConfirmInput": "Workspace URL slug",
+        "deleteCancel": "Cancel",
+        "deleteConfirm": "I understand, delete it",
+        "deleting": "Deleting…"
+      }
     }
   },
   "onboarding": {
@@ -67,6 +403,8 @@
       "slugPlaceholder": "sarah-bell-photo",
       "businessType": "Business type",
       "country": "Country",
+      "currency": "Currency",
+      "currencyHelp": "Used for new bookings, transactions, and totals shown across your workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",

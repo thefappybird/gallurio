@@ -45,7 +45,7 @@ export async function businessStepAction(
   const parsed = businessStepSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
-  const { firstName, lastName, name, slug, businessType, country, timezone } = parsed.data;
+  const { firstName, lastName, name, slug, businessType, country, currency, timezone } = parsed.data;
   await connectDB();
 
   const slugClash = await Workspace.findOne({ slug, clerkOrgId: { $ne: session.orgId ?? "" } }).lean();
@@ -83,7 +83,7 @@ export async function businessStepAction(
   const workspace = await Workspace.findOneAndUpdate(
     { clerkOrgId },
     {
-      $set: { name, slug, businessType, country, timezone },
+      $set: { name, slug, businessType, country, currency, timezone },
       $setOnInsert: { ownerUserId: session.userId, clerkOrgId, plan: "free" },
     },
     { upsert: true, new: true }

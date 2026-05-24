@@ -1,3 +1,5 @@
+// Sign-in / sign-up appearance used by the Clerk auth pages.
+// For the embedded <UserProfile /> in /settings, see userProfileAppearance.ts.
 import type { ComponentProps } from "react";
 import type { SignIn } from "@clerk/nextjs";
 
