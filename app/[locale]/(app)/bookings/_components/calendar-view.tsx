@@ -577,13 +577,15 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
     externalDragRef.current = null;
   }, []);
 
-  // Return the actively dragged event so rbc renders a real candle preview at
-  // the hover position. MUST return null when no drag is active — otherwise
-  // any placeholder will be rendered into the target cell. (Earlier versions
-  // returned an OverflowEvent placeholder, which made rbc draw a stray
-  // "+N more" pill in whatever cell the cursor was over.)
+  // Always return null. We rely on the HTML5 drag image (a candle, built in
+  // OverflowPopoverRow.onDragStart) for visual feedback at the cursor — rbc's
+  // in-cell preview is more trouble than it's worth here: even when we return
+  // the actual booking event, rbc combines it with the source cell's existing
+  // overflow event and ends up rendering a "+N more" pill instead of a candle.
+  // Returning null disables rbc's cell preview entirely; the drop still works
+  // because handleDropFromOutside reads externalDragRef directly.
   const dragFromOutsideItem = useCallback((): AnyCalendarEvent | null => {
-    return externalDragRef.current;
+    return null;
   }, []);
 
   /**
