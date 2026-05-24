@@ -48,8 +48,8 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="pb-0">
-        <div className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0">
+      <SidebarHeader className="pb-0 group-data-[collapsible=icon]:items-center">
+        <div className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
           <Link
             href="/settings"
             className="grid size-10 shrink-0 place-items-center border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm overflow-hidden"
@@ -67,7 +67,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
         </div>
       </SidebarHeader>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
 
       <SidebarContent>
         <SidebarGroup>
@@ -81,6 +81,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
                       render={<Link href={href} />}
                       isActive={pathname === href || pathname.startsWith(href + "/")}
                       tooltip={label}
+                      className="group-data-[collapsible=icon]:mx-auto"
                     >
                       <Icon className="size-5! shrink-0" />
                       <span>{label}</span>
@@ -100,7 +101,11 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
             <ThemeToggle />
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<Link href="/settings" />} tooltip={t("settings")}>
+            <SidebarMenuButton
+              render={<Link href="/settings" />}
+              tooltip={t("settings")}
+              className="group-data-[collapsible=icon]:mx-auto"
+            >
               <SettingsIcon className="size-5! shrink-0" />
               <span>{t("settings")}</span>
             </SidebarMenuButton>
@@ -127,7 +132,10 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SignOutButton redirectUrl="/sign-in">
-              <SidebarMenuButton tooltip={t("logOut")}>
+              <SidebarMenuButton
+                tooltip={t("logOut")}
+                className="group-data-[collapsible=icon]:mx-auto"
+              >
                 <LogOutIcon className="size-5 shrink-0" />
                 <span>{t("logOut")}</span>
               </SidebarMenuButton>

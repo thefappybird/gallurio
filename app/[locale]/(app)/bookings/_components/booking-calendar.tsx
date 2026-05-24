@@ -148,7 +148,11 @@ function formatTimeRange(start: Date, end: Date) {
   return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
-/** A single draggable row inside the overflow popover. */
+/** A single draggable row inside the overflow popover.
+ *  Renders a hidden offscreen "candle" element styled exactly like a
+ *  MonthBookingEvent pill, and uses it as the HTML5 drag ghost via
+ *  setDragImage — so the user sees a booking candle being dragged, not the
+ *  popover row itself. */
 function OverflowPopoverRow({
   event: e,
   onSelectEvent,
@@ -162,43 +166,63 @@ function OverflowPopoverRow({
   onExternalDragEnd?: () => void;
   onClose: () => void;
 }) {
-  const rowRef = useRef<HTMLButtonElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
   const bg = STATUS_COLOR[e.status];
+  const clientDisplay = e.clientName || "—";
+  const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt);
   return (
-    <button
-      ref={rowRef}
-      key={e.id}
-      type="button"
-      draggable
-      onDragStart={(evt) => {
-        if (rowRef.current) {
-          evt.dataTransfer.setDragImage(rowRef.current, 0, 0);
-        }
-        evt.dataTransfer.effectAllowed = "move";
-        evt.dataTransfer.setData("text/plain", e.bookingId);
-        onExternalDragStart?.(e);
-      }}
-      onDragEnd={() => {
-        onExternalDragEnd?.();
-        onClose();
-      }}
-      onClick={() => {
-        onClose();
-        onSelectEvent?.(e);
-      }}
-      className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
-      style={{ borderLeft: `3px solid ${bg}` }}
-    >
-      <span className="truncate text-xs font-semibold text-foreground w-full">
-        {e.title}
-      </span>
-      <span className="truncate text-[10px] text-muted-foreground w-full">
-        {e.clientName || "—"}
-      </span>
-      <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-        {formatTimeRange(e.sessionStartAt, e.sessionEndAt)}
-      </span>
-    </button>
+    <>
+      {/* Hidden candle used as the drag ghost. Positioned offscreen so the
+          user never sees it directly; the browser snapshots it for the drag
+          preview when setDragImage points here. */}
+      <div
+        ref={ghostRef}
+        aria-hidden
+        className="pointer-events-none fixed -left-[9999px] top-0 flex h-10 w-48 flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white"
+        style={{ backgroundColor: bg }}
+      >
+        <span
+          className="absolute inset-y-0 left-0 w-1"
+          style={{ background: stripeBg(bg) }}
+        />
+        <span className="truncate text-xs font-semibold leading-tight">{e.title}</span>
+        <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+        <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+      </div>
+      <button
+        key={e.id}
+        type="button"
+        draggable
+        onDragStart={(evt) => {
+          if (ghostRef.current) {
+            evt.dataTransfer.setDragImage(ghostRef.current, 0, 0);
+          }
+          evt.dataTransfer.effectAllowed = "move";
+          evt.dataTransfer.setData("text/plain", e.bookingId);
+          onExternalDragStart?.(e);
+        }}
+        onDragEnd={() => {
+          onExternalDragEnd?.();
+          onClose();
+        }}
+        onClick={() => {
+          onClose();
+          onSelectEvent?.(e);
+        }}
+        className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+        style={{ borderLeft: `3px solid ${bg}` }}
+      >
+        <span className="truncate text-xs font-semibold text-foreground w-full">
+          {e.title}
+        </span>
+        <span className="truncate text-[10px] text-muted-foreground w-full">
+          {clientDisplay}
+        </span>
+        <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+          {timeRange}
+        </span>
+      </button>
+    </>
   );
 }
 

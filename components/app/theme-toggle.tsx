@@ -38,7 +38,10 @@ export function ThemeToggle() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <SidebarMenuButton tooltip={t("label")}>
+          <SidebarMenuButton
+            tooltip={t("label")}
+            className="group-data-[collapsible=icon]:mx-auto"
+          >
             <TriggerIcon suppressHydrationWarning />
             <span>{t("label")}</span>
           </SidebarMenuButton>
