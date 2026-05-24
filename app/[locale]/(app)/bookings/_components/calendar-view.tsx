@@ -10,14 +10,12 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
-import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
+import { PastDateConfirmDialog } from "./past-date-confirm-dialog";
 import { DropConflictDialog, type ShiftHit } from "./drop-conflict-dialog";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import {
   type Session,
   splitDayOut,
-  shiftSession,
-  shiftSessionTimes,
 } from "@/lib/bookings/session-edits";
 
 type Props = {
@@ -28,42 +26,20 @@ type Props = {
 
 type PendingConflict = {
   event: CalendarEvent;
-  newStart: Date;
-  newEnd: Date;
   newSessionStart: Date;
   newSessionEnd: Date;
-  isDateOnlyDrag: boolean;
-  shiftMs: number;
   bookingSessions: Session[];
   conflicts: ShiftHit[];
-  kind: "drop" | "resize";
+  touchedDay: Date;
 };
 
-/**
- * Describes a drop or resize that is awaiting user confirmation.
- *
- * `bookingSessions` is reconstructed in-memory from optimisticEvents (Option B)
- * to avoid a round-trip fetch just to read the sessions array. The tradeoff: if
- * the user drags again before the previous PATCH lands, the sessions count may
- * be slightly stale. Acceptable for MVP — a comment flags this below.
- */
-type PendingEdit = {
+type PendingPastConfirm = {
   event: CalendarEvent;
-  newStart: Date;
-  newEnd: Date;
-  kind: "drop" | "resize";
-  /** The full sessions array for this booking, reconstructed from optimistic state. */
-  bookingSessions: Session[];
-  /** Day the user dragged from (for splitDayOut). For drop = event.start's calendar day. */
-  touchedDay: Date;
-  /** Precomputed shift for drop edits: newSessionStart - event.sessionStartAt. */
-  shiftMs: number;
-  /** For drop: the fully-resolved new session start/end (date + time). */
   newSessionStart: Date;
   newSessionEnd: Date;
-  /** True when this was a month-view date-only drag (no time change). */
-  isDateOnlyDrag: boolean;
-} | null;
+  bookingSessions: Session[];
+  touchedDay: Date;
+};
 
 /** Convert "HH:MM" string to minutes since midnight. Returns null on bad input. */
 function toMinutes(hhmm: string): number | null {
@@ -121,14 +97,6 @@ function startOfDay(d: Date) {
  * current optimistic events state. Candles share sessionIndex, sessionStartAt,
  * sessionEndAt within each session group — we deduplicate by sessionIndex and
  * sort ascending.
- *
- * Option B: in-memory reconstruction, no fetch required.
- *
- * Caveat (MVP): if a PATCH is in-flight when the user starts another drag, the
- * reconstructed sessions may not yet reflect the previous save. The candle's
- * sessionDayCount will also be stale in that window, which could show the
- * wrong prompt. Acceptable — rare race, and the worst outcome is showing the
- * dialog for a single-day session (harmless extra click).
  */
 function reconstructSessions(
   optimisticEvents: CalendarEvent[],
@@ -147,83 +115,6 @@ function reconstructSessions(
   return Array.from(byIndex.entries())
     .sort(([a], [b]) => a - b)
     .map(([, s]) => s);
-}
-
-/**
- * After computing new sessions for a booking, produce an updated optimistic
- * candle list. Strategy: in-place shift of candle start/end times for the
- * affected session index. We do NOT attempt to regenerate sessionDayCount or
- * sessionPastDayCount client-side — those will correct themselves when the
- * server-rendered events prop updates after the PATCH. This is intentionally
- * pragmatic: a second drag before the server responds may show a stale prompt.
- */
-function applyOptimisticCandleShift(
-  optimisticEvents: CalendarEvent[],
-  event: CalendarEvent,
-  newSessionStart: Date,
-  newSessionEnd: Date,
-  isDateOnlyDrag: boolean,
-  dragStart: Date
-): CalendarEvent[] {
-  const dayDiff = isDateOnlyDrag
-    ? Math.round(
-        (startOfDay(newSessionStart).getTime() -
-          startOfDay(event.sessionStartAt).getTime()) /
-          86_400_000
-      )
-    : 0;
-  const shift = isDateOnlyDrag ? 0 : newSessionStart.getTime() - event.sessionStartAt.getTime();
-
-  return optimisticEvents.map((e) => {
-    if (e.bookingId !== event.bookingId || e.sessionIndex !== event.sessionIndex) return e;
-    const newCandleStart = isDateOnlyDrag
-      ? (() => {
-          const s = new Date(e.start);
-          s.setDate(s.getDate() + dayDiff);
-          return s;
-        })()
-      : new Date(e.start.getTime() + (event.start.getTime() === dragStart.getTime() ? shift : shift));
-    const newCandleEnd = isDateOnlyDrag
-      ? (() => {
-          const s = new Date(e.end);
-          s.setDate(s.getDate() + dayDiff);
-          return s;
-        })()
-      : new Date(e.end.getTime() + shift);
-    return {
-      ...e,
-      start: newCandleStart,
-      end: newCandleEnd,
-      sessionStartAt: newSessionStart,
-      sessionEndAt: newSessionEnd,
-    };
-  });
-}
-
-/**
- * Optimistic update for a resize: apply new times to all candles of the
- * affected session.
- */
-function applyOptimisticCandleResize(
-  optimisticEvents: CalendarEvent[],
-  event: CalendarEvent,
-  newSessionStart: Date,
-  newSessionEnd: Date
-): CalendarEvent[] {
-  return optimisticEvents.map((e) => {
-    if (e.bookingId !== event.bookingId || e.sessionIndex !== event.sessionIndex) return e;
-    const newCandleStart = new Date(e.start);
-    newCandleStart.setHours(newSessionStart.getHours(), newSessionStart.getMinutes(), 0, 0);
-    const newCandleEnd = new Date(e.end);
-    newCandleEnd.setHours(newSessionEnd.getHours(), newSessionEnd.getMinutes(), 0, 0);
-    return {
-      ...e,
-      start: newCandleStart,
-      end: newCandleEnd,
-      sessionStartAt: newSessionStart,
-      sessionEndAt: newSessionEnd,
-    };
-  });
 }
 
 /**
@@ -255,15 +146,14 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
 
-  const [pendingEdit, setPendingEdit] = useState<PendingEdit>(null);
-  const [savingDnd, setSavingDnd] = useState(false);
+  const [pendingPastConfirm, setPendingPastConfirm] =
+    useState<PendingPastConfirm | null>(null);
   const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(null);
   // Incrementing this key forces BookingCalendar to remount, flushing rbc's
-  // internal optimistic drag state when the user cancels a conflicted drop.
+  // internal optimistic drag state when the user cancels.
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Keep optimistic state in sync when the server provides new events (e.g.
-  // after navigation or after the wizard creates/edits a booking).
+  // Keep optimistic state in sync when the server provides new events.
   const prevEventsRef = useRef(events);
   useEffect(() => {
     if (events !== prevEventsRef.current) {
@@ -295,48 +185,47 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
     [router, pathname, searchParams]
   );
 
-  // ─── Shared save logic ────────────────────────────────────────────────────
+  // ─── Core splitDayOut apply ───────────────────────────────────────────────
 
   /**
-   * Apply optimistic update + PATCH for a drop edit.
-   * Works for both single-day fast-path and confirmed multi-day edits.
+   * Apply splitDayOut semantics: the dragged candle becomes its own session at
+   * the new location. Only the dragged candle moves in the optimistic update;
+   * siblings in the same session stay at their original positions.
    */
-  const applyDropSave = useCallback(
+  const applySplit = useCallback(
     async (
       event: CalendarEvent,
       bookingSessions: Session[],
-      newSessionStart: Date,
-      newSessionEnd: Date,
-      isDateOnlyDrag: boolean,
-      dragStart: Date,
-      shiftedSessions: Session[],
-      splitHappened: boolean
+      touchedDay: Date,
+      newCandleStart: Date,
+      newCandleEnd: Date
     ) => {
       const prev = optimisticEvents;
 
+      const splitResult = splitDayOut(
+        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
+        touchedDay,
+        newCandleStart,
+        newCandleEnd
+      );
+
       const newSessions = bookingSessions.flatMap((s, idx) =>
-        idx === event.sessionIndex ? shiftedSessions : [s]
+        idx === event.sessionIndex ? splitResult : [s]
       );
 
-      // Optimistic update: shift candle positions in-place.
+      // Optimistic: move only the dragged candle; siblings stay put.
       setOptimisticEvents(
-        applyOptimisticCandleShift(
-          prev,
-          event,
-          newSessionStart,
-          newSessionEnd,
-          isDateOnlyDrag,
-          dragStart
-        )
+        optimisticEvents.map((e) => {
+          if (e.bookingId !== event.bookingId || e.id !== event.id) return e;
+          return {
+            ...e,
+            start: newCandleStart,
+            end: newCandleEnd,
+            sessionStartAt: newCandleStart,
+            sessionEndAt: newCandleEnd,
+          };
+        })
       );
-
-      const today = startOfDay(new Date());
-      if (newSessionStart < today) {
-        toast.warning(t("pastDateWarning"));
-      } else if (splitHappened) {
-        // Past portion was preserved; future was shifted.
-        toast.warning(t("pastSplitWarning"));
-      }
 
       try {
         const ok = await patchBookingSessions(event.bookingId, newSessions);
@@ -349,41 +238,110 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
     [optimisticEvents, t]
   );
 
+  // ─── Universal drag handler ───────────────────────────────────────────────
+
   /**
-   * Apply optimistic update + PATCH for a resize edit.
+   * Shared logic for drop, resize, and external-popover-drop.
+   *
+   * Steps:
+   *   1. Compute newCandleStart / newCandleEnd from the rbc-provided times.
+   *   2. Same-position no-op check.
+   *   3. Past-date check → PastDateConfirmDialog.
+   *   4. Overnight conflict check (fetches shifts for both dates when the
+   *      candle window spans midnight).
+   *   5. Conflict check → DropConflictDialog on match.
+   *   6. Apply via splitDayOut.
    */
-  const applyResizeSave = useCallback(
+  const handleAnyDrop = useCallback(
     async (
       event: CalendarEvent,
-      bookingSessions: Session[],
-      newSessionStart: Date,
-      newSessionEnd: Date,
-      shiftedSessions: Session[],
-      splitHappened: boolean
+      newRbcStart: Date,
+      newRbcEnd: Date,
+      isDateOnlyDrag: boolean,
+      touchedDay: Date
     ) => {
-      const prev = optimisticEvents;
+      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
-      const newSessions = bookingSessions.flatMap((s, idx) =>
-        idx === event.sessionIndex ? shiftedSessions : [s]
-      );
+      // 1. Compute candle times.
+      let newCandleStart: Date;
+      let newCandleEnd: Date;
 
-      setOptimisticEvents(
-        applyOptimisticCandleResize(prev, event, newSessionStart, newSessionEnd)
-      );
-
-      if (splitHappened) {
-        toast.warning(t("pastSplitWarning"));
+      if (isDateOnlyDrag) {
+        const dayDiff = Math.round(
+          (startOfDay(newRbcStart).getTime() - startOfDay(event.start).getTime()) /
+            86_400_000
+        );
+        newCandleStart = new Date(event.start);
+        newCandleStart.setDate(newCandleStart.getDate() + dayDiff);
+        newCandleEnd = new Date(event.end);
+        newCandleEnd.setDate(newCandleEnd.getDate() + dayDiff);
+      } else {
+        newCandleStart = newRbcStart;
+        newCandleEnd = newRbcEnd;
       }
 
-      try {
-        const ok = await patchBookingSessions(event.bookingId, newSessions);
-        if (!ok) throw new Error();
-      } catch {
-        setOptimisticEvents(prev);
-        toast.error(t("updateError"));
+      // 2. Same-position no-op.
+      if (
+        newCandleStart.getTime() === event.start.getTime() &&
+        newCandleEnd.getTime() === event.end.getTime()
+      ) {
+        return;
       }
+
+      // 3. Past-date check.
+      const today = startOfDay(new Date());
+      if (startOfDay(newCandleStart) < today) {
+        setPendingPastConfirm({
+          event,
+          newSessionStart: newCandleStart,
+          newSessionEnd: newCandleEnd,
+          bookingSessions,
+          touchedDay,
+        });
+        return;
+      }
+
+      // 4. Conflict check — fetch shifts for both dates if the window is overnight.
+      const startDateStr = isoDate(newCandleStart);
+      const endDateStr = isoDate(newCandleEnd);
+      const aStart = newCandleStart.getHours() * 60 + newCandleStart.getMinutes();
+      const aEnd = newCandleEnd.getHours() * 60 + newCandleEnd.getMinutes();
+
+      let allShifts: ShiftHit[];
+      if (startDateStr !== endDateStr) {
+        const [shiftsA, shiftsB] = await Promise.all([
+          fetchConflicts(startDateStr, event.bookingId),
+          fetchConflicts(endDateStr, event.bookingId),
+        ]);
+        const seen = new Set<string>();
+        allShifts = [...shiftsA, ...shiftsB].filter((s) => {
+          if (seen.has(s.id)) return false;
+          seen.add(s.id);
+          return true;
+        });
+      } else {
+        allShifts = await fetchConflicts(startDateStr, event.bookingId);
+      }
+
+      const conflicts = overlappingShifts(allShifts, aStart, aEnd);
+
+      // 5. Show conflict dialog if needed.
+      if (conflicts.length > 0) {
+        setPendingConflict({
+          event,
+          newSessionStart: newCandleStart,
+          newSessionEnd: newCandleEnd,
+          bookingSessions,
+          conflicts,
+          touchedDay,
+        });
+        return;
+      }
+
+      // 6. Apply.
+      await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
     },
-    [optimisticEvents, t]
+    [optimisticEvents, applySplit]
   );
 
   // ─── Drop handler ─────────────────────────────────────────────────────────
@@ -403,88 +361,15 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         event.start.getHours() !== 0 || event.start.getMinutes() !== 0;
       const isDateOnlyDrag = newStartIsMidnight && eventHasTime;
 
-      let newSessionStart: Date;
-      let newSessionEnd: Date;
-      let shiftMs: number;
-
-      if (isDateOnlyDrag) {
-        const dayDiff = Math.round(
-          (startOfDay(newStart).getTime() - startOfDay(event.start).getTime()) /
-            86_400_000
-        );
-        newSessionStart = new Date(event.sessionStartAt);
-        newSessionStart.setDate(newSessionStart.getDate() + dayDiff);
-        newSessionEnd = new Date(event.sessionEndAt);
-        newSessionEnd.setDate(newSessionEnd.getDate() + dayDiff);
-        shiftMs = dayDiff * 86_400_000;
-      } else {
-        shiftMs = newStart.getTime() - event.start.getTime();
-        newSessionStart = new Date(event.sessionStartAt.getTime() + shiftMs);
-        newSessionEnd = new Date(event.sessionEndAt.getTime() + shiftMs);
-      }
-
-      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
-
-      // Single-day session: conflict-check then apply (or prompt).
-      if (event.sessionDayCount === 1) {
-        const dateStr = isoDate(newSessionStart);
-        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
-        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
-        const shifts = await fetchConflicts(dateStr, event.bookingId);
-        const conflicts = overlappingShifts(shifts, aStart, aEnd);
-
-        if (conflicts.length > 0) {
-          setPendingConflict({
-            event,
-            newStart,
-            newEnd,
-            newSessionStart,
-            newSessionEnd,
-            isDateOnlyDrag,
-            shiftMs,
-            bookingSessions,
-            conflicts,
-            kind: "drop",
-          });
-          return;
-        }
-
-        const today = new Date();
-        const shifted = shiftSession(
-          { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-          shiftMs,
-          today
-        );
-        const splitHappened = shifted.length > 1;
-
-        await applyDropSave(
-          event,
-          bookingSessions,
-          newSessionStart,
-          newSessionEnd,
-          isDateOnlyDrag,
-          newStart,
-          shifted,
-          splitHappened
-        );
-        return;
-      }
-
-      // Multi-day session: defer to the confirmation dialog.
-      setPendingEdit({
+      await handleAnyDrop(
         event,
         newStart,
         newEnd,
-        kind: "drop",
-        bookingSessions,
-        touchedDay: startOfDay(event.start),
-        shiftMs,
-        newSessionStart,
-        newSessionEnd,
         isDateOnlyDrag,
-      });
+        startOfDay(event.start)
+      );
     },
-    [optimisticEvents, applyDropSave]
+    [handleAnyDrop]
   );
 
   // ─── Resize handler ───────────────────────────────────────────────────────
@@ -496,75 +381,16 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
       const newStart = new Date(start);
       const newEnd = new Date(end);
 
-      // Resize adjusts shift times on the session endpoints.
-      const newSessionStart = new Date(event.sessionStartAt);
-      if (newStart.getTime() !== event.start.getTime()) {
-        newSessionStart.setHours(newStart.getHours(), newStart.getMinutes(), 0, 0);
-      }
-      const newSessionEnd = new Date(event.sessionEndAt);
-      newSessionEnd.setHours(newEnd.getHours(), newEnd.getMinutes(), 0, 0);
-
-      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
-
-      // Single-day session: conflict-check then apply (or prompt).
-      if (event.sessionDayCount === 1) {
-        const dateStr = isoDate(newSessionStart);
-        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
-        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
-        const shifts = await fetchConflicts(dateStr, event.bookingId);
-        const conflicts = overlappingShifts(shifts, aStart, aEnd);
-
-        if (conflicts.length > 0) {
-          setPendingConflict({
-            event,
-            newStart,
-            newEnd,
-            newSessionStart,
-            newSessionEnd,
-            isDateOnlyDrag: false,
-            shiftMs: 0,
-            bookingSessions,
-            conflicts,
-            kind: "resize",
-          });
-          return;
-        }
-
-        const today = new Date();
-        const shifted = shiftSessionTimes(
-          { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-          newSessionStart,
-          newSessionEnd,
-          today
-        );
-        const splitHappened = shifted.length > 1;
-
-        await applyResizeSave(
-          event,
-          bookingSessions,
-          newSessionStart,
-          newSessionEnd,
-          shifted,
-          splitHappened
-        );
-        return;
-      }
-
-      // Multi-day session: open dialog.
-      setPendingEdit({
+      // Resize is always time-based (never a date-only drag).
+      await handleAnyDrop(
         event,
         newStart,
         newEnd,
-        kind: "resize",
-        bookingSessions,
-        touchedDay: startOfDay(event.start),
-        shiftMs: 0,
-        newSessionStart,
-        newSessionEnd,
-        isDateOnlyDrag: false,
-      });
+        false,
+        startOfDay(event.start)
+      );
     },
-    [optimisticEvents, applyResizeSave]
+    [handleAnyDrop]
   );
 
   // ─── External drag (overflow popover → calendar) ──────────────────────────
@@ -579,19 +405,15 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
   // Always return null. We rely on the HTML5 drag image (a candle, built in
   // OverflowPopoverRow.onDragStart) for visual feedback at the cursor — rbc's
-  // in-cell preview is more trouble than it's worth here: even when we return
-  // the actual booking event, rbc combines it with the source cell's existing
-  // overflow event and ends up rendering a "+N more" pill instead of a candle.
-  // Returning null disables rbc's cell preview entirely; the drop still works
-  // because handleDropFromOutside reads externalDragRef directly.
+  // in-cell preview is more trouble than it's worth here.
   const dragFromOutsideItem = useCallback((): AnyCalendarEvent | null => {
     return null;
   }, []);
 
   /**
    * Called by rbc when the user drops an externally-dragged event onto a
-   * calendar cell. Reuses the same single-day fast-path + conflict-check flow
-   * as handleEventDrop, treating the drop as a date-only shift (month view).
+   * calendar cell. External drops from the overflow popover always land in
+   * month view — treat as a date-only drag.
    */
   const handleDropFromOutside = useCallback(
     async ({ start }: { start: string | Date; end: string | Date; allDay: boolean }) => {
@@ -601,278 +423,46 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
       const newStart = new Date(start);
 
-      // External drops from the overflow popover land in month view — always
-      // treat as a date-only drag: preserve session shift times, shift date only.
-      const dayDiff = Math.round(
-        (startOfDay(newStart).getTime() - startOfDay(event.start).getTime()) /
-          86_400_000
-      );
-      const newSessionStart = new Date(event.sessionStartAt);
-      newSessionStart.setDate(newSessionStart.getDate() + dayDiff);
-      const newSessionEnd = new Date(event.sessionEndAt);
-      newSessionEnd.setDate(newSessionEnd.getDate() + dayDiff);
-      const shiftMs = dayDiff * 86_400_000;
-
-      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
-
-      if (event.sessionDayCount === 1) {
-        const dateStr = isoDate(newSessionStart);
-        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
-        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
-        const shifts = await fetchConflicts(dateStr, event.bookingId);
-        const conflicts = overlappingShifts(shifts, aStart, aEnd);
-
-        if (conflicts.length > 0) {
-          setPendingConflict({
-            event,
-            newStart,
-            newEnd: newSessionEnd,
-            newSessionStart,
-            newSessionEnd,
-            isDateOnlyDrag: true,
-            shiftMs,
-            bookingSessions,
-            conflicts,
-            kind: "drop",
-          });
-          return;
-        }
-
-        const today = new Date();
-        const shifted = shiftSession(
-          { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-          shiftMs,
-          today
-        );
-        await applyDropSave(
-          event,
-          bookingSessions,
-          newSessionStart,
-          newSessionEnd,
-          true,
-          newStart,
-          shifted,
-          shifted.length > 1
-        );
-        return;
-      }
-
-      // Multi-day session: defer to confirmation dialog.
-      setPendingEdit({
+      await handleAnyDrop(
         event,
         newStart,
-        newEnd: newSessionEnd,
-        kind: "drop",
-        bookingSessions,
-        touchedDay: startOfDay(event.start),
-        shiftMs,
-        newSessionStart,
-        newSessionEnd,
-        isDateOnlyDrag: true,
-      });
+        newStart,
+        true,
+        startOfDay(event.start)
+      );
     },
-    [optimisticEvents, applyDropSave]
+    [handleAnyDrop]
   );
 
-  // ─── Dialog apply handlers ────────────────────────────────────────────────
+  // ─── Past-date confirm handlers ───────────────────────────────────────────
 
-  const handleApplyToDay = useCallback(async () => {
-    if (!pendingEdit) return;
-    const { event, bookingSessions, touchedDay, newSessionStart, newSessionEnd, kind, newStart } = pendingEdit;
+  const handlePastCancel = useCallback(() => {
+    setPendingPastConfirm(null);
+    setRefreshKey((k) => k + 1);
+  }, []);
 
-    // Block: cannot split off a past day.
-    const today = startOfDay(new Date());
-    if (touchedDay < today) {
-      toast.error(t("thisDayOnlyOnPast"));
-      setPendingEdit(null);
-      return;
-    }
-
-    setSavingDnd(true);
-    const prev = optimisticEvents;
-
-    // "Apply to this day only" must produce a single-day session, not a shifted
-    // copy of the full session range. Compute the target day + the shift times:
-    //   - DROP:   target day = where the user dropped (startOfDay(newStart)); times from newSessionStart/End.
-    //   - RESIZE: day stays the same (touchedDay); times from newSessionStart/End.
-    const targetDay = kind === "drop" ? startOfDay(newStart) : new Date(touchedDay);
-    const singleDayStart = new Date(targetDay);
-    singleDayStart.setHours(newSessionStart.getHours(), newSessionStart.getMinutes(), 0, 0);
-    const singleDayEnd = new Date(targetDay);
-    singleDayEnd.setHours(newSessionEnd.getHours(), newSessionEnd.getMinutes(), 0, 0);
-
-    const splitResult = splitDayOut(
-      { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-      touchedDay,
-      singleDayStart,
-      singleDayEnd
-    );
-
-    const newSessions = bookingSessions.flatMap((s, idx) =>
-      idx === event.sessionIndex ? splitResult : [s]
-    );
-
-    // Optimistic: move the dragged candle only (others in the session stay put).
-    setOptimisticEvents(
-      optimisticEvents.map((e) => {
-        if (e.bookingId !== event.bookingId || e.id !== event.id) return e;
-        return {
-          ...e,
-          start: singleDayStart,
-          end: singleDayEnd,
-          sessionStartAt: singleDayStart,
-          sessionEndAt: singleDayEnd,
-        };
-      })
-    );
-
-    try {
-      const ok = await patchBookingSessions(event.bookingId, newSessions);
-      if (!ok) throw new Error();
-    } catch {
-      setOptimisticEvents(prev);
-      toast.error(t("updateError"));
-    } finally {
-      setSavingDnd(false);
-      setPendingEdit(null);
-    }
-  }, [pendingEdit, optimisticEvents, t]);
-
-  const handleApplyToSession = useCallback(async () => {
-    if (!pendingEdit) return;
-    const {
-      event,
-      kind,
-      bookingSessions,
-      shiftMs,
-      newSessionStart,
-      newSessionEnd,
-      isDateOnlyDrag,
-    } = pendingEdit;
-
-    setSavingDnd(true);
-    const today = new Date();
-    const session: Session = { startAt: event.sessionStartAt, endAt: event.sessionEndAt };
-
-    let shiftedSessions: Session[];
-    if (kind === "drop") {
-      shiftedSessions = shiftSession(session, shiftMs, today);
-    } else {
-      // Resize: time-only change.
-      shiftedSessions = shiftSessionTimes(session, newSessionStart, newSessionEnd, today);
-    }
-
-    const splitHappened = shiftedSessions.length > 1;
-    // The representative "new" session for optimistic candle update is the last
-    // element (the future/shifted portion).
-    const representativeSession = shiftedSessions[shiftedSessions.length - 1];
-
-    const newSessions = bookingSessions.flatMap((s, idx) =>
-      idx === event.sessionIndex ? shiftedSessions : [s]
-    );
-
-    const prev = optimisticEvents;
-
-    if (kind === "drop") {
-      setOptimisticEvents(
-        applyOptimisticCandleShift(
-          optimisticEvents,
-          event,
-          representativeSession.startAt,
-          representativeSession.endAt,
-          isDateOnlyDrag,
-          pendingEdit.newStart
-        )
-      );
-      const todayStart = startOfDay(new Date());
-      if (representativeSession.startAt < todayStart) {
-        toast.warning(t("pastDateWarning"));
-      } else if (splitHappened) {
-        toast.warning(t("pastSplitWarning"));
-      }
-    } else {
-      setOptimisticEvents(
-        applyOptimisticCandleResize(
-          optimisticEvents,
-          event,
-          representativeSession.startAt,
-          representativeSession.endAt
-        )
-      );
-      if (splitHappened) {
-        toast.warning(t("pastSplitWarning"));
-      }
-    }
-
-    try {
-      const ok = await patchBookingSessions(event.bookingId, newSessions);
-      if (!ok) throw new Error();
-    } catch {
-      setOptimisticEvents(prev);
-      toast.error(t("updateError"));
-    } finally {
-      setSavingDnd(false);
-      setPendingEdit(null);
-    }
-  }, [pendingEdit, optimisticEvents, t]);
+  const handlePastConfirm = useCallback(async () => {
+    if (!pendingPastConfirm) return;
+    const { event, bookingSessions, touchedDay, newSessionStart, newSessionEnd } =
+      pendingPastConfirm;
+    setPendingPastConfirm(null);
+    await applySplit(event, bookingSessions, touchedDay, newSessionStart, newSessionEnd);
+  }, [pendingPastConfirm, applySplit]);
 
   // ─── Conflict dialog handlers ─────────────────────────────────────────────
 
   const handleConflictCancel = useCallback(() => {
     setPendingConflict(null);
-    // Force BookingCalendar to remount so rbc discards its internal optimistic
-    // drag position and the event snaps back to its original slot.
     setRefreshKey((k) => k + 1);
   }, []);
 
   const handleConflictConfirm = useCallback(async () => {
     if (!pendingConflict) return;
-    const {
-      event,
-      bookingSessions,
-      newSessionStart,
-      newSessionEnd,
-      isDateOnlyDrag,
-      shiftMs,
-      newStart,
-      kind,
-    } = pendingConflict;
+    const { event, bookingSessions, touchedDay, newSessionStart, newSessionEnd } =
+      pendingConflict;
     setPendingConflict(null);
-
-    const today = new Date();
-    if (kind === "drop") {
-      const shifted = shiftSession(
-        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-        shiftMs,
-        today
-      );
-      await applyDropSave(
-        event,
-        bookingSessions,
-        newSessionStart,
-        newSessionEnd,
-        isDateOnlyDrag,
-        newStart,
-        shifted,
-        shifted.length > 1
-      );
-    } else {
-      const shifted = shiftSessionTimes(
-        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-        newSessionStart,
-        newSessionEnd,
-        today
-      );
-      await applyResizeSave(
-        event,
-        bookingSessions,
-        newSessionStart,
-        newSessionEnd,
-        shifted,
-        shifted.length > 1
-      );
-    }
-  }, [pendingConflict, applyDropSave, applyResizeSave]);
+    await applySplit(event, bookingSessions, touchedDay, newSessionStart, newSessionEnd);
+  }, [pendingConflict, applySplit]);
 
   return (
     <>
@@ -890,14 +480,10 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         dragFromOutsideItem={dragFromOutsideItem}
         messages={messages}
       />
-      <SessionEditConfirmDialog
-        open={pendingEdit !== null}
-        sessionDayCount={pendingEdit?.event.sessionDayCount ?? 0}
-        pastDayCount={pendingEdit?.event.sessionPastDayCount ?? 0}
-        onApplyToDay={handleApplyToDay}
-        onApplyToSession={handleApplyToSession}
-        onCancel={() => setPendingEdit(null)}
-        busy={savingDnd}
+      <PastDateConfirmDialog
+        open={pendingPastConfirm !== null}
+        onCancel={handlePastCancel}
+        onConfirm={handlePastConfirm}
       />
       <DropConflictDialog
         open={pendingConflict !== null}

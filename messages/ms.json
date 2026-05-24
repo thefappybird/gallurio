@@ -57,6 +57,12 @@
           "description": "Memindahkan tempahan ini menciptakan pertindihan dengan satu atau lebih syif sedia ada. Anda boleh memindahkannya atau membatalkan.",
           "cancel": "Batal",
           "moveAnyway": "Pindahkan sekaligus"
+        },
+        "pastDateConfirm": {
+          "title": "Pindah ke tarikh lepas?",
+          "description": "Anda memindahkan tempahan ini ke tarikh yang telah lepas. Ini dibenarkan tetapi luar biasa — sahkan untuk teruskan.",
+          "confirm": "Pindah ke lepas",
+          "cancel": "Batal"
         }
       }
     },

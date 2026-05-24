@@ -209,6 +209,12 @@
           "description": "Moving this booking creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
           "cancel": "Cancel",
           "moveAnyway": "Move anyway"
+        },
+        "pastDateConfirm": {
+          "title": "Move to a past date?",
+          "description": "You're moving this booking to a date in the past. This is allowed but unusual — confirm to continue.",
+          "confirm": "Move to past",
+          "cancel": "Cancel"
         }
       },
       "sessions": {

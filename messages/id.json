@@ -57,6 +57,12 @@
           "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
           "cancel": "Batal",
           "moveAnyway": "Pindahkan saja"
+        },
+        "pastDateConfirm": {
+          "title": "Pindah ke tanggal lampau?",
+          "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
+          "confirm": "Pindah ke lampau",
+          "cancel": "Batal"
         }
       }
     },

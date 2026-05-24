@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -24,6 +24,7 @@ import { EventStep, type ShiftHit } from "./booking-wizard-steps/event-step";
 import { PricingStep } from "./booking-wizard-steps/pricing-step";
 import { ReviewStep } from "./booking-wizard-steps/review-step";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
+import { WizardConflictConfirmDialog } from "./wizard-conflict-confirm-dialog";
 import type {
   WizardMode,
   WizardValues,
@@ -94,11 +95,23 @@ export function BookingWizardModal({
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
   /** Dates currently being fetched — used to disable Next and show inline loaders. */
   const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
+  /** When the user submits with active conflicts, open this dialog to confirm. */
+  const [conflictConfirmOpen, setConflictConfirmOpen] = useState(false);
+  /** Form values held while the conflict confirm dialog is open. */
+  const [pendingSubmitValues, setPendingSubmitValues] = useState<WizardValues | null>(null);
 
   const defaults = useMemo(
     () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
     [defaultDate, defaultTime, defaultCurrency, initialValues]
   );
+
+  /**
+   * In edit mode, `defaults` is computed once (initialValues is undefined →
+   * empty sessions). After the async fetch resolves and form.reset(next) fires,
+   * this ref updates so buildEditDiff compares against actual fetched values
+   * rather than the empty initial defaults.
+   */
+  const defaultsRef = useRef<WizardValues>(defaults);
 
   const form = useForm<WizardValues>({
     defaultValues: defaults,
@@ -166,6 +179,9 @@ export function BookingWizardModal({
           notes: b.notes ?? "",
         };
         form.reset(next);
+        // Sync the baseline so buildEditDiff compares against fetched values,
+        // not the empty defaults computed before the fetch resolved.
+        defaultsRef.current = next;
         setEditClientName(b.clientName ?? undefined);
         setLoading(false);
       })
@@ -289,8 +305,7 @@ export function BookingWizardModal({
       if (!title?.trim()) return false;
       // Every session must have a start date.
       if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
-      // Hard-block on scheduling conflicts — proceeding with overlapping bookings is not allowed.
-      if (conflictsBySession.some((c) => c.length > 0)) return false;
+      // Conflicts no longer block navigation — they are surfaced on final submit.
     }
     if (step.id === "pricing") {
       const { total, deposit } = watch("amount");
@@ -357,7 +372,7 @@ export function BookingWizardModal({
     setStepIndex(target);
   }
 
-  const onSubmit = handleSubmit(async (values) => {
+  const fireSubmit = useCallback(async (values: WizardValues) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -374,7 +389,7 @@ export function BookingWizardModal({
         toast.success(t("createdToast"));
       } else {
         if (!bookingId) throw new Error("Missing booking id");
-        const diff = buildEditDiff(values, defaults);
+        const diff = buildEditDiff(values, defaultsRef.current);
         if (Object.keys(diff).length === 0) {
           // No-op submit — just close.
           close();
@@ -398,6 +413,17 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
+  }, [mode, bookingId, t, close]);
+
+  const onSubmit = handleSubmit(async (values) => {
+    // If any session has scheduling conflicts, surface a confirm dialog before
+    // actually writing — conflicts are no longer a hard block, just a warning.
+    if (conflictsBySession.some((c) => c.length > 0)) {
+      setPendingSubmitValues(values);
+      setConflictConfirmOpen(true);
+      return;
+    }
+    await fireSubmit(values);
   });
 
   function attemptClose(next: boolean) {
@@ -592,7 +618,7 @@ export function BookingWizardModal({
                     type="button"
                     size="sm"
                     onClick={nextStep}
-                    disabled={submitting || (STEPS[stepIndex].id === "event" && (loadingDates.size > 0 || conflictsBySession.some((c) => c.length > 0)))}
+                    disabled={submitting || (STEPS[stepIndex].id === "event" && loadingDates.size > 0)}
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
                     variant="brand"
                     className={cn(stepErrors.has(stepIndex) && "animate-shake")}
@@ -631,6 +657,27 @@ export function BookingWizardModal({
         onDiscard={() => {
           setUnsavedDialogOpen(false);
           close();
+        }}
+      />
+
+      <WizardConflictConfirmDialog
+        open={conflictConfirmOpen}
+        conflicts={conflictsBySession}
+        sessions={(watchedSessions ?? []).map((s) => ({
+          startDate: s.startDate,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        }))}
+        onCancel={() => {
+          setConflictConfirmOpen(false);
+          setPendingSubmitValues(null);
+        }}
+        onConfirm={async () => {
+          setConflictConfirmOpen(false);
+          if (pendingSubmitValues) {
+            await fireSubmit(pendingSubmitValues);
+            setPendingSubmitValues(null);
+          }
         }}
       />
 

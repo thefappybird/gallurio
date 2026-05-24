@@ -49,6 +49,12 @@
       "wizard": {
         "event": {
           "checkingConflicts": "Sinisiyasat ang mga salungatan…"
+        },
+        "conflictConfirm": {
+          "title": "Natuklasan ang mga salungatan sa iskedyul",
+          "description": "Ang isa o maraming sesyon ay may overlap sa mga umiiral na booking. Maaari mong i-submit kahit paano o bumalik upang ayusin ang mga petsa.",
+          "confirm": "I-submit pa rin",
+          "cancel": "Bumalik"
         }
       },
       "calendar": {
