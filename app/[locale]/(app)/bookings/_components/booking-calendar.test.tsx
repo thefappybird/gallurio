@@ -33,7 +33,8 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 // components by dynamically importing and extracting from CALENDAR_COMPONENTS,
 // which is module-level. We use a dynamic import with the already-mocked deps.
 
-import type { CalendarEvent } from "./booking-calendar";
+import { groupEventsForMonth } from "./booking-calendar";
+import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
 
 // Build a fixture CalendarEvent used across all tests.
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
@@ -229,5 +230,75 @@ describe("TimeBookingEvent pill", () => {
   it("renders em-dash when clientName is empty", () => {
     render(<TimePill event={makeEvent({ clientName: "" })} />);
     expect(screen.getByText("—")).toBeInTheDocument();
+  });
+});
+
+describe("groupEventsForMonth", () => {
+  function makeEventOnDay(
+    dateStr: string,
+    overrides: Partial<CalendarEvent> = {}
+  ): CalendarEvent {
+    const start = new Date(`${dateStr}T10:00:00`);
+    const end = new Date(`${dateStr}T13:00:00`);
+    return makeEvent({ ...overrides, start, end });
+  }
+
+  it("returns the event unchanged when there is 1 event on a day", () => {
+    const ev = makeEventOnDay("2026-08-15");
+    const result = groupEventsForMonth([ev]);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(ev);
+  });
+
+  it("returns 1 event pill + 1 overflow placeholder for 2 events on the same day", () => {
+    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
+    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
+    const result = groupEventsForMonth([ev1, ev2]);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(ev1);
+    const overflow = result[1] as OverflowEvent;
+    expect("type" in overflow && overflow.type).toBe("overflow");
+    expect(overflow.overflowCount).toBe(1);
+    expect(overflow.overflowEvents).toEqual([ev2]);
+  });
+
+  it("returns 1 event pill + 1 overflow with count 2 for 3 events on the same day", () => {
+    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
+    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
+    const ev3 = makeEventOnDay("2026-08-15", { id: "c_s0_2026-08-15" });
+    const result = groupEventsForMonth([ev1, ev2, ev3]);
+    expect(result).toHaveLength(2);
+    const overflow = result[1] as OverflowEvent;
+    expect("type" in overflow && overflow.type).toBe("overflow");
+    expect(overflow.overflowCount).toBe(2);
+    expect(overflow.overflowEvents).toEqual([ev2, ev3]);
+  });
+
+  it("does not group events on different days", () => {
+    const ev1 = makeEventOnDay("2026-08-15");
+    const ev2 = makeEventOnDay("2026-08-16");
+    const result = groupEventsForMonth([ev1, ev2]);
+    expect(result).toHaveLength(2);
+    expect(result.every((e) => !("type" in e))).toBe(true);
+  });
+
+  it("handles mixed: one day with overflow, one without", () => {
+    const evA1 = makeEventOnDay("2026-08-15", { id: "a1_s0_2026-08-15" });
+    const evA2 = makeEventOnDay("2026-08-15", { id: "a2_s0_2026-08-15" });
+    const evB = makeEventOnDay("2026-08-16", { id: "b_s0_2026-08-16" });
+    const result = groupEventsForMonth([evA1, evA2, evB]);
+    expect(result).toHaveLength(3);
+    const overflowItems = result.filter((e) => "type" in e && (e as OverflowEvent).type === "overflow");
+    expect(overflowItems).toHaveLength(1);
+    const overflow = overflowItems[0] as OverflowEvent;
+    expect(overflow.overflowCount).toBe(1);
+  });
+
+  it("overflow placeholder id is deterministic from the day key", () => {
+    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
+    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
+    const result = groupEventsForMonth([ev1, ev2]);
+    const overflow = result[1] as OverflowEvent;
+    expect(overflow.id).toBe("overflow_2026-08-15");
   });
 });

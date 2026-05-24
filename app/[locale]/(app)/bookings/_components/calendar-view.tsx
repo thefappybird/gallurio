@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import {
   BookingCalendar,
   type CalendarEvent,
+  type AnyCalendarEvent,
 } from "./booking-calendar";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
@@ -327,7 +328,9 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
   // ─── Drop handler ─────────────────────────────────────────────────────────
 
   const handleEventDrop = useCallback(
-    async ({ event, start, end }: EventInteractionArgs<CalendarEvent>) => {
+    async ({ event: anyEvent, start, end }: EventInteractionArgs<AnyCalendarEvent>) => {
+      if ("type" in anyEvent && anyEvent.type === "overflow") return;
+      const event = anyEvent as CalendarEvent;
       const newStart = new Date(start);
       const newEnd = new Date(end);
 
@@ -404,7 +407,9 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
   // ─── Resize handler ───────────────────────────────────────────────────────
 
   const handleEventResize = useCallback(
-    async ({ event, start, end }: EventInteractionArgs<CalendarEvent>) => {
+    async ({ event: anyEvent, start, end }: EventInteractionArgs<AnyCalendarEvent>) => {
+      if ("type" in anyEvent && anyEvent.type === "overflow") return;
+      const event = anyEvent as CalendarEvent;
       const newStart = new Date(start);
       const newEnd = new Date(end);
 

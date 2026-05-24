@@ -22,8 +22,8 @@ export default async function AppLayout({
         workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
       />
       <div className="flex flex-1 flex-col min-w-0">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <Separator orientation="vertical" className="h-4" />
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <Separator orientation="vertical" className="h-6" />
         </header>
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>
       </div>

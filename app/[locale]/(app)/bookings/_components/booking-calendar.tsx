@@ -23,10 +23,29 @@ import {
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 
+export type OverflowEvent = {
+  type: "overflow";
+  id: string;
+  bookingId: string;
+  title: string;
+  start: Date;
+  end: Date;
+  status: "booked";
+  clientName: string;
+  clientEmail: null;
+  rangeStart: Date;
+  rangeEnd: Date;
+  sessionIndex: 0;
+  sessionStartAt: Date;
+  sessionEndAt: Date;
+  sessionDayCount: 1;
+  sessionPastDayCount: 0;
+  overflowCount: number;
+  overflowEvents: CalendarEvent[];
+};
+
 const locales = {} as const;
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
-
-const DnDCalendar = withDragAndDrop<CalendarEvent>(Calendar);
 
 type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
 
@@ -59,6 +78,11 @@ export type CalendarEvent = {
   sessionPastDayCount: number;
 };
 
+/** Union of a real booking event and the synthetic overflow placeholder. */
+export type AnyCalendarEvent = CalendarEvent | OverflowEvent;
+
+const DnDCalendar = withDragAndDrop<AnyCalendarEvent>(Calendar);
+
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
@@ -68,8 +92,8 @@ type Props = {
    *  `time` is "HH:MM" and is provided in week/day view where the slot has
    *  a known time; absent for month-view day-cell clicks. */
   onSelectSlot?: (date: Date, time?: string) => void;
-  onEventDrop?: (args: EventInteractionArgs<CalendarEvent>) => void;
-  onEventResize?: (args: EventInteractionArgs<CalendarEvent>) => void;
+  onEventDrop?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
+  onEventResize?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
   messages: {
     today: string;
     previous: string;
@@ -118,16 +142,73 @@ function formatTimeRange(start: Date, end: Date) {
 }
 
 /** Month view: three-line stacked — title / client / time range. */
-function MonthBookingEvent({ event }: EventProps<CalendarEvent>) {
+function MonthBookingEvent({
+  event,
+  onSelectEvent,
+}: EventProps<AnyCalendarEvent> & {
+  onSelectEvent?: (ev: CalendarEvent) => void;
+}) {
   const ev = event;
-  const bg = STATUS_COLOR[ev.status];
-  const clientDisplay = ev.clientName || "—";
-  const timeRange = formatTimeRange(ev.start, ev.end);
+  const [open, setOpen] = useState(false);
+
+  if ("type" in ev && ev.type === "overflow") {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className="w-full text-left"
+              aria-label={`Show ${ev.overflowCount} more event${ev.overflowCount === 1 ? "" : "s"}`}
+            />
+          }
+        >
+          <span className="overflow-pill block w-full cursor-pointer bg-foreground text-background text-[10px] font-semibold leading-tight px-1.5 py-0.5">
+            +{ev.overflowCount} more
+          </span>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-56 p-2">
+          <div className="flex flex-col gap-1">
+            {ev.overflowEvents.map((e) => {
+              const bg = STATUS_COLOR[e.status];
+              return (
+                <button
+                  key={e.id}
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onSelectEvent?.(e);
+                  }}
+                  className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors"
+                  style={{ borderLeft: `3px solid ${bg}` }}
+                >
+                  <span className="truncate text-xs font-semibold text-foreground w-full">
+                    {e.title}
+                  </span>
+                  <span className="truncate text-[10px] text-muted-foreground w-full">
+                    {e.clientName || "—"}
+                  </span>
+                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+                    {formatTimeRange(e.sessionStartAt, e.sessionEndAt)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  const booking = ev as CalendarEvent;
+  const bg = STATUS_COLOR[booking.status];
+  const clientDisplay = booking.clientName || "—";
+  const timeRange = formatTimeRange(booking.start, booking.end);
   return (
     <span
-      title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
+      title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
       className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
-        ev.status === "cancelled" || ev.status === "completed"
+        booking.status === "cancelled" || booking.status === "completed"
           ? "line-through opacity-80"
           : ""
       }`}
@@ -138,7 +219,7 @@ function MonthBookingEvent({ event }: EventProps<CalendarEvent>) {
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="truncate text-xs font-semibold leading-tight">{ev.title}</span>
+      <span className="truncate text-xs font-semibold leading-tight">{booking.title}</span>
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
     </span>
@@ -395,16 +476,62 @@ function CalendarToolbar({
   );
 }
 
-// Stable components object — CalendarToolbar is module-level so rbc never
-// remounts event components due to a reference change.
-const CALENDAR_COMPONENTS = {
-  toolbar: CalendarToolbar,
-  month: { event: MonthBookingEvent },
-  week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-  day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-};
+// CalendarToolbar, TimeBookingEvent, and HoverableDayWrapper are module-level
+// stable references. MonthBookingEvent needs onSelectEvent injected, so we
+// build the month event component inside the parent via useMemo.
 
 // ─── BookingCalendar ──────────────────────────────────────────────────────────
+
+/**
+ * Groups same-day events in month view so rbc renders at most one booking pill
+ * per cell. Days with more than one event get a synthetic overflow placeholder
+ * appended after the first event, listing all events for that day.
+ *
+ * Only applied in month view — week/day views have time-slot rows and can
+ * display overlapping events without a cell-height cap.
+ */
+export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[] {
+  const byDay = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    const key = format(ev.start, "yyyy-MM-dd");
+    const bucket = byDay.get(key);
+    if (bucket) {
+      bucket.push(ev);
+    } else {
+      byDay.set(key, [ev]);
+    }
+  }
+
+  const result: AnyCalendarEvent[] = [];
+  for (const [, bucket] of byDay) {
+    result.push(bucket[0]);
+    if (bucket.length > 1) {
+      const first = bucket[0];
+      const overflow: OverflowEvent = {
+        type: "overflow",
+        id: `overflow_${format(first.start, "yyyy-MM-dd")}`,
+        bookingId: "",
+        title: `+${bucket.length - 1} more`,
+        start: first.start,
+        end: first.end,
+        status: "booked",
+        clientName: "",
+        clientEmail: null,
+        rangeStart: first.start,
+        rangeEnd: first.end,
+        sessionIndex: 0,
+        sessionStartAt: first.start,
+        sessionEndAt: first.end,
+        sessionDayCount: 1,
+        sessionPastDayCount: 0,
+        overflowCount: bucket.length - 1,
+        overflowEvents: bucket.slice(1),
+      };
+      result.push(overflow);
+    }
+  }
+  return result;
+}
 
 export function BookingCalendar({
   events,
@@ -469,12 +596,36 @@ export function BookingCalendar({
     [messages]
   );
 
+  // Pre-process events for month view: cap each day at 1 pill + overflow.
+  // Week/day views receive all events unmodified.
+  const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
+    if (view === Views.MONTH) return groupEventsForMonth(events);
+    return events;
+  }, [view, events]);
+
+  // Build the components object here so we can bind onSelectEvent to the
+  // MonthBookingEvent overflow popover without making it a closure inside a
+  // module-level constant (which would stale-close over the prop).
+  const calendarComponents = useMemo(
+    () => ({
+      toolbar: CalendarToolbar,
+      month: {
+        event: (props: EventProps<AnyCalendarEvent>) => (
+          <MonthBookingEvent {...props} onSelectEvent={onSelectEvent} />
+        ),
+      },
+      week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+      day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+    }),
+    [onSelectEvent]
+  );
+
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
         <DnDCalendar
           localizer={localizer}
-          events={events}
+          events={displayEvents}
           startAccessor="start"
           endAccessor="end"
           view={view}
@@ -485,13 +636,15 @@ export function BookingCalendar({
           scrollToTime={scrollToTime}
           step={30}
           timeslots={2}
-          popup
           selectable
           resizable
           longPressThreshold={1}
           messages={calendarMessages}
-          components={CALENDAR_COMPONENTS}
-          onSelectEvent={(event) => onSelectEvent?.(event as CalendarEvent)}
+          components={calendarComponents}
+          onSelectEvent={(event) => {
+            if ("type" in event && (event as OverflowEvent).type === "overflow") return;
+            onSelectEvent?.(event as unknown as CalendarEvent);
+          }}
           onSelectSlot={(slot) => {
             const d = new Date(slot.start);
             const isTimeView = view === Views.WEEK || view === Views.DAY;
@@ -500,8 +653,10 @@ export function BookingCalendar({
           onEventDrop={onEventDrop}
           onEventResize={onEventResize}
           eventPropGetter={(event) => {
-            const ev = event as CalendarEvent;
-            const bg = STATUS_COLOR[ev.status];
+            if ("type" in event && (event as OverflowEvent).type === "overflow") {
+              return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };
+            }
+            const bg = STATUS_COLOR[(event as CalendarEvent).status];
             return {
               className: "cursor-pointer",
               style: { borderColor: bg, padding: 0 },

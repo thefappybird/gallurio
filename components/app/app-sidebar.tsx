@@ -106,11 +106,17 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <div className="grid size-10 shrink-0 place-items-center">
+            <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+              <div className="grid size-7 shrink-0 place-items-center">
                 <UserButton
                   appearance={{
-                    elements: { avatarBox: "!size-10" },
+                    elements: {
+                      rootBox: "!size-7",
+                      userButtonBox: "!size-7",
+                      userButtonTrigger: "!size-7 !p-0",
+                      userButtonOuterIdentifier: "hidden",
+                      avatarBox: "!size-7",
+                    },
                   }}
                 />
               </div>

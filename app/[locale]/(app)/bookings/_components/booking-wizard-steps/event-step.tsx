@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useFieldArray,
   Controller,
@@ -12,6 +12,7 @@ import {
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { differenceInCalendarDays, addDays, format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -76,12 +77,17 @@ function SessionCard({
   const tSessions = useTranslations("app.bookings.sessions");
 
   const startDate = watch(`sessions.${index}.startDate`);
+  const endDate = watch(`sessions.${index}.endDate`);
   const singleDay = watch(`sessions.${index}.singleDay`);
   const allowPastDate = watch(`sessions.${index}.allowPastDate`);
 
   const isPastDate = !!startDate && startDate < todayIso();
   const startMin = allowPastDate ? undefined : todayIso();
   const endMin = startDate || startMin;
+
+  // Track the previous startDate so we can compute the shift delta.
+  const prevStartRef = useRef(startDate);
+  const prevEndRef = useRef(endDate);
 
   // When user picks a past date, auto-enable allowPastDate.
   useEffect(() => {
@@ -90,11 +96,50 @@ function SessionCard({
     }
   }, [isPastDate, allowPastDate, setValue, index]);
 
-  // Lock end-date to start-date when singleDay is on.
+  // Shift end date when start date changes (Issue 4), or lock to start when singleDay is on.
   useEffect(() => {
-    if (singleDay && startDate) {
-      setValue(`sessions.${index}.endDate`, startDate, { shouldDirty: false });
+    const prevStart = prevStartRef.current;
+    const prevEnd = prevEndRef.current;
+    prevStartRef.current = startDate;
+    prevEndRef.current = endDate;
+
+    if (!startDate) return;
+
+    if (singleDay) {
+      // Single-day mode: end date always mirrors start date.
+      setValue(`sessions.${index}.endDate`, startDate, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+      return;
     }
+
+    // Multi-day: if the start date CHANGED and there was a prior start + end,
+    // shift the end date by the same number of calendar days to preserve duration.
+    if (prevStart && prevStart !== startDate && prevEnd) {
+      const durDays = differenceInCalendarDays(
+        new Date(prevEnd),
+        new Date(prevStart)
+      );
+      const newEnd = addDays(new Date(startDate), Math.max(0, durDays));
+      setValue(
+        `sessions.${index}.endDate`,
+        format(newEnd, "yyyy-MM-dd"),
+        { shouldDirty: true, shouldValidate: true }
+      );
+      return;
+    }
+
+    // Fallback: if there's no prior start to compute a duration from but the
+    // end date is now before the new start, bump end forward to match start.
+    if (endDate && endDate < startDate) {
+      setValue(`sessions.${index}.endDate`, startDate, {
+        shouldDirty: true,
+      });
+    }
+  // prevStartRef and prevEndRef are stable refs — they must NOT be in the dep
+  // array or the effect re-runs on every render without a real change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [singleDay, startDate, setValue, index]);
 
   const sessionErrors = errors.sessions?.[index];
@@ -131,13 +176,6 @@ function SessionCard({
             min={startMin}
             {...register(`sessions.${index}.startDate`, { required: true })}
             aria-invalid={sessionErrors?.startDate ? "true" : undefined}
-            onChange={(e) => {
-              setValue(`sessions.${index}.startDate`, e.target.value, { shouldDirty: true });
-              const end = watch(`sessions.${index}.endDate`);
-              if (end && end < e.target.value) {
-                setValue(`sessions.${index}.endDate`, e.target.value, { shouldDirty: true });
-              }
-            }}
           />
           {sessionErrors?.startDate ? (
             <p className="text-xs text-destructive">{t("startAtRequired")}</p>

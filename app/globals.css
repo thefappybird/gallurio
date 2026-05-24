@@ -403,61 +403,13 @@
   opacity: 0.55 !important;
 }
 
-/* Month rows: fixed height capped so rbc's dynamic rowLimit measurement
-   resolves to 1 event per cell, triggering the "+N more" popup for overflow.
-   Height: ~24px date header + ~40px three-line pill + ~18px "+N more" = 82px.
-   The !important is required because rbc's unlayered CSS sets its own height. */
-.rbc-calendar .rbc-month-row {
-  min-height: 82px !important;
-  max-height: 82px !important;
-  overflow: hidden !important;
-}
-
-/* "+N more" link: inverted-scheme pill (foreground bg, background text) so it
-   stands out on both light and dark surfaces without relying on the brand color. */
-.rbc-show-more {
-  @apply bg-foreground text-background text-[10px] font-semibold leading-tight;
-  display: block;
-  padding: 1px 6px;
-  margin: 1px 1px 0;
-}
-.rbc-show-more:hover {
-  background-color: color-mix(in oklch, var(--foreground) 80%, transparent);
-}
-/* "+N more" popup: rbc renders this via react-overlays' Portal so it lives
-   outside `.rbc-calendar` — selectors here must NOT scope under `.rbc-calendar`
-   or they will silently fail to match the portaled popup. Force both bg and
-   text to paired tokens so contrast is preserved in light + dark. The
-   :is(html) prefix bumps specificity above the default `.rbc-overlay` rule
-   AND `!important` guards against any future cascade reorder. */
-:is(html) .rbc-overlay,
-.rbc-overlay {
-  background-color: var(--popover) !important;
-  color: var(--popover-foreground) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground) 15%, transparent) !important;
-  padding: 8px !important;
-}
-:is(html) .rbc-overlay > *,
-.rbc-overlay > * {
-  color: var(--popover-foreground) !important;
-}
-:is(html) .rbc-overlay-header,
-.rbc-overlay-header {
-  background-color: var(--popover) !important;
-  color: var(--popover-foreground) !important;
-  border-bottom: 1px solid var(--border) !important;
-  font-weight: 600;
-  padding: 4px 4px 6px !important;
-  margin: 0 0 4px !important;
-}
-/* Events inside the popup are rbc-event nodes that ALSO get the default
-   rbc styling. Make sure the bg comes from our custom event component
-   (it sets bg inline) and the rbc default doesn't repaint over it. */
-.rbc-overlay .rbc-event {
+/* Overflow event pill: rbc wraps the custom event component in .rbc-event which
+   adds its own background/border. Strip those for the overflow placeholder so
+   only the custom pill renders visually. */
+.rbc-calendar .rbc-event.overflow-event {
   background-color: transparent !important;
   border: none !important;
-  padding: 0 !important;
+  box-shadow: none !important;
 }
 .rbc-agenda-table {
   @apply border-collapse;
