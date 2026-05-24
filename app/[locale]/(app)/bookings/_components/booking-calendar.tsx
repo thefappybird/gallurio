@@ -148,11 +148,61 @@ function formatTimeRange(start: Date, end: Date) {
   return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
+/** Build a candle-styled DOM element on the fly, append to body, return it.
+ *  Used as the HTML5 drag image. Chrome refuses to snapshot offscreen React
+ *  elements reliably, so we create a real on-screen (but visually negligible)
+ *  node, point setDragImage at it, then remove it on the next animation
+ *  frame — after the browser has already captured the bitmap. */
+function buildDragGhost(args: {
+  title: string;
+  clientName: string;
+  timeRange: string;
+  bg: string;
+}): HTMLDivElement {
+  const ghost = document.createElement("div");
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.style.cssText = [
+    "position: fixed",
+    "top: 0",
+    "left: 0",
+    "width: 192px",
+    "height: 40px",
+    "padding: 2px 6px 2px 8px",
+    "display: flex",
+    "flex-direction: column",
+    "justify-content: center",
+    "overflow: hidden",
+    "color: white",
+    "font-family: system-ui, sans-serif",
+    `background-color: ${args.bg}`,
+    "pointer-events: none",
+    // Render on top, transparent so it doesn't flash the user before the
+    // browser snapshots and detaches it. Keep z-index high so it's not
+    // visually clipped by any stacking context behind it during capture.
+    "opacity: 0.999",
+    "z-index: 9999",
+  ].join(";");
+  ghost.innerHTML = `
+    <div style="font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(args.title)}</div>
+    <div style="font-size:10px;line-height:1.2;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(args.clientName)}</div>
+    <div style="font-size:10px;line-height:1.2;opacity:0.85;white-space:nowrap">${escapeHtml(args.timeRange)}</div>
+  `;
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /** A single draggable row inside the overflow popover.
- *  Renders a hidden offscreen "candle" element styled exactly like a
- *  MonthBookingEvent pill, and uses it as the HTML5 drag ghost via
- *  setDragImage — so the user sees a booking candle being dragged, not the
- *  popover row itself. */
+ *  Builds a candle-styled ghost on dragstart, points setDragImage at it,
+ *  then schedules its removal after the browser has captured the bitmap. */
 function OverflowPopoverRow({
   event: e,
   onSelectEvent,
@@ -166,63 +216,53 @@ function OverflowPopoverRow({
   onExternalDragEnd?: () => void;
   onClose: () => void;
 }) {
-  const ghostRef = useRef<HTMLDivElement>(null);
   const bg = STATUS_COLOR[e.status];
   const clientDisplay = e.clientName || "—";
   const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt);
   return (
-    <>
-      {/* Hidden candle used as the drag ghost. Positioned offscreen so the
-          user never sees it directly; the browser snapshots it for the drag
-          preview when setDragImage points here. */}
-      <div
-        ref={ghostRef}
-        aria-hidden
-        className="pointer-events-none fixed -left-[9999px] top-0 flex h-10 w-48 flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white"
-        style={{ backgroundColor: bg }}
-      >
-        <span
-          className="absolute inset-y-0 left-0 w-1"
-          style={{ background: stripeBg(bg) }}
-        />
-        <span className="truncate text-xs font-semibold leading-tight">{e.title}</span>
-        <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
-        <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
-      </div>
-      <button
-        key={e.id}
-        type="button"
-        draggable
-        onDragStart={(evt) => {
-          if (ghostRef.current) {
-            evt.dataTransfer.setDragImage(ghostRef.current, 0, 0);
-          }
-          evt.dataTransfer.effectAllowed = "move";
-          evt.dataTransfer.setData("text/plain", e.bookingId);
-          onExternalDragStart?.(e);
-        }}
-        onDragEnd={() => {
-          onExternalDragEnd?.();
-          onClose();
-        }}
-        onClick={() => {
-          onClose();
-          onSelectEvent?.(e);
-        }}
-        className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
-        style={{ borderLeft: `3px solid ${bg}` }}
-      >
-        <span className="truncate text-xs font-semibold text-foreground w-full">
-          {e.title}
-        </span>
-        <span className="truncate text-[10px] text-muted-foreground w-full">
-          {clientDisplay}
-        </span>
-        <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-          {timeRange}
-        </span>
-      </button>
-    </>
+    <button
+      key={e.id}
+      type="button"
+      draggable
+      onDragStart={(evt) => {
+        const ghost = buildDragGhost({
+          title: e.title,
+          clientName: clientDisplay,
+          timeRange,
+          bg,
+        });
+        evt.dataTransfer.setDragImage(ghost, 0, 0);
+        // Remove after the browser has captured the bitmap.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            ghost.remove();
+          });
+        });
+        evt.dataTransfer.effectAllowed = "move";
+        evt.dataTransfer.setData("text/plain", e.bookingId);
+        onExternalDragStart?.(e);
+      }}
+      onDragEnd={() => {
+        onExternalDragEnd?.();
+        onClose();
+      }}
+      onClick={() => {
+        onClose();
+        onSelectEvent?.(e);
+      }}
+      className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+      style={{ borderLeft: `3px solid ${bg}` }}
+    >
+      <span className="truncate text-xs font-semibold text-foreground w-full">
+        {e.title}
+      </span>
+      <span className="truncate text-[10px] text-muted-foreground w-full">
+        {clientDisplay}
+      </span>
+      <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+        {timeRange}
+      </span>
+    </button>
   );
 }
 
