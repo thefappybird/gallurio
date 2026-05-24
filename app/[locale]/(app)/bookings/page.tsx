@@ -14,6 +14,7 @@ import {
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
+import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
@@ -101,63 +102,28 @@ export default async function BookingsPage({
       const sessionStart = new Date(session.startAt);
       const sessionEnd = new Date(session.endAt);
 
-      const shiftStartHour = sessionStart.getHours();
-      const shiftStartMin = sessionStart.getMinutes();
-      const shiftEndHour = sessionEnd.getHours();
-      const shiftEndMin = sessionEnd.getMinutes();
-
-      const firstDay = new Date(
-        sessionStart.getFullYear(),
-        sessionStart.getMonth(),
-        sessionStart.getDate()
-      );
-      const lastDay = new Date(
-        sessionEnd.getFullYear(),
-        sessionEnd.getMonth(),
-        sessionEnd.getDate()
+      const result = splitSessionIntoCandles(
+        { startAt: sessionStart, endAt: sessionEnd },
+        today
       );
 
-      // Count total days and past days for this session (drives DnD prompt).
-      let totalDays = 0;
-      let pastDays = 0;
-      const counter = new Date(firstDay);
-      while (counter <= lastDay) {
-        totalDays++;
-        if (counter < today) pastDays++;
-        counter.setDate(counter.getDate() + 1);
-      }
-
-      const dayCandles: CalendarEvent[] = [];
-      const cursor = new Date(firstDay);
-      while (cursor <= lastDay) {
-        const dayStart = new Date(cursor);
-        dayStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
-        const dayEnd = new Date(cursor);
-        dayEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
-        // Skip misconfigured days where shift-end <= shift-start.
-        if (dayEnd.getTime() > dayStart.getTime()) {
-          const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
-          dayCandles.push({
-            id: `${bookingId}_s${sessionIdx}_${key}`,
-            bookingId,
-            title: b.title,
-            start: dayStart,
-            end: dayEnd,
-            status: b.status as BookingStatus,
-            clientName: b.clientName,
-            clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
-            rangeStart: firstDay,
-            rangeEnd: lastDay,
-            sessionIndex: sessionIdx,
-            sessionStartAt: sessionStart,
-            sessionEndAt: sessionEnd,
-            sessionDayCount: totalDays,
-            sessionPastDayCount: pastDays,
-          });
-        }
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      return dayCandles;
+      return result.candles.map((candle) => ({
+        id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
+        bookingId,
+        title: b.title,
+        start: candle.start,
+        end: candle.end,
+        status: b.status as BookingStatus,
+        clientName: b.clientName,
+        clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
+        rangeStart: result.rangeStart,
+        rangeEnd: result.rangeEnd,
+        sessionIndex: sessionIdx,
+        sessionStartAt: sessionStart,
+        sessionEndAt: sessionEnd,
+        sessionDayCount: result.totalShiftDays,
+        sessionPastDayCount: result.pastShiftDays,
+      }));
     });
   });
 
