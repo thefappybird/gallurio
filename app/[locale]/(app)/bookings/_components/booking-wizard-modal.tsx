@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -92,6 +92,8 @@ export function BookingWizardModal({
   /** Raw shifts per session index — keyed by startDate string.
    *  Re-fetched whenever any session's startDate changes. */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
+  /** Dates currently being fetched — used to disable Next and show inline loaders. */
+  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
 
   const defaults = useMemo(
     () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
@@ -187,19 +189,23 @@ export function BookingWizardModal({
   } = form;
 
   // Watch all session startDates to know which dates need conflict lookups.
-  const watchedSessions = watch("sessions");
+  // useWatch triggers re-renders on individual subfield changes (e.g. sessions.0.startDate),
+  // whereas watch("sessions") only fires on array-level mutations (append/remove).
+  const watchedSessions = useWatch({ control, name: "sessions" });
   const sessionDates = useMemo(
     () => (watchedSessions ?? []).map((s) => s.startDate),
     [watchedSessions]
   );
 
-  // Fetch shifts for each unique startDate. Cached by date so navigating
-  // back to a date doesn't re-fetch. Clears stale dates automatically.
+  // Fetch shifts for each unique startDate. Clears stale dates automatically.
+  // Marks each date as loading before the fetch and clears it after.
   useEffect(() => {
     const uniqueDates = [...new Set(sessionDates.filter(Boolean))];
     if (uniqueDates.length === 0) return;
 
     let cancelled = false;
+    setLoadingDates(new Set(uniqueDates));
+
     Promise.all(
       uniqueDates.map(async (date) => {
         const params = new URLSearchParams({ date });
@@ -219,10 +225,12 @@ export function BookingWizardModal({
     ).then((entries) => {
       if (cancelled) return;
       setRawShiftsByDate(Object.fromEntries(entries));
+      setLoadingDates(new Set());
     });
 
     return () => {
       cancelled = true;
+      setLoadingDates(new Set());
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(sessionDates), mode, bookingId]);
@@ -523,6 +531,7 @@ export function BookingWizardModal({
                 setValue={setValue}
                 errors={errors}
                 conflictsBySession={conflictsBySession}
+                loadingDates={loadingDates}
               />
             ) : null}
             {!loading && current.id === "pricing" ? (
@@ -583,7 +592,7 @@ export function BookingWizardModal({
                     type="button"
                     size="sm"
                     onClick={nextStep}
-                    disabled={submitting || (STEPS[stepIndex].id === "event" && conflictsBySession.some((c) => c.length > 0))}
+                    disabled={submitting || (STEPS[stepIndex].id === "event" && (loadingDates.size > 0 || conflictsBySession.some((c) => c.length > 0)))}
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
                     variant="brand"
                     className={cn(stepErrors.has(stepIndex) && "animate-shake")}

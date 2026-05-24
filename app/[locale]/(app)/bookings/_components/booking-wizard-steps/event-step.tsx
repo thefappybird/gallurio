@@ -11,7 +11,7 @@ import {
   type UseFormWatch,
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
-import { AlertTriangleIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { differenceInCalendarDays, addDays, format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,8 @@ type Props = {
   /** Per-session conflicts — array parallel to sessions[]. Passed in from the
    *  wizard host so the same data gates the Next button. */
   conflictsBySession: ShiftHit[][];
+  /** Dates currently being fetched — used to show inline loading state per card. */
+  loadingDates: Set<string>;
 };
 
 function todayIso() {
@@ -62,6 +64,7 @@ function SessionCard({
   setValue,
   errors,
   conflicts,
+  loading,
   onRemove,
 }: {
   index: number;
@@ -71,6 +74,7 @@ function SessionCard({
   setValue: UseFormSetValue<WizardValues>;
   errors: FieldErrors<WizardValues>;
   conflicts: ShiftHit[];
+  loading: boolean;
   onRemove: () => void;
 }) {
   const t = useTranslations("app.bookings.wizard.event");
@@ -192,8 +196,16 @@ function SessionCard({
         </div>
       </div>
 
-      {/* Conflicts for this session */}
-      {conflicts.length > 0 ? (
+      {/* Conflict check loading indicator */}
+      {loading ? (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-live="polite">
+          <Loader2Icon className="size-3.5 animate-spin" />
+          <span>{t("checkingConflicts")}</span>
+        </div>
+      ) : null}
+
+      {/* Conflicts for this session — only shown when not loading */}
+      {!loading && conflicts.length > 0 ? (
         <div className="flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
           <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -273,6 +285,7 @@ export function EventStep({
   setValue,
   errors,
   conflictsBySession,
+  loadingDates,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
   const tEvent = useTranslations("app.bookings.eventTypes");
@@ -345,19 +358,23 @@ export function EventStep({
 
       {/* Sessions list */}
       <div className="flex flex-col gap-2">
-        {fields.map((field, i) => (
-          <SessionCard
-            key={field.id}
-            index={i}
-            total={fields.length}
-            register={register}
-            watch={watch}
-            setValue={setValue}
-            errors={errors}
-            conflicts={conflictsBySession[i] ?? []}
-            onRemove={() => remove(i)}
-          />
-        ))}
+        {fields.map((field, i) => {
+          const sessionDate = watch(`sessions.${i}.startDate`);
+          return (
+            <SessionCard
+              key={field.id}
+              index={i}
+              total={fields.length}
+              register={register}
+              watch={watch}
+              setValue={setValue}
+              errors={errors}
+              conflicts={conflictsBySession[i] ?? []}
+              loading={!!(sessionDate && loadingDates.has(sessionDate))}
+              onRemove={() => remove(i)}
+            />
+          );
+        })}
       </div>
 
       {/* Add session button */}

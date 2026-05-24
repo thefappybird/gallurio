@@ -46,7 +46,11 @@
       "go": "Go"
     },
     "bookings": {
-      "wizard": {}
+      "wizard": {
+        "event": {
+          "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…"
+        }
+      }
     },
     "sidebar": {
       "dashboard": "แดชบอร์ด",

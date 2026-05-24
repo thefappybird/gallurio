@@ -368,3 +368,200 @@ describe("conflict overlap formula", () => {
     expect(overlaps("", "17:00", "13:00", "14:00")).toBe(false);
   });
 });
+
+// ── Issue 1A regression: conflict warning fires immediately on date change ────
+//
+// Bug: watch("sessions") in the parent only re-rendered on array mutations
+// (append/remove), not on subfield changes like sessions.0.startDate.
+// Fix: replaced with useWatch({ control, name: "sessions" }) which subscribes
+// at the field level and triggers re-renders on every subfield change.
+describe("BookingWizardModal — Issue 1A: conflict fires immediately on date change", () => {
+  it("shows conflict warning without any extra interaction after date change", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return {
+            ok: true,
+            json: async () => ({ shifts: [CONFLICT_SHIFT] }),
+          };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+
+    // Change start date — conflict fetch fires immediately via useWatch
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: TARGET_DATE } });
+    });
+
+    // Warning must appear without clicking "Add session" or anything else
+    await waitFor(
+      () => {
+        expect(screen.getByText(/shifts already on/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    expect(screen.getByText("Existing Shoot")).toBeInTheDocument();
+  });
+});
+
+// ── Issue 1B regression: warning clears when switching to a conflict-free date ─
+//
+// Bug: the conflicts prop passed to SessionCard stayed stale (old May 24 array)
+// because the parent never re-rendered after a subfield change. The date label
+// updated (SessionCard's own watch fired) but conflicts didn't clear.
+// Fix: useWatch propagates subfield changes to the parent, recomputing
+// conflictsBySession correctly for the new (conflict-free) date.
+describe("BookingWizardModal — Issue 1B: warning clears when date has no conflict", () => {
+  it("removes the conflict warning entirely when the user picks a conflict-free date", async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          callCount += 1;
+          // First call (TARGET_DATE) returns a conflict; second call (CLEAR_DATE) returns none
+          const date = new URL(url, "http://localhost").searchParams.get("date");
+          const shifts = date === TARGET_DATE ? [CONFLICT_SHIFT] : [];
+          return { ok: true, json: async () => ({ shifts }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    const CLEAR_DATE = "2026-05-26";
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate={TARGET_DATE}
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+
+    // Wait for conflict on TARGET_DATE
+    await waitFor(
+      () => {
+        expect(screen.getByText(/shifts already on/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Change to a conflict-free date
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: CLEAR_DATE } });
+    });
+
+    // Warning must disappear entirely — not just update its date label
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/shifts already on/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });
+});
+
+// ── Issue 1C regression: loading state during fetch ───────────────────────────
+//
+// While the shifts-on-date fetch is in flight, SessionCard shows a loading
+// indicator and the Next button is disabled to prevent advancing with stale data.
+describe("BookingWizardModal — Issue 1C: loading state during fetch", () => {
+  it("shows loading indicator and disables Next while fetch is in flight", async () => {
+    let resolveFetch!: (v: unknown) => void;
+    const fetchPromise = new Promise((r) => {
+      resolveFetch = r;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          await fetchPromise;
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+
+    // Change date to trigger a fetch
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: TARGET_DATE } });
+    });
+
+    // While fetch is in flight: loading indicator visible, Next button disabled
+    await waitFor(() => {
+      expect(screen.getByText(/checking for conflicts/i)).toBeInTheDocument();
+    });
+
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    expect(nextBtn).toBeDisabled();
+
+    // Resolve the fetch
+    await act(async () => {
+      resolveFetch(undefined);
+      await fetchPromise;
+    });
+
+    // After fetch: loading indicator gone, Next button enabled (no conflicts)
+    await waitFor(() => {
+      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
+  });
+});

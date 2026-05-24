@@ -11,6 +11,7 @@ import {
 } from "react-big-calendar";
 import withDragAndDrop, {
   type EventInteractionArgs,
+  type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
@@ -94,6 +95,12 @@ type Props = {
   onSelectSlot?: (date: Date, time?: string) => void;
   onEventDrop?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
   onEventResize?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
+  /** Called when the user begins dragging a hidden event from the overflow popover. */
+  onExternalDragStart?: (event: CalendarEvent) => void;
+  /** Called when an external drag ends (dropped or cancelled) so the popover can close. */
+  onExternalDragEnd?: () => void;
+  onDropFromOutside?: (args: DragFromOutsideItemArgs) => void;
+  dragFromOutsideItem?: () => AnyCalendarEvent;
   messages: {
     today: string;
     previous: string;
@@ -142,11 +149,15 @@ function formatTimeRange(start: Date, end: Date) {
 }
 
 /** Month view: three-line stacked — title / client / time range. */
-function MonthBookingEvent({
+export function MonthBookingEvent({
   event,
   onSelectEvent,
+  onExternalDragStart,
+  onExternalDragEnd,
 }: EventProps<AnyCalendarEvent> & {
   onSelectEvent?: (ev: CalendarEvent) => void;
+  onExternalDragStart?: (ev: CalendarEvent) => void;
+  onExternalDragEnd?: () => void;
 }) {
   const ev = event;
   const [open, setOpen] = useState(false);
@@ -175,11 +186,21 @@ function MonthBookingEvent({
                 <button
                   key={e.id}
                   type="button"
+                  draggable
+                  onDragStart={(evt) => {
+                    evt.dataTransfer.setData("text/plain", e.bookingId);
+                    evt.dataTransfer.effectAllowed = "move";
+                    onExternalDragStart?.(e);
+                  }}
+                  onDragEnd={() => {
+                    onExternalDragEnd?.();
+                    setOpen(false);
+                  }}
                   onClick={() => {
                     setOpen(false);
                     onSelectEvent?.(e);
                   }}
-                  className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors"
+                  className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
                   style={{ borderLeft: `3px solid ${bg}` }}
                 >
                   <span className="truncate text-xs font-semibold text-foreground w-full">
@@ -541,6 +562,10 @@ export function BookingCalendar({
   onSelectSlot,
   onEventDrop,
   onEventResize,
+  onExternalDragStart,
+  onExternalDragEnd,
+  onDropFromOutside,
+  dragFromOutsideItem,
   messages,
 }: Props) {
   const [view, setView] = useState<View>(defaultView);
@@ -603,21 +628,25 @@ export function BookingCalendar({
     return events;
   }, [view, events]);
 
-  // Build the components object here so we can bind onSelectEvent to the
-  // MonthBookingEvent overflow popover without making it a closure inside a
-  // module-level constant (which would stale-close over the prop).
+  // Build the components object here so we can bind onSelectEvent and the
+  // external-drag callbacks to MonthBookingEvent without stale closures.
   const calendarComponents = useMemo(
     () => ({
       toolbar: CalendarToolbar,
       month: {
         event: (props: EventProps<AnyCalendarEvent>) => (
-          <MonthBookingEvent {...props} onSelectEvent={onSelectEvent} />
+          <MonthBookingEvent
+            {...props}
+            onSelectEvent={onSelectEvent}
+            onExternalDragStart={onExternalDragStart}
+            onExternalDragEnd={onExternalDragEnd}
+          />
         ),
       },
       week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
       day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
     }),
-    [onSelectEvent]
+    [onSelectEvent, onExternalDragStart, onExternalDragEnd]
   );
 
   return (
@@ -652,6 +681,8 @@ export function BookingCalendar({
           }}
           onEventDrop={onEventDrop}
           onEventResize={onEventResize}
+          onDropFromOutside={onDropFromOutside}
+          dragFromOutsideItem={dragFromOutsideItem ?? undefined}
           eventPropGetter={(event) => {
             if ("type" in event && (event as OverflowEvent).type === "overflow") {
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };

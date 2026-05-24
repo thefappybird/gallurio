@@ -11,6 +11,7 @@ import {
   type AnyCalendarEvent,
 } from "./booking-calendar";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
+import { DropConflictDialog, type ShiftHit } from "./drop-conflict-dialog";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import {
   type Session,
@@ -23,6 +24,19 @@ type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   messages: React.ComponentProps<typeof BookingCalendar>["messages"];
+};
+
+type PendingConflict = {
+  event: CalendarEvent;
+  newStart: Date;
+  newEnd: Date;
+  newSessionStart: Date;
+  newSessionEnd: Date;
+  isDateOnlyDrag: boolean;
+  shiftMs: number;
+  bookingSessions: Session[];
+  conflicts: ShiftHit[];
+  kind: "drop" | "resize";
 };
 
 /**
@@ -50,6 +64,46 @@ type PendingEdit = {
   /** True when this was a month-view date-only drag (no time change). */
   isDateOnlyDrag: boolean;
 } | null;
+
+/** Convert "HH:MM" string to minutes since midnight. Returns null on bad input. */
+function toMinutes(hhmm: string): number | null {
+  const parts = hhmm.split(":");
+  if (parts.length !== 2) return null;
+  const h = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+/** Fetch shifts on a date, excluding a specific booking id. Returns [] on error. */
+async function fetchConflicts(
+  dateStr: string,
+  excludeId: string
+): Promise<ShiftHit[]> {
+  try {
+    const r = await fetch(
+      `/api/bookings/shifts-on-date?date=${dateStr}&excludeId=${encodeURIComponent(excludeId)}`
+    );
+    if (!r.ok) return [];
+    const { shifts } = await r.json();
+    return Array.isArray(shifts) ? (shifts as ShiftHit[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Return shifts that overlap [aStart, aEnd) in minutes since midnight. */
+function overlappingShifts(
+  shifts: ShiftHit[],
+  aStart: number,
+  aEnd: number
+): ShiftHit[] {
+  return shifts.filter((s) => {
+    const bStart = toMinutes(s.shiftStart);
+    const bEnd = toMinutes(s.shiftEnd);
+    return bStart !== null && bEnd !== null && aStart < bEnd && bStart < aEnd;
+  });
+}
 
 function isoDate(d: Date) {
   const y = d.getFullYear();
@@ -203,6 +257,10 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
   const [pendingEdit, setPendingEdit] = useState<PendingEdit>(null);
   const [savingDnd, setSavingDnd] = useState(false);
+  const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(null);
+  // Incrementing this key forces BookingCalendar to remount, flushing rbc's
+  // internal optimistic drag state when the user cancels a conflicted drop.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Keep optimistic state in sync when the server provides new events (e.g.
   // after navigation or after the wizard creates/edits a booking).
@@ -213,6 +271,9 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
       setOptimisticEvents(events);
     }
   }, [events]);
+
+  // Tracks the CalendarEvent currently being dragged out of the overflow popover.
+  const externalDragRef = useRef<CalendarEvent | null>(null);
 
   const openDetail = useCallback(
     (event: CalendarEvent) => {
@@ -364,8 +425,30 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
       const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
-      // Single-day session: fast path — no dialog.
+      // Single-day session: conflict-check then apply (or prompt).
       if (event.sessionDayCount === 1) {
+        const dateStr = isoDate(newSessionStart);
+        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
+        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
+        const shifts = await fetchConflicts(dateStr, event.bookingId);
+        const conflicts = overlappingShifts(shifts, aStart, aEnd);
+
+        if (conflicts.length > 0) {
+          setPendingConflict({
+            event,
+            newStart,
+            newEnd,
+            newSessionStart,
+            newSessionEnd,
+            isDateOnlyDrag,
+            shiftMs,
+            bookingSessions,
+            conflicts,
+            kind: "drop",
+          });
+          return;
+        }
+
         const today = new Date();
         const shifted = shiftSession(
           { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
@@ -423,8 +506,30 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
       const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
-      // Single-day session: fast path — apply immediately.
+      // Single-day session: conflict-check then apply (or prompt).
       if (event.sessionDayCount === 1) {
+        const dateStr = isoDate(newSessionStart);
+        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
+        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
+        const shifts = await fetchConflicts(dateStr, event.bookingId);
+        const conflicts = overlappingShifts(shifts, aStart, aEnd);
+
+        if (conflicts.length > 0) {
+          setPendingConflict({
+            event,
+            newStart,
+            newEnd,
+            newSessionStart,
+            newSessionEnd,
+            isDateOnlyDrag: false,
+            shiftMs: 0,
+            bookingSessions,
+            conflicts,
+            kind: "resize",
+          });
+          return;
+        }
+
         const today = new Date();
         const shifted = shiftSessionTimes(
           { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
@@ -453,13 +558,136 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         kind: "resize",
         bookingSessions,
         touchedDay: startOfDay(event.start),
-        shiftMs: 0, // not used for resize
+        shiftMs: 0,
         newSessionStart,
         newSessionEnd,
         isDateOnlyDrag: false,
       });
     },
     [optimisticEvents, applyResizeSave]
+  );
+
+  // ─── External drag (overflow popover → calendar) ──────────────────────────
+
+  const handleExternalDragStart = useCallback((event: CalendarEvent) => {
+    externalDragRef.current = event;
+  }, []);
+
+  const handleExternalDragEnd = useCallback(() => {
+    externalDragRef.current = null;
+  }, []);
+
+  // dragFromOutsideItem return type matches rbc's TEvent (AnyCalendarEvent).
+  // Return a placeholder OverflowEvent when nothing is being dragged so rbc
+  // doesn't crash — rbc only uses this value for ghost rendering during
+  // drag-over, and never calls onDropFromOutside if it returns falsy.
+  const dragFromOutsideItem = useCallback(() => {
+    return externalDragRef.current ?? {
+      type: "overflow" as const,
+      id: "__external_drag_placeholder__",
+      bookingId: "",
+      title: "",
+      start: new Date(),
+      end: new Date(),
+      status: "booked" as const,
+      clientName: "",
+      clientEmail: null,
+      rangeStart: new Date(),
+      rangeEnd: new Date(),
+      sessionIndex: 0 as const,
+      sessionStartAt: new Date(),
+      sessionEndAt: new Date(),
+      sessionDayCount: 1 as const,
+      sessionPastDayCount: 0 as const,
+      overflowCount: 0,
+      overflowEvents: [],
+    };
+  }, []);
+
+  /**
+   * Called by rbc when the user drops an externally-dragged event onto a
+   * calendar cell. Reuses the same single-day fast-path + conflict-check flow
+   * as handleEventDrop, treating the drop as a date-only shift (month view).
+   */
+  const handleDropFromOutside = useCallback(
+    async ({ start }: { start: string | Date; end: string | Date; allDay: boolean }) => {
+      const event = externalDragRef.current;
+      externalDragRef.current = null;
+      if (!event) return;
+
+      const newStart = new Date(start);
+
+      // External drops from the overflow popover land in month view — always
+      // treat as a date-only drag: preserve session shift times, shift date only.
+      const dayDiff = Math.round(
+        (startOfDay(newStart).getTime() - startOfDay(event.start).getTime()) /
+          86_400_000
+      );
+      const newSessionStart = new Date(event.sessionStartAt);
+      newSessionStart.setDate(newSessionStart.getDate() + dayDiff);
+      const newSessionEnd = new Date(event.sessionEndAt);
+      newSessionEnd.setDate(newSessionEnd.getDate() + dayDiff);
+      const shiftMs = dayDiff * 86_400_000;
+
+      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
+
+      if (event.sessionDayCount === 1) {
+        const dateStr = isoDate(newSessionStart);
+        const aStart = newSessionStart.getHours() * 60 + newSessionStart.getMinutes();
+        const aEnd = newSessionEnd.getHours() * 60 + newSessionEnd.getMinutes();
+        const shifts = await fetchConflicts(dateStr, event.bookingId);
+        const conflicts = overlappingShifts(shifts, aStart, aEnd);
+
+        if (conflicts.length > 0) {
+          setPendingConflict({
+            event,
+            newStart,
+            newEnd: newSessionEnd,
+            newSessionStart,
+            newSessionEnd,
+            isDateOnlyDrag: true,
+            shiftMs,
+            bookingSessions,
+            conflicts,
+            kind: "drop",
+          });
+          return;
+        }
+
+        const today = new Date();
+        const shifted = shiftSession(
+          { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
+          shiftMs,
+          today
+        );
+        await applyDropSave(
+          event,
+          bookingSessions,
+          newSessionStart,
+          newSessionEnd,
+          true,
+          newStart,
+          shifted,
+          shifted.length > 1
+        );
+        return;
+      }
+
+      // Multi-day session: defer to confirmation dialog.
+      setPendingEdit({
+        event,
+        newStart,
+        newEnd: newSessionEnd,
+        kind: "drop",
+        bookingSessions,
+        touchedDay: startOfDay(event.start),
+        shiftMs,
+        newSessionStart,
+        newSessionEnd,
+        isDateOnlyDrag: true,
+      });
+    },
+    [optimisticEvents, applyDropSave]
   );
 
   // ─── Dialog apply handlers ────────────────────────────────────────────────
@@ -604,15 +832,78 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
     }
   }, [pendingEdit, optimisticEvents, t]);
 
+  // ─── Conflict dialog handlers ─────────────────────────────────────────────
+
+  const handleConflictCancel = useCallback(() => {
+    setPendingConflict(null);
+    // Force BookingCalendar to remount so rbc discards its internal optimistic
+    // drag position and the event snaps back to its original slot.
+    setRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleConflictConfirm = useCallback(async () => {
+    if (!pendingConflict) return;
+    const {
+      event,
+      bookingSessions,
+      newSessionStart,
+      newSessionEnd,
+      isDateOnlyDrag,
+      shiftMs,
+      newStart,
+      kind,
+    } = pendingConflict;
+    setPendingConflict(null);
+
+    const today = new Date();
+    if (kind === "drop") {
+      const shifted = shiftSession(
+        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
+        shiftMs,
+        today
+      );
+      await applyDropSave(
+        event,
+        bookingSessions,
+        newSessionStart,
+        newSessionEnd,
+        isDateOnlyDrag,
+        newStart,
+        shifted,
+        shifted.length > 1
+      );
+    } else {
+      const shifted = shiftSessionTimes(
+        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
+        newSessionStart,
+        newSessionEnd,
+        today
+      );
+      await applyResizeSave(
+        event,
+        bookingSessions,
+        newSessionStart,
+        newSessionEnd,
+        shifted,
+        shifted.length > 1
+      );
+    }
+  }, [pendingConflict, applyDropSave, applyResizeSave]);
+
   return (
     <>
       <BookingCalendar
+        key={refreshKey}
         events={optimisticEvents}
         defaultDate={defaultDate}
         onSelectEvent={openDetail}
         onSelectSlot={(date, time) => openAddForDate(date, time)}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventResize}
+        onExternalDragStart={handleExternalDragStart}
+        onExternalDragEnd={handleExternalDragEnd}
+        onDropFromOutside={handleDropFromOutside}
+        dragFromOutsideItem={dragFromOutsideItem}
         messages={messages}
       />
       <SessionEditConfirmDialog
@@ -623,6 +914,14 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         onApplyToSession={handleApplyToSession}
         onCancel={() => setPendingEdit(null)}
         busy={savingDnd}
+      />
+      <DropConflictDialog
+        open={pendingConflict !== null}
+        conflicts={pendingConflict?.conflicts ?? []}
+        proposedStart={pendingConflict?.newSessionStart ?? new Date()}
+        proposedEnd={pendingConflict?.newSessionEnd ?? new Date()}
+        onCancel={handleConflictCancel}
+        onConfirm={handleConflictConfirm}
       />
     </>
   );

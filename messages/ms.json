@@ -46,7 +46,11 @@
       "go": "Go"
     },
     "bookings": {
-      "wizard": {}
+      "wizard": {
+        "event": {
+          "checkingConflicts": "Menyemak konflik…"
+        }
+      }
     },
     "sidebar": {
       "dashboard": "Papan pemuka",
