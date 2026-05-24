@@ -148,6 +148,60 @@ function formatTimeRange(start: Date, end: Date) {
   return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
+/** A single draggable row inside the overflow popover. */
+function OverflowPopoverRow({
+  event: e,
+  onSelectEvent,
+  onExternalDragStart,
+  onExternalDragEnd,
+  onClose,
+}: {
+  event: CalendarEvent;
+  onSelectEvent?: (ev: CalendarEvent) => void;
+  onExternalDragStart?: (ev: CalendarEvent) => void;
+  onExternalDragEnd?: () => void;
+  onClose: () => void;
+}) {
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const bg = STATUS_COLOR[e.status];
+  return (
+    <button
+      ref={rowRef}
+      key={e.id}
+      type="button"
+      draggable
+      onDragStart={(evt) => {
+        if (rowRef.current) {
+          evt.dataTransfer.setDragImage(rowRef.current, 0, 0);
+        }
+        evt.dataTransfer.effectAllowed = "move";
+        evt.dataTransfer.setData("text/plain", e.bookingId);
+        onExternalDragStart?.(e);
+      }}
+      onDragEnd={() => {
+        onExternalDragEnd?.();
+        onClose();
+      }}
+      onClick={() => {
+        onClose();
+        onSelectEvent?.(e);
+      }}
+      className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+      style={{ borderLeft: `3px solid ${bg}` }}
+    >
+      <span className="truncate text-xs font-semibold text-foreground w-full">
+        {e.title}
+      </span>
+      <span className="truncate text-[10px] text-muted-foreground w-full">
+        {e.clientName || "—"}
+      </span>
+      <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+        {formatTimeRange(e.sessionStartAt, e.sessionEndAt)}
+      </span>
+    </button>
+  );
+}
+
 /** Month view: three-line stacked — title / client / time range. */
 export function MonthBookingEvent({
   event,
@@ -180,41 +234,16 @@ export function MonthBookingEvent({
         </PopoverTrigger>
         <PopoverContent side="bottom" align="start" className="w-56 p-2">
           <div className="flex flex-col gap-1">
-            {ev.overflowEvents.map((e) => {
-              const bg = STATUS_COLOR[e.status];
-              return (
-                <button
-                  key={e.id}
-                  type="button"
-                  draggable
-                  onDragStart={(evt) => {
-                    evt.dataTransfer.setData("text/plain", e.bookingId);
-                    evt.dataTransfer.effectAllowed = "move";
-                    onExternalDragStart?.(e);
-                  }}
-                  onDragEnd={() => {
-                    onExternalDragEnd?.();
-                    setOpen(false);
-                  }}
-                  onClick={() => {
-                    setOpen(false);
-                    onSelectEvent?.(e);
-                  }}
-                  className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
-                  style={{ borderLeft: `3px solid ${bg}` }}
-                >
-                  <span className="truncate text-xs font-semibold text-foreground w-full">
-                    {e.title}
-                  </span>
-                  <span className="truncate text-[10px] text-muted-foreground w-full">
-                    {e.clientName || "—"}
-                  </span>
-                  <span className="whitespace-nowrap text-[10px] text-muted-foreground">
-                    {formatTimeRange(e.sessionStartAt, e.sessionEndAt)}
-                  </span>
-                </button>
-              );
-            })}
+            {ev.overflowEvents.map((e) => (
+              <OverflowPopoverRow
+                key={e.id}
+                event={e}
+                onSelectEvent={onSelectEvent}
+                onExternalDragStart={onExternalDragStart}
+                onExternalDragEnd={onExternalDragEnd}
+                onClose={() => setOpen(false)}
+              />
+            ))}
           </div>
         </PopoverContent>
       </Popover>

@@ -50,6 +50,14 @@
         "event": {
           "checkingConflicts": "Sinisiyasat ang mga salungatan…"
         }
+      },
+      "calendar": {
+        "dropConflict": {
+          "title": "Salungatan sa iskedyul noong {date}",
+          "description": "Ang paglipat ng booking na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
+          "cancel": "Kanselahin",
+          "moveAnyway": "Ialpat pa rin"
+        }
       }
     },
     "sidebar": {

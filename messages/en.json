@@ -203,6 +203,14 @@
         "thisDayOnlyOnPast": "Cannot edit a past day",
         "updateError": "Failed to update booking"
       },
+      "calendar": {
+        "dropConflict": {
+          "title": "Schedule conflict on {date}",
+          "description": "Moving this booking creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
+          "cancel": "Cancel",
+          "moveAnyway": "Move anyway"
+        }
+      },
       "sessions": {
         "label": "Session {n}",
         "add": "Add session",

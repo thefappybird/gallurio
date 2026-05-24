@@ -50,6 +50,14 @@
         "event": {
           "checkingConflicts": "Menyemak konflik…"
         }
+      },
+      "calendar": {
+        "dropConflict": {
+          "title": "Konflik jadual pada {date}",
+          "description": "Memindahkan tempahan ini menciptakan pertindihan dengan satu atau lebih syif sedia ada. Anda boleh memindahkannya atau membatalkan.",
+          "cancel": "Batal",
+          "moveAnyway": "Pindahkan sekaligus"
+        }
       }
     },
     "sidebar": {

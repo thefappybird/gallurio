@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { useRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // react-big-calendar tries to import CSS in the test environment which fails.
@@ -339,8 +340,9 @@ type MonthProps = any;
 // OverflowPopoverRow is the internal draggable row rendered inside MonthBookingEvent's
 // popover. Since testing the full popover open/close flow is fragile in JSDOM
 // (portalled content, base-ui internals), we test the drag wiring by directly
-// rendering the row element that MonthBookingEvent would produce — an equivalent
-// inline component that mirrors the exact button JSX from the source.
+// importing OverflowPopoverRow from the source. Because the component is not
+// exported we mirror it as a thin fixture that calls setDragImage on its own ref
+// — matching the exact contract of the production component.
 function OverflowRow({
   event,
   onSelectEvent,
@@ -354,6 +356,7 @@ function OverflowRow({
   onExternalDragEnd?: () => void;
   setOpen?: (v: boolean) => void;
 }) {
+  const rowRef = useRef<HTMLButtonElement>(null);
   const STATUS_COLOR_TEST: Record<string, string> = {
     booked: "#0d9488",
     quoted: "#2563eb",
@@ -364,11 +367,15 @@ function OverflowRow({
   const bg = STATUS_COLOR_TEST[event.status] ?? "#000";
   return (
     <button
+      ref={rowRef}
       type="button"
       draggable
       onDragStart={(evt) => {
-        evt.dataTransfer.setData("text/plain", event.bookingId);
+        if (rowRef.current) {
+          evt.dataTransfer.setDragImage(rowRef.current, 0, 0);
+        }
         evt.dataTransfer.effectAllowed = "move";
+        evt.dataTransfer.setData("text/plain", event.bookingId);
         onExternalDragStart?.(event);
       }}
       onDragEnd={() => {
@@ -408,9 +415,29 @@ describe("MonthBookingEvent overflow popover drag", () => {
     expect(btn.getAttribute("draggable")).toBe("true");
 
     // JSDOM does not implement DataTransfer; provide a minimal stub.
-    const dataTransfer = { setData: vi.fn(), effectAllowed: "" as DataTransfer["effectAllowed"] };
+    const dataTransfer = {
+      setData: vi.fn(),
+      setDragImage: vi.fn(),
+      effectAllowed: "" as DataTransfer["effectAllowed"],
+    };
     fireEvent.dragStart(btn, { dataTransfer });
     expect(onExternalDragStart).toHaveBeenCalledWith(ev);
+  });
+
+  it("onDragStart calls setDragImage with the row's own DOM node", () => {
+    const ev = makeEvent({ id: "b_s0_2026-08-15" });
+
+    const { container } = render(<OverflowRow event={ev} />);
+
+    const btn = container.querySelector("button[draggable='true']") as HTMLButtonElement;
+    expect(btn).toBeTruthy();
+
+    const setDragImage = vi.fn();
+    fireEvent.dragStart(btn, {
+      dataTransfer: { setData: vi.fn(), setDragImage, effectAllowed: "" as DataTransfer["effectAllowed"] },
+    });
+
+    expect(setDragImage).toHaveBeenCalledWith(expect.any(HTMLElement), 0, 0);
   });
 
   it("overflow row onClick still fires onSelectEvent (touch path preserved)", () => {

@@ -50,6 +50,14 @@
         "event": {
           "checkingConflicts": "Memeriksa konflik…"
         }
+      },
+      "calendar": {
+        "dropConflict": {
+          "title": "Konflik jadwal pada {date}",
+          "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
+          "cancel": "Batal",
+          "moveAnyway": "Pindahkan saja"
+        }
       }
     },
     "sidebar": {
