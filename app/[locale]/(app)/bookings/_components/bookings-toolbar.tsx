@@ -131,7 +131,12 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
         <Button
           size="sm"
           className="bg-brand text-brand-foreground hover:bg-brand/90"
-          render={<Link href={`${pathname}?add=1`} />}
+          render={<Link href={(() => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("add", "1");
+            const qs = params.toString();
+            return qs ? `${pathname}?${qs}` : pathname;
+          })()} />}
         >
           <PlusIcon className="size-4" />
           {t("add")}

@@ -403,6 +403,16 @@
   opacity: 0.55 !important;
 }
 
+/* Month rows: fixed height capped so rbc's dynamic rowLimit measurement
+   resolves to 1 event per cell, triggering the "+N more" popup for overflow.
+   Height: ~24px date header + ~40px three-line pill + ~18px "+N more" = 82px.
+   The !important is required because rbc's unlayered CSS sets its own height. */
+.rbc-calendar .rbc-month-row {
+  min-height: 82px !important;
+  max-height: 82px !important;
+  overflow: hidden !important;
+}
+
 /* "+N more" link: inverted-scheme pill (foreground bg, background text) so it
    stands out on both light and dark surfaces without relying on the brand color. */
 .rbc-show-more {

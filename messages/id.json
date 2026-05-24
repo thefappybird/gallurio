@@ -46,14 +46,7 @@
       "go": "Go"
     },
     "bookings": {
-      "wizard": {
-        "conflictDialog": {
-          "title": "Konflik penjadwalan",
-          "description": "Tanggal di bawah tumpang tindih dengan pemesanan yang sudah ada. Anda dapat kembali dan menyesuaikan, atau lanjutkan saja.",
-          "proceed": "Lanjutkan saja",
-          "cancel": "Kembali dan edit"
-        }
-      }
+      "wizard": {}
     },
     "sidebar": {
       "dashboard": "Dasbor",

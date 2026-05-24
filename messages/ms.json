@@ -46,14 +46,7 @@
       "go": "Go"
     },
     "bookings": {
-      "wizard": {
-        "conflictDialog": {
-          "title": "Konflik penjadualan",
-          "description": "Tarikh di bawah bertindih dengan tempahan sedia ada. Anda boleh kembali dan menyesuaikan, atau teruskan saja.",
-          "proceed": "Teruskan saja",
-          "cancel": "Kembali dan sunting"
-        }
-      }
+      "wizard": {}
     },
     "sidebar": {
       "dashboard": "Papan pemuka",

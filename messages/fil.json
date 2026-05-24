@@ -46,14 +46,7 @@
       "go": "Go"
     },
     "bookings": {
-      "wizard": {
-        "conflictDialog": {
-          "title": "May tagpuan sa iskedyul",
-          "description": "Ang mga petsa sa ibaba ay tumatagos sa mga umiiral nang booking. Maaari kang bumalik at mag-adjust, o magpatuloy pa rin.",
-          "proceed": "Magpatuloy pa rin",
-          "cancel": "Bumalik at mag-edit"
-        }
-      }
+      "wizard": {}
     },
     "sidebar": {
       "dashboard": "Dashboard",

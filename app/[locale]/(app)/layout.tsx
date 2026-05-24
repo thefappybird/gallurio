@@ -1,5 +1,5 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cookies } from "next/headers";
@@ -9,7 +9,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireOrg();
+  const { workspace } = await requireOrg();
 
   const cookieStore = await cookies();
   const sidebarState = cookieStore.get("sidebar_state");
@@ -17,10 +17,12 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <AppSidebar
+        workspaceName={workspace.name}
+        workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
+      />
       <div className="flex flex-1 flex-col min-w-0">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-4" />
         </header>
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>

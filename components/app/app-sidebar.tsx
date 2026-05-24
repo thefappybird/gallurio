@@ -11,7 +11,7 @@ import {
   UsersIcon,
   BookOpenIcon,
 } from "lucide-react";
-import { UserButton, OrganizationSwitcher, SignOutButton } from "@clerk/nextjs";
+import { UserButton, SignOutButton } from "@clerk/nextjs";
 import {
   Sidebar,
   SidebarContent,
@@ -23,8 +23,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
+
 const NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
@@ -33,24 +35,35 @@ const NAV = [
   { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
 ];
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  workspaceName: string;
+  workspaceLogoUrl?: string | null;
+};
+
+export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
 
+  const initial = workspaceName[0]?.toUpperCase() ?? "W";
+
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="pb-2">
-        <div className="px-2 py-1">
-          <OrganizationSwitcher
-            hidePersonal
-            appearance={{
-              elements: {
-                rootBox: "w-full",
-                organizationSwitcherTrigger:
-                  "w-full justify-start px-2 py-1.5 text-sm font-medium hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              },
-            }}
-          />
+      <SidebarHeader className="pb-0">
+        <div className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0">
+          <Link
+            href="/settings"
+            className="grid size-10 shrink-0 place-items-center border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm overflow-hidden"
+          >
+            {workspaceLogoUrl ? (
+              <img src={workspaceLogoUrl} alt="" className="size-full object-cover" />
+            ) : (
+              initial
+            )}
+          </Link>
+          <span className="truncate text-sm font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            {workspaceName}
+          </span>
+          <SidebarTrigger className="ml-auto size-8 shrink-0 group-data-[collapsible=icon]:ml-0" />
         </div>
       </SidebarHeader>
 
@@ -69,7 +82,7 @@ export function AppSidebar() {
                       isActive={pathname === href || pathname.startsWith(href + "/")}
                       tooltip={label}
                     >
-                      <Icon />
+                      <Icon className="size-5! shrink-0" />
                       <span>{label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -88,17 +101,19 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton render={<Link href="/settings" />} tooltip={t("settings")}>
-              <SettingsIcon />
+              <SettingsIcon className="size-5! shrink-0" />
               <span>{t("settings")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5">
-              <UserButton
-                appearance={{
-                  elements: { avatarBox: "size-6" },
-                }}
-              />
+              <div className="grid size-10 shrink-0 place-items-center">
+                <UserButton
+                  appearance={{
+                    elements: { avatarBox: "!size-10" },
+                  }}
+                />
+              </div>
               <span className="text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
                 {t("account")}
               </span>
@@ -107,7 +122,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SignOutButton redirectUrl="/sign-in">
               <SidebarMenuButton tooltip={t("logOut")}>
-                <LogOutIcon />
+                <LogOutIcon className="size-5 shrink-0" />
                 <span>{t("logOut")}</span>
               </SidebarMenuButton>
             </SignOutButton>

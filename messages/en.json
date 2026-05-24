@@ -276,12 +276,6 @@
         },
         "review": {
           "intro": "Quick check — confirm everything looks right before you save."
-        },
-        "conflictDialog": {
-          "title": "Scheduling conflicts",
-          "description": "The dates below overlap existing bookings. You can go back and adjust, or proceed anyway.",
-          "proceed": "Proceed anyway",
-          "cancel": "Go back and edit"
         }
       }
     },

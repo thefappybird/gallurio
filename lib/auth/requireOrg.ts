@@ -1,6 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/db/mongoose";
+import { routing } from "@/lib/i18n/routing";
+import { getLocale } from "next-intl/server";
 import { User, Workspace, type WorkspaceDoc, type UserDoc } from "@/lib/db/models";
 
 export type OrgContext = {
@@ -10,10 +12,15 @@ export type OrgContext = {
   workspace: WorkspaceDoc;
 };
 
+function localized(href: string, locale: string): string {
+  return locale === routing.defaultLocale ? href : `/${locale}${href}`;
+}
+
 export async function requireOrg(opts: { allowDuringOnboarding?: boolean } = {}): Promise<OrgContext> {
   const session = await auth();
-  if (!session.userId) redirect("/sign-in");
-  if (!session.orgId) redirect("/onboarding");
+  const locale = await getLocale();
+  if (!session.userId) redirect(localized("/sign-in", locale));
+  if (!session.orgId) redirect(localized("/onboarding", locale));
 
   await connectDB();
 
@@ -24,10 +31,10 @@ export async function requireOrg(opts: { allowDuringOnboarding?: boolean } = {})
     Workspace.findOne({ clerkOrgId: session.orgId }).lean<WorkspaceDoc>(),
   ]);
 
-  if (!workspace) redirect("/onboarding");
+  if (!workspace) redirect(localized("/onboarding", locale));
 
   if (!opts.allowDuringOnboarding) {
-    if (!user?.onboardingCompletedAt) redirect("/onboarding");
+    if (!user?.onboardingCompletedAt) redirect(localized("/onboarding", locale));
   }
 
   const role: "owner" | "staff" =
