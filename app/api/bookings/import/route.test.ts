@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client } from "@/lib/db/models";
+import { Booking, Client, Transaction } from "@/lib/db/models";
 
 const WS_ID = new Types.ObjectId();
 
@@ -141,5 +141,88 @@ describe("POST /api/bookings/import", () => {
     const rows = Array.from({ length: 501 }, () => VALID_ROW);
     const res = await callImport(rows);
     expect(res.status).toBe(400);
+  });
+
+  it("errors include kind, row, and field fields", async () => {
+    const noTitle = { ...VALID_ROW, title: undefined };
+    const res = await callImport([noTitle]);
+    const body = await res.json();
+    const err = body.errors[0];
+    expect(err.kind).toBe("validation");
+    expect(err.row).toBeDefined();
+  });
+
+  it("includes skipped count equal to errors length", async () => {
+    const badRow = { clientName: "X", startAt: "bad-date" };
+    const res = await callImport([VALID_ROW, badRow]);
+    const body = await res.json();
+    expect(body.skipped).toBe(body.errors.length);
+    expect(body.skipped).toBe(1);
+  });
+
+  it("existing client gets transaction appended and summaries bumped", async () => {
+    await Client.create({
+      workspaceId: WS_ID,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      source: "manual",
+      totalSpent: 0,
+      bookingsCount: 0,
+    });
+
+    await callImport([VALID_ROW]);
+
+    const client = await Client.findOne({ workspaceId: WS_ID, email: "jane@example.com" }).lean();
+    expect(client?.bookingsCount).toBe(1);
+    expect(client?.totalSpent).toBe(10_000);
+    expect(client?.transactions).toHaveLength(1);
+
+    const tx = await Transaction.findOne({ workspaceId: WS_ID }).lean();
+    expect(tx?.type).toBe("deposit");
+    expect(tx?.amount).toBe(10_000);
+  });
+
+  it("duplicate email in same import results in one client with N transactions", async () => {
+    const row2 = {
+      ...VALID_ROW,
+      title: "Smith Engagement",
+      amountTotal: 30000,
+      amountDeposit: 0,
+    };
+    await callImport([VALID_ROW, row2]);
+
+    const client = await Client.findOne({ workspaceId: WS_ID }).lean();
+    expect(client?.bookingsCount).toBe(2);
+    expect(client?.transactions).toHaveLength(2);
+
+    const txs = await Transaction.find({ workspaceId: WS_ID });
+    expect(txs).toHaveLength(2);
+  });
+
+  it("invalid row increments skipped and writes no booking or transaction", async () => {
+    const res = await callImport([{ title: "", clientName: "", startAt: "bad" }]);
+    const body = await res.json();
+    expect(body.skipped).toBe(1);
+    expect(body.created).toBe(0);
+
+    const bookings = await Booking.find({ workspaceId: WS_ID });
+    expect(bookings).toHaveLength(0);
+
+    const txs = await Transaction.find({ workspaceId: WS_ID });
+    expect(txs).toHaveLength(0);
+  });
+
+  it("negative amountTotal fails validation (schema enforces non-negative)", async () => {
+    const refundRow = {
+      ...VALID_ROW,
+      amountTotal: -5000,
+      amountDeposit: 0,
+    };
+    const res = await callImport([refundRow]);
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0].kind).toBe("validation");
+    expect(body.skipped).toBe(1);
   });
 });

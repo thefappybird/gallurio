@@ -28,9 +28,10 @@ import {
   Inquiry,
   GalleryCollection,
   GalleryItem,
-  Transaction,
+
   ActivityLog,
 } from "./models";
+import { recordBookingForClient } from "./clientTransactions";
 
 const DEMO_WORKSPACES = [
   {
@@ -248,43 +249,20 @@ async function seedWorkspace(
 
   const bookings = await Booking.insertMany(bookingPayloads);
 
-  // 30 transactions across trailing 90 days, mix of types and methods.
-  const txPayloads: Array<{
-    workspaceId: mongoose.Types.ObjectId;
-    bookingId: mongoose.Types.ObjectId;
-    clientId: mongoose.Types.ObjectId;
-    amount: number;
-    currency: string;
-    type: "deposit" | "balance" | "refund" | "subscription" | "other";
-    method: "hitpay" | "cash" | "transfer" | "other";
-    paidAt: Date;
-  }> = [];
-  const paidBookings = bookings.filter(
-    (b) => b.status === "completed" || b.status === "booked"
-  );
-  for (let i = 0; i < 30; i += 1) {
-    const b = pick(paidBookings);
-    const dayDelta = range(-90, 0);
-    const isRefund = rand() < 0.05;
-    const isDeposit = rand() < 0.5;
-    const type = isRefund ? "refund" : isDeposit ? "deposit" : "balance";
-    const amount = isRefund
-      ? -Math.floor(b.amount.deposit / 2)
-      : isDeposit
-        ? b.amount.deposit
-        : b.amount.total - b.amount.deposit;
-    txPayloads.push({
+  // recordBookingForClient creates Transaction docs and updates client summaries
+  // — replaces the old explicit Transaction.insertMany.
+  for (const b of bookings) {
+    await recordBookingForClient({
       workspaceId: workspace._id,
-      bookingId: b._id,
       clientId: b.clientId,
-      amount,
-      currency: workspace.currency,
-      type,
-      method: pick(["hitpay", "cash", "transfer"] as const),
-      paidAt: dayOffset(dayDelta),
+      booking: {
+        _id: b._id,
+        amount: b.amount,
+        firstSessionStart: b.firstSessionStart,
+      },
+      source: "seed",
     });
   }
-  await Transaction.insertMany(txPayloads);
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
@@ -375,7 +353,7 @@ async function seedWorkspace(
   await ActivityLog.insertMany(activityPayloads);
 
   console.log(
-    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings, ${txPayloads.length} transactions, ${inquiryPayloads.length} inquiries`
+    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings (+ transactions), ${inquiryPayloads.length} inquiries`
   );
   return workspace;
 }

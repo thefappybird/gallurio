@@ -1,5 +1,26 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
+const clientTransactionEntrySchema = new Schema(
+  {
+    bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true },
+    transactionId: { type: Schema.Types.ObjectId, ref: "Transaction", default: null },
+    amount: { type: Number, required: true },
+    currency: { type: String, default: "PHP" },
+    type: {
+      type: String,
+      enum: ["deposit", "balance", "refund", "subscription", "other", "import"],
+      required: true,
+    },
+    occurredAt: { type: Date, required: true },
+    source: {
+      type: String,
+      enum: ["manual", "import", "webhook", "seed"],
+      required: true,
+    },
+  },
+  { _id: false }
+);
+
 const clientSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
@@ -15,6 +36,10 @@ const clientSchema = new Schema(
     totalSpent: { type: Number, default: 0 },
     lastBookingAt: { type: Date, default: null },
     notes: { type: String, default: "" },
+    transactions: { type: [clientTransactionEntrySchema], default: [] },
+    lastPaymentAmount: { type: Number, default: 0 },
+    lastPaymentDate: { type: Date, default: null },
+    bookingsCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

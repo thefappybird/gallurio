@@ -64,4 +64,29 @@ describe("parseCsv", () => {
     const { rows } = parseCsv("title,clientName,notes\nWedding,Jane");
     expect(rows[0].notes).toBe("");
   });
+
+  it("strips leading # comment lines before parsing headers", () => {
+    const csv =
+      "# Required: clientName, startAt. clientEmail optional but used to dedupe.\n" +
+      "title,clientName\n" +
+      "Smith Wedding,Jane\n";
+    const { headers, rows } = parseCsv(csv);
+    expect(headers).toEqual(["title", "clientName"]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].title).toBe("Smith Wedding");
+  });
+
+  it("strips multiple # comment lines in sequence", () => {
+    const csv = "# line 1\n# line 2\ntitle,clientName\nWedding,Bob\n";
+    const { headers, rows } = parseCsv(csv);
+    expect(headers).toEqual(["title", "clientName"]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].clientName).toBe("Bob");
+  });
+
+  it("does not strip # values that appear inside data rows", () => {
+    const csv = "title,clientName\nMy #Wedding,Jane\n";
+    const { rows } = parseCsv(csv);
+    expect(rows[0].title).toBe("My #Wedding");
+  });
 });

@@ -12,7 +12,7 @@ export type ParsedCsv = {
  * Returns normalized header names and one CsvRow object per data line.
  */
 export function parseCsv(text: string): ParsedCsv {
-  const rawLines = splitCsvLines(text);
+  const rawLines = splitCsvLines(text).filter((l) => !l.trimStart().startsWith("#"));
   if (rawLines.length === 0) return { headers: [], rows: [] };
 
   const rawHeaders = parseFields(rawLines[0]);

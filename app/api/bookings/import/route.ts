@@ -4,12 +4,22 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
+import { recordBookingForClient } from "@/lib/db/clientTransactions";
 
 export const runtime = "nodejs";
 
+export type ImportErrorEntry = {
+  index: number;
+  row: Record<string, unknown>;
+  field?: string;
+  kind: "validation" | "lookup" | "server";
+  message: string;
+};
+
 export type ImportResult = {
   created: number;
-  errors: { index: number; message: string }[];
+  skipped: number;
+  errors: ImportErrorEntry[];
 };
 
 export async function POST(req: Request) {
@@ -26,7 +36,7 @@ export async function POST(req: Request) {
   await connectDB();
 
   const created: number[] = [];
-  const errors: { index: number; message: string }[] = [];
+  const errors: ImportErrorEntry[] = [];
 
   // Cache clients found/created within this import so duplicate email rows
   // reuse the same client rather than creating duplicates.
@@ -34,12 +44,21 @@ export async function POST(req: Request) {
   const defaultCurrency = ctx.workspace.currency ?? "PHP";
 
   for (let i = 0; i < json.rows.length; i++) {
-    const raw = json.rows[i];
+    const raw: Record<string, unknown> = json.rows[i];
 
     const parsed = bookingImportRowSchema.safeParse(raw);
     if (!parsed.success) {
-      const msg = parsed.error.errors[0]?.message ?? "Invalid row";
-      errors.push({ index: i, message: msg });
+      const allMessages = parsed.error.errors
+        .map((e) => `${e.path.join(".") || "row"}: ${e.message}`)
+        .join("; ");
+      const firstField = parsed.error.errors[0]?.path?.[0]?.toString();
+      errors.push({
+        index: i,
+        row: raw,
+        field: firstField,
+        kind: "validation",
+        message: allMessages,
+      });
       continue;
     }
 
@@ -112,14 +131,37 @@ export async function POST(req: Request) {
         action: "created",
       });
 
+      try {
+        await recordBookingForClient({
+          workspaceId: ctx.workspace._id,
+          clientId,
+          booking: {
+            _id: booking._id,
+            amount: booking.amount!,
+            firstSessionStart: booking.firstSessionStart,
+          },
+          source: "import",
+        });
+      } catch (err) {
+        console.error("[bookings.import] enrich client failed", err);
+      }
+
       created.push(i);
-    } catch {
-      errors.push({ index: i, message: "Server error creating booking" });
+    } catch (err) {
+      console.error("[bookings.import] booking create failed", { index: i, err });
+      errors.push({
+        index: i,
+        row: raw,
+        kind: "server",
+        message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
+      });
     }
   }
 
+  const skipped = errors.length;
+
   return NextResponse.json(
-    { created: created.length, errors } satisfies ImportResult,
+    { created: created.length, skipped, errors } satisfies ImportResult,
     { status: errors.length === json.rows.length ? 422 : 200 }
   );
 }

@@ -3,6 +3,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog } from "@/lib/db/models";
 import { bookingCreateSchema } from "@/lib/validators/booking";
+import { recordBookingForClient } from "@/lib/db/clientTransactions";
 
 export const runtime = "nodejs";
 
@@ -81,6 +82,21 @@ export async function POST(req: Request) {
     entityId: booking._id,
     action: "created",
   });
+
+  try {
+    await recordBookingForClient({
+      workspaceId: ctx.workspace._id,
+      clientId,
+      booking: {
+        _id: booking._id,
+        amount: booking.amount!,
+        firstSessionStart: booking.firstSessionStart,
+      },
+      source: "manual",
+    });
+  } catch (err) {
+    console.error("[bookings] enrich client failed", err);
+  }
 
   return NextResponse.json({ id: booking._id.toString() }, { status: 201 });
 }

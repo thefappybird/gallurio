@@ -9,7 +9,7 @@ const transactionSchema = new Schema(
     currency: { type: String, default: "PHP" },
     type: {
       type: String,
-      enum: ["deposit", "balance", "refund", "subscription", "other"],
+      enum: ["deposit", "balance", "refund", "subscription", "other", "import"],
       required: true,
     },
     method: {
