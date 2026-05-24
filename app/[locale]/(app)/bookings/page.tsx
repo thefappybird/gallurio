@@ -95,12 +95,7 @@ export default async function BookingsPage({
   // date so each candle is unique and stable.
   const events: CalendarEvent[] = bookings.flatMap((b) => {
     const bookingId = b._id.toString();
-    // Coerce legacy docs (pre-migration) that still carry flat startAt/endAt.
-    const sessions: { startAt: Date; endAt: Date }[] = (b.sessions as { startAt: Date; endAt: Date }[] | undefined)?.length
-      ? (b.sessions as { startAt: Date; endAt: Date }[])
-      : (b as { startAt?: Date; endAt?: Date }).startAt
-      ? [{ startAt: (b as { startAt: Date }).startAt, endAt: (b as { startAt: Date; endAt?: Date }).endAt ?? (b as { startAt: Date }).startAt }]
-      : [];
+    const sessions = b.sessions as { startAt: Date; endAt: Date }[];
 
     return sessions.flatMap((session, sessionIdx) => {
       const sessionStart = new Date(session.startAt);
@@ -167,17 +162,12 @@ export default async function BookingsPage({
   });
 
   const rows: BookingRow[] = bookings.map((b) => {
-    const bAny = b as { startAt?: Date; endAt?: Date };
-    const rowSessions: { startAt: Date; endAt: Date }[] = (b.sessions as { startAt: Date; endAt: Date }[] | undefined)?.length
-      ? (b.sessions as { startAt: Date; endAt: Date }[])
-      : bAny.startAt
-      ? [{ startAt: bAny.startAt, endAt: bAny.endAt ?? bAny.startAt }]
-      : [];
+    const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
     return {
       id: b._id.toString(),
       title: b.title,
       clientName: b.clientName,
-      sessions: rowSessions.map((s) => ({
+      sessions: bSessions.map((s) => ({
         startAt: new Date(s.startAt).toISOString(),
         endAt: new Date(s.endAt).toISOString(),
       })),

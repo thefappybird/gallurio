@@ -1,12 +1,13 @@
 "use client";
 
-import { forwardRef, useCallback, useMemo, useRef, useState } from "react";
+import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   dateFnsLocalizer,
   Views,
   type View,
   type EventProps,
+  type ToolbarProps,
 } from "react-big-calendar";
 import withDragAndDrop, {
   type EventInteractionArgs,
@@ -273,159 +274,161 @@ const HoverableDayWrapper = forwardRef<
 
 // ─── Custom toolbar ───────────────────────────────────────────────────────────
 
-type RbcToolbarProps = {
-  date: Date;
-  label: string;
-  onNavigate: (action: "PREV" | "TODAY" | "NEXT" | "DATE", date?: Date) => void;
-  onView: (view: View) => void;
-  view: View;
-  views: View[];
+type CalendarToolbarCtxValue = {
+  messages: Props["messages"];
+  onScrollToHour: (h: number) => void;
 };
 
 /**
- * Factory that produces a stable custom rbc toolbar component. The factory
- * captures `messages` and `onScrollToHour` in a closure so the component can
- * use them without receiving them through rbc's ToolbarProps.
- *
- * The resulting component is memoized with [messages, onScrollToHour] deps so
- * rbc only remounts the toolbar when those stable refs actually change.
+ * Context that provides messages and the imperative scroll handler to the
+ * toolbar component. Using context (vs. a factory closure) keeps the toolbar
+ * a stable module-level component so rbc never remounts it.
  */
-function makeCalendarToolbar(
-  messages: Props["messages"],
-  onScrollToHour: (h: number) => void
-) {
-  return function CalendarToolbar({
-    label,
-    onNavigate,
-    onView,
-    view,
-    views,
-  }: RbcToolbarProps) {
-    const [jumpDate, setJumpDate] = useState("");
-    const [jumpTime, setJumpTime] = useState("");
-    const isTimeView = view === Views.WEEK || view === Views.DAY;
+const CalendarToolbarCtx = createContext<CalendarToolbarCtxValue | null>(null);
 
-    const viewLabel: Record<string, string> = {
-      month: messages.month,
-      week: messages.week,
-      day: messages.day,
-    };
+function CalendarToolbar({
+  label,
+  onNavigate,
+  onView,
+  view,
+}: ToolbarProps<CalendarEvent>) {
+  const ctx = useContext(CalendarToolbarCtx);
+  const [jumpDate, setJumpDate] = useState("");
+  const [jumpTime, setJumpTime] = useState("");
 
-    function handleGo() {
-      if (jumpDate) {
-        const [y, m, d] = jumpDate.split("-").map(Number);
-        // Use noon local time to avoid date-shifting from UTC offset.
-        onNavigate("DATE", new Date(y, m - 1, d, 12, 0, 0));
-      }
-      if (jumpTime && isTimeView) {
-        const [h] = jumpTime.split(":").map(Number);
-        onScrollToHour(h);
-      }
+  if (!ctx) return null;
+  const { messages, onScrollToHour } = ctx;
+  const isTimeView = view === Views.WEEK || view === Views.DAY;
+
+  const viewLabel: Record<string, string> = {
+    month: messages.month,
+    week: messages.week,
+    day: messages.day,
+  };
+
+  function handleGo() {
+    if (jumpDate) {
+      const [y, m, d] = jumpDate.split("-").map(Number);
+      // Use noon local time to avoid date-shifting from UTC offset.
+      onNavigate("DATE", new Date(y, m - 1, d, 12, 0, 0));
     }
+    if (jumpTime && isTimeView) {
+      const [h] = jumpTime.split(":").map(Number);
+      onScrollToHour(h);
+    }
+  }
 
-    return (
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
-        {/* Navigation */}
-        <div className="flex items-center">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="min-h-11"
-            onClick={() => onNavigate("PREV")}
-            aria-label={messages.previous}
-          >
-            <ChevronLeftIcon className="size-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 border-x-0"
-            onClick={() => onNavigate("TODAY")}
-          >
-            {messages.today}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="min-h-11"
-            onClick={() => onNavigate("NEXT")}
-            aria-label={messages.next}
-          >
-            <ChevronRightIcon className="size-4" />
-          </Button>
-        </div>
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
+      {/* Navigation */}
+      <div className="flex items-center">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="min-h-11"
+          onClick={() => onNavigate("PREV")}
+          aria-label={messages.previous}
+        >
+          <ChevronLeftIcon className="size-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 border-x-0"
+          onClick={() => onNavigate("TODAY")}
+        >
+          {messages.today}
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className="min-h-11"
+          onClick={() => onNavigate("NEXT")}
+          aria-label={messages.next}
+        >
+          <ChevronRightIcon className="size-4" />
+        </Button>
+      </div>
 
-        {/* Date label — hidden on xs, visible sm+ */}
-        <span className="hidden sm:block font-semibold text-sm">{label}</span>
+      {/* Date label — hidden on xs, visible sm+ */}
+      <span className="hidden sm:block font-semibold text-sm">{label}</span>
 
-        {/* Right: jump-to button + view switcher */}
-        <div className="flex items-center gap-2">
-          {/* Jump-to popover */}
-          <Popover>
-            <PopoverTrigger
-              render={
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="min-h-11"
-                  aria-label={messages.jumpTo}
+      {/* Right: jump-to button + view switcher */}
+      <div className="flex items-center gap-2">
+        {/* Jump-to popover */}
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="min-h-11"
+                aria-label={messages.jumpTo}
+              />
+            }
+          >
+            <CalendarIcon className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent side="bottom" align="end" className="w-64 p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {messages.jumpTo}
+                </label>
+                <input
+                  type="date"
+                  value={jumpDate}
+                  onChange={(e) => setJumpDate(e.target.value)}
+                  className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 />
-              }
-            >
-              <CalendarIcon className="size-4" />
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="end" className="w-64 p-4">
-              <div className="flex flex-col gap-3">
+              </div>
+              {isTimeView && (
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
-                    {messages.jumpTo}
+                    {messages.scrollToTime}
                   </label>
                   <input
-                    type="date"
-                    value={jumpDate}
-                    onChange={(e) => setJumpDate(e.target.value)}
+                    type="time"
+                    value={jumpTime}
+                    onChange={(e) => setJumpTime(e.target.value)}
                     className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   />
                 </div>
-                {isTimeView && (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      {messages.scrollToTime}
-                    </label>
-                    <input
-                      type="time"
-                      value={jumpTime}
-                      onChange={(e) => setJumpTime(e.target.value)}
-                      className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    />
-                  </div>
-                )}
-                <Button size="sm" className="w-full min-h-11" onClick={handleGo}>
-                  {messages.go}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* View switcher — button group (no gap, borders collapsed) */}
-          <div className="flex">
-            {views.map((v, i) => (
-              <Button
-                key={v}
-                variant={view === v ? "default" : "outline"}
-                size="sm"
-                className={`min-h-11${i > 0 ? " border-l-0" : ""}`}
-                onClick={() => onView(v)}
-              >
-                {viewLabel[v] ?? v}
+              )}
+              <Button size="sm" className="w-full min-h-11" onClick={handleGo}>
+                {messages.go}
               </Button>
-            ))}
-          </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* View switcher — button group (no gap, borders collapsed) */}
+        <div className="flex">
+          {([Views.MONTH, Views.WEEK, Views.DAY] as View[]).map((v, i) => (
+            <Button
+              key={v}
+              variant={view === v ? "default" : "outline"}
+              size="sm"
+              className={`min-h-11${i > 0 ? " border-l-0" : ""}`}
+              onClick={() => onView(v)}
+            >
+              {viewLabel[v] ?? v}
+            </Button>
+          ))}
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 }
+
+// Stable components object — CalendarToolbar is module-level so rbc never
+// remounts event components due to a reference change.
+const CALENDAR_COMPONENTS = {
+  toolbar: CalendarToolbar,
+  month: { event: MonthBookingEvent },
+  week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+  day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+};
 
 // ─── BookingCalendar ──────────────────────────────────────────────────────────
 
@@ -450,33 +453,30 @@ export function BookingCalendar({
     return d;
   }, []);
 
-  // Ref used for imperative time-grid scrolling (jump-to time feature).
+  // Ref on the calendar wrapper — used for imperative .rbc-time-content scroll.
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToHour = useCallback((h: number) => {
+  const onScrollToHour = useCallback((h: number) => {
     const content = containerRef.current?.querySelector(
       ".rbc-time-content"
     ) as HTMLElement | null;
-    if (!content) return;
-    // Fraction of the 24-hour column that this hour represents.
-    content.scrollTo({ top: (h / 24) * content.scrollHeight, behavior: "smooth" });
+    if (content) {
+      content.scrollTo({ top: (h / 24) * content.scrollHeight, behavior: "smooth" });
+    }
   }, []);
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
-  const handleViewChange = useCallback(
-    (newView: View) => {
-      setView(newView);
-      if (newView === Views.WEEK || newView === Views.DAY) {
-        setDate(new Date());
-      }
-    },
-    []
-  );
+  const handleViewChange = useCallback((newView: View) => {
+    setView(newView);
+    if (newView === Views.WEEK || newView === Views.DAY) {
+      setDate(new Date());
+    }
+  }, []);
 
-  const toolbarComponent = useMemo(
-    () => makeCalendarToolbar(messages, scrollToHour),
-    [messages, scrollToHour]
+  const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
+    () => ({ messages, onScrollToHour }),
+    [messages, onScrollToHour]
   );
 
   const calendarMessages = useMemo(
@@ -495,57 +495,46 @@ export function BookingCalendar({
     [messages]
   );
 
-  const components = useMemo(
-    () => ({
-      toolbar: toolbarComponent,
-      month: { event: MonthBookingEvent },
-      week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-      day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-    }),
-    [toolbarComponent]
-  );
-
   return (
-    <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
-      <DnDCalendar
-        localizer={localizer}
-        events={events}
-        startAccessor="start"
-        endAccessor="end"
-        view={view}
-        onView={handleViewChange}
-        date={date}
-        onNavigate={setDate}
-        views={[Views.MONTH, Views.WEEK, Views.DAY]}
-        scrollToTime={scrollToTime}
-        step={30}
-        timeslots={2}
-        popup
-        selectable
-        resizable
-        longPressThreshold={1}
-        messages={calendarMessages}
-        components={components}
-        onSelectEvent={(event) => onSelectEvent?.(event as CalendarEvent)}
-        onSelectSlot={(slot) => {
-          const d = new Date(slot.start);
-          const isTimeView = view === Views.WEEK || view === Views.DAY;
-          onSelectSlot?.(d, isTimeView ? slotTime(d) : undefined);
-        }}
-        onEventDrop={onEventDrop}
-        onEventResize={onEventResize}
-        eventPropGetter={(event) => {
-          // The candle bg/text live inside the custom event components; here
-          // we just match the wrapper's border so the rbc default border
-          // doesn't clash with the candle's saturated bg.
-          const ev = event as CalendarEvent;
-          const bg = STATUS_COLOR[ev.status];
-          return {
-            className: "cursor-pointer",
-            style: { borderColor: bg, padding: 0 },
-          };
-        }}
-      />
-    </div>
+    <CalendarToolbarCtx.Provider value={toolbarCtx}>
+      <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
+        <DnDCalendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          view={view}
+          onView={handleViewChange}
+          date={date}
+          onNavigate={setDate}
+          views={[Views.MONTH, Views.WEEK, Views.DAY]}
+          scrollToTime={scrollToTime}
+          step={30}
+          timeslots={2}
+          popup
+          selectable
+          resizable
+          longPressThreshold={1}
+          messages={calendarMessages}
+          components={CALENDAR_COMPONENTS}
+          onSelectEvent={(event) => onSelectEvent?.(event as CalendarEvent)}
+          onSelectSlot={(slot) => {
+            const d = new Date(slot.start);
+            const isTimeView = view === Views.WEEK || view === Views.DAY;
+            onSelectSlot?.(d, isTimeView ? slotTime(d) : undefined);
+          }}
+          onEventDrop={onEventDrop}
+          onEventResize={onEventResize}
+          eventPropGetter={(event) => {
+            const ev = event as CalendarEvent;
+            const bg = STATUS_COLOR[ev.status];
+            return {
+              className: "cursor-pointer",
+              style: { borderColor: bg, padding: 0 },
+            };
+          }}
+        />
+      </div>
+    </CalendarToolbarCtx.Provider>
   );
 }
