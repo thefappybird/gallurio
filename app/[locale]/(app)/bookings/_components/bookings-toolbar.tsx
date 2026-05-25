@@ -151,6 +151,7 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
         <Button
           variant="brand"
           size="sm"
+          nativeButton={false}
           render={<Link href={(() => {
             const params = new URLSearchParams(searchParams.toString());
             params.set("add", "1");

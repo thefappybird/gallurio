@@ -83,6 +83,13 @@ type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   defaultView?: View;
+  /** Controlled view. When provided alongside `onViewChange`, the parent owns
+   *  the current view so dialog-cancel remounts (key bumps) don't reset it. */
+  view?: View;
+  onViewChange?: (v: View) => void;
+  /** Controlled current date — same rationale as `view`. */
+  date?: Date;
+  onDateChange?: (d: Date) => void;
   onSelectEvent?: (event: CalendarEvent) => void;
   /** Called when the user clicks an empty cell or time slot.
    *  `time` is "HH:MM" and is provided in week/day view where the slot has
@@ -653,6 +660,10 @@ export function BookingCalendar({
   events,
   defaultDate,
   defaultView = Views.MONTH,
+  view: viewProp,
+  onViewChange,
+  date: dateProp,
+  onDateChange,
   onSelectEvent,
   onSelectSlot,
   onEventDrop,
@@ -663,8 +674,26 @@ export function BookingCalendar({
   dragFromOutsideItem,
   messages,
 }: Props) {
-  const [view, setView] = useState<View>(defaultView);
-  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
+  // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
+  // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
+  const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
+  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? new Date());
+  const view = viewProp ?? internalView;
+  const date = dateProp ?? internalDate;
+  const setView = useCallback(
+    (v: View) => {
+      if (onViewChange) onViewChange(v);
+      else setInternalView(v);
+    },
+    [onViewChange]
+  );
+  const setDate = useCallback(
+    (d: Date) => {
+      if (onDateChange) onDateChange(d);
+      else setInternalDate(d);
+    },
+    [onDateChange]
+  );
 
   // Open week/day view scrolled to 8 AM so business-hours bookings are
   // immediately visible. (rbc defaults to midnight otherwise.)
@@ -688,12 +717,15 @@ export function BookingCalendar({
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
-  const handleViewChange = useCallback((newView: View) => {
-    setView(newView);
-    if (newView === Views.WEEK || newView === Views.DAY) {
-      setDate(new Date());
-    }
-  }, []);
+  const handleViewChange = useCallback(
+    (newView: View) => {
+      setView(newView);
+      if (newView === Views.WEEK || newView === Views.DAY) {
+        setDate(new Date());
+      }
+    },
+    [setView, setDate]
+  );
 
   const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
     () => ({ messages, onScrollToHour }),

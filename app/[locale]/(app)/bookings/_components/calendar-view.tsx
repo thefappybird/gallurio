@@ -14,6 +14,7 @@ import { PastDateConfirmDialog } from "./past-date-confirm-dialog";
 import { DropConflictDialog, type ShiftHit } from "./drop-conflict-dialog";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
+import { Views, type View } from "react-big-calendar";
 import {
   type Session,
   splitDayOut,
@@ -59,17 +60,23 @@ type PendingPastConfirm = {
 };
 
 /**
- * Fetch shifts on a date, excluding a specific booking id.
- * Returns null on non-2xx response or network error — callers must treat null
- * as "check unavailable" and abort the operation (not silently allow it).
+ * Fetch shifts on a date, excluding a specific session within a booking so
+ * the dragged session doesn't appear in its own conflict set. Sibling
+ * sessions of the same booking DO surface as conflicts (use the wizard's
+ * excludeId path if you want to drop the whole booking).
+ *
+ * Returns null on non-2xx response or network error — callers must treat
+ * null as "check unavailable" and abort the operation.
  */
 async function fetchConflicts(
   dateStr: string,
-  excludeId: string
+  bookingId: string,
+  sessionIndex: number
 ): Promise<ShiftHit[] | null> {
   try {
+    const shiftKey = `${bookingId}:${sessionIndex}`;
     const r = await fetch(
-      `/api/bookings/shifts-on-date?date=${dateStr}&excludeId=${encodeURIComponent(excludeId)}`
+      `/api/bookings/shifts-on-date?date=${dateStr}&excludeShiftKey=${encodeURIComponent(shiftKey)}`
     );
     if (!r.ok) {
       console.error("[fetchConflicts] non-ok response", { status: r.status, dateStr });
@@ -152,8 +159,11 @@ export function CalendarView({
     useState<PendingPastConfirm | null>(null);
   const [pendingConflict, setPendingConflict] = useState<PendingConflict | null>(null);
   // Incrementing this key forces BookingCalendar to remount, flushing rbc's
-  // internal optimistic drag state when the user cancels.
+  // internal optimistic drag state when the user cancels. The user's current
+  // view + visible date are held HERE so the remount doesn't reset them.
   const [refreshKey, setRefreshKey] = useState(0);
+  const [view, setView] = useState<View>(Views.MONTH);
+  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
 
   // Keep optimistic state in sync when the server provides new events.
   const prevEventsRef = useRef(events);
@@ -339,9 +349,16 @@ export function CalendarView({
         return;
       }
 
-      // 3. Past-date check.
-      const today = startOfDay(new Date());
-      if (startOfDay(newCandleStart) < today) {
+      // 3. Past-date / past-time check. The same confirm dialog covers both —
+      // dropping on a past calendar day OR dropping today at a time that has
+      // already passed.
+      const now = new Date();
+      const todayStart = startOfDay(now);
+      const droppedDayStart = startOfDay(newCandleStart);
+      const isPastDay = droppedDayStart < todayStart;
+      const isPastTimeToday =
+        droppedDayStart.getTime() === todayStart.getTime() && newCandleStart < now;
+      if (isPastDay || isPastTimeToday) {
         setPendingPastConfirm({
           event,
           newSessionStart: newCandleStart,
@@ -361,21 +378,24 @@ export function CalendarView({
       let allShifts: ShiftHit[] | null;
       if (startDateStr !== endDateStr) {
         const [shiftsA, shiftsB] = await Promise.all([
-          fetchConflicts(startDateStr, event.bookingId),
-          fetchConflicts(endDateStr, event.bookingId),
+          fetchConflicts(startDateStr, event.bookingId, event.sessionIndex),
+          fetchConflicts(endDateStr, event.bookingId, event.sessionIndex),
         ]);
         if (shiftsA === null || shiftsB === null) {
           toast.error(t("conflictCheckFailed"));
           return;
         }
+        // Dedupe by bookingId+sessionIndex — a sibling session of the SAME
+        // booking touching both dates should appear only once.
         const seen = new Set<string>();
         allShifts = [...shiftsA, ...shiftsB].filter((s) => {
-          if (seen.has(s.id)) return false;
-          seen.add(s.id);
+          const key = `${s.bookingId ?? s.id}:${s.sessionIndex ?? 0}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
           return true;
         });
       } else {
-        allShifts = await fetchConflicts(startDateStr, event.bookingId);
+        allShifts = await fetchConflicts(startDateStr, event.bookingId, event.sessionIndex);
         if (allShifts === null) {
           toast.error(t("conflictCheckFailed"));
           return;
@@ -529,8 +549,12 @@ export function CalendarView({
         key={refreshKey}
         events={optimisticEvents}
         defaultDate={defaultDate}
+        view={view}
+        onViewChange={setView}
+        date={date}
+        onDateChange={setDate}
         onSelectEvent={openDetail}
-        onSelectSlot={(date, time) => openAddForDate(date, time)}
+        onSelectSlot={(d, time) => openAddForDate(d, time)}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventResize}
         onExternalDragStart={handleExternalDragStart}

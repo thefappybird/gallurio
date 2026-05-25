@@ -28,6 +28,8 @@ import type { WizardValues } from "./types";
 
 export type ShiftHit = {
   id: string;
+  bookingId?: string;
+  sessionIndex?: number;
   title: string;
   shiftStart: string;
   shiftEnd: string;
@@ -54,6 +56,13 @@ function todayIso() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function nowHHMM() {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 const Asterisk = () => <span className="ml-0.5 text-destructive">*</span>;
@@ -90,6 +99,13 @@ function SessionCard({
   const isPastDate = !!startDate && startDate < todayIso();
   const startMin = allowPastDate ? undefined : todayIso();
   const endMin = startDate || startMin;
+  // When the start date is today and past dates aren't allowed, block past
+  // times of day in the start-time input. Matches the drag-and-drop
+  // past-time confirm flow so both entry points enforce the same rule.
+  const startTimeMin =
+    !allowPastDate && startDate === todayIso() ? nowHHMM() : undefined;
+  const endTimeMin =
+    !allowPastDate && endDate === todayIso() ? nowHHMM() : undefined;
 
   // Track the previous startDate so we can compute the shift delta.
   const prevStartRef = useRef(startDate);
@@ -193,6 +209,7 @@ function SessionCard({
             id={`wiz-startTime-${index}`}
             type="time"
             className="w-32"
+            min={startTimeMin}
             {...register(`sessions.${index}.startTime`)}
           />
         </div>
@@ -262,6 +279,7 @@ function SessionCard({
             id={`wiz-endTime-${index}`}
             type="time"
             className="w-32"
+            min={endTimeMin}
             {...register(`sessions.${index}.endTime`)}
           />
         </div>

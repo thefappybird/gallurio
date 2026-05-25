@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 
 export type ShiftHit = {
   id: string;
+  bookingId?: string;
+  sessionIndex?: number;
   title: string;
   shiftStart: string;
   shiftEnd: string;

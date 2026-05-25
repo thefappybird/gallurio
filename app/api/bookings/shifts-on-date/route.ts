@@ -79,9 +79,21 @@ export async function GET(req: Request) {
   if (!dateParam || !/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
-  // Exclude a booking from the results — used in edit mode so the wizard
-  // doesn't flag the user's own current booking as a conflict.
+  // Exclude an entire booking — used by the wizard in edit mode so the user's
+  // own current booking doesn't appear as a self-conflict.
   const excludeId = url.searchParams.get("excludeId");
+  // Exclude a single session within a booking — used by drag-and-drop so a
+  // session moving onto a sibling session of the SAME booking is still
+  // flagged as a conflict. Format: "bookingId:sessionIndex".
+  const excludeShiftKey = url.searchParams.get("excludeShiftKey");
+  let excludeShift: { bookingId: string; sessionIndex: number } | null = null;
+  if (excludeShiftKey) {
+    const [bid, idxStr] = excludeShiftKey.split(":");
+    const idx = Number(idxStr);
+    if (bid && /^[a-f0-9]{24}$/i.test(bid) && Number.isInteger(idx) && idx >= 0) {
+      excludeShift = { bookingId: bid, sessionIndex: idx };
+    }
+  }
 
   await connectDB();
 
@@ -133,14 +145,18 @@ export async function GET(req: Request) {
   };
 
   const shifts = (bookings as RawBooking[]).flatMap((b) => {
+    const bookingId = b._id.toString();
     const sessions = b.sessions as { startAt: Date; endAt: Date }[] | undefined;
-    const matchingSession = sessions?.find(
-      (s) => s.startAt <= dayEnd && s.endAt >= dayStart
-    );
+    const matchingEntries = (sessions ?? [])
+      .map((s, i) => ({ session: s, sessionIndex: i }))
+      .filter(({ session }) => session.startAt <= dayEnd && session.endAt >= dayStart);
 
     // Fall back to denormalized bounds for legacy bookings missing sessions[].
-    if (!matchingSession) {
+    if (matchingEntries.length === 0) {
       if (!b.firstSessionStart || !b.lastSessionEnd) return [];
+      if (excludeShift && excludeShift.bookingId === bookingId && excludeShift.sessionIndex === 0) {
+        return [];
+      }
       const startDate = new Date(b.firstSessionStart);
       const endDate = new Date(b.lastSessionEnd);
       // Multi-day booking queried mid-span: the overall window (e.g. Jul 1 09:00
@@ -153,7 +169,9 @@ export async function GET(req: Request) {
       const isMultiDay = dateFmt.format(startDate) !== dateFmt.format(endDate);
       return [
         {
-          id: b._id.toString(),
+          id: bookingId,
+          bookingId,
+          sessionIndex: 0,
           title: b.title,
           shiftStart: isMultiDay ? "00:00" : startTzStr,
           shiftEnd: isMultiDay ? "23:59" : endTzStr,
@@ -161,16 +179,18 @@ export async function GET(req: Request) {
       ];
     }
 
-    const startDate = new Date(matchingSession.startAt);
-    const endDate = new Date(matchingSession.endAt);
-    return [
-      {
-        id: b._id.toString(),
+    return matchingEntries
+      .filter(({ sessionIndex }) =>
+        !(excludeShift && excludeShift.bookingId === bookingId && excludeShift.sessionIndex === sessionIndex)
+      )
+      .map(({ session, sessionIndex }) => ({
+        id: bookingId,
+        bookingId,
+        sessionIndex,
         title: b.title,
-        shiftStart: formatHHMM(startDate, tz),
-        shiftEnd: formatHHMM(endDate, tz),
-      },
-    ];
+        shiftStart: formatHHMM(new Date(session.startAt), tz),
+        shiftEnd: formatHHMM(new Date(session.endAt), tz),
+      }));
   });
 
   return NextResponse.json({ shifts });

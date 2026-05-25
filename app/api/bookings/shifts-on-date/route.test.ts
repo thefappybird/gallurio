@@ -45,6 +45,13 @@ function makeReq(date: string, excludeId?: string) {
   return new Request(url);
 }
 
+function makeReqWithShiftKey(date: string, excludeShiftKey: string) {
+  const url = new URL(
+    `http://test/api/bookings/shifts-on-date?date=${date}&excludeShiftKey=${encodeURIComponent(excludeShiftKey)}`
+  );
+  return new Request(url);
+}
+
 /**
  * Seed a booking with explicit sessions.
  * Note: Booking.insertMany skips pre-save hooks, so set denormalised fields
@@ -192,6 +199,60 @@ describe("GET /api/bookings/shifts-on-date", () => {
     const res = await GET(req);
     const body = await res.json();
     expect(body.shifts).toHaveLength(0);
+  });
+
+  it("returns BOTH sessions of the SAME booking when two of its sessions touch the date (drag will see siblings as conflicts)", async () => {
+    const { GET } = await load();
+    await seedBooking(
+      [
+        { startAt: new Date("2026-08-15T09:00:00Z"), endAt: new Date("2026-08-15T11:00:00Z") },
+        { startAt: new Date("2026-08-15T14:00:00Z"), endAt: new Date("2026-08-15T16:00:00Z") },
+      ],
+      { title: "Two-session Same Day" }
+    );
+
+    const req = makeReq("2026-08-15");
+    const res = await GET(req);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(2);
+    const indexes = body.shifts.map((s: { sessionIndex: number }) => s.sessionIndex).sort();
+    expect(indexes).toEqual([0, 1]);
+    const ranges = body.shifts
+      .map((s: { shiftStart: string; shiftEnd: string }) => `${s.shiftStart}-${s.shiftEnd}`)
+      .sort();
+    expect(ranges).toEqual(["09:00-11:00", "14:00-16:00"]);
+  });
+
+  it("excludeShiftKey skips only the specified session; sibling sessions of the same booking still appear", async () => {
+    const { GET } = await load();
+    const b = await seedBooking(
+      [
+        { startAt: new Date("2026-08-15T09:00:00Z"), endAt: new Date("2026-08-15T11:00:00Z") },
+        { startAt: new Date("2026-08-15T14:00:00Z"), endAt: new Date("2026-08-15T16:00:00Z") },
+      ],
+      { title: "Drag Source" }
+    );
+
+    // Dragging session 0 — it should not appear in its own conflict set, but
+    // session 1 of the same booking must still show.
+    const req = makeReqWithShiftKey("2026-08-15", `${b._id.toString()}:0`);
+    const res = await GET(req);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(1);
+    expect(body.shifts[0].sessionIndex).toBe(1);
+    expect(body.shifts[0].shiftStart).toBe("14:00");
+  });
+
+  it("excludeShiftKey ignores malformed input and returns all matching sessions", async () => {
+    const { GET } = await load();
+    await seedBooking([
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
+    ]);
+
+    const req = makeReqWithShiftKey("2026-08-15", "not-a-key");
+    const res = await GET(req);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(1);
   });
 
   it("returns a shift via firstSessionStart/lastSessionEnd fallback for a legacy booking with empty sessions[]", async () => {
