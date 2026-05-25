@@ -622,13 +622,50 @@ function CalendarToolbar({
  * per cell. Days with more than one event get a synthetic overflow placeholder
  * appended after the first event, listing all events for that day.
  *
+ * Overnight / multi-day events (end is on a later calendar day than start)
+ * render as a wide bar across all occupied cells in rbc. Any own events that
+ * START on a bleed-in day would visually stack below that bar without being
+ * collapsed into the "+N more" pill. This function detects bleed-in days and
+ * suppresses own-start events on those days into an overflow placeholder so
+ * the pill appears instead.
+ *
  * Only applied in month view — week/day views have time-slot rows and can
  * display overlapping events without a cell-height cap.
  */
 export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[] {
+  // Local helpers — not exported so they stay scoped to this function.
+  function startOfMonthDay(d: Date): Date {
+    const out = new Date(d);
+    out.setHours(0, 0, 0, 0);
+    return out;
+  }
+  function dayKey(d: Date): string {
+    return format(d, "yyyy-MM-dd");
+  }
+
+  // Pass 1 — identify days that have an inbound overnight/multi-day bleed-over.
+  // For every event that crosses a day boundary, every calendar day strictly
+  // after the event's start-day (up to and including the event's end-day)
+  // receives a bleed-in marker.
+  const bleedInDays = new Set<string>();
+  for (const ev of events) {
+    const startDay = startOfMonthDay(ev.start);
+    const endDay = startOfMonthDay(ev.end);
+    if (endDay > startDay) {
+      // Walk each day strictly after startDay through endDay.
+      const cursor = new Date(startDay);
+      cursor.setDate(cursor.getDate() + 1);
+      while (cursor <= endDay) {
+        bleedInDays.add(dayKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+  }
+
+  // Pass 2 — bucket events by their start-day (same as before).
   const byDay = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
-    const key = format(ev.start, "yyyy-MM-dd");
+    const key = dayKey(ev.start);
     const bucket = byDay.get(key);
     if (bucket) {
       bucket.push(ev);
@@ -637,20 +674,38 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
     }
   }
 
+  // Pass 3 — emit result events, collapsing bleed-in days into overflow pills.
   const result: AnyCalendarEvent[] = [];
-  for (const [, bucket] of byDay) {
-    result.push(bucket[0]);
-    if (bucket.length > 1) {
+  for (const [key, bucket] of byDay) {
+    if (bleedInDays.has(key) && bucket.length >= 1) {
+      // The wide bar from the overnight event already occupies this cell.
+      // Collapse every own event that starts here into a single overflow pill
+      // so they don't render as extra stacked bars below the wide bar.
       const first = bucket[0];
       const overflow: OverflowEvent = {
         type: "overflow",
-        id: `overflow_${format(first.start, "yyyy-MM-dd")}`,
+        id: `overflow_${key}`,
         start: first.start,
         end: first.end,
-        overflowCount: bucket.length - 1,
-        overflowEvents: bucket.slice(1),
+        overflowCount: bucket.length,
+        overflowEvents: bucket,
       };
       result.push(overflow);
+    } else {
+      // Normal day (no inbound bleed): show first event + optional overflow.
+      result.push(bucket[0]);
+      if (bucket.length > 1) {
+        const first = bucket[0];
+        const overflow: OverflowEvent = {
+          type: "overflow",
+          id: `overflow_${key}`,
+          start: first.start,
+          end: first.end,
+          overflowCount: bucket.length - 1,
+          overflowEvents: bucket.slice(1),
+        };
+        result.push(overflow);
+      }
     }
   }
   return result;
