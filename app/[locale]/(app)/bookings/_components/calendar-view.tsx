@@ -19,7 +19,6 @@ import {
   splitDayOut,
 } from "@/lib/bookings/session-edits";
 import {
-  toMinutes,
   overlappingShifts,
   isoDate,
   reconstructSessions,
@@ -205,45 +204,89 @@ export function CalendarView({
     ) => {
       const prev = optimisticEvents;
 
-      const splitResult = splitDayOut(
-        { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
-        touchedDay,
-        newCandleStart,
-        newCandleEnd
-      );
+      // Bled (midnight-split) candles represent ONE overnight session displayed
+      // as two halves. splitDayOut would produce an invalid before-portion
+      // because the same calendar day serves as both session-day and drag-day.
+      // Shift the whole session by the drag delta instead.
+      const isBled = event.isMorningContinuation === true || event.isEveningHead === true;
 
-      const newSessions = bookingSessions.flatMap((s, idx) =>
-        idx === event.sessionIndex ? splitResult : [s]
-      );
+      let newSessions: Session[];
+      if (isBled) {
+        const deltaMs = newCandleStart.getTime() - event.start.getTime();
+        const oldSession = bookingSessions[event.sessionIndex];
+        const shifted: Session = {
+          startAt: new Date(oldSession.startAt.getTime() + deltaMs),
+          endAt: new Date(oldSession.endAt.getTime() + deltaMs),
+        };
+        newSessions = bookingSessions.map((s, idx) =>
+          idx === event.sessionIndex ? shifted : s
+        );
 
-      // Optimistic: move only the dragged candle; siblings stay put.
-      setOptimisticEvents(
-        optimisticEvents.map((e) => {
-          if (e.bookingId !== event.bookingId || e.id !== event.id) return e;
-          return {
-            ...e,
-            start: newCandleStart,
-            end: newCandleEnd,
-            sessionStartAt: newCandleStart,
-            sessionEndAt: newCandleEnd,
-          };
-        })
-      );
+        // Optimistic: shift every candle/half belonging to this session.
+        setOptimisticEvents(
+          optimisticEvents.map((e) => {
+            if (e.bookingId !== event.bookingId || e.sessionIndex !== event.sessionIndex) {
+              return e;
+            }
+            return {
+              ...e,
+              start: new Date(e.start.getTime() + deltaMs),
+              end: new Date(e.end.getTime() + deltaMs),
+              sessionStartAt: shifted.startAt,
+              sessionEndAt: shifted.endAt,
+            };
+          })
+        );
+      } else {
+        const splitResult = splitDayOut(
+          { startAt: event.sessionStartAt, endAt: event.sessionEndAt },
+          touchedDay,
+          newCandleStart,
+          newCandleEnd
+        );
+
+        newSessions = bookingSessions.flatMap((s, idx) =>
+          idx === event.sessionIndex ? splitResult : [s]
+        );
+
+        // Optimistic: move only the dragged candle; siblings stay put.
+        setOptimisticEvents(
+          optimisticEvents.map((e) => {
+            if (e.bookingId !== event.bookingId || e.id !== event.id) return e;
+            return {
+              ...e,
+              start: newCandleStart,
+              end: newCandleEnd,
+              sessionStartAt: newCandleStart,
+              sessionEndAt: newCandleEnd,
+            };
+          })
+        );
+      }
 
       try {
         const ok = await patchBookingSessions(event.bookingId, newSessions);
         if (!ok) throw new Error("PATCH returned non-ok");
+        if (isBled) {
+          // Re-derive candles from the server so overnight↔same-day transitions
+          // render cleanly (splitSessionIntoCandles lives in the server page).
+          router.refresh();
+        }
       } catch (err) {
+        const errInfo =
+          err instanceof Error
+            ? { name: err.name, message: err.message, stack: err.stack }
+            : String(err);
         console.error("[calendar-view] patchBookingSessions failed", {
           bookingId: event.bookingId,
           newSessions,
-          err,
+          err: errInfo,
         });
         setOptimisticEvents(prev);
         toast.error(t("updateError"));
       }
     },
-    [optimisticEvents, t]
+    [optimisticEvents, t, router]
   );
 
   // ─── Universal drag handler ───────────────────────────────────────────────

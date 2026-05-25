@@ -137,6 +137,7 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
           variant="outline"
           size="sm"
           title={tBookings("export.tooltip")}
+          nativeButton={false}
           render={<a href={exportHref} download />}
         >
           <DownloadIcon className="size-4" />
