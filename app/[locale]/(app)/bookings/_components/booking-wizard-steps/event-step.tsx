@@ -13,6 +13,7 @@ import {
 import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { differenceInCalendarDays, addDays, format } from "date-fns";
+import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -119,6 +120,8 @@ function SessionCard({
   }, [isPastDate, allowPastDate, setValue, index]);
 
   // Shift end date when start date changes (Issue 4), or lock to start when singleDay is on.
+  // When start date transitions to today, also snap time to next 30-min slot after now.
+  // The snap fires even on the very first date pick (prevStart === "").
   useEffect(() => {
     const prevStart = prevStartRef.current;
     const prevEnd = prevEndRef.current;
@@ -127,18 +130,15 @@ function SessionCard({
 
     if (!startDate) return;
 
+    // 1. End-date alignment logic (singleDay mirror or multi-day duration shift).
     if (singleDay) {
       // Single-day mode: end date always mirrors start date.
       setValue(`sessions.${index}.endDate`, startDate, {
         shouldDirty: false,
         shouldValidate: true,
       });
-      return;
-    }
-
-    // Multi-day: if the start date CHANGED and there was a prior start + end,
-    // shift the end date by the same number of calendar days to preserve duration.
-    if (prevStart && prevStart !== startDate && prevEnd) {
+    } else if (prevStart && prevStart !== startDate && prevEnd) {
+      // Multi-day: shift end date to preserve prior calendar-day duration.
       const durDays = differenceInCalendarDays(
         new Date(prevEnd),
         new Date(prevStart)
@@ -149,14 +149,48 @@ function SessionCard({
         format(newEnd, "yyyy-MM-dd"),
         { shouldDirty: true, shouldValidate: true }
       );
-      return;
-    }
-
-    // Fallback: if there's no prior start to compute a duration from but the
-    // end date is now before the new start, bump end forward to match start.
-    if (endDate && endDate < startDate) {
+    } else if (endDate && endDate < startDate) {
+      // Fallback: bump end forward when it would precede the new start.
       setValue(`sessions.${index}.endDate`, startDate, {
         shouldDirty: true,
+      });
+    }
+
+    // 2. Today-snap: fires whenever startDate transitions to today, including
+    //    on the very first date pick (prevStart === "").
+    const startBecameToday = prevStart !== startDate && isToday(startDate);
+    if (startBecameToday) {
+      const currentStartTime = watch(`sessions.${index}.startTime`);
+      const currentEndTime = watch(`sessions.${index}.endTime`);
+      const snapped = applyTodaySnap({
+        prevStartDate: prevStart || startDate,
+        prevStartTime: currentStartTime,
+        prevEndDate: prevEnd || endDate || startDate,
+        prevEndTime: currentEndTime,
+      });
+      if (snapped.startDate !== startDate) {
+        // Snap crossed midnight — advance start date as well.
+        setValue(`sessions.${index}.startDate`, snapped.startDate, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        setValue(`sessions.${index}.endDate`, snapped.endDate, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      } else {
+        setValue(`sessions.${index}.endDate`, snapped.endDate, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+      setValue(`sessions.${index}.startTime`, snapped.startTime, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      setValue(`sessions.${index}.endTime`, snapped.endTime, {
+        shouldDirty: true,
+        shouldValidate: true,
       });
     }
   // prevStartRef and prevEndRef are stable refs — they must NOT be in the dep

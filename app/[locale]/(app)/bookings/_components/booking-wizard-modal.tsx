@@ -31,6 +31,11 @@ import type {
 } from "./booking-wizard-steps/types";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
+import {
+  todayIso,
+  nextHalfHourFromNow,
+  applyTodaySnap,
+} from "./_helpers/today-snap";
 
 type ClientHit = {
   id: string;
@@ -751,12 +756,36 @@ function makeDefaults({
   defaultCurrency: SupportedCurrency;
   initialValues?: Partial<WizardValues>;
 }): WizardValues {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = todayIso(now);
+
+  // When no explicit time was provided and the default start date is today,
+  // snap to the next 30-min slot after now and adjust end time to preserve
+  // the default 7-hour duration.
+  let resolvedStartDate = defaultDate ?? "";
+  let resolvedStartTime = defaultTime ?? "10:00";
+  let resolvedEndDate = "";
+  let resolvedEndTime = "17:00";
+
+  if (!defaultTime && defaultDate && defaultDate === today) {
+    const snapped = applyTodaySnap({
+      prevStartDate: defaultDate,
+      prevStartTime: "10:00",
+      prevEndDate: "",
+      prevEndTime: "17:00",
+      now,
+    });
+    resolvedStartDate = snapped.startDate;
+    resolvedStartTime = snapped.startTime;
+    resolvedEndDate = snapped.startDate !== defaultDate ? snapped.endDate : "";
+    resolvedEndTime = snapped.endTime;
+  }
+
   const defaultSession = {
-    startDate: defaultDate ?? "",
-    startTime: defaultTime ?? "10:00",
-    endDate: "",
-    endTime: "17:00",
+    startDate: resolvedStartDate,
+    startTime: resolvedStartTime,
+    endDate: resolvedEndDate,
+    endTime: resolvedEndTime,
     singleDay: true,
     allowPastDate: defaultDate ? defaultDate < today : false,
   };
