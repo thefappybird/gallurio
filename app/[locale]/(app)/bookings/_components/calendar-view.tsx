@@ -214,14 +214,24 @@ export function CalendarView({
     ) => {
       const prev = optimisticEvents;
 
-      // Bled (midnight-split) candles represent ONE overnight session displayed
-      // as two halves. splitDayOut would produce an invalid before-portion
-      // because the same calendar day serves as both session-day and drag-day.
-      // Shift the whole session by the drag delta instead.
+      // Any overnight session breaks splitDayOut's per-day split semantics:
+      // because shift-day N's evening continues into calendar-day N+1's morning,
+      // the helper's "before" / "after" portions get end-times anchored on the
+      // wrong calendar day and produce sessions where endAt < startAt. Detect
+      // that case (whether the candle is bled into two halves in week/day or
+      // rendered whole in month) and shift the entire session by the drag
+      // delta instead of splitting.
+      const sStartH = event.sessionStartAt.getHours();
+      const sStartM = event.sessionStartAt.getMinutes();
+      const sEndH = event.sessionEndAt.getHours();
+      const sEndM = event.sessionEndAt.getMinutes();
+      const isOvernightSession =
+        sEndH < sStartH || (sEndH === sStartH && sEndM < sStartM);
       const isBled = event.isMorningContinuation === true || event.isEveningHead === true;
+      const shiftWholeSession = isBled || isOvernightSession;
 
       let newSessions: Session[];
-      if (isBled) {
+      if (shiftWholeSession) {
         const deltaMs = newCandleStart.getTime() - event.start.getTime();
         const oldSession = bookingSessions[event.sessionIndex];
         const shifted: Session = {
@@ -277,9 +287,10 @@ export function CalendarView({
       try {
         const ok = await patchBookingSessions(event.bookingId, newSessions);
         if (!ok) throw new Error("PATCH returned non-ok");
-        if (isBled) {
+        if (shiftWholeSession) {
           // Re-derive candles from the server so overnight↔same-day transitions
-          // render cleanly (splitSessionIntoCandles lives in the server page).
+          // (and multi-night re-anchoring) render cleanly — splitSessionIntoCandles
+          // runs in the server page.
           router.refresh();
         }
       } catch (err) {
