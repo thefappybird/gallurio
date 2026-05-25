@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog } from "@/lib/db/models";
@@ -56,47 +57,67 @@ export async function POST(req: Request) {
   const firstSessionStart = new Date(Math.min(...sessionStarts));
   const lastSessionEnd = new Date(Math.max(...sessionEnds));
 
-  const booking = await Booking.create({
-    workspaceId: ctx.workspace._id,
-    clientId,
-    clientName,
-    title,
-    eventType,
-    status,
-    sessions,
-    firstSessionStart,
-    lastSessionEnd,
-    location: { address: location.address },
-    amount: {
-      total: amount.total,
-      deposit: amount.deposit,
-      currency: amount.currency,
-    },
-    notes,
-  });
-
-  await ActivityLog.create({
-    workspaceId: ctx.workspace._id,
-    actorUserId: ctx.userId,
-    entity: "booking",
-    entityId: booking._id,
-    action: "created",
-  });
+  // Wrap Booking.create and recordBookingForClient in a single transaction so
+  // that a failure in either write leaves no partial state in the database.
+  const session = await mongoose.startSession();
+  let bookingId: mongoose.Types.ObjectId;
 
   try {
-    await recordBookingForClient({
-      workspaceId: ctx.workspace._id,
-      clientId,
-      booking: {
-        _id: booking._id,
-        amount: booking.amount!,
-        firstSessionStart: booking.firstSessionStart,
-      },
-      source: "manual",
+    await session.withTransaction(async () => {
+      const [booking] = await Booking.create(
+        [
+          {
+            workspaceId: ctx.workspace._id,
+            clientId,
+            clientName,
+            title,
+            eventType,
+            status,
+            sessions,
+            firstSessionStart,
+            lastSessionEnd,
+            location: { address: location.address },
+            amount: {
+              total: amount.total,
+              deposit: amount.deposit,
+              currency: amount.currency,
+            },
+            notes,
+          },
+        ],
+        { session }
+      );
+
+      bookingId = booking._id;
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId: ctx.workspace._id,
+            actorUserId: ctx.userId,
+            entity: "booking",
+            entityId: booking._id,
+            action: "created",
+          },
+        ],
+        { session }
+      );
+
+      await recordBookingForClient({
+        workspaceId: ctx.workspace._id,
+        clientId,
+        booking: {
+          _id: booking._id,
+          amount: booking.amount!,
+          firstSessionStart: booking.firstSessionStart,
+        },
+        source: "manual",
+        session,
+      });
     });
-  } catch (err) {
-    console.error("[bookings] enrich client failed", err);
+  } finally {
+    await session.endSession();
   }
 
-  return NextResponse.json({ id: booking._id.toString() }, { status: 201 });
+  return NextResponse.json({ id: bookingId!.toString() }, { status: 201 });
 }

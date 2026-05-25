@@ -12,16 +12,34 @@ import {
 } from "./booking-calendar";
 import { PastDateConfirmDialog } from "./past-date-confirm-dialog";
 import { DropConflictDialog, type ShiftHit } from "./drop-conflict-dialog";
+import { BookingWizardModal } from "./booking-wizard-modal";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import {
   type Session,
   splitDayOut,
 } from "@/lib/bookings/session-edits";
+import {
+  toMinutes,
+  overlappingShifts,
+  isoDate,
+  reconstructSessions,
+} from "./_helpers/calendar-helpers";
+import type { SupportedCurrency } from "@/lib/validators/workspace";
+
+export type ClientHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
 
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   messages: React.ComponentProps<typeof BookingCalendar>["messages"];
+  initialClients?: ClientHit[];
+  defaultCurrency?: SupportedCurrency;
+  locale?: string;
 };
 
 type PendingConflict = {
@@ -41,80 +59,33 @@ type PendingPastConfirm = {
   touchedDay: Date;
 };
 
-/** Convert "HH:MM" string to minutes since midnight. Returns null on bad input. */
-function toMinutes(hhmm: string): number | null {
-  const parts = hhmm.split(":");
-  if (parts.length !== 2) return null;
-  const h = Number(parts[0]);
-  const m = Number(parts[1]);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  return h * 60 + m;
-}
-
-/** Fetch shifts on a date, excluding a specific booking id. Returns [] on error. */
+/**
+ * Fetch shifts on a date, excluding a specific booking id.
+ * Returns null on non-2xx response or network error — callers must treat null
+ * as "check unavailable" and abort the operation (not silently allow it).
+ */
 async function fetchConflicts(
   dateStr: string,
   excludeId: string
-): Promise<ShiftHit[]> {
+): Promise<ShiftHit[] | null> {
   try {
     const r = await fetch(
       `/api/bookings/shifts-on-date?date=${dateStr}&excludeId=${encodeURIComponent(excludeId)}`
     );
-    if (!r.ok) return [];
+    if (!r.ok) {
+      console.error("[fetchConflicts] non-ok response", { status: r.status, dateStr });
+      return null;
+    }
     const { shifts } = await r.json();
     return Array.isArray(shifts) ? (shifts as ShiftHit[]) : [];
-  } catch {
-    return [];
+  } catch (err) {
+    console.error("[fetchConflicts] request failed", { dateStr, err });
+    return null;
   }
-}
-
-/** Return shifts that overlap [aStart, aEnd) in minutes since midnight. */
-function overlappingShifts(
-  shifts: ShiftHit[],
-  aStart: number,
-  aEnd: number
-): ShiftHit[] {
-  return shifts.filter((s) => {
-    const bStart = toMinutes(s.shiftStart);
-    const bEnd = toMinutes(s.shiftEnd);
-    return bStart !== null && bEnd !== null && aStart < bEnd && bStart < aEnd;
-  });
-}
-
-function isoDate(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
 }
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-}
-
-/**
- * Reconstruct the full ordered sessions array for a given booking from the
- * current optimistic events state. Candles share sessionIndex, sessionStartAt,
- * sessionEndAt within each session group — we deduplicate by sessionIndex and
- * sort ascending.
- */
-function reconstructSessions(
-  optimisticEvents: CalendarEvent[],
-  bookingId: string
-): Session[] {
-  const byIndex = new Map<number, Session>();
-  for (const e of optimisticEvents) {
-    if (e.bookingId !== bookingId) continue;
-    if (!byIndex.has(e.sessionIndex)) {
-      byIndex.set(e.sessionIndex, {
-        startAt: e.sessionStartAt,
-        endAt: e.sessionEndAt,
-      });
-    }
-  }
-  return Array.from(byIndex.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([, s]) => s);
 }
 
 /**
@@ -137,11 +108,43 @@ async function patchBookingSessions(
   return res.ok;
 }
 
-export function CalendarView({ events, defaultDate, messages }: Props) {
+export function CalendarView({
+  events,
+  defaultDate,
+  messages,
+  initialClients,
+  defaultCurrency = "PHP",
+  locale = "en",
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
+
+  // Read wizard state from URL search params so the wizard modal is managed
+  // here alongside the client list (enables client refetch after creation).
+  const spAdd = searchParams.get("add");
+  const spEdit = searchParams.get("edit");
+  const spDate = searchParams.get("date") ?? undefined;
+  const spTime = searchParams.get("time") ?? undefined;
+
+  const [clients, setClients] = useState<ClientHit[]>(initialClients ?? []);
+
+  const refetchClients = useCallback(async () => {
+    const r = await fetch("/api/clients?limit=1000");
+    if (r.ok) {
+      const data = await r.json();
+      setClients(Array.isArray(data) ? data : (data.clients ?? []));
+    }
+  }, []);
+
+  // If no initial clients were server-rendered, fetch on mount.
+  useEffect(() => {
+    if (!initialClients) {
+      refetchClients();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
@@ -229,8 +232,13 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
 
       try {
         const ok = await patchBookingSessions(event.bookingId, newSessions);
-        if (!ok) throw new Error();
-      } catch {
+        if (!ok) throw new Error("PATCH returned non-ok");
+      } catch (err) {
+        console.error("[calendar-view] patchBookingSessions failed", {
+          bookingId: event.bookingId,
+          newSessions,
+          err,
+        });
         setOptimisticEvents(prev);
         toast.error(t("updateError"));
       }
@@ -307,12 +315,16 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
       const aStart = newCandleStart.getHours() * 60 + newCandleStart.getMinutes();
       const aEnd = newCandleEnd.getHours() * 60 + newCandleEnd.getMinutes();
 
-      let allShifts: ShiftHit[];
+      let allShifts: ShiftHit[] | null;
       if (startDateStr !== endDateStr) {
         const [shiftsA, shiftsB] = await Promise.all([
           fetchConflicts(startDateStr, event.bookingId),
           fetchConflicts(endDateStr, event.bookingId),
         ]);
+        if (shiftsA === null || shiftsB === null) {
+          toast.error(t("conflictCheckFailed"));
+          return;
+        }
         const seen = new Set<string>();
         allShifts = [...shiftsA, ...shiftsB].filter((s) => {
           if (seen.has(s.id)) return false;
@@ -321,6 +333,10 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         });
       } else {
         allShifts = await fetchConflicts(startDateStr, event.bookingId);
+        if (allShifts === null) {
+          toast.error(t("conflictCheckFailed"));
+          return;
+        }
       }
 
       const conflicts = overlappingShifts(allShifts, aStart, aEnd);
@@ -493,6 +509,27 @@ export function CalendarView({ events, defaultDate, messages }: Props) {
         onCancel={handleConflictCancel}
         onConfirm={handleConflictConfirm}
       />
+      {spAdd === "1" ? (
+        <BookingWizardModal
+          mode="create"
+          defaultDate={spDate}
+          defaultTime={spTime}
+          defaultCurrency={defaultCurrency}
+          locale={locale}
+          clients={clients}
+          onClientCreated={refetchClients}
+        />
+      ) : null}
+      {spEdit ? (
+        <BookingWizardModal
+          mode="edit"
+          bookingId={spEdit}
+          defaultCurrency={defaultCurrency}
+          locale={locale}
+          clients={clients}
+          onClientCreated={refetchClients}
+        />
+      ) : null}
     </>
   );
 }

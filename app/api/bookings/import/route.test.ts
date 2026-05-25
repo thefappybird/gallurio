@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi, type MockInstance } from "vitest";
 import { Types } from "mongoose";
 import {
   startInMemoryMongo,
@@ -6,6 +6,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Booking, Client, Transaction } from "@/lib/db/models";
+import * as clientTransactions from "@/lib/db/clientTransactions";
 
 const WS_ID = new Types.ObjectId();
 const WS_A = new Types.ObjectId();
@@ -126,6 +127,8 @@ describe("POST /api/bookings/import", () => {
     expect(body.created).toBe(0);
     expect(body.errors).toHaveLength(1);
     expect(body.errors[0].index).toBe(0);
+    expect(body.validationErrors).toBe(1);
+    expect(body.serverErrors).toBe(0);
   });
 
   it("returns 422 when every row fails", async () => {
@@ -169,6 +172,30 @@ describe("POST /api/bookings/import", () => {
     const body = await res.json();
     expect(body.skipped).toBe(body.errors.length);
     expect(body.skipped).toBe(1);
+    expect(body.validationErrors).toBe(1);
+    expect(body.serverErrors).toBe(0);
+  });
+
+  it("server error during recordBookingForClient: serverErrors=1, created=0, row in errors", async () => {
+    let spy: MockInstance | null = null;
+    try {
+      spy = vi
+        .spyOn(clientTransactions, "recordBookingForClient")
+        .mockRejectedValueOnce(new Error("transaction aborted"));
+
+      const res = await callImport([VALID_ROW]);
+      const body = await res.json();
+
+      expect(body.created).toBe(0);
+      expect(body.validationErrors).toBe(0);
+      expect(body.serverErrors).toBe(1);
+      expect(body.skipped).toBe(1);
+      expect(body.errors).toHaveLength(1);
+      expect(body.errors[0].kind).toBe("server");
+      expect(body.errors[0].index).toBe(0);
+    } finally {
+      spy?.mockRestore();
+    }
   });
 
   it("existing client gets transaction appended and summaries bumped", async () => {

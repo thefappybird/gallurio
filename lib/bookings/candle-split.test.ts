@@ -221,3 +221,56 @@ describe("pastShiftDays correctness — overnight session with today inside rang
     expect(r.pastShiftDays).toBe(2);
   });
 });
+
+// ─── midnight boundary edge cases ─────────────────────────────────────────────
+
+describe("midnight boundary — session ending exactly at midnight", () => {
+  // Aug 15 21:00 → Aug 16 00:00: endHour(0) < startHour(21) so isOvernight=true.
+  // lastShiftDay = startOfDay(Aug16 - 24h) = Aug15, so loop runs once (Aug15 only).
+  const session: SessionInput = {
+    startAt: date(2026, 8, 15, 21, 0),
+    endAt: date(2026, 8, 16, 0, 0),
+  };
+  const today = date(2026, 8, 20);
+
+  it("is flagged as overnight (endHour 0 < startHour 21)", () => {
+    const r = splitSessionIntoCandles(session, today);
+    // Overnight flag causes the single candle to span into the next day.
+    expect(r.candles).toHaveLength(1);
+  });
+
+  it("produces 1 candle", () => {
+    const r = splitSessionIntoCandles(session, today);
+    expect(r.totalShiftDays).toBe(1);
+  });
+
+  it("candle ends at Aug 16 00:00 (the exact midnight)", () => {
+    const r = splitSessionIntoCandles(session, today);
+    const [c] = r.candles;
+    expect(c.end).toEqual(date(2026, 8, 16, 0, 0));
+  });
+});
+
+describe("zero-duration same-day session (start === end)", () => {
+  // startAt and endAt are identical: same hour, same minute.
+  // endHour(12) === startHour(12) and endMin(0) === startMin(0) → isOvernight=false.
+  // lastShiftDay = startOfDay(Aug15), loop runs once producing 1 candle.
+  const session: SessionInput = {
+    startAt: date(2026, 8, 15, 12, 0),
+    endAt: date(2026, 8, 15, 12, 0),
+  };
+  const today = date(2026, 8, 20);
+
+  it("produces 1 candle (not 0)", () => {
+    // Zero-duration is treated as a point-in-time event, not skipped.
+    const r = splitSessionIntoCandles(session, today);
+    expect(r.candles).toHaveLength(1);
+  });
+
+  it("candle start and end are both 12:00", () => {
+    const r = splitSessionIntoCandles(session, today);
+    const [c] = r.candles;
+    expect(c.start).toEqual(date(2026, 8, 15, 12, 0));
+    expect(c.end).toEqual(date(2026, 8, 15, 12, 0));
+  });
+});

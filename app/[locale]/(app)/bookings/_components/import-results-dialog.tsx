@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import {
   Dialog,
@@ -18,15 +19,16 @@ type Props = {
   skipped: number;
 };
 
-const KIND_LABEL: Record<ImportErrorEntry["kind"], string> = {
-  validation: "Validation",
-  lookup: "Lookup",
-  server: "Server",
-};
-
 function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
+  const t = useTranslations("app.bookings.import.results");
   const [expanded, setExpanded] = useState(false);
   const csvLine = entry.index + 2;
+
+  const kindLabel: Record<ImportErrorEntry["kind"], string> = {
+    validation: t("kindValidation"),
+    lookup: t("kindLookup"),
+    server: t("kindServer"),
+  };
 
   return (
     <div className="border-b border-border last:border-0">
@@ -45,7 +47,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <span className="text-xs font-medium tabular-nums">Line {csvLine}</span>
+            <span className="text-xs font-medium tabular-nums">{t("line", { csvLine })}</span>
             {entry.field ? (
               <span className="font-mono text-[10px] text-muted-foreground">{entry.field}</span>
             ) : null}
@@ -57,7 +59,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
                 entry.kind === "server" && "text-destructive"
               )}
             >
-              {KIND_LABEL[entry.kind]}
+              {kindLabel[entry.kind]}
             </span>
           </div>
           <p className="text-xs text-foreground">{entry.message}</p>
@@ -66,7 +68,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
       {expanded ? (
         <div className="border-t border-border bg-muted/30 px-3 py-2">
           <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Raw row
+            {t("rawRow")}
           </p>
           <pre className="overflow-x-auto whitespace-pre-wrap break-all text-[10px] text-muted-foreground">
             {JSON.stringify(entry.row, null, 2)}
@@ -78,6 +80,8 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
 }
 
 export function ImportResultsDialog({ open, onClose, errors, created, skipped }: Props) {
+  const t = useTranslations("app.bookings.import.results");
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
@@ -85,7 +89,7 @@ export function ImportResultsDialog({ open, onClose, errors, created, skipped }:
         className="flex max-h-[calc(100vh-3rem)] w-full max-w-lg flex-col gap-0 p-0 sm:max-w-lg"
       >
         <div className="border-b border-border px-4 py-3">
-          <DialogTitle>Import errors</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -95,10 +99,8 @@ export function ImportResultsDialog({ open, onClose, errors, created, skipped }:
         </div>
 
         <div className="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-          <span>
-            Imported {created} · Skipped {skipped}
-          </span>
-          <span>Fix the rows above and re-upload to import them.</span>
+          <span>{t("summary", { created, skipped })}</span>
+          <span>{t("hint")}</span>
         </div>
       </DialogContent>
     </Dialog>

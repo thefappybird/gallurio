@@ -21,7 +21,8 @@ vi.mock("@/lib/auth/requireOrg", () => ({
     userId,
     clerkOrgId: "org_test",
     role: "owner",
-    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t" },
+    // timezone is "UTC" so HH:MM assertions match UTC-stored Date values directly.
+    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", timezone: "UTC" },
   }),
 }));
 
@@ -103,7 +104,7 @@ describe("GET /api/bookings/shifts-on-date", () => {
   it("returns shift from a single-session booking that overlaps the date", async () => {
     const { GET } = await load();
     await seedBooking([
-      { startAt: new Date("2026-08-15T10:00:00"), endAt: new Date("2026-08-15T18:00:00") },
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
     ], { title: "Carter Wedding" });
 
     const req = makeReq("2026-08-15");
@@ -122,8 +123,8 @@ describe("GET /api/bookings/shifts-on-date", () => {
     // Query Aug 20 → should return session 2's 14:00–20:00, NOT session 1's 09:00–17:00.
     const { GET } = await load();
     await seedBooking([
-      { startAt: new Date("2026-08-10T09:00:00"), endAt: new Date("2026-08-10T17:00:00") },
-      { startAt: new Date("2026-08-20T14:00:00"), endAt: new Date("2026-08-20T20:00:00") },
+      { startAt: new Date("2026-08-10T09:00:00Z"), endAt: new Date("2026-08-10T17:00:00Z") },
+      { startAt: new Date("2026-08-20T14:00:00Z"), endAt: new Date("2026-08-20T20:00:00Z") },
     ], { title: "Multi-session Shoot" });
 
     const req = makeReq("2026-08-20");
@@ -142,10 +143,10 @@ describe("GET /api/bookings/shifts-on-date", () => {
     // Session 1 of booking B: Aug 15 with different times
     const { GET } = await load();
     await seedBooking([
-      { startAt: new Date("2026-08-15T09:00:00"), endAt: new Date("2026-08-15T12:00:00") },
+      { startAt: new Date("2026-08-15T09:00:00Z"), endAt: new Date("2026-08-15T12:00:00Z") },
     ], { title: "Morning Shoot" });
     await seedBooking([
-      { startAt: new Date("2026-08-15T14:00:00"), endAt: new Date("2026-08-15T18:00:00") },
+      { startAt: new Date("2026-08-15T14:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
     ], { title: "Afternoon Shoot" });
 
     const req = makeReq("2026-08-15");
@@ -160,7 +161,7 @@ describe("GET /api/bookings/shifts-on-date", () => {
   it("does not return cancelled bookings", async () => {
     const { GET } = await load();
     await seedBooking([
-      { startAt: new Date("2026-08-15T10:00:00"), endAt: new Date("2026-08-15T18:00:00") },
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
     ], { status: "cancelled" });
 
     const req = makeReq("2026-08-15");
@@ -172,7 +173,7 @@ describe("GET /api/bookings/shifts-on-date", () => {
   it("excludes the booking specified by excludeId", async () => {
     const { GET } = await load();
     const b = await seedBooking([
-      { startAt: new Date("2026-08-15T10:00:00"), endAt: new Date("2026-08-15T18:00:00") },
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
     ]);
 
     const req = makeReq("2026-08-15", b._id.toString());
@@ -184,7 +185,7 @@ describe("GET /api/bookings/shifts-on-date", () => {
   it("never leaks another workspace's bookings (tenant isolation)", async () => {
     const { GET } = await load();
     await seedBooking([
-      { startAt: new Date("2026-08-15T10:00:00"), endAt: new Date("2026-08-15T18:00:00") },
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
     ], { workspaceId: otherWorkspaceId });
 
     const req = makeReq("2026-08-15");
@@ -204,8 +205,8 @@ describe("GET /api/bookings/shifts-on-date", () => {
       title: "Legacy Booking",
       status: "booked",
       sessions: [],
-      firstSessionStart: new Date("2026-08-15T10:00:00"),
-      lastSessionEnd: new Date("2026-08-15T18:00:00"),
+      firstSessionStart: new Date("2026-08-15T10:00:00Z"),
+      lastSessionEnd: new Date("2026-08-15T18:00:00Z"),
       location: { address: "" },
       amount: { total: 0, deposit: 0, currency: "PHP" },
       createdAt: new Date(),
@@ -220,5 +221,34 @@ describe("GET /api/bookings/shifts-on-date", () => {
     expect(body.shifts[0].title).toBe("Legacy Booking");
     expect(body.shifts[0].shiftStart).toBe("10:00");
     expect(body.shifts[0].shiftEnd).toBe("18:00");
+  });
+
+  it("returns all-day sentinel (00:00–23:59) for a multi-day legacy booking queried on a mid-span date", async () => {
+    // Verifies the isMultiDay sentinel branch: a legacy booking spanning Aug 15–17
+    // queried on the middle date (Aug 16) should yield shiftStart=00:00/shiftEnd=23:59
+    // rather than exposing the raw firstSessionStart/lastSessionEnd wall times.
+    const { GET } = await load();
+    await Booking.collection.insertOne({
+      workspaceId,
+      clientId,
+      clientName: "Multi-day Legacy Client",
+      title: "Multi-day Legacy Booking",
+      status: "booked",
+      sessions: [],
+      firstSessionStart: new Date("2026-08-15T10:00:00Z"),
+      lastSessionEnd: new Date("2026-08-17T18:00:00Z"),
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const req = makeReq("2026-08-16");
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(1);
+    expect(body.shifts[0].shiftStart).toBe("00:00");
+    expect(body.shifts[0].shiftEnd).toBe("23:59");
   });
 });

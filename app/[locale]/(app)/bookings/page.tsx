@@ -18,6 +18,13 @@ import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
+type ClientHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -69,22 +76,24 @@ export default async function BookingsPage({
     includeCancelled: sp.includeCancelled === "1",
   });
 
-  // Fetch only the clients referenced by these bookings — keeps email lookup
-  // cheap and avoids loading the full workspace client list.
-  const clientIds = Array.from(
-    new Set(bookings.map((b) => b.clientId?.toString()).filter(Boolean))
-  );
-  const clientEmails =
-    clientIds.length > 0
-      ? await Client.find({
-          _id: { $in: clientIds },
-          workspaceId: workspace._id,
-        })
-          .select({ _id: 1, email: 1 })
-          .lean()
-      : [];
+  // Fetch all clients for the workspace — used by the booking wizard's
+  // client picker. Limit 1000 covers all realistic workspace sizes and avoids
+  // per-keystroke API calls in the modal.
+  const allClients = await Client.find({ workspaceId: workspace._id })
+    .select({ _id: 1, name: 1, email: 1, phone: 1 })
+    .sort({ name: 1 })
+    .limit(1000)
+    .lean();
+  const initialClients: ClientHit[] = allClients.map((c) => ({
+    id: c._id.toString(),
+    name: c.name,
+    email: c.email ?? null,
+    phone: c.phone ?? null,
+  }));
+
+  // Build a lookup map for email by client id — used for calendar event enrichment.
   const emailByClientId = new Map(
-    clientEmails.map((c) => [c._id.toString(), c.email ?? null])
+    allClients.map((c) => [c._id.toString(), c.email ?? null])
   );
 
   const today = new Date();
@@ -158,6 +167,9 @@ export default async function BookingsPage({
         <CalendarView
           events={events}
           defaultDate={defaultDate}
+          initialClients={initialClients}
+          defaultCurrency={workspace.currency as SupportedCurrency}
+          locale={locale}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),
@@ -182,22 +194,24 @@ export default async function BookingsPage({
         <BookingDetailModal bookingId={sp.detail} locale={locale} />
       ) : null}
 
-      {sp.add === "1" ? (
+      {view !== "calendar" && sp.add === "1" ? (
         <BookingWizardModal
           mode="create"
           defaultDate={sp.date}
           defaultTime={sp.time}
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
+          clients={initialClients}
         />
       ) : null}
 
-      {sp.edit ? (
+      {view !== "calendar" && sp.edit ? (
         <BookingWizardModal
           mode="edit"
           bookingId={sp.edit}
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
+          clients={initialClients}
         />
       ) : null}
     </div>

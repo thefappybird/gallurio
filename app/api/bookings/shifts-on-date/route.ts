@@ -5,6 +5,67 @@ import { Booking } from "@/lib/db/models";
 
 export const runtime = "nodejs";
 
+const FALLBACK_TZ = "Asia/Manila";
+
+/**
+ * Returns the UTC instant corresponding to HH:MM:SS.mmm on `dateStr`
+ * (YYYY-MM-DD) in `timeZone`, by parsing the Intl-formatted parts.
+ */
+function dayBoundInTz(
+  dateStr: string,
+  timeZone: string,
+  h: number,
+  min: number,
+  sec: number,
+  ms: number
+): Date {
+  // Build a wall-clock string in the target TZ and parse it as UTC offset
+  // using Intl to avoid reliance on the server's local clock.
+  const [year, month, day] = dateStr.split("-").map(Number);
+  // Approximate: start with a UTC midnight for that date, then shift by TZ offset.
+  // We use the "en-CA" locale trick to get a stable ISO-like output from Intl.
+  const probe = new Date(Date.UTC(year, month - 1, day, h, min, sec, ms));
+  // Ask Intl what the local time is at `probe` in the target TZ so we can
+  // compute the offset and adjust.
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(probe);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
+  const localH = get("hour");
+  const localMin = get("minute");
+  const localSec = get("second");
+  // Offset between what we want (h:min:sec) and what Intl reported at probe.
+  // Subtract to shift the UTC value so Intl would report the desired wall time.
+  const diffMs =
+    (h - localH) * 3_600_000 +
+    (min - localMin) * 60_000 +
+    (sec - localSec) * 1_000 +
+    ms;
+  return new Date(probe.getTime() + diffMs);
+}
+
+/** Format a UTC Date as HH:MM in the given IANA timezone. */
+function formatHHMM(date: Date, timeZone: string): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(date);
+  const h = parts.find((p) => p.type === "hour")?.value ?? "00";
+  const m = parts.find((p) => p.type === "minute")?.value ?? "00";
+  return `${h}:${m}`;
+}
+
 /**
  * Returns shifts in the workspace that touch the given date. A shift "touches"
  * the date if any session's range overlaps [dayStart, dayEnd]. Returns the
@@ -24,10 +85,17 @@ export async function GET(req: Request) {
 
   await connectDB();
 
-  // Day boundaries in LOCAL time (server clock).
-  const [y, m, d] = dateParam.split("-").map(Number);
-  const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
-  const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+  // Resolve workspace timezone — fall back to Manila (launch market) if not set.
+  const tz: string = (ctx.workspace as { timezone?: string | null }).timezone || (() => {
+    console.warn(`[shifts-on-date] workspace ${ctx.workspace._id} has no timezone set; defaulting to ${FALLBACK_TZ}`);
+    return FALLBACK_TZ;
+  })();
+
+  // Day boundaries as UTC instants matching 00:00:00.000 and 23:59:59.999 in
+  // the workspace's timezone, so a Manila workspace querying "2026-08-15" gets
+  // the correct Manila-day window regardless of where Vercel runs.
+  const dayStart = dayBoundInTz(dateParam, tz, 0, 0, 0, 0);
+  const dayEnd = dayBoundInTz(dateParam, tz, 23, 59, 59, 999);
 
   // Any booking with a session (or legacy firstSessionStart/lastSessionEnd)
   // whose range overlaps [dayStart, dayEnd].
@@ -78,16 +146,17 @@ export async function GET(req: Request) {
       // Multi-day booking queried mid-span: the overall window (e.g. Jul 1 09:00
       // → Jul 3 18:00) is not the correct shift for the queried day. Return an
       // all-day sentinel so conflict checks always treat this as overlapping.
-      const isMultiDay =
-        startDate.getFullYear() !== endDate.getFullYear() ||
-        startDate.getMonth() !== endDate.getMonth() ||
-        startDate.getDate() !== endDate.getDate();
+      const startTzStr = formatHHMM(startDate, tz);
+      const endTzStr = formatHHMM(endDate, tz);
+      // Compare calendar dates in the workspace TZ to detect multi-day span.
+      const dateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
+      const isMultiDay = dateFmt.format(startDate) !== dateFmt.format(endDate);
       return [
         {
           id: b._id.toString(),
           title: b.title,
-          shiftStart: isMultiDay ? "00:00" : `${String(startDate.getHours()).padStart(2, "0")}:${String(startDate.getMinutes()).padStart(2, "0")}`,
-          shiftEnd: isMultiDay ? "23:59" : `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
+          shiftStart: isMultiDay ? "00:00" : startTzStr,
+          shiftEnd: isMultiDay ? "23:59" : endTzStr,
         },
       ];
     }
@@ -98,8 +167,8 @@ export async function GET(req: Request) {
       {
         id: b._id.toString(),
         title: b.title,
-        shiftStart: `${String(startDate.getHours()).padStart(2, "0")}:${String(startDate.getMinutes()).padStart(2, "0")}`,
-        shiftEnd: `${String(endDate.getHours()).padStart(2, "0")}:${String(endDate.getMinutes()).padStart(2, "0")}`,
+        shiftStart: formatHHMM(startDate, tz),
+        shiftEnd: formatHHMM(endDate, tz),
       },
     ];
   });

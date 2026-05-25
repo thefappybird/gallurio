@@ -32,6 +32,13 @@ import type {
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
 
+type ClientHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
+
 type Props = {
   mode: WizardMode;
   /** Booking id in edit mode. */
@@ -44,6 +51,10 @@ type Props = {
   /** Pre-fetched booking values for edit mode. */
   initialValues?: Partial<WizardValues>;
   locale: string;
+  /** Pre-fetched client list — avoids per-keystroke API calls in ClientStep. */
+  clients?: ClientHit[];
+  /** Called after a new client is successfully created via this wizard. */
+  onClientCreated?: () => void;
 };
 
 type StepDef = {
@@ -66,6 +77,8 @@ export function BookingWizardModal({
   defaultCurrency,
   initialValues,
   locale,
+  clients,
+  onClientCreated,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -78,11 +91,15 @@ export function BookingWizardModal({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(mode === "edit" && !initialValues);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [conflictCheckError, setConflictCheckError] = useState(false);
   const [editClientName, setEditClientName] = useState<string | undefined>(
     initialValues?.client?.mode === "existing"
       ? initialValues.client.clientName
       : undefined
   );
+  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
+  const reqIdRef = useRef(0);
   /** Steps that have failed validation since the user last interacted with
    *  them. Drives the red-asterisk + shake markers in the header. */
   const [stepErrors, setStepErrors] = useState<Set<number>>(new Set());
@@ -185,14 +202,16 @@ export function BookingWizardModal({
         setEditClientName(b.clientName ?? undefined);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        console.error("[booking-wizard] failed to load booking", { bookingId, err });
         setLoading(false);
+        setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
       });
     return () => {
       cancelled = true;
     };
-  }, [mode, bookingId, initialValues, defaultCurrency, form]);
+  }, [mode, bookingId, initialValues, defaultCurrency, form, t]);
 
   const {
     control,
@@ -215,12 +234,16 @@ export function BookingWizardModal({
 
   // Fetch shifts for each unique startDate. Clears stale dates automatically.
   // Marks each date as loading before the fetch and clears it after.
+  // Uses an incrementing request id to discard stale results when the user
+  // changes dates faster than the fetch resolves (race-condition guard).
   useEffect(() => {
     const uniqueDates = [...new Set(sessionDates.filter(Boolean))];
     if (uniqueDates.length === 0) return;
 
+    const myId = ++reqIdRef.current;
     let cancelled = false;
     setLoadingDates(new Set(uniqueDates));
+    setConflictCheckError(false);
 
     Promise.all(
       uniqueDates.map(async (date) => {
@@ -230,17 +253,30 @@ export function BookingWizardModal({
           const r = await fetch(
             `/api/bookings/shifts-on-date?${params.toString()}`
           );
-          const data: { shifts: ShiftHit[] } = r.ok
-            ? await r.json()
-            : { shifts: [] };
+          if (!r.ok) {
+            // Non-2xx treated as check unavailable — return null sentinel.
+            return [date, null] as const;
+          }
+          const data: { shifts: ShiftHit[] } = await r.json();
           return [date, data.shifts ?? []] as const;
         } catch {
-          return [date, [] as ShiftHit[]] as const;
+          return [date, null] as const;
         }
       })
     ).then((entries) => {
-      if (cancelled) return;
-      setRawShiftsByDate(Object.fromEntries(entries));
+      if (cancelled || myId !== reqIdRef.current) return;
+      const hasError = entries.some(([, v]) => v === null);
+      if (hasError) {
+        setConflictCheckError(true);
+        setRawShiftsByDate({});
+      } else {
+        setConflictCheckError(false);
+        setRawShiftsByDate(
+          Object.fromEntries(
+            entries.map(([date, shifts]) => [date, shifts as ShiftHit[]])
+          )
+        );
+      }
       setLoadingDates(new Set());
     });
 
@@ -387,6 +423,11 @@ export function BookingWizardModal({
           throw new Error(data.error ?? "Couldn't create booking");
         }
         toast.success(t("createdToast"));
+        // If a new client was created, notify the parent so it can refresh
+        // its client list without a full page reload.
+        if (values.client.mode === "new") {
+          onClientCreated?.();
+        }
       } else {
         if (!bookingId) throw new Error("Missing booking id");
         const diff = buildEditDiff(values, defaultsRef.current);
@@ -413,7 +454,7 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close]);
+  }, [mode, bookingId, t, close, onClientCreated]);
 
   const onSubmit = handleSubmit(async (values) => {
     // If any session has scheduling conflicts, surface a confirm dialog before
@@ -541,15 +582,24 @@ export function BookingWizardModal({
                 {t("loading")}
               </p>
             ) : null}
-            {!loading && current.id === "client" ? (
+            {loadError ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <p className="text-sm text-destructive">{loadError}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => attemptClose(false)}>
+                  {t("cancel")}
+                </Button>
+              </div>
+            ) : null}
+            {!loading && !loadError && current.id === "client" ? (
               <ClientStep
                 control={control}
                 errors={errors}
                 readOnly={isReadOnlyClient}
                 readOnlyClientName={editClientName}
+                clients={clients}
               />
             ) : null}
-            {!loading && current.id === "event" ? (
+            {!loading && !loadError && current.id === "event" ? (
               <EventStep
                 control={control}
                 register={register}
@@ -558,16 +608,17 @@ export function BookingWizardModal({
                 errors={errors}
                 conflictsBySession={conflictsBySession}
                 loadingDates={loadingDates}
+                conflictCheckError={conflictCheckError}
               />
             ) : null}
-            {!loading && current.id === "pricing" ? (
+            {!loading && !loadError && current.id === "pricing" ? (
               <PricingStep
                 control={control}
                 register={register}
                 errors={errors}
               />
             ) : null}
-            {!loading && current.id === "review" ? (
+            {!loading && !loadError && current.id === "review" ? (
               <ReviewStep values={values} locale={locale} />
             ) : null}
           </div>
@@ -618,7 +669,11 @@ export function BookingWizardModal({
                     type="button"
                     size="sm"
                     onClick={nextStep}
-                    disabled={submitting || (STEPS[stepIndex].id === "event" && loadingDates.size > 0)}
+                    disabled={
+                      submitting ||
+                      !!loadError ||
+                      (STEPS[stepIndex].id === "event" && (loadingDates.size > 0 || conflictCheckError))
+                    }
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
                     variant="brand"
                     className={cn(stepErrors.has(stepIndex) && "animate-shake")}
@@ -631,7 +686,7 @@ export function BookingWizardModal({
                     type="submit"
                     variant="brand"
                     size="sm"
-                    disabled={submitting}
+                    disabled={submitting || !!loadError}
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />

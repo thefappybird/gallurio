@@ -47,6 +47,7 @@
     },
     "bookings": {
       "wizard": {
+        "loadError": "Tidak dapat memuat pemesanan ini. Tutup dan coba lagi.",
         "event": {
           "checkingConflicts": "Memeriksa konflik…"
         },
@@ -62,7 +63,8 @@
           "title": "Konflik jadwal pada {date}",
           "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
           "cancel": "Batal",
-          "moveAnyway": "Pindahkan saja"
+          "moveAnyway": "Pindahkan saja",
+          "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi"
         },
         "pastDateConfirm": {
           "title": "Pindah ke tanggal lampau?",
@@ -70,6 +72,67 @@
           "confirm": "Pindah ke lampau",
           "cancel": "Batal"
         }
+      },
+      "import": {
+        "title": "Impor pemesanan",
+        "dropzone": "Letakkan file CSV di sini, atau klik untuk memilih",
+        "dropzoneActive": "Lepaskan untuk mengunggah",
+        "template": "Unduh template CSV",
+        "preview": "{total} baris ditemukan",
+        "validCount": "{count} valid",
+        "invalidCount": "{count} dengan kesalahan",
+        "importButton": "Impor {count} pemesanan",
+        "importing": "Mengimpor…",
+        "noValidRows": "Tidak ada baris valid untuk diimpor. Perbaiki kesalahan di atas.",
+        "success": "Berhasil mengimpor {count} pemesanan.",
+        "partialSuccess": "Mengimpor {count} pemesanan. {failed} baris tidak dapat diimpor.",
+        "parseError": "Tidak dapat membaca file ini. Pastikan itu adalah CSV yang valid.",
+        "columns": {
+          "row": "#",
+          "title": "Judul",
+          "client": "Klien",
+          "start": "Mulai",
+          "error": "Kesalahan"
+        },
+        "results": {
+          "title": "Kesalahan impor",
+          "kindValidation": "Validasi",
+          "kindLookup": "Pencarian",
+          "kindServer": "Server",
+          "line": "Baris {csvLine}",
+          "rawRow": "Baris mentah",
+          "summary": "Diimpor {created} · Dilewati {skipped}",
+          "hint": "Perbaiki baris di atas dan unggah ulang untuk mengimpornya."
+        },
+        "dialog": {
+          "columnHeader": "Kolom",
+          "notesHeader": "Catatan",
+          "required": "wajib",
+          "optional": "opsional",
+          "failedWithDetails": "Impor gagal — lihat detailnya",
+          "failedRetry": "Impor gagal. Silakan coba lagi.",
+          "close": "Tutup",
+          "cancel": "Batal",
+          "viewErrors": "Lihat {n} kesalahan",
+          "spec": {
+            "clientName": { "note": "Nama lengkap klien" },
+            "clientEmail": { "note": "Digunakan untuk mendeduplikasi klien yang ada" },
+            "startAt": { "note": "ISO 8601 — mis. 2026-06-15T09:00" },
+            "endAt": { "note": "Default ke startAt jika dihilangkan" },
+            "title": { "note": "Judul pemesanan" },
+            "eventType": { "note": "pernikahan, korporat, potret, dll." },
+            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
+            "amountTotal": { "note": "Total jumlah pemesanan" },
+            "amountDeposit": { "note": "Jumlah deposit" },
+            "currency": { "note": "Default ke mata uang ruang kerja" },
+            "locationAddress": { "note": "Venue atau teks lokasi" },
+            "notes": { "note": "Catatan internal" }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "Unduh pemesanan sebagai CSV",
+        "empty": "Tidak ada pemesanan untuk diekspor"
       }
     },
     "sidebar": {

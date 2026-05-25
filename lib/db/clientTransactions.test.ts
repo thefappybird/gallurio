@@ -1,10 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
-import mongoose, { Types } from "mongoose";
-import {
-  startInMemoryMongo,
-  stopInMemoryMongo,
-  clearCollections,
-} from "@/test-utils/mongo";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
+import { Types } from "mongoose";
+import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Transaction } from "@/lib/db/models";
 import { recordBookingForClient } from "./clientTransactions";
 
@@ -33,10 +29,12 @@ const BASE_BOOKING = {
 
 beforeAll(async () => {
   await startInMemoryMongo();
-});
+}, 90_000);
+
 afterAll(async () => {
   await stopInMemoryMongo();
 });
+
 beforeEach(async () => {
   await clearCollections();
 });
@@ -161,7 +159,7 @@ describe("recordBookingForClient", () => {
         workspaceId: WS_B,
         clientId: clientA._id,
         booking: {
-          _id: new mongoose.Types.ObjectId(),
+          _id: new Types.ObjectId(),
           amount: { total: 1000, deposit: 500, currency: "PHP" },
           firstSessionStart: new Date(),
         },
@@ -171,5 +169,78 @@ describe("recordBookingForClient", () => {
 
     const orphanCount = await Transaction.countDocuments({});
     expect(orphanCount).toBe(0);
+  });
+
+  // P1-9: back-dated booking must NOT regress $max fields or overwrite the
+  // lastPaymentAmount that belongs to a newer payment.
+  it("back-dated booking does not regress lastBookingAt, lastPaymentDate, or lastPaymentAmount", async () => {
+    await makeClient();
+
+    // First call — newer date, larger deposit.
+    await recordBookingForClient({
+      workspaceId: WS_ID,
+      clientId: CLIENT_ID,
+      booking: {
+        _id: new Types.ObjectId(),
+        amount: { total: 10_000, deposit: 5_000, currency: "PHP" },
+        firstSessionStart: new Date("2026-08-10T10:00:00Z"),
+      },
+      source: "manual",
+    });
+
+    // Second call — older date, smaller deposit (back-dated import).
+    await recordBookingForClient({
+      workspaceId: WS_ID,
+      clientId: CLIENT_ID,
+      booking: {
+        _id: new Types.ObjectId(),
+        amount: { total: 5_000, deposit: 1_000, currency: "PHP" },
+        firstSessionStart: new Date("2026-06-01T10:00:00Z"),
+      },
+      source: "import",
+    });
+
+    const client = await Client.findById(CLIENT_ID).lean();
+
+    // lastBookingAt must remain the later date.
+    expect(client?.lastBookingAt?.toISOString()).toBe("2026-08-10T10:00:00.000Z");
+    // lastPaymentDate must remain the later date.
+    expect(client?.lastPaymentDate?.toISOString()).toBe("2026-08-10T10:00:00.000Z");
+    // lastPaymentAmount must reflect the newer entry (5000), not the back-dated one (1000).
+    expect(client?.lastPaymentAmount).toBe(5_000);
+    // Both bookings contributed to totals.
+    expect(client?.totalSpent).toBe(6_000);
+    expect(client?.bookingsCount).toBe(2);
+  });
+
+  // P1-11: transaction rollback on partial-write failure.
+  // Transaction.create rolls back when Client.updateOne fails inside
+  // withTransaction — the txn abort leaves 0 Transaction docs.
+  it("rolls back Transaction.create when Client.updateOne throws (no orphaned Transaction doc)", async () => {
+    await makeClient();
+
+    const spy = vi
+      .spyOn(Client, "updateOne")
+      .mockRejectedValueOnce(new Error("forced"));
+
+    await expect(
+      recordBookingForClient({
+        workspaceId: WS_ID,
+        clientId: CLIENT_ID,
+        booking: {
+          _id: new Types.ObjectId(),
+          amount: { total: 10_000, deposit: 5_000, currency: "PHP" },
+          firstSessionStart: new Date("2026-08-10T10:00:00Z"),
+        },
+        source: "manual",
+      })
+    ).rejects.toThrow("forced");
+
+    // The transaction must have rolled back: Transaction.create ran inside
+    // the same session so the aborted txn persists 0 documents.
+    const count = await Transaction.countDocuments({});
+    expect(count).toBe(0);
+
+    spy.mockRestore();
   });
 });

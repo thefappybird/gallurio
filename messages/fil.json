@@ -47,6 +47,7 @@
     },
     "bookings": {
       "wizard": {
+        "loadError": "Hindi ma-load ang booking na ito. Isara at subukan muli.",
         "event": {
           "checkingConflicts": "Sinisiyasat ang mga salungatan…"
         },
@@ -62,8 +63,76 @@
           "title": "Salungatan sa iskedyul noong {date}",
           "description": "Ang paglipat ng booking na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
           "cancel": "Kanselahin",
-          "moveAnyway": "Ialpat pa rin"
+          "moveAnyway": "Ialpat pa rin",
+          "conflictCheckFailed": "Hindi ma-verify ang mga salungatan — pakisubukan muli"
+        },
+        "pastDateConfirm": {
+          "title": "Lipat sa nakaraang petsa?",
+          "description": "Inililipat mo ang booking na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
+          "confirm": "Lipat sa nakaraan",
+          "cancel": "Kanselahin"
         }
+      },
+      "import": {
+        "title": "Mag-import ng mga booking",
+        "dropzone": "Mag-drop ng CSV file dito, o mag-click para pumili",
+        "dropzoneActive": "I-drop para mag-upload",
+        "template": "I-download ang CSV template",
+        "preview": "{total} row(s) natagpuan",
+        "validCount": "{count} valid",
+        "invalidCount": "{count} may mga error",
+        "importButton": "I-import ang {count} booking(s)",
+        "importing": "Nag-iimport…",
+        "noValidRows": "Walang valid na row para i-import. Ayusin ang mga error sa itaas.",
+        "success": "Matagumpay na na-import ang {count} booking(s).",
+        "partialSuccess": "Na-import ang {count} booking(s). Hindi na-import ang {failed} row(s).",
+        "parseError": "Hindi mabasa ang file. Siguraduhing valid CSV ito.",
+        "columns": {
+          "row": "#",
+          "title": "Pamagat",
+          "client": "Kliyente",
+          "start": "Simula",
+          "error": "Error"
+        },
+        "results": {
+          "title": "Mga error sa import",
+          "kindValidation": "Validation",
+          "kindLookup": "Lookup",
+          "kindServer": "Server",
+          "line": "Linya {csvLine}",
+          "rawRow": "Raw na row",
+          "summary": "Na-import ang {created} · Nilaktawan ang {skipped}",
+          "hint": "Ayusin ang mga row sa itaas at muling i-upload para i-import ang mga ito."
+        },
+        "dialog": {
+          "columnHeader": "Kolumna",
+          "notesHeader": "Mga tala",
+          "required": "kailangan",
+          "optional": "opsyonal",
+          "failedWithDetails": "Nabigo ang import — tingnan ang mga detalye",
+          "failedRetry": "Nabigo ang import. Subukan muli.",
+          "close": "Isara",
+          "cancel": "Kanselahin",
+          "viewErrors": "Tingnan ang {n} error(s)",
+          "spec": {
+            "clientName": { "note": "Buong pangalan ng kliyente" },
+            "clientEmail": { "note": "Ginagamit para ma-deduplicate ang mga umiiral na kliyente" },
+            "startAt": { "note": "ISO 8601 — hal. 2026-06-15T09:00" },
+            "endAt": { "note": "Default sa startAt kung wala" },
+            "title": { "note": "Pamagat ng booking" },
+            "eventType": { "note": "kasal, corporate, portrait, atb." },
+            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
+            "amountTotal": { "note": "Kabuuang halaga ng booking" },
+            "amountDeposit": { "note": "Halaga ng deposito" },
+            "currency": { "note": "Default sa currency ng workspace" },
+            "locationAddress": { "note": "Venue o lokasyon" },
+            "notes": { "note": "Mga panloob na tala" }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "I-download ang mga booking bilang CSV",
+        "empty": "Walang booking para i-export"
       }
     },
     "sidebar": {

@@ -1,13 +1,21 @@
-import { MongoMemoryServer } from "mongodb-memory-server";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import mongoose from "mongoose";
 
-let mongo: MongoMemoryServer | null = null;
+// Replica set (not single-node) so code under test can use Mongoose sessions /
+// `withTransaction` — required by recordBookingForClient and any future helper
+// that needs multi-document atomicity.
+let mongo: MongoMemoryReplSet | null = null;
 
 export async function startInMemoryMongo() {
   if (mongo) return;
-  mongo = await MongoMemoryServer.create({
-    // Cold-start on Windows is slow (binary lookup + AV scan) — bump generously.
-    instance: { launchTimeout: 60_000 },
+  mongo = await MongoMemoryReplSet.create({
+    replSet: { count: 1 },
+    instanceOpts: [
+      {
+        // Cold-start on Windows is slow (binary lookup + AV scan) — bump generously.
+        launchTimeout: 60_000,
+      },
+    ],
   });
   await mongoose.connect(mongo.getUri(), { bufferCommands: false });
 }

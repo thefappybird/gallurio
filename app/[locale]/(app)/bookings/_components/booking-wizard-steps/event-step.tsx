@@ -44,6 +44,8 @@ type Props = {
   conflictsBySession: ShiftHit[][];
   /** Dates currently being fetched — used to show inline loading state per card. */
   loadingDates: Set<string>;
+  /** When true, the conflict-check fetch failed — show an inline warning. */
+  conflictCheckError?: boolean;
 };
 
 function todayIso() {
@@ -286,6 +288,7 @@ export function EventStep({
   errors,
   conflictsBySession,
   loadingDates,
+  conflictCheckError = false,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
   const tEvent = useTranslations("app.bookings.eventTypes");
@@ -355,6 +358,13 @@ export function EventStep({
           />
         </div>
       </div>
+
+      {/* Conflict-check error warning */}
+      {conflictCheckError ? (
+        <p className="text-xs text-destructive">
+          {"Couldn't verify conflicts — try again before continuing."}
+        </p>
+      ) : null}
 
       {/* Sessions list */}
       <div className="flex flex-col gap-2">

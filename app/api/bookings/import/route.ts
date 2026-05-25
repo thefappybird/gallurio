@@ -19,6 +19,8 @@ export type ImportErrorEntry = {
 export type ImportResult = {
   created: number;
   skipped: number;
+  validationErrors: number;
+  serverErrors: number;
   errors: ImportErrorEntry[];
 };
 
@@ -142,11 +144,16 @@ export async function POST(req: Request) {
           },
           source: "import",
         });
+        created.push(i);
       } catch (err) {
-        console.error("[bookings.import] enrich client failed", err);
+        console.error("[bookings.import] enrich client failed", { index: i, err });
+        errors.push({
+          index: i,
+          row: raw,
+          kind: "server",
+          message: "Booking created but client history update failed — see server logs",
+        });
       }
-
-      created.push(i);
     } catch (err) {
       console.error("[bookings.import] booking create failed", { index: i, err });
       errors.push({
@@ -159,9 +166,11 @@ export async function POST(req: Request) {
   }
 
   const skipped = errors.length;
+  const validationErrors = errors.filter((e) => e.kind === "validation").length;
+  const serverErrors = errors.filter((e) => e.kind === "server").length;
 
   return NextResponse.json(
-    { created: created.length, skipped, errors } satisfies ImportResult,
+    { created: created.length, skipped, validationErrors, serverErrors, errors } satisfies ImportResult,
     { status: errors.length === json.rows.length ? 422 : 200 }
   );
 }

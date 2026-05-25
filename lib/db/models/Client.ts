@@ -3,6 +3,7 @@ import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 const clientTransactionEntrySchema = new Schema(
   {
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true },
+    // transactionId is null for zero-deposit bookings — no Transaction doc is created in that case
     transactionId: { type: Schema.Types.ObjectId, ref: "Transaction", default: null },
     amount: { type: Number, required: true },
     currency: { type: String, default: "PHP" },

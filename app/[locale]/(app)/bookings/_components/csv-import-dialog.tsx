@@ -40,22 +40,22 @@ type Props = {
   defaultCurrency: string;
 };
 
-const HEADER_SPEC = [
-  { name: "clientName", required: true, note: "Full name of the client" },
-  { name: "clientEmail", required: false, note: "Used to deduplicate existing clients" },
-  { name: "startAt", required: true, note: "ISO 8601 — e.g. 2026-06-15T09:00" },
-  { name: "endAt", required: false, note: "Defaults to startAt if omitted" },
-  { name: "title", required: false, note: "Booking title" },
-  { name: "eventType", required: false, note: "wedding, corporate, portrait, etc." },
-  { name: "status", required: false, note: "inquiry, quoted, booked, completed, cancelled" },
-  { name: "amountTotal", required: false, note: "Total booking amount" },
-  { name: "amountDeposit", required: false, note: "Deposit amount" },
-  { name: "currency", required: false, note: "Defaults to workspace currency" },
-  { name: "locationAddress", required: false, note: "Venue or location text" },
-  { name: "notes", required: false, note: "Internal notes" },
+const HEADER_SPEC_KEYS = [
+  { name: "clientName", required: true },
+  { name: "clientEmail", required: false },
+  { name: "startAt", required: true },
+  { name: "endAt", required: false },
+  { name: "title", required: false },
+  { name: "eventType", required: false },
+  { name: "status", required: false },
+  { name: "amountTotal", required: false },
+  { name: "amountDeposit", required: false },
+  { name: "currency", required: false },
+  { name: "locationAddress", required: false },
+  { name: "notes", required: false },
 ] as const;
 
-const TEMPLATE_HEADERS = HEADER_SPEC.map((h) => h.name);
+const TEMPLATE_HEADERS = HEADER_SPEC_KEYS.map((h) => h.name);
 
 const SAMPLE_ROW = [
   "Jane Smith",
@@ -95,6 +95,7 @@ function quoteField(v: string) {
 
 export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const t = useTranslations("app.bookings.import");
+  const tDialog = useTranslations("app.bookings.import.dialog");
   const tCols = useTranslations("app.bookings.import.columns");
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -209,11 +210,11 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
       if (data.errors.length > 0) {
         setShowResultsDialog(true);
         if (data.created === 0) {
-          toast.error("Import failed — see details");
+          toast.error(tDialog("failedWithDetails"));
         }
       }
     } catch {
-      toast.error("Import failed. Please try again.");
+      toast.error(tDialog("failedRetry"));
     } finally {
       setImporting(false);
     }
@@ -247,11 +248,11 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
             {!hasRows ? (
               <div className="border border-border">
                 <div className="grid grid-cols-[1fr_auto_1fr] border-b border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  <span>Column</span>
+                  <span>{tDialog("columnHeader")}</span>
                   <span />
-                  <span>Notes</span>
+                  <span>{tDialog("notesHeader")}</span>
                 </div>
-                {HEADER_SPEC.map((h) => (
+                {HEADER_SPEC_KEYS.map((h) => (
                   <div
                     key={h.name}
                     className="grid grid-cols-[1fr_auto_1fr] items-center border-b border-border px-3 py-1.5 text-xs last:border-0"
@@ -260,15 +261,15 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                     <span className="px-2">
                       {h.required ? (
                         <Badge variant="default" className="text-[10px] leading-none">
-                          required
+                          {tDialog("required")}
                         </Badge>
                       ) : (
                         <Badge variant="secondary" className="text-[10px] leading-none">
-                          optional
+                          {tDialog("optional")}
                         </Badge>
                       )}
                     </span>
-                    <span className="text-muted-foreground">{h.note}</span>
+                    <span className="text-muted-foreground">{tDialog(`spec.${h.name}.note`)}</span>
                   </div>
                 ))}
               </div>
@@ -396,7 +397,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
 
           <div className="flex items-center justify-between gap-2 border-t border-border bg-muted/30 px-4 py-3">
             <Button type="button" variant="outline" size="sm" onClick={handleClose} disabled={importing}>
-              {done ? "Close" : "Cancel"}
+              {done ? tDialog("close") : tDialog("cancel")}
             </Button>
 
             {hasRows && !done ? (
@@ -425,7 +426,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                     size="sm"
                     onClick={() => setShowResultsDialog(true)}
                   >
-                    View {importResult.errors.length} error(s)
+                    {tDialog("viewErrors", { n: importResult.errors.length })}
                   </Button>
                 ) : null}
                 <span className="text-xs text-muted-foreground">

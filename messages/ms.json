@@ -47,6 +47,7 @@
     },
     "bookings": {
       "wizard": {
+        "loadError": "Tidak dapat memuatkan tempahan ini. Tutup dan cuba lagi.",
         "event": {
           "checkingConflicts": "Menyemak konflik…"
         },
@@ -62,7 +63,8 @@
           "title": "Konflik jadual pada {date}",
           "description": "Memindahkan tempahan ini menciptakan pertindihan dengan satu atau lebih syif sedia ada. Anda boleh memindahkannya atau membatalkan.",
           "cancel": "Batal",
-          "moveAnyway": "Pindahkan sekaligus"
+          "moveAnyway": "Pindahkan sekaligus",
+          "conflictCheckFailed": "Tidak dapat mengesahkan konflik — sila cuba lagi"
         },
         "pastDateConfirm": {
           "title": "Pindah ke tarikh lepas?",
@@ -70,6 +72,67 @@
           "confirm": "Pindah ke lepas",
           "cancel": "Batal"
         }
+      },
+      "import": {
+        "title": "Import tempahan",
+        "dropzone": "Lepaskan fail CSV di sini, atau klik untuk memilih",
+        "dropzoneActive": "Lepaskan untuk memuat naik",
+        "template": "Muat turun templat CSV",
+        "preview": "{total} baris ditemui",
+        "validCount": "{count} sah",
+        "invalidCount": "{count} dengan ralat",
+        "importButton": "Import {count} tempahan",
+        "importing": "Mengimport…",
+        "noValidRows": "Tiada baris sah untuk diimport. Betulkan ralat di atas.",
+        "success": "Berjaya mengimport {count} tempahan.",
+        "partialSuccess": "Mengimport {count} tempahan. {failed} baris tidak dapat diimport.",
+        "parseError": "Tidak dapat membaca fail ini. Pastikan ia adalah CSV yang sah.",
+        "columns": {
+          "row": "#",
+          "title": "Tajuk",
+          "client": "Pelanggan",
+          "start": "Mula",
+          "error": "Ralat"
+        },
+        "results": {
+          "title": "Ralat import",
+          "kindValidation": "Pengesahan",
+          "kindLookup": "Carian",
+          "kindServer": "Pelayan",
+          "line": "Baris {csvLine}",
+          "rawRow": "Baris mentah",
+          "summary": "Diimport {created} · Dilangkau {skipped}",
+          "hint": "Betulkan baris di atas dan muat naik semula untuk mengimportnya."
+        },
+        "dialog": {
+          "columnHeader": "Lajur",
+          "notesHeader": "Nota",
+          "required": "diperlukan",
+          "optional": "pilihan",
+          "failedWithDetails": "Import gagal — lihat butiran",
+          "failedRetry": "Import gagal. Sila cuba lagi.",
+          "close": "Tutup",
+          "cancel": "Batal",
+          "viewErrors": "Lihat {n} ralat",
+          "spec": {
+            "clientName": { "note": "Nama penuh pelanggan" },
+            "clientEmail": { "note": "Digunakan untuk menyahdupl pelanggan sedia ada" },
+            "startAt": { "note": "ISO 8601 — cth. 2026-06-15T09:00" },
+            "endAt": { "note": "Lalai ke startAt jika ditinggalkan" },
+            "title": { "note": "Tajuk tempahan" },
+            "eventType": { "note": "perkahwinan, korporat, potret, dsb." },
+            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
+            "amountTotal": { "note": "Jumlah tempahan keseluruhan" },
+            "amountDeposit": { "note": "Jumlah deposit" },
+            "currency": { "note": "Lalai ke mata wang ruang kerja" },
+            "locationAddress": { "note": "Venue atau teks lokasi" },
+            "notes": { "note": "Nota dalaman" }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "Muat turun tempahan sebagai CSV",
+        "empty": "Tiada tempahan untuk dieksport"
       }
     },
     "sidebar": {

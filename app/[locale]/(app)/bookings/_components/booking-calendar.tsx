@@ -23,24 +23,13 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
+import { splitCandleAtMidnight } from "@/lib/bookings/midnight-split";
 
 export type OverflowEvent = {
   type: "overflow";
   id: string;
-  bookingId: string;
-  title: string;
   start: Date;
   end: Date;
-  status: "booked";
-  clientName: string;
-  clientEmail: null;
-  rangeStart: Date;
-  rangeEnd: Date;
-  sessionIndex: 0;
-  sessionStartAt: Date;
-  sessionEndAt: Date;
-  sessionDayCount: 1;
-  sessionPastDayCount: 0;
   overflowCount: number;
   overflowEvents: CalendarEvent[];
 };
@@ -77,6 +66,12 @@ export type CalendarEvent = {
   /** Days in this session that are strictly before today (used for past-aware
    *  shift logic in DnD). */
   sessionPastDayCount: number;
+  /** Set by the midnight-split pass for week/day views. The evening half of an
+   *  overnight candle (start → 23:59:59.999). */
+  isEveningHead?: boolean;
+  /** Set by the midnight-split pass for week/day views. The morning half of an
+   *  overnight candle (00:00 → original end). */
+  isMorningContinuation?: boolean;
 };
 
 /** Union of a real booking event and the synthetic overflow placeholder. */
@@ -341,11 +336,17 @@ export function MonthBookingEvent({
 }
 
 /** Week/day view: three-line stacked — title / client / time range. */
-function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
-  const ev = event;
+function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+  // Overflow events never appear in week/day view (only month view produces them).
+  // Guard defensively so the narrowing is correct for TS.
+  if ("type" in event && event.type === "overflow") return null;
+  const ev = event as CalendarEvent;
   const bg = STATUS_COLOR[ev.status];
   const clientDisplay = ev.clientName || "—";
-  const timeRange = formatTimeRange(ev.start, ev.end);
+  // For split overnight halves show the full original session times so the user
+  // always sees the real shift boundaries regardless of which half they hover.
+  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt);
+  const isContinuation = ev.isMorningContinuation === true;
   return (
     <div
       title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
@@ -354,16 +355,29 @@ function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
           ? "line-through opacity-80"
           : ""
       }`}
-      style={{ backgroundColor: bg }}
+      style={{
+        backgroundColor: bg,
+        // Morning continuation: omit top border radius cue by reducing top
+        // opacity on the stripe so it visually "continues" from the evening half.
+        opacity: isContinuation ? 0.85 : 1,
+      }}
     >
       <span
         className="absolute inset-y-0 left-0 w-1"
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="truncate text-sm font-semibold leading-tight">{ev.title}</span>
-      <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
-      <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+      {isContinuation ? (
+        <span className="truncate text-[10px] leading-tight opacity-70 italic">
+          ↑ {ev.title}
+        </span>
+      ) : (
+        <>
+          <span className="truncate text-sm font-semibold leading-tight">{ev.title}</span>
+          <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+          <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+        </>
+      )}
     </div>
   );
 }
@@ -624,20 +638,8 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
       const overflow: OverflowEvent = {
         type: "overflow",
         id: `overflow_${format(first.start, "yyyy-MM-dd")}`,
-        bookingId: "",
-        title: `+${bucket.length - 1} more`,
         start: first.start,
         end: first.end,
-        status: "booked",
-        clientName: "",
-        clientEmail: null,
-        rangeStart: first.start,
-        rangeEnd: first.end,
-        sessionIndex: 0,
-        sessionStartAt: first.start,
-        sessionEndAt: first.end,
-        sessionDayCount: 1,
-        sessionPastDayCount: 0,
         overflowCount: bucket.length - 1,
         overflowEvents: bucket.slice(1),
       };
@@ -714,10 +716,30 @@ export function BookingCalendar({
     [messages]
   );
 
-  // Pre-process events for month view: cap each day at 1 pill + overflow.
-  // Week/day views receive all events unmodified.
+  // Pre-process events depending on view:
+  // - month: cap each day at 1 pill + overflow placeholder.
+  // - week/day: split overnight candles at midnight so both the evening and
+  //   morning columns in the time-grid show the bleed. Month view renders
+  //   overnight sessions as continuous blocks so no split is needed there.
   const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
     if (view === Views.MONTH) return groupEventsForMonth(events);
+    if (view === Views.WEEK || view === Views.DAY) {
+      return events.flatMap((evt) => {
+        const halves = splitCandleAtMidnight({
+          start: evt.start,
+          end: evt.end,
+          dayKey: evt.id.split("_").slice(2).join("_") || evt.id,
+        });
+        if (halves.length === 1) return [evt];
+        return halves.map((half) => ({
+          ...evt,
+          start: half.start,
+          end: half.end,
+          isEveningHead: half.isEveningHead,
+          isMorningContinuation: half.isMorningContinuation,
+        }));
+      });
+    }
     return events;
   }, [view, events]);
 

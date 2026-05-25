@@ -310,20 +310,8 @@ function makeOverflowEvent(hidden: CalendarEvent[]): OverflowEvent {
   return {
     type: "overflow",
     id: `overflow_${ref.id}`,
-    bookingId: "",
-    title: `+${hidden.length} more`,
     start: ref.start,
     end: ref.end,
-    status: "booked",
-    clientName: "",
-    clientEmail: null,
-    rangeStart: ref.start,
-    rangeEnd: ref.end,
-    sessionIndex: 0,
-    sessionStartAt: ref.start,
-    sessionEndAt: ref.end,
-    sessionDayCount: 1,
-    sessionPastDayCount: 0,
     overflowCount: hidden.length,
     overflowEvents: hidden,
   };
@@ -452,5 +440,121 @@ describe("MonthBookingEvent overflow popover drag", () => {
     expect(btn).toBeTruthy();
     btn.click();
     expect(onSelectEvent).toHaveBeenCalledWith(ev);
+  });
+});
+
+// ─── midnight-split integration (via splitCandleAtMidnight used in displayEvents) ─
+import { splitCandleAtMidnight } from "@/lib/bookings/midnight-split";
+import type { Candle } from "@/lib/bookings/candle-split";
+
+describe("midnight-split: splitCandleAtMidnight used in week/day displayEvents", () => {
+  function makeOvernightCandle(): Candle {
+    return {
+      start: new Date("2026-08-15T22:00:00"),
+      end: new Date("2026-08-16T04:00:00"),
+      dayKey: "2026-08-15",
+    };
+  }
+
+  function makeSameDayCandle(): Candle {
+    return {
+      start: new Date("2026-08-15T10:00:00"),
+      end: new Date("2026-08-15T14:00:00"),
+      dayKey: "2026-08-15",
+    };
+  }
+
+  it("overnight candle produces two halves referencing both calendar days", () => {
+    const candle = makeOvernightCandle();
+    const halves = splitCandleAtMidnight(candle);
+
+    expect(halves).toHaveLength(2);
+
+    // Use local date accessors — toISOString() is UTC and will differ from local
+    // time in non-UTC environments, producing false failures.
+
+    // Evening half: stays on Aug 15 (local)
+    expect(halves[0].start.getDate()).toBe(15);
+    expect(halves[0].end.getDate()).toBe(15);
+
+    // Morning half: starts on Aug 16 (local)
+    expect(halves[1].start.getDate()).toBe(16);
+    expect(halves[1].end.getDate()).toBe(16);
+  });
+
+  it("both halves of an overnight candle share the same dayKey", () => {
+    const candle = makeOvernightCandle();
+    const halves = splitCandleAtMidnight(candle);
+    expect(halves[0].dayKey).toBe("2026-08-15");
+    expect(halves[1].dayKey).toBe("2026-08-15");
+  });
+
+  it("evening half is tagged isEveningHead, morning half is tagged isMorningContinuation", () => {
+    const candle = makeOvernightCandle();
+    const [evening, morning] = splitCandleAtMidnight(candle);
+    expect(evening.isEveningHead).toBe(true);
+    expect(evening.isMorningContinuation).toBeFalsy();
+    expect(morning.isMorningContinuation).toBe(true);
+    expect(morning.isEveningHead).toBeFalsy();
+  });
+
+  it("same-day candle returns single unchanged entry (no split, not a new object)", () => {
+    const candle = makeSameDayCandle();
+    const result = splitCandleAtMidnight(candle);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(candle);
+  });
+
+  it("month view: groupEventsForMonth does NOT split — same bookingId in one entry", () => {
+    const start = new Date("2026-08-15T22:00:00");
+    const end = new Date("2026-08-16T04:00:00");
+    // candle-split produces a single candle with dayKey = 2026-08-15 for overnight
+    const evt = makeEvent({
+      id: "booking1_s0_2026-08-15",
+      bookingId: "booking1",
+      start,
+      end,
+    });
+    const result = groupEventsForMonth([evt]);
+    // Only one entry; no overflow because there's only one event on Aug 15
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(evt);
+  });
+});
+
+describe("OverflowEvent discriminated union: narrowing correctness", () => {
+  it("makeOverflowEvent has no .status field (discriminated properly)", () => {
+    const ev = makeEvent();
+    const overflow = makeOverflowEvent([ev]);
+    // The slimmed OverflowEvent must NOT have a status key.
+    expect("status" in overflow).toBe(false);
+  });
+
+  it("OverflowEvent can be narrowed via type === 'overflow'", () => {
+    const ev = makeEvent();
+    const overflow = makeOverflowEvent([ev]);
+    // Simulates the eventPropGetter guard:
+    const isOverflow = "type" in overflow && overflow.type === "overflow";
+    expect(isOverflow).toBe(true);
+  });
+
+  it("CalendarEvent does NOT have type field — narrowing excludes it", () => {
+    const ev = makeEvent();
+    const hasType = "type" in ev;
+    expect(hasType).toBe(false);
+  });
+
+  it("MonthBookingEvent renders overflow pill without throwing when OverflowEvent has no status", () => {
+    const ev = makeEvent();
+    const overflow = makeOverflowEvent([ev]);
+    // MonthBookingEvent short-circuits at ev.type === "overflow" — it must not
+    // attempt to read overflow.status. Casting the whole props object to any
+    // avoids providing rbc's full EventProps shape which is irrelevant here.
+    const props = {
+      event: overflow,
+      continuesPrior: false,
+      continuesAfter: false,
+    } as MonthProps;
+    expect(() => render(<MonthBookingEvent {...props} />)).not.toThrow();
   });
 });

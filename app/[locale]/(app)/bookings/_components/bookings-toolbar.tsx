@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, usePathname, Link } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -25,6 +25,7 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
+  const tBookings = useTranslations("app.bookings");
   const [, startTransition] = useTransition();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
@@ -37,6 +38,19 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
 
   const status = searchParams.get("status") ?? ALL;
   const includeCancelled = searchParams.get("includeCancelled") === "1";
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const exportHref = useMemo(() => {
+    const p = new URLSearchParams();
+    if (status && status !== ALL) p.set("status", status);
+    if (q) p.set("q", q);
+    if (includeCancelled) p.set("includeCancelled", "1");
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    const qs = p.toString();
+    return `/api/bookings/export${qs ? `?${qs}` : ""}`;
+  }, [status, q, includeCancelled, from, to]);
 
   const pushParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -119,7 +133,12 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
           <UploadIcon className="size-4" />
           {t("import")}
         </Button>
-        <Button variant="outline" size="sm" disabled>
+        <Button
+          variant="outline"
+          size="sm"
+          title={tBookings("export.tooltip")}
+          render={<a href={exportHref} download />}
+        >
           <DownloadIcon className="size-4" />
           {t("export")}
         </Button>

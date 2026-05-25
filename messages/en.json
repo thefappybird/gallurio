@@ -100,7 +100,46 @@
           "client": "Client",
           "start": "Start",
           "error": "Error"
+        },
+        "results": {
+          "title": "Import errors",
+          "kindValidation": "Validation",
+          "kindLookup": "Lookup",
+          "kindServer": "Server",
+          "line": "Line {csvLine}",
+          "rawRow": "Raw row",
+          "summary": "Imported {created} · Skipped {skipped}",
+          "hint": "Fix the rows above and re-upload to import them."
+        },
+        "dialog": {
+          "columnHeader": "Column",
+          "notesHeader": "Notes",
+          "required": "required",
+          "optional": "optional",
+          "failedWithDetails": "Import failed — see details",
+          "failedRetry": "Import failed. Please try again.",
+          "close": "Close",
+          "cancel": "Cancel",
+          "viewErrors": "View {n} error(s)",
+          "spec": {
+            "clientName": { "note": "Full name of the client" },
+            "clientEmail": { "note": "Used to deduplicate existing clients" },
+            "startAt": { "note": "ISO 8601 — e.g. 2026-06-15T09:00" },
+            "endAt": { "note": "Defaults to startAt if omitted" },
+            "title": { "note": "Booking title" },
+            "eventType": { "note": "wedding, corporate, portrait, etc." },
+            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
+            "amountTotal": { "note": "Total booking amount" },
+            "amountDeposit": { "note": "Deposit amount" },
+            "currency": { "note": "Defaults to workspace currency" },
+            "locationAddress": { "note": "Venue or location text" },
+            "notes": { "note": "Internal notes" }
+          }
         }
+      },
+      "export": {
+        "tooltip": "Download bookings as CSV",
+        "empty": "No bookings to export"
       },
       "table": {
         "empty": "No bookings match your filters.",
@@ -201,7 +240,8 @@
         "pastDateWarning": "Moved to a past date",
         "pastSplitWarning": "Past days preserved — only future days were updated",
         "thisDayOnlyOnPast": "Cannot edit a past day",
-        "updateError": "Failed to update booking"
+        "updateError": "Failed to update booking",
+        "conflictCheckFailed": "Couldn't verify conflicts — please try again"
       },
       "calendar": {
         "dropConflict": {
