@@ -18,17 +18,8 @@ type Props = {
   onClose: () => void;
   onEdit: (client: ClientRow) => void;
   onDeactivate: (client: ClientRow) => void;
+  onReactivate: (client: ClientRow) => void;
   locale: string;
-};
-
-// Fake minimal transaction shape for the Payments tab
-type TransactionRow = {
-  id: string;
-  date: Date | string;
-  type: string;
-  amount: number;
-  currency: string;
-  bookingRef?: string;
 };
 
 const SOURCE_BADGE_CLASS: Record<string, string> = {
@@ -38,38 +29,72 @@ const SOURCE_BADGE_CLASS: Record<string, string> = {
   import: "border-muted-foreground text-muted-foreground",
 };
 
-export function ClientDetailModal({ client, open, onClose, onEdit, onDeactivate, locale }: Props) {
+export function ClientDetailModal({
+  client,
+  open,
+  onClose,
+  onEdit,
+  onDeactivate,
+  onReactivate,
+  locale,
+}: Props) {
+  if (!client) return null;
+  return (
+    <ClientDetailModalInner
+      key={`${client.id}:${open ? "open" : "closed"}`}
+      client={client}
+      open={open}
+      onClose={onClose}
+      onEdit={onEdit}
+      onDeactivate={onDeactivate}
+      onReactivate={onReactivate}
+      locale={locale}
+    />
+  );
+}
+
+type InnerProps = Omit<Props, "client"> & { client: ClientRow };
+
+function ClientDetailModalInner({
+  client,
+  open,
+  onClose,
+  onEdit,
+  onDeactivate,
+  onReactivate,
+  locale,
+}: InnerProps) {
   const t = useTranslations("app.clients");
   const tBookingStatus = useTranslations("app.bookings.statusValues");
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [bookings, setBookings] = useState<ClientBookingRow[] | null>(null);
-  const [bookingsLoading, setBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
 
-  // Reset tab when modal closes/opens
+  // Lazy-load bookings on first activation of the bookings tab. The outer
+  // component re-keys this inner component on client.id and open, so all
+  // local state resets naturally when those change — no reset effect needed.
   useEffect(() => {
-    if (!open) {
-      setActiveTab("overview");
-      setBookings(null);
-      setBookingsError(null);
-    }
-  }, [open]);
+    if (!open || activeTab !== "bookings") return;
+    if (bookings !== null || bookingsError) return;
 
-  // Lazy-load bookings on first tab activation
-  useEffect(() => {
-    if (activeTab !== "bookings" || !client || bookings !== null || bookingsLoading) return;
-    setBookingsLoading(true);
+    let cancelled = false;
     getClientBookingsAction(client.id).then((result) => {
+      if (cancelled) return;
       if ("error" in result) {
         setBookingsError(result.error);
       } else {
         setBookings(result);
       }
-      setBookingsLoading(false);
     });
-  }, [activeTab, client, bookings, bookingsLoading]);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, activeTab, client.id, bookings, bookingsError]);
 
-  if (!client) return null;
+  // Loading is derived: the bookings tab is loading whenever we're on it for
+  // this client and we haven't resolved into either bookings or an error yet.
+  const bookingsLoading =
+    activeTab === "bookings" && bookings === null && bookingsError === null;
 
   const lastBookingDate = client.lastBookingAt
     ? new Date(client.lastBookingAt).toLocaleDateString(locale, {
@@ -247,7 +272,7 @@ export function ClientDetailModal({ client, open, onClose, onEdit, onDeactivate,
             variant={client.isActive ? "outline" : "default"}
             size="sm"
             className={client.isActive ? "border-destructive text-destructive hover:bg-destructive/10" : ""}
-            onClick={() => onDeactivate(client)}
+            onClick={() => (client.isActive ? onDeactivate(client) : onReactivate(client))}
           >
             {client.isActive ? t("detail.deactivate") : t("detail.reactivate")}
           </Button>

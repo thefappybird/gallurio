@@ -9,6 +9,7 @@ import { ClientsTable, type ClientRow } from "./clients-table";
 import { ClientFormModal } from "./client-form-modal";
 import { ClientDetailModal } from "./client-detail-modal";
 import { DeactivateClientDialog } from "./deactivate-client-dialog";
+import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import { reactivateClientAction } from "@/lib/actions/clients";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,27 +42,43 @@ export function ClientsPageClient({
   // Modal state
   const [formOpen, setFormOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ClientRow | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [pendingFormAction, setPendingFormAction] = useState<(() => void) | null>(null);
   const [detailClient, setDetailClient] = useState<ClientRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [deactivateTarget, setDeactivateTarget] = useState<ClientRow | null>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
 
   function refreshPage() {
-    const params = new URLSearchParams(searchParams.toString());
     startTransition(() => {
-      router.push(params.toString() ? `${pathname}?${params.toString()}` : pathname);
+      router.refresh();
     });
   }
 
+  // If the form is open with unsaved edits, intercept the next action that
+  // would change `editTarget` (e.g. opening another row) and surface the
+  // unsaved-changes dialog instead of silently replacing the draft.
+  function withFormGuard(next: () => void) {
+    if (formOpen && formDirty) {
+      setPendingFormAction(() => next);
+      return;
+    }
+    next();
+  }
+
   function openAdd() {
-    setEditTarget(null);
-    setFormOpen(true);
+    withFormGuard(() => {
+      setEditTarget(null);
+      setFormOpen(true);
+    });
   }
 
   function openEdit(client: ClientRow) {
-    setEditTarget(client);
-    setFormOpen(true);
-    setDetailOpen(false);
+    withFormGuard(() => {
+      setEditTarget(client);
+      setFormOpen(true);
+      setDetailOpen(false);
+    });
   }
 
   function openDetail(client: ClientRow) {
@@ -81,6 +98,7 @@ export function ClientsPageClient({
       toast.error(result.error);
     } else {
       toast.success(t("form.updateSuccess"));
+      setDetailOpen(false);
       refreshPage();
     }
   }
@@ -145,6 +163,21 @@ export function ClientsPageClient({
         onOpenChange={setFormOpen}
         initialData={editTarget ?? undefined}
         onSuccess={refreshPage}
+        onDirtyChange={setFormDirty}
+      />
+
+      <UnsavedChangesDialog
+        open={pendingFormAction !== null}
+        onKeepEditing={() => setPendingFormAction(null)}
+        onDiscard={() => {
+          const next = pendingFormAction;
+          setPendingFormAction(null);
+          setFormDirty(false);
+          setFormOpen(false);
+          // Defer the queued action until after the form has closed so its
+          // reset effect doesn't overwrite the new target.
+          if (next) setTimeout(next, 0);
+        }}
       />
 
       <ClientDetailModal
@@ -153,6 +186,7 @@ export function ClientsPageClient({
         onClose={() => setDetailOpen(false)}
         onEdit={openEdit}
         onDeactivate={openDeactivate}
+        onReactivate={handleReactivate}
         locale={locale}
       />
 

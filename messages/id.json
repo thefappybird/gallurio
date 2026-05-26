@@ -138,6 +138,117 @@
         "deleteConfirm": "Saya mengerti, hapus",
         "deleting": "Menghapus…"
       }
+    },
+    "clients": {
+      "title": "Klien",
+      "toolbar": {
+        "search": "Cari berdasarkan nama atau email",
+        "searchLabel": "Cari klien",
+        "sourceAll": "Semua sumber",
+        "tagsAll": "Semua tag",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
+        "showInactive": "Tampilkan tidak aktif",
+        "add": "Tambah Klien",
+        "clearFilters": "Hapus filter"
+      },
+      "sourceValues": {
+        "form": "Formulir",
+        "manual": "Manual",
+        "referral": "Referensi",
+        "import": "Impor"
+      },
+      "table": {
+        "empty": "Tidak ada klien yang cocok dengan filter Anda.",
+        "col": {
+          "name": "Nama",
+          "contact": "Kontak",
+          "source": "Sumber",
+          "totalSpent": "Total Dihabiskan",
+          "actions": "Aksi"
+        },
+        "bookings": "{count} booking",
+        "lastBooking": "Terakhir: {date}",
+        "noBookings": "Belum ada booking",
+        "openMenu": "Buka aksi klien",
+        "openClient": "Buka {name}",
+        "edit": "Ubah",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali"
+      },
+      "form": {
+        "addTitle": "Tambah Klien",
+        "editTitle": "Ubah Klien",
+        "name": "Nama",
+        "namePlaceholder": "mis. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Telepon",
+        "phonePlaceholder": "+62 812 555 0142",
+        "source": "Sumber",
+        "tags": "Tag",
+        "tagsPlaceholder": "Tambahkan tag dan tekan Enter",
+        "removeTag": "Hapus tag {tag}",
+        "notes": "Catatan",
+        "notesPlaceholder": "Catatan apa pun tentang klien ini…",
+        "save": "Simpan",
+        "saving": "Menyimpan…",
+        "cancel": "Batal",
+        "createSuccess": "Klien dibuat.",
+        "updateSuccess": "Klien diperbarui.",
+        "error": "Ada yang salah. Coba lagi."
+      },
+      "detail": {
+        "inactive": "Tidak aktif",
+        "tabs": {
+          "overview": "Ringkasan",
+          "bookings": "Booking",
+          "payments": "Pembayaran"
+        },
+        "overview": {
+          "totalSpent": "Total Dihabiskan",
+          "bookingsCount": "Booking",
+          "lastBooking": "Booking Terakhir",
+          "never": "Tidak pernah",
+          "contact": "Kontak",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Sumber",
+          "tags": "Tag",
+          "noTags": "Tidak ada tag",
+          "notes": "Catatan",
+          "noNotes": "Tidak ada catatan"
+        },
+        "bookings": {
+          "loading": "Memuat booking…",
+          "empty": "Belum ada booking.",
+          "error": "Gagal memuat booking."
+        },
+        "payments": {
+          "empty": "Belum ada catatan pembayaran."
+        },
+        "edit": "Ubah",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali",
+        "close": "Tutup"
+      },
+      "deactivate": {
+        "title": "Nonaktifkan klien ini?",
+        "body": "Klien ini akan disembunyikan dari daftar aktif. Anda dapat mengaktifkannya kembali kapan saja dengan mengaktifkan 'Tampilkan tidak aktif' di daftar klien.",
+        "cancel": "Batal",
+        "confirm": "Nonaktifkan"
+      },
+      "unsaved": {
+        "title": "Buang perubahan Anda?",
+        "body": "Anda memiliki perubahan yang belum disimpan untuk klien ini. Perubahan akan hilang jika Anda menutup sekarang.",
+        "keep": "Lanjutkan mengubah",
+        "discard": "Buang dan tutup"
+      },
+      "pagination": {
+        "showing": "Menampilkan {from}–{to} dari {total} klien",
+        "rowsPerPage": "Per halaman",
+        "previous": "Sebelumnya",
+        "next": "Berikutnya"
+      }
     }
   },
   "onboarding": {

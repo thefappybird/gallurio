@@ -31,11 +31,12 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   initialData?: ClientFormData;
   onSuccess: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 };
 
 const SOURCES = ["form", "manual", "referral", "import"] as const;
 
-export function ClientFormModal({ open, onOpenChange, initialData, onSuccess }: Props) {
+export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, onDirtyChange }: Props) {
   const t = useTranslations("app.clients");
   const isEdit = !!initialData?.id;
 
@@ -114,6 +115,11 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess }: 
 
   const tags = form.watch("tags");
   const { isSubmitting, isDirty } = form.formState;
+
+  // Surface dirty state to the parent so it can guard navigation/target swaps.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   return (
     <>
@@ -215,7 +221,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess }: 
                           type="button"
                           onClick={() => removeTag(tag)}
                           className="hover:text-foreground"
-                          aria-label={`Remove tag ${tag}`}
+                          aria-label={t("form.removeTag", { tag })}
                         >
                           <XIcon className="size-2.5" />
                         </button>

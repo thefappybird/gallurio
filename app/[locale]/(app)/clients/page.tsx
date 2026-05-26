@@ -69,8 +69,8 @@ export default async function ClientsPage({
     tags: (c.tags as string[]) ?? [],
     notes: (c.notes as string) ?? "",
     totalSpent: c.totalSpent ?? 0,
-    bookingsCount: (c as { bookingsCount?: number }).bookingsCount ?? 0,
-    lastBookingAt: c.lastBookingAt ?? null,
+    bookingsCount: c.bookingsCount,
+    lastBookingAt: c.lastBookingAt,
     isActive: c.isActive ?? true,
     currency: workspace.currency ?? "PHP",
   }));

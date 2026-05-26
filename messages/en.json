@@ -377,6 +377,7 @@
       "title": "Clients",
       "toolbar": {
         "search": "Search by name or email",
+        "searchLabel": "Search clients",
         "sourceAll": "All sources",
         "tagsAll": "All tags",
         "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
@@ -403,6 +404,7 @@
         "lastBooking": "Last: {date}",
         "noBookings": "No bookings yet",
         "openMenu": "Open client actions",
+        "openClient": "Open {name}",
         "edit": "Edit",
         "deactivate": "Deactivate",
         "reactivate": "Reactivate"
@@ -419,6 +421,7 @@
         "source": "Source",
         "tags": "Tags",
         "tagsPlaceholder": "Add tag and press Enter",
+        "removeTag": "Remove tag {tag}",
         "notes": "Notes",
         "notesPlaceholder": "Any notes about this client…",
         "save": "Save",

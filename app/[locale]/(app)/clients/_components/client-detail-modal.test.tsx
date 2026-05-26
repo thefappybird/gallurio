@@ -39,6 +39,7 @@ const defaultProps = {
   onClose: vi.fn(),
   onEdit: vi.fn(),
   onDeactivate: vi.fn(),
+  onReactivate: vi.fn(),
   locale: "en",
 };
 

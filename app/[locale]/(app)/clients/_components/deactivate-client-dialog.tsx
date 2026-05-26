@@ -55,7 +55,10 @@ export function DeactivateClientDialog({
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <DialogTitle>{t("deactivate.title")}</DialogTitle>
-            <p className="text-sm text-muted-foreground">{t("deactivate.body")}</p>
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{clientName}</span>{" "}
+              {t("deactivate.body")}
+            </p>
           </div>
         </div>
         <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end">

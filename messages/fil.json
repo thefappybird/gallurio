@@ -138,6 +138,117 @@
         "deleteConfirm": "Naiintindihan ko, burahin na",
         "deleting": "Binubura…"
       }
+    },
+    "clients": {
+      "title": "Mga Kliyente",
+      "toolbar": {
+        "search": "Hanapin sa pangalan o email",
+        "searchLabel": "Maghanap ng kliyente",
+        "sourceAll": "Lahat ng pinagmulan",
+        "tagsAll": "Lahat ng tag",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
+        "showInactive": "Ipakita ang inactive",
+        "add": "Magdagdag ng Kliyente",
+        "clearFilters": "Tanggalin ang filter"
+      },
+      "sourceValues": {
+        "form": "Form",
+        "manual": "Manwal",
+        "referral": "Referral",
+        "import": "Import"
+      },
+      "table": {
+        "empty": "Walang kliyenteng tumutugma sa iyong filter.",
+        "col": {
+          "name": "Pangalan",
+          "contact": "Contact",
+          "source": "Pinagmulan",
+          "totalSpent": "Kabuuang Ginastos",
+          "actions": "Mga Aksyon"
+        },
+        "bookings": "{count} bookings",
+        "lastBooking": "Huli: {date}",
+        "noBookings": "Wala pang bookings",
+        "openMenu": "Buksan ang mga aksyon ng kliyente",
+        "openClient": "Buksan ang {name}",
+        "edit": "I-edit",
+        "deactivate": "I-deactivate",
+        "reactivate": "I-reactivate"
+      },
+      "form": {
+        "addTitle": "Magdagdag ng Kliyente",
+        "editTitle": "I-edit ang Kliyente",
+        "name": "Pangalan",
+        "namePlaceholder": "hal. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Telepono",
+        "phonePlaceholder": "+63 917 555 0142",
+        "source": "Pinagmulan",
+        "tags": "Mga Tag",
+        "tagsPlaceholder": "Magdagdag ng tag at pindutin ang Enter",
+        "removeTag": "Tanggalin ang tag {tag}",
+        "notes": "Mga Tala",
+        "notesPlaceholder": "Anumang tala tungkol sa kliyenteng ito…",
+        "save": "I-save",
+        "saving": "Sine-save…",
+        "cancel": "Kanselahin",
+        "createSuccess": "Nailikha ang kliyente.",
+        "updateSuccess": "Na-update ang kliyente.",
+        "error": "May nangyaring mali. Subukan muli."
+      },
+      "detail": {
+        "inactive": "Inactive",
+        "tabs": {
+          "overview": "Pangkalahatan",
+          "bookings": "Mga Booking",
+          "payments": "Mga Bayad"
+        },
+        "overview": {
+          "totalSpent": "Kabuuang Ginastos",
+          "bookingsCount": "Mga Booking",
+          "lastBooking": "Huling Booking",
+          "never": "Wala",
+          "contact": "Contact",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Pinagmulan",
+          "tags": "Mga Tag",
+          "noTags": "Walang tag",
+          "notes": "Mga Tala",
+          "noNotes": "Walang tala"
+        },
+        "bookings": {
+          "loading": "Niloload ang mga booking…",
+          "empty": "Wala pang booking.",
+          "error": "Nabigong i-load ang mga booking."
+        },
+        "payments": {
+          "empty": "Wala pang rekord ng bayad."
+        },
+        "edit": "I-edit",
+        "deactivate": "I-deactivate",
+        "reactivate": "I-reactivate",
+        "close": "Isara"
+      },
+      "deactivate": {
+        "title": "I-deactivate ang kliyenteng ito?",
+        "body": "Itatago ang kliyenteng ito mula sa aktibong listahan. Maaari mo siyang i-reactivate anumang oras sa pamamagitan ng pagpapagana ng 'Ipakita ang inactive' sa listahan ng kliyente.",
+        "cancel": "Kanselahin",
+        "confirm": "I-deactivate"
+      },
+      "unsaved": {
+        "title": "Itapon ang iyong mga pagbabago?",
+        "body": "May mga hindi pa nai-save na pagbabago ka sa kliyenteng ito. Mawawala ang mga ito kung magsasara ka ngayon.",
+        "keep": "Magpatuloy sa pag-edit",
+        "discard": "Itapon at isara"
+      },
+      "pagination": {
+        "showing": "Ipinapakita ang {from}–{to} ng {total} kliyente",
+        "rowsPerPage": "Bawat pahina",
+        "previous": "Nakaraan",
+        "next": "Susunod"
+      }
     }
   },
   "onboarding": {

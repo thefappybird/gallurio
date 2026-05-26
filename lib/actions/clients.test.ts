@@ -2,7 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Booking } from "@/lib/db/models";
+import type { WorkspaceDoc } from "@/lib/db/models";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import type { OrgContext } from "@/lib/auth/requireOrg";
 import {
   createClientAction,
   updateClientAction,
@@ -20,12 +22,16 @@ const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
 
 function mockOrg(wsId: Types.ObjectId = workspaceId) {
-  vi.mocked(requireOrg).mockResolvedValue({
+  // Only the workspace._id field is read by the actions under test; cast
+  // through unknown to a typed WorkspaceDoc to avoid building the full doc.
+  const workspace = { _id: wsId } as unknown as WorkspaceDoc;
+  const ctx: OrgContext = {
     userId: "user_test",
     clerkOrgId: "org_test",
     role: "owner",
-    workspace: { _id: wsId } as any,
-  });
+    workspace,
+  };
+  vi.mocked(requireOrg).mockResolvedValue(ctx);
 }
 
 const validInput = {

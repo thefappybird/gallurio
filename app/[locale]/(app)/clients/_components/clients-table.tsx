@@ -212,23 +212,40 @@ export function ClientsTable({
               {hg.headers.map((header) => {
                 const canSort = header.column.getCanSort();
                 const sorted = header.column.getIsSorted();
+                const ariaSort: "ascending" | "descending" | "none" | undefined = canSort
+                  ? sorted === "asc"
+                    ? "ascending"
+                    : sorted === "desc"
+                    ? "descending"
+                    : "none"
+                  : undefined;
                 return (
                   <th
                     key={header.id}
-                    className={cn("px-3 py-2 font-medium", canSort && "cursor-pointer select-none")}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                    scope="col"
+                    aria-sort={ariaSort}
+                    className="px-3 py-2 font-medium"
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {canSort &&
-                        (sorted === "asc" ? (
+                    {canSort ? (
+                      <button
+                        type="button"
+                        onClick={header.column.getToggleSortingHandler()}
+                        className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {sorted === "asc" ? (
                           <ArrowUpIcon className="size-3" />
                         ) : sorted === "desc" ? (
                           <ArrowDownIcon className="size-3" />
                         ) : (
                           <ArrowUpDownIcon className="size-3 opacity-40" />
-                        ))}
-                    </span>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </span>
+                    )}
                   </th>
                 );
               })}
@@ -239,9 +256,21 @@ export function ClientsTable({
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
+              tabIndex={0}
+              role="button"
+              aria-label={t("table.openClient", { name: row.original.name })}
               onClick={() => onClickClient(row.original)}
+              onKeyDown={(e) => {
+                // Enter or Space activates the row, mirroring native button behavior.
+                // Ignore key events bubbling up from interactive children (action menu).
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onClickClient(row.original);
+                }
+              }}
               className={cn(
-                "cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40",
+                "cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 !row.original.isActive && "opacity-50"
               )}
             >

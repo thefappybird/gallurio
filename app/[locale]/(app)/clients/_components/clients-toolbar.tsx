@@ -90,9 +90,11 @@ export function ClientsToolbar({ availableTags, onAddClient }: Props) {
         <div className="relative w-full sm:w-80">
           <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("toolbar.search")}
+            aria-label={t("toolbar.searchLabel")}
             className="pl-8"
           />
         </div>

@@ -50,7 +50,8 @@ describe("clientFormSchema", () => {
   });
 
   it("accepts undefined email (optional) and email is absent/undefined in output", () => {
-    const { email: _omitted, ...withoutEmail } = validFull;
+    const { email: _omittedEmail, ...withoutEmail } = validFull;
+    void _omittedEmail;
     const result = clientFormSchema.safeParse(withoutEmail);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -74,6 +75,30 @@ describe("clientFormSchema", () => {
   it("accepts null phone", () => {
     const result = clientFormSchema.safeParse({ ...validFull, phone: null });
     expect(result.success).toBe(true);
+  });
+
+  it("normalizes empty-string email to null (so blank inputs do not fail .email())", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, email: "" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBeNull();
+    }
+  });
+
+  it("normalizes whitespace-only email to null", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, email: "   " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBeNull();
+    }
+  });
+
+  it("normalizes empty-string phone to null (avoids persisting blank phone)", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, phone: "" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.phone).toBeNull();
+    }
   });
 
   it("rejects an invalid source value", () => {
