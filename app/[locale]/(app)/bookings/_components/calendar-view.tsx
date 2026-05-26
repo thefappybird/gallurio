@@ -214,7 +214,7 @@ export function CalendarView({
   const [refreshKey, setRefreshKey] = useState(0);
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
-  const [showPast, setShowPast] = useState<boolean>(false);
+  const showPast = searchParams.get("showPast") === "1";
 
   // On mount: if the persisted/URL view is WEEK but the viewport is mobile
   // (< sm = 640px), snap to DAY so the hidden Week button doesn't leave the
@@ -614,7 +614,6 @@ export function CalendarView({
         dragFromOutsideItem={dragFromOutsideItem}
         messages={messages}
         showPast={showPast}
-        onShowPastChange={setShowPast}
       />
       <PastDateConfirmDialog
         open={pendingPastConfirm !== null}

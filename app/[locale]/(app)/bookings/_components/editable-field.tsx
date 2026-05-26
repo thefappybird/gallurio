@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { DEFAULT_TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
 
 export type EditableFieldType =
   | "text"
@@ -143,10 +144,7 @@ export function EditableField({
         month: "short",
         day: "numeric",
       });
-      const timePart = d.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      });
+      const timePart = formatTime(d);
       return `${datePart} · ${timePart}`;
     }
     return String(v);
@@ -226,6 +224,7 @@ export function EditableField({
                   />
                   <Input
                     type="time"
+                    lang={DEFAULT_TIME_INPUT_LANG}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>

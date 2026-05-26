@@ -13,6 +13,7 @@ import {
 import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -209,6 +210,7 @@ function SessionCard({
           <Input
             id={`wiz-startTime-${index}`}
             type="time"
+            lang={DEFAULT_TIME_INPUT_LANG}
             min={startTimeMin}
             {...register(`sessions.${index}.startTime`, {
               required: true,
@@ -225,6 +227,7 @@ function SessionCard({
           <Input
             id={`wiz-endTime-${index}`}
             type="time"
+            lang={DEFAULT_TIME_INPUT_LANG}
             {...register(`sessions.${index}.endTime`, {
               required: true,
               pattern: /^\d{2}:\d{2}$/,

@@ -569,6 +569,149 @@ describe("Issue 4 — AlertDialog for close-with-unsaved", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// False-conflict regression (sibling sessions + non-overlapping times)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("False-conflict regression — time-overlap filtering", () => {
+  /**
+   * Builds a booking with two sessions on the SAME day: 08:30–15:30 and 16:30–20:30.
+   * The shifts-on-date API should exclude both (same bookingId), but even if a shift
+   * for the sibling session's time leaked through, the time-overlap filter must
+   * reject it for session 1 (15:30 < 16:30 → no overlap).
+   */
+  function makeTwoSessionBooking() {
+    const base = new Date();
+    base.setDate(base.getDate() + 7);
+    base.setHours(8, 30, 0, 0);
+    const session1Start = base.toISOString();
+    base.setHours(15, 30, 0, 0);
+    const session1End = base.toISOString();
+    base.setHours(16, 30, 0, 0);
+    const session2Start = base.toISOString();
+    base.setHours(20, 30, 0, 0);
+    const session2End = base.toISOString();
+    return {
+      _id: BOOKING_ID,
+      title: "Multi-Session Booking",
+      clientName: "Client A",
+      eventType: "wedding",
+      status: "booked",
+      sessions: [
+        { startAt: session1Start, endAt: session1End },
+        { startAt: session2Start, endAt: session2End },
+      ],
+      firstSessionStart: session1Start,
+      lastSessionEnd: session2End,
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" },
+      notes: "",
+    };
+  }
+
+  /** Wait for the multi-session booking heading to appear. */
+  async function waitForMultiSessionLoad() {
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Multi-Session Booking" })
+      ).toBeInTheDocument();
+    });
+  }
+
+  it("does NOT show a conflict when the only shift on the date belongs to the same booking", async () => {
+    const twoSessBooking = makeTwoSessionBooking();
+    // Simulate the API leaking sibling session 2's data (same bookingId) — defense
+    // in depth must suppress it.
+    const siblingShift = {
+      id: BOOKING_ID,
+      bookingId: BOOKING_ID,
+      title: "Sibling Session",
+      shiftStart: "16:30",
+      shiftEnd: "20:30",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [siblingShift] })
+    );
+    renderModal();
+    await waitForMultiSessionLoad();
+
+    // Conflict alert must NOT appear for session 1 because the shift belongs to
+    // the same booking.
+    await waitFor(() => {
+      expect(screen.queryByText(/Sibling Session/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("does NOT show a conflict when a shift on the same date does not overlap session 1's time window", async () => {
+    const twoSessBooking = makeTwoSessionBooking();
+    // Shift is 16:30–20:30 on the same date — no overlap with session 1 (08:30–15:30).
+    const nonOverlappingShift = {
+      id: "other-booking-xyz",
+      bookingId: "other-booking-xyz",
+      title: "Evening Event",
+      shiftStart: "16:30",
+      shiftEnd: "20:30",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [nonOverlappingShift] })
+    );
+    renderModal();
+    await waitForMultiSessionLoad();
+
+    // No conflict should appear for session 1 — times don't overlap.
+    await waitFor(() => {
+      expect(screen.queryByText(/Evening Event/)).not.toBeInTheDocument();
+    });
+  });
+
+  it("DOES show a conflict when a shift from another booking truly overlaps the session time", async () => {
+    const twoSessBooking = makeTwoSessionBooking();
+    // Shift 10:00–12:00 overlaps session 1 (08:30–15:30).
+    const overlappingShift = {
+      id: "other-booking-abc",
+      bookingId: "other-booking-abc",
+      title: "Morning Shoot",
+      shiftStart: "10:00",
+      shiftEnd: "12:00",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [overlappingShift] })
+    );
+    renderModal();
+    await waitForMultiSessionLoad();
+
+    // Session 1's conflict alert must appear — 10:00–12:00 overlaps 08:30–15:30.
+    await waitFor(() => {
+      expect(screen.getByText(/Morning Shoot/)).toBeInTheDocument();
+    });
+  });
+
+  it("does NOT flag back-to-back shifts as conflicts (boundary: session ends at 15:30, shift starts at 15:30)", async () => {
+    const twoSessBooking = makeTwoSessionBooking();
+    // Shift starts exactly when session 1 ends — strict half-open interval means no overlap.
+    const backToBackShift = {
+      id: "other-booking-btb",
+      bookingId: "other-booking-btb",
+      title: "Afternoon Event",
+      shiftStart: "15:30",
+      shiftEnd: "16:00",
+    };
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [backToBackShift] })
+    );
+    renderModal();
+    await waitForMultiSessionLoad();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Afternoon Event/)).not.toBeInTheDocument();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // pendingCount integrity
 // ─────────────────────────────────────────────────────────────────────────────
 

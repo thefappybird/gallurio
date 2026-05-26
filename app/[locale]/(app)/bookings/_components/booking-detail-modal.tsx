@@ -57,6 +57,7 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import {
   countDays,
   countPastDays,
@@ -379,21 +380,47 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   // Whether any session has an unresolved conflict — gates the global Save button.
   // We only count conflicts for dates that are "committed" (pending or saved),
   // not for in-flight dates the user hasn't confirmed yet.
+  // Uses the same strict half-open overlap predicate as the wizard: aStart < bEnd && bStart < aEnd.
   const hasAnyConflict = useMemo(() => {
     if (!booking) return false;
     for (let i = 0; i < booking.sessions.length; i++) {
       const edit = pendingSessionEdits[i];
-      const date = edit ? isoDate(edit.startAt) : isoDate(booking.sessions[i].startAt);
-      const shifts = shiftsByDate.get(date) ?? [];
-      if (shifts.length > 0) return true;
+      const effectiveStart = edit ? edit.startAt : new Date(booking.sessions[i].startAt);
+      const effectiveEnd = edit ? edit.endAt : new Date(booking.sessions[i].endAt);
+      const date = isoDate(effectiveStart);
+      const rawShifts = shiftsByDate.get(date) ?? [];
+      if (rawShifts.length === 0) continue;
+      const aStart = toMinutes(hhmm(effectiveStart));
+      const aEnd = toMinutes(hhmm(effectiveEnd));
+      if (aStart == null || aEnd == null || aEnd <= aStart) continue;
+      const overlapping = rawShifts.filter((s) => {
+        // Defense in depth: exclude shifts that belong to the same booking.
+        if (s.bookingId === bookingId) return false;
+        const bStart = toMinutes(s.shiftStart);
+        const bEnd = toMinutes(s.shiftEnd);
+        if (bStart == null || bEnd == null) return false;
+        return aStart < bEnd && bStart < aEnd;
+      });
+      if (overlapping.length > 0) return true;
     }
     for (const d of draftSessions) {
       if (!d.locked) continue;
-      const shifts = shiftsByDate.get(isoDate(d.startAt)) ?? [];
-      if (shifts.length > 0) return true;
+      const rawShifts = shiftsByDate.get(isoDate(d.startAt)) ?? [];
+      if (rawShifts.length === 0) continue;
+      const aStart = toMinutes(hhmm(d.startAt));
+      const aEnd = toMinutes(hhmm(d.endAt));
+      if (aStart == null || aEnd == null || aEnd <= aStart) continue;
+      const overlapping = rawShifts.filter((s) => {
+        if (s.bookingId === bookingId) return false;
+        const bStart = toMinutes(s.shiftStart);
+        const bEnd = toMinutes(s.shiftEnd);
+        if (bStart == null || bEnd == null) return false;
+        return aStart < bEnd && bStart < aEnd;
+      });
+      if (overlapping.length > 0) return true;
     }
     return false;
-  }, [booking, pendingSessionEdits, draftSessions, shiftsByDate]);
+  }, [booking, pendingSessionEdits, draftSessions, shiftsByDate, bookingId]);
 
   function prependOptimisticActivity(
     action: "updated" | "status_changed" | "created",
@@ -914,6 +941,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           ) : (
             <BookingTabs
               booking={booking}
+              bookingId={bookingId}
               activity={activity}
               activityTotal={activityTotal}
               pending={pending}
@@ -1130,6 +1158,7 @@ function DialogHeaderBar({
 
 function BookingTabs({
   booking,
+  bookingId,
   activity,
   activityTotal,
   pending,
@@ -1154,6 +1183,7 @@ function BookingTabs({
   onDraftDateChange,
 }: {
   booking: BookingDoc;
+  bookingId: string;
   activity: ActivityEntry[];
   activityTotal: number;
   pending: PendingChanges;
@@ -1342,12 +1372,36 @@ function BookingTabs({
             const hasPendingEdit = resolvedIdx in pendingSessionEdits;
             // The effective date for this card — in-flight draft date takes priority.
             const inFlightDate = editingDraftDates[String(resolvedIdx)];
+            const pendingEdit = pendingSessionEdits[resolvedIdx];
             const committedDate = hasPendingEdit
-              ? isoDate(pendingSessionEdits[resolvedIdx].startAt)
+              ? isoDate(pendingEdit.startAt)
               : isoDate(s.startAt);
             // For conflict display: while editing use in-flight date; otherwise use committed.
             const effectiveDateForConflict = inFlightDate ?? committedDate;
-            const sessionConflicts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            const rawShifts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            // Filter raw shifts by time overlap using the committed/pending times.
+            // The strict half-open predicate (aStart < bEnd && bStart < aEnd) matches
+            // the wizard's canonical pattern. Also exclude any shift that belongs to
+            // this booking (defense in depth — the API should already exclude them via
+            // excludeId, but a stale cache entry or race condition could slip one through).
+            const effectiveStartTime = pendingEdit
+              ? hhmm(pendingEdit.startAt)
+              : hhmm(s.startAt);
+            const effectiveEndTime = pendingEdit
+              ? hhmm(pendingEdit.endAt)
+              : hhmm(s.endAt);
+            const aStart = toMinutes(effectiveStartTime);
+            const aEnd = toMinutes(effectiveEndTime);
+            const sessionConflicts =
+              aStart == null || aEnd == null || aEnd <= aStart
+                ? rawShifts.filter((sh) => sh.bookingId !== bookingId)
+                : rawShifts.filter((sh) => {
+                    if (sh.bookingId === bookingId) return false;
+                    const bStart = toMinutes(sh.shiftStart);
+                    const bEnd = toMinutes(sh.shiftEnd);
+                    if (bStart == null || bEnd == null) return false;
+                    return aStart < bEnd && bStart < aEnd;
+                  });
             const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
             return (
               <SessionCard
@@ -1362,7 +1416,7 @@ function BookingTabs({
                 removeLabel={tSessions("remove")}
                 unsavedLabel={tSessions("unsaved")}
                 hasPendingEdit={hasPendingEdit}
-                pendingEdit={pendingSessionEdits[resolvedIdx]}
+                pendingEdit={pendingEdit}
                 conflicts={sessionConflicts}
                 isCheckingConflicts={isLoadingConflict}
                 onCommit={(newSession, kind) =>
@@ -1381,7 +1435,20 @@ function BookingTabs({
             const inFlightDate = editingDraftDates[`draft:${draftIdx}`];
             const effectiveDateForConflict = inFlightDate ?? isoDate(draft.startAt);
             const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
-            const draftConflicts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            const rawDraftShifts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            // Filter draft conflicts by time overlap (same predicate as the wizard).
+            const draftAStart = toMinutes(hhmm(draft.startAt));
+            const draftAEnd = toMinutes(hhmm(draft.endAt));
+            const draftConflicts =
+              draftAStart == null || draftAEnd == null || draftAEnd <= draftAStart
+                ? rawDraftShifts.filter((sh) => sh.bookingId !== bookingId)
+                : rawDraftShifts.filter((sh) => {
+                    if (sh.bookingId === bookingId) return false;
+                    const bStart = toMinutes(sh.shiftStart);
+                    const bEnd = toMinutes(sh.shiftEnd);
+                    if (bStart == null || bEnd == null) return false;
+                    return draftAStart < bEnd && bStart < draftAEnd;
+                  });
             return draft.locked ? (
               <LockedDraftCard
                 key={draft.draftId}
@@ -1941,6 +2008,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
+                lang={DEFAULT_TIME_INPUT_LANG}
                 value={draftStartTime}
                 onChange={(e) => setDraftStartTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -1955,6 +2023,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
+                lang={DEFAULT_TIME_INPUT_LANG}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -2255,6 +2324,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
+              lang={DEFAULT_TIME_INPUT_LANG}
               value={draftStartTime}
               onChange={(e) => {
                 setDraftStartTime(e.target.value);
@@ -2273,6 +2343,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
+              lang={DEFAULT_TIME_INPUT_LANG}
               value={draftEndTime}
               onChange={(e) => {
                 setDraftEndTime(e.target.value);

@@ -15,7 +15,7 @@ import withDragAndDrop, {
   type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
 
 export type OverflowEvent = {
   type: "overflow";
@@ -114,14 +115,12 @@ type Props = {
     time: string;
     event: string;
     noEventsInRange: string;
-    jumpTo: string;
+    goTo: string;
     scrollToTime: string;
     go: string;
   };
   /** When true, past candles render with opacity-60, title strikethrough, and a "Past" pill. */
   showPast?: boolean;
-  /** Called when the user clicks the "Show past" toggle in the toolbar. */
-  onShowPastChange?: (v: boolean) => void;
 };
 
 // Status colors are theme-invariant — same hex/oklch in light AND dark so the
@@ -511,7 +510,6 @@ type CalendarToolbarCtxValue = {
   messages: Props["messages"];
   onScrollToHour: (h: number) => void;
   showPast: boolean;
-  onShowPastChange: (v: boolean) => void;
 };
 
 /**
@@ -528,12 +526,11 @@ function CalendarToolbar({
   view,
 }: ToolbarProps<CalendarEvent>) {
   const ctx = useContext(CalendarToolbarCtx);
-  const t = useTranslations("app.bookings.calendar");
   const [jumpDate, setJumpDate] = useState("");
   const [jumpTime, setJumpTime] = useState("");
 
   if (!ctx) return null;
-  const { messages, onScrollToHour, showPast, onShowPastChange } = ctx;
+  const { messages, onScrollToHour } = ctx;
   const isTimeView = view === Views.WEEK || view === Views.DAY;
 
   const viewLabel: Record<string, string> = {
@@ -597,19 +594,20 @@ function CalendarToolbar({
             render={
               <Button
                 variant="outline"
-                size="icon-sm"
-                className="min-h-11"
-                aria-label={messages.jumpTo}
+                size="sm"
+                className="min-h-11 gap-1.5"
+                aria-label={messages.goTo}
               />
             }
           >
-            <CalendarIcon className="size-4" />
+            <CalendarIcon className="size-4 shrink-0" />
+            <span className="hidden sm:inline">{messages.goTo}</span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="end" className="w-64 p-4">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  {messages.jumpTo}
+                  {messages.goTo}
                 </label>
                 <input
                   type="date"
@@ -625,6 +623,7 @@ function CalendarToolbar({
                   </label>
                   <input
                     type="time"
+                    lang={DEFAULT_TIME_INPUT_LANG}
                     value={jumpTime}
                     onChange={(e) => setJumpTime(e.target.value)}
                     className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -637,23 +636,6 @@ function CalendarToolbar({
             </div>
           </PopoverContent>
         </Popover>
-
-        {/* Show-past toggle */}
-        <Button
-          variant="outline"
-          size="sm"
-          className={`min-h-11 gap-1.5${showPast ? " bg-brand text-brand-foreground border-brand" : ""}`}
-          onClick={() => onShowPastChange(!showPast)}
-          aria-pressed={showPast}
-          aria-label={t("togglePast")}
-        >
-          {showPast ? (
-            <EyeIcon className="size-4 shrink-0" />
-          ) : (
-            <EyeOffIcon className="size-4 shrink-0" />
-          )}
-          <span>{t("togglePast")}</span>
-        </Button>
 
         {/* View switcher — button group (no gap, borders collapsed) */}
         <div className="flex">
@@ -792,7 +774,6 @@ export function BookingCalendar({
   dragFromOutsideItem,
   messages,
   showPast = false,
-  onShowPastChange,
 }: Props) {
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
@@ -852,9 +833,8 @@ export function BookingCalendar({
       messages,
       onScrollToHour,
       showPast,
-      onShowPastChange: onShowPastChange ?? (() => {}),
     }),
-    [messages, onScrollToHour, showPast, onShowPastChange]
+    [messages, onScrollToHour, showPast]
   );
 
   const calendarMessages = useMemo(

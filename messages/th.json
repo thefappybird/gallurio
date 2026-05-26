@@ -62,7 +62,7 @@
         "month": "Month",
         "agenda": "Agenda"
       },
-      "jumpTo": "Jump to date",
+      "goTo": "Jump to date",
       "scrollToTime": "Scroll to time",
       "go": "Go"
     },

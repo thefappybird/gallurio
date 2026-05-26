@@ -220,7 +220,7 @@ export default async function BookingsPage({
             time: tCal("time"),
             event: tCal("event"),
             noEventsInRange: tCal("noEventsInRange"),
-            jumpTo: tCal("jumpTo"),
+            goTo: tCal("goTo"),
             scrollToTime: tCal("scrollToTime"),
             go: tCal("go"),
           }}

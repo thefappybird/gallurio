@@ -38,6 +38,7 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 
 import { groupEventsForMonth, MonthBookingEvent } from "./booking-calendar";
 import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
+import { formatTime, formatTimeRange } from "@/lib/utils/time-format";
 
 // Build a fixture CalendarEvent used across all tests.
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
@@ -68,12 +69,6 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
 // source so we can assert on the rendered output. These are kept 1:1 with the
 // source implementation — any divergence is a test authoring error.
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-}
-function formatTimeRange(start: Date, end: Date) {
-  return `${formatTime(start)} – ${formatTime(end)}`;
-}
 
 function MonthPill({ event }: { event: CalendarEvent }) {
   const ev = event;
