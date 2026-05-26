@@ -13,18 +13,39 @@
   "app": {
     "dashboard": {
       "title": "{workspaceName}",
-      "subtitle": "Narito ang nangyayari ngayon.",
-      "stats": {
-        "totalBookings": "Kabuuang mga booking",
-        "activeClients": "Aktibong kliyente",
+      "greeting": "Maligayang pagbabalik, {name}",
+      "kpi": {
+        "revenueThisMonth": "Kita ngayong buwan",
+        "activeBookings": "Aktibong mga booking ngayong buwan",
         "newInquiries": "Mga bagong inquiry",
-        "eventsThisMonth": "Mga event ngayong buwan"
+        "outstandingBalance": "Natitirang balanse"
       },
-      "upcoming": {
-        "title": "Mga paparating na booking",
-        "empty": "Wala pang paparating na booking.",
-        "createOne": "Gumawa ng isa"
-      }
+      "sections": {
+        "todaysEvents": "Mga event ngayon",
+        "upcomingWeek": "Paparating ngayong linggo",
+        "recentInquiries": "Mga kamakailang inquiry",
+        "activity": "Kamakailang aktibidad",
+        "pipeline": "Pipeline",
+        "revenueTrend": "Kita (nakaraang 30 araw)",
+        "calendar": "Booking calendar",
+        "eventTypes": "Breakdown ng uri ng event",
+        "transactionsByMethod": "Mga bayad ayon sa paraan (90d)",
+        "weeklyBookings": "Mga booking ayon sa araw ng linggo",
+        "topClients": "Mga nangungunang kliyente ayon sa gastos"
+      },
+      "pipeline": {
+        "inquiries": "Mga inquiry",
+        "quoted": "Naka-quote",
+        "booked": "Naka-book"
+      },
+      "quickAdd": {
+        "title": "Mabilis na dagdag",
+        "booking": "Bagong booking",
+        "client": "Bagong kliyente",
+        "inquiry": "Bagong inquiry"
+      },
+      "empty": "Wala pa rito.",
+      "viewAll": "Tingnan lahat"
     },
     "calendar": {
       "title": "Calendar",
@@ -46,76 +67,19 @@
       "go": "Go"
     },
     "bookings": {
-      "sessions": {
-        "label": "Sesyon {n}",
-        "add": "Magdagdag ng sesyon",
-        "remove": "Alisin ang sesyon",
-        "reviewLabel": "Mga sesyon",
-        "past": "Nakaraan",
+      "title": "Mga Booking",
+      "view": {
+        "table": "Talahanayan",
+        "calendar": "Kalendaryo"
+      },
+      "toolbar": {
+        "search": "Maghanap ng booking",
+        "statusAll": "Lahat ng status",
+        "showCancelled": "Ipakita ang mga nakansela",
         "showPast": "Ipakita ang nakaraan",
-        "hidePast": "Itago ang nakaraan",
-        "pastHidden": "{count, plural, one {# nakaraang sesyon ang nakatago} other {# nakaraang sesyon ang nakatago}} — i-toggle para ipakita"
-      },
-      "wizard": {
-        "loadError": "Hindi ma-load ang booking na ito. Isara at subukan muli.",
-        "client": {
-          "multiSessionReadOnly": "Ang kliyente ay naka-lock sa mga multi-session na booking."
-        },
-        "event": {
-          "checkingConflicts": "Sinisiyasat ang mga salungatan…",
-          "repeatingSessions": "Mga paulit-ulit na sesyon",
-          "repeatingHint": "Gumawa ng isang same-day session bawat araw sa loob ng isang hanay ng petsa.",
-          "rangeStartDate": "Petsa ng simula",
-          "rangeEndDate": "Petsa ng katapusan",
-          "rangeApply": "Ilapat",
-          "rangeCancel": "Kanselahin",
-          "rangeAllFieldsRequired": "Punan ang lahat ng apat na field.",
-          "rangeEndBeforeStart": "Ang petsa ng katapusan ay dapat na sa o pagkatapos ng petsa ng simula.",
-          "rangeEndTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula.",
-          "rangeTooLong": "Masyadong mahaba ang hanay (max 366 araw).",
-          "startTimeRequired": "Kailangan ang oras ng simula.",
-          "endTimeRequired": "Kailangan ang oras ng katapusan.",
-          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula."
-        },
-        "conflictConfirm": {
-          "title": "Natuklasan ang mga salungatan sa iskedyul",
-          "description": "Ang isa o maraming sesyon ay may overlap sa mga umiiral na booking. Maaari mong i-submit kahit paano o bumalik upang ayusin ang mga petsa.",
-          "confirm": "I-submit pa rin",
-          "cancel": "Bumalik"
-        }
-      },
-      "calendar": {
-        "dropConflict": {
-          "title": "Salungatan sa iskedyul noong {date}",
-          "description": "Ang paglipat ng booking na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
-          "cancel": "Kanselahin",
-          "moveAnyway": "Ialpat pa rin",
-          "conflictCheckFailed": "Hindi ma-verify ang mga salungatan — pakisubukan muli"
-        },
-        "pastDateConfirm": {
-          "title": "Lipat sa nakaraang petsa?",
-          "description": "Inililipat mo ang booking na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
-          "confirm": "Lipat sa nakaraan",
-          "cancel": "Kanselahin"
-        },
-        "past": "Lipas na",
-        "showPast": "Ipakita ang nakaraan",
-        "hidePast": "Itago ang nakaraan"
-      },
-      "table": {
-        "past": "Lipas na",
-        "showPast": "Ipakita ang nakaraan",
-        "hidePast": "Itago ang nakaraan",
-        "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang booking} other {# nakatagong nakaraang booking}}",
-        "col": {
-          "past": "Lipas na"
-        }
-      },
-      "detail": {
-        "past": "Lipas na",
-        "showPast": "Ipakita ang lipas na sesyon",
-        "hidePast": "Itago ang lipas na sesyon",
-        "pastSessionsHidden": "{count, plural, one {# nakatagong lipas na sesyon — i-toggle para makita} other {# nakatagong lipas na sesyon — i-toggle para makita}}"
+        "import": "Mag-import ng CSV",
+        "export": "Mag-export ng CSV",
+        "add": "Bagong booking"
       },
       "import": {
         "title": "Mag-import ng mga booking",
@@ -178,6 +142,118 @@
         "tooltip": "I-download ang mga booking bilang CSV",
         "empty": "Walang booking para i-export"
       },
+      "table": {
+        "empty": "Walang booking na tumutugma sa iyong mga filter.",
+        "past": "Lipas na",
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan",
+        "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang booking} other {# nakatagong nakaraang booking}}",
+        "col": {
+          "title": "Booking",
+          "client": "Kliyente",
+          "date": "Petsa",
+          "status": "Status",
+          "total": "Kabuuan",
+          "actions": "Mga aksyon",
+          "past": "Lipas na"
+        }
+      },
+      "row": {
+        "openMenu": "Buksan ang mga aksyon sa booking",
+        "view": "Tingnan"
+      },
+      "statusValues": {
+        "inquiry": "Inquiry",
+        "quoted": "Naka-quote",
+        "booked": "Naka-book",
+        "completed": "Natapos",
+        "cancelled": "Nakansela"
+      },
+      "eventTypes": {
+        "wedding": "Kasal",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anibersaryo",
+        "other": "Iba pa"
+      },
+      "detail": {
+        "past": "Lipas na",
+        "showPast": "Ipakita ang lipas na sesyon",
+        "hidePast": "Itago ang lipas na sesyon",
+        "pastSessionsHidden": "{count, plural, one {# nakatagong lipas na sesyon — i-toggle para makita} other {# nakatagong lipas na sesyon — i-toggle para makita}}",
+        "tabs": {
+          "details": "Mga detalye",
+          "activity": "Mga tala at aktibidad"
+        },
+        "sections": {
+          "schedule": "Iskedyul",
+          "pricing": "Presyo",
+          "history": "Kasaysayan"
+        },
+        "fields": {
+          "title": "Pamagat",
+          "titleRequired": "Hindi maaaring walang pamagat.",
+          "clientName": "Pangalan ng kliyente",
+          "status": "Status",
+          "eventType": "Uri ng event",
+          "date": "Petsa",
+          "startAt": "Simula ng shift",
+          "startTime": "Oras ng simula",
+          "endAt": "Katapusan ng shift",
+          "endTime": "Oras ng katapusan",
+          "location": "Lokasyon",
+          "total": "Kabuuan",
+          "deposit": "Deposito",
+          "depositExceedsTotal": "Hindi maaaring mas malaki ang deposito kaysa sa kabuuan.",
+          "currency": "Currency",
+          "outstanding": "Natitirang balanse",
+          "notes": "Mga tala",
+          "activityEmpty": "Wala pang aktibidad.",
+          "viewAllHistory": "Tingnan ang lahat ng {count} entry",
+          "endBeforeStart": "Hindi maaaring mas maaga ang katapusan kaysa sa simula.",
+          "conflictsLabel": "Mga shift na nasa {date} na:",
+          "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito."
+        },
+        "cancelConfirm": {
+          "title": "Kanselahin ang booking na ito?",
+          "body": "Mamarkahan namin ang \"{title}\" bilang nakansela. Hindi mabubura ang booking — maaari mo itong i-restore mula sa parehong window kung bumalik ang iyong kliyente. Mananatiling buo ang kasaysayan ng audit.",
+          "keep": "Panatilihin ang booking",
+          "confirm": "Oo, kanselahin ang booking"
+        },
+        "history": {
+          "title": "Kasaysayan ng booking",
+          "totalCount": "{count} entry",
+          "pageOf": "Pahina {page} ng {total}",
+          "previous": "Nakaraang pahina",
+          "next": "Susunod na pahina"
+        },
+        "cancel": "Kanselahin ang booking",
+        "restore": "I-restore ang booking",
+        "discardChanges": "Itapon ang mga pagbabago",
+        "saveChanges": "I-save ang mga pagbabago",
+        "pendingBadge": "{count} hindi pa nai-save",
+        "unsavedConfirm": "Mayroon kang mga hindi pa nai-save na pagbabago. Itapon ang mga ito?",
+        "discardTitle": "Itapon ang mga pagbabago?",
+        "discardDescription": "{count, plural, one {# hindi pa nai-save na pagbabago ang mawawala.} other {# hindi pa nai-save na mga pagbabago ang mawawala.}}",
+        "discardConfirm": "Itapon at isara",
+        "keepEditing": "Ipagpatuloy ang pag-edit",
+        "savedToast": "Na-update ang booking.",
+        "cancelledToast": "Nakansela ang booking.",
+        "restoredToast": "Na-restore ang booking.",
+        "actionFailed": "May naganap na mali. Subukan muli.",
+        "notFound": "Hindi natagpuan ang booking.",
+        "editAll": "I-edit lahat",
+        "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save."
+      },
+      "confirm": {
+        "title": "Ilapat ang mga pagbabago",
+        "body": "Ang sesyong ito ay sumasaklaw ng {days} araw. Ano ang gusto mong gawin?",
+        "thisDay": "Ilapat sa araw na ito lamang",
+        "wholeSession": "Ilapat sa buong sesyon",
+        "pastNote": "Mananatili ang nakaraang {count} araw.",
+        "cancel": "Kanselahin"
+      },
       "dnd": {
         "pastDateWarning": "Inilipat sa nakaraang petsa",
         "pastSplitWarning": "Ang mga nakaraang araw ay napanatili — ang mga susunod na araw lamang ang na-update",
@@ -188,6 +264,124 @@
         "conflictBlockSubmit": "Ayusin muna ang mga conflict ng session bago mag-save.",
         "conflictBlockDnd": "May conflict sa {title} — hindi puwedeng ilipat dito.",
         "conflictBlockDndMany": "May conflict sa {title} at {more} pa — hindi puwedeng ilipat dito."
+      },
+      "calendar": {
+        "past": "Lipas na",
+        "togglePast": "Nakaraan",
+        "dropConflict": {
+          "title": "Salungatan sa iskedyul noong {date}",
+          "description": "Ang paglipat ng booking na ito ay lumilikha ng overlap sa isa o maraming umiiral nang shift. Maaari mo itong ialpat kahit paano o kanselahin.",
+          "cancel": "Kanselahin",
+          "moveAnyway": "Ialpat pa rin"
+        },
+        "pastDateConfirm": {
+          "title": "Lipat sa nakaraang petsa?",
+          "description": "Inililipat mo ang booking na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
+          "confirm": "Lipat sa nakaraan",
+          "cancel": "Kanselahin"
+        },
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan"
+      },
+      "sessions": {
+        "label": "Sesyon {n}",
+        "add": "Magdagdag ng sesyon",
+        "remove": "Alisin ang sesyon",
+        "reviewLabel": "Mga sesyon",
+        "past": "Nakaraan",
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan",
+        "pastHidden": "{count, plural, one {# nakaraang sesyon ang nakatago} other {# nakaraang sesyon ang nakatago}} — i-toggle para ipakita",
+        "unsaved": "Hindi pa nai-save"
+      },
+      "wizard": {
+        "createTitle": "Bagong booking",
+        "editTitle": "I-edit ang booking",
+        "loading": "Nilo-load ang booking…",
+        "previous": "Nakaraan",
+        "next": "Susunod",
+        "cancel": "Kanselahin",
+        "create": "Gumawa ng booking",
+        "creating": "Gumagawa…",
+        "save": "I-save ang mga pagbabago",
+        "saving": "Sine-save…",
+        "createdToast": "Nagawa ang booking.",
+        "savedToast": "Na-update ang booking.",
+        "depositExceedsTotal": "Hindi maaaring mas malaki ang deposito kaysa sa kabuuan.",
+        "unsavedConfirm": "Mawawala ang iyong progreso kung lalabas ka ngayon. Sigurado ka ba?",
+        "unsaved": {
+          "title": "Itapon ang iyong mga pagbabago?",
+          "body": "Mawawala ang lahat ng iyong nai-enter sa booking na ito kung aalis ka ngayon. Hindi pa nai-save ang iyong mga pagbabago.",
+          "keep": "Ipagpatuloy ang pag-edit",
+          "discard": "Itapon at isara"
+        },
+        "conflictConfirm": {
+          "title": "Natuklasan ang mga salungatan sa iskedyul",
+          "description": "Ang isa o maraming sesyon ay may overlap sa mga umiiral na booking. Maaari mong i-submit kahit paano o bumalik upang ayusin ang mga petsa.",
+          "confirm": "I-submit pa rin",
+          "cancel": "Bumalik"
+        },
+        "steps": {
+          "client": "Kliyente",
+          "event": "Event",
+          "pricing": "Presyo",
+          "review": "Suriin"
+        },
+        "client": {
+          "tabExisting": "Kasalukuyang kliyente",
+          "tabNew": "Gumawa ng bago",
+          "searchPlaceholder": "Maghanap ayon sa pangalan o email",
+          "noResults": "Walang kliyenteng tumutugma. Subukan ang ibang paghahanap.",
+          "selectRequired": "Pumili ng kliyente para magpatuloy.",
+          "name": "Pangalan",
+          "namePlaceholder": "hal. Emma Carter",
+          "email": "Email",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "Telepono",
+          "phonePlaceholder": "+63 917 555 0142",
+          "readOnlyLabel": "Kliyente",
+          "readOnlyHint": "Ang pag-aassign ulit ng booking sa ibang kliyente ay hindi pa sinusuportahan sa view na ito.",
+          "multiSessionReadOnly": "Ang kliyente ay naka-lock sa mga multi-session na booking."
+        },
+        "event": {
+          "title": "Pamagat",
+          "titleRequired": "Bigyan ng pamagat ang booking na ito.",
+          "titlePlaceholder": "hal. Carter Wedding — Pier 27",
+          "eventType": "Uri ng event",
+          "startAt": "Petsa ng simula ng shift",
+          "startAtRequired": "Pumili ng petsa ng simula.",
+          "startTime": "Oras ng simula ng shift",
+          "endAt": "Petsa ng katapusan ng shift",
+          "endTime": "Oras ng katapusan ng shift",
+          "shiftHint": "Ang mga oras ng shift ay inuulit araw-araw sa buong hanay ng petsa — ito ang pang-araw-araw na simula at katapusan, hindi isang 24-oras na event.",
+          "conflictsLabel": "Mga shift na nasa {date} na:",
+          "allowPastDate": "Nagdadagdag ng lumang booking? Payagan ang mga nakaraang petsa",
+          "location": "Lokasyon",
+          "locationPlaceholder": "Venue o kumpletong address",
+          "checkingConflicts": "Sinisiyasat ang mga salungatan…",
+          "repeatingSessions": "Mga paulit-ulit na sesyon",
+          "repeatingHint": "Gumawa ng isang same-day session bawat araw sa loob ng isang hanay ng petsa.",
+          "rangeStartDate": "Petsa ng simula",
+          "rangeEndDate": "Petsa ng katapusan",
+          "rangeApply": "Ilapat",
+          "rangeCancel": "Kanselahin",
+          "rangeAllFieldsRequired": "Punan ang lahat ng apat na field.",
+          "rangeEndBeforeStart": "Ang petsa ng katapusan ay dapat na sa o pagkatapos ng petsa ng simula.",
+          "rangeEndTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula.",
+          "rangeTooLong": "Masyadong mahaba ang hanay (max 366 araw).",
+          "startTimeRequired": "Kailangan ang oras ng simula.",
+          "endTimeRequired": "Kailangan ang oras ng katapusan.",
+          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula."
+        },
+        "pricing": {
+          "total": "Kabuuan",
+          "deposit": "Deposito",
+          "currency": "Currency",
+          "hint": "Presyo sa default na currency ng workspace. Maaari mong baguhin ang currency bawat booking."
+        },
+        "review": {
+          "intro": "Mabilis na pagsusuri — kumpirmahin na tama ang lahat bago ka mag-save."
+        }
       }
     },
     "sidebar": {
@@ -313,6 +507,8 @@
       "slugPlaceholder": "sarah-bell-photo",
       "businessType": "Uri ng negosyo",
       "country": "Bansa",
+      "currency": "Currency",
+      "currencyHelp": "Ginagamit para sa mga bagong booking, transaksyon, at mga kabuuang ipinapakita sa iyong workspace.",
       "timezone": "Timezone",
       "businessTypes": {
         "photographer": "Photographer",

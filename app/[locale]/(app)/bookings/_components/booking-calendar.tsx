@@ -338,7 +338,7 @@ export function MonthBookingEvent({
   const bg = STATUS_COLOR[booking.status];
   const clientDisplay = booking.clientName || "—";
   const timeRange = formatTimeRange(booking.start, booking.end);
-  const isPast = booking.sessionEndAt < new Date();
+  const isPast = booking.end < new Date();
   const isStatusMuted =
     booking.status === "cancelled" || booking.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
@@ -386,7 +386,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // always sees the real shift boundaries regardless of which half they hover.
   const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt);
   const isContinuation = ev.isMorningContinuation === true;
-  const isPast = ev.sessionEndAt < new Date();
+  const isPast = ev.end < new Date();
   const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
 

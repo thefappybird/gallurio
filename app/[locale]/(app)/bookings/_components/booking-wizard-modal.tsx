@@ -133,10 +133,15 @@ export function BookingWizardModal({
    *  Next without passing validation. Drives the shake animation. */
   const [shakeKey, setShakeKey] = useState(0);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
-  /** Raw shifts per session index — keyed by startDate string.
-   *  Re-fetched whenever any session's startDate changes. */
+  /** Raw shifts keyed by YYYY-MM-DD date string. Treated as a cache — entries
+   *  are added on demand and never evicted (harmless small footprint). */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
-  /** Dates currently being fetched — used to disable Next and show inline loaders. */
+  /** Mirror of rawShiftsByDate in a ref so the fetch effect can read cached keys
+   *  without adding rawShiftsByDate to its dependency array (which would re-trigger
+   *  the effect on every cache write, defeating the cache). */
+  const rawShiftsByDateRef = useRef<Record<string, ShiftHit[]>>({});
+  /** Dates currently being fetched — only in-flight (uncached) dates appear here.
+   *  Used to disable Next and show inline loaders. */
   const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
   // Effective IANA timezone for wall-clock → UTC conversion. Falls back to
   // the launch-market default when the workspace has not set a TZ yet.
@@ -198,7 +203,13 @@ export function BookingWizardModal({
             ? b.sessions
             : [];
         const today = new Date().toISOString().slice(0, 10);
-        const wizardSessions = rawSessions.map((s) => {
+        // In edit mode: order existing sessions chronologically so they read
+        // top-to-bottom by date. Create mode keeps insertion order because
+        // the user's workflow may have implicit meaning.
+        const sessionsForForm = [...rawSessions].sort(
+          (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        );
+        const wizardSessions = sessionsForForm.map((s) => {
           const sd = new Date(s.startAt);
           const ed = new Date(s.endAt);
           const startDate = sd.toISOString().slice(0, 10);
@@ -254,11 +265,12 @@ export function BookingWizardModal({
     return () => {
       cancelled = true;
     };
-  // clearWizardUrlParams is stable (useCallback) but must be listed so the
-  // linter doesn't flag a stale-closure warning. The effect only re-runs when
-  // mode/bookingId changes, which is the intended trigger.
+  // clearWizardUrlParams and onClose are stable across the booking's lifetime.
+  // They're intentionally excluded from the dep array — the effect should only
+  // re-run when the booking identity changes (mode/bookingId), not when URL state
+  // or parent callbacks update. The `cancelled` flag guards against stale closures.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, bookingId, initialValues, defaultCurrency, form, t, clearWizardUrlParams, onClose]);
+  }, [mode, bookingId, initialValues, defaultCurrency, form, t]);
 
   const {
     control,
@@ -279,21 +291,28 @@ export function BookingWizardModal({
     [watchedSessions]
   );
 
-  // Fetch shifts for each unique startDate. Clears stale dates automatically.
-  // Marks each date as loading before the fetch and clears it after.
-  // Uses an incrementing request id to discard stale results when the user
-  // changes dates faster than the fetch resolves (race-condition guard).
+  // Fetch shifts for new startDates only. Uses rawShiftsByDateRef as a read-only
+  // cache key-check so we don't re-fetch already-known dates. Only new (uncached)
+  // dates are marked loading. Results are merged into the existing cache rather
+  // than replacing it. An incrementing request id discards stale responses.
   useEffect(() => {
     const uniqueDates = [...new Set(sessionDates.filter(isValidDateString))];
     if (uniqueDates.length === 0) return;
 
+    // Skip dates already in the cache — only fetch genuinely new ones.
+    const datesToFetch = uniqueDates.filter(
+      (d) => !(d in rawShiftsByDateRef.current)
+    );
+    if (datesToFetch.length === 0) return;
+
     const myId = ++reqIdRef.current;
     let cancelled = false;
-    setLoadingDates(new Set(uniqueDates));
-    setConflictCheckError(false);
+
+    // Mark only in-flight (uncached) dates as loading.
+    setLoadingDates(new Set(datesToFetch));
 
     Promise.all(
-      uniqueDates.map(async (date) => {
+      datesToFetch.map(async (date) => {
         const params = new URLSearchParams({ date });
         if (mode === "edit" && bookingId) params.set("excludeId", bookingId);
         try {
@@ -314,15 +333,22 @@ export function BookingWizardModal({
       if (cancelled || myId !== reqIdRef.current) return;
       const hasError = entries.some(([, v]) => v === null);
       if (hasError) {
+        // A new date failed — set the error flag. Cached good dates remain.
         setConflictCheckError(true);
-        setRawShiftsByDate({});
       } else {
         setConflictCheckError(false);
-        setRawShiftsByDate(
-          Object.fromEntries(
-            entries.map(([date, shifts]) => [date, shifts as ShiftHit[]])
-          )
-        );
+        // Merge new results into the existing cache rather than overwriting.
+        setRawShiftsByDate((prev) => {
+          const next = {
+            ...prev,
+            ...Object.fromEntries(
+              entries.map(([date, shifts]) => [date, shifts as ShiftHit[]])
+            ),
+          };
+          // Keep the ref in sync so the next effect run can read the latest cache.
+          rawShiftsByDateRef.current = next;
+          return next;
+        });
       }
       setLoadingDates(new Set());
     });
@@ -331,6 +357,8 @@ export function BookingWizardModal({
       cancelled = true;
       setLoadingDates(new Set());
     };
+  // rawShiftsByDateRef is intentionally omitted — it's a ref, not reactive state.
+  // rawShiftsByDate is omitted to avoid re-running the effect on every cache write.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(sessionDates), mode, bookingId]);
 
@@ -598,7 +626,7 @@ export function BookingWizardModal({
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col gap-0 p-0 transition-[max-height,width] duration-200 ease-out sm:max-w-2xl"
+        className="flex max-h-[calc(100vh-4em)] w-full max-w-2xl flex-col gap-0 p-0 transition-[max-height,width] duration-200 ease-out sm:max-w-2xl"
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex flex-col gap-1">

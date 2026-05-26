@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
@@ -578,9 +578,21 @@ export function CalendarView({
   const todayDateStr = isoDateInTz(new Date(), tz);
   const startOfTodayInTz = dayBoundInTz(todayDateStr, tz, 0, 0, 0, 0);
 
-  const visibleEvents = showPast
-    ? optimisticEvents
-    : optimisticEvents.filter((e) => e.sessionEndAt >= startOfTodayInTz);
+  // Filter at the per-candle level using e.end (the candle's own end time).
+  // For single-day sessions e.end === e.sessionEndAt, so behaviour is unchanged.
+  // For legacy multi-day sessions each per-day candle's end reflects its own
+  // day's boundary, so Monday's candle is correctly hidden even when the session
+  // runs through Friday. Using sessionEndAt would keep every past candle visible
+  // as long as the session's final day is in the future.
+  //
+  // Cache todayMs as a number so useMemo deps are stable across renders
+  // (startOfTodayInTz is a new Date object every render, but its numeric value
+  // only changes once per day, so we compare the underlying number).
+  const startOfTodayMs = startOfTodayInTz.getTime();
+  const visibleEvents = useMemo(() => {
+    if (showPast) return optimisticEvents;
+    return optimisticEvents.filter((e) => e.end.getTime() >= startOfTodayMs);
+  }, [optimisticEvents, showPast, startOfTodayMs]);
 
   return (
     <>
@@ -611,7 +623,7 @@ export function CalendarView({
       />
       {addState ? (
         <BookingWizardModal
-          key={addState.nonce}
+          key={`add-${addState.nonce}`}
           mode="create"
           defaultDate={addState.date || undefined}
           defaultTime={addState.time}
@@ -628,6 +640,7 @@ export function CalendarView({
       ) : null}
       {editState ? (
         <BookingWizardModal
+          key={`edit-${editState.bookingId}`}
           mode="edit"
           bookingId={editState.bookingId}
           defaultCurrency={defaultCurrency}

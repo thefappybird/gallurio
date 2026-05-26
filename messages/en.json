@@ -234,6 +234,10 @@
         "saveChanges": "Save changes",
         "pendingBadge": "{count} unsaved",
         "unsavedConfirm": "You have unsaved changes. Discard them?",
+        "discardTitle": "Discard changes?",
+        "discardDescription": "{count, plural, one {# unsaved change will be lost.} other {# unsaved changes will be lost.}}",
+        "discardConfirm": "Discard and close",
+        "keepEditing": "Keep editing",
         "savedToast": "Booking updated.",
         "cancelledToast": "Booking cancelled.",
         "restoredToast": "Booking restored.",
@@ -288,7 +292,8 @@
         "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past",
-        "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show"
+        "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show",
+        "unsaved": "Unsaved"
       },
       "wizard": {
         "createTitle": "New booking",

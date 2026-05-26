@@ -380,7 +380,7 @@ export function EventStep({
       ) : null}
 
       {/* Sessions list — only this region scrolls */}
-      <div className="flex max-h-112 flex-col gap-3 overflow-y-auto pr-1">
+      <div className="flex max-h-100 flex-col gap-3 overflow-y-auto pr-1">
         {fields.map((field, i) => {
           const sessionDate = watch(`sessions.${i}.startDate`);
           return (

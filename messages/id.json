@@ -13,18 +13,39 @@
   "app": {
     "dashboard": {
       "title": "{workspaceName}",
-      "subtitle": "Berikut yang terjadi hari ini.",
-      "stats": {
-        "totalBookings": "Total pemesanan",
-        "activeClients": "Klien aktif",
+      "greeting": "Selamat datang kembali, {name}",
+      "kpi": {
+        "revenueThisMonth": "Pendapatan bulan ini",
+        "activeBookings": "Pemesanan aktif bulan ini",
         "newInquiries": "Pertanyaan baru",
-        "eventsThisMonth": "Acara bulan ini"
+        "outstandingBalance": "Saldo tertunggak"
       },
-      "upcoming": {
-        "title": "Pemesanan mendatang",
-        "empty": "Belum ada pemesanan mendatang.",
-        "createOne": "Buat satu"
-      }
+      "sections": {
+        "todaysEvents": "Acara hari ini",
+        "upcomingWeek": "Akan datang minggu ini",
+        "recentInquiries": "Pertanyaan terbaru",
+        "activity": "Aktivitas terbaru",
+        "pipeline": "Pipeline",
+        "revenueTrend": "Pendapatan (30 hari terakhir)",
+        "calendar": "Kalender pemesanan",
+        "eventTypes": "Rincian jenis acara",
+        "transactionsByMethod": "Pembayaran per metode (90 hari)",
+        "weeklyBookings": "Pemesanan per hari dalam seminggu",
+        "topClients": "Klien teratas berdasarkan pengeluaran"
+      },
+      "pipeline": {
+        "inquiries": "Pertanyaan",
+        "quoted": "Dikutip",
+        "booked": "Dipesan"
+      },
+      "quickAdd": {
+        "title": "Tambah cepat",
+        "booking": "Pemesanan baru",
+        "client": "Klien baru",
+        "inquiry": "Pertanyaan baru"
+      },
+      "empty": "Belum ada apa-apa di sini.",
+      "viewAll": "Lihat semua"
     },
     "calendar": {
       "title": "Calendar",
@@ -46,76 +67,19 @@
       "go": "Go"
     },
     "bookings": {
-      "sessions": {
-        "label": "Sesi {n}",
-        "add": "Tambah sesi",
-        "remove": "Hapus sesi",
-        "reviewLabel": "Sesi",
-        "past": "Lampau",
-        "showPast": "Tampilkan lampau",
-        "hidePast": "Sembunyikan lampau",
-        "pastHidden": "{count, plural, one {# sesi lampau disembunyikan} other {# sesi lampau disembunyikan}} — toggle untuk tampilkan"
+      "title": "Pemesanan",
+      "view": {
+        "table": "Tabel",
+        "calendar": "Kalender"
       },
-      "wizard": {
-        "loadError": "Tidak dapat memuat pemesanan ini. Tutup dan coba lagi.",
-        "client": {
-          "multiSessionReadOnly": "Klien dikunci pada pemesanan multi-sesi."
-        },
-        "event": {
-          "checkingConflicts": "Memeriksa konflik…",
-          "repeatingSessions": "Sesi berulang",
-          "repeatingHint": "Buat satu sesi pada hari yang sama untuk setiap hari dalam rentang tanggal.",
-          "rangeStartDate": "Tanggal mulai",
-          "rangeEndDate": "Tanggal selesai",
-          "rangeApply": "Terapkan",
-          "rangeCancel": "Batal",
-          "rangeAllFieldsRequired": "Isi keempat kolom.",
-          "rangeEndBeforeStart": "Tanggal selesai harus pada atau setelah tanggal mulai.",
-          "rangeEndTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
-          "rangeTooLong": "Rentang terlalu panjang (maks 366 hari).",
-          "startTimeRequired": "Waktu mulai diperlukan.",
-          "endTimeRequired": "Waktu selesai diperlukan.",
-          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai."
-        },
-        "conflictConfirm": {
-          "title": "Konflik jadwal terdeteksi",
-          "description": "Satu atau lebih sesi tumpang tindih dengan pemesanan yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
-          "confirm": "Kirim tetap",
-          "cancel": "Kembali"
-        }
-      },
-      "calendar": {
-        "dropConflict": {
-          "title": "Konflik jadwal pada {date}",
-          "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
-          "cancel": "Batal",
-          "moveAnyway": "Pindahkan saja",
-          "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi"
-        },
-        "pastDateConfirm": {
-          "title": "Pindah ke tanggal lampau?",
-          "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
-          "confirm": "Pindah ke lampau",
-          "cancel": "Batal"
-        },
-        "past": "Lalu",
+      "toolbar": {
+        "search": "Cari pemesanan",
+        "statusAll": "Semua status",
+        "showCancelled": "Tampilkan yang dibatalkan",
         "showPast": "Tampilkan yang lalu",
-        "hidePast": "Sembunyikan yang lalu"
-      },
-      "table": {
-        "past": "Lalu",
-        "showPast": "Tampilkan yang lalu",
-        "hidePast": "Sembunyikan yang lalu",
-        "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
-        "col": {
-          "past": "Lalu"
-        }
-      },
-      "detail": {
-        "past": "Lalu",
-        "showPast": "Tampilkan sesi yang lalu",
-        "hidePast": "Sembunyikan sesi yang lalu",
-        "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}"
+        "import": "Impor CSV",
+        "export": "Ekspor CSV",
+        "add": "Pemesanan baru"
       },
       "import": {
         "title": "Impor pemesanan",
@@ -178,6 +142,118 @@
         "tooltip": "Unduh pemesanan sebagai CSV",
         "empty": "Tidak ada pemesanan untuk diekspor"
       },
+      "table": {
+        "empty": "Tidak ada pemesanan yang sesuai dengan filter Anda.",
+        "past": "Lalu",
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu",
+        "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
+        "col": {
+          "title": "Pemesanan",
+          "client": "Klien",
+          "date": "Tanggal",
+          "status": "Status",
+          "total": "Total",
+          "actions": "Tindakan",
+          "past": "Lalu"
+        }
+      },
+      "row": {
+        "openMenu": "Buka tindakan pemesanan",
+        "view": "Lihat"
+      },
+      "statusValues": {
+        "inquiry": "Pertanyaan",
+        "quoted": "Dikutip",
+        "booked": "Dipesan",
+        "completed": "Selesai",
+        "cancelled": "Dibatalkan"
+      },
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "other": "Lainnya"
+      },
+      "detail": {
+        "past": "Lalu",
+        "showPast": "Tampilkan sesi yang lalu",
+        "hidePast": "Sembunyikan sesi yang lalu",
+        "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}",
+        "tabs": {
+          "details": "Detail",
+          "activity": "Catatan & aktivitas"
+        },
+        "sections": {
+          "schedule": "Jadwal",
+          "pricing": "Harga",
+          "history": "Riwayat"
+        },
+        "fields": {
+          "title": "Judul",
+          "titleRequired": "Judul tidak boleh kosong.",
+          "clientName": "Nama klien",
+          "status": "Status",
+          "eventType": "Jenis acara",
+          "date": "Tanggal",
+          "startAt": "Mulai shift",
+          "startTime": "Waktu mulai",
+          "endAt": "Selesai shift",
+          "endTime": "Waktu selesai",
+          "location": "Lokasi",
+          "total": "Total",
+          "deposit": "Deposit",
+          "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
+          "currency": "Mata uang",
+          "outstanding": "Saldo tertunggak",
+          "notes": "Catatan",
+          "activityEmpty": "Belum ada aktivitas.",
+          "viewAllHistory": "Lihat semua {count} entri",
+          "endBeforeStart": "Selesai tidak boleh sebelum mulai.",
+          "conflictsLabel": "Shift yang sudah ada pada {date}:",
+          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini."
+        },
+        "cancelConfirm": {
+          "title": "Batalkan pemesanan ini?",
+          "body": "Kami akan menandai \"{title}\" sebagai dibatalkan. Pemesanan tidak akan dihapus — Anda dapat memulihkannya dari jendela yang sama jika klien Anda kembali. Riwayat audit tetap utuh.",
+          "keep": "Pertahankan pemesanan",
+          "confirm": "Ya, batalkan pemesanan"
+        },
+        "history": {
+          "title": "Riwayat pemesanan",
+          "totalCount": "{count} entri",
+          "pageOf": "Halaman {page} dari {total}",
+          "previous": "Halaman sebelumnya",
+          "next": "Halaman berikutnya"
+        },
+        "cancel": "Batalkan pemesanan",
+        "restore": "Pulihkan pemesanan",
+        "discardChanges": "Buang perubahan",
+        "saveChanges": "Simpan perubahan",
+        "pendingBadge": "{count} belum disimpan",
+        "unsavedConfirm": "Anda memiliki perubahan yang belum disimpan. Buangnya?",
+        "discardTitle": "Buang perubahan?",
+        "discardDescription": "{count, plural, one {# perubahan belum disimpan akan hilang.} other {# perubahan belum disimpan akan hilang.}}",
+        "discardConfirm": "Buang dan tutup",
+        "keepEditing": "Terus mengedit",
+        "savedToast": "Pemesanan diperbarui.",
+        "cancelledToast": "Pemesanan dibatalkan.",
+        "restoredToast": "Pemesanan dipulihkan.",
+        "actionFailed": "Ada yang tidak beres. Coba lagi.",
+        "notFound": "Pemesanan tidak ditemukan.",
+        "editAll": "Edit semua",
+        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan."
+      },
+      "confirm": {
+        "title": "Terapkan perubahan",
+        "body": "Sesi ini mencakup {days} hari. Apa yang ingin Anda lakukan?",
+        "thisDay": "Terapkan untuk hari ini saja",
+        "wholeSession": "Terapkan untuk seluruh sesi",
+        "pastNote": "{count} hari yang lalu akan dipertahankan.",
+        "cancel": "Batal"
+      },
       "dnd": {
         "pastDateWarning": "Dipindahkan ke tanggal lampau",
         "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
@@ -188,6 +264,124 @@
         "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
         "conflictBlockDnd": "Bentrok dengan {title} — tidak bisa pindah ke sini.",
         "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini."
+      },
+      "calendar": {
+        "past": "Lalu",
+        "togglePast": "Lalu",
+        "dropConflict": {
+          "title": "Konflik jadwal pada {date}",
+          "description": "Memindahkan pemesanan ini menciptakan tumpang tindih dengan satu atau lebih shift yang ada. Anda dapat memindahkannya atau membatalkan.",
+          "cancel": "Batal",
+          "moveAnyway": "Pindahkan saja"
+        },
+        "pastDateConfirm": {
+          "title": "Pindah ke tanggal lampau?",
+          "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
+          "confirm": "Pindah ke lampau",
+          "cancel": "Batal"
+        },
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu"
+      },
+      "sessions": {
+        "label": "Sesi {n}",
+        "add": "Tambah sesi",
+        "remove": "Hapus sesi",
+        "reviewLabel": "Sesi",
+        "past": "Lampau",
+        "showPast": "Tampilkan lampau",
+        "hidePast": "Sembunyikan lampau",
+        "pastHidden": "{count, plural, one {# sesi lampau disembunyikan} other {# sesi lampau disembunyikan}} — toggle untuk tampilkan",
+        "unsaved": "Belum disimpan"
+      },
+      "wizard": {
+        "createTitle": "Pemesanan baru",
+        "editTitle": "Edit pemesanan",
+        "loading": "Memuat pemesanan…",
+        "previous": "Sebelumnya",
+        "next": "Berikutnya",
+        "cancel": "Batal",
+        "create": "Buat pemesanan",
+        "creating": "Membuat…",
+        "save": "Simpan perubahan",
+        "saving": "Menyimpan…",
+        "createdToast": "Pemesanan dibuat.",
+        "savedToast": "Pemesanan diperbarui.",
+        "depositExceedsTotal": "Deposit tidak boleh melebihi total.",
+        "unsavedConfirm": "Kemajuan Anda akan hilang jika keluar sekarang. Yakin?",
+        "unsaved": {
+          "title": "Buang perubahan Anda?",
+          "body": "Semua yang Anda masukkan dalam pemesanan ini akan hilang jika Anda pergi sekarang. Perubahan Anda belum disimpan.",
+          "keep": "Terus mengedit",
+          "discard": "Buang dan tutup"
+        },
+        "conflictConfirm": {
+          "title": "Konflik jadwal terdeteksi",
+          "description": "Satu atau lebih sesi tumpang tindih dengan pemesanan yang ada. Anda dapat mengirim tetap atau kembali untuk menyesuaikan tanggal.",
+          "confirm": "Kirim tetap",
+          "cancel": "Kembali"
+        },
+        "steps": {
+          "client": "Klien",
+          "event": "Acara",
+          "pricing": "Harga",
+          "review": "Tinjau"
+        },
+        "client": {
+          "tabExisting": "Klien yang ada",
+          "tabNew": "Buat baru",
+          "searchPlaceholder": "Cari berdasarkan nama atau email",
+          "noResults": "Tidak ada klien yang cocok. Coba pencarian lain.",
+          "selectRequired": "Pilih klien untuk melanjutkan.",
+          "name": "Nama",
+          "namePlaceholder": "mis. Emma Carter",
+          "email": "Email",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "Telepon",
+          "phonePlaceholder": "+62 812 555 0142",
+          "readOnlyLabel": "Klien",
+          "readOnlyHint": "Mengubah klien ke pemesanan yang berbeda belum didukung dalam tampilan ini.",
+          "multiSessionReadOnly": "Klien dikunci pada pemesanan multi-sesi."
+        },
+        "event": {
+          "title": "Judul",
+          "titleRequired": "Beri judul untuk pemesanan ini.",
+          "titlePlaceholder": "mis. Pernikahan Carter — Pier 27",
+          "eventType": "Jenis acara",
+          "startAt": "Tanggal mulai shift",
+          "startAtRequired": "Pilih tanggal mulai.",
+          "startTime": "Waktu mulai shift",
+          "endAt": "Tanggal selesai shift",
+          "endTime": "Waktu selesai shift",
+          "shiftHint": "Jam shift berulang setiap hari sepanjang rentang tanggal — ini adalah waktu mulai dan selesai harian, bukan satu acara 24 jam.",
+          "conflictsLabel": "Shift yang sudah ada pada {date}:",
+          "allowPastDate": "Menambahkan pemesanan lama? Izinkan tanggal lampau",
+          "location": "Lokasi",
+          "locationPlaceholder": "Venue atau alamat lengkap",
+          "checkingConflicts": "Memeriksa konflik…",
+          "repeatingSessions": "Sesi berulang",
+          "repeatingHint": "Buat satu sesi pada hari yang sama untuk setiap hari dalam rentang tanggal.",
+          "rangeStartDate": "Tanggal mulai",
+          "rangeEndDate": "Tanggal selesai",
+          "rangeApply": "Terapkan",
+          "rangeCancel": "Batal",
+          "rangeAllFieldsRequired": "Isi keempat kolom.",
+          "rangeEndBeforeStart": "Tanggal selesai harus pada atau setelah tanggal mulai.",
+          "rangeEndTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
+          "rangeTooLong": "Rentang terlalu panjang (maks 366 hari).",
+          "startTimeRequired": "Waktu mulai diperlukan.",
+          "endTimeRequired": "Waktu selesai diperlukan.",
+          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai."
+        },
+        "pricing": {
+          "total": "Total",
+          "deposit": "Deposit",
+          "currency": "Mata uang",
+          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per pemesanan."
+        },
+        "review": {
+          "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
+        }
       }
     },
     "sidebar": {
@@ -313,6 +507,8 @@
       "slugPlaceholder": "sarah-bell-photo",
       "businessType": "Jenis bisnis",
       "country": "Negara",
+      "currency": "Mata uang",
+      "currencyHelp": "Digunakan untuk pemesanan baru, transaksi, dan total yang ditampilkan di seluruh ruang kerja Anda.",
       "timezone": "Zona waktu",
       "businessTypes": {
         "photographer": "Fotografer",
