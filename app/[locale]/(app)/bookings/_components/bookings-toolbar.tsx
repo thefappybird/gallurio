@@ -47,6 +47,7 @@ export function BookingsToolbar({
 
   const status = searchParams.get("status") ?? ALL;
   const includeCancelled = searchParams.get("includeCancelled") === "1";
+  const showPast = searchParams.get("showPast") === "1";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
@@ -133,6 +134,18 @@ export function BookingsToolbar({
           />
           <span className="select-none text-muted-foreground">
             {t("showCancelled")}
+          </span>
+        </label>
+
+        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+          <Switch
+            checked={showPast}
+            onCheckedChange={(v: boolean) =>
+              pushParams({ showPast: v ? "1" : null })
+            }
+          />
+          <span className="select-none text-muted-foreground">
+            {t("showPast")}
           </span>
         </label>
       </div>

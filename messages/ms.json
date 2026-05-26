@@ -46,13 +46,36 @@
       "go": "Go"
     },
     "bookings": {
+      "sessions": {
+        "label": "Sesi {n}",
+        "add": "Tambah sesi",
+        "remove": "Buang sesi",
+        "reviewLabel": "Sesi",
+        "past": "Lepas",
+        "showPast": "Tunjuk yang lepas",
+        "hidePast": "Sembunyikan yang lepas",
+        "pastHidden": "{count, plural, one {# sesi lepas disembunyikan} other {# sesi lepas disembunyikan}} — togol untuk tunjuk"
+      },
       "wizard": {
         "loadError": "Tidak dapat memuatkan tempahan ini. Tutup dan cuba lagi.",
         "client": {
           "multiSessionReadOnly": "Pelanggan dikunci pada tempahan berbilang sesi."
         },
         "event": {
-          "checkingConflicts": "Menyemak konflik…"
+          "checkingConflicts": "Menyemak konflik…",
+          "repeatingSessions": "Sesi berulang",
+          "repeatingHint": "Janakan satu sesi pada hari yang sama setiap hari dalam julat tarikh.",
+          "rangeStartDate": "Tarikh mula",
+          "rangeEndDate": "Tarikh tamat",
+          "rangeApply": "Guna",
+          "rangeCancel": "Batal",
+          "rangeAllFieldsRequired": "Isikan semua empat medan.",
+          "rangeEndBeforeStart": "Tarikh tamat mesti pada atau selepas tarikh mula.",
+          "rangeEndTimeBeforeStart": "Masa tamat mesti selepas masa mula.",
+          "rangeTooLong": "Julat terlalu panjang (maks 366 hari).",
+          "startTimeRequired": "Masa mula diperlukan.",
+          "endTimeRequired": "Masa tamat diperlukan.",
+          "endTimeBeforeStart": "Masa tamat mesti selepas masa mula."
         },
         "conflictConfirm": {
           "title": "Konflik jadual dikesan",
@@ -74,7 +97,25 @@
           "description": "Anda memindahkan tempahan ini ke tarikh yang telah lepas. Ini dibenarkan tetapi luar biasa — sahkan untuk teruskan.",
           "confirm": "Pindah ke lepas",
           "cancel": "Batal"
+        },
+        "past": "Lepas",
+        "showPast": "Tunjukkan lepas",
+        "hidePast": "Sembunyi lepas"
+      },
+      "table": {
+        "past": "Lepas",
+        "showPast": "Tunjukkan lepas",
+        "hidePast": "Sembunyi lepas",
+        "pastBookingsHidden": "{count, plural, one {# tempahan lepas disembunyikan} other {# tempahan lepas disembunyikan}}",
+        "col": {
+          "past": "Lepas"
         }
+      },
+      "detail": {
+        "past": "Lepas",
+        "showPast": "Tunjukkan sesi lepas",
+        "hidePast": "Sembunyi sesi lepas",
+        "pastSessionsHidden": "{count, plural, one {# sesi lepas disembunyikan — toggle untuk tunjuk} other {# sesi lepas disembunyikan — toggle untuk tunjuk}}"
       },
       "import": {
         "title": "Import tempahan",
@@ -136,6 +177,17 @@
       "export": {
         "tooltip": "Muat turun tempahan sebagai CSV",
         "empty": "Tiada tempahan untuk dieksport"
+      },
+      "dnd": {
+        "pastDateWarning": "Dipindahkan ke tarikh lepas",
+        "pastSplitWarning": "Hari-hari lepas dikekalkan — hanya hari-hari akan datang dikemas kini",
+        "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang lepas",
+        "updateError": "Gagal mengemas kini tempahan",
+        "conflictCheckFailed": "Tidak dapat mengesahkan konflik — sila cuba lagi",
+        "overnightNotAllowed": "Tempahan tidak boleh melepasi tengah malam. Gunakan sesi berulang untuk merangkumi beberapa hari.",
+        "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
+        "conflictBlockDnd": "Konflik dengan {title} — tidak boleh pindah ke sini.",
+        "conflictBlockDndMany": "Konflik dengan {title} dan {more} lagi — tidak boleh pindah ke sini."
       }
     },
     "sidebar": {

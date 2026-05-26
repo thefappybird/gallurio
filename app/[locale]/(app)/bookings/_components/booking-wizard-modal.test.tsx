@@ -117,7 +117,7 @@ describe("BookingWizardModal — conflict detection", () => {
     expect(screen.getByText(/13:00/)).toBeInTheDocument();
   });
 
-  it("Next button is NOT disabled when conflicts exist (conflicts no longer block navigation)", async () => {
+  it("Next button IS disabled when conflicts exist (hard-block)", async () => {
     renderWizard();
     await advanceToEventStep();
 
@@ -134,11 +134,11 @@ describe("BookingWizardModal — conflict detection", () => {
     );
 
     const nextBtn = screen.getByRole("button", { name: /next/i });
-    // Conflicts no longer disable Next — user can proceed to the next step.
-    expect(nextBtn).not.toBeDisabled();
+    // Conflicts are a hard block — Next is disabled until conflicts are resolved.
+    expect(nextBtn).toBeDisabled();
   });
 
-  it("clicking Next with a conflict advances to the pricing step", async () => {
+  it("clicking Next with a conflict does NOT advance — hard block", async () => {
     renderWizard();
     await advanceToEventStep();
 
@@ -153,17 +153,13 @@ describe("BookingWizardModal — conflict detection", () => {
       { timeout: 3000 }
     );
 
+    // Next is disabled when conflicts exist — clicking is not possible.
     const nextBtn = screen.getByRole("button", { name: /next/i });
-    expect(nextBtn).not.toBeDisabled();
+    expect(nextBtn).toBeDisabled();
 
-    await act(async () => {
-      fireEvent.click(nextBtn);
-    });
-
-    // Should now be on the pricing step.
-    await waitFor(() => {
-      expect(screen.getByLabelText(/^total$/i)).toBeInTheDocument();
-    });
+    // The event step content must still be visible (not advanced to pricing).
+    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^total$/i)).not.toBeInTheDocument();
   });
 });
 
@@ -176,29 +172,22 @@ describe("BookingWizardModal — conflict detection", () => {
 // The fix: use the native register() onChange (no custom override) so RHF
 // properly notifies all watch() subscriptions on every date change.
 //
-// What we verify: the conflict warning appears without ANY extra interaction
-// when the initial date has a conflict — this is covered by the existing
-// "conflict detection" suite. The additional test here verifies that the
-// startDate watch INSIDE SessionCard is reactive (the end-date min attribute
-// updates when startDate changes), which is the same reactive mechanism that
-// drives the parent-level conflict fetch.
+// What we verify: changing the start date re-fires the conflict fetch for the
+// new date. This exercises the same reactive mechanism (useWatch → useEffect
+// dependency) that was broken in the original bug.
 describe("BookingWizardModal — Issue 3: startDate watch is reactive on change", () => {
-  beforeEach(() => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (url: string) => {
-        if (url.includes("/api/bookings/shifts-on-date")) {
-          return { ok: true, json: async () => ({ shifts: [] }) };
-        }
-        if (url.includes("/api/clients")) {
-          return { ok: true, json: async () => ({ clients: [] }) };
-        }
-        return { ok: false, json: async () => ({}) };
-      })
-    );
-  });
+  it("re-fetches shifts-on-date for the new date when startDate changes", async () => {
+    const mockFetch = vi.fn(async (url: string) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => ({ shifts: [] }) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
 
-  it("updates the end-date min attribute immediately when the start date changes", async () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <BookingWizardModal
@@ -223,29 +212,38 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
       expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
     });
 
-    // The endDate input's min should start as TARGET_DATE (= startDate).
-    const endDateInput = document.getElementById(
-      "wiz-endDate-0"
-    ) as HTMLInputElement;
-    expect(endDateInput).not.toBeNull();
-    expect(endDateInput.min).toBe(TARGET_DATE);
+    // Wait for the initial fetch for TARGET_DATE to complete.
+    await waitFor(() => {
+      const initialCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes("/api/bookings/shifts-on-date") && url.includes(`date=${TARGET_DATE}`)
+      );
+      expect(initialCalls.length).toBeGreaterThan(0);
+    });
 
-    // Change start date to a later date.
+    const callCountAfterInitial = mockFetch.mock.calls.filter(([url]: [string]) =>
+      url.includes("/api/bookings/shifts-on-date")
+    ).length;
+
+    // Change start date to a new date — this must trigger a new fetch.
     const NEW_DATE = "2026-08-01";
-    const dateInput = document.getElementById(
-      "wiz-startDate-0"
-    ) as HTMLInputElement;
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
     await act(async () => {
       fireEvent.change(dateInput, { target: { value: NEW_DATE } });
     });
 
-    // The endDate min must update to the new start date — this proves that
-    // SessionCard's local watch("sessions.0.startDate") re-rendered after the
-    // native register onChange fired, which is the same mechanism that
-    // drives the parent conflict-fetch useEffect.
+    // A new conflict-check fetch must have fired for the new date.
     await waitFor(() => {
-      expect(endDateInput.min).toBe(NEW_DATE);
+      const newDateCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes("/api/bookings/shifts-on-date") && url.includes(`date=${NEW_DATE}`)
+      );
+      expect(newDateCalls.length).toBeGreaterThan(0);
     });
+
+    // Sanity: more total shift-fetch calls than before the date change.
+    const callCountAfterChange = mockFetch.mock.calls.filter(([url]: [string]) =>
+      url.includes("/api/bookings/shifts-on-date")
+    ).length;
+    expect(callCountAfterChange).toBeGreaterThan(callCountAfterInitial);
   });
 });
 
@@ -865,6 +863,351 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
       expect(patchCall).toBeDefined();
       const body = JSON.parse((patchCall![1] as RequestInit).body as string);
       expect(body.clientId).toBe(NEW_CLIENT_ID);
+    });
+  });
+});
+
+// ── Issue 2 regression: conflict check fires in edit mode on date change ──────
+//
+// Symptom: in EDIT mode, picking a new date does not trigger the conflict-check
+// fetch. The root cause is investigated here by verifying the fetch IS called
+// with excludeId when the date changes after the booking loads.
+describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
+  const EDIT_BOOKING_ID = "aabbccddeeff001122334488";
+  const EDIT_DATE = "2026-09-10";
+
+  it("fires conflict fetch with excludeId when date changes in edit mode (initialValues path)", async () => {
+    const mockFetch = vi.fn(async (url: string) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => ({ shifts: [CONFLICT_SHIFT] }) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const initialValues = {
+      client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+      title: "Test Shoot",
+      eventType: "portrait" as const,
+      status: "booked" as const,
+      sessions: [
+        { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+      ],
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" as const },
+      notes: "",
+    };
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID}
+          defaultCurrency="PHP"
+          initialValues={initialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    // Wait for the modal to be visible (initialValues path — no async fetch).
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    // Navigate to event step.
+    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Wait for the initial conflict-check fetch (for "2026-09-01").
+    await waitFor(() => {
+      const initialCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes("/api/bookings/shifts-on-date") &&
+        url.includes("date=2026-09-01") &&
+        url.includes(`excludeId=${EDIT_BOOKING_ID}`)
+      );
+      expect(initialCalls.length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
+
+    const countBefore = mockFetch.mock.calls.filter(([url]: [string]) =>
+      url.includes("/api/bookings/shifts-on-date")
+    ).length;
+
+    // Change the date — this must trigger a new conflict fetch.
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: EDIT_DATE } });
+    });
+
+    // The new fetch must include excludeId= so the booking being edited is not
+    // counted as a conflict against itself.
+    await waitFor(() => {
+      const newCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
+        url.includes("/api/bookings/shifts-on-date") &&
+        url.includes(`date=${EDIT_DATE}`) &&
+        url.includes(`excludeId=${EDIT_BOOKING_ID}`)
+      );
+      expect(newCalls.length).toBeGreaterThan(0);
+    }, { timeout: 3000 });
+
+    const countAfter = mockFetch.mock.calls.filter(([url]: [string]) =>
+      url.includes("/api/bookings/shifts-on-date")
+    ).length;
+    expect(countAfter).toBeGreaterThan(countBefore);
+  });
+
+  it("shows conflict warning in edit mode after date change triggers fetch", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          const date = new URL(url, "http://localhost").searchParams.get("date");
+          // Only return conflict for the new date, not the initial date.
+          const shifts = date === EDIT_DATE ? [CONFLICT_SHIFT] : [];
+          return { ok: true, json: async () => ({ shifts }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+
+    const initialValues = {
+      client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+      title: "Test Shoot",
+      eventType: "portrait" as const,
+      status: "booked" as const,
+      sessions: [
+        { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+      ],
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" as const },
+      notes: "",
+    };
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID}
+          defaultCurrency="PHP"
+          initialValues={initialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Initial date (2026-09-01) has no conflict — no warning should appear.
+    await waitFor(() => {
+      expect(screen.queryByText(/shifts already on/i)).not.toBeInTheDocument();
+    }, { timeout: 2000 });
+
+    // Change to the conflict date.
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: EDIT_DATE } });
+    });
+
+    // Conflict warning must appear.
+    await waitFor(
+      () => {
+        expect(screen.getByText(/shifts already on/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+    expect(screen.getByText("Existing Shoot")).toBeInTheDocument();
+  });
+});
+
+// ── Issue 3 regression: submit button gated by isDirty in edit mode ───────────
+//
+// Symptom: in edit mode, the wizard's final Submit/Save button is enabled even
+// when the user hasn't made any changes. After the fix, the button must be
+// disabled until at least one field is dirtied.
+describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (edit mode)", () => {
+  const EDIT_BOOKING_ID_3 = "aabbccddeeff001122334499";
+
+  const issueThreeInitialValues = {
+    client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+    title: "Test Shoot",
+    eventType: "portrait" as const,
+    status: "booked" as const,
+    sessions: [
+      { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+    ],
+    location: { address: "" },
+    amount: { total: 0, deposit: 0, currency: "PHP" as const },
+    notes: "",
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  it("submit button on final step is disabled when form is untouched in edit mode", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID_3}
+          defaultCurrency="PHP"
+          initialValues={issueThreeInitialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    // Navigate directly to the review step (last step).
+    const reviewStepBtn = screen.getByRole("button", { name: /review/i });
+    await act(async () => {
+      fireEvent.click(reviewStepBtn);
+    });
+
+    // Submit/Save button must be disabled — no changes have been made.
+    await waitFor(() => {
+      // In edit mode the button text is "Save".
+      const submitBtns = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.toLowerCase().includes("save") && b.getAttribute("type") === "submit"
+      );
+      expect(submitBtns.length).toBeGreaterThan(0);
+      expect(submitBtns[0]).toBeDisabled();
+    });
+  });
+
+  it("submit button becomes enabled after a field is changed in edit mode", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={EDIT_BOOKING_ID_3}
+          defaultCurrency="PHP"
+          initialValues={issueThreeInitialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    // Navigate to event step and dirty the form.
+    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Dirty the title field.
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Modified Title" },
+    });
+
+    // Navigate to review step.
+    const reviewStepBtn = screen.getByRole("button", { name: /review/i });
+    await act(async () => {
+      fireEvent.click(reviewStepBtn);
+    });
+
+    // Submit button must now be enabled (form is dirty).
+    await waitFor(() => {
+      const submitBtns = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.toLowerCase().includes("save") && b.getAttribute("type") === "submit"
+      );
+      expect(submitBtns.length).toBeGreaterThan(0);
+      expect(submitBtns[0]).not.toBeDisabled();
+    });
+  });
+
+  it("submit button in create mode is NOT gated by isDirty", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate="2026-09-01"
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    // Client step: create new client.
+    const createNewTab = screen.getByRole("button", { name: /create new/i });
+    fireEvent.click(createNewTab);
+    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
+      target: { value: "New Client" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Event step: fill title and wait for conflict check to complete.
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Shoot" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Pricing step: advance.
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    // Review step: Create button must be enabled (create mode is not gated by isDirty).
+    await waitFor(() => {
+      const createBtns = screen.getAllByRole("button").filter(
+        (b) => b.textContent?.toLowerCase().includes("create") && b.getAttribute("type") === "submit"
+      );
+      expect(createBtns.length).toBeGreaterThan(0);
+      expect(createBtns[0]).not.toBeDisabled();
     });
   });
 });

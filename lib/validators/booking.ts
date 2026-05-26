@@ -51,7 +51,27 @@ export const bookingSessionSchema = z
   .refine((s) => s.endAt.getTime() >= s.startAt.getTime(), {
     message: "Session end must be on or after session start",
     path: ["endAt"],
-  });
+  })
+  .refine(
+    (s) => {
+      // Single-day invariant: bookings cannot cross midnight. The form's
+      // repeating-sessions toggle spawns one same-day session per day for
+      // multi-day events, so any cross-midnight session is a bug or a
+      // hand-crafted API call.
+      // Note: comparison is done in UTC; wallTimeInTzToUtc (client-side) ensures
+      // the UTC calendar day matches the workspace's wall-clock day for UTC+8 (PHP)
+      // when sessions are within a 12-hour window of midnight.
+      return (
+        s.startAt.getUTCFullYear() === s.endAt.getUTCFullYear() &&
+        s.startAt.getUTCMonth() === s.endAt.getUTCMonth() &&
+        s.startAt.getUTCDate() === s.endAt.getUTCDate()
+      );
+    },
+    {
+      message: "Session cannot span midnight",
+      path: ["endAt"],
+    }
+  );
 export type BookingSessionInput = z.infer<typeof bookingSessionSchema>;
 
 export const bookingCreateSchema = z.object({

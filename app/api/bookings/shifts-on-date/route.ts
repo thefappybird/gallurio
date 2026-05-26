@@ -107,6 +107,14 @@ export async function GET(req: Request) {
 
     // Fall back to denormalized bounds for legacy bookings missing sessions[].
     if (matchingEntries.length === 0) {
+      // Modern bookings: sessions[] is the source of truth. If no specific session
+      // matches the queried date, this booking genuinely has no shift on that day
+      // — the Mongo $or's bounds clause matched only because the booking's overall
+      // date range (firstSessionStart..lastSessionEnd) spans the date. Skip the
+      // legacy all-day sentinel to avoid false conflicts.
+      if (sessions && sessions.length > 0) return [];
+      // Legacy fallback: bookings without a sessions[] array fall back to the
+      // denormalized bounds and are treated as occupying the entire day.
       if (!b.firstSessionStart || !b.lastSessionEnd) return [];
       if (excludeShift && excludeShift.bookingId === bookingId && excludeShift.sessionIndex === 0) {
         return [];

@@ -76,6 +76,7 @@
         "search": "Search bookings",
         "statusAll": "All statuses",
         "showCancelled": "Show cancelled",
+        "showPast": "Show past",
         "import": "Import CSV",
         "export": "Export CSV",
         "add": "New booking"
@@ -143,13 +144,18 @@
       },
       "table": {
         "empty": "No bookings match your filters.",
+        "past": "Past",
+        "showPast": "Show past",
+        "hidePast": "Hide past",
+        "pastBookingsHidden": "{count, plural, one {# past booking hidden} other {# past bookings hidden}}",
         "col": {
           "title": "Booking",
           "client": "Client",
           "date": "Date",
           "status": "Status",
           "total": "Total",
-          "actions": "Actions"
+          "actions": "Actions",
+          "past": "Past"
         }
       },
       "row": {
@@ -172,6 +178,10 @@
         "other": "Other"
       },
       "detail": {
+        "past": "Past",
+        "showPast": "Show past sessions",
+        "hidePast": "Hide past sessions",
+        "pastSessionsHidden": "{count, plural, one {# past session hidden — toggle to show} other {# past sessions hidden — toggle to show}}",
         "tabs": {
           "details": "Details",
           "activity": "Notes & activity"
@@ -187,8 +197,11 @@
           "clientName": "Client name",
           "status": "Status",
           "eventType": "Event type",
+          "date": "Date",
           "startAt": "Shift start",
+          "startTime": "Start time",
           "endAt": "Shift end",
+          "endTime": "End time",
           "location": "Location",
           "total": "Total",
           "deposit": "Deposit",
@@ -199,7 +212,8 @@
           "activityEmpty": "No activity yet.",
           "viewAllHistory": "View all {count} entries",
           "endBeforeStart": "End can't be before start.",
-          "conflictsLabel": "Shifts already on {date}:"
+          "conflictsLabel": "Shifts already on {date}:",
+          "draftHint": "Adjust the times below, then click Save changes to add this session."
         },
         "cancelConfirm": {
           "title": "Cancel this booking?",
@@ -241,9 +255,15 @@
         "pastSplitWarning": "Past days preserved — only future days were updated",
         "thisDayOnlyOnPast": "Cannot edit a past day",
         "updateError": "Failed to update booking",
-        "conflictCheckFailed": "Couldn't verify conflicts — please try again"
+        "conflictCheckFailed": "Couldn't verify conflicts — please try again",
+        "overnightNotAllowed": "Bookings cannot span midnight — please adjust the time",
+        "conflictBlockSubmit": "Resolve session conflicts before saving.",
+        "conflictBlockDnd": "This time overlaps with \"{title}\" — move cancelled",
+        "conflictBlockDndMany": "This time overlaps with \"{title}\" and {more} other shift(s) — move cancelled"
       },
       "calendar": {
+        "past": "Past",
+        "togglePast": "Past",
         "dropConflict": {
           "title": "Schedule conflict on {date}",
           "description": "Moving this booking creates an overlap with one or more existing shifts. You can move it anyway or cancel.",
@@ -255,13 +275,20 @@
           "description": "You're moving this booking to a date in the past. This is allowed but unusual — confirm to continue.",
           "confirm": "Move to past",
           "cancel": "Cancel"
-        }
+        },
+        "past": "Past",
+        "showPast": "Show past",
+        "hidePast": "Hide past"
       },
       "sessions": {
         "label": "Session {n}",
         "add": "Add session",
         "remove": "Remove session",
-        "reviewLabel": "Sessions"
+        "reviewLabel": "Sessions",
+        "past": "Past",
+        "showPast": "Show past",
+        "hidePast": "Hide past",
+        "pastHidden": "{count, plural, one {# past session hidden} other {# past sessions hidden}} — toggle to show"
       },
       "wizard": {
         "createTitle": "New booking",
@@ -324,11 +351,23 @@
           "endTime": "Shift end time",
           "shiftHint": "Shift hours repeat daily across the date range — they're the daily start and end, not a single 24-hour event.",
           "conflictsLabel": "Shifts already on {date}:",
-          "singleDay": "Same-day shift — no separate end date",
           "allowPastDate": "Adding an old booking? Allow past dates",
           "location": "Location",
           "locationPlaceholder": "Venue or full address",
-          "checkingConflicts": "Checking for conflicts…"
+          "checkingConflicts": "Checking for conflicts…",
+          "repeatingSessions": "Repeating sessions",
+          "repeatingHint": "Generate one same-day session per day in a date range.",
+          "rangeStartDate": "Start date",
+          "rangeEndDate": "End date",
+          "rangeApply": "Apply",
+          "rangeCancel": "Cancel",
+          "rangeAllFieldsRequired": "Fill in all four fields.",
+          "rangeEndBeforeStart": "End date must be on or after start date.",
+          "rangeEndTimeBeforeStart": "End time must be after start time.",
+          "rangeTooLong": "Range too long (max 366 days).",
+          "startTimeRequired": "Start time is required.",
+          "endTimeRequired": "End time is required.",
+          "endTimeBeforeStart": "End time must be after start time."
         },
         "pricing": {
           "total": "Total",

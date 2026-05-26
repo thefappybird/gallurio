@@ -114,6 +114,14 @@ export function EditableField({
     setError(null);
   }
 
+  /** The value that was active when the user opened the editor. */
+  const originalValue = hasPending ? (pendingValue ?? null) : (value ?? null);
+  const normalizedDraft = normalize(draft, type);
+  const normalizedOriginal = normalize(originalValue, type);
+  const isDirty = String(normalizedDraft) !== String(normalizedOriginal);
+  const validationError = validate?.(normalizedDraft) ?? null;
+  const canCommit = isDirty && !validationError;
+
   const currentDisplay = (() => {
     const v = hasPending ? (pendingValue ?? null) : (value ?? null);
     if (formatDisplay) return formatDisplay(v);
@@ -298,6 +306,7 @@ export function EditableField({
                 variant="ghost"
                 onClick={commit}
                 aria-label="Confirm"
+                disabled={!canCommit}
               >
                 <CheckIcon className="size-4" />
               </Button>

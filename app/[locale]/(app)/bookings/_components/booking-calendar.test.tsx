@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { useRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import enMessages from "@/messages/en.json";
 
 // react-big-calendar tries to import CSS in the test environment which fails.
 // Stub out both stylesheet imports before the component loads.
@@ -234,149 +236,34 @@ describe("TimeBookingEvent pill", () => {
   });
 });
 
-describe("groupEventsForMonth", () => {
-  function makeEventOnDay(
-    dateStr: string,
-    overrides: Partial<CalendarEvent> = {}
-  ): CalendarEvent {
-    const start = new Date(`${dateStr}T10:00:00`);
-    const end = new Date(`${dateStr}T13:00:00`);
-    return makeEvent({ ...overrides, start, end });
-  }
-
-  it("returns the event unchanged when there is 1 event on a day", () => {
-    const ev = makeEventOnDay("2026-08-15");
+describe("groupEventsForMonth (simple per-day overflow grouping)", () => {
+  it("returns a single event for a day with one event", () => {
+    const ev = makeEvent();
     const result = groupEventsForMonth([ev]);
     expect(result).toHaveLength(1);
     expect(result[0]).toBe(ev);
   });
 
-  it("returns 1 event pill + 1 overflow placeholder for 2 events on the same day", () => {
-    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
-    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
-    const result = groupEventsForMonth([ev1, ev2]);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toBe(ev1);
-    const overflow = result[1] as OverflowEvent;
-    expect("type" in overflow && overflow.type).toBe("overflow");
-    expect(overflow.overflowCount).toBe(1);
-    expect(overflow.overflowEvents).toEqual([ev2]);
-  });
-
-  it("returns 1 event pill + 1 overflow with count 2 for 3 events on the same day", () => {
-    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
-    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
-    const ev3 = makeEventOnDay("2026-08-15", { id: "c_s0_2026-08-15" });
+  it("returns first event + overflow pill for a day with multiple events", () => {
+    const ev1 = makeEvent({ id: "a", start: new Date("2026-08-15T09:00:00"), end: new Date("2026-08-15T11:00:00") });
+    const ev2 = makeEvent({ id: "b", start: new Date("2026-08-15T13:00:00"), end: new Date("2026-08-15T15:00:00") });
+    const ev3 = makeEvent({ id: "c", start: new Date("2026-08-15T17:00:00"), end: new Date("2026-08-15T19:00:00") });
     const result = groupEventsForMonth([ev1, ev2, ev3]);
     expect(result).toHaveLength(2);
-    const overflow = result[1] as OverflowEvent;
-    expect("type" in overflow && overflow.type).toBe("overflow");
-    expect(overflow.overflowCount).toBe(2);
-    expect(overflow.overflowEvents).toEqual([ev2, ev3]);
-  });
-
-  it("does not group events on different days", () => {
-    const ev1 = makeEventOnDay("2026-08-15");
-    const ev2 = makeEventOnDay("2026-08-16");
-    const result = groupEventsForMonth([ev1, ev2]);
-    expect(result).toHaveLength(2);
-    expect(result.every((e) => !("type" in e))).toBe(true);
-  });
-
-  it("handles mixed: one day with overflow, one without", () => {
-    const evA1 = makeEventOnDay("2026-08-15", { id: "a1_s0_2026-08-15" });
-    const evA2 = makeEventOnDay("2026-08-15", { id: "a2_s0_2026-08-15" });
-    const evB = makeEventOnDay("2026-08-16", { id: "b_s0_2026-08-16" });
-    const result = groupEventsForMonth([evA1, evA2, evB]);
-    expect(result).toHaveLength(3);
-    const overflowItems = result.filter((e) => "type" in e && (e as OverflowEvent).type === "overflow");
-    expect(overflowItems).toHaveLength(1);
-    const overflow = overflowItems[0] as OverflowEvent;
-    expect(overflow.overflowCount).toBe(1);
-  });
-
-  it("overflow placeholder id is deterministic from the day key", () => {
-    const ev1 = makeEventOnDay("2026-08-15", { id: "a_s0_2026-08-15" });
-    const ev2 = makeEventOnDay("2026-08-15", { id: "b_s0_2026-08-15" });
-    const result = groupEventsForMonth([ev1, ev2]);
-    const overflow = result[1] as OverflowEvent;
-    expect(overflow.id).toBe("overflow_2026-08-15");
-  });
-
-  // Regression: overnight bleed-over into next day must collapse own-start events.
-  it("overnight event: own events starting on the bleed-in day collapse into overflow pill", () => {
-    // Aug 25 22:30 → Aug 26 00:30 — rbc renders a wide bar spanning cells 25 and 26.
-    const overnight = makeEvent({
-      id: "overnight_s0_2026-08-25",
-      bookingId: "overnight",
-      start: new Date("2026-08-25T22:30:00"),
-      end: new Date("2026-08-26T00:30:00"),
-    });
-    // A separate booking that starts on Aug 26 — without the fix it would stack
-    // below the wide bar instead of being collapsed into the "+1 more" pill.
-    const ownAug26 = makeEvent({
-      id: "own_s0_2026-08-26",
-      bookingId: "own26",
-      start: new Date("2026-08-26T14:00:00"),
-      end: new Date("2026-08-26T16:00:00"),
-    });
-
-    const result = groupEventsForMonth([overnight, ownAug26]);
-
-    // The overnight event itself must be in the result (rbc draws the wide bar from it).
-    const hasOvernight = result.some(
-      (e) => !("type" in e) && (e as CalendarEvent).id === "overnight_s0_2026-08-25"
-    );
-    expect(hasOvernight).toBe(true);
-
-    // The Aug 26 own event must NOT appear directly in the result.
-    const hasOwnDirect = result.some(
-      (e) => !("type" in e) && (e as CalendarEvent).id === "own_s0_2026-08-26"
-    );
-    expect(hasOwnDirect).toBe(false);
-
-    // There must be an overflow event keyed to Aug 26.
-    const overflowItems = result.filter(
-      (e) => "type" in e && (e as OverflowEvent).type === "overflow"
-    ) as OverflowEvent[];
-    const aug26Overflow = overflowItems.find((o) => o.id === "overflow_2026-08-26");
-    expect(aug26Overflow).toBeDefined();
-    expect(aug26Overflow!.overflowCount).toBe(1);
-    expect(aug26Overflow!.overflowEvents).toContainEqual(ownAug26);
-  });
-
-  it("no-bleed day with 3 events still produces 1 visible + overflow of 2", () => {
-    const ev1 = makeEventOnDay("2026-08-20", { id: "a_s0_2026-08-20" });
-    const ev2 = makeEventOnDay("2026-08-20", { id: "b_s0_2026-08-20" });
-    const ev3 = makeEventOnDay("2026-08-20", { id: "c_s0_2026-08-20" });
-    const result = groupEventsForMonth([ev1, ev2, ev3]);
-    expect(result).toHaveLength(2);
-    // First item is the visible event pill.
-    expect(result[0]).toBe(ev1);
-    // Second item is the overflow placeholder.
+    expect(result[0]).toMatchObject({ id: "a" });
     const overflow = result[1] as OverflowEvent;
     expect(overflow.type).toBe("overflow");
     expect(overflow.overflowCount).toBe(2);
-    expect(overflow.overflowEvents).toEqual([ev2, ev3]);
+    expect(overflow.overflowEvents.map((e) => e.id)).toEqual(["b", "c"]);
   });
 
-  it("bleed-in day with ZERO own events produces no overflow pill", () => {
-    // A two-day event: Aug 10 → Aug 12. Cells 11 and 12 are bleed-in days.
-    // No other events start on those days — no pill should appear for them.
-    const multiDay = makeEvent({
-      id: "multi_s0_2026-08-10",
-      bookingId: "multi",
-      start: new Date("2026-08-10T09:00:00"),
-      end: new Date("2026-08-12T18:00:00"),
-    });
-    const result = groupEventsForMonth([multiDay]);
-    // Only the multi-day event itself; no overflow pills for Aug 11 or Aug 12.
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBe(multiDay);
-    const overflowItems = result.filter(
-      (e) => "type" in e && (e as OverflowEvent).type === "overflow"
-    );
-    expect(overflowItems).toHaveLength(0);
+  it("groups by start-day so two days each get their own entry", () => {
+    const evA = makeEvent({ id: "a", start: new Date("2026-08-15T09:00:00"), end: new Date("2026-08-15T11:00:00") });
+    const evB = makeEvent({ id: "b", start: new Date("2026-08-16T09:00:00"), end: new Date("2026-08-16T11:00:00") });
+    const result = groupEventsForMonth([evA, evB]);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(evA);
+    expect(result[1]).toBe(evB);
   });
 });
 
@@ -519,84 +406,6 @@ describe("MonthBookingEvent overflow popover drag", () => {
   });
 });
 
-// ─── midnight-split integration (via splitCandleAtMidnight used in displayEvents) ─
-import { splitCandleAtMidnight } from "@/lib/bookings/midnight-split";
-import type { Candle } from "@/lib/bookings/candle-split";
-
-describe("midnight-split: splitCandleAtMidnight used in week/day displayEvents", () => {
-  function makeOvernightCandle(): Candle {
-    return {
-      start: new Date("2026-08-15T22:00:00"),
-      end: new Date("2026-08-16T04:00:00"),
-      dayKey: "2026-08-15",
-    };
-  }
-
-  function makeSameDayCandle(): Candle {
-    return {
-      start: new Date("2026-08-15T10:00:00"),
-      end: new Date("2026-08-15T14:00:00"),
-      dayKey: "2026-08-15",
-    };
-  }
-
-  it("overnight candle produces two halves referencing both calendar days", () => {
-    const candle = makeOvernightCandle();
-    const halves = splitCandleAtMidnight(candle);
-
-    expect(halves).toHaveLength(2);
-
-    // Use local date accessors — toISOString() is UTC and will differ from local
-    // time in non-UTC environments, producing false failures.
-
-    // Evening half: stays on Aug 15 (local)
-    expect(halves[0].start.getDate()).toBe(15);
-    expect(halves[0].end.getDate()).toBe(15);
-
-    // Morning half: starts on Aug 16 (local)
-    expect(halves[1].start.getDate()).toBe(16);
-    expect(halves[1].end.getDate()).toBe(16);
-  });
-
-  it("both halves of an overnight candle share the same dayKey", () => {
-    const candle = makeOvernightCandle();
-    const halves = splitCandleAtMidnight(candle);
-    expect(halves[0].dayKey).toBe("2026-08-15");
-    expect(halves[1].dayKey).toBe("2026-08-15");
-  });
-
-  it("evening half is tagged isEveningHead, morning half is tagged isMorningContinuation", () => {
-    const candle = makeOvernightCandle();
-    const [evening, morning] = splitCandleAtMidnight(candle);
-    expect(evening.isEveningHead).toBe(true);
-    expect(evening.isMorningContinuation).toBeFalsy();
-    expect(morning.isMorningContinuation).toBe(true);
-    expect(morning.isEveningHead).toBeFalsy();
-  });
-
-  it("same-day candle returns single unchanged entry (no split, not a new object)", () => {
-    const candle = makeSameDayCandle();
-    const result = splitCandleAtMidnight(candle);
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBe(candle);
-  });
-
-  it("month view: groupEventsForMonth does NOT split — same bookingId in one entry", () => {
-    const start = new Date("2026-08-15T22:00:00");
-    const end = new Date("2026-08-16T04:00:00");
-    // candle-split produces a single candle with dayKey = 2026-08-15 for overnight
-    const evt = makeEvent({
-      id: "booking1_s0_2026-08-15",
-      bookingId: "booking1",
-      start,
-      end,
-    });
-    const result = groupEventsForMonth([evt]);
-    // Only one entry; no overflow because there's only one event on Aug 15
-    expect(result).toHaveLength(1);
-    expect(result[0]).toBe(evt);
-  });
-});
 
 describe("OverflowEvent discriminated union: narrowing correctness", () => {
   it("makeOverflowEvent has no .status field (discriminated properly)", () => {
@@ -631,6 +440,14 @@ describe("OverflowEvent discriminated union: narrowing correctness", () => {
       continuesPrior: false,
       continuesAfter: false,
     } as MonthProps;
-    expect(() => render(<MonthBookingEvent {...props} />)).not.toThrow();
+    // MonthBookingEvent calls useTranslations unconditionally (hooks rule), so
+    // the test must provide a NextIntlClientProvider even for the overflow path.
+    expect(() =>
+      render(
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <MonthBookingEvent {...props} />
+        </NextIntlClientProvider>
+      )
+    ).not.toThrow();
   });
 });

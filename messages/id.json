@@ -46,13 +46,36 @@
       "go": "Go"
     },
     "bookings": {
+      "sessions": {
+        "label": "Sesi {n}",
+        "add": "Tambah sesi",
+        "remove": "Hapus sesi",
+        "reviewLabel": "Sesi",
+        "past": "Lampau",
+        "showPast": "Tampilkan lampau",
+        "hidePast": "Sembunyikan lampau",
+        "pastHidden": "{count, plural, one {# sesi lampau disembunyikan} other {# sesi lampau disembunyikan}} — toggle untuk tampilkan"
+      },
       "wizard": {
         "loadError": "Tidak dapat memuat pemesanan ini. Tutup dan coba lagi.",
         "client": {
           "multiSessionReadOnly": "Klien dikunci pada pemesanan multi-sesi."
         },
         "event": {
-          "checkingConflicts": "Memeriksa konflik…"
+          "checkingConflicts": "Memeriksa konflik…",
+          "repeatingSessions": "Sesi berulang",
+          "repeatingHint": "Buat satu sesi pada hari yang sama untuk setiap hari dalam rentang tanggal.",
+          "rangeStartDate": "Tanggal mulai",
+          "rangeEndDate": "Tanggal selesai",
+          "rangeApply": "Terapkan",
+          "rangeCancel": "Batal",
+          "rangeAllFieldsRequired": "Isi keempat kolom.",
+          "rangeEndBeforeStart": "Tanggal selesai harus pada atau setelah tanggal mulai.",
+          "rangeEndTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
+          "rangeTooLong": "Rentang terlalu panjang (maks 366 hari).",
+          "startTimeRequired": "Waktu mulai diperlukan.",
+          "endTimeRequired": "Waktu selesai diperlukan.",
+          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai."
         },
         "conflictConfirm": {
           "title": "Konflik jadwal terdeteksi",
@@ -74,7 +97,25 @@
           "description": "Anda memindahkan pemesanan ini ke tanggal di masa lalu. Ini diizinkan tapi tidak biasa — konfirmasi untuk melanjutkan.",
           "confirm": "Pindah ke lampau",
           "cancel": "Batal"
+        },
+        "past": "Lalu",
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu"
+      },
+      "table": {
+        "past": "Lalu",
+        "showPast": "Tampilkan yang lalu",
+        "hidePast": "Sembunyikan yang lalu",
+        "pastBookingsHidden": "{count, plural, one {# pemesanan lalu disembunyikan} other {# pemesanan lalu disembunyikan}}",
+        "col": {
+          "past": "Lalu"
         }
+      },
+      "detail": {
+        "past": "Lalu",
+        "showPast": "Tampilkan sesi yang lalu",
+        "hidePast": "Sembunyikan sesi yang lalu",
+        "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}"
       },
       "import": {
         "title": "Impor pemesanan",
@@ -136,6 +177,17 @@
       "export": {
         "tooltip": "Unduh pemesanan sebagai CSV",
         "empty": "Tidak ada pemesanan untuk diekspor"
+      },
+      "dnd": {
+        "pastDateWarning": "Dipindahkan ke tanggal lampau",
+        "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
+        "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang telah berlalu",
+        "updateError": "Gagal memperbarui pemesanan",
+        "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi",
+        "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
+        "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
+        "conflictBlockDnd": "Bentrok dengan {title} — tidak bisa pindah ke sini.",
+        "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini."
       }
     },
     "sidebar": {

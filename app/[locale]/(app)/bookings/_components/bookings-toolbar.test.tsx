@@ -79,6 +79,40 @@ describe("BookingsToolbar — New Booking button", () => {
   });
 });
 
+describe("BookingsToolbar — Show past toggle", () => {
+  it("renders a 'Show past' label", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    // The label text comes from app.bookings.toolbar.showPast
+    expect(screen.getByText(/show past/i)).toBeInTheDocument();
+  });
+
+  it("'Show past' switch renders with aria-checked=false by default", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    // @base-ui Switch renders as role="switch" with aria-checked attribute.
+    const allSwitches = screen.getAllByRole("switch");
+    // Find the switch whose label contains "show past"
+    const showPastSwitch = allSwitches.find(
+      (s) => s.closest("label")?.textContent?.match(/show past/i)
+    );
+    expect(showPastSwitch).toBeTruthy();
+    // Default state: showPast not in URL → should be false/unchecked
+    expect(showPastSwitch).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("pushes showPast=1 to URL when switch is clicked", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    const allSwitches = screen.getAllByRole("switch");
+    const showPastSwitch = allSwitches.find(
+      (s) => s.closest("label")?.textContent?.match(/show past/i)
+    );
+    expect(showPastSwitch).toBeTruthy();
+    fireEvent.click(showPastSwitch!);
+    // router.push is called with the URL as first argument
+    const calls = mockPush.mock.calls;
+    expect(calls.some((args) => String(args[0]).includes("showPast=1"))).toBe(true);
+  });
+});
+
 describe("BookingsToolbar — Week view button visibility classes (Bug 2)", () => {
   // We test the class strings that drive visibility rather than actual media
   // query evaluation — Tailwind classes are the source of truth; JSDOM does

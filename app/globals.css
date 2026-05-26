@@ -462,3 +462,59 @@
   background-color: var(--brand);
   height: 2px;
 }
+
+/* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
+@keyframes toast-in {
+  0% {
+    transform: translateX(20px) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-2px) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+.animate-toast-in {
+  animation: toast-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sonner richColors palette override — align with Gallurio's oklch tokens.
+   Sonner expects --[type]-bg, --[type]-text, --[type]-border CSS variables. */
+:root {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.95 0.05 145);
+  --success-text: oklch(0.30 0.13 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.95 0.05 25);
+  --error-text: oklch(0.30 0.18 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.95 0.05 75);
+  --warning-text: oklch(0.30 0.14 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.95 0.04 230);
+  --info-text: oklch(0.30 0.10 230);
+  --info-border: oklch(0.55 0.10 230);
+}
+.dark {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.22 0.06 145);
+  --success-text: oklch(0.95 0.05 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.22 0.08 25);
+  --error-text: oklch(0.95 0.05 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.22 0.07 75);
+  --warning-text: oklch(0.95 0.05 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.22 0.05 230);
+  --info-text: oklch(0.95 0.04 230);
+  --info-border: oklch(0.55 0.10 230);
+}

@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "../booking-calendar";
 import type { Session } from "@/lib/bookings/session-edits";
-import type { ShiftHit } from "../drop-conflict-dialog";
+import type { ShiftHit } from "../booking-wizard-steps/event-step";
+export type { ShiftHit } from "../booking-wizard-steps/event-step";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -14,7 +15,7 @@ import withDragAndDrop, {
   type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
-import { splitCandleAtMidnight } from "@/lib/bookings/midnight-split";
 
 export type OverflowEvent = {
   type: "overflow";
@@ -118,6 +118,10 @@ type Props = {
     scrollToTime: string;
     go: string;
   };
+  /** When true, past candles render with opacity-60, title strikethrough, and a "Past" pill. */
+  showPast?: boolean;
+  /** Called when the user clicks the "Show past" toggle in the toolbar. */
+  onShowPastChange?: (v: boolean) => void;
 };
 
 // Status colors are theme-invariant — same hex/oklch in light AND dark so the
@@ -268,6 +272,18 @@ function OverflowPopoverRow({
   );
 }
 
+/** Small "Past" badge overlaid in the top-right corner of a candle. */
+function PastPill({ label }: { label: string }) {
+  return (
+    <span
+      aria-label={label}
+      className="absolute right-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+    >
+      {label}
+    </span>
+  );
+}
+
 /** Month view: three-line stacked — title / client / time range. */
 export function MonthBookingEvent({
   event,
@@ -281,6 +297,8 @@ export function MonthBookingEvent({
 }) {
   const ev = event;
   const [open, setOpen] = useState(false);
+  const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
 
   if ("type" in ev && ev.type === "overflow") {
     return (
@@ -320,12 +338,19 @@ export function MonthBookingEvent({
   const bg = STATUS_COLOR[booking.status];
   const clientDisplay = booking.clientName || "—";
   const timeRange = formatTimeRange(booking.start, booking.end);
+  const isPast = booking.sessionEndAt < new Date();
+  const isStatusMuted =
+    booking.status === "cancelled" || booking.status === "completed";
+  const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+
   return (
     <span
       title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
       className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
-        booking.status === "cancelled" || booking.status === "completed"
+        isStatusMuted
           ? "line-through opacity-80"
+          : showPastVisual
+          ? "opacity-60"
           : ""
       }`}
       style={{ backgroundColor: bg }}
@@ -335,9 +360,14 @@ export function MonthBookingEvent({
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="truncate text-xs font-semibold leading-tight">{booking.title}</span>
+      <span
+        className={`truncate text-xs font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
+      >
+        {booking.title}
+      </span>
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+      {showPastVisual && <PastPill label={t("past")} />}
     </span>
   );
 }
@@ -348,25 +378,33 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
   const ev = event as CalendarEvent;
+  const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
   const bg = STATUS_COLOR[ev.status];
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
   const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt);
   const isContinuation = ev.isMorningContinuation === true;
+  const isPast = ev.sessionEndAt < new Date();
+  const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
+  const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+
   return (
     <div
       title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
       className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
-        ev.status === "cancelled" || ev.status === "completed"
+        isStatusMuted
           ? "line-through opacity-80"
+          : showPastVisual
+          ? "opacity-60"
           : ""
       }`}
       style={{
         backgroundColor: bg,
         // Morning continuation: omit top border radius cue by reducing top
         // opacity on the stripe so it visually "continues" from the evening half.
-        opacity: isContinuation ? 0.85 : 1,
+        opacity: isContinuation ? 0.85 : showPastVisual ? 0.6 : 1,
       }}
     >
       <span
@@ -380,11 +418,16 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </span>
       ) : (
         <>
-          <span className="truncate text-sm font-semibold leading-tight">{ev.title}</span>
+          <span
+            className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
+          >
+            {ev.title}
+          </span>
           <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
           <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
         </>
       )}
+      {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
     </div>
   );
 }
@@ -467,6 +510,8 @@ const HoverableDayWrapper = forwardRef<
 type CalendarToolbarCtxValue = {
   messages: Props["messages"];
   onScrollToHour: (h: number) => void;
+  showPast: boolean;
+  onShowPastChange: (v: boolean) => void;
 };
 
 /**
@@ -483,11 +528,12 @@ function CalendarToolbar({
   view,
 }: ToolbarProps<CalendarEvent>) {
   const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
   const [jumpDate, setJumpDate] = useState("");
   const [jumpTime, setJumpTime] = useState("");
 
   if (!ctx) return null;
-  const { messages, onScrollToHour } = ctx;
+  const { messages, onScrollToHour, showPast, onShowPastChange } = ctx;
   const isTimeView = view === Views.WEEK || view === Views.DAY;
 
   const viewLabel: Record<string, string> = {
@@ -591,6 +637,23 @@ function CalendarToolbar({
             </div>
           </PopoverContent>
         </Popover>
+
+        {/* Show-past toggle */}
+        <Button
+          variant="outline"
+          size="sm"
+          className={`min-h-11 gap-1.5${showPast ? " bg-brand text-brand-foreground border-brand" : ""}`}
+          onClick={() => onShowPastChange(!showPast)}
+          aria-pressed={showPast}
+          aria-label={t("togglePast")}
+        >
+          {showPast ? (
+            <EyeIcon className="size-4 shrink-0" />
+          ) : (
+            <EyeOffIcon className="size-4 shrink-0" />
+          )}
+          <span>{t("togglePast")}</span>
+        </Button>
 
         {/* View switcher — button group (no gap, borders collapsed) */}
         <div className="flex">
@@ -728,6 +791,8 @@ export function BookingCalendar({
   onDropFromOutside,
   dragFromOutsideItem,
   messages,
+  showPast = false,
+  onShowPastChange,
 }: Props) {
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
@@ -783,8 +848,13 @@ export function BookingCalendar({
   );
 
   const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
-    () => ({ messages, onScrollToHour }),
-    [messages, onScrollToHour]
+    () => ({
+      messages,
+      onScrollToHour,
+      showPast,
+      onShowPastChange: onShowPastChange ?? (() => {}),
+    }),
+    [messages, onScrollToHour, showPast, onShowPastChange]
   );
 
   const calendarMessages = useMemo(
@@ -805,28 +875,9 @@ export function BookingCalendar({
 
   // Pre-process events depending on view:
   // - month: cap each day at 1 pill + overflow placeholder.
-  // - week/day: split overnight candles at midnight so both the evening and
-  //   morning columns in the time-grid show the bleed. Month view renders
-  //   overnight sessions as continuous blocks so no split is needed there.
+  // - week/day: pass events directly (overnight sessions are represented as-is).
   const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
     if (view === Views.MONTH) return groupEventsForMonth(events);
-    if (view === Views.WEEK || view === Views.DAY) {
-      return events.flatMap((evt) => {
-        const halves = splitCandleAtMidnight({
-          start: evt.start,
-          end: evt.end,
-          dayKey: evt.id.split("_").slice(2).join("_") || evt.id,
-        });
-        if (halves.length === 1) return [evt];
-        return halves.map((half) => ({
-          ...evt,
-          start: half.start,
-          end: half.end,
-          isEveningHead: half.isEveningHead,
-          isMorningContinuation: half.isMorningContinuation,
-        }));
-      });
-    }
     return events;
   }, [view, events]);
 

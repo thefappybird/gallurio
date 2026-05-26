@@ -312,4 +312,27 @@ describe("GET /api/bookings/shifts-on-date", () => {
     expect(body.shifts[0].shiftStart).toBe("00:00");
     expect(body.shifts[0].shiftEnd).toBe("23:59");
   });
+
+  it("modern booking with sessions[]: gap day between sessions returns no shift", async () => {
+    // Booking X has sessions on day 1 (Aug 18) and day 3 (Aug 20).
+    // Querying the gap day (Aug 19) must return an empty shifts array —
+    // the Mongo $or bounds-clause matches because firstSessionStart=Aug18 and
+    // lastSessionEnd=Aug20 span Aug 19, but no individual session touches Aug 19.
+    // Without the fix, the legacy-fallback fires and emits an all-day sentinel,
+    // causing a false conflict for any booking attempted on Aug 19.
+    const { GET } = await load();
+    await seedBooking(
+      [
+        { startAt: new Date("2026-08-18T09:00:00Z"), endAt: new Date("2026-08-18T17:00:00Z") },
+        { startAt: new Date("2026-08-20T09:00:00Z"), endAt: new Date("2026-08-20T17:00:00Z") },
+      ],
+      { title: "Two-day Multi-session Shoot" }
+    );
+
+    const req = makeReq("2026-08-19");
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(0);
+  });
 });

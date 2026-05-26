@@ -10,12 +10,8 @@ export type WizardSession = {
   startDate: string;
   /** HH:MM 24h. */
   startTime: string;
-  /** YYYY-MM-DD. Empty when singleDay is true. */
-  endDate: string;
   /** HH:MM 24h. */
   endTime: string;
-  /** When true, hide end-date and copy start date for the payload. */
-  singleDay: boolean;
   /** When true, allow start dates in the past. */
   allowPastDate: boolean;
 };

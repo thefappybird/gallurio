@@ -46,13 +46,36 @@
       "go": "Go"
     },
     "bookings": {
+      "sessions": {
+        "label": "Sesyon {n}",
+        "add": "Magdagdag ng sesyon",
+        "remove": "Alisin ang sesyon",
+        "reviewLabel": "Mga sesyon",
+        "past": "Nakaraan",
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan",
+        "pastHidden": "{count, plural, one {# nakaraang sesyon ang nakatago} other {# nakaraang sesyon ang nakatago}} — i-toggle para ipakita"
+      },
       "wizard": {
         "loadError": "Hindi ma-load ang booking na ito. Isara at subukan muli.",
         "client": {
           "multiSessionReadOnly": "Ang kliyente ay naka-lock sa mga multi-session na booking."
         },
         "event": {
-          "checkingConflicts": "Sinisiyasat ang mga salungatan…"
+          "checkingConflicts": "Sinisiyasat ang mga salungatan…",
+          "repeatingSessions": "Mga paulit-ulit na sesyon",
+          "repeatingHint": "Gumawa ng isang same-day session bawat araw sa loob ng isang hanay ng petsa.",
+          "rangeStartDate": "Petsa ng simula",
+          "rangeEndDate": "Petsa ng katapusan",
+          "rangeApply": "Ilapat",
+          "rangeCancel": "Kanselahin",
+          "rangeAllFieldsRequired": "Punan ang lahat ng apat na field.",
+          "rangeEndBeforeStart": "Ang petsa ng katapusan ay dapat na sa o pagkatapos ng petsa ng simula.",
+          "rangeEndTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula.",
+          "rangeTooLong": "Masyadong mahaba ang hanay (max 366 araw).",
+          "startTimeRequired": "Kailangan ang oras ng simula.",
+          "endTimeRequired": "Kailangan ang oras ng katapusan.",
+          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula."
         },
         "conflictConfirm": {
           "title": "Natuklasan ang mga salungatan sa iskedyul",
@@ -74,7 +97,25 @@
           "description": "Inililipat mo ang booking na ito sa petsa sa nakaraan. Pinahihintulutan ito ngunit hindi karaniwan — kumpirmahin upang magpatuloy.",
           "confirm": "Lipat sa nakaraan",
           "cancel": "Kanselahin"
+        },
+        "past": "Lipas na",
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan"
+      },
+      "table": {
+        "past": "Lipas na",
+        "showPast": "Ipakita ang nakaraan",
+        "hidePast": "Itago ang nakaraan",
+        "pastBookingsHidden": "{count, plural, one {# nakatagong nakaraang booking} other {# nakatagong nakaraang booking}}",
+        "col": {
+          "past": "Lipas na"
         }
+      },
+      "detail": {
+        "past": "Lipas na",
+        "showPast": "Ipakita ang lipas na sesyon",
+        "hidePast": "Itago ang lipas na sesyon",
+        "pastSessionsHidden": "{count, plural, one {# nakatagong lipas na sesyon — i-toggle para makita} other {# nakatagong lipas na sesyon — i-toggle para makita}}"
       },
       "import": {
         "title": "Mag-import ng mga booking",
@@ -136,6 +177,17 @@
       "export": {
         "tooltip": "I-download ang mga booking bilang CSV",
         "empty": "Walang booking para i-export"
+      },
+      "dnd": {
+        "pastDateWarning": "Inilipat sa nakaraang petsa",
+        "pastSplitWarning": "Ang mga nakaraang araw ay napanatili — ang mga susunod na araw lamang ang na-update",
+        "thisDayOnlyOnPast": "Hindi maaaring i-edit ang nakaraang araw",
+        "updateError": "Hindi na-update ang booking",
+        "conflictCheckFailed": "Hindi ma-verify ang mga salungatan — pakisubukan muli",
+        "overnightNotAllowed": "Hindi puwedeng tumawid ng hatinggabi ang booking. Gamitin ang repeating sessions para sa maraming araw.",
+        "conflictBlockSubmit": "Ayusin muna ang mga conflict ng session bago mag-save.",
+        "conflictBlockDnd": "May conflict sa {title} — hindi puwedeng ilipat dito.",
+        "conflictBlockDndMany": "May conflict sa {title} at {more} pa — hindi puwedeng ilipat dito."
       }
     },
     "sidebar": {

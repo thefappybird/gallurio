@@ -3,7 +3,8 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { listBookings } from "./_data/bookings-queries";
+import { redirect } from "next/navigation";
+import { listBookings, getBookingById } from "./_data/bookings-queries";
 import { ViewToggle, type BookingsView } from "./_components/view-toggle";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
 import { TableBookingManager } from "./_components/table-booking-manager";
@@ -45,6 +46,7 @@ type SearchParams = {
   from?: string;
   to?: string;
   includeCancelled?: string;
+  showPast?: string;
   detail?: string;
   add?: string;
   edit?: string;
@@ -138,6 +140,11 @@ export default async function BookingsPage({
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
+    // lastSessionEnd = max(endAt) across all sessions — used to compute isPast.
+    const lastSessionEnd = bSessions.reduce<string>((max, s) => {
+      const iso = new Date(s.endAt).toISOString();
+      return iso > max ? iso : max;
+    }, new Date(0).toISOString());
     return {
       id: b._id.toString(),
       title: b.title,
@@ -146,6 +153,7 @@ export default async function BookingsPage({
         startAt: new Date(s.startAt).toISOString(),
         endAt: new Date(s.endAt).toISOString(),
       })),
+      lastSessionEnd,
       status: b.status as BookingStatus,
       total: b.amount?.total ?? 0,
       currency: b.amount?.currency ?? workspace.currency,
@@ -153,6 +161,27 @@ export default async function BookingsPage({
   });
 
   const defaultDate = sp.date ? new Date(sp.date) : new Date();
+
+  // Defensive: if ?detail= is present but the booking doesn't exist (or is
+  // not owned by this workspace), strip the param and redirect — prevents the
+  // URL from staying broken after a delete, hard-reload, or bad link.
+  if (sp.detail) {
+    let detailExists = false;
+    try {
+      const found = await getBookingById(workspace._id, sp.detail);
+      detailExists = found !== null;
+    } catch {
+      // Invalid ObjectId format — treat as not found.
+      detailExists = false;
+    }
+    if (!detailExists) {
+      const cleanParams = new URLSearchParams(
+        Object.entries(sp).filter(([k]) => k !== "detail") as [string, string][]
+      );
+      const qs = cleanParams.toString();
+      redirect(qs ? `/${locale}/bookings?${qs}` : `/${locale}/bookings`);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -197,7 +226,12 @@ export default async function BookingsPage({
           }}
         />
       ) : (
-        <BookingsTable rows={rows} locale={locale} empty={t("table.empty")} />
+        <BookingsTable
+          rows={rows}
+          locale={locale}
+          empty={t("table.empty")}
+          showPast={sp.showPast === "1"}
+        />
       )}
 
       {sp.detail ? (
