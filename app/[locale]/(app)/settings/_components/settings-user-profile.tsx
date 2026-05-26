@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { resolveScheme } from "@/lib/theme/themes";
 import { buildUserProfileAppearance } from "@/lib/auth/userProfileAppearance";
 
-type LabelKey = "customize" | "workspace" | "publicPage" | "danger";
+type LabelKey = "customize" | "workspace" | "teams" | "publicPage" | "danger";
 
 type CustomPageProps = {
   slug: string;

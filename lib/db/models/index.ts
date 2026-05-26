@@ -16,3 +16,5 @@ export { GalleryCollection, type GalleryCollectionDoc } from "./GalleryCollectio
 export { GalleryItem, type GalleryItemDoc } from "./GalleryItem";
 export { Transaction, type TransactionDoc } from "./Transaction";
 export { ActivityLog, type ActivityLogDoc } from "./ActivityLog";
+export { Team, TEAM_COLOR_PALETTE, ensureDefaultTeam, type TeamDoc } from "./team";
+export { TeamMembership, TEAM_MEMBERSHIP_ROLES, type TeamMembershipDoc } from "./teamMembership";

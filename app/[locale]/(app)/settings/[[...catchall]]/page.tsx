@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { Building2, Palette, Globe, AlertTriangle } from "lucide-react";
+import { Building2, Palette, Globe, AlertTriangle, UsersRound } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
 import { SettingsUserProfile, CustomPage } from "../_components/settings-user-profile";
@@ -10,6 +10,9 @@ import { WorkspaceBrandingForm } from "../workspace/_branding-form";
 import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DangerPanel } from "../danger/_panel";
+import { TeamsPanel } from "../teams/_panel";
+import { Team, type TeamDoc } from "@/lib/db/models";
+import { planEntitlements } from "@/lib/plans/entitlements";
 import type {
   UpdateWorkspaceBusinessInput,
   UpdateWorkspaceBrandingInput,
@@ -18,7 +21,7 @@ import type {
   SupportedCurrency,
 } from "@/lib/validators/workspace";
 
-const OWNER_ONLY_SLUGS = new Set(["workspace", "public-page", "danger"]);
+const OWNER_ONLY_SLUGS = new Set(["workspace", "public-page", "danger", "teams"]);
 
 export async function generateMetadata({
   params,
@@ -45,6 +48,20 @@ export default async function SettingsCatchallPage({
   if (slug && OWNER_ONLY_SLUGS.has(slug) && role !== "owner") {
     notFound();
   }
+
+  const rawTeams = await Team.find({ workspaceId: workspace._id })
+    .sort({ isDefault: -1, createdAt: 1 })
+    .lean<TeamDoc[]>();
+
+  const teams = rawTeams.map((t) => ({
+    id: String(t._id),
+    name: t.name,
+    color: t.color,
+    isDefault: t.isDefault ?? false,
+    memberCount: t.memberCount ?? 0,
+  }));
+
+  const { maxTeams } = planEntitlements(workspace.plan as "free" | "starter" | "pro");
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -92,6 +109,18 @@ export default async function SettingsCatchallPage({
           <WorkspaceBusinessForm defaults={businessDefaults} />
           <WorkspaceBrandingForm defaults={brandingDefaults} />
         </div>
+      </CustomPage>
+      <CustomPage
+        slug="teams"
+        labelKey="teams"
+        labelIcon={<UsersRound className="size-4" />}
+        ownerOnly
+      >
+        <TeamsPanel
+          teams={teams}
+          plan={workspace.plan as "free" | "starter" | "pro"}
+          maxTeams={maxTeams}
+        />
       </CustomPage>
       <CustomPage
         slug="public-page"

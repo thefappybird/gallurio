@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, type HitpayRecurringStatus } from "@/lib/db/models";
+import { Team } from "@/lib/db/models/team";
 import { verifyHitpayCallback } from "@/lib/hitpay/webhook";
 import { planForAmount } from "@/lib/hitpay/plans";
+import { planEntitlements } from "@/lib/plans/entitlements";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -125,6 +127,26 @@ async function handleSubscriptionUpdated(data: Record<string, unknown> | undefin
   } else if (status === "cancelled" || status === "closed" || status === "failed") {
     update.plan = "free";
     update.hitpayCurrentPeriodEnd = null;
+  }
+
+  if (Object.keys(update).length === 0) return;
+
+  // Guard: if a plan downgrade is being applied, check whether the workspace
+  // currently has more teams than the new plan allows. If so, refuse to
+  // downgrade the plan field (data corruption prevention). The workspace owner
+  // must delete teams first; UI handling lands in Phase 3.
+  if (update.plan != null) {
+    const ws = await Workspace.findOne(filter).select({ _id: 1, plan: 1 }).lean();
+    if (ws) {
+      const newPlanEntitlements = planEntitlements(update.plan as "free" | "starter" | "pro");
+      const currentTeamCount = await Team.countDocuments({ workspaceId: ws._id });
+      if (currentTeamCount > newPlanEntitlements.maxTeams) {
+        console.warn(
+          `[hitpay-webhook] refused plan downgrade for workspace ${ws._id}: ${currentTeamCount} teams > ${newPlanEntitlements.maxTeams} maxTeams (${String(update.plan)})`
+        );
+        delete update.plan;
+      }
+    }
   }
 
   if (Object.keys(update).length === 0) return;

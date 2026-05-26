@@ -13,6 +13,7 @@ import {
   ONBOARDING_STEPS,
   type OnboardingStep,
 } from "@/lib/db/models";
+import { ensureDefaultTeam } from "@/lib/db/models/team";
 import {
   businessStepSchema,
   brandingStepSchema,
@@ -88,6 +89,8 @@ export async function businessStepAction(
     },
     { upsert: true, new: true }
   );
+
+  await ensureDefaultTeam(workspace._id, session.userId);
 
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
