@@ -106,7 +106,7 @@ export function ClientsTable({
           const { email, phone } = info.row.original;
           return (
             <div className="flex flex-col text-xs">
-              <span>{email ?? t("table.col.contact")}</span>
+              <span>{email ?? "—"}</span>
               <span className="text-muted-foreground">{phone ?? "—"}</span>
             </div>
           );
