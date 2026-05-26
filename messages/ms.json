@@ -70,6 +70,7 @@
         "security": "Keselamatan",
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
+        "teams": "Pasukan",
         "publicPage": "Halaman awam",
         "danger": "Zon berbahaya"
       },
@@ -94,6 +95,62 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
+        }
+      },
+      "teams": {
+        "title": "Pasukan",
+        "description": "Kumpulkan rakan sepasukan ke dalam pasukan. Setiap pasukan mempunyai kalendarnya sendiri. Ahli hanya dapat melihat tempahan daripada pasukan yang mereka sertai.",
+        "listEmpty": "Anda belum mempunyai sebarang pasukan.",
+        "createButton": "Buat pasukan",
+        "createDialog": {
+          "title": "Buat pasukan",
+          "description": "Berikan nama kepada pasukan dan pilih warna untuk cip kalendarnya.",
+          "nameLabel": "Nama pasukan",
+          "namePlaceholder": "cth. Kru perkahwinan",
+          "colorLabel": "Warna",
+          "submit": "Buat pasukan",
+          "cancel": "Batal",
+          "creating": "Sedang dibuat…"
+        },
+        "renameDialog": {
+          "title": "Namakan semula pasukan",
+          "submit": "Simpan",
+          "saving": "Sedang disimpan…",
+          "cancel": "Batal"
+        },
+        "deleteDialog": {
+          "title": "Padam pasukan?",
+          "description": "Ahli pasukan ini akan kehilangan akses. Tempahan yang dikaitkan dengan pasukan perlu ditetapkan semula. Ini tidak boleh dibatalkan.",
+          "confirm": "Padam pasukan",
+          "deleting": "Sedang dipadamkan…",
+          "cancel": "Batal"
+        },
+        "team": {
+          "memberCount": "{count, plural, =0 {Tiada ahli lagi} =1 {1 ahli} other {# ahli}}",
+          "defaultBadge": "Lalai",
+          "rename": "Namakan semula",
+          "changeColor": "Tukar warna",
+          "delete": "Padam"
+        },
+        "upsell": {
+          "atCapTitle": "Anda telah mencapai had pasukan anda",
+          "atCapBody": "Pelan {plan} anda membenarkan {max} {max, plural, =1 {pasukan} other {pasukan}}. Naik taraf untuk menambah lebih banyak.",
+          "cta": "Lihat pelan",
+          "proAtCapBody": "Pro dihadkan pada {max} pasukan. Hubungi sokongan jika anda memerlukan lebih banyak."
+        },
+        "errors": {
+          "nameRequired": "Nama pasukan diperlukan.",
+          "nameTooLong": "Nama pasukan mestilah 40 aksara atau kurang.",
+          "duplicateName": "Pasukan dengan nama ini sudah wujud dalam ruang kerja ini.",
+          "cannotDeleteDefault": "Pasukan lalai tidak boleh dipadamkan.",
+          "teamNotFound": "Pasukan tidak dijumpai.",
+          "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+        },
+        "toasts": {
+          "created": "Pasukan telah dibuat.",
+          "renamed": "Pasukan telah dinamakan semula.",
+          "colorChanged": "Warna telah dikemas kini.",
+          "deleted": "Pasukan telah dipadamkan."
         }
       },
       "publicPage": {

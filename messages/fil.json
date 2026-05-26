@@ -70,6 +70,7 @@
         "security": "Seguridad",
         "customize": "I-customize",
         "workspace": "Workspace",
+        "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
         "danger": "Danger zone"
       },
@@ -94,6 +95,62 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
+        }
+      },
+      "teams": {
+        "title": "Mga Koponan",
+        "description": "I-grupo ang mga katrabaho sa mga koponan. Ang bawat koponan ay may sariling kalendaryo. Ang mga miyembro ay makakakita lamang ng mga booking mula sa mga koponan na kanilang kinabibilangan.",
+        "listEmpty": "Wala ka pang anumang koponan.",
+        "createButton": "Lumikha ng koponan",
+        "createDialog": {
+          "title": "Lumikha ng koponan",
+          "description": "Bigyan ang koponan ng pangalan at pumili ng kulay para sa mga chip ng kalendaryo nito.",
+          "nameLabel": "Pangalan ng koponan",
+          "namePlaceholder": "hal. Wedding crew",
+          "colorLabel": "Kulay",
+          "submit": "Lumikha ng koponan",
+          "cancel": "Kanselahin",
+          "creating": "Nililikha…"
+        },
+        "renameDialog": {
+          "title": "Palitan ang pangalan ng koponan",
+          "submit": "I-save",
+          "saving": "Nini-save…",
+          "cancel": "Kanselahin"
+        },
+        "deleteDialog": {
+          "title": "Burahin ang koponan?",
+          "description": "Ang mga miyembro ng koponan na ito ay mawawalan ng access. Ang mga booking na nakakonekta sa koponan ay kailangang muling italaga. Hindi ito maaaring ibalik.",
+          "confirm": "Burahin ang koponan",
+          "deleting": "Binubura…",
+          "cancel": "Kanselahin"
+        },
+        "team": {
+          "memberCount": "{count, plural, =0 {Walang miyembro pa} =1 {1 miyembro} other {# mga miyembro}}",
+          "defaultBadge": "Default",
+          "rename": "Palitan ang pangalan",
+          "changeColor": "Baguhin ang kulay",
+          "delete": "Burahin"
+        },
+        "upsell": {
+          "atCapTitle": "Naabot mo na ang iyong limitasyon sa koponan",
+          "atCapBody": "Ang iyong plano sa {plan} ay nagpapahintulot ng {max} {max, plural, =1 {koponan} other {mga koponan}}. Mag-upgrade para magdagdag ng higit pa.",
+          "cta": "Tingnan ang mga plano",
+          "proAtCapBody": "Ang Pro ay limitado sa {max} na koponan. Makipag-ugnayan sa suporta kung kailangan mo ng higit pa."
+        },
+        "errors": {
+          "nameRequired": "Kinakailangan ang pangalan ng koponan.",
+          "nameTooLong": "Ang pangalan ng koponan ay dapat na 40 character o mas kaunti.",
+          "duplicateName": "May koponan na na may ganitong pangalan sa workspace na ito.",
+          "cannotDeleteDefault": "Hindi mabubura ang default na koponan.",
+          "teamNotFound": "Hindi nahanap ang koponan.",
+          "generic": "May nangyaring mali. Pakisubukan muli."
+        },
+        "toasts": {
+          "created": "Nalikha ang koponan.",
+          "renamed": "Napalitan ang pangalan ng koponan.",
+          "colorChanged": "Na-update ang kulay.",
+          "deleted": "Nabura ang koponan."
         }
       },
       "publicPage": {

@@ -70,6 +70,7 @@
         "security": "Keamanan",
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
+        "teams": "Tim",
         "publicPage": "Halaman publik",
         "danger": "Zona berbahaya"
       },
@@ -94,6 +95,62 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
+        }
+      },
+      "teams": {
+        "title": "Tim",
+        "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
+        "listEmpty": "Anda belum memiliki tim apa pun.",
+        "createButton": "Buat tim",
+        "createDialog": {
+          "title": "Buat tim",
+          "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
+          "nameLabel": "Nama tim",
+          "namePlaceholder": "mis. Kru pernikahan",
+          "colorLabel": "Warna",
+          "submit": "Buat tim",
+          "cancel": "Batal",
+          "creating": "Membuat…"
+        },
+        "renameDialog": {
+          "title": "Ganti nama tim",
+          "submit": "Simpan",
+          "saving": "Menyimpan…",
+          "cancel": "Batal"
+        },
+        "deleteDialog": {
+          "title": "Hapus tim?",
+          "description": "Anggota tim ini akan kehilangan akses. Pemesanan yang terkait dengan tim perlu ditetapkan ulang. Ini tidak dapat dibatalkan.",
+          "confirm": "Hapus tim",
+          "deleting": "Menghapus…",
+          "cancel": "Batal"
+        },
+        "team": {
+          "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+          "defaultBadge": "Default",
+          "rename": "Ganti nama",
+          "changeColor": "Ubah warna",
+          "delete": "Hapus"
+        },
+        "upsell": {
+          "atCapTitle": "Anda telah mencapai batas tim Anda",
+          "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
+          "cta": "Lihat paket",
+          "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
+        },
+        "errors": {
+          "nameRequired": "Nama tim diperlukan.",
+          "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
+          "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
+          "cannotDeleteDefault": "Tim default tidak dapat dihapus.",
+          "teamNotFound": "Tim tidak ditemukan.",
+          "generic": "Terjadi kesalahan. Silakan coba lagi."
+        },
+        "toasts": {
+          "created": "Tim berhasil dibuat.",
+          "renamed": "Tim berhasil diganti nama.",
+          "colorChanged": "Warna berhasil diperbarui.",
+          "deleted": "Tim berhasil dihapus."
         }
       },
       "publicPage": {

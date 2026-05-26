@@ -304,6 +304,7 @@
         "security": "Security",
         "customize": "Customize",
         "workspace": "Workspace",
+        "teams": "Teams",
         "publicPage": "Public page",
         "danger": "Danger zone"
       },
@@ -328,6 +329,62 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
+        }
+      },
+      "teams": {
+        "title": "Teams",
+        "description": "Group teammates into teams. Each team has its own calendar. Members only see bookings from teams they belong to.",
+        "listEmpty": "You don't have any teams yet.",
+        "createButton": "Create team",
+        "createDialog": {
+          "title": "Create team",
+          "description": "Give the team a name and pick a color for its calendar chips.",
+          "nameLabel": "Team name",
+          "namePlaceholder": "e.g. Wedding crew",
+          "colorLabel": "Color",
+          "submit": "Create team",
+          "cancel": "Cancel",
+          "creating": "Creating…"
+        },
+        "renameDialog": {
+          "title": "Rename team",
+          "submit": "Save",
+          "saving": "Saving…",
+          "cancel": "Cancel"
+        },
+        "deleteDialog": {
+          "title": "Delete team?",
+          "description": "Members of this team will lose access. Bookings tied to the team will need to be reassigned. This cannot be undone.",
+          "confirm": "Delete team",
+          "deleting": "Deleting…",
+          "cancel": "Cancel"
+        },
+        "team": {
+          "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
+          "defaultBadge": "Default",
+          "rename": "Rename",
+          "changeColor": "Change color",
+          "delete": "Delete"
+        },
+        "upsell": {
+          "atCapTitle": "You've reached your team limit",
+          "atCapBody": "Your {plan} plan allows {max} {max, plural, =1 {team} other {teams}}. Upgrade to add more.",
+          "cta": "See plans",
+          "proAtCapBody": "Pro is capped at {max} teams. Contact support if you need more."
+        },
+        "errors": {
+          "nameRequired": "Team name is required.",
+          "nameTooLong": "Team name must be 40 characters or fewer.",
+          "duplicateName": "A team with this name already exists in this workspace.",
+          "cannotDeleteDefault": "The default team can't be deleted.",
+          "teamNotFound": "Team not found.",
+          "generic": "Something went wrong. Please try again."
+        },
+        "toasts": {
+          "created": "Team created.",
+          "renamed": "Team renamed.",
+          "colorChanged": "Color updated.",
+          "deleted": "Team deleted."
         }
       },
       "publicPage": {
