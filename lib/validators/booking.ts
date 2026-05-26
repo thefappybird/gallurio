@@ -92,6 +92,7 @@ export const EDITABLE_KEYS = [
   "amount.currency",
   "notes",
   "clientName",
+  "clientId",
 ] as const;
 export type EditableKey = (typeof EDITABLE_KEYS)[number];
 
@@ -110,6 +111,7 @@ export const bookingPatchSchema = z
     "amount.currency": z.enum(SUPPORTED_CURRENCIES).optional(),
     notes: z.string().max(2000).trim().optional(),
     clientName: z.string().min(1).max(120).trim().optional(),
+    clientId: objectIdString.optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, {

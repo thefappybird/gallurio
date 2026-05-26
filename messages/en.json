@@ -309,7 +309,8 @@
           "phone": "Phone",
           "phonePlaceholder": "+63 917 555 0142",
           "readOnlyLabel": "Client",
-          "readOnlyHint": "Re-assigning a booking to a different client isn't supported in this view yet."
+          "readOnlyHint": "Re-assigning a booking to a different client isn't supported in this view yet.",
+          "multiSessionReadOnly": "Client is locked on multi-session bookings."
         },
         "event": {
           "title": "Title",

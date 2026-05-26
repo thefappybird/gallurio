@@ -45,7 +45,7 @@ const HEADER_SPEC_KEYS = [
   { name: "clientEmail", required: false },
   { name: "startAt", required: true },
   { name: "endAt", required: false },
-  { name: "title", required: false },
+  { name: "title", required: true },
   { name: "eventType", required: false },
   { name: "status", required: false },
   { name: "amountTotal", required: false },

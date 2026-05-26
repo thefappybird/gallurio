@@ -48,6 +48,9 @@
     "bookings": {
       "wizard": {
         "loadError": "ไม่สามารถโหลดการจองนี้ได้ ปิดและลองอีกครั้ง",
+        "client": {
+          "multiSessionReadOnly": "ลูกค้าถูกล็อคสำหรับการจองหลายเซสชัน"
+        },
         "event": {
           "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…"
         },

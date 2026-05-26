@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
@@ -22,8 +22,11 @@ import {
 import {
   overlappingShifts,
   isoDate,
+  isoDateInTz,
+  dateToTzMinutes,
   reconstructSessions,
 } from "./_helpers/calendar-helpers";
+import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
 export type ClientHit = {
@@ -40,6 +43,13 @@ type Props = {
   initialClients?: ClientHit[];
   defaultCurrency?: SupportedCurrency;
   locale?: string;
+  workspaceTimezone?: string;
+  /**
+   * Incrementing nonce from a parent toolbar's "New Booking" button. When this
+   * changes, CalendarView opens a fresh add modal — decoupled from URL so the
+   * button always fires even when ?add=1 is already set.
+   */
+  externalAddNonce?: number;
 };
 
 type PendingConflict = {
@@ -121,18 +131,68 @@ export function CalendarView({
   initialClients,
   defaultCurrency = "PHP",
   locale = "en",
+  workspaceTimezone,
+  externalAddNonce,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
 
-  // Read wizard state from URL search params so the wizard modal is managed
-  // here alongside the client list (enables client refetch after creation).
-  const spAdd = searchParams.get("add");
-  const spEdit = searchParams.get("edit");
-  const spDate = searchParams.get("date") ?? undefined;
-  const spTime = searchParams.get("time") ?? undefined;
+  const [, startTransition] = useTransition();
+
+  // Local state for the add/edit wizard modals. Using local state (not URL)
+  // ensures the modal always opens on click, even when the URL already contains
+  // the relevant param — a URL push to the same URL is a no-op in Next.js.
+  // The URL is updated as a side effect for shareability.
+  type AddState = { date: string; time?: string; nonce: number } | null;
+  type EditState = { bookingId: string } | null;
+  const [addState, setAddState] = useState<AddState>(null);
+  const [editState, setEditState] = useState<EditState>(null);
+
+  // Seed from URL on mount — handles refreshes / shared links.
+  const mountedRef = useRef(false);
+  useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+    const spAdd = searchParams.get("add");
+    const spEdit = searchParams.get("edit");
+    const spDate = searchParams.get("date") ?? "";
+    const spTime = searchParams.get("time") ?? undefined;
+    if (spAdd === "1") {
+      setAddState({ date: spDate, time: spTime, nonce: 0 });
+    } else if (spEdit) {
+      setEditState({ bookingId: spEdit });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Respond to the toolbar's "New Booking" button via an incrementing nonce.
+  // Skip nonce=0 (initial mount value — the URL-seed effect above handles that).
+  const prevExternalNonceRef = useRef(0);
+  useEffect(() => {
+    if (!externalAddNonce || externalAddNonce === prevExternalNonceRef.current) return;
+    prevExternalNonceRef.current = externalAddNonce;
+    setAddState((prev) => ({
+      date: "",
+      time: undefined,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }));
+  }, [externalAddNonce]);
+
+  // Respond to URL-driven edit requests set by the BookingDetailModal's
+  // "Edit all" button. The detail modal sets ?edit=<id> to hand off to the
+  // wizard; we mirror that into local editState.
+  useEffect(() => {
+    const spEdit = searchParams.get("edit");
+    if (spEdit && (!editState || editState.bookingId !== spEdit)) {
+      setEditState({ bookingId: spEdit });
+    } else if (!spEdit && editState) {
+      // URL cleared externally (e.g. browser back) — close the wizard.
+      setEditState(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("edit")]);
 
   const [clients, setClients] = useState<ClientHit[]>(initialClients ?? []);
 
@@ -165,6 +225,17 @@ export function CalendarView({
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
 
+  // On mount: if the persisted/URL view is WEEK but the viewport is mobile
+  // (< sm = 640px), snap to DAY so the hidden Week button doesn't leave the
+  // user stranded on a view they can't switch away from via the toolbar.
+  useEffect(() => {
+    if (view !== Views.WEEK) return;
+    const mq = window.matchMedia("(max-width: 639px)");
+    if (mq.matches) setView(Views.DAY);
+  // Only run on mount — view changes thereafter are intentional.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Keep optimistic state in sync when the server provides new events.
   const prevEventsRef = useRef(events);
   useEffect(() => {
@@ -177,27 +248,112 @@ export function CalendarView({
   // Tracks the CalendarEvent currently being dragged out of the overflow popover.
   const externalDragRef = useRef<CalendarEvent | null>(null);
 
+  const openDetailById = useCallback(
+    (bookingId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("detail", bookingId);
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [router, pathname, searchParams]
+  );
+
   const openDetail = useCallback(
     (event: CalendarEvent) => {
+      openDetailById(event.bookingId);
+    },
+    [openDetailById]
+  );
+
+  const clearWizardParams = useCallback(
+    (extra: string[] = []) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set("detail", event.bookingId);
-      router.push(`${pathname}?${params.toString()}`);
+      for (const k of ["add", "date", "time", "edit", ...extra]) params.delete(k);
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
     },
     [router, pathname, searchParams]
   );
 
   const openAddForDate = useCallback(
     (date: Date, time?: string) => {
+      // Always open the modal directly (no URL round-trip that may no-op).
+      setAddState((prev) => ({
+        date: isoDate(date),
+        time,
+        nonce: (prev?.nonce ?? 0) + 1,
+      }));
+      // Side-effect: update URL for shareability.
       const params = new URLSearchParams(searchParams.toString());
       params.set("add", "1");
       params.set("date", isoDate(date));
       if (time) params.set("time", time);
-      router.push(`${pathname}?${params.toString()}`);
+      else params.delete("time");
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
     },
     [router, pathname, searchParams]
   );
 
   // ─── Core splitDayOut apply ───────────────────────────────────────────────
+
+  /**
+   * Patch only the `endAt` of a session identified by `sessionIndex`.
+   * Used for bled-tail (isMorningContinuation) bottom-edge resizes where only
+   * the session end boundary changes — the start must not be shifted.
+   *
+   * Optimistic update: update `sessionEndAt` on every candle for this session,
+   * then PATCH the server. On success, trigger a router.refresh() so the
+   * splitter re-derives the correct candle boundaries from the new endAt.
+   */
+  const applyTailResize = useCallback(
+    async (event: CalendarEvent, newEndAt: Date) => {
+      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
+      const prev = optimisticEvents;
+
+      const newSessions = bookingSessions.map((s, idx) =>
+        idx === event.sessionIndex ? { ...s, endAt: newEndAt } : s
+      );
+
+      // Optimistic: update sessionEndAt on every candle belonging to this session.
+      // We also extend the synthetic `end` of the morning-continuation candle so it
+      // visually reflects the resize before the server round-trip completes.
+      setOptimisticEvents(
+        optimisticEvents.map((e) => {
+          if (e.bookingId !== event.bookingId || e.sessionIndex !== event.sessionIndex)
+            return e;
+          return {
+            ...e,
+            sessionEndAt: newEndAt,
+            // For the morning-continuation candle, extend its visual end too.
+            end: e.isMorningContinuation ? newEndAt : e.end,
+          };
+        })
+      );
+
+      try {
+        const ok = await patchBookingSessions(event.bookingId, newSessions);
+        if (!ok) throw new Error("PATCH returned non-ok");
+        // Re-derive candles from the server so the tail displays the correct new endAt.
+        router.refresh();
+      } catch (err) {
+        const errInfo =
+          err instanceof Error
+            ? { name: err.name, message: err.message, stack: err.stack }
+            : String(err);
+        console.error("[calendar-view] applyTailResize failed", {
+          bookingId: event.bookingId,
+          newEndAt,
+          err: errInfo,
+        });
+        setOptimisticEvents(prev);
+        toast.error(t("updateError"));
+      }
+    },
+    [optimisticEvents, t, router]
+  );
 
   /**
    * Apply splitDayOut semantics: the dragged candle becomes its own session at
@@ -318,7 +474,8 @@ export function CalendarView({
    * Steps:
    *   1. Compute newCandleStart / newCandleEnd from the rbc-provided times.
    *   2. Same-position no-op check.
-   *   3. Past-date check → PastDateConfirmDialog.
+   *   3. Past-date check → PastDateConfirmDialog (skipped when the session's
+   *      current startAt is already in the past — user already accepted it).
    *   4. Overnight conflict check (fetches shifts for both dates when the
    *      candle window spans midnight).
    *   5. Conflict check → DropConflictDialog on match.
@@ -332,6 +489,7 @@ export function CalendarView({
       isDateOnlyDrag: boolean,
       touchedDay: Date
     ) => {
+      const tz = workspaceTimezone || FALLBACK_TZ;
       const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
       // 1. Compute candle times.
@@ -363,28 +521,44 @@ export function CalendarView({
       // 3. Past-date / past-time check. The same confirm dialog covers both —
       // dropping on a past calendar day OR dropping today at a time that has
       // already passed.
-      const now = new Date();
-      const todayStart = startOfDay(now);
-      const droppedDayStart = startOfDay(newCandleStart);
-      const isPastDay = droppedDayStart < todayStart;
-      const isPastTimeToday =
-        droppedDayStart.getTime() === todayStart.getTime() && newCandleStart < now;
-      if (isPastDay || isPastTimeToday) {
-        setPendingPastConfirm({
-          event,
-          newSessionStart: newCandleStart,
-          newSessionEnd: newCandleEnd,
-          bookingSessions,
-          touchedDay,
-        });
-        return;
+      //
+      // Skip the modal entirely when the session being moved is ALREADY in the
+      // past — the user has already accepted the past-ness of that event and
+      // re-confirming on every intra-past drag is friction without benefit.
+      //
+      // "Start of today" is derived in the workspace timezone so users in Manila
+      // see the Manila calendar day boundary, not the server's/browser's UTC one.
+      const todayDateStr = isoDateInTz(new Date(), tz);
+      const startOfTodayInTz = dayBoundInTz(todayDateStr, tz, 0, 0, 0, 0);
+      const sessionAlreadyPast = event.sessionStartAt < startOfTodayInTz;
+      if (!sessionAlreadyPast) {
+        const now = new Date();
+        const droppedDateStr = isoDateInTz(newCandleStart, tz);
+        const droppedDayStartInTz = dayBoundInTz(droppedDateStr, tz, 0, 0, 0, 0);
+        const isPastDay = droppedDayStartInTz < startOfTodayInTz;
+        const isPastTimeToday =
+          droppedDateStr === todayDateStr && newCandleStart < now;
+        if (isPastDay || isPastTimeToday) {
+          setPendingPastConfirm({
+            event,
+            newSessionStart: newCandleStart,
+            newSessionEnd: newCandleEnd,
+            bookingSessions,
+            touchedDay,
+          });
+          return;
+        }
       }
 
       // 4. Conflict check — fetch shifts for both dates if the window is overnight.
-      const startDateStr = isoDate(newCandleStart);
-      const endDateStr = isoDate(newCandleEnd);
-      const aStart = newCandleStart.getHours() * 60 + newCandleStart.getMinutes();
-      const aEnd = newCandleEnd.getHours() * 60 + newCandleEnd.getMinutes();
+      // Use the workspace timezone for date strings so the server's day-boundary
+      // query matches what the user sees. Also extract HH:MM in workspace TZ so
+      // the client-side overlap comparison uses the same reference frame as the
+      // server's shiftStart/shiftEnd strings.
+      const startDateStr = isoDateInTz(newCandleStart, tz);
+      const endDateStr = isoDateInTz(newCandleEnd, tz);
+      const aStart = dateToTzMinutes(newCandleStart, tz);
+      const aEnd = dateToTzMinutes(newCandleEnd, tz);
 
       let allShifts: ShiftHit[] | null;
       if (startDateStr !== endDateStr) {
@@ -431,7 +605,7 @@ export function CalendarView({
       // 6. Apply.
       await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
     },
-    [optimisticEvents, applySplit]
+    [optimisticEvents, applySplit, workspaceTimezone, t]
   );
 
   // ─── Drop handler ─────────────────────────────────────────────────────────
@@ -468,8 +642,27 @@ export function CalendarView({
     async ({ event: anyEvent, start, end }: EventInteractionArgs<AnyCalendarEvent>) => {
       if ("type" in anyEvent && anyEvent.type === "overflow") return;
       const event = anyEvent as CalendarEvent;
+
+      // Bug 3: The origin (evening head) half of an overnight session has its
+      // bottom edge pointing toward midnight — resizing it cleanly across
+      // midnight is non-trivial. Silently no-op so the user can't accidentally
+      // corrupt the session. They can edit via the booking wizard instead.
+      if (event.isEveningHead) return;
+
       const newStart = new Date(start);
       const newEnd = new Date(end);
+
+      // Bug 2: The bled (morning continuation) half of an overnight session
+      // owns only the endAt boundary. A bottom-edge resize extends sessionEndAt
+      // while leaving sessionStartAt unchanged. We bypass applySplit entirely
+      // (which would delta-shift both boundaries) and call applyTailResize which
+      // patches only endAt and refreshes the splitter so the tail re-renders.
+      if (event.isMorningContinuation) {
+        // Same-position no-op: rbc gives us the new end for the bled half.
+        if (newEnd.getTime() === event.sessionEndAt.getTime()) return;
+        await applyTailResize(event, newEnd);
+        return;
+      }
 
       // Resize is always time-based (never a date-only drag).
       await handleAnyDrop(
@@ -480,7 +673,7 @@ export function CalendarView({
         startOfDay(event.start)
       );
     },
-    [handleAnyDrop]
+    [handleAnyDrop, applyTailResize]
   );
 
   // ─── External drag (overflow popover → calendar) ──────────────────────────
@@ -587,25 +780,36 @@ export function CalendarView({
         onCancel={handleConflictCancel}
         onConfirm={handleConflictConfirm}
       />
-      {spAdd === "1" ? (
+      {addState ? (
         <BookingWizardModal
+          key={addState.nonce}
           mode="create"
-          defaultDate={spDate}
-          defaultTime={spTime}
+          defaultDate={addState.date || undefined}
+          defaultTime={addState.time}
           defaultCurrency={defaultCurrency}
           locale={locale}
+          workspaceTimezone={workspaceTimezone}
           clients={clients}
           onClientCreated={refetchClients}
+          onClose={() => {
+            setAddState(null);
+            clearWizardParams();
+          }}
         />
       ) : null}
-      {spEdit ? (
+      {editState ? (
         <BookingWizardModal
           mode="edit"
-          bookingId={spEdit}
+          bookingId={editState.bookingId}
           defaultCurrency={defaultCurrency}
           locale={locale}
+          workspaceTimezone={workspaceTimezone}
           clients={clients}
           onClientCreated={refetchClients}
+          onClose={() => {
+            setEditState(null);
+            clearWizardParams();
+          }}
         />
       ) : null}
     </>

@@ -48,6 +48,9 @@
     "bookings": {
       "wizard": {
         "loadError": "Tidak dapat memuatkan tempahan ini. Tutup dan cuba lagi.",
+        "client": {
+          "multiSessionReadOnly": "Pelanggan dikunci pada tempahan berbilang sesi."
+        },
         "event": {
           "checkingConflicts": "Menyemak konflik…"
         },

@@ -36,6 +36,7 @@ import {
   nextHalfHourFromNow,
   applyTodaySnap,
 } from "./_helpers/today-snap";
+import { wallTimeInTzToUtc, FALLBACK_TZ } from "@/lib/utils/timezone";
 
 type ClientHit = {
   id: string;
@@ -56,10 +57,16 @@ type Props = {
   /** Pre-fetched booking values for edit mode. */
   initialValues?: Partial<WizardValues>;
   locale: string;
+  /** IANA timezone for the workspace — used to convert wall-clock inputs to UTC. */
+  workspaceTimezone?: string;
   /** Pre-fetched client list — avoids per-keystroke API calls in ClientStep. */
   clients?: ClientHit[];
   /** Called after a new client is successfully created via this wizard. */
   onClientCreated?: () => void;
+  /** Called on every close path (cancel, save, backdrop, Escape).
+   *  When provided, the parent owns the "is open" gate — the modal still
+   *  manages its own animation state via Dialog's open/onOpenChange. */
+  onClose?: () => void;
 };
 
 type StepDef = {
@@ -67,8 +74,14 @@ type StepDef = {
   fields: (keyof WizardValues | "amount.total" | "amount.deposit")[];
 };
 
-const STEPS: StepDef[] = [
+const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
+  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
+  { id: "pricing", fields: ["amount"] },
+  { id: "review", fields: [] },
+];
+
+const MULTI_SESSION_STEPS: StepDef[] = [
   { id: "event", fields: ["title", "eventType", "sessions", "location"] },
   { id: "pricing", fields: ["amount"] },
   { id: "review", fields: [] },
@@ -82,8 +95,10 @@ export function BookingWizardModal({
   defaultCurrency,
   initialValues,
   locale,
+  workspaceTimezone,
   clients,
   onClientCreated,
+  onClose,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -103,6 +118,12 @@ export function BookingWizardModal({
       ? initialValues.client.clientName
       : undefined
   );
+  /** Email shown in the multi-session client sub-line (display only). */
+  const [editClientEmail, setEditClientEmail] = useState<string | null>(null);
+  /** Number of sessions on the booking being edited. Determines step list. */
+  const [editSessionCount, setEditSessionCount] = useState<number>(
+    initialValues?.sessions?.length ?? 1
+  );
   /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
   const reqIdRef = useRef(0);
   /** Steps that have failed validation since the user last interacted with
@@ -121,6 +142,10 @@ export function BookingWizardModal({
   const [conflictConfirmOpen, setConflictConfirmOpen] = useState(false);
   /** Form values held while the conflict confirm dialog is open. */
   const [pendingSubmitValues, setPendingSubmitValues] = useState<WizardValues | null>(null);
+
+  // Effective IANA timezone for wall-clock → UTC conversion. Falls back to
+  // the launch-market default when the workspace has not set a TZ yet.
+  const tz = workspaceTimezone || FALLBACK_TZ;
 
   const defaults = useMemo(
     () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
@@ -205,6 +230,8 @@ export function BookingWizardModal({
         // not the empty defaults computed before the fetch resolved.
         defaultsRef.current = next;
         setEditClientName(b.clientName ?? undefined);
+        setEditClientEmail(b.clientEmail ?? null);
+        setEditSessionCount(rawSessions.length);
         setLoading(false);
       })
       .catch((err) => {
@@ -313,17 +340,27 @@ export function BookingWizardModal({
     [watchedSessions, rawShiftsByDate]
   );
 
+  // Multi-session edits drop the Client step — client is immutable there.
+  const isMultiSessionEdit = mode === "edit" && editSessionCount > 1;
+  const STEPS = isMultiSessionEdit ? MULTI_SESSION_STEPS : ALL_STEPS;
+
   const close = useCallback(() => {
+    setOpen(false);
+    // If the parent owns the open gate, delegate cleanup to it.
+    if (onClose) {
+      onClose();
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.delete("add");
     params.delete("date");
+    params.delete("time");
     params.delete("edit");
     const qs = params.toString();
-    setOpen(false);
     startTransition(() => {
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     });
-  }, [router, pathname, searchParams]);
+  }, [router, pathname, searchParams, onClose]);
 
   /** Validates a single step's fields. Returns true if the step is good. */
   async function validateStep(index: number): Promise<boolean> {
@@ -421,7 +458,7 @@ export function BookingWizardModal({
         const res = await fetch("/api/bookings", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(buildCreatePayload(values)),
+          body: JSON.stringify(buildCreatePayload(values, tz)),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -435,7 +472,19 @@ export function BookingWizardModal({
         }
       } else {
         if (!bookingId) throw new Error("Missing booking id");
-        const diff = buildEditDiff(values, defaultsRef.current);
+        const diff = buildEditDiff(values, defaultsRef.current, tz);
+        // For single-session edits, include clientId when the client was changed.
+        const defaultClient = defaultsRef.current.client;
+        const defaultClientId =
+          defaultClient?.mode === "existing" ? defaultClient.clientId : undefined;
+        if (
+          !isMultiSessionEdit &&
+          values.client.mode === "existing" &&
+          values.client.clientId &&
+          values.client.clientId !== defaultClientId
+        ) {
+          diff.clientId = values.client.clientId;
+        }
         if (Object.keys(diff).length === 0) {
           // No-op submit — just close.
           close();
@@ -459,7 +508,7 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close, onClientCreated]);
+  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit]);
 
   const onSubmit = handleSubmit(async (values) => {
     // If any session has scheduling conflicts, surface a confirm dialog before
@@ -501,7 +550,9 @@ export function BookingWizardModal({
 
   const current = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
-  const isReadOnlyClient = mode === "edit";
+  // Single-session edits now show the full picker; multi-session edits drop
+  // the Client step entirely (handled above via STEPS selection).
+  const isReadOnlyClient = false;
   const values = watch();
 
   return (
@@ -515,6 +566,12 @@ export function BookingWizardModal({
             <DialogTitle>
               {mode === "create" ? t("createTitle") : t("editTitle")}
             </DialogTitle>
+            {isMultiSessionEdit && editClientName ? (
+              <p className="text-xs text-muted-foreground">
+                {t("client.readOnlyLabel")}: {editClientName}
+                {editClientEmail ? ` · ${editClientEmail}` : ""}
+              </p>
+            ) : null}
             <ol className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {STEPS.map((s, i) => {
                 const hasError = stepErrors.has(i);
@@ -811,25 +868,20 @@ function makeDefaults({
   };
 }
 
-function combineDateTime(date: string, time: string): string {
-  if (!date) return "";
-  const t = time && /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
-  return new Date(`${date}T${t}:00`).toISOString();
-}
-
 function sessionsToPayload(
-  sessions: WizardValues["sessions"]
+  sessions: WizardValues["sessions"],
+  timeZone: string
 ): { startAt: string; endAt: string }[] {
   return sessions.map((s) => {
-    const startIso = combineDateTime(s.startDate, s.startTime);
+    const startIso = wallTimeInTzToUtc(s.startDate, s.startTime, timeZone);
     // Single-day: end date = start date. Multi-day: use endDate.
     const endDate = s.singleDay ? s.startDate : s.endDate || s.startDate;
-    const endIso = combineDateTime(endDate, s.endTime || s.startTime);
+    const endIso = wallTimeInTzToUtc(endDate, s.endTime || s.startTime, timeZone);
     return { startAt: startIso, endAt: endIso };
   });
 }
 
-function buildCreatePayload(v: WizardValues) {
+function buildCreatePayload(v: WizardValues, timeZone: string) {
   // POST /api/bookings expects bookingCreateSchema — strip clientName from
   // existing-mode client (server looks it up by id) and pass everything else
   // through. Date + time combine into full ISO strings here.
@@ -848,7 +900,7 @@ function buildCreatePayload(v: WizardValues) {
     title: v.title,
     eventType: v.eventType,
     status: v.status,
-    sessions: sessionsToPayload(v.sessions),
+    sessions: sessionsToPayload(v.sessions, timeZone),
     location: { address: v.location.address },
     amount: {
       total: v.amount.total,
@@ -861,7 +913,8 @@ function buildCreatePayload(v: WizardValues) {
 
 function buildEditDiff(
   v: WizardValues,
-  defaults: WizardValues
+  defaults: WizardValues,
+  timeZone: string
 ): Record<string, unknown> {
   const diff: Record<string, unknown> = {};
   if (v.title !== defaults.title) diff.title = v.title;
@@ -873,7 +926,7 @@ function buildEditDiff(
   const sessionsChanged =
     JSON.stringify(v.sessions) !== JSON.stringify(defaults.sessions);
   if (sessionsChanged) {
-    diff.sessions = sessionsToPayload(v.sessions);
+    diff.sessions = sessionsToPayload(v.sessions, timeZone);
   }
 
   if (v.location.address !== defaults.location.address)

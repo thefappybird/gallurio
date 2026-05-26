@@ -2,55 +2,9 @@ import { NextResponse } from "next/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking } from "@/lib/db/models";
+import { dayBoundInTz, FALLBACK_TZ } from "@/lib/utils/timezone";
 
 export const runtime = "nodejs";
-
-const FALLBACK_TZ = "Asia/Manila";
-
-/**
- * Returns the UTC instant corresponding to HH:MM:SS.mmm on `dateStr`
- * (YYYY-MM-DD) in `timeZone`, by parsing the Intl-formatted parts.
- */
-function dayBoundInTz(
-  dateStr: string,
-  timeZone: string,
-  h: number,
-  min: number,
-  sec: number,
-  ms: number
-): Date {
-  // Build a wall-clock string in the target TZ and parse it as UTC offset
-  // using Intl to avoid reliance on the server's local clock.
-  const [year, month, day] = dateStr.split("-").map(Number);
-  // Approximate: start with a UTC midnight for that date, then shift by TZ offset.
-  // We use the "en-CA" locale trick to get a stable ISO-like output from Intl.
-  const probe = new Date(Date.UTC(year, month - 1, day, h, min, sec, ms));
-  // Ask Intl what the local time is at `probe` in the target TZ so we can
-  // compute the offset and adjust.
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
-  const parts = fmt.formatToParts(probe);
-  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? "0");
-  const localH = get("hour");
-  const localMin = get("minute");
-  const localSec = get("second");
-  // Offset between what we want (h:min:sec) and what Intl reported at probe.
-  // Subtract to shift the UTC value so Intl would report the desired wall time.
-  const diffMs =
-    (h - localH) * 3_600_000 +
-    (min - localMin) * 60_000 +
-    (sec - localSec) * 1_000 +
-    ms;
-  return new Date(probe.getTime() + diffMs);
-}
 
 /** Format a UTC Date as HH:MM in the given IANA timezone. */
 function formatHHMM(date: Date, timeZone: string): string {

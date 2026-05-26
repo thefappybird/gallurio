@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog } from "@/lib/db/models";
+import { Booking, ActivityLog, Client } from "@/lib/db/models";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
+import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 
 export const runtime = "nodejs";
 
@@ -56,6 +57,44 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  // Block client reassignment on multi-session bookings.
+  const incomingClientId = parsed.data.clientId;
+  if (
+    incomingClientId &&
+    incomingClientId !== String(existing.clientId) &&
+    Array.isArray(existing.sessions) &&
+    existing.sessions.length > 1
+  ) {
+    return NextResponse.json(
+      { error: "Cannot change client on a multi-session booking" },
+      { status: 422 }
+    );
+  }
+
+  // When clientId is being changed, resolve the new client's canonical name
+  // and validate it belongs to the same workspace.
+  let newClientId: mongoose.Types.ObjectId | undefined;
+  let newClientName: string | undefined;
+  const oldClientId = existing.clientId as mongoose.Types.ObjectId;
+
+  if (incomingClientId && incomingClientId !== String(existing.clientId)) {
+    if (!isValidObjectId(incomingClientId)) {
+      return NextResponse.json({ error: "Invalid clientId" }, { status: 400 });
+    }
+    const newClient = await Client.findOne({
+      _id: incomingClientId,
+      workspaceId: ctx.workspace._id,
+    }).lean();
+    if (!newClient) {
+      return NextResponse.json(
+        { error: "Client not found in this workspace" },
+        { status: 404 }
+      );
+    }
+    newClientId = newClient._id;
+    newClientName = newClient.name;
+  }
+
   // Map dotted-path keys to nested Mongo $set paths and capture before/after.
   const setOp: Record<string, unknown> = {};
   const diff: Record<string, { before: unknown; after: unknown }> = {};
@@ -72,6 +111,8 @@ export async function PATCH(req: Request, { params }: Params) {
         return existing.amount?.currency ?? null;
       case "sessions":
         return existing.sessions ?? null;
+      case "clientId":
+        return String(existing.clientId ?? null);
       default:
         return existing[key as keyof typeof existing] ?? null;
     }
@@ -79,6 +120,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
   for (const [key, value] of Object.entries(parsed.data)) {
     const k = key as EditableKey;
+    // Skip clientId here — handled separately with transaction logic below.
+    if (k === "clientId") continue;
     const before = beforeOf(k);
     // For sessions arrays, always treat as changed (deep equality is expensive
     // and the client only sends sessions when it intends to update).
@@ -97,23 +140,89 @@ export async function PATCH(req: Request, { params }: Params) {
     setOp.lastSessionEnd = new Date(Math.max(...ends));
   }
 
-  if (Object.keys(setOp).length === 0) {
+  const isClientChange = !!newClientId;
+
+  if (Object.keys(setOp).length === 0 && !isClientChange) {
     return NextResponse.json(existing.toObject());
   }
 
-  await Booking.updateOne(
-    { _id: id, workspaceId: ctx.workspace._id },
-    { $set: setOp }
-  );
+  if (isClientChange) {
+    // Client reassignment: wrap everything in a transaction so booking update,
+    // transaction history reconciliation, and activity log are all atomic.
+    const mongoSession = await mongoose.startSession();
+    try {
+      await mongoSession.withTransaction(async () => {
+        // Update booking with new clientId and canonical clientName.
+        const clientSetOp: Record<string, unknown> = {
+          ...setOp,
+          clientId: newClientId,
+          clientName: newClientName,
+        };
 
-  await ActivityLog.create({
-    workspaceId: ctx.workspace._id,
-    actorUserId: ctx.userId,
-    entity: "booking",
-    entityId: existing._id,
-    action: "status" in setOp ? "status_changed" : "updated",
-    diff: { changes: diff },
-  });
+        if ("sessions" in setOp) {
+          // already included in setOp
+        }
+
+        await Booking.updateOne(
+          { _id: id, workspaceId: ctx.workspace._id },
+          { $set: clientSetOp },
+          { session: mongoSession }
+        );
+
+        // Reconcile transaction history between old and new clients.
+        await reassignBookingBetweenClients({
+          workspaceId: ctx.workspace._id,
+          fromClientId: oldClientId,
+          toClientId: newClientId!,
+          booking: {
+            _id: existing._id,
+            amount: {
+              total: existing.amount?.total ?? 0,
+              deposit: existing.amount?.deposit ?? 0,
+              currency: existing.amount?.currency ?? "PHP",
+            },
+            firstSessionStart: existing.firstSessionStart,
+          },
+          session: mongoSession,
+        });
+
+        // Write activity log with client_changed action and meta.
+        await ActivityLog.create(
+          [
+            {
+              workspaceId: ctx.workspace._id,
+              actorUserId: ctx.userId,
+              entity: "booking",
+              entityId: existing._id,
+              action: "client_changed",
+              diff: Object.keys(diff).length > 0 ? { changes: diff } : null,
+              meta: {
+                from: String(oldClientId),
+                to: String(newClientId),
+              },
+            },
+          ],
+          { session: mongoSession }
+        );
+      });
+    } finally {
+      await mongoSession.endSession();
+    }
+  } else {
+    await Booking.updateOne(
+      { _id: id, workspaceId: ctx.workspace._id },
+      { $set: setOp }
+    );
+
+    await ActivityLog.create({
+      workspaceId: ctx.workspace._id,
+      actorUserId: ctx.userId,
+      entity: "booking",
+      entityId: existing._id,
+      action: "status" in setOp ? "status_changed" : "updated",
+      diff: { changes: diff },
+    });
+  }
 
   const updated = await Booking.findOne({
     _id: id,

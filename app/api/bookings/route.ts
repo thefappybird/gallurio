@@ -25,9 +25,8 @@ export async function POST(req: Request) {
   const { client, title, eventType, status, sessions, location, amount, notes } =
     parsed.data;
 
-  let clientId;
-  let clientName: string;
-
+  // Validate existing-client ownership BEFORE starting the transaction so we
+  // can return a clean 404 without wasting a session.
   if (client.mode === "existing") {
     const existing = await Client.findOne({
       _id: client.clientId,
@@ -36,18 +35,6 @@ export async function POST(req: Request) {
     if (!existing) {
       return NextResponse.json({ error: "Client not found" }, { status: 404 });
     }
-    clientId = existing._id;
-    clientName = existing.name;
-  } else {
-    const created = await Client.create({
-      workspaceId: ctx.workspace._id,
-      name: client.name,
-      email: client.email ?? null,
-      phone: client.phone ?? null,
-      source: "manual",
-    });
-    clientId = created._id;
-    clientName = created.name;
   }
 
   // Compute denormalized bounds explicitly — Booking.create() runs pre("save")
@@ -57,13 +44,45 @@ export async function POST(req: Request) {
   const firstSessionStart = new Date(Math.min(...sessionStarts));
   const lastSessionEnd = new Date(Math.max(...sessionEnds));
 
-  // Wrap Booking.create and recordBookingForClient in a single transaction so
-  // that a failure in either write leaves no partial state in the database.
+  // All writes — including client creation for new clients — happen inside one
+  // transaction so that a failure in any step leaves no orphan documents.
   const session = await mongoose.startSession();
   let bookingId: mongoose.Types.ObjectId;
 
   try {
     await session.withTransaction(async () => {
+      let clientId: mongoose.Types.ObjectId;
+      let clientName: string;
+
+      if (client.mode === "existing") {
+        // Re-read inside the transaction to lock the document in the session.
+        const existing = await Client.findOne(
+          { _id: client.clientId, workspaceId: ctx.workspace._id },
+          null,
+          { session }
+        ).lean();
+        if (!existing) {
+          throw new Error("Client not found");
+        }
+        clientId = existing._id;
+        clientName = existing.name;
+      } else {
+        const [created] = await Client.create(
+          [
+            {
+              workspaceId: ctx.workspace._id,
+              name: client.name,
+              email: client.email ?? null,
+              phone: client.phone ?? null,
+              source: "manual",
+            },
+          ],
+          { session }
+        );
+        clientId = created._id;
+        clientName = created.name;
+      }
+
       const [booking] = await Booking.create(
         [
           {

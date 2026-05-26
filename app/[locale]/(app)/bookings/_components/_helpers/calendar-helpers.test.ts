@@ -3,6 +3,8 @@ import {
   toMinutes,
   overlappingShifts,
   isoDate,
+  isoDateInTz,
+  dateToTzMinutes,
   reconstructSessions,
 } from "./calendar-helpers";
 import type { CalendarEvent } from "../booking-calendar";
@@ -112,6 +114,46 @@ describe("overlappingShifts", () => {
       1020
     );
     expect(result).toHaveLength(0);
+  });
+});
+
+// ── isoDateInTz ───────────────────────────────────────────────────────────────
+
+describe("isoDateInTz", () => {
+  it("returns the date as seen in the given IANA timezone", () => {
+    // UTC midnight on Aug 16 is still Aug 15 in Manila (UTC+8 → 08:00 Aug 16,
+    // but use a UTC time that is Aug 15 in Manila to keep it simple).
+    // 2026-08-15T01:00:00Z → Aug 15 09:00 in Manila (UTC+8). Should be "2026-08-15".
+    const d = new Date("2026-08-15T01:00:00Z");
+    expect(isoDateInTz(d, "Asia/Manila")).toBe("2026-08-15");
+  });
+
+  it("crosses the date boundary for east-of-UTC zones", () => {
+    // 2026-08-15T16:01:00Z → 2026-08-16 00:01 in Manila (UTC+8).
+    const d = new Date("2026-08-15T16:01:00Z");
+    expect(isoDateInTz(d, "Asia/Manila")).toBe("2026-08-16");
+  });
+
+  it("crosses the date boundary for west-of-UTC zones (LA, UTC-7/8)", () => {
+    // 2026-08-15T06:00:00Z → 2026-08-14 23:00 in LA (PDT = UTC-7).
+    const d = new Date("2026-08-15T06:00:00Z");
+    expect(isoDateInTz(d, "America/Los_Angeles")).toBe("2026-08-14");
+  });
+});
+
+// ── dateToTzMinutes ───────────────────────────────────────────────────────────
+
+describe("dateToTzMinutes", () => {
+  it("returns correct minutes for 10:30 Manila time", () => {
+    // 2026-08-15T02:30:00Z → 10:30 Manila (UTC+8).
+    const d = new Date("2026-08-15T02:30:00Z");
+    expect(dateToTzMinutes(d, "Asia/Manila")).toBe(10 * 60 + 30);
+  });
+
+  it("returns 0 for 00:00 in the given timezone", () => {
+    // 2026-08-15T16:00:00Z → 00:00 Manila on 2026-08-16.
+    const d = new Date("2026-08-15T16:00:00Z");
+    expect(dateToTzMinutes(d, "Asia/Manila")).toBe(0);
   });
 });
 

@@ -5,8 +5,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { listBookings } from "./_data/bookings-queries";
 import { ViewToggle, type BookingsView } from "./_components/view-toggle";
-import { CalendarView } from "./_components/calendar-view";
-import { BookingsToolbar } from "./_components/bookings-toolbar";
+import { CalendarBookingManager } from "./_components/calendar-booking-manager";
+import { TableBookingManager } from "./_components/table-booking-manager";
 import {
   BookingsTable,
   type BookingRow,
@@ -161,15 +161,25 @@ export default async function BookingsPage({
         <ViewToggle view={view} />
       </div>
 
-      <BookingsToolbar defaultCurrency={workspace.currency ?? "PHP"} />
+      {view !== "calendar" ? (
+        // Table view: TableBookingManager owns the "New Booking" open state so
+        // the button always fires even when ?add=1 is already in the URL.
+        <TableBookingManager
+          defaultCurrency={workspace.currency as SupportedCurrency}
+          locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+          clients={initialClients}
+        />
+      ) : null}
 
       {view === "calendar" ? (
-        <CalendarView
+        <CalendarBookingManager
           events={events}
           defaultDate={defaultDate}
           initialClients={initialClients}
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),
@@ -194,23 +204,14 @@ export default async function BookingsPage({
         <BookingDetailModal bookingId={sp.detail} locale={locale} />
       ) : null}
 
-      {view !== "calendar" && sp.add === "1" ? (
-        <BookingWizardModal
-          mode="create"
-          defaultDate={sp.date}
-          defaultTime={sp.time}
-          defaultCurrency={workspace.currency as SupportedCurrency}
-          locale={locale}
-          clients={initialClients}
-        />
-      ) : null}
-
+      {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
       {view !== "calendar" && sp.edit ? (
         <BookingWizardModal
           mode="edit"
           bookingId={sp.edit}
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           clients={initialClients}
         />
       ) : null}

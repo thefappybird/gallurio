@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Transaction } from "@/lib/db/models";
-import { recordBookingForClient } from "./clientTransactions";
+import { recordBookingForClient, reassignBookingBetweenClients } from "./clientTransactions";
 
 const WS_ID = new Types.ObjectId();
 const WS_A = new Types.ObjectId();
@@ -242,5 +242,147 @@ describe("recordBookingForClient", () => {
     expect(count).toBe(0);
 
     spy.mockRestore();
+  });
+});
+
+describe("reassignBookingBetweenClients", () => {
+  const FROM_CLIENT_ID = new Types.ObjectId();
+  const TO_CLIENT_ID = new Types.ObjectId();
+  const REASSIGN_BOOKING_ID = new Types.ObjectId();
+  const REASSIGN_START = new Date("2026-09-01T10:00:00Z");
+
+  const BASE_REASSIGN_BOOKING = {
+    _id: REASSIGN_BOOKING_ID,
+    amount: { total: 50_000, deposit: 10_000, currency: "PHP" },
+    firstSessionStart: REASSIGN_START,
+  };
+
+  async function seedFromClient(overrides: Record<string, unknown> = {}) {
+    return Client.create({
+      _id: FROM_CLIENT_ID,
+      workspaceId: WS_ID,
+      name: "From Client",
+      source: "manual",
+      bookingsCount: 1,
+      totalSpent: 10_000,
+      lastBookingAt: REASSIGN_START,
+      ...overrides,
+    });
+  }
+
+  async function seedToClient(overrides: Record<string, unknown> = {}) {
+    return Client.create({
+      _id: TO_CLIENT_ID,
+      workspaceId: WS_ID,
+      name: "To Client",
+      source: "manual",
+      bookingsCount: 0,
+      totalSpent: 0,
+      ...overrides,
+    });
+  }
+
+  it("decrements from-client and increments to-client counters atomically", async () => {
+    await seedFromClient();
+    await seedToClient();
+
+    // Seed an existing Transaction for the from-client.
+    await Transaction.create({
+      workspaceId: WS_ID,
+      bookingId: REASSIGN_BOOKING_ID,
+      clientId: FROM_CLIENT_ID,
+      amount: 10_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: REASSIGN_START,
+    });
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: BASE_REASSIGN_BOOKING,
+    });
+
+    const from = await Client.findById(FROM_CLIENT_ID).lean();
+    expect(from?.totalSpent).toBe(0);
+    expect(from?.bookingsCount).toBe(0);
+
+    const to = await Client.findById(TO_CLIENT_ID).lean();
+    expect(to?.totalSpent).toBe(10_000);
+    expect(to?.bookingsCount).toBe(1);
+
+    // Old Transaction removed; new one created for to-client.
+    const oldTx = await Transaction.findOne({ bookingId: REASSIGN_BOOKING_ID, clientId: FROM_CLIENT_ID }).lean();
+    expect(oldTx).toBeNull();
+    const newTx = await Transaction.findOne({ bookingId: REASSIGN_BOOKING_ID, clientId: TO_CLIENT_ID }).lean();
+    expect(newTx).not.toBeNull();
+    expect(newTx?.amount).toBe(10_000);
+  });
+
+  it("works when deposit is 0 (no Transaction doc involved)", async () => {
+    await seedFromClient({ totalSpent: 0 });
+    await seedToClient();
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: {
+        _id: REASSIGN_BOOKING_ID,
+        amount: { total: 30_000, deposit: 0, currency: "PHP" },
+        firstSessionStart: REASSIGN_START,
+      },
+    });
+
+    const from = await Client.findById(FROM_CLIENT_ID).lean();
+    expect(from?.bookingsCount).toBe(0);
+
+    const to = await Client.findById(TO_CLIENT_ID).lean();
+    expect(to?.bookingsCount).toBe(1);
+
+    const txCount = await Transaction.countDocuments({});
+    expect(txCount).toBe(0);
+  });
+
+  it("throws when fromClient is not found", async () => {
+    await seedToClient();
+    await expect(
+      reassignBookingBetweenClients({
+        workspaceId: WS_ID,
+        fromClientId: new Types.ObjectId(),
+        toClientId: TO_CLIENT_ID,
+        booking: BASE_REASSIGN_BOOKING,
+      })
+    ).rejects.toThrow(/fromClient not found/);
+  });
+
+  it("throws when toClient is not found", async () => {
+    await seedFromClient();
+    await expect(
+      reassignBookingBetweenClients({
+        workspaceId: WS_ID,
+        fromClientId: FROM_CLIENT_ID,
+        toClientId: new Types.ObjectId(),
+        booking: BASE_REASSIGN_BOOKING,
+      })
+    ).rejects.toThrow(/toClient not found/);
+  });
+
+  it("rejects cross-workspace toClient (workspace isolation)", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const fromClientA = await Client.create({ workspaceId: wsA, name: "A", source: "manual", bookingsCount: 1, totalSpent: 5_000 });
+    const toClientB = await Client.create({ workspaceId: wsB, name: "B", source: "manual" });
+
+    await expect(
+      reassignBookingBetweenClients({
+        workspaceId: wsA,
+        fromClientId: fromClientA._id,
+        toClientId: toClientB._id,
+        booking: BASE_REASSIGN_BOOKING,
+      })
+    ).rejects.toThrow(/toClient not found/);
   });
 });

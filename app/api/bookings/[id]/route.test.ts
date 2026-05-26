@@ -5,7 +5,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, ActivityLog } from "@/lib/db/models";
+import { Booking, ActivityLog, Client } from "@/lib/db/models";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -38,11 +38,27 @@ async function load() {
   return import("./route");
 }
 
-async function seedBooking(wid: Types.ObjectId, overrides: Record<string, unknown> = {}) {
+async function seedClient(wid: Types.ObjectId, overrides: Record<string, unknown> = {}) {
+  return Client.create({
+    workspaceId: wid,
+    name: "Emma Carter",
+    email: "emma@example.com",
+    source: "manual",
+    bookingsCount: 0,
+    totalSpent: 0,
+    ...overrides,
+  });
+}
+
+async function seedBooking(
+  wid: Types.ObjectId,
+  clientId: Types.ObjectId,
+  overrides: Record<string, unknown> = {}
+) {
   const defaultStart = new Date("2026-08-15T10:00:00Z");
   return Booking.create({
     workspaceId: wid,
-    clientId: new Types.ObjectId(),
+    clientId,
     clientName: "Emma Carter",
     title: "Carter Wedding",
     status: "booked",
@@ -72,7 +88,8 @@ function ctx(id: string) {
 
 describe("GET /api/bookings/[id]", () => {
   it("returns the booking when workspaceId matches", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { GET } = await load();
     const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(200);
@@ -81,7 +98,8 @@ describe("GET /api/bookings/[id]", () => {
   });
 
   it("returns 404 when the booking belongs to another workspace (tenant isolation)", async () => {
-    const b = await seedBooking(otherWorkspaceId);
+    const c = await seedClient(otherWorkspaceId);
+    const b = await seedBooking(otherWorkspaceId, c._id);
     const { GET } = await load();
     const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(404);
@@ -96,7 +114,8 @@ describe("GET /api/bookings/[id]", () => {
 
 describe("PATCH /api/bookings/[id]", () => {
   it("applies a single-field patch and writes one activity entry", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     const res = await PATCH(
       makePatch({ title: "Renamed" }, b._id.toString()),
@@ -113,7 +132,8 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 
   it("applies a multi-field patch and writes ONE activity entry with all changes", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     const res = await PATCH(
       makePatch(
@@ -135,7 +155,8 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 
   it("logs action='status_changed' when status is in the patch", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     await PATCH(
       makePatch({ status: "cancelled" }, b._id.toString()),
@@ -146,7 +167,8 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 
   it("rejects unknown keys with 400 (strict allowlist)", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     const res = await PATCH(
       makePatch({ workspaceId: "leak" }, b._id.toString()),
@@ -156,14 +178,16 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 
   it("rejects an empty body with 400", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     const res = await PATCH(makePatch({}, b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(400);
   });
 
   it("returns 404 when patching a booking from another workspace", async () => {
-    const b = await seedBooking(otherWorkspaceId);
+    const c = await seedClient(otherWorkspaceId);
+    const b = await seedBooking(otherWorkspaceId, c._id);
     const { PATCH } = await load();
     const res = await PATCH(
       makePatch({ title: "Hacked" }, b._id.toString()),
@@ -175,7 +199,8 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 
   it("skips identical values and does not write an activity log", async () => {
-    const b = await seedBooking(workspaceId);
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
     const { PATCH } = await load();
     await PATCH(
       makePatch({ title: "Carter Wedding" }, b._id.toString()),
@@ -183,5 +208,121 @@ describe("PATCH /api/bookings/[id]", () => {
     );
     const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).lean();
     expect(logs).toHaveLength(0);
+  });
+});
+
+describe("PATCH /api/bookings/[id] — client reassignment", () => {
+  it("single-session: PATCH with new clientId updates booking and logs client_changed", async () => {
+    const oldClient = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      email: "emma@example.com",
+      bookingsCount: 1,
+      totalSpent: 25_000,
+    });
+    const newClient = await seedClient(workspaceId, {
+      name: "Liam Carter",
+      email: "liam@example.com",
+      bookingsCount: 0,
+      totalSpent: 0,
+    });
+    const b = await seedBooking(workspaceId, oldClient._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ clientId: newClient._id.toString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.clientId.toString()).toBe(newClient._id.toString());
+    expect(json.clientName).toBe("Liam Carter");
+
+    const log = await ActivityLog.findOne({ workspaceId, entity: "booking" }).lean();
+    expect(log?.action).toBe("client_changed");
+    const meta = log?.meta as { from: string; to: string } | null;
+    expect(meta?.from).toBe(oldClient._id.toString());
+    expect(meta?.to).toBe(newClient._id.toString());
+  });
+
+  it("single-session: client transaction stats reconciled on reassignment", async () => {
+    const { Transaction } = await import("@/lib/db/models");
+    const oldClient = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      bookingsCount: 1,
+      totalSpent: 25_000,
+    });
+    const newClient = await seedClient(workspaceId, {
+      name: "Liam Carter",
+      bookingsCount: 0,
+      totalSpent: 0,
+    });
+    // Seed a Transaction doc for the old client.
+    const defaultStart = new Date("2026-08-15T10:00:00Z");
+    const b = await seedBooking(workspaceId, oldClient._id);
+    await Transaction.create({
+      workspaceId,
+      bookingId: b._id,
+      clientId: oldClient._id,
+      amount: 25_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: defaultStart,
+    });
+
+    const { PATCH } = await load();
+    await PATCH(
+      makePatch({ clientId: newClient._id.toString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+
+    const updatedOld = await Client.findById(oldClient._id).lean();
+    expect(updatedOld?.totalSpent).toBe(0);
+    expect(updatedOld?.bookingsCount).toBe(0);
+
+    const updatedNew = await Client.findById(newClient._id).lean();
+    expect(updatedNew?.totalSpent).toBe(25_000);
+    expect(updatedNew?.bookingsCount).toBe(1);
+
+    // Transaction doc must be re-assigned to new client.
+    const tx = await Transaction.findOne({ bookingId: b._id }).lean();
+    expect(tx?.clientId?.toString()).toBe(newClient._id.toString());
+  });
+
+  it("multi-session: PATCH with clientId returns 422", async () => {
+    const oldClient = await seedClient(workspaceId);
+    const newClient = await seedClient(workspaceId, { name: "Other Client" });
+    const s1 = new Date("2026-08-15T10:00:00Z");
+    const s2 = new Date("2026-08-22T10:00:00Z");
+    const b = await seedBooking(workspaceId, oldClient._id, {
+      sessions: [
+        { startAt: s1, endAt: s1 },
+        { startAt: s2, endAt: s2 },
+      ],
+      firstSessionStart: s1,
+      lastSessionEnd: s2,
+    });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ clientId: newClient._id.toString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.error).toMatch(/multi-session/i);
+  });
+
+  it("tenant isolation: rejects clientId from another workspace with 404", async () => {
+    const myClient = await seedClient(workspaceId);
+    const otherClient = await seedClient(otherWorkspaceId, { name: "Other WS Client" });
+    const b = await seedBooking(workspaceId, myClient._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ clientId: otherClient._id.toString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(404);
+    // Booking's clientId must be unchanged.
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.clientId.toString()).toBe(myClient._id.toString());
   });
 });

@@ -11,7 +11,8 @@ import {
   UsersIcon,
   BookOpenIcon,
 } from "lucide-react";
-import { UserButton, SignOutButton } from "@clerk/nextjs";
+import { SignOutButton } from "@clerk/nextjs";
+import { ClientUserButton } from "@/components/app/client-user-button";
 import {
   Sidebar,
   SidebarContent,
@@ -113,17 +114,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <div className="grid size-7 shrink-0 place-items-center">
-                <UserButton
-                  appearance={{
-                    elements: {
-                      rootBox: "!size-7",
-                      userButtonBox: "!size-7",
-                      userButtonTrigger: "!size-7 !p-0",
-                      userButtonOuterIdentifier: "hidden",
-                      avatarBox: "!size-7",
-                    },
-                  }}
-                />
+                <ClientUserButton />
               </div>
               <span className="text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
                 {t("account")}

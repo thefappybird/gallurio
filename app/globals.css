@@ -397,6 +397,34 @@
 .rbc-addons-dnd .rbc-addons-dnd-dragged-event {
   opacity: 0.15 !important;
 }
+/*
+ * Bug 3 — disable invalid resize handles on overnight candle halves.
+ *
+ * The bled-tail (isMorningContinuation / .rbc-bled-tail) sits at 00:00 of the
+ * next day. Its TOP (start) anchor would let the user "move the session start
+ * to after midnight" — an invalid mutation. Kill pointer-events on the first
+ * .rbc-addons-dnd-resize-ns-anchor child (the start/top handle).
+ *
+ * The evening-head (isEveningHead / .rbc-evening-head) ends at 23:59:59 of
+ * the first day. Its BOTTOM (end) anchor would let the user push the session
+ * end to midnight — also invalid. Kill pointer-events on the last anchor.
+ *
+ * CSS is the visual layer; the handler guards in handleEventResize are the
+ * primary enforcement so even if rbc's DOM structure changes the mutation
+ * is still blocked in JS.
+ */
+.rbc-calendar .rbc-event.rbc-bled-tail
+  .rbc-addons-dnd-resize-ns-anchor:first-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
+.rbc-calendar .rbc-event.rbc-evening-head
+  .rbc-addons-dnd-resize-ns-anchor:last-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
 /* Non-dragged events dim slightly while a drag is in progress. */
 .rbc-addons-dnd.rbc-addons-dnd-is-dragging
   .rbc-event:not(.rbc-addons-dnd-dragged-event):not(.rbc-addons-dnd-drag-preview) {

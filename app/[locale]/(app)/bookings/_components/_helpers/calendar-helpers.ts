@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "../booking-calendar";
 import type { Session } from "@/lib/bookings/session-edits";
 import type { ShiftHit } from "../drop-conflict-dialog";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 /**
  * Convert "HH:MM" string to minutes since midnight.
@@ -42,6 +43,40 @@ export function isoDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+/**
+ * Format a UTC Date as YYYY-MM-DD in the given IANA timezone.
+ * This is the timezone-correct replacement for `isoDate()` when the workspace
+ * timezone is known. The server's shifts-on-date route uses this same TZ to
+ * resolve day boundaries, so the client must send the same date string.
+ */
+export function isoDateInTz(d: Date, timeZone: string): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return fmt.format(d); // en-CA produces YYYY-MM-DD natively
+}
+
+/**
+ * Return minutes-since-midnight for a UTC Date as seen in `timeZone`.
+ * Used so the client-side overlap comparison uses the same TZ reference as the
+ * server's shiftStart/shiftEnd HH:MM strings.
+ */
+export function dateToTzMinutes(d: Date, timeZone: string): number {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(d);
+  const h = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
+  const m = Number(parts.find((p) => p.type === "minute")?.value ?? "0");
+  return h * 60 + m;
 }
 
 /**

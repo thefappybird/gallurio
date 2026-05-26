@@ -172,6 +172,32 @@ describe("POST /api/bookings", () => {
     expect(booking?._id.toString()).toBe(json.id);
   });
 
+  it("atomic rollback: new-client doc is not persisted when Booking.create throws", async () => {
+    // Simulate a booking write failure AFTER client creation would have occurred.
+    const spy = vi.spyOn(Booking, "create").mockRejectedValueOnce(
+      new Error("simulated booking write failure")
+    );
+
+    const { POST } = await load();
+
+    let status: number;
+    try {
+      const res = await POST(makeReq(makeBody()));
+      status = res.status;
+    } catch {
+      status = 500;
+    }
+
+    spy.mockRestore();
+
+    expect(status).toBe(500);
+
+    // The transaction rolled back — no orphan Client, no Booking, no ActivityLog.
+    expect(await Client.countDocuments({ workspaceId })).toBe(0);
+    expect(await Booking.countDocuments({ workspaceId })).toBe(0);
+    expect(await ActivityLog.countDocuments({ workspaceId, entity: "booking" })).toBe(0);
+  });
+
   it("atomic rollback: no Booking/Transaction/ActivityLog written when recordBookingForClient throws", async () => {
     // Use an existing client so we can assert its state is unchanged after rollback.
     const existingClient = await Client.create({

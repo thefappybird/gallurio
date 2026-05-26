@@ -48,6 +48,9 @@
     "bookings": {
       "wizard": {
         "loadError": "Hindi ma-load ang booking na ito. Isara at subukan muli.",
+        "client": {
+          "multiSessionReadOnly": "Ang kliyente ay naka-lock sa mga multi-session na booking."
+        },
         "event": {
           "checkingConflicts": "Sinisiyasat ang mga salungatan…"
         },

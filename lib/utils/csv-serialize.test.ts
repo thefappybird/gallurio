@@ -102,11 +102,11 @@ describe("serializeCsv", () => {
     expect(result).toBe("a,b,c\r\n,,val\r\n");
   });
 
-  it("full round-trip fixture — all 12 booking columns", () => {
+  it("full round-trip fixture — all 14 booking columns (incl. booking_id and session_index)", () => {
     const headers = [
       "clientName", "clientEmail", "startAt", "endAt", "title",
       "eventType", "status", "amountTotal", "amountDeposit",
-      "currency", "locationAddress", "notes",
+      "currency", "locationAddress", "notes", "booking_id", "session_index",
     ];
     const row = [
       "Jane Smith",
@@ -121,13 +121,15 @@ describe("serializeCsv", () => {
       "PHP",
       "100 Ayala Ave",
       "",
+      "6849abc123def456789abcde",
+      0,
     ];
     const csv = serializeCsv(headers, [row]);
     const lines = csv.split("\r\n").filter(Boolean);
     expect(lines).toHaveLength(2);
     expect(lines[0]).toBe(headers.join(","));
     expect(lines[1]).toBe(
-      "Jane Smith,jane@example.com,2026-06-15T09:00:00.000Z,2026-06-15T18:00:00.000Z,Smith Wedding,wedding,booked,50000,10000,PHP,100 Ayala Ave,"
+      "Jane Smith,jane@example.com,2026-06-15T09:00:00.000Z,2026-06-15T18:00:00.000Z,Smith Wedding,wedding,booked,50000,10000,PHP,100 Ayala Ave,,6849abc123def456789abcde,0"
     );
   });
 });

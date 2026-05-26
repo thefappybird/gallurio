@@ -19,6 +19,9 @@ const CSV_HEADERS = [
   "currency",
   "locationAddress",
   "notes",
+  // booking_id and session_index are appended last so existing column positions are undisturbed
+  "booking_id",
+  "session_index",
 ] as const;
 
 export async function GET(req: Request) {
@@ -54,7 +57,7 @@ export async function GET(req: Request) {
   }
 
   const bookings = await Booking.find(filter)
-    .sort({ firstSessionStart: 1 })
+    .sort({ firstSessionStart: 1, _id: 1 })
     .limit(10_000)
     .lean();
 
@@ -75,27 +78,34 @@ export async function GET(req: Request) {
     }
   }
 
-  const rows = bookings.map((b) => {
+  // Each booking emits one row per session so all date ranges are preserved on
+  // round-trip. Importing such a CSV creates one single-session booking per row
+  // (the original multi-session grouping is lost — known limitation).
+  const rows: (string | number)[][] = [];
+  for (const b of bookings) {
     const sessions = b.sessions as { startAt: Date; endAt: Date }[];
-    const firstStart = b.firstSessionStart ? new Date(b.firstSessionStart).toISOString() : "";
-    const lastEnd = b.lastSessionEnd ? new Date(b.lastSessionEnd).toISOString() : "";
     const clientEmail = emailByClientId.get(b.clientId?.toString() ?? "") ?? "";
+    const bookingId = b._id.toString();
 
-    return [
-      b.clientName ?? "",
-      clientEmail,
-      firstStart,
-      lastEnd,
-      b.title ?? "",
-      b.eventType ?? "",
-      b.status ?? "",
-      b.amount?.total ?? "",
-      b.amount?.deposit ?? "",
-      b.amount?.currency ?? "",
-      b.location?.address ?? "",
-      b.notes ?? "",
-    ] as const;
-  });
+    sessions.forEach((session, idx) => {
+      rows.push([
+        b.clientName ?? "",
+        clientEmail,
+        session.startAt ? new Date(session.startAt).toISOString() : "",
+        session.endAt ? new Date(session.endAt).toISOString() : "",
+        b.title ?? "",
+        b.eventType ?? "",
+        b.status ?? "",
+        b.amount?.total ?? "",
+        b.amount?.deposit ?? "",
+        b.amount?.currency ?? "",
+        b.location?.address ?? "",
+        b.notes ?? "",
+        bookingId,
+        idx,
+      ]);
+    });
+  }
 
   const csv = serializeCsv(CSV_HEADERS, rows);
   const datestamp = new Date().toISOString().slice(0, 10);

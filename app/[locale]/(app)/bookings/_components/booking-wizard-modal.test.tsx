@@ -655,8 +655,9 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
       const patchBody = JSON.parse((patchCall![1] as RequestInit).body as string);
       expect(patchBody.sessions).toBeDefined();
       const startAt = new Date(patchBody.sessions[0].startAt);
-      // TZ-agnostic: local hours must be 11, not 10.
-      expect(startAt.getHours()).toBe(11);
+      // No workspaceTimezone prop → FALLBACK_TZ (Asia/Manila, UTC+8).
+      // 11:00 Asia/Manila wall-clock = 03:00 UTC.
+      expect(startAt.getUTCHours()).toBe(3);
     });
   });
 });
@@ -735,5 +736,236 @@ describe("BookingWizardModal — Item 5: add-session prefills next day", () => {
       return { isoAddDaysForTest };
     })();
     expect(isoAddDaysForTest("2026-06-01", 1)).toBe("2026-06-02");
+  });
+});
+
+// ── Client reassignment — single-session edit ────────────────────────────────
+//
+// Single-session edits show the full client picker; the PATCH body must include
+// clientId when the client is changed.
+describe("BookingWizardModal — single-session edit: client picker visible", () => {
+  const BOOKING_ID = "aabbccddeeff001122334455";
+  const OLD_CLIENT_ID = "aabbccddeeff001122334400";
+  const NEW_CLIENT_ID = "aabbccddeeff001122334401";
+
+  function mockFetchForEdit() {
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (typeof url === "string" && url.includes(`/api/bookings/${BOOKING_ID}`)) {
+        if (!init || init.method === "GET" || !init.method) {
+          return {
+            ok: true,
+            json: async () => ({
+              _id: BOOKING_ID,
+              clientId: OLD_CLIENT_ID,
+              clientName: "Emma Carter",
+              title: "Carter Wedding",
+              status: "booked",
+              sessions: [{ startAt: "2026-08-15T10:00:00Z", endAt: "2026-08-15T17:00:00Z" }],
+              amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
+              notes: "",
+              location: { address: "" },
+              eventType: "wedding",
+            }),
+          };
+        }
+        if (init?.method === "PATCH") {
+          return { ok: true, json: async () => ({}) };
+        }
+      }
+      if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
+        return { ok: true, json: async () => ({ shifts: [] }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    return mockFetch;
+  }
+
+  it("shows client picker (not read-only) in single-session edit", async () => {
+    mockFetchForEdit();
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={BOOKING_ID}
+          defaultCurrency="PHP"
+          locale="en"
+          clients={[
+            { id: OLD_CLIENT_ID, name: "Emma Carter", email: "emma@example.com", phone: null },
+            { id: NEW_CLIENT_ID, name: "Liam Carter", email: "liam@example.com", phone: null },
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    // Wait for loading to complete (booking fetch).
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Should NOT show the read-only hint message.
+    expect(screen.queryByText(/re-assigning a booking/i)).not.toBeInTheDocument();
+    // Should show the client search tab buttons (picker is active).
+    expect(screen.getByRole("button", { name: /existing client/i })).toBeInTheDocument();
+  });
+
+  it("single-session edit: PATCH body includes clientId when client is changed", async () => {
+    const mockFetch = mockFetchForEdit();
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={BOOKING_ID}
+          defaultCurrency="PHP"
+          locale="en"
+          clients={[
+            { id: OLD_CLIENT_ID, name: "Emma Carter", email: "emma@example.com", phone: null },
+            { id: NEW_CLIENT_ID, name: "Liam Carter", email: "liam@example.com", phone: null },
+          ]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Search for and select the new client.
+    const searchInput = screen.getByPlaceholderText(/search by name or email/i);
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: "Liam" } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Liam Carter")).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Liam Carter"));
+    });
+
+    // Click Save changes.
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    await waitFor(() => {
+      const patchCall = mockFetch.mock.calls.find(
+        ([, init]) => (init as RequestInit)?.method === "PATCH"
+      );
+      expect(patchCall).toBeDefined();
+      const body = JSON.parse((patchCall![1] as RequestInit).body as string);
+      expect(body.clientId).toBe(NEW_CLIENT_ID);
+    });
+  });
+});
+
+// ── Client reassignment — multi-session edit ─────────────────────────────────
+//
+// Multi-session edits remove the Client step entirely and show the client as a
+// read-only sub-line under the modal title. PATCH body must not include clientId.
+describe("BookingWizardModal — multi-session edit: no client step", () => {
+  const BOOKING_ID = "aabbccddeeff001122334466";
+  const CLIENT_ID = "aabbccddeeff001122334467";
+
+  function mockFetchForMultiSessionEdit() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (typeof url === "string" && url.includes(`/api/bookings/${BOOKING_ID}`)) {
+          if (!init || init.method === "GET" || !init.method) {
+            return {
+              ok: true,
+              json: async () => ({
+                _id: BOOKING_ID,
+                clientId: CLIENT_ID,
+                clientName: "Emma & Liam Carter",
+                title: "Carter Wedding",
+                status: "booked",
+                sessions: [
+                  { startAt: "2026-08-15T10:00:00Z", endAt: "2026-08-15T17:00:00Z" },
+                  { startAt: "2026-08-16T10:00:00Z", endAt: "2026-08-16T17:00:00Z" },
+                ],
+                amount: { total: 150_000, deposit: 50_000, currency: "PHP" },
+                notes: "",
+                location: { address: "" },
+                eventType: "wedding",
+              }),
+            };
+          }
+          if (init?.method === "PATCH") {
+            return { ok: true, json: async () => ({}) };
+          }
+        }
+        if (typeof url === "string" && url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        return { ok: true, json: async () => ({}) };
+      })
+    );
+  }
+
+  it("no Client step in stepper for multi-session edit", async () => {
+    mockFetchForMultiSessionEdit();
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={BOOKING_ID}
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // The step list should NOT include a "Client" step button.
+    const stepButtons = screen.getAllByRole("button");
+    const stepLabels = stepButtons.map((b) => b.textContent?.toLowerCase() ?? "");
+    const hasClientStep = stepLabels.some((l) => l.includes("client") && l.length < 20);
+    expect(hasClientStep).toBe(false);
+  });
+
+  it("shows client sub-line with name in multi-session edit header", async () => {
+    mockFetchForMultiSessionEdit();
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId={BOOKING_ID}
+          defaultCurrency="PHP"
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.queryByText(/loading booking/i)).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Sub-line should show the client name.
+    await waitFor(() => {
+      expect(screen.getByText(/Emma & Liam Carter/)).toBeInTheDocument();
+    });
   });
 });

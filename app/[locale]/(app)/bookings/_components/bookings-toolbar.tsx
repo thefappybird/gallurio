@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter, usePathname, Link } from "@/lib/i18n/navigation";
+import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DownloadIcon, PlusIcon, SearchIcon, UploadIcon } from "lucide-react";
@@ -20,7 +20,16 @@ import { CsvImportDialog } from "./csv-import-dialog";
 
 const ALL = "__all__";
 
-export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }) {
+export function BookingsToolbar({
+  defaultCurrency,
+  onAddClick,
+}: {
+  defaultCurrency: string;
+  /** When provided, the "New Booking" button calls this directly instead of
+   *  performing a URL push. Allows the parent to own the open state so the
+   *  button always fires even when ?add=1 is already in the URL. */
+  onAddClick?: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -128,14 +137,20 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
         </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+      <div className="flex w-full items-center sm:w-auto sm:flex-wrap sm:gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+          onClick={() => setImportOpen(true)}
+        >
           <UploadIcon className="size-4" />
           {t("import")}
         </Button>
         <Button
           variant="outline"
           size="sm"
+          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l"
           title={tBookings("export.tooltip")}
           nativeButton={false}
           render={<a href={exportHref} download />}
@@ -151,13 +166,19 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
         <Button
           variant="brand"
           size="sm"
-          nativeButton={false}
-          render={<Link href={(() => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("add", "1");
-            const qs = params.toString();
-            return qs ? `${pathname}?${qs}` : pathname;
-          })()} />}
+          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
+          onClick={() => {
+            if (onAddClick) {
+              onAddClick();
+            } else {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("add", "1");
+              const qs = params.toString();
+              startTransition(() => {
+                router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+              });
+            }
+          }}
         >
           <PlusIcon className="size-4" />
           {t("add")}

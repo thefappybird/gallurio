@@ -69,7 +69,7 @@ export function ViewToggle({ view }: Props) {
     <div
       role="tablist"
       aria-label={t("table")}
-      className="inline-flex h-9 items-stretch border border-border bg-background"
+      className="flex w-full min-h-11 items-stretch border border-border bg-background sm:inline-flex sm:w-auto sm:h-9 sm:min-h-0"
     >
       {options.map(({ key, label, icon: Icon }) => (
         <button
@@ -79,7 +79,7 @@ export function ViewToggle({ view }: Props) {
           aria-selected={view === key}
           onClick={() => setView(key)}
           className={cn(
-            "inline-flex items-center gap-1.5 px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex flex-1 items-center justify-center gap-1.5 px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             view === key
               ? "bg-brand text-brand-foreground"
               : "bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground"
