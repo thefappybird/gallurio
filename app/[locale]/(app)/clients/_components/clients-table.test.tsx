@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { useState, type ReactNode, type ReactElement, createElement } from "react";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ClientsTable, type ClientRow } from "./clients-table";
@@ -6,27 +7,28 @@ import { ClientsTable, type ClientRow } from "./clients-table";
 // Base UI's floating portal relies on layout APIs unavailable in happy-dom.
 // Stub the dropdown so menu items render inline on trigger click.
 vi.mock("@/components/ui/dropdown-menu", () => {
-  const React = require("react");
-  type DropdownState = { open: boolean };
-  const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    return React.createElement(
+  type DropdownChildren =
+    | ReactNode
+    | ((args: { open: boolean; setOpen: (v: boolean) => void }) => ReactNode);
+  const DropdownMenu = ({ children }: { children: DropdownChildren }) => {
+    const [open, setOpen] = useState<boolean>(false);
+    return createElement(
       "div",
-      { "data-testid": "dropdown-menu", onClick: () => setOpen((o: boolean) => !o) },
+      { "data-testid": "dropdown-menu", onClick: () => setOpen((o) => !o) },
       typeof children === "function" ? children({ open, setOpen }) : children,
     );
   };
-  const DropdownMenuTrigger = ({ render, children }: { render?: React.ReactElement; children?: React.ReactNode }) =>
-    render ?? React.createElement("button", null, children);
-  const DropdownMenuContent = ({ children }: { children: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "dropdown-content" }, children);
+  const DropdownMenuTrigger = ({ render, children }: { render?: ReactElement; children?: ReactNode }) =>
+    render ?? createElement("button", null, children);
+  const DropdownMenuContent = ({ children }: { children: ReactNode }) =>
+    createElement("div", { "data-testid": "dropdown-content" }, children);
   const DropdownMenuItem = ({
     children,
     onClick,
   }: {
-    children: React.ReactNode;
+    children: ReactNode;
     onClick?: () => void;
-  }) => React.createElement("button", { onClick }, children);
+  }) => createElement("button", { onClick }, children);
   return { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem };
 });
 
