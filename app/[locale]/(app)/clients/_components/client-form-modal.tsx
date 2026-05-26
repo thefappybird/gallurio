@@ -126,7 +126,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess }: 
               variant="ghost"
               size="icon-sm"
               onClick={() => handleOpenChange(false)}
-              aria-label="Close"
+              aria-label={t("detail.close")}
             >
               <XIcon className="size-4" />
             </Button>

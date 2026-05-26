@@ -379,6 +379,7 @@
         "search": "Search by name or email",
         "sourceAll": "All sources",
         "tagsAll": "All tags",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
         "showInactive": "Show inactive",
         "add": "Add Client",
         "clearFilters": "Clear filters"
@@ -428,6 +429,7 @@
         "error": "Something went wrong. Try again."
       },
       "detail": {
+        "inactive": "Inactive",
         "tabs": {
           "overview": "Overview",
           "bookings": "Bookings",

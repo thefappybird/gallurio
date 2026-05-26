@@ -14,6 +14,7 @@ const clientSchema = new Schema(
     },
     totalSpent: { type: Number, default: 0 },
     lastBookingAt: { type: Date, default: null },
+    bookingsCount: { type: Number, default: 0 },
     notes: { type: String, default: "" },
     isActive: { type: Boolean, default: true, index: true },
   },

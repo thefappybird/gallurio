@@ -40,6 +40,7 @@ const SOURCE_BADGE_CLASS: Record<string, string> = {
 
 export function ClientDetailModal({ client, open, onClose, onEdit, onDeactivate, locale }: Props) {
   const t = useTranslations("app.clients");
+  const tBookingStatus = useTranslations("app.bookings.statusValues");
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [bookings, setBookings] = useState<ClientBookingRow[] | null>(null);
   const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -86,7 +87,7 @@ export function ClientDetailModal({ client, open, onClose, onEdit, onDeactivate,
           <div className="flex flex-col">
             <DialogTitle className="leading-snug">{client.name}</DialogTitle>
             {!client.isActive && (
-              <span className="text-xs text-muted-foreground">Inactive</span>
+              <span className="text-xs text-muted-foreground">{t("detail.inactive")}</span>
             )}
           </div>
           <Button
@@ -216,7 +217,7 @@ export function ClientDetailModal({ client, open, onClose, onEdit, onDeactivate,
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs capitalize">
-                          {b.status}
+                          {tBookingStatus(b.status as "inquiry" | "quoted" | "booked" | "completed" | "cancelled")}
                         </Badge>
                         <span className="text-sm tabular-nums">
                           {new Intl.NumberFormat(locale, {

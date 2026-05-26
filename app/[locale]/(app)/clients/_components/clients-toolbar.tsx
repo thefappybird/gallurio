@@ -133,7 +133,7 @@ export function ClientsToolbar({ availableTags, onAddClient }: Props) {
               aria-label={t("toolbar.tagsAll")}
             >
               {selectedTags.length > 0
-                ? `${selectedTags.length} tag${selectedTags.length > 1 ? "s" : ""}`
+                ? t("toolbar.tagsSelected", { count: selectedTags.length })
                 : t("toolbar.tagsAll")}
               <ChevronDownIcon className="size-4 text-muted-foreground" />
             </PopoverTrigger>
