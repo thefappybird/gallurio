@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import type { Data } from "@measured/puck";
 import { notFound } from "next/navigation";
 import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder";
+import { runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 
@@ -54,14 +54,43 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   if (!workspace) notFound();
 
   // publicPage is guaranteed non-null here — the query filters on publishedAt != null.
-  // homeData is stored as Schema.Types.Mixed so we cast to Data for Puck's Render.
-  const homeData =
-    ((workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home as Data) ??
-    null;
+  // homeData is stored as Schema.Types.Mixed. The raw Mongoose lean doc gives us `unknown`,
+  // and puckConfig.components is typed with our specific Components union, which creates
+  // a Data<Components> vs Data<DefaultComponents> mismatch at the Render call site.
+  // We escape with `any` — the shape is correct at runtime.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const homeData: any =
+    ((workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home) ?? null;
 
-  return homeData ? (
-    <Render data={homeData} config={puckConfig} />
-  ) : (
-    <ComingSoonFallback workspace={workspace} />
-  );
+  // Build the minimal workspace shape that server blocks need.
+  const renderWorkspace = {
+    _id: String(workspace._id),
+    name: workspace.name,
+    branding: workspace.branding
+      ? {
+          logoUrl: workspace.branding.logoUrl ?? null,
+          tagline: workspace.branding.tagline ?? null,
+          description: workspace.branding.description ?? null,
+        }
+      : null,
+    publicPage: workspace.publicPage
+      ? {
+          inquiryRecipientEmail: workspace.publicPage.inquiryRecipientEmail ?? null,
+        }
+      : null,
+  };
+
+  // ComingSoonFallback does not need workspace block context — only <Render>
+  // (and the blocks it invokes) reads the AsyncLocalStorage store.
+  if (!homeData) {
+    return <ComingSoonFallback workspace={workspace} />;
+  }
+
+  // runWithRenderWorkspace gives every server block rendered inside this tree
+  // an isolated, request-scoped store. Concurrent requests cannot clobber
+  // each other's workspace context (unlike a module-level singleton).
+  return runWithRenderWorkspace(renderWorkspace, () => (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <Render data={homeData} config={puckConfig as any} />
+  ));
 }

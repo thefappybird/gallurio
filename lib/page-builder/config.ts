@@ -4,26 +4,48 @@
  * Imported by:
  * - app/(public)/w/[orgSlug]/page.tsx  → <Render data={...} config={puckConfig} />
  * - app/[locale]/(app)/page-builder/  → <Puck data={...} config={puckConfig} onPublish={...} />
- *
- * Phase 3 will fill `components` with the block implementations.
- * Phase 1 intentionally ships an empty registry so the renderer and editor
- * can both import a stable entry-point without circular dependencies.
  */
 
 import type { Config } from "@measured/puck";
+import { heroBlockConfig } from "./blocks/HeroBlock";
+import { aboutBlockConfig } from "./blocks/AboutBlock";
+import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
+import { servicesListBlockConfig } from "./blocks/ServicesListBlock";
+import { ctaBannerBlockConfig } from "./blocks/CTABannerBlock";
+import { contactCardBlockConfig } from "./blocks/ContactCardBlock";
+import type { HeroBlockProps } from "./blocks/HeroBlock";
+import type { AboutBlockProps } from "./blocks/AboutBlock";
+import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
+import type { ServicesListProps } from "./blocks/ServicesListBlock";
+import type { CTABannerProps } from "./blocks/CTABannerBlock";
+import type { ContactCardProps } from "./blocks/ContactCardBlock";
 
-/**
- * Union of all portfolio block component names.
- * Filled in Phase 3: Hero, About, GalleryGrid, ServicesList, CTABanner,
- * ContactCard, GalleryMasonry, GalleryCarousel, FeaturedWork, Testimonials.
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+// ---------------------------------------------------------------------------
+// Components union
+// ---------------------------------------------------------------------------
+
 type Components = {
-  // Populated in Phase 3
+  Hero: HeroBlockProps;
+  About: AboutBlockProps;
+  GalleryGrid: GalleryGridProps;
+  ServicesList: ServicesListProps;
+  CTABanner: CTABannerProps;
+  ContactCard: ContactCardProps;
 };
 
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
 export const puckConfig: Config<Components> = {
-  components: {},
+  components: {
+    Hero: heroBlockConfig,
+    About: aboutBlockConfig,
+    GalleryGrid: galleryGridBlockConfig,
+    ServicesList: servicesListBlockConfig,
+    CTABanner: ctaBannerBlockConfig,
+    ContactCard: contactCardBlockConfig,
+  },
   root: {
     fields: {},
   },
