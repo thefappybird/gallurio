@@ -42,7 +42,6 @@ const clientSchema = new Schema(
     transactions: { type: [clientTransactionEntrySchema], default: [] },
     lastPaymentAmount: { type: Number, default: 0 },
     lastPaymentDate: { type: Date, default: null },
-    bookingsCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
