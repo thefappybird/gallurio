@@ -40,52 +40,152 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
     const occurredAt = booking.firstSessionStart;
 
     // --- Decrement old client ---
+    // Remove the matching transaction doc from the old client (only exists when deposit > 0).
     if (deposit > 0) {
-      // Remove the matching transaction doc from the old client.
       await Transaction.deleteOne(
         { workspaceId, bookingId: booking._id, clientId: fromClientId },
         { session }
       );
-
-      await Client.updateOne(
-        { _id: fromClientId, workspaceId },
-        [
-          {
-            $set: {
-              totalSpent: { $max: [{ $subtract: [{ $ifNull: ["$totalSpent", 0] }, deposit] }, 0] },
-              bookingsCount: { $max: [{ $subtract: [{ $ifNull: ["$bookingsCount", 0] }, 1] }, 0] },
-              transactions: {
-                $filter: {
-                  input: { $ifNull: ["$transactions", []] },
-                  as: "t",
-                  cond: { $ne: ["$$t.bookingId", booking._id] },
-                },
-              },
-            },
-          },
-        ],
-        { session }
-      );
-    } else {
-      await Client.updateOne(
-        { _id: fromClientId, workspaceId },
-        [
-          {
-            $set: {
-              bookingsCount: { $max: [{ $subtract: [{ $ifNull: ["$bookingsCount", 0] }, 1] }, 0] },
-              transactions: {
-                $filter: {
-                  input: { $ifNull: ["$transactions", []] },
-                  as: "t",
-                  cond: { $ne: ["$$t.bookingId", booking._id] },
-                },
-              },
-            },
-          },
-        ],
-        { session }
-      );
     }
+
+    // Single-stage aggregation pipeline update for the old client.
+    // We use $let to define the filtered transaction array once, then derive all
+    // summary fields (lastBookingAt, lastPaymentDate, lastPaymentAmount) from it
+    // in the same stage — ensuring they are recomputed from the remaining entries
+    // rather than left as stale pointers to the moved booking.
+    await Client.updateOne(
+      { _id: fromClientId, workspaceId },
+      [
+        {
+          $set: {
+            totalSpent: deposit > 0
+              ? { $max: [{ $subtract: [{ $ifNull: ["$totalSpent", 0] }, deposit] }, 0] }
+              : { $ifNull: ["$totalSpent", 0] },
+            bookingsCount: { $max: [{ $subtract: [{ $ifNull: ["$bookingsCount", 0] }, 1] }, 0] },
+            // Recompute all three summary fields using $let so the filtered array
+            // is evaluated once and referenced safely by the derived expressions.
+            lastBookingAt: {
+              $let: {
+                vars: {
+                  remaining: {
+                    $filter: {
+                      input: { $ifNull: ["$transactions", []] },
+                      as: "t",
+                      cond: { $ne: ["$$t.bookingId", booking._id] },
+                    },
+                  },
+                },
+                in: {
+                  $cond: [
+                    { $eq: [{ $size: "$$remaining" }, 0] },
+                    null,
+                    {
+                      $reduce: {
+                        input: "$$remaining",
+                        initialValue: new Date(0),
+                        in: {
+                          $cond: [
+                            { $gt: ["$$this.occurredAt", "$$value"] },
+                            "$$this.occurredAt",
+                            "$$value",
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            lastPaymentDate: {
+              $let: {
+                vars: {
+                  paymentEntries: {
+                    $filter: {
+                      input: { $ifNull: ["$transactions", []] },
+                      as: "t",
+                      cond: {
+                        $and: [
+                          { $ne: ["$$t.bookingId", booking._id] },
+                          { $in: ["$$t.type", ["deposit", "payment"]] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                in: {
+                  $cond: [
+                    { $eq: [{ $size: "$$paymentEntries" }, 0] },
+                    null,
+                    {
+                      $reduce: {
+                        input: "$$paymentEntries",
+                        initialValue: new Date(0),
+                        in: {
+                          $cond: [
+                            { $gt: ["$$this.occurredAt", "$$value"] },
+                            "$$this.occurredAt",
+                            "$$value",
+                          ],
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+            transactions: {
+              $filter: {
+                input: { $ifNull: ["$transactions", []] },
+                as: "t",
+                cond: { $ne: ["$$t.bookingId", booking._id] },
+              },
+            },
+          },
+        },
+      ],
+      { session }
+    );
+
+    // lastPaymentAmount must be set in a second stage because it depends on
+    // lastPaymentDate computed above (pipeline stages run sequentially and each
+    // stage can read fields set by the previous one).
+    await Client.updateOne(
+      { _id: fromClientId, workspaceId },
+      [
+        {
+          $set: {
+            lastPaymentAmount: {
+              $cond: [
+                { $eq: ["$lastPaymentDate", null] },
+                null,
+                {
+                  $let: {
+                    vars: {
+                      matchingEntry: {
+                        $first: {
+                          $filter: {
+                            input: { $ifNull: ["$transactions", []] },
+                            as: "t",
+                            cond: {
+                              $and: [
+                                { $in: ["$$t.type", ["deposit", "payment"]] },
+                                { $eq: ["$$t.occurredAt", "$lastPaymentDate"] },
+                              ],
+                            },
+                          },
+                        },
+                      },
+                    },
+                    in: { $ifNull: ["$$matchingEntry.amount", null] },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      ],
+      { session }
+    );
 
     // --- Increment new client ---
     if (deposit > 0) {

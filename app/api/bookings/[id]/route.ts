@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog, Client } from "@/lib/db/models";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
+import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 
 export const runtime = "nodejs";
 
@@ -55,6 +56,23 @@ export async function PATCH(req: Request, { params }: Params) {
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Authoritative timezone-aware midnight check for session patches.
+  // The Zod UTC-day check is a cheap baseline; this is the definitive guard.
+  if (parsed.data.sessions) {
+    const tzCheck = sessionsAreSameDayInTz(
+      parsed.data.sessions,
+      ctx.workspace.timezone ?? FALLBACK_TZ
+    );
+    if (!tzCheck.ok) {
+      return NextResponse.json(
+        {
+          error: `Session ${tzCheck.sessionIndex} crosses midnight in the workspace timezone`,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Block client reassignment on multi-session bookings.
@@ -169,7 +187,38 @@ export async function PATCH(req: Request, { params }: Params) {
           { session: mongoSession }
         );
 
-        // Reconcile transaction history between old and new clients.
+        // Build a post-patch snapshot of the fields consumed by
+        // reassignBookingBetweenClients. The booking document hasn't been
+        // written yet (we're inside the transaction), so we merge setOp
+        // onto the pre-patch values to derive what the new state will be.
+        // This prevents the new client from being credited with stale
+        // financial data when amount.* or sessions change in the same PATCH.
+        const mergedAmountTotal =
+          typeof (setOp["amount.total"] as number | undefined) === "number"
+            ? (setOp["amount.total"] as number)
+            : (existing.amount?.total ?? 0);
+        const mergedAmountDeposit =
+          typeof (setOp["amount.deposit"] as number | undefined) === "number"
+            ? (setOp["amount.deposit"] as number)
+            : (existing.amount?.deposit ?? 0);
+        const mergedCurrency =
+          typeof setOp["amount.currency"] === "string"
+            ? (setOp["amount.currency"] as string)
+            : (existing.amount?.currency ?? "PHP");
+
+        // firstSessionStart is either already recomputed into setOp (when
+        // sessions were updated in this same PATCH) or falls back to the
+        // existing stored value.
+        const mergedFirstSessionStart =
+          setOp.firstSessionStart instanceof Date
+            ? setOp.firstSessionStart
+            : typeof setOp.firstSessionStart === "string"
+              ? new Date(setOp.firstSessionStart)
+              : existing.firstSessionStart;
+
+        // Reconcile transaction history between old and new clients using
+        // the merged (post-patch) financial snapshot, not the stale pre-patch
+        // values stored on `existing`.
         await reassignBookingBetweenClients({
           workspaceId: ctx.workspace._id,
           fromClientId: oldClientId,
@@ -177,11 +226,11 @@ export async function PATCH(req: Request, { params }: Params) {
           booking: {
             _id: existing._id,
             amount: {
-              total: existing.amount?.total ?? 0,
-              deposit: existing.amount?.deposit ?? 0,
-              currency: existing.amount?.currency ?? "PHP",
+              total: mergedAmountTotal,
+              deposit: mergedAmountDeposit,
+              currency: mergedCurrency,
             },
-            firstSessionStart: existing.firstSessionStart,
+            firstSessionStart: mergedFirstSessionStart,
           },
           session: mongoSession,
         });

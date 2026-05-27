@@ -263,7 +263,8 @@
         "overnightNotAllowed": "Tempahan tidak boleh melepasi tengah malam. Gunakan sesi berulang untuk merangkumi beberapa hari.",
         "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
         "conflictBlockDnd": "Konflik dengan {title} — tidak boleh pindah ke sini.",
-        "conflictBlockDndMany": "Konflik dengan {title} dan {more} lagi — tidak boleh pindah ke sini."
+        "conflictBlockDndMany": "Konflik dengan {title} dan {more} lagi — tidak boleh pindah ke sini.",
+        "pastDropNotAllowed": "Tidak boleh dipindahkan ke tarikh atau masa lepas."
       },
       "calendar": {
         "past": "Lepas",

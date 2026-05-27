@@ -263,7 +263,8 @@
         "overnightNotAllowed": "การจองไม่สามารถข้ามเที่ยงคืนได้ ใช้เซสชันซ้ำสำหรับหลายวัน",
         "conflictBlockSubmit": "แก้ไขข้อขัดแย้งของเซสชันก่อนบันทึก",
         "conflictBlockDnd": "ขัดแย้งกับ {title} — ย้ายมาที่นี่ไม่ได้",
-        "conflictBlockDndMany": "ขัดแย้งกับ {title} และอีก {more} รายการ — ย้ายมาที่นี่ไม่ได้"
+        "conflictBlockDndMany": "ขัดแย้งกับ {title} และอีก {more} รายการ — ย้ายมาที่นี่ไม่ได้",
+        "pastDropNotAllowed": "ย้ายไปยังวันหรือเวลาในอดีตไม่ได้"
       },
       "calendar": {
         "past": "ผ่านมาแล้ว",

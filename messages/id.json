@@ -263,7 +263,8 @@
         "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
         "conflictBlockSubmit": "Selesaikan konflik sesi sebelum menyimpan.",
         "conflictBlockDnd": "Bentrok dengan {title} — tidak bisa pindah ke sini.",
-        "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini."
+        "conflictBlockDndMany": "Bentrok dengan {title} dan {more} lainnya — tidak bisa pindah ke sini.",
+        "pastDropNotAllowed": "Tidak bisa dipindahkan ke tanggal atau waktu yang sudah lewat."
       },
       "calendar": {
         "past": "Lalu",

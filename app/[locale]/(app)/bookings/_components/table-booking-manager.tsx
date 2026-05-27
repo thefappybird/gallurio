@@ -40,7 +40,8 @@ export function TableBookingManager({
   const searchParams = useSearchParams();
 
   // Local open state that decouples "modal is open" from URL presence.
-  const [addOpen, setAddOpen] = useState(false);
+  // Lazy initializer seeds from ?add=1 so a refresh / shared link re-opens the wizard.
+  const [addOpen, setAddOpen] = useState(() => searchParams.get("add") === "1");
   // Nonce key forces modal to remount (resetting form) on each new "add" click.
   const nonceRef = useRef(0);
   const [nonce, setNonce] = useState(0);

@@ -325,4 +325,94 @@ describe("PATCH /api/bookings/[id] — client reassignment", () => {
     const fresh = await Booking.findById(b._id).lean();
     expect(fresh?.clientId.toString()).toBe(myClient._id.toString());
   });
+
+  it("concurrent clientId + amount.deposit change: new client receives the updated deposit, not the stale one", async () => {
+    // Booking starts with deposit=25_000. PATCH changes it to 40_000 AND
+    // reassigns to a new client in the same request. The new client must be
+    // credited with 40_000, not the pre-patch 25_000.
+    const { Transaction } = await import("@/lib/db/models");
+    const oldClient = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      bookingsCount: 1,
+      totalSpent: 25_000,
+    });
+    const newClient = await seedClient(workspaceId, {
+      name: "Liam Carter",
+      email: "liam@example.com",
+      bookingsCount: 0,
+      totalSpent: 0,
+    });
+    const defaultStart = new Date("2026-08-15T10:00:00Z");
+    const b = await seedBooking(workspaceId, oldClient._id);
+    await Transaction.create({
+      workspaceId,
+      bookingId: b._id,
+      clientId: oldClient._id,
+      amount: 25_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: defaultStart,
+    });
+
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch(
+        { clientId: newClient._id.toString(), "amount.deposit": 40_000 },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+
+    // Old client: stats zeroed out.
+    const updatedOld = await Client.findById(oldClient._id).lean();
+    expect(updatedOld?.totalSpent).toBe(0);
+    expect(updatedOld?.bookingsCount).toBe(0);
+
+    // New client: must reflect the NEW deposit (40_000), not the stale 25_000.
+    const updatedNew = await Client.findById(newClient._id).lean();
+    expect(updatedNew?.bookingsCount).toBe(1);
+    expect(updatedNew?.totalSpent).toBe(40_000);
+
+    // Transaction doc re-assigned to new client with updated amount.
+    const tx = await Transaction.findOne({ bookingId: b._id }).lean();
+    expect(tx?.clientId?.toString()).toBe(newClient._id.toString());
+    expect(tx?.amount).toBe(40_000);
+  });
+
+  it("concurrent clientId + sessions change: new client gets the updated firstSessionStart", async () => {
+    const oldClient = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      bookingsCount: 1,
+      totalSpent: 25_000,
+    });
+    const newClient = await seedClient(workspaceId, {
+      name: "Liam Carter",
+      email: "liam@example.com",
+      bookingsCount: 0,
+      totalSpent: 0,
+    });
+    const b = await seedBooking(workspaceId, oldClient._id);
+    const { PATCH } = await load();
+
+    // Move the session date forward by one month in the same PATCH as client change.
+    const newStart = new Date("2026-09-20T10:00:00Z");
+    const res = await PATCH(
+      makePatch(
+        {
+          clientId: newClient._id.toString(),
+          sessions: [{ startAt: newStart.toISOString(), endAt: newStart.toISOString() }],
+        },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    // Booking must carry the updated session bounds.
+    expect(new Date(json.firstSessionStart).toISOString()).toBe(newStart.toISOString());
+    // New client owns the booking.
+    expect(json.clientId.toString()).toBe(newClient._id.toString());
+  });
 });

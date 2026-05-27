@@ -263,7 +263,8 @@
         "overnightNotAllowed": "Hindi puwedeng tumawid ng hatinggabi ang booking. Gamitin ang repeating sessions para sa maraming araw.",
         "conflictBlockSubmit": "Ayusin muna ang mga conflict ng session bago mag-save.",
         "conflictBlockDnd": "May conflict sa {title} — hindi puwedeng ilipat dito.",
-        "conflictBlockDndMany": "May conflict sa {title} at {more} pa — hindi puwedeng ilipat dito."
+        "conflictBlockDndMany": "May conflict sa {title} at {more} pa — hindi puwedeng ilipat dito.",
+        "pastDropNotAllowed": "Hindi puwedeng ilipat sa nakaraang petsa o oras."
       },
       "calendar": {
         "past": "Lipas na",

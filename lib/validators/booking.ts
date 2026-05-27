@@ -54,13 +54,16 @@ export const bookingSessionSchema = z
   })
   .refine(
     (s) => {
-      // Single-day invariant: bookings cannot cross midnight. The form's
-      // repeating-sessions toggle spawns one same-day session per day for
-      // multi-day events, so any cross-midnight session is a bug or a
-      // hand-crafted API call.
-      // Note: comparison is done in UTC; wallTimeInTzToUtc (client-side) ensures
-      // the UTC calendar day matches the workspace's wall-clock day for UTC+8 (PHP)
-      // when sessions are within a 12-hour window of midnight.
+      // Best-effort UTC-day check: a cheap sanity guard for callers that do not
+      // have workspace timezone context (e.g. unit tests, CSV import pre-check).
+      // This catches the obvious "next-calendar-day in UTC" cases early.
+      //
+      // NOTE: this check is NOT the authoritative single-day enforcer.
+      // Route handlers that know the workspace timezone MUST also call
+      // `sessionsAreSameDayInTz` from `lib/bookings/session-validation.ts`,
+      // which is the authoritative tz-aware check.  Without it, a Philippines
+      // (UTC+8) booking of 21:00→02:00 wall-time passes this UTC check because
+      // it maps to 13:00→18:00 UTC same day.
       return (
         s.startAt.getUTCFullYear() === s.endAt.getUTCFullYear() &&
         s.startAt.getUTCMonth() === s.endAt.getUTCMonth() &&

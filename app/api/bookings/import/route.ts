@@ -69,122 +69,140 @@ export async function POST(req: Request) {
 
     const row: BookingImportRowInput = parsed.data;
 
+    const session = await mongoose.startSession();
     try {
-      // Resolve or create the client.
-      let clientId: string;
-      let clientName: string;
+      // Track whether a new client was resolved inside this transaction so
+      // we only populate emailCache after a successful commit. A committed
+      // client entry is the only safe source of truth for subsequent rows.
+      let committedClient: { id: string; name: string } | null = null;
+      // Whether the row's email was already in the cache before this row
+      // (cached clients were committed by a previous row's successful tx).
+      const cachedEntry = row.clientEmail ? clientIdByEmail.get(row.clientEmail) : undefined;
 
-      if (row.clientEmail) {
-        const cached = clientIdByEmail.get(row.clientEmail);
-        if (cached) {
-          clientId = cached.id;
-          clientName = cached.name;
-        } else {
-          let client = await Client.findOne({
-            workspaceId: ctx.workspace._id,
-            email: row.clientEmail,
-          }).lean();
-          if (!client) {
-            client = await Client.create({
+      await session.withTransaction(async () => {
+        // Resolve or create the client INSIDE the transaction so that a
+        // subsequent abort rolls back any newly-created client together with
+        // the booking and financial writes. We never leave orphan clients.
+        let clientId: string;
+        let clientName: string;
+
+        if (row.clientEmail) {
+          if (cachedEntry) {
+            // Already committed by a previous row in this import batch.
+            clientId = cachedEntry.id;
+            clientName = cachedEntry.name;
+          } else {
+            let client = await Client.findOne({
               workspaceId: ctx.workspace._id,
-              name: row.clientName,
               email: row.clientEmail,
-              source: "import",
-            });
+            })
+              .session(session)
+              .lean();
+            if (!client) {
+              [client] = await Client.create(
+                [
+                  {
+                    workspaceId: ctx.workspace._id,
+                    name: row.clientName,
+                    email: row.clientEmail,
+                    source: "import",
+                  },
+                ],
+                { session }
+              );
+            }
+            clientId = client._id.toString();
+            clientName = client.name;
+            // Stage for cache population after commit — not before.
+            committedClient = { id: clientId, name: clientName };
           }
-          clientId = client._id.toString();
-          clientName = client.name;
-          clientIdByEmail.set(row.clientEmail, { id: clientId, name: clientName });
+        } else {
+          const [newClient] = await Client.create(
+            [
+              {
+                workspaceId: ctx.workspace._id,
+                name: row.clientName,
+                source: "import",
+              },
+            ],
+            { session }
+          );
+          clientId = newClient._id.toString();
+          clientName = newClient.name;
+          // No email — cannot be cached for deduplication; no-op.
         }
-      } else {
-        const newClient = await Client.create({
-          workspaceId: ctx.workspace._id,
-          name: row.clientName,
-          source: "import",
-        });
-        clientId = newClient._id.toString();
-        clientName = newClient.name;
-      }
 
-      // Wrap Booking.create, ActivityLog.create, and recordBookingForClient in
-      // a single transaction. If any write fails, the entire row rolls back so
-      // the response truthfully reports the row as failed — no partial state.
-      const sessionStart = row.startAt;
-      const sessionEnd = row.endAt ?? row.startAt;
+        const sessionStart = row.startAt;
+        const sessionEnd = row.endAt ?? row.startAt;
 
-      const session = await mongoose.startSession();
-      try {
-        await session.withTransaction(async () => {
-          const [booking] = await Booking.create(
-            [
-              {
-                workspaceId: ctx.workspace._id,
-                clientId,
-                clientName,
-                title: row.title,
-                eventType: row.eventType ?? "other",
-                status: row.status ?? "inquiry",
-                sessions: [{ startAt: sessionStart, endAt: sessionEnd }],
-                firstSessionStart: sessionStart,
-                lastSessionEnd: sessionEnd,
-                location: { address: row.locationAddress ?? "" },
-                amount: {
-                  total: row.amountTotal ?? 0,
-                  deposit: row.amountDeposit ?? 0,
-                  currency: row.currency ?? defaultCurrency,
-                },
-                notes: row.notes ?? "",
+        const [booking] = await Booking.create(
+          [
+            {
+              workspaceId: ctx.workspace._id,
+              clientId,
+              clientName,
+              title: row.title,
+              eventType: row.eventType ?? "other",
+              status: row.status ?? "inquiry",
+              sessions: [{ startAt: sessionStart, endAt: sessionEnd }],
+              firstSessionStart: sessionStart,
+              lastSessionEnd: sessionEnd,
+              location: { address: row.locationAddress ?? "" },
+              amount: {
+                total: row.amountTotal ?? 0,
+                deposit: row.amountDeposit ?? 0,
+                currency: row.currency ?? defaultCurrency,
               },
-            ],
-            { session }
-          );
-
-          await ActivityLog.create(
-            [
-              {
-                workspaceId: ctx.workspace._id,
-                actorUserId: ctx.userId,
-                entity: "booking",
-                entityId: booking._id,
-                action: "created",
-              },
-            ],
-            { session }
-          );
-
-          await recordBookingForClient({
-            workspaceId: ctx.workspace._id,
-            clientId,
-            booking: {
-              _id: booking._id,
-              amount: booking.amount!,
-              firstSessionStart: booking.firstSessionStart,
+              notes: row.notes ?? "",
             },
-            source: "import",
-            session,
-          });
-        });
+          ],
+          { session }
+        );
 
-        created.push(i);
-      } catch (err) {
-        console.error("[bookings.import] row transaction failed", { index: i, err });
-        errors.push({
-          index: i,
-          row: raw,
-          kind: "server",
-          message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
+        await ActivityLog.create(
+          [
+            {
+              workspaceId: ctx.workspace._id,
+              actorUserId: ctx.userId,
+              entity: "booking",
+              entityId: booking._id,
+              action: "created",
+            },
+          ],
+          { session }
+        );
+
+        await recordBookingForClient({
+          workspaceId: ctx.workspace._id,
+          clientId,
+          booking: {
+            _id: booking._id,
+            amount: booking.amount!,
+            firstSessionStart: booking.firstSessionStart,
+          },
+          source: "import",
+          session,
         });
-      } finally {
-        await session.endSession();
+      });
+
+      // Only populate the cache after the transaction has been committed.
+      // If the transaction aborted, committedClient remains null and the
+      // email slot stays empty so a retry can create the client afresh.
+      if (committedClient && row.clientEmail) {
+        clientIdByEmail.set(row.clientEmail, committedClient);
       }
+
+      created.push(i);
     } catch (err) {
-      console.error("[bookings.import] booking create failed", { index: i, err });
+      console.error("[bookings.import] row transaction failed", { index: i, err });
       errors.push({
         index: i,
         row: raw,
         kind: "server",
         message: err instanceof Error ? err.message.slice(0, 200) : "Unknown server error",
       });
+    } finally {
+      await session.endSession();
     }
   }
 

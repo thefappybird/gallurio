@@ -53,6 +53,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
         <div className="flex items-center gap-2 px-1 py-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
           <Link
             href="/settings"
+            aria-label={workspaceName}
             className="grid size-10 shrink-0 place-items-center border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm overflow-hidden"
           >
             {workspaceLogoUrl ? (

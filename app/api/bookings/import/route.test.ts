@@ -198,6 +198,39 @@ describe("POST /api/bookings/import", () => {
     }
   });
 
+  it("transaction abort on first row: no orphan client; second row with same email creates client cleanly", async () => {
+    // Row 0 fails (recordBookingForClient rejects) → transaction aborts.
+    // Row 1 has the same email. It must succeed and produce exactly one client,
+    // proving the email cache was NOT poisoned by the aborted row 0.
+    let spy: MockInstance | null = null;
+    try {
+      spy = vi
+        .spyOn(clientTransactions, "recordBookingForClient")
+        .mockRejectedValueOnce(new Error("simulated abort"));
+
+      const row1 = { ...VALID_ROW, title: "Smith Engagement" };
+      const res = await callImport([VALID_ROW, row1]);
+      const body = await res.json();
+
+      // Row 0 failed, row 1 succeeded.
+      expect(body.created).toBe(1);
+      expect(body.serverErrors).toBe(1);
+      expect(body.errors[0].index).toBe(0);
+
+      // Exactly one client must exist — created by the successful row 1.
+      const clients = await Client.find({ workspaceId: WS_ID }).lean();
+      expect(clients).toHaveLength(1);
+      expect(clients[0].email).toBe("jane@example.com");
+
+      // Exactly one booking must exist.
+      const bookings = await Booking.find({ workspaceId: WS_ID }).lean();
+      expect(bookings).toHaveLength(1);
+      expect(bookings[0].title).toBe("Smith Engagement");
+    } finally {
+      spy?.mockRestore();
+    }
+  });
+
   it("existing client gets transaction appended and summaries bumped", async () => {
     await Client.create({
       workspaceId: WS_ID,

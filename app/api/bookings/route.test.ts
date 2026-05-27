@@ -19,7 +19,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
     userId,
     clerkOrgId: "org_test",
     role: "owner",
-    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t" },
+    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", timezone: "UTC" },
   }),
 }));
 

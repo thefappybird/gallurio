@@ -10,7 +10,6 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
-import { PastDateConfirmDialog } from "./past-date-confirm-dialog";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { Views, type View } from "react-big-calendar";
@@ -49,14 +48,6 @@ type Props = {
    * button always fires even when ?add=1 is already set.
    */
   externalAddNonce?: number;
-};
-
-type PendingPastConfirm = {
-  event: CalendarEvent;
-  newSessionStart: Date;
-  newSessionEnd: Date;
-  bookingSessions: Session[];
-  touchedDay: Date;
 };
 
 /**
@@ -206,12 +197,6 @@ export function CalendarView({
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
 
-  const [pendingPastConfirm, setPendingPastConfirm] =
-    useState<PendingPastConfirm | null>(null);
-  // Incrementing this key forces BookingCalendar to remount, flushing rbc's
-  // internal optimistic drag state when the user cancels. The user's current
-  // view + visible date are held HERE so the remount doesn't reset them.
-  const [refreshKey, setRefreshKey] = useState(0);
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
   const showPast = searchParams.get("showPast") === "1";
@@ -313,7 +298,7 @@ export function CalendarView({
 
       setOptimisticEvents(
         optimisticEvents.map((e) => {
-          if (e.bookingId !== event.bookingId || e.id !== event.id) return e;
+          if (e.bookingId !== event.bookingId || e.sessionIndex !== event.sessionIndex) return e;
           return {
             ...e,
             start: newCandleStart,
@@ -406,13 +391,11 @@ export function CalendarView({
         return;
       }
 
-      // 3. Past-date / past-time check. The same confirm dialog covers both —
-      // dropping on a past calendar day OR dropping today at a time that has
-      // already passed.
+      // 3. Reject drops onto past dates / past times. Hard block — no override.
       //
-      // Skip the modal entirely when the session being moved is ALREADY in the
-      // past — the user has already accepted the past-ness of that event and
-      // re-confirming on every intra-past drag is friction without benefit.
+      // Skip when the session being moved is ALREADY in the past — the user has
+      // already accepted its pastness and re-blocking every intra-past drag is
+      // friction without benefit.
       //
       // "Start of today" is derived in the workspace timezone so users in Manila
       // see the Manila calendar day boundary, not the server's/browser's UTC one.
@@ -427,13 +410,7 @@ export function CalendarView({
         const isPastTimeToday =
           droppedDateStr === todayDateStr && newCandleStart < now;
         if (isPastDay || isPastTimeToday) {
-          setPendingPastConfirm({
-            event,
-            newSessionStart: newCandleStart,
-            newSessionEnd: newCandleEnd,
-            bookingSessions,
-            touchedDay,
-          });
+          toast.error(t("pastDropNotAllowed"));
           return;
         }
       }
@@ -559,21 +536,6 @@ export function CalendarView({
     [handleAnyDrop]
   );
 
-  // ─── Past-date confirm handlers ───────────────────────────────────────────
-
-  const handlePastCancel = useCallback(() => {
-    setPendingPastConfirm(null);
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  const handlePastConfirm = useCallback(async () => {
-    if (!pendingPastConfirm) return;
-    const { event, bookingSessions, touchedDay, newSessionStart, newSessionEnd } =
-      pendingPastConfirm;
-    setPendingPastConfirm(null);
-    await applySplit(event, bookingSessions, touchedDay, newSessionStart, newSessionEnd);
-  }, [pendingPastConfirm, applySplit]);
-
   const tz = workspaceTimezone || FALLBACK_TZ;
   const todayDateStr = isoDateInTz(new Date(), tz);
   const startOfTodayInTz = dayBoundInTz(todayDateStr, tz, 0, 0, 0, 0);
@@ -597,7 +559,6 @@ export function CalendarView({
   return (
     <>
       <BookingCalendar
-        key={refreshKey}
         events={visibleEvents}
         defaultDate={defaultDate}
         view={view}
@@ -614,11 +575,6 @@ export function CalendarView({
         dragFromOutsideItem={dragFromOutsideItem}
         messages={messages}
         showPast={showPast}
-      />
-      <PastDateConfirmDialog
-        open={pendingPastConfirm !== null}
-        onCancel={handlePastCancel}
-        onConfirm={handlePastConfirm}
       />
       {addState ? (
         <BookingWizardModal

@@ -5,6 +5,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client, ActivityLog } from "@/lib/db/models";
 import { bookingCreateSchema } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,21 @@ export async function POST(req: Request) {
 
   const { client, title, eventType, status, sessions, location, amount, notes } =
     parsed.data;
+
+  // Authoritative timezone-aware midnight check.
+  // The Zod UTC-day check above is a cheap baseline; this is the definitive guard.
+  const tzCheck = sessionsAreSameDayInTz(
+    sessions,
+    ctx.workspace.timezone ?? FALLBACK_TZ
+  );
+  if (!tzCheck.ok) {
+    return NextResponse.json(
+      {
+        error: `Session ${tzCheck.sessionIndex} crosses midnight in the workspace timezone`,
+      },
+      { status: 400 }
+    );
+  }
 
   // Validate existing-client ownership BEFORE starting the transaction so we
   // can return a clean 404 without wasting a session.

@@ -263,7 +263,8 @@
         "overnightNotAllowed": "Bookings cannot span midnight — please adjust the time",
         "conflictBlockSubmit": "Resolve session conflicts before saving.",
         "conflictBlockDnd": "This time overlaps with \"{title}\" — move cancelled",
-        "conflictBlockDndMany": "This time overlaps with \"{title}\" and {more} other shift(s) — move cancelled"
+        "conflictBlockDndMany": "This time overlaps with \"{title}\" and {more} other shift(s) — move cancelled",
+        "pastDropNotAllowed": "Can't move to a past date or time."
       },
       "calendar": {
         "past": "Past",

@@ -1,5 +1,5 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cookies } from "next/headers";
@@ -23,6 +23,7 @@ export default async function AppLayout({
       />
       <div className="flex flex-1 flex-col min-w-0">
         <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="md:hidden" />
           <Separator orientation="vertical" className="h-6" />
         </header>
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>

@@ -385,4 +385,170 @@ describe("reassignBookingBetweenClients", () => {
       })
     ).rejects.toThrow(/toClient not found/);
   });
+
+  // Issue 6 — stale summary fields on old client after reassignment.
+  it("recomputes lastBookingAt to the remaining booking when the most-recent booking is moved", async () => {
+    const olderStart = new Date("2026-07-01T09:00:00Z");
+    const newerStart = new Date("2026-09-01T10:00:00Z"); // REASSIGN_START — the one we move
+
+    const olderBookingId = new Types.ObjectId();
+
+    await Client.create({
+      _id: FROM_CLIENT_ID,
+      workspaceId: WS_ID,
+      name: "From Client",
+      source: "manual",
+      bookingsCount: 2,
+      totalSpent: 15_000,
+      lastBookingAt: newerStart,
+      lastPaymentDate: newerStart,
+      lastPaymentAmount: 10_000,
+      transactions: [
+        {
+          bookingId: olderBookingId,
+          transactionId: null,
+          amount: 5_000,
+          currency: "PHP",
+          type: "deposit",
+          occurredAt: olderStart,
+          source: "manual",
+        },
+        {
+          bookingId: REASSIGN_BOOKING_ID,
+          transactionId: null,
+          amount: 10_000,
+          currency: "PHP",
+          type: "deposit",
+          occurredAt: newerStart,
+          source: "manual",
+        },
+      ],
+    });
+    await seedToClient();
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: BASE_REASSIGN_BOOKING,
+    });
+
+    const from = await Client.findById(FROM_CLIENT_ID).lean();
+    // After moving the Sept booking, only the July one remains.
+    expect(from?.lastBookingAt?.toISOString()).toBe(olderStart.toISOString());
+    expect(from?.lastPaymentDate?.toISOString()).toBe(olderStart.toISOString());
+    expect(from?.lastPaymentAmount).toBe(5_000);
+    expect(from?.bookingsCount).toBe(1);
+    expect(from?.transactions).toHaveLength(1);
+    expect(from?.transactions?.[0]?.bookingId?.toString()).toBe(olderBookingId.toString());
+  });
+
+  it("sets lastBookingAt, lastPaymentDate, and lastPaymentAmount to null when the only booking is moved", async () => {
+    await Client.create({
+      _id: FROM_CLIENT_ID,
+      workspaceId: WS_ID,
+      name: "From Client",
+      source: "manual",
+      bookingsCount: 1,
+      totalSpent: 10_000,
+      lastBookingAt: REASSIGN_START,
+      lastPaymentDate: REASSIGN_START,
+      lastPaymentAmount: 10_000,
+      transactions: [
+        {
+          bookingId: REASSIGN_BOOKING_ID,
+          transactionId: null,
+          amount: 10_000,
+          currency: "PHP",
+          type: "deposit",
+          occurredAt: REASSIGN_START,
+          source: "manual",
+        },
+      ],
+    });
+    await seedToClient();
+
+    // Seed the corresponding Transaction doc so deleteOne finds it.
+    await Transaction.create({
+      workspaceId: WS_ID,
+      bookingId: REASSIGN_BOOKING_ID,
+      clientId: FROM_CLIENT_ID,
+      amount: 10_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: REASSIGN_START,
+    });
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: BASE_REASSIGN_BOOKING,
+    });
+
+    const from = await Client.findById(FROM_CLIENT_ID).lean();
+    expect(from?.transactions).toHaveLength(0);
+    expect(from?.lastBookingAt ?? null).toBeNull();
+    expect(from?.lastPaymentDate ?? null).toBeNull();
+    expect(from?.lastPaymentAmount ?? null).toBeNull();
+    expect(from?.bookingsCount).toBe(0);
+  });
+
+  it("recomputes correctly for zero-deposit booking (type=other entries)", async () => {
+    const olderStart = new Date("2026-06-10T08:00:00Z");
+    const newerStart = new Date("2026-09-01T10:00:00Z");
+    const olderBookingId = new Types.ObjectId();
+
+    await Client.create({
+      _id: FROM_CLIENT_ID,
+      workspaceId: WS_ID,
+      name: "From Client",
+      source: "manual",
+      bookingsCount: 2,
+      totalSpent: 0,
+      lastBookingAt: newerStart,
+      lastPaymentDate: null,
+      lastPaymentAmount: null,
+      transactions: [
+        {
+          bookingId: olderBookingId,
+          transactionId: null,
+          amount: 0,
+          currency: "PHP",
+          type: "other",
+          occurredAt: olderStart,
+          source: "manual",
+        },
+        {
+          bookingId: REASSIGN_BOOKING_ID,
+          transactionId: null,
+          amount: 0,
+          currency: "PHP",
+          type: "other",
+          occurredAt: newerStart,
+          source: "manual",
+        },
+      ],
+    });
+    await seedToClient();
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: {
+        _id: REASSIGN_BOOKING_ID,
+        amount: { total: 0, deposit: 0, currency: "PHP" },
+        firstSessionStart: newerStart,
+      },
+    });
+
+    const from = await Client.findById(FROM_CLIENT_ID).lean();
+    expect(from?.lastBookingAt?.toISOString()).toBe(olderStart.toISOString());
+    // No payment-type entries remain — payment fields stay null.
+    expect(from?.lastPaymentDate ?? null).toBeNull();
+    expect(from?.lastPaymentAmount ?? null).toBeNull();
+    expect(from?.bookingsCount).toBe(1);
+  });
 });

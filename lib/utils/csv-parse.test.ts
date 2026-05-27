@@ -89,4 +89,25 @@ describe("parseCsv", () => {
     const { rows } = parseCsv(csv);
     expect(rows[0].title).toBe("My #Wedding");
   });
+
+  it("parses data rows whose first field starts with #", () => {
+    const csv = "title,clientName\n#5 Birthday,Jane\n";
+    const { rows } = parseCsv(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].title).toBe("#5 Birthday");
+    expect(rows[0].clientName).toBe("Jane");
+  });
+
+  it("only skips # comment lines that appear before the header row", () => {
+    const csv =
+      "# this is a comment\n" +
+      "title,clientName\n" +
+      "#3 Anniversary,Bob\n" +
+      "#4 Wedding,Alice\n";
+    const { headers, rows } = parseCsv(csv);
+    expect(headers).toEqual(["title", "clientName"]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].title).toBe("#3 Anniversary");
+    expect(rows[1].title).toBe("#4 Wedding");
+  });
 });
