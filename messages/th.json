@@ -123,18 +123,42 @@
           "cancel": "ยกเลิก",
           "viewErrors": "ดู {n} ข้อผิดพลาด",
           "spec": {
-            "clientName": { "note": "ชื่อเต็มของลูกค้า" },
-            "clientEmail": { "note": "ใช้เพื่อลบข้อมูลซ้ำของลูกค้าที่มีอยู่" },
-            "startAt": { "note": "ISO 8601 — เช่น 2026-06-15T09:00" },
-            "endAt": { "note": "ค่าเริ่มต้นเป็น startAt หากไม่ระบุ" },
-            "title": { "note": "ชื่อการจอง" },
-            "eventType": { "note": "งานแต่งงาน คอร์ปอเรต ภาพบุคคล ฯลฯ" },
-            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
-            "amountTotal": { "note": "ยอดรวมการจอง" },
-            "amountDeposit": { "note": "จำนวนเงินมัดจำ" },
-            "currency": { "note": "ค่าเริ่มต้นเป็นสกุลเงินของที่ทำงาน" },
-            "locationAddress": { "note": "สถานที่หรือที่อยู่" },
-            "notes": { "note": "บันทึกภายใน" }
+            "clientName": {
+              "note": "ชื่อเต็มของลูกค้า"
+            },
+            "clientEmail": {
+              "note": "ใช้เพื่อลบข้อมูลซ้ำของลูกค้าที่มีอยู่"
+            },
+            "startAt": {
+              "note": "ISO 8601 — เช่น 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "ค่าเริ่มต้นเป็น startAt หากไม่ระบุ"
+            },
+            "title": {
+              "note": "ชื่อการจอง"
+            },
+            "eventType": {
+              "note": "งานแต่งงาน คอร์ปอเรต ภาพบุคคล ฯลฯ"
+            },
+            "status": {
+              "note": "inquiry, quoted, booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "ยอดรวมการจอง"
+            },
+            "amountDeposit": {
+              "note": "จำนวนเงินมัดจำ"
+            },
+            "currency": {
+              "note": "ค่าเริ่มต้นเป็นสกุลเงินของที่ทำงาน"
+            },
+            "locationAddress": {
+              "note": "สถานที่หรือที่อยู่"
+            },
+            "notes": {
+              "note": "บันทึกภายใน"
+            }
           }
         }
       },
@@ -411,7 +435,8 @@
         "customize": "ปรับแต่ง",
         "workspace": "ที่ทำงาน",
         "publicPage": "หน้าสาธารณะ",
-        "danger": "โซนอันตราย"
+        "danger": "โซนอันตราย",
+        "switchWorkspace": "สลับพื้นที่ทำงาน"
       },
       "workspace": {
         "businessSection": "รายละเอียดธุรกิจ",

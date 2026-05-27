@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
@@ -45,6 +45,14 @@ export function TableBookingManager({
   // Nonce key forces modal to remount (resetting form) on each new "add" click.
   const nonceRef = useRef(0);
   const [nonce, setNonce] = useState(0);
+
+  // Sync modal open state with URL changes (browser back/forward, external navigation).
+  // The lazy initializer handles the first render; this effect catches subsequent
+  // URL changes so the modal closes when ?add=1 is removed from the URL.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: mirrors URL ?add=1 into modal open state (external → React sync for browser back/forward support)
+    setAddOpen(searchParams.get("add") === "1");
+  }, [searchParams]);
 
   const clearParams = useCallback(
     (params: string[]) => {

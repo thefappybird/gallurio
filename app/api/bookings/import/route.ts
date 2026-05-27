@@ -6,6 +6,12 @@ import { Booking, Client, ActivityLog } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
+
+// Keys added by the CSV exporter for human reference. They carry no import
+// semantics and must be stripped before schema validation so that a round-trip
+// "export → re-import" works without manual CSV editing.
+const EXPORT_ONLY_KEYS = ["booking_id", "session_index"] as const;
 
 export const runtime = "nodejs";
 
@@ -51,7 +57,14 @@ export async function POST(req: Request) {
   for (let i = 0; i < json.rows.length; i++) {
     const raw: Record<string, unknown> = json.rows[i];
 
-    const parsed = bookingImportRowSchema.safeParse(raw);
+    // Strip export-only columns before validation so a re-imported CSV succeeds
+    // even when it still carries booking_id and session_index columns.
+    const rowForParsing: Record<string, unknown> = { ...raw };
+    for (const key of EXPORT_ONLY_KEYS) {
+      delete rowForParsing[key];
+    }
+
+    const parsed = bookingImportRowSchema.safeParse(rowForParsing);
     if (!parsed.success) {
       const allMessages = parsed.error.errors
         .map((e) => `${e.path.join(".") || "row"}: ${e.message}`)
@@ -68,6 +81,25 @@ export async function POST(req: Request) {
     }
 
     const row: BookingImportRowInput = parsed.data;
+
+    // Authoritative tz-aware single-day check. The Zod schema performs a cheap
+    // UTC-day guard; this catches wall-time midnight crossings in the workspace
+    // timezone (e.g. Philippines UTC+8: 21:00→02:00 wall-time is same UTC day).
+    const sessionEnd = row.endAt ?? row.startAt;
+    const tzCheck = sessionsAreSameDayInTz(
+      [{ startAt: row.startAt, endAt: sessionEnd }],
+      ctx.workspace.timezone ?? FALLBACK_TZ
+    );
+    if (!tzCheck.ok) {
+      errors.push({
+        index: i,
+        row: raw,
+        field: "endAt",
+        kind: "validation",
+        message: "Session must start and end on the same day in the workspace timezone.",
+      });
+      continue;
+    }
 
     const session = await mongoose.startSession();
     try {

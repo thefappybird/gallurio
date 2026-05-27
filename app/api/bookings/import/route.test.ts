@@ -285,6 +285,75 @@ describe("POST /api/bookings/import", () => {
     expect(txs).toHaveLength(0);
   });
 
+  // --- Issue 3: round-trip compatibility (export fields stripped before validation) ---
+
+  it("round-trip: row with booking_id and session_index columns imports successfully", async () => {
+    // Simulates a CSV row produced by the exporter being re-imported.
+    const exportRow = {
+      ...VALID_ROW,
+      booking_id: new Types.ObjectId().toHexString(),
+      session_index: "0",
+    };
+    const res = await callImport([exportRow]);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.created).toBe(1);
+    expect(body.errors).toHaveLength(0);
+  });
+
+  it("round-trip: booking_id and session_index do not appear as booking fields", async () => {
+    const exportRow = {
+      ...VALID_ROW,
+      booking_id: new Types.ObjectId().toHexString(),
+      session_index: "0",
+    };
+    await callImport([exportRow]);
+    const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
+    // The Mongoose doc should not carry these export-only artefacts.
+    expect((booking as Record<string, unknown>)?.booking_id).toBeUndefined();
+    expect((booking as Record<string, unknown>)?.session_index).toBeUndefined();
+  });
+
+  // --- Issue 4: timezone-aware session validation ---
+
+  it("rejects a session that crosses midnight in the workspace timezone (UTC-safe but tz-unsafe)", async () => {
+    // Philippines is UTC+8. 20:00→00:30 UTC = 04:00→08:30 Philippine time — same
+    // UTC date but crosses midnight in UTC+8. This test verifies the tz check
+    // catches what the UTC-day guard misses.
+    //
+    // 2026-07-14T16:00:00Z = 2026-07-15 00:00 PHT (midnight boundary)
+    // 2026-07-14T15:00:00Z = 2026-07-14 23:00 PHT → 2026-07-14T16:30:00Z = 2026-07-15 00:30 PHT
+    // These are the same UTC date but cross the PHT midnight.
+    const crossMidnightPHT = {
+      ...VALID_ROW,
+      startAt: "2026-07-14T15:00:00Z", // 23:00 PHT July 14
+      endAt: "2026-07-14T16:30:00Z", // 00:30 PHT July 15
+    };
+    // Workspace timezone is Asia/Manila (FALLBACK_TZ) since the mock doesn't set it.
+    const res = await callImport([crossMidnightPHT]);
+    const body = await res.json();
+    expect(body.created).toBe(0);
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0].kind).toBe("validation");
+    expect(body.errors[0].message).toMatch(/same day in the workspace timezone/i);
+  });
+
+  it("accepts a session that looks cross-midnight UTC but is same-day in workspace timezone", async () => {
+    // 2026-07-14T16:00:00Z = 2026-07-15 00:00 PHT — this IS midnight boundary,
+    // so use an endAt that lands well within July 15 PHT.
+    // startAt: 2026-07-15T01:00:00Z = 09:00 PHT July 15
+    // endAt:   2026-07-15T10:00:00Z = 18:00 PHT July 15 — same PHT day, passes.
+    const sameDayPHT = {
+      ...VALID_ROW,
+      startAt: "2026-07-15T01:00:00Z", // 09:00 PHT July 15
+      endAt: "2026-07-15T10:00:00Z", // 18:00 PHT July 15
+    };
+    const res = await callImport([sameDayPHT]);
+    const body = await res.json();
+    expect(body.created).toBe(1);
+    expect(body.errors).toHaveLength(0);
+  });
+
   it("negative amountTotal fails validation (schema enforces non-negative)", async () => {
     const refundRow = {
       ...VALID_ROW,

@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
+import { dayBoundInTz } from "@/lib/utils/timezone";
+import { isoDateInTz } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type BookingRow = {
@@ -48,16 +50,29 @@ type Props = {
   locale: string;
   empty: string;
   showPast?: boolean;
+  workspaceTimezone?: string;
 };
 
-/** Returns true when ALL sessions of a booking ended before today (midnight). */
-function computeIsPast(lastSessionEnd: string): boolean {
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  return new Date(lastSessionEnd) < startOfToday;
+/**
+ * Returns true when ALL sessions of a booking ended before today (midnight)
+ * in the given workspace timezone.
+ *
+ * Falls back to UTC when no timezone is provided to keep behaviour
+ * deterministic regardless of the viewer's browser locale.
+ */
+function computeIsPast(lastSessionEnd: string, tz: string): boolean {
+  const todayStr = isoDateInTz(new Date(), tz);
+  const todayStart = dayBoundInTz(todayStr, tz, 0, 0, 0, 0);
+  return new Date(lastSessionEnd) < todayStart;
 }
 
-export function BookingsTable({ rows, locale, empty, showPast = false }: Props) {
+export function BookingsTable({
+  rows,
+  locale,
+  empty,
+  showPast = false,
+  workspaceTimezone = "UTC",
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -70,7 +85,7 @@ export function BookingsTable({ rows, locale, empty, showPast = false }: Props) 
   // Client-side filter: hide fully-past bookings unless showPast is enabled.
   const visibleRows = showPast
     ? rows
-    : rows.filter((r) => !computeIsPast(r.lastSessionEnd));
+    : rows.filter((r) => !computeIsPast(r.lastSessionEnd, workspaceTimezone));
 
   const openDetail = useCallback(
     (id: string) => {
@@ -131,7 +146,7 @@ export function BookingsTable({ rows, locale, empty, showPast = false }: Props) 
         cell: (info) => {
           const v = info.getValue<BookingStatus>();
           const isBooked = v === "booked";
-          const isPast = computeIsPast(info.row.original.lastSessionEnd);
+          const isPast = computeIsPast(info.row.original.lastSessionEnd, workspaceTimezone);
           return (
             <span className="flex flex-wrap items-center gap-1.5">
               <Badge
@@ -196,9 +211,10 @@ export function BookingsTable({ rows, locale, empty, showPast = false }: Props) 
         enableSorting: false,
       },
     ],
-    [locale, t, tActions, openDetail]
+    [locale, t, tActions, openDetail, workspaceTimezone]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable returns non-memoizable functions; React Compiler skips this component intentionally
   const table = useReactTable({
     data: visibleRows,
     columns,
@@ -264,7 +280,7 @@ export function BookingsTable({ rows, locale, empty, showPast = false }: Props) 
         <tbody>
           {table.getRowModel().rows.map((row) => {
             const cancelled = row.original.status === "cancelled";
-            const isPast = computeIsPast(row.original.lastSessionEnd);
+            const isPast = computeIsPast(row.original.lastSessionEnd, workspaceTimezone);
             return (
               <tr
                 key={row.id}

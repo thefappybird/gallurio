@@ -5,11 +5,6 @@ function date(y: number, m: number, d: number, h = 0, min = 0): Date {
   return new Date(y, m - 1, d, h, min, 0, 0);
 }
 
-function todayAt(h: number, min = 0): Date {
-  const d = new Date();
-  d.setHours(h, min, 0, 0);
-  return d;
-}
 
 function midnightToday(): Date {
   const d = new Date();

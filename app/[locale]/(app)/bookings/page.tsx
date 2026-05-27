@@ -231,6 +231,7 @@ export default async function BookingsPage({
           locale={locale}
           empty={t("table.empty")}
           showPast={sp.showPast === "1"}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
         />
       )}
 

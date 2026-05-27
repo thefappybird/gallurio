@@ -11,6 +11,7 @@ import {
   UsersIcon,
   BookOpenIcon,
 } from "lucide-react";
+import NextImage from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
 import { ClientUserButton } from "@/components/app/client-user-button";
 import {
@@ -57,7 +58,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
             className="grid size-10 shrink-0 place-items-center border border-sidebar-border bg-sidebar-accent text-sidebar-accent-foreground font-semibold text-sm overflow-hidden"
           >
             {workspaceLogoUrl ? (
-              <img src={workspaceLogoUrl} alt="" className="size-full object-cover" />
+              <NextImage src={workspaceLogoUrl} alt="" fill className="object-cover" />
             ) : (
               initial
             )}

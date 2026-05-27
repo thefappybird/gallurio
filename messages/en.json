@@ -123,18 +123,42 @@
           "cancel": "Cancel",
           "viewErrors": "View {n} error(s)",
           "spec": {
-            "clientName": { "note": "Full name of the client" },
-            "clientEmail": { "note": "Used to deduplicate existing clients" },
-            "startAt": { "note": "ISO 8601 — e.g. 2026-06-15T09:00" },
-            "endAt": { "note": "Defaults to startAt if omitted" },
-            "title": { "note": "Booking title" },
-            "eventType": { "note": "wedding, corporate, portrait, etc." },
-            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
-            "amountTotal": { "note": "Total booking amount" },
-            "amountDeposit": { "note": "Deposit amount" },
-            "currency": { "note": "Defaults to workspace currency" },
-            "locationAddress": { "note": "Venue or location text" },
-            "notes": { "note": "Internal notes" }
+            "clientName": {
+              "note": "Full name of the client"
+            },
+            "clientEmail": {
+              "note": "Used to deduplicate existing clients"
+            },
+            "startAt": {
+              "note": "ISO 8601 — e.g. 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "Defaults to startAt if omitted"
+            },
+            "title": {
+              "note": "Booking title"
+            },
+            "eventType": {
+              "note": "wedding, corporate, portrait, etc."
+            },
+            "status": {
+              "note": "inquiry, quoted, booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "Total booking amount"
+            },
+            "amountDeposit": {
+              "note": "Deposit amount"
+            },
+            "currency": {
+              "note": "Defaults to workspace currency"
+            },
+            "locationAddress": {
+              "note": "Venue or location text"
+            },
+            "notes": {
+              "note": "Internal notes"
+            }
           }
         }
       },
@@ -281,7 +305,6 @@
           "confirm": "Move to past",
           "cancel": "Cancel"
         },
-        "past": "Past",
         "showPast": "Show past",
         "hidePast": "Hide past"
       },
@@ -412,7 +435,8 @@
         "customize": "Customize",
         "workspace": "Workspace",
         "publicPage": "Public page",
-        "danger": "Danger zone"
+        "danger": "Danger zone",
+        "switchWorkspace": "Switch Workspace"
       },
       "workspace": {
         "businessSection": "Business details",

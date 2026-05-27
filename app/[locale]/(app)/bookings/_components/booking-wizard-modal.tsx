@@ -32,7 +32,6 @@ import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
 import {
   todayIso,
-  nextHalfHourFromNow,
   applyTodaySnap,
 } from "./_helpers/today-snap";
 import { wallTimeInTzToUtc, FALLBACK_TZ } from "@/lib/utils/timezone";
@@ -427,6 +426,7 @@ export function BookingWizardModal({
     const rhfOk =
       fieldPaths.length === 0 ? true : await trigger(fieldPaths);
     if (step.id === "client") {
+      // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is non-memoizable; React Compiler skips this component intentionally
       const client = watch("client");
       if (
         (client.mode === "existing" && !client.clientId) ||
@@ -572,17 +572,47 @@ export function BookingWizardModal({
     } finally {
       setSubmitting(false);
     }
-  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams]);
+  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz]);
 
   const eventStepIndex = STEPS.findIndex((s) => s.id === "event");
 
-  const onSubmit = handleSubmit(async (values) => {
-    // Conflicts are a hard block — the Next button on the event step is also
-    // disabled when any session has conflicts. Defense in depth.
-    if (conflictsBySession.some((c) => c.length > 0)) {
-      setStepErrors((prev) => new Set(prev).add(eventStepIndex));
-      setShakeKey((k) => k + 1);
+  /**
+   * Single source of truth for submit readiness.
+   *
+   * Returns { ok: true } when the form may be submitted, or
+   * { ok: false, reason: "loading" | "error" | "conflict" } when it must be
+   * blocked. Both onSubmit and saveFromAnywhere must call this before proceeding.
+   */
+  function canSubmit():
+    | { ok: true }
+    | { ok: false; reason: "loading" | "error" | "conflict" } {
+    if (loadingDates.size > 0) return { ok: false, reason: "loading" };
+    if (conflictCheckError) return { ok: false, reason: "error" };
+    if (conflictsBySession.some((c) => c.length > 0))
+      return { ok: false, reason: "conflict" };
+    return { ok: true };
+  }
+
+  /** Surfaces the appropriate toast and marks the event step as invalid. */
+  function blockOnConflict(reason: "loading" | "error" | "conflict") {
+    setStepErrors((prev) => new Set(prev).add(eventStepIndex));
+    setShakeKey((k) => k + 1);
+    if (reason === "loading") {
+      toast.info(t("event.checkingConflicts"));
+    } else if (reason === "error") {
+      toast.error(tDnd("conflictCheckFailed"));
+    } else {
       toast.error(tDnd("conflictBlockSubmit"));
+    }
+  }
+
+  const onSubmit = handleSubmit(async (values) => {
+    // Defense in depth: block submit if conflict fetch is in-flight, errored,
+    // or returned actual conflicts. The Next button on the event step enforces
+    // the same guard, but onSubmit must be independently safe.
+    const guard = canSubmit();
+    if (!guard.ok) {
+      blockOnConflict(guard.reason);
       return;
     }
     await fireSubmit(values);
@@ -602,6 +632,12 @@ export function BookingWizardModal({
   /** Save in edit mode without having to navigate to the final step. */
   const saveFromAnywhere = async () => {
     if (mode !== "edit") return;
+    // Guard: block if conflict fetch is unresolved or errored — same gate as onSubmit.
+    const guard = canSubmit();
+    if (!guard.ok) {
+      blockOnConflict(guard.reason);
+      return;
+    }
     // Validate every step's required fields before saving.
     for (let i = 0; i < STEPS.length; i += 1) {
       const ok = await validateStep(i);

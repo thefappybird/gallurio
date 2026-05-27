@@ -142,6 +142,7 @@ export function CalendarView({
     const spDate = searchParams.get("date") ?? "";
     const spTime = searchParams.get("time") ?? undefined;
     if (spAdd === "1") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: seeds local modal state from URL on mount (external → React sync)
       setAddState({ date: spDate, time: spTime, nonce: 0 });
     } else if (spEdit) {
       setEditState({ bookingId: spEdit });
@@ -168,6 +169,7 @@ export function CalendarView({
   useEffect(() => {
     const spEdit = searchParams.get("edit");
     if (spEdit && (!editState || editState.bookingId !== spEdit)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: mirrors URL ?edit= param into local modal state (external → React sync)
       setEditState({ bookingId: spEdit });
     } else if (!spEdit && editState) {
       // URL cleared externally (e.g. browser back) — close the wizard.
@@ -189,6 +191,7 @@ export function CalendarView({
   // If no initial clients were server-rendered, fetch on mount.
   useEffect(() => {
     if (!initialClients) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: fetches clients from API and sets state; async callback pattern avoids cascading renders
       refetchClients();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -207,6 +210,7 @@ export function CalendarView({
   useEffect(() => {
     if (view !== Views.WEEK) return;
     const mq = window.matchMedia("(max-width: 639px)");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs media query (external system) into React view state on mount only
     if (mq.matches) setView(Views.DAY);
   // Only run on mount — view changes thereafter are intentional.
   // eslint-disable-next-line react-hooks/exhaustive-deps

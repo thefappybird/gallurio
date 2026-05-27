@@ -7,6 +7,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import { differenceInCalendarDays, addDays, format } from "date-fns";
 import enMessages from "@/messages/en.json";
 import { BookingWizardModal } from "./booking-wizard-modal";
 
@@ -25,7 +26,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // ── Sonner toast stub ────────────────────────────────────────────────────────
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 const TARGET_DATE = "2026-05-24";
 
@@ -262,14 +263,9 @@ describe("Issue 4: start date shift preserves duration — date arithmetic", () 
     isSingle: boolean
   ): string {
     // Inline the same logic as the onChange handler.
-    const { differenceInCalendarDays: diff, addDays, format } = require("date-fns") as {
-      differenceInCalendarDays: (a: Date, b: Date) => number;
-      addDays: (d: Date, n: number) => Date;
-      format: (d: Date, fmt: string) => string;
-    };
     if (isSingle) return newStart;
     if (oldStart && oldEnd && newStart) {
-      const durDays = diff(new Date(oldEnd), new Date(oldStart));
+      const durDays = differenceInCalendarDays(new Date(oldEnd), new Date(oldStart));
       return format(addDays(new Date(newStart), Math.max(0, durDays)), "yyyy-MM-dd");
     }
     if (oldEnd && oldEnd < newStart) return newStart;
@@ -433,12 +429,10 @@ describe("BookingWizardModal — Issue 1A: conflict fires immediately on date ch
 // conflictsBySession correctly for the new (conflict-free) date.
 describe("BookingWizardModal — Issue 1B: warning clears when date has no conflict", () => {
   it("removes the conflict warning entirely when the user picks a conflict-free date", async () => {
-    let callCount = 0;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
         if (url.includes("/api/bookings/shifts-on-date")) {
-          callCount += 1;
           // First call (TARGET_DATE) returns a conflict; second call (CLEAR_DATE) returns none
           const date = new URL(url, "http://localhost").searchParams.get("date");
           const shifts = date === TARGET_DATE ? [CONFLICT_SHIFT] : [];
@@ -1209,6 +1203,169 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
       expect(createBtns.length).toBeGreaterThan(0);
       expect(createBtns[0]).not.toBeDisabled();
     });
+  });
+});
+
+// ── Issue 2 regression: onSubmit / saveFromAnywhere blocked by loadingDates / conflictCheckError ──
+//
+// Prior to the fix, onSubmit only checked conflictsBySession — it would fire a
+// POST/PATCH even while a conflict-check fetch was still in-flight or had errored.
+// canSubmit() is now the single gate for all three blocking conditions.
+describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is unresolved or errored", () => {
+  const TARGET_DATE_SUBMIT = "2026-07-15";
+
+  function renderEditWizardWithInitialValues() {
+    const initialValues = {
+      client: { mode: "existing" as const, clientId: "aaa", clientName: "Test Client" },
+      title: "Test Shoot",
+      eventType: "portrait" as const,
+      status: "booked" as const,
+      sessions: [
+        { startDate: "2026-07-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
+      ],
+      location: { address: "" },
+      amount: { total: 0, deposit: 0, currency: "PHP" as const },
+      notes: "",
+    };
+    return render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="edit"
+          bookingId="aabbccddeeff001122334477"
+          defaultCurrency="PHP"
+          initialValues={initialValues}
+          locale="en"
+        />
+      </NextIntlClientProvider>
+    );
+  }
+
+  it("save is blocked when conflict fetch is unresolved (loadingDates.size > 0)", async () => {
+    const { toast } = await import("sonner");
+    let resolveShiftFetch!: () => void;
+    const fetchNeverResolves = new Promise<void>((r) => {
+      resolveShiftFetch = r;
+    });
+
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        // Hang indefinitely — simulates an in-flight fetch that never resolves.
+        await fetchNeverResolves;
+        return { ok: true, json: async () => ({ shifts: [] }) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      if (init?.method === "PATCH") {
+        return { ok: true, json: async () => ({}) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    renderEditWizardWithInitialValues();
+
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    // Navigate to event step to trigger a date change that starts a fetch.
+    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Change the date to a new value — this triggers a fetch that never resolves.
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: TARGET_DATE_SUBMIT } });
+    });
+
+    // Wait for the loading indicator to confirm the fetch is in-flight.
+    await waitFor(() => {
+      expect(screen.getByText(/checking for conflicts/i)).toBeInTheDocument();
+    });
+
+    // Click the fast-save button — must be blocked.
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    // No PATCH should have fired.
+    const patchCalls = mockFetch.mock.calls.filter(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PATCH"
+    );
+    expect(patchCalls).toHaveLength(0);
+
+    // A toast.info should have been shown (checking conflicts message).
+    expect(toast.info).toHaveBeenCalled();
+
+    // Clean up — resolve the dangling fetch so the component can unmount cleanly.
+    resolveShiftFetch();
+  });
+
+  it("save is blocked when conflict fetch errored (conflictCheckError = true)", async () => {
+    const { toast } = await import("sonner");
+
+    const mockFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/bookings/shifts-on-date")) {
+        // Simulate a server error for the new date.
+        return { ok: false, json: async () => ({}) };
+      }
+      if (url.includes("/api/clients")) {
+        return { ok: true, json: async () => ({ clients: [] }) };
+      }
+      if (init?.method === "PATCH") {
+        return { ok: true, json: async () => ({}) };
+      }
+      return { ok: false, json: async () => ({}) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    renderEditWizardWithInitialValues();
+
+    await waitFor(() => {
+      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+    });
+
+    // Navigate to event step.
+    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    await act(async () => {
+      fireEvent.click(eventStepBtn);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Change date — triggers a fetch that returns a non-ok response, setting conflictCheckError.
+    const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(dateInput, { target: { value: TARGET_DATE_SUBMIT } });
+    });
+
+    // Wait for the conflict-check error state to settle (loading indicator gone, error state set).
+    await waitFor(() => {
+      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Click the fast-save button — must be blocked.
+    const saveBtn = screen.getByRole("button", { name: /save/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    // No PATCH should have fired.
+    const patchCalls = mockFetch.mock.calls.filter(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PATCH"
+    );
+    expect(patchCalls).toHaveLength(0);
+
+    // A toast.error should have been shown (conflict check failed message).
+    expect(toast.error).toHaveBeenCalled();
   });
 });
 

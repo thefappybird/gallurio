@@ -38,7 +38,7 @@ vi.mock("react-big-calendar/lib/addons/dragAndDrop", () => ({
 
 import { groupEventsForMonth, MonthBookingEvent } from "./booking-calendar";
 import type { CalendarEvent, OverflowEvent } from "./booking-calendar";
-import { formatTime, formatTimeRange } from "@/lib/utils/time-format";
+import { formatTimeRange } from "@/lib/utils/time-format";
 
 // Build a fixture CalendarEvent used across all tests.
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {

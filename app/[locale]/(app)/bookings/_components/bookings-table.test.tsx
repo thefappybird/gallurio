@@ -3,6 +3,8 @@ import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 
+const TEST_TZ = "UTC";
+
 /** Returns a date ISO string relative to today by `offsetDays`. */
 function relativeDate(offsetDays: number, hour = 10): string {
   const d = new Date();
@@ -69,7 +71,7 @@ const partiallyPastRow: BookingRow = {
 describe("BookingsTable", () => {
   it("renders rows with title, client, and money column", () => {
     renderWithProviders(
-      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" />
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
     expect(screen.getByText("Emma Carter")).toBeInTheDocument();
@@ -77,7 +79,7 @@ describe("BookingsTable", () => {
   });
 
   it("renders empty state when rows is empty", () => {
-    renderWithProviders(<BookingsTable rows={[]} locale="en" empty="No rows" />);
+    renderWithProviders(<BookingsTable rows={[]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />);
     expect(screen.getByText("No rows")).toBeInTheDocument();
   });
 
@@ -88,6 +90,7 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         showPast
+        workspaceTimezone={TEST_TZ}
       />
     );
     const cells = container.querySelectorAll("td");
@@ -105,6 +108,7 @@ describe("BookingsTable", () => {
         rows={[futureRow, pastRow]}
         locale="en"
         empty="No rows"
+        workspaceTimezone={TEST_TZ}
       />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
@@ -118,6 +122,7 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         showPast
+        workspaceTimezone={TEST_TZ}
       />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
@@ -131,6 +136,7 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No bookings"
         showPast={false}
+        workspaceTimezone={TEST_TZ}
       />
     );
     expect(screen.getByText("No bookings")).toBeInTheDocument();
@@ -140,7 +146,7 @@ describe("BookingsTable", () => {
 
   it("shows 'Past' pill for fully-past rows when showPast is true", () => {
     renderWithProviders(
-      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast />
+      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
     );
     // The pill text comes from the i18n key app.bookings.table.past
     expect(screen.getByText(/past/i)).toBeInTheDocument();
@@ -148,7 +154,7 @@ describe("BookingsTable", () => {
 
   it("does NOT show 'Past' pill for future rows", () => {
     renderWithProviders(
-      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast />
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
     );
     // There must be no element with text "Past" in the table rows
     const pastPills = screen.queryAllByText(/^past$/i);
@@ -159,7 +165,7 @@ describe("BookingsTable", () => {
 
   it("applies opacity-60 to fully-past rows", () => {
     const { container } = renderWithProviders(
-      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast />
+      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
     );
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.className).toMatch(/opacity-60/);
@@ -167,7 +173,7 @@ describe("BookingsTable", () => {
 
   it("does NOT apply opacity-60 to future rows", () => {
     const { container } = renderWithProviders(
-      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast />
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
     );
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.className).not.toMatch(/opacity-60/);
@@ -182,6 +188,7 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         showPast={false}
+        workspaceTimezone={TEST_TZ}
       />
     );
     expect(screen.getByText("Ongoing Multi-Day")).toBeInTheDocument();
@@ -194,6 +201,7 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         showPast={false}
+        workspaceTimezone={TEST_TZ}
       />
     );
     const rows = container.querySelectorAll("tbody tr");
@@ -207,9 +215,40 @@ describe("BookingsTable", () => {
         locale="en"
         empty="No rows"
         showPast
+        workspaceTimezone={TEST_TZ}
       />
     );
     const pastPills = screen.queryAllByText(/^past$/i);
     expect(pastPills).toHaveLength(0);
+  });
+
+  // ── workspaceTimezone prop ───────────────────────────────────────────────────
+
+  it("accepts Asia/Manila as workspaceTimezone without crashing", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow, pastRow]}
+        locale="en"
+        empty="No rows"
+        showPast
+        workspaceTimezone="Asia/Manila"
+      />
+    );
+    // Both rows visible when showPast is true
+    expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
+    expect(screen.getByText("Old Completed Shoot")).toBeInTheDocument();
+  });
+
+  it("defaults to UTC when workspaceTimezone is omitted", () => {
+    // Should not throw and should still correctly filter past rows
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow, pastRow]}
+        locale="en"
+        empty="No rows"
+      />
+    );
+    expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
+    expect(screen.queryByText("Old Completed Shoot")).not.toBeInTheDocument();
   });
 });

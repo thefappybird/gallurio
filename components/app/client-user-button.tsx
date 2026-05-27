@@ -7,6 +7,7 @@ export function ClientUserButton() {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sets mounted flag to suppress SSR hydration mismatch for Clerk UserButton
     setMounted(true);
   }, []);
 

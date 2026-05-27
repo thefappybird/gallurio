@@ -5,7 +5,6 @@ import {
   formatTime,
   formatTimeRange,
   TIME_INPUT_LANG,
-  type TimeMode,
 } from "./time-format";
 
 describe("DEFAULT_TIME_MODE", () => {

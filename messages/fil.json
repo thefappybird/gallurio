@@ -123,18 +123,42 @@
           "cancel": "Kanselahin",
           "viewErrors": "Tingnan ang {n} error(s)",
           "spec": {
-            "clientName": { "note": "Buong pangalan ng kliyente" },
-            "clientEmail": { "note": "Ginagamit para ma-deduplicate ang mga umiiral na kliyente" },
-            "startAt": { "note": "ISO 8601 — hal. 2026-06-15T09:00" },
-            "endAt": { "note": "Default sa startAt kung wala" },
-            "title": { "note": "Pamagat ng booking" },
-            "eventType": { "note": "kasal, corporate, portrait, atb." },
-            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
-            "amountTotal": { "note": "Kabuuang halaga ng booking" },
-            "amountDeposit": { "note": "Halaga ng deposito" },
-            "currency": { "note": "Default sa currency ng workspace" },
-            "locationAddress": { "note": "Venue o lokasyon" },
-            "notes": { "note": "Mga panloob na tala" }
+            "clientName": {
+              "note": "Buong pangalan ng kliyente"
+            },
+            "clientEmail": {
+              "note": "Ginagamit para ma-deduplicate ang mga umiiral na kliyente"
+            },
+            "startAt": {
+              "note": "ISO 8601 — hal. 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "Default sa startAt kung wala"
+            },
+            "title": {
+              "note": "Pamagat ng booking"
+            },
+            "eventType": {
+              "note": "kasal, corporate, portrait, atb."
+            },
+            "status": {
+              "note": "inquiry, quoted, booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "Kabuuang halaga ng booking"
+            },
+            "amountDeposit": {
+              "note": "Halaga ng deposito"
+            },
+            "currency": {
+              "note": "Default sa currency ng workspace"
+            },
+            "locationAddress": {
+              "note": "Venue o lokasyon"
+            },
+            "notes": {
+              "note": "Mga panloob na tala"
+            }
           }
         }
       },
@@ -411,7 +435,8 @@
         "customize": "I-customize",
         "workspace": "Workspace",
         "publicPage": "Pampublikong pahina",
-        "danger": "Danger zone"
+        "danger": "Danger zone",
+        "switchWorkspace": "Palitan ang Workspace"
       },
       "workspace": {
         "businessSection": "Mga detalye ng negosyo",

@@ -1254,8 +1254,8 @@ function BookingTabs({
 
   const [showPast, setShowPast] = useState(false);
 
-  const allSessions = booking?.sessions ?? [];
   const { upcomingSessions, pastSessions } = useMemo(() => {
+    const allSessions = booking?.sessions ?? [];
     const upcoming: SessionDoc[] = [];
     const past: SessionDoc[] = [];
     for (const s of allSessions) {
@@ -1270,7 +1270,7 @@ function BookingTabs({
     upcoming.sort(byStartAt);
     past.sort(byStartAt);
     return { upcomingSessions: upcoming, pastSessions: past };
-  }, [allSessions]);
+  }, [booking?.sessions]);
 
   const hasPastSessions = pastSessions.length > 0;
   const visibleSessions = showPast

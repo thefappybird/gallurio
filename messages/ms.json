@@ -123,18 +123,42 @@
           "cancel": "Batal",
           "viewErrors": "Lihat {n} ralat",
           "spec": {
-            "clientName": { "note": "Nama penuh pelanggan" },
-            "clientEmail": { "note": "Digunakan untuk menyahdupl pelanggan sedia ada" },
-            "startAt": { "note": "ISO 8601 — cth. 2026-06-15T09:00" },
-            "endAt": { "note": "Lalai ke startAt jika ditinggalkan" },
-            "title": { "note": "Tajuk tempahan" },
-            "eventType": { "note": "perkahwinan, korporat, potret, dsb." },
-            "status": { "note": "inquiry, quoted, booked, completed, cancelled" },
-            "amountTotal": { "note": "Jumlah tempahan keseluruhan" },
-            "amountDeposit": { "note": "Jumlah deposit" },
-            "currency": { "note": "Lalai ke mata wang ruang kerja" },
-            "locationAddress": { "note": "Venue atau teks lokasi" },
-            "notes": { "note": "Nota dalaman" }
+            "clientName": {
+              "note": "Nama penuh pelanggan"
+            },
+            "clientEmail": {
+              "note": "Digunakan untuk menyahdupl pelanggan sedia ada"
+            },
+            "startAt": {
+              "note": "ISO 8601 — cth. 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "Lalai ke startAt jika ditinggalkan"
+            },
+            "title": {
+              "note": "Tajuk tempahan"
+            },
+            "eventType": {
+              "note": "perkahwinan, korporat, potret, dsb."
+            },
+            "status": {
+              "note": "inquiry, quoted, booked, completed, cancelled"
+            },
+            "amountTotal": {
+              "note": "Jumlah tempahan keseluruhan"
+            },
+            "amountDeposit": {
+              "note": "Jumlah deposit"
+            },
+            "currency": {
+              "note": "Lalai ke mata wang ruang kerja"
+            },
+            "locationAddress": {
+              "note": "Venue atau teks lokasi"
+            },
+            "notes": {
+              "note": "Nota dalaman"
+            }
           }
         }
       },
@@ -411,7 +435,8 @@
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
         "publicPage": "Halaman awam",
-        "danger": "Zon berbahaya"
+        "danger": "Zon berbahaya",
+        "switchWorkspace": "Tukar Ruang Kerja"
       },
       "workspace": {
         "businessSection": "Butiran perniagaan",

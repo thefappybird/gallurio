@@ -46,6 +46,7 @@ export function BrandingStepForm({
     defaultValues: defaults,
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is non-memoizable; React Compiler skips this component intentionally
   const primary = watch("primaryColor");
   const secondary = watch("secondaryColor");
 

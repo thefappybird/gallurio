@@ -286,4 +286,31 @@ describe("GET /api/bookings/export", () => {
     expect(body).toContain('"Smith, Jr. Wedding"');
     expect(body).toContain(`"She said ""beautiful"""`);
   });
+
+  it("returns 413 when booking count exceeds 10,000", async () => {
+    // Use the top-level Booking import (same module instance the route uses).
+    const spy = vi.spyOn(Booking, "countDocuments").mockResolvedValueOnce(10_001 as never);
+
+    try {
+      const res = await callExport();
+      expect(res.status).toBe(413);
+      const body = await res.json();
+      expect(body.error).toMatch(/Too many bookings/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("does not truncate when count is exactly 10,000", async () => {
+    // countDocuments returns exactly 10_000 — should proceed and return CSV.
+    await seedBooking(WS_A);
+    const spy = vi.spyOn(Booking, "countDocuments").mockResolvedValueOnce(10_000 as never);
+
+    try {
+      const res = await callExport();
+      expect(res.status).toBe(200);
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

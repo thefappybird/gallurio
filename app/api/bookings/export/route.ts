@@ -56,9 +56,20 @@ export async function GET(req: Request) {
     filter.firstSessionStart = range;
   }
 
+  const EXPORT_ROW_LIMIT = 10_000;
+  const total = await Booking.countDocuments(filter);
+  if (total > EXPORT_ROW_LIMIT) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many bookings to export at once. Use date range or status filters to narrow the export.",
+      },
+      { status: 413 }
+    );
+  }
+
   const bookings = await Booking.find(filter)
     .sort({ firstSessionStart: 1, _id: 1 })
-    .limit(10_000)
     .lean();
 
   // Build email lookup from referenced clients — bookings store clientId, not email.

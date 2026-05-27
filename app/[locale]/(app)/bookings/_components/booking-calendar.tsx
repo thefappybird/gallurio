@@ -373,12 +373,13 @@ export function MonthBookingEvent({
 
 /** Week/day view: three-line stacked — title / client / time range. */
 function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+  // Hooks must be called unconditionally before any early return.
+  const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
   // Overflow events never appear in week/day view (only month view produces them).
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
   const ev = event as CalendarEvent;
-  const ctx = useContext(CalendarToolbarCtx);
-  const t = useTranslations("app.bookings.calendar");
   const bg = STATUS_COLOR[ev.status];
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
