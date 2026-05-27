@@ -6,7 +6,7 @@ import { DeactivateClientDialog } from "./deactivate-client-dialog";
 vi.mock("@/lib/actions/clients", () => ({
   deactivateClientAction: vi.fn().mockResolvedValue({ ok: true }),
 }));
-vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { loading: vi.fn(() => "toast-id"), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() } }));
 
 describe("DeactivateClientDialog", () => {
   const defaultProps = {
