@@ -11,7 +11,16 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DangerPanel } from "../danger/_panel";
 import { TeamsPanel } from "../teams/_panel";
-import { Team, type TeamDoc } from "@/lib/db/models";
+import {
+  Team,
+  TeamMembership,
+  User,
+  PendingTeamAssignment,
+  type TeamDoc,
+  type TeamMembershipDoc,
+  type UserDoc,
+  type PendingTeamAssignmentDoc,
+} from "@/lib/db/models";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import type {
   UpdateWorkspaceBusinessInput,
@@ -61,7 +70,54 @@ export default async function SettingsCatchallPage({
     memberCount: t.memberCount ?? 0,
   }));
 
-  const { maxTeams } = planEntitlements(workspace.plan as "free" | "starter" | "pro");
+  const { maxTeams, maxMembersPerTeam } = planEntitlements(
+    workspace.plan as "free" | "starter" | "pro",
+  );
+
+  // Pull workspace members + their team assignments in parallel. Only run for
+  // the owner role since non-owners can't reach this slug (notFound above).
+  const [memberUsers, memberships, pendingInviteRows] =
+    role === "owner"
+      ? await Promise.all([
+          User.find({ "memberships.workspaceId": workspace._id })
+            .select({ clerkUserId: 1, email: 1, name: 1, avatarUrl: 1 })
+            .lean<UserDoc[]>(),
+          TeamMembership.find({ workspaceId: workspace._id })
+            .select({ clerkUserId: 1, teamId: 1, role: 1 })
+            .lean<TeamMembershipDoc[]>(),
+          PendingTeamAssignment.find({ workspaceId: workspace._id })
+            .sort({ createdAt: -1 })
+            .lean<PendingTeamAssignmentDoc[]>(),
+        ])
+      : [[], [], []];
+
+  const membershipsByUser = new Map<
+    string,
+    { teamId: string; role: "member" | "lead" }[]
+  >();
+  for (const m of memberships) {
+    const list = membershipsByUser.get(m.clerkUserId) ?? [];
+    list.push({
+      teamId: String(m.teamId),
+      role: (m.role ?? "member") as "member" | "lead",
+    });
+    membershipsByUser.set(m.clerkUserId, list);
+  }
+
+  const members = memberUsers.map((u) => ({
+    clerkUserId: u.clerkUserId,
+    email: u.email,
+    name: u.name ?? "",
+    avatarUrl: u.avatarUrl ?? null,
+    teams: membershipsByUser.get(u.clerkUserId) ?? [],
+  }));
+
+  const pendingInvites = pendingInviteRows.map((p) => ({
+    email: p.email,
+    teamIds: (p.teamIds ?? []).map((id) => String(id)),
+    leadOnTeamIds: (p.leadOnTeamIds ?? []).map((id) => String(id)),
+    invitedAt: (p as { createdAt?: Date }).createdAt?.toISOString() ?? "",
+  }));
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
@@ -120,6 +176,10 @@ export default async function SettingsCatchallPage({
           teams={teams}
           plan={workspace.plan as "free" | "starter" | "pro"}
           maxTeams={maxTeams}
+          maxMembersPerTeam={maxMembersPerTeam}
+          members={members}
+          pendingInvites={pendingInvites}
+          ownerClerkUserId={workspace.ownerUserId}
         />
       </CustomPage>
       <CustomPage

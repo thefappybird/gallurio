@@ -151,6 +151,85 @@
           "renamed": "Pasukan telah dinamakan semula.",
           "colorChanged": "Warna telah dikemas kini.",
           "deleted": "Pasukan telah dipadamkan."
+        },
+        "teamsHeading": "Pasukan",
+        "invite": {
+          "button": "Jemput ahli",
+          "dialog": {
+            "title": "Jemput rakan sepasukan",
+            "description": "Mereka akan menerima e-mel daripada Clerk. Setelah menerima, mereka akan muncul dalam senarai ahli anda dan ditugaskan ke pasukan yang anda pilih.",
+            "emailLabel": "Alamat e-mel",
+            "emailPlaceholder": "rakansekerja@contoh.com",
+            "teamsLabel": "Tambah ke pasukan ini",
+            "leadLabel": "Ketua",
+            "teamFull": "Penuh",
+            "submit": "Hantar jemputan",
+            "sending": "Menghantar…"
+          },
+          "errors": {
+            "emailRequired": "Masukkan alamat e-mel yang sah.",
+            "pickAtLeastOneTeam": "Pilih sekurang-kurangnya satu pasukan untuk menambahkan mereka.",
+            "teamFull": "Pasukan-pasukan ini penuh dan tidak boleh menerima ahli baru: {teams}.",
+            "teamNotFound": "Salah satu pasukan yang dipilih tidak dijumpai.",
+            "alreadyInvitedOrMember": "E-mel tersebut sudah mempunyai jemputan atau sudah menjadi ahli ruang kerja.",
+            "noTeamsExist": "Buat pasukan dahulu sebelum menjemput ahli."
+          },
+          "toasts": {
+            "sent": "Jemputan dihantar.",
+            "revoked": "Jemputan dibatalkan."
+          },
+          "revokeDialog": {
+            "title": "Batalkan jemputan?",
+            "description": "Jemputan untuk {email} akan dibatalkan dan tempat pasukan yang ditempah akan dilepaskan.",
+            "confirm": "Batalkan jemputan"
+          }
+        },
+        "members": {
+          "heading": "Ahli",
+          "empty": "Belum ada rakan sepasukan. Jemput seseorang di atas untuk bermula.",
+          "ownerBadge": "Pemilik",
+          "leadBadge": "Ketua",
+          "pendingBadge": "Belum selesai",
+          "manageTeams": "Urus pasukan",
+          "removeFromWorkspace": "Buang dari ruang kerja",
+          "revokeInvite": "Batalkan jemputan",
+          "rowActionsLabel": "Tindakan untuk {name}",
+          "removeDialog": {
+            "title": "Buang ahli?",
+            "description": "{name} akan kehilangan akses ke ruang kerja ini dengan serta-merta. Tempahan mereka kekal; tempat pasukan dilepaskan. Ini tidak boleh dibatalkan.",
+            "confirm": "Buang ahli"
+          },
+          "errors": {
+            "cannotRemoveOwner": "Pemilik ruang kerja tidak boleh dibuang."
+          },
+          "toasts": {
+            "removed": "Ahli telah dibuang."
+          }
+        },
+        "assignment": {
+          "dialog": {
+            "title": "Urus penugasan pasukan",
+            "description": "Tambah atau buang {name} daripada pasukan. Togol bendera ketua untuk memberikan mereka hak mengedit dalam pasukan.",
+            "add": "Tambah",
+            "remove": "Buang",
+            "done": "Selesai"
+          },
+          "errors": {
+            "alreadyOnTeam": "Ahli tersebut sudah berada dalam pasukan ini."
+          },
+          "toasts": {
+            "added": "Ditambah ke pasukan.",
+            "removed": "Dibuang daripada pasukan.",
+            "promoted": "Dinaikkan pangkat menjadi ketua.",
+            "demoted": "Diturunkan pangkat menjadi ahli."
+          }
+        },
+        "downgradeBlock": {
+          "title": "Penurunan taraf disekat",
+          "description": "Anda berada pada pelan {currentPlan} dengan lebih banyak pasukan berbanding yang dibenarkan oleh pelan {targetPlan} ({maxTeams} maksimum). Padam {excess} pasukan sebelum menukar pelan.",
+          "teamsHeading": "Pasukan semasa",
+          "dismiss": "Faham",
+          "manageTeams": "Urus pasukan"
         }
       },
       "publicPage": {

@@ -385,6 +385,85 @@
           "renamed": "Team renamed.",
           "colorChanged": "Color updated.",
           "deleted": "Team deleted."
+        },
+        "teamsHeading": "Teams",
+        "invite": {
+          "button": "Invite member",
+          "dialog": {
+            "title": "Invite a teammate",
+            "description": "They'll get an email from Clerk. Once they accept, they'll appear in your member list assigned to the teams you choose.",
+            "emailLabel": "Email address",
+            "emailPlaceholder": "teammate@example.com",
+            "teamsLabel": "Add to these teams",
+            "leadLabel": "Lead",
+            "teamFull": "Full",
+            "submit": "Send invite",
+            "sending": "Sending…"
+          },
+          "errors": {
+            "emailRequired": "Enter a valid email address.",
+            "pickAtLeastOneTeam": "Pick at least one team to add them to.",
+            "teamFull": "These teams are full and can't accept new members: {teams}.",
+            "teamNotFound": "One of the selected teams was not found.",
+            "alreadyInvitedOrMember": "That email already has an invite or is already a workspace member.",
+            "noTeamsExist": "Create a team first before inviting members."
+          },
+          "toasts": {
+            "sent": "Invite sent.",
+            "revoked": "Invite revoked."
+          },
+          "revokeDialog": {
+            "title": "Revoke invite?",
+            "description": "The invite for {email} will be cancelled and the reserved team seats will be released.",
+            "confirm": "Revoke invite"
+          }
+        },
+        "members": {
+          "heading": "Members",
+          "empty": "No teammates yet. Invite someone above to get started.",
+          "ownerBadge": "Owner",
+          "leadBadge": "Lead",
+          "pendingBadge": "Pending",
+          "manageTeams": "Manage teams",
+          "removeFromWorkspace": "Remove from workspace",
+          "revokeInvite": "Revoke invite",
+          "rowActionsLabel": "Actions for {name}",
+          "removeDialog": {
+            "title": "Remove member?",
+            "description": "{name} will lose access to this workspace immediately. Their bookings stay; team seats are released. This cannot be undone.",
+            "confirm": "Remove member"
+          },
+          "errors": {
+            "cannotRemoveOwner": "The workspace owner can't be removed."
+          },
+          "toasts": {
+            "removed": "Member removed."
+          }
+        },
+        "assignment": {
+          "dialog": {
+            "title": "Manage team assignments",
+            "description": "Add or remove {name} from teams. Toggle the lead flag to give them edit rights within a team.",
+            "add": "Add",
+            "remove": "Remove",
+            "done": "Done"
+          },
+          "errors": {
+            "alreadyOnTeam": "That member is already on this team."
+          },
+          "toasts": {
+            "added": "Added to team.",
+            "removed": "Removed from team.",
+            "promoted": "Promoted to lead.",
+            "demoted": "Demoted to member."
+          }
+        },
+        "downgradeBlock": {
+          "title": "Downgrade blocked",
+          "description": "You're on the {currentPlan} plan with more teams than the {targetPlan} plan allows ({maxTeams} max). Delete {excess} team(s) before changing plans.",
+          "teamsHeading": "Current teams",
+          "dismiss": "Got it",
+          "manageTeams": "Manage teams"
         }
       },
       "publicPage": {

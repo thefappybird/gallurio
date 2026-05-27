@@ -55,6 +55,10 @@ function renderPanel(overrides?: Partial<Parameters<typeof TeamsPanel>[0]>) {
       teams={[DEFAULT_TEAM, REGULAR_TEAM]}
       plan="starter"
       maxTeams={3}
+      maxMembersPerTeam={10}
+      members={[]}
+      pendingInvites={[]}
+      ownerClerkUserId="user_owner_test"
       {...overrides}
     />
   );
@@ -67,8 +71,10 @@ describe("TeamsPanel", () => {
 
   it("renders the section title", () => {
     renderPanel();
-    // en.json: app.settings.teams.title = "Teams"
-    expect(screen.getByRole("heading", { name: "Teams" })).toBeInTheDocument();
+    // en.json: app.settings.teams.title = "Teams" — the h2 title. The page also
+    // has an h3 "Teams" subheading above the teams list (teamsHeading key), so
+    // we scope the lookup to h2.
+    expect(screen.getByRole("heading", { level: 2, name: "Teams" })).toBeInTheDocument();
   });
 
   it("renders the Create team button", () => {
@@ -79,9 +85,7 @@ describe("TeamsPanel", () => {
   });
 
   it("shows empty state when teams list is empty", () => {
-    renderWithProviders(
-      <TeamsPanel teams={[]} plan="starter" maxTeams={3} />
-    );
+    renderPanel({ teams: [] });
     // en.json: app.settings.teams.listEmpty = "You don't have any teams yet."
     expect(
       screen.getByText("You don't have any teams yet.")

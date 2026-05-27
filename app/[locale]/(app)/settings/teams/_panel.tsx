@@ -30,6 +30,9 @@ import {
   setTeamColorAction,
   deleteTeamAction,
 } from "./_actions";
+import { InviteForm, type InvitableTeam } from "./_components/invite-form";
+import { MemberList, type PendingInviteRow } from "./_components/member-list";
+import type { MemberSummary } from "./_components/team-assignment-modal";
 
 const TEAM_COLOR_PALETTE = [
   "#0d7377",
@@ -52,6 +55,10 @@ type TeamsPanelProps = {
   teams: Team[];
   plan: "free" | "starter" | "pro";
   maxTeams: number;
+  maxMembersPerTeam: number;
+  members: MemberSummary[];
+  pendingInvites: PendingInviteRow[];
+  ownerClerkUserId: string;
 };
 
 type OptimisticAction =
@@ -629,7 +636,15 @@ function TeamRow({
 
 // --- Main Panel ---
 
-export function TeamsPanel({ teams: initialTeams, plan, maxTeams }: TeamsPanelProps) {
+export function TeamsPanel({
+  teams: initialTeams,
+  plan,
+  maxTeams,
+  maxMembersPerTeam,
+  members,
+  pendingInvites,
+  ownerClerkUserId,
+}: TeamsPanelProps) {
   const t = useTranslations("app.settings.teams");
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -650,6 +665,14 @@ export function TeamsPanel({ teams: initialTeams, plan, maxTeams }: TeamsPanelPr
     }
   }, [atCap]);
 
+  const invitableTeams: InvitableTeam[] = optimisticTeams.map((team) => ({
+    id: team.id,
+    name: team.name,
+    color: team.color,
+    memberCount: team.memberCount,
+    maxMembersPerTeam,
+  }));
+
   return (
     <div className="flex flex-col gap-8">
       {/* Header + action bar */}
@@ -658,21 +681,35 @@ export function TeamsPanel({ teams: initialTeams, plan, maxTeams }: TeamsPanelPr
           <h2 className="text-lg font-semibold">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
-        <Button
-          onClick={handleCreateClick}
-          className="shrink-0"
-          variant="outline"
-        >
-          {t("createButton")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <InviteForm teams={invitableTeams} />
+          <Button
+            onClick={handleCreateClick}
+            className="shrink-0"
+            variant="outline"
+          >
+            {t("createButton")}
+          </Button>
+        </div>
       </div>
 
+      {/* Member list */}
+      <MemberList
+        members={members}
+        pendingInvites={pendingInvites}
+        teams={invitableTeams}
+        ownerClerkUserId={ownerClerkUserId}
+      />
+
       {/* Team list */}
-      <div>
+      <div id="teams-list" className="flex flex-col gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t("teamsHeading")}
+        </h3>
         {optimisticTeams.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("listEmpty")}</p>
         ) : (
-          <div>
+          <div className="border border-border">
             {optimisticTeams.map((team) => (
               <TeamRow
                 key={team.id}

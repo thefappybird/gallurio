@@ -18,3 +18,8 @@ export { Transaction, type TransactionDoc } from "./Transaction";
 export { ActivityLog, type ActivityLogDoc } from "./ActivityLog";
 export { Team, TEAM_COLOR_PALETTE, ensureDefaultTeam, type TeamDoc } from "./team";
 export { TeamMembership, TEAM_MEMBERSHIP_ROLES, type TeamMembershipDoc } from "./teamMembership";
+export {
+  PendingTeamAssignment,
+  PENDING_INVITE_TTL_SECONDS,
+  type PendingTeamAssignmentDoc,
+} from "./pendingTeamAssignment";

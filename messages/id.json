@@ -151,6 +151,85 @@
           "renamed": "Tim berhasil diganti nama.",
           "colorChanged": "Warna berhasil diperbarui.",
           "deleted": "Tim berhasil dihapus."
+        },
+        "teamsHeading": "Tim",
+        "invite": {
+          "button": "Undang anggota",
+          "dialog": {
+            "title": "Undang rekan kerja",
+            "description": "Mereka akan mendapatkan email dari Clerk. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke tim yang Anda pilih.",
+            "emailLabel": "Alamat email",
+            "emailPlaceholder": "rekankerja@contoh.com",
+            "teamsLabel": "Tambahkan ke tim ini",
+            "leadLabel": "Lead",
+            "teamFull": "Penuh",
+            "submit": "Kirim undangan",
+            "sending": "Mengirim…"
+          },
+          "errors": {
+            "emailRequired": "Masukkan alamat email yang valid.",
+            "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
+            "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+            "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
+            "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
+            "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
+          },
+          "toasts": {
+            "sent": "Undangan terkirim.",
+            "revoked": "Undangan dicabut."
+          },
+          "revokeDialog": {
+            "title": "Cabut undangan?",
+            "description": "Undangan untuk {email} akan dibatalkan dan kursi tim yang telah dipesan akan dibebaskan.",
+            "confirm": "Cabut undangan"
+          }
+        },
+        "members": {
+          "heading": "Anggota",
+          "empty": "Belum ada rekan kerja. Undang seseorang di atas untuk memulai.",
+          "ownerBadge": "Pemilik",
+          "leadBadge": "Lead",
+          "pendingBadge": "Menunggu",
+          "manageTeams": "Kelola tim",
+          "removeFromWorkspace": "Hapus dari ruang kerja",
+          "revokeInvite": "Cabut undangan",
+          "rowActionsLabel": "Tindakan untuk {name}",
+          "removeDialog": {
+            "title": "Hapus anggota?",
+            "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
+            "confirm": "Hapus anggota"
+          },
+          "errors": {
+            "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus."
+          },
+          "toasts": {
+            "removed": "Anggota dihapus."
+          }
+        },
+        "assignment": {
+          "dialog": {
+            "title": "Kelola penugasan tim",
+            "description": "Tambahkan atau hapus {name} dari tim. Aktifkan tanda lead untuk memberi mereka hak edit di dalam tim.",
+            "add": "Tambahkan",
+            "remove": "Hapus",
+            "done": "Selesai"
+          },
+          "errors": {
+            "alreadyOnTeam": "Anggota tersebut sudah ada di tim ini."
+          },
+          "toasts": {
+            "added": "Ditambahkan ke tim.",
+            "removed": "Dihapus dari tim.",
+            "promoted": "Dipromosikan menjadi lead.",
+            "demoted": "Diturunkan menjadi anggota."
+          }
+        },
+        "downgradeBlock": {
+          "title": "Downgrade diblokir",
+          "description": "Anda berada di paket {currentPlan} dengan lebih banyak tim daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} tim sebelum mengganti paket.",
+          "teamsHeading": "Tim saat ini",
+          "dismiss": "Mengerti",
+          "manageTeams": "Kelola tim"
         }
       },
       "publicPage": {

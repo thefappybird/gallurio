@@ -33,3 +33,48 @@ export const deleteTeamSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
 });
 export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;
+
+export const inviteMemberSchema = z
+  .object({
+    email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+    teamIds: z
+      .array(z.string().min(1))
+      .min(1, "Pick at least one team")
+      .max(15, "Too many teams selected"),
+    leadOnTeamIds: z.array(z.string().min(1)).default([]),
+  })
+  .refine(
+    (v) => v.leadOnTeamIds.every((id) => v.teamIds.includes(id)),
+    { message: "Lead flag can only be set on selected teams", path: ["leadOnTeamIds"] },
+  );
+export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
+
+export const assignMemberToTeamSchema = z.object({
+  clerkUserId: z.string().min(1),
+  teamId: z.string().min(1),
+  role: z.enum(["member", "lead"]).default("member"),
+});
+export type AssignMemberToTeamInput = z.infer<typeof assignMemberToTeamSchema>;
+
+export const removeMemberFromTeamSchema = z.object({
+  clerkUserId: z.string().min(1),
+  teamId: z.string().min(1),
+});
+export type RemoveMemberFromTeamInput = z.infer<typeof removeMemberFromTeamSchema>;
+
+export const setLeadFlagSchema = z.object({
+  clerkUserId: z.string().min(1),
+  teamId: z.string().min(1),
+  isLead: z.boolean(),
+});
+export type SetLeadFlagInput = z.infer<typeof setLeadFlagSchema>;
+
+export const removeMemberFromWorkspaceSchema = z.object({
+  clerkUserId: z.string().min(1),
+});
+export type RemoveMemberFromWorkspaceInput = z.infer<typeof removeMemberFromWorkspaceSchema>;
+
+export const revokeInviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+export type RevokeInviteInput = z.infer<typeof revokeInviteSchema>;

@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, User, type PlanTier } from "@/lib/db/models";
@@ -39,5 +39,40 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<ActionResul
   );
 
   revalidatePath("/onboarding/done");
+  return { ok: true };
+}
+
+// Dev-only invite shortcut: fires a Clerk organization invitation directly,
+// skipping the seat-reservation + PendingTeamAssignment plumbing. Useful when
+// iterating on member-side UI (sidebar filtering, /bookings as a member,
+// proxy redirects) without round-tripping the full invite flow. Hard-blocked
+// in production by the NODE_ENV gate. Real invites must go through
+// inviteMemberAction in app/.../settings/teams/_invite-action.ts.
+export async function devSeedMemberAction(email: string): Promise<ActionResult> {
+  if (process.env.NODE_ENV === "production") {
+    return { error: "Not available in production" };
+  }
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !trimmed.includes("@")) {
+    return { error: "Enter a valid email address" };
+  }
+
+  const session = await auth();
+  if (!session.userId) return { error: "Not authenticated" };
+  if (!session.orgId) return { error: "No active workspace" };
+
+  try {
+    const clerk = await clerkClient();
+    await clerk.organizations.createOrganizationInvitation({
+      organizationId: session.orgId,
+      emailAddress: trimmed,
+      role: "org:member",
+      inviterUserId: session.userId,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Invite failed";
+    return { error: message };
+  }
+
   return { ok: true };
 }

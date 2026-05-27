@@ -25,7 +25,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
-const NAV = [
+const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
@@ -33,9 +33,19 @@ const NAV = [
   { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
 ];
 
-export function AppSidebar() {
+const MEMBER_NAV = [
+  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
+];
+
+type AppSidebarProps = {
+  role: "owner" | "staff";
+};
+
+export function AppSidebar({ role }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const isOwner = role === "owner";
+  const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
   return (
     <Sidebar collapsible="icon">
@@ -60,7 +70,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map(({ href, labelKey, icon: Icon }) => {
+              {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);
                 return (
                   <SidebarMenuItem key={href}>
@@ -86,12 +96,14 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <ThemeToggle />
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton render={<Link href="/settings" />} tooltip={t("settings")}>
-              <SettingsIcon />
-              <span>{t("settings")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isOwner && (
+            <SidebarMenuItem>
+              <SidebarMenuButton render={<Link href="/settings" />} tooltip={t("settings")}>
+                <SettingsIcon />
+                <span>{t("settings")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5">
               <UserButton

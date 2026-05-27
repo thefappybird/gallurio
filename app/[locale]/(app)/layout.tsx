@@ -9,7 +9,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireOrg();
+  const { role } = await requireOrg();
 
   const cookieStore = await cookies();
   const sidebarState = cookieStore.get("sidebar_state");
@@ -17,7 +17,7 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar />
+      <AppSidebar role={role} />
       <div className="flex flex-1 flex-col min-w-0">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />

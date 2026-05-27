@@ -13,7 +13,14 @@ const teamMembershipSchema = new Schema(
 );
 
 teamMembershipSchema.index({ workspaceId: 1, clerkUserId: 1 });
-teamMembershipSchema.index({ teamId: 1, clerkUserId: 1 }, { unique: true });
+// Convention: every compound index starts with workspaceId. The narrower
+// {teamId, clerkUserId} would also be unique because every teamId belongs to
+// exactly one workspaceId, but the tenant-first ordering satisfies the
+// project-wide index rule.
+teamMembershipSchema.index(
+  { workspaceId: 1, teamId: 1, clerkUserId: 1 },
+  { unique: true },
+);
 
 export type TeamMembershipDoc = InferSchemaType<typeof teamMembershipSchema> & {
   _id: mongoose.Types.ObjectId;
