@@ -9,15 +9,17 @@ import { ViewToggle, type BookingsView } from "./_components/view-toggle";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
 import { TableBookingManager } from "./_components/table-booking-manager";
 import {
-  BookingsTable,
   type BookingRow,
 } from "./_components/bookings-table";
+import { BookingsPageClient } from "./_components/bookings-page-client";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
 import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 type ClientHit = {
   id: string;
@@ -50,6 +52,8 @@ type SearchParams = {
   detail?: string;
   add?: string;
   edit?: string;
+  page?: string;
+  limit?: string;
 };
 
 export default async function BookingsPage({
@@ -70,13 +74,27 @@ export default async function BookingsPage({
   const sp = await searchParams;
   const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
 
-  const bookings = await listBookings(workspace._id, {
+  // Parse pagination params (table view only).
+  const parsedPage = Number.parseInt(sp.page ?? "1", 10);
+  const tablePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
+  const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+
+  const filters = {
     status: sp.status ?? null,
     q: sp.q ?? null,
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
-  });
+  };
+
+  // Calendar view: fetch all bookings (no pagination) for event splitting.
+  // Table view: fetch only one page of bookings.
+  const { rows: bookings, total: bookingsTotal } = await listBookings(
+    workspace._id,
+    filters,
+    view === "table" ? { page: tablePage, limit: tableLimit } : undefined
+  );
 
   // Fetch all clients for the workspace — used by the booking wizard's
   // client picker. Limit 1000 covers all realistic workspace sizes and avoids
@@ -226,8 +244,11 @@ export default async function BookingsPage({
           }}
         />
       ) : (
-        <BookingsTable
+        <BookingsPageClient
           rows={rows}
+          total={bookingsTotal}
+          page={tablePage}
+          limit={tableLimit}
           locale={locale}
           empty={t("table.empty")}
           showPast={sp.showPast === "1"}

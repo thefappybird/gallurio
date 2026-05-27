@@ -65,8 +65,9 @@ describe("listBookings", () => {
     await seedBooking(workspaceId, { startAt: days(1) });
     await seedBooking(workspaceId, { startAt: days(3) });
 
-    const rows = await listBookings(workspaceId);
+    const { rows, total } = await listBookings(workspaceId);
     expect(rows).toHaveLength(3);
+    expect(total).toBe(3);
     expect(rows[0].firstSessionStart.getTime()).toBeLessThan(rows[1].firstSessionStart.getTime());
     expect(rows[1].firstSessionStart.getTime()).toBeLessThan(rows[2].firstSessionStart.getTime());
   });
@@ -75,7 +76,7 @@ describe("listBookings", () => {
     await seedBooking(workspaceId, { status: "booked" });
     await seedBooking(workspaceId, { status: "cancelled" });
 
-    const rows = await listBookings(workspaceId);
+    const { rows } = await listBookings(workspaceId);
     expect(rows).toHaveLength(1);
     expect(rows[0].status).toBe("booked");
   });
@@ -84,7 +85,7 @@ describe("listBookings", () => {
     await seedBooking(workspaceId, { status: "booked" });
     await seedBooking(workspaceId, { status: "cancelled" });
 
-    const rows = await listBookings(workspaceId, { includeCancelled: true });
+    const { rows } = await listBookings(workspaceId, { includeCancelled: true });
     expect(rows).toHaveLength(2);
   });
 
@@ -93,7 +94,7 @@ describe("listBookings", () => {
     await seedBooking(workspaceId, { status: "booked" });
     await seedBooking(workspaceId, { status: "inquiry" });
 
-    const rows = await listBookings(workspaceId, { status: "quoted" });
+    const { rows } = await listBookings(workspaceId, { status: "quoted" });
     expect(rows).toHaveLength(1);
     expect(rows[0].status).toBe("quoted");
   });
@@ -103,7 +104,7 @@ describe("listBookings", () => {
     await seedBooking(workspaceId, { startAt: days(5) });
     await seedBooking(workspaceId, { startAt: days(15) });
 
-    const rows = await listBookings(workspaceId, {
+    const { rows } = await listBookings(workspaceId, {
       from: days(0),
       to: days(10),
     });
@@ -124,20 +125,48 @@ describe("listBookings", () => {
       location: { address: "100 carter Ave" },
     });
 
-    const rows = await listBookings(workspaceId, { q: "carter" });
+    const { rows } = await listBookings(workspaceId, { q: "carter" });
     expect(rows).toHaveLength(2);
   });
 
   it("escapes regex special chars in search", async () => {
     await seedBooking(workspaceId, { title: "Wedding (Outdoor)" });
-    const rows = await listBookings(workspaceId, { q: "Wedding (Outdoor)" });
+    const { rows } = await listBookings(workspaceId, { q: "Wedding (Outdoor)" });
     expect(rows).toHaveLength(1);
   });
 
   it("never leaks another workspace's bookings", async () => {
     await seedBooking(otherWorkspaceId, { title: "Other org" });
-    const rows = await listBookings(workspaceId);
+    const { rows } = await listBookings(workspaceId);
     expect(rows).toHaveLength(0);
+  });
+
+  it("returns paginated rows and accurate total when pagination is passed", async () => {
+    for (let i = 0; i < 15; i++) {
+      await seedBooking(workspaceId, { startAt: days(i + 1) });
+    }
+
+    const page1 = await listBookings(workspaceId, {}, { page: 1, limit: 10 });
+    expect(page1.rows).toHaveLength(10);
+    expect(page1.total).toBe(15);
+
+    const page2 = await listBookings(workspaceId, {}, { page: 2, limit: 10 });
+    expect(page2.rows).toHaveLength(5);
+    expect(page2.total).toBe(15);
+  });
+
+  it("returns total matching the filter, not the page size", async () => {
+    await seedBooking(workspaceId, { status: "booked", startAt: days(1) });
+    await seedBooking(workspaceId, { status: "booked", startAt: days(2) });
+    await seedBooking(workspaceId, { status: "quoted", startAt: days(3) });
+
+    const { rows, total } = await listBookings(
+      workspaceId,
+      { status: "booked" },
+      { page: 1, limit: 1 }
+    );
+    expect(rows).toHaveLength(1);
+    expect(total).toBe(2);
   });
 });
 
