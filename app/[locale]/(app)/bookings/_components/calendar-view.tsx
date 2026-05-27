@@ -200,6 +200,11 @@ export function CalendarView({
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
 
+  // Tracks booking IDs that have an in-flight PATCH. While a booking is pending
+  // the calendar dims the event via eventPropGetter and pointer-events:none so
+  // the user cannot drag the same event again mid-flight.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
   const showPast = searchParams.get("showPast") === "1";
@@ -313,21 +318,37 @@ export function CalendarView({
         })
       );
 
+      setPendingIds((s) => new Set(s).add(event.bookingId));
       try {
-        const ok = await patchBookingSessions(event.bookingId, newSessions);
-        if (!ok) throw new Error("PATCH returned non-ok");
-      } catch (err) {
-        const errInfo =
-          err instanceof Error
-            ? { name: err.name, message: err.message, stack: err.stack }
-            : String(err);
-        console.error("[calendar-view] patchBookingSessions failed", {
-          bookingId: event.bookingId,
-          newSessions,
-          err: errInfo,
+        await toast.promise(
+          (async () => {
+            const ok = await patchBookingSessions(event.bookingId, newSessions);
+            if (!ok) throw new Error("PATCH returned non-ok");
+          })(),
+          {
+            loading: t("updating"),
+            success: t("updated"),
+            error: (err: unknown) => {
+              const errInfo =
+                err instanceof Error
+                  ? { name: err.name, message: err.message, stack: err.stack }
+                  : String(err);
+              console.error("[calendar-view] patchBookingSessions failed", {
+                bookingId: event.bookingId,
+                newSessions,
+                err: errInfo,
+              });
+              setOptimisticEvents(prev);
+              return t("updateError");
+            },
+          }
+        );
+      } finally {
+        setPendingIds((s) => {
+          const next = new Set(s);
+          next.delete(event.bookingId);
+          return next;
         });
-        setOptimisticEvents(prev);
-        toast.error(t("updateError"));
       }
     },
     [optimisticEvents, t]
@@ -356,6 +377,9 @@ export function CalendarView({
       isDateOnlyDrag: boolean,
       touchedDay: Date
     ) => {
+      // Guard: ignore if a PATCH is already in flight for this booking.
+      if (pendingIds.has(event.bookingId)) return;
+
       const tz = workspaceTimezone || FALLBACK_TZ;
       const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
@@ -447,7 +471,7 @@ export function CalendarView({
       // 5. Apply.
       await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
     },
-    [optimisticEvents, applySplit, workspaceTimezone, t]
+    [optimisticEvents, applySplit, workspaceTimezone, t, pendingIds]
   );
 
   // ─── Drop handler ─────────────────────────────────────────────────────────
@@ -577,6 +601,7 @@ export function CalendarView({
         onExternalDragEnd={handleExternalDragEnd}
         onDropFromOutside={handleDropFromOutside}
         dragFromOutsideItem={dragFromOutsideItem}
+        pendingIds={pendingIds}
         messages={messages}
         showPast={showPast}
       />
