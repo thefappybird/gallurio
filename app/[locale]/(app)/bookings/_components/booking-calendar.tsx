@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -11,6 +12,7 @@ import {
 } from "react-big-calendar";
 import withDragAndDrop, {
   type EventInteractionArgs,
+  type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
@@ -22,11 +24,19 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+
+export type OverflowEvent = {
+  type: "overflow";
+  id: string;
+  start: Date;
+  end: Date;
+  overflowCount: number;
+  overflowEvents: CalendarEvent[];
+};
 
 const locales = {} as const;
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
-
-const DnDCalendar = withDragAndDrop<CalendarEvent>(Calendar);
 
 type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
 
@@ -57,19 +67,43 @@ export type CalendarEvent = {
   /** Days in this session that are strictly before today (used for past-aware
    *  shift logic in DnD). */
   sessionPastDayCount: number;
+  /** Set by the midnight-split pass for week/day views. The evening half of an
+   *  overnight candle (start → 23:59:59.999). */
+  isEveningHead?: boolean;
+  /** Set by the midnight-split pass for week/day views. The morning half of an
+   *  overnight candle (00:00 → original end). */
+  isMorningContinuation?: boolean;
 };
+
+/** Union of a real booking event and the synthetic overflow placeholder. */
+export type AnyCalendarEvent = CalendarEvent | OverflowEvent;
+
+const DnDCalendar = withDragAndDrop<AnyCalendarEvent>(Calendar);
 
 type Props = {
   events: CalendarEvent[];
   defaultDate?: Date;
   defaultView?: View;
+  /** Controlled view. When provided alongside `onViewChange`, the parent owns
+   *  the current view so dialog-cancel remounts (key bumps) don't reset it. */
+  view?: View;
+  onViewChange?: (v: View) => void;
+  /** Controlled current date — same rationale as `view`. */
+  date?: Date;
+  onDateChange?: (d: Date) => void;
   onSelectEvent?: (event: CalendarEvent) => void;
   /** Called when the user clicks an empty cell or time slot.
    *  `time` is "HH:MM" and is provided in week/day view where the slot has
    *  a known time; absent for month-view day-cell clicks. */
   onSelectSlot?: (date: Date, time?: string) => void;
-  onEventDrop?: (args: EventInteractionArgs<CalendarEvent>) => void;
-  onEventResize?: (args: EventInteractionArgs<CalendarEvent>) => void;
+  onEventDrop?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
+  onEventResize?: (args: EventInteractionArgs<AnyCalendarEvent>) => void;
+  /** Called when the user begins dragging a hidden event from the overflow popover. */
+  onExternalDragStart?: (event: CalendarEvent) => void;
+  /** Called when an external drag ends (dropped or cancelled) so the popover can close. */
+  onExternalDragEnd?: () => void;
+  onDropFromOutside?: (args: DragFromOutsideItemArgs) => void;
+  dragFromOutsideItem?: () => AnyCalendarEvent | null;
   messages: {
     today: string;
     previous: string;
@@ -81,10 +115,12 @@ type Props = {
     time: string;
     event: string;
     noEventsInRange: string;
-    jumpTo: string;
+    goTo: string;
     scrollToTime: string;
     go: string;
   };
+  /** When true, past candles render with opacity-60, title strikethrough, and a "Past" pill. */
+  showPast?: boolean;
 };
 
 // Status colors are theme-invariant — same hex/oklch in light AND dark so the
@@ -113,68 +149,207 @@ function formatTime(d: Date) {
   });
 }
 
-function formatRangeDate(d: Date) {
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function formatTimeRange(start: Date, end: Date) {
+  return `${formatTime(start)} – ${formatTime(end)}`;
 }
 
-function isSameDay(a: Date, b: Date) {
+/** Build a candle-styled DOM element on the fly, append to body, return it.
+ *  Used as the HTML5 drag image. Chrome refuses to snapshot offscreen React
+ *  elements reliably, so we create a real on-screen (but visually negligible)
+ *  node, point setDragImage at it, then remove it on the next animation
+ *  frame — after the browser has already captured the bitmap. */
+function buildDragGhost(args: {
+  title: string;
+  clientName: string;
+  timeRange: string;
+  bg: string;
+}): HTMLDivElement {
+  const ghost = document.createElement("div");
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.style.cssText = [
+    "position: fixed",
+    "top: 0",
+    "left: 0",
+    "width: 192px",
+    "height: 40px",
+    "padding: 2px 6px 2px 8px",
+    "display: flex",
+    "flex-direction: column",
+    "justify-content: center",
+    "overflow: hidden",
+    "color: white",
+    "font-family: system-ui, sans-serif",
+    `background-color: ${args.bg}`,
+    "pointer-events: none",
+    // Render on top, transparent so it doesn't flash the user before the
+    // browser snapshots and detaches it. Keep z-index high so it's not
+    // visually clipped by any stacking context behind it during capture.
+    "opacity: 0.999",
+    "z-index: 9999",
+  ].join(";");
+  ghost.innerHTML = `
+    <div style="font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(args.title)}</div>
+    <div style="font-size:10px;line-height:1.2;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(args.clientName)}</div>
+    <div style="font-size:10px;line-height:1.2;opacity:0.85;white-space:nowrap">${escapeHtml(args.timeRange)}</div>
+  `;
+  document.body.appendChild(ghost);
+  return ghost;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** A single draggable row inside the overflow popover.
+ *  Builds a candle-styled ghost on dragstart, points setDragImage at it,
+ *  then schedules its removal after the browser has captured the bitmap. */
+function OverflowPopoverRow({
+  event: e,
+  onSelectEvent,
+  onExternalDragStart,
+  onExternalDragEnd,
+  onClose,
+}: {
+  event: CalendarEvent;
+  onSelectEvent?: (ev: CalendarEvent) => void;
+  onExternalDragStart?: (ev: CalendarEvent) => void;
+  onExternalDragEnd?: () => void;
+  onClose: () => void;
+}) {
+  const bg = STATUS_COLOR[e.status];
+  const clientDisplay = e.clientName || "—";
+  const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt);
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    <button
+      key={e.id}
+      type="button"
+      draggable
+      onDragStart={(evt) => {
+        const ghost = buildDragGhost({
+          title: e.title,
+          clientName: clientDisplay,
+          timeRange,
+          bg,
+        });
+        evt.dataTransfer.setDragImage(ghost, 0, 0);
+        // Remove after the browser has captured the bitmap.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            ghost.remove();
+          });
+        });
+        evt.dataTransfer.effectAllowed = "move";
+        evt.dataTransfer.setData("text/plain", e.bookingId);
+        onExternalDragStart?.(e);
+      }}
+      onDragEnd={() => {
+        onExternalDragEnd?.();
+        onClose();
+      }}
+      onClick={() => {
+        onClose();
+        onSelectEvent?.(e);
+      }}
+      className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+      style={{ borderLeft: `3px solid ${bg}` }}
+    >
+      <span className="truncate text-xs font-semibold text-foreground w-full">
+        {e.title}
+      </span>
+      <span className="truncate text-[10px] text-muted-foreground w-full">
+        {clientDisplay}
+      </span>
+      <span className="whitespace-nowrap text-[10px] text-muted-foreground">
+        {timeRange}
+      </span>
+    </button>
   );
 }
 
-/** Month view: compact single line — title • start-time. The bg color lives
- *  here on the candle itself (NOT on rbc's wrapper) so it always renders
- *  reliably regardless of how rbc wraps per-view event components. */
-function MonthBookingEvent({ event }: EventProps<CalendarEvent>) {
-  const ev = event;
-  const hasTime = ev.start.getHours() !== 0 || ev.start.getMinutes() !== 0;
-  const bg = STATUS_COLOR[ev.status];
-  const isMultiDay = !isSameDay(ev.rangeStart, ev.rangeEnd);
+/** Small "Past" badge overlaid in the top-right corner of a candle. */
+function PastPill({ label }: { label: string }) {
   return (
     <span
-      className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 leading-tight text-white ${
-        ev.status === "cancelled" || ev.status === "completed"
-          ? "line-through opacity-80"
-          : ""
-      }`}
-      style={{ backgroundColor: bg }}
+      aria-label={label}
+      className="absolute right-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
     >
-      {/* Teams-style striped left edge — diagonal hash pattern */}
-      <span
-        className="absolute inset-y-0 left-0 w-1"
-        aria-hidden
-        style={{ background: stripeBg(bg) }}
-      />
-      <span className="flex items-center gap-1.5 text-xs">
-        <span className="truncate font-semibold">{ev.title}</span>
-        {hasTime ? (
-          <span className="ml-auto shrink-0 text-[10px] opacity-85">
-            {formatTime(ev.start)}
-          </span>
-        ) : null}
-      </span>
-      {isMultiDay ? (
-        <span className="truncate text-[10px] opacity-85">
-          {formatRangeDate(ev.rangeStart)} – {formatRangeDate(ev.rangeEnd)}
-        </span>
-      ) : null}
+      {label}
     </span>
   );
 }
 
-/** Week/day view: vertical block, height = duration. Title prominent, time
- *  small. Striped left edge mirrors Teams' visual language. */
-function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
+/** Month view: three-line stacked — title / client / time range. */
+export function MonthBookingEvent({
+  event,
+  onSelectEvent,
+  onExternalDragStart,
+  onExternalDragEnd,
+}: EventProps<AnyCalendarEvent> & {
+  onSelectEvent?: (ev: CalendarEvent) => void;
+  onExternalDragStart?: (ev: CalendarEvent) => void;
+  onExternalDragEnd?: () => void;
+}) {
   const ev = event;
-  const bg = STATUS_COLOR[ev.status];
+  const [open, setOpen] = useState(false);
+  const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
+
+  if ("type" in ev && ev.type === "overflow") {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              className="w-full text-left"
+              aria-label={`Show ${ev.overflowCount} more event${ev.overflowCount === 1 ? "" : "s"}`}
+            />
+          }
+        >
+          <span className="overflow-pill block w-full cursor-pointer bg-foreground text-background text-[10px] font-semibold leading-tight px-1.5 py-0.5">
+            +{ev.overflowCount} more
+          </span>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" align="start" className="w-56 p-2">
+          <div className="flex flex-col gap-1">
+            {ev.overflowEvents.map((e) => (
+              <OverflowPopoverRow
+                key={e.id}
+                event={e}
+                onSelectEvent={onSelectEvent}
+                onExternalDragStart={onExternalDragStart}
+                onExternalDragEnd={onExternalDragEnd}
+                onClose={() => setOpen(false)}
+              />
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  const booking = ev as CalendarEvent;
+  const bg = STATUS_COLOR[booking.status];
+  const clientDisplay = booking.clientName || "—";
+  const timeRange = formatTimeRange(booking.start, booking.end);
+  const isPast = booking.end < new Date();
+  const isStatusMuted =
+    booking.status === "cancelled" || booking.status === "completed";
+  const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+
   return (
-    <div
-      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
-        ev.status === "cancelled" || ev.status === "completed"
+    <span
+      title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
+      className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
+        isStatusMuted
           ? "line-through opacity-80"
+          : showPastVisual
+          ? "opacity-60"
           : ""
       }`}
       style={{ backgroundColor: bg }}
@@ -184,17 +359,75 @@ function TimeBookingEvent({ event }: EventProps<CalendarEvent>) {
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      <span className="truncate text-sm font-semibold leading-tight">
-        {ev.title}
+      <span
+        className={`truncate text-xs font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
+      >
+        {booking.title}
       </span>
-      {ev.clientEmail ? (
-        <span className="truncate text-[10px] leading-tight opacity-80">
-          {ev.clientEmail}
+      <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+      <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+      {showPastVisual && <PastPill label={t("past")} />}
+    </span>
+  );
+}
+
+/** Week/day view: three-line stacked — title / client / time range. */
+function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
+  // Hooks must be called unconditionally before any early return.
+  const ctx = useContext(CalendarToolbarCtx);
+  const t = useTranslations("app.bookings.calendar");
+  // Overflow events never appear in week/day view (only month view produces them).
+  // Guard defensively so the narrowing is correct for TS.
+  if ("type" in event && event.type === "overflow") return null;
+  const ev = event as CalendarEvent;
+  const bg = STATUS_COLOR[ev.status];
+  const clientDisplay = ev.clientName || "—";
+  // For split overnight halves show the full original session times so the user
+  // always sees the real shift boundaries regardless of which half they hover.
+  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt);
+  const isContinuation = ev.isMorningContinuation === true;
+  const isPast = ev.end < new Date();
+  const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
+  const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+
+  return (
+    <div
+      title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
+      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
+        isStatusMuted
+          ? "line-through opacity-80"
+          : showPastVisual
+          ? "opacity-60"
+          : ""
+      }`}
+      style={{
+        backgroundColor: bg,
+        // Morning continuation: omit top border radius cue by reducing top
+        // opacity on the stripe so it visually "continues" from the evening half.
+        opacity: isContinuation ? 0.85 : showPastVisual ? 0.6 : 1,
+      }}
+    >
+      <span
+        className="absolute inset-y-0 left-0 w-1"
+        aria-hidden
+        style={{ background: stripeBg(bg) }}
+      />
+      {isContinuation ? (
+        <span className="truncate text-[10px] leading-tight opacity-70 italic">
+          ↑ {ev.title}
         </span>
-      ) : null}
-      <span className="truncate text-[11px] leading-tight opacity-85">
-        {formatTime(ev.start)} – {formatTime(ev.end)}
-      </span>
+      ) : (
+        <>
+          <span
+            className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
+          >
+            {ev.title}
+          </span>
+          <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
+          <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
+        </>
+      )}
+      {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
     </div>
   );
 }
@@ -277,6 +510,7 @@ const HoverableDayWrapper = forwardRef<
 type CalendarToolbarCtxValue = {
   messages: Props["messages"];
   onScrollToHour: (h: number) => void;
+  showPast: boolean;
 };
 
 /**
@@ -361,19 +595,20 @@ function CalendarToolbar({
             render={
               <Button
                 variant="outline"
-                size="icon-sm"
-                className="min-h-11"
-                aria-label={messages.jumpTo}
+                size="sm"
+                className="min-h-11 gap-1.5"
+                aria-label={messages.goTo}
               />
             }
           >
-            <CalendarIcon className="size-4" />
+            <CalendarIcon className="size-4 shrink-0" />
+            <span className="hidden sm:inline">{messages.goTo}</span>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="end" className="w-64 p-4">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground">
-                  {messages.jumpTo}
+                  {messages.goTo}
                 </label>
                 <input
                   type="date"
@@ -389,6 +624,7 @@ function CalendarToolbar({
                   </label>
                   <input
                     type="time"
+                    lang={DEFAULT_TIME_INPUT_LANG}
                     value={jumpTime}
                     onChange={(e) => setJumpTime(e.target.value)}
                     className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -421,29 +657,145 @@ function CalendarToolbar({
   );
 }
 
-// Stable components object — CalendarToolbar is module-level so rbc never
-// remounts event components due to a reference change.
-const CALENDAR_COMPONENTS = {
-  toolbar: CalendarToolbar,
-  month: { event: MonthBookingEvent },
-  week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-  day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
-};
+// CalendarToolbar, TimeBookingEvent, and HoverableDayWrapper are module-level
+// stable references. MonthBookingEvent needs onSelectEvent injected, so we
+// build the month event component inside the parent via useMemo.
 
 // ─── BookingCalendar ──────────────────────────────────────────────────────────
+
+/**
+ * Groups same-day events in month view so rbc renders at most one booking pill
+ * per cell. Days with more than one event get a synthetic overflow placeholder
+ * appended after the first event, listing all events for that day.
+ *
+ * Overnight / multi-day events (end is on a later calendar day than start)
+ * render as a wide bar across all occupied cells in rbc. Any own events that
+ * START on a bleed-in day would visually stack below that bar without being
+ * collapsed into the "+N more" pill. This function detects bleed-in days and
+ * suppresses own-start events on those days into an overflow placeholder so
+ * the pill appears instead.
+ *
+ * Only applied in month view — week/day views have time-slot rows and can
+ * display overlapping events without a cell-height cap.
+ */
+export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[] {
+  // Local helpers — not exported so they stay scoped to this function.
+  function startOfMonthDay(d: Date): Date {
+    const out = new Date(d);
+    out.setHours(0, 0, 0, 0);
+    return out;
+  }
+  function dayKey(d: Date): string {
+    return format(d, "yyyy-MM-dd");
+  }
+
+  // Pass 1 — identify days that have an inbound overnight/multi-day bleed-over.
+  // For every event that crosses a day boundary, every calendar day strictly
+  // after the event's start-day (up to and including the event's end-day)
+  // receives a bleed-in marker.
+  const bleedInDays = new Set<string>();
+  for (const ev of events) {
+    const startDay = startOfMonthDay(ev.start);
+    const endDay = startOfMonthDay(ev.end);
+    if (endDay > startDay) {
+      // Walk each day strictly after startDay through endDay.
+      const cursor = new Date(startDay);
+      cursor.setDate(cursor.getDate() + 1);
+      while (cursor <= endDay) {
+        bleedInDays.add(dayKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+  }
+
+  // Pass 2 — bucket events by their start-day (same as before).
+  const byDay = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    const key = dayKey(ev.start);
+    const bucket = byDay.get(key);
+    if (bucket) {
+      bucket.push(ev);
+    } else {
+      byDay.set(key, [ev]);
+    }
+  }
+
+  // Pass 3 — emit result events, collapsing bleed-in days into overflow pills.
+  const result: AnyCalendarEvent[] = [];
+  for (const [key, bucket] of byDay) {
+    if (bleedInDays.has(key) && bucket.length >= 1) {
+      // The wide bar from the overnight event already occupies this cell.
+      // Collapse every own event that starts here into a single overflow pill
+      // so they don't render as extra stacked bars below the wide bar.
+      const first = bucket[0];
+      const overflow: OverflowEvent = {
+        type: "overflow",
+        id: `overflow_${key}`,
+        start: first.start,
+        end: first.end,
+        overflowCount: bucket.length,
+        overflowEvents: bucket,
+      };
+      result.push(overflow);
+    } else {
+      // Normal day (no inbound bleed): show first event + optional overflow.
+      result.push(bucket[0]);
+      if (bucket.length > 1) {
+        const first = bucket[0];
+        const overflow: OverflowEvent = {
+          type: "overflow",
+          id: `overflow_${key}`,
+          start: first.start,
+          end: first.end,
+          overflowCount: bucket.length - 1,
+          overflowEvents: bucket.slice(1),
+        };
+        result.push(overflow);
+      }
+    }
+  }
+  return result;
+}
 
 export function BookingCalendar({
   events,
   defaultDate,
   defaultView = Views.MONTH,
+  view: viewProp,
+  onViewChange,
+  date: dateProp,
+  onDateChange,
   onSelectEvent,
   onSelectSlot,
   onEventDrop,
   onEventResize,
+  onExternalDragStart,
+  onExternalDragEnd,
+  onDropFromOutside,
+  dragFromOutsideItem,
   messages,
+  showPast = false,
 }: Props) {
-  const [view, setView] = useState<View>(defaultView);
-  const [date, setDate] = useState<Date>(defaultDate ?? new Date());
+  // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
+  // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
+  const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
+  const [internalDate, setInternalDate] = useState<Date>(dateProp ?? defaultDate ?? new Date());
+  const view = viewProp ?? internalView;
+  const date = dateProp ?? internalDate;
+  const setView = useCallback(
+    (v: View) => {
+      if (onViewChange) onViewChange(v);
+      else setInternalView(v);
+    },
+    [onViewChange]
+  );
+  const setDate = useCallback(
+    (d: Date) => {
+      if (onDateChange) onDateChange(d);
+      else setInternalDate(d);
+    },
+    [onDateChange]
+  );
 
   // Open week/day view scrolled to 8 AM so business-hours bookings are
   // immediately visible. (rbc defaults to midnight otherwise.)
@@ -467,16 +819,23 @@ export function BookingCalendar({
 
   // Switching to week/day always snaps back to the current week/day so the
   // user doesn't end up stranded in a past or future period after browsing.
-  const handleViewChange = useCallback((newView: View) => {
-    setView(newView);
-    if (newView === Views.WEEK || newView === Views.DAY) {
-      setDate(new Date());
-    }
-  }, []);
+  const handleViewChange = useCallback(
+    (newView: View) => {
+      setView(newView);
+      if (newView === Views.WEEK || newView === Views.DAY) {
+        setDate(new Date());
+      }
+    },
+    [setView, setDate]
+  );
 
   const toolbarCtx = useMemo<CalendarToolbarCtxValue>(
-    () => ({ messages, onScrollToHour }),
-    [messages, onScrollToHour]
+    () => ({
+      messages,
+      onScrollToHour,
+      showPast,
+    }),
+    [messages, onScrollToHour, showPast]
   );
 
   const calendarMessages = useMemo(
@@ -495,12 +854,41 @@ export function BookingCalendar({
     [messages]
   );
 
+  // Pre-process events depending on view:
+  // - month: cap each day at 1 pill + overflow placeholder.
+  // - week/day: pass events directly (overnight sessions are represented as-is).
+  const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
+    if (view === Views.MONTH) return groupEventsForMonth(events);
+    return events;
+  }, [view, events]);
+
+  // Build the components object here so we can bind onSelectEvent and the
+  // external-drag callbacks to MonthBookingEvent without stale closures.
+  const calendarComponents = useMemo(
+    () => ({
+      toolbar: CalendarToolbar,
+      month: {
+        event: (props: EventProps<AnyCalendarEvent>) => (
+          <MonthBookingEvent
+            {...props}
+            onSelectEvent={onSelectEvent}
+            onExternalDragStart={onExternalDragStart}
+            onExternalDragEnd={onExternalDragEnd}
+          />
+        ),
+      },
+      week: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+      day: { event: TimeBookingEvent, dayColumnWrapper: HoverableDayWrapper },
+    }),
+    [onSelectEvent, onExternalDragStart, onExternalDragEnd]
+  );
+
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
         <DnDCalendar
           localizer={localizer}
-          events={events}
+          events={displayEvents}
           startAccessor="start"
           endAccessor="end"
           view={view}
@@ -511,13 +899,15 @@ export function BookingCalendar({
           scrollToTime={scrollToTime}
           step={30}
           timeslots={2}
-          popup
           selectable
           resizable
           longPressThreshold={1}
           messages={calendarMessages}
-          components={CALENDAR_COMPONENTS}
-          onSelectEvent={(event) => onSelectEvent?.(event as CalendarEvent)}
+          components={calendarComponents}
+          onSelectEvent={(event) => {
+            if ("type" in event && (event as OverflowEvent).type === "overflow") return;
+            onSelectEvent?.(event as unknown as CalendarEvent);
+          }}
           onSelectSlot={(slot) => {
             const d = new Date(slot.start);
             const isTimeView = view === Views.WEEK || view === Views.DAY;
@@ -525,9 +915,15 @@ export function BookingCalendar({
           }}
           onEventDrop={onEventDrop}
           onEventResize={onEventResize}
+          onDropFromOutside={onDropFromOutside}
+          dragFromOutsideItem={
+            (dragFromOutsideItem ?? undefined) as (() => AnyCalendarEvent) | undefined
+          }
           eventPropGetter={(event) => {
-            const ev = event as CalendarEvent;
-            const bg = STATUS_COLOR[ev.status];
+            if ("type" in event && (event as OverflowEvent).type === "overflow") {
+              return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };
+            }
+            const bg = STATUS_COLOR[(event as CalendarEvent).status];
             return {
               className: "cursor-pointer",
               style: { borderColor: bg, padding: 0 },

@@ -92,11 +92,6 @@ export const brandingStepSchema = z.object({
 });
 export type BrandingStepInput = z.infer<typeof brandingStepSchema>;
 
-export const templateStepSchema = z.object({
-  templateId: z.enum(["default", "editorial", "studio"]),
-});
-export type TemplateStepInput = z.infer<typeof templateStepSchema>;
-
 // Kept for backwards-compat with the old single-page onboarding action signature.
 export const createWorkspaceSchema = z.object({
   name: businessStepSchema.shape.name,

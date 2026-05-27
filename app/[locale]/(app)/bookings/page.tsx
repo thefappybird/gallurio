@@ -3,10 +3,11 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { listBookings } from "./_data/bookings-queries";
+import { redirect } from "next/navigation";
+import { listBookings, getBookingById } from "./_data/bookings-queries";
 import { ViewToggle, type BookingsView } from "./_components/view-toggle";
-import { CalendarView } from "./_components/calendar-view";
-import { BookingsToolbar } from "./_components/bookings-toolbar";
+import { CalendarBookingManager } from "./_components/calendar-booking-manager";
+import { TableBookingManager } from "./_components/table-booking-manager";
 import {
   BookingsTable,
   type BookingRow,
@@ -14,8 +15,16 @@ import {
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
+import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+
+type ClientHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
 
 export async function generateMetadata({
   params,
@@ -37,6 +46,7 @@ type SearchParams = {
   from?: string;
   to?: string;
   includeCancelled?: string;
+  showPast?: string;
   detail?: string;
   add?: string;
   edit?: string;
@@ -68,22 +78,24 @@ export default async function BookingsPage({
     includeCancelled: sp.includeCancelled === "1",
   });
 
-  // Fetch only the clients referenced by these bookings — keeps email lookup
-  // cheap and avoids loading the full workspace client list.
-  const clientIds = Array.from(
-    new Set(bookings.map((b) => b.clientId?.toString()).filter(Boolean))
-  );
-  const clientEmails =
-    clientIds.length > 0
-      ? await Client.find({
-          _id: { $in: clientIds },
-          workspaceId: workspace._id,
-        })
-          .select({ _id: 1, email: 1 })
-          .lean()
-      : [];
+  // Fetch all clients for the workspace — used by the booking wizard's
+  // client picker. Limit 1000 covers all realistic workspace sizes and avoids
+  // per-keystroke API calls in the modal.
+  const allClients = await Client.find({ workspaceId: workspace._id })
+    .select({ _id: 1, name: 1, email: 1, phone: 1 })
+    .sort({ name: 1 })
+    .limit(1000)
+    .lean();
+  const initialClients: ClientHit[] = allClients.map((c) => ({
+    id: c._id.toString(),
+    name: c.name,
+    email: c.email ?? null,
+    phone: c.phone ?? null,
+  }));
+
+  // Build a lookup map for email by client id — used for calendar event enrichment.
   const emailByClientId = new Map(
-    clientEmails.map((c) => [c._id.toString(), c.email ?? null])
+    allClients.map((c) => [c._id.toString(), c.email ?? null])
   );
 
   const today = new Date();
@@ -101,68 +113,38 @@ export default async function BookingsPage({
       const sessionStart = new Date(session.startAt);
       const sessionEnd = new Date(session.endAt);
 
-      const shiftStartHour = sessionStart.getHours();
-      const shiftStartMin = sessionStart.getMinutes();
-      const shiftEndHour = sessionEnd.getHours();
-      const shiftEndMin = sessionEnd.getMinutes();
-
-      const firstDay = new Date(
-        sessionStart.getFullYear(),
-        sessionStart.getMonth(),
-        sessionStart.getDate()
-      );
-      const lastDay = new Date(
-        sessionEnd.getFullYear(),
-        sessionEnd.getMonth(),
-        sessionEnd.getDate()
+      const result = splitSessionIntoCandles(
+        { startAt: sessionStart, endAt: sessionEnd },
+        today
       );
 
-      // Count total days and past days for this session (drives DnD prompt).
-      let totalDays = 0;
-      let pastDays = 0;
-      const counter = new Date(firstDay);
-      while (counter <= lastDay) {
-        totalDays++;
-        if (counter < today) pastDays++;
-        counter.setDate(counter.getDate() + 1);
-      }
-
-      const dayCandles: CalendarEvent[] = [];
-      const cursor = new Date(firstDay);
-      while (cursor <= lastDay) {
-        const dayStart = new Date(cursor);
-        dayStart.setHours(shiftStartHour, shiftStartMin, 0, 0);
-        const dayEnd = new Date(cursor);
-        dayEnd.setHours(shiftEndHour, shiftEndMin, 0, 0);
-        // Skip misconfigured days where shift-end <= shift-start.
-        if (dayEnd.getTime() > dayStart.getTime()) {
-          const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}-${String(cursor.getDate()).padStart(2, "0")}`;
-          dayCandles.push({
-            id: `${bookingId}_s${sessionIdx}_${key}`,
-            bookingId,
-            title: b.title,
-            start: dayStart,
-            end: dayEnd,
-            status: b.status as BookingStatus,
-            clientName: b.clientName,
-            clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
-            rangeStart: firstDay,
-            rangeEnd: lastDay,
-            sessionIndex: sessionIdx,
-            sessionStartAt: sessionStart,
-            sessionEndAt: sessionEnd,
-            sessionDayCount: totalDays,
-            sessionPastDayCount: pastDays,
-          });
-        }
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      return dayCandles;
+      return result.candles.map((candle) => ({
+        id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
+        bookingId,
+        title: b.title,
+        start: candle.start,
+        end: candle.end,
+        status: b.status as BookingStatus,
+        clientName: b.clientName,
+        clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
+        rangeStart: result.rangeStart,
+        rangeEnd: result.rangeEnd,
+        sessionIndex: sessionIdx,
+        sessionStartAt: sessionStart,
+        sessionEndAt: sessionEnd,
+        sessionDayCount: result.totalShiftDays,
+        sessionPastDayCount: result.pastShiftDays,
+      }));
     });
   });
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
+    // lastSessionEnd = max(endAt) across all sessions — used to compute isPast.
+    const lastSessionEnd = bSessions.reduce<string>((max, s) => {
+      const iso = new Date(s.endAt).toISOString();
+      return iso > max ? iso : max;
+    }, new Date(0).toISOString());
     return {
       id: b._id.toString(),
       title: b.title,
@@ -171,6 +153,7 @@ export default async function BookingsPage({
         startAt: new Date(s.startAt).toISOString(),
         endAt: new Date(s.endAt).toISOString(),
       })),
+      lastSessionEnd,
       status: b.status as BookingStatus,
       total: b.amount?.total ?? 0,
       currency: b.amount?.currency ?? workspace.currency,
@@ -179,6 +162,27 @@ export default async function BookingsPage({
 
   const defaultDate = sp.date ? new Date(sp.date) : new Date();
 
+  // Defensive: if ?detail= is present but the booking doesn't exist (or is
+  // not owned by this workspace), strip the param and redirect — prevents the
+  // URL from staying broken after a delete, hard-reload, or bad link.
+  if (sp.detail) {
+    let detailExists = false;
+    try {
+      const found = await getBookingById(workspace._id, sp.detail);
+      detailExists = found !== null;
+    } catch {
+      // Invalid ObjectId format — treat as not found.
+      detailExists = false;
+    }
+    if (!detailExists) {
+      const cleanParams = new URLSearchParams(
+        Object.entries(sp).filter(([k]) => k !== "detail") as [string, string][]
+      );
+      const qs = cleanParams.toString();
+      redirect(qs ? `/${locale}/bookings?${qs}` : `/${locale}/bookings`);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -186,12 +190,25 @@ export default async function BookingsPage({
         <ViewToggle view={view} />
       </div>
 
-      <BookingsToolbar defaultCurrency={workspace.currency ?? "PHP"} />
+      {view !== "calendar" ? (
+        // Table view: TableBookingManager owns the "New Booking" open state so
+        // the button always fires even when ?add=1 is already in the URL.
+        <TableBookingManager
+          defaultCurrency={workspace.currency as SupportedCurrency}
+          locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+          clients={initialClients}
+        />
+      ) : null}
 
       {view === "calendar" ? (
-        <CalendarView
+        <CalendarBookingManager
           events={events}
           defaultDate={defaultDate}
+          initialClients={initialClients}
+          defaultCurrency={workspace.currency as SupportedCurrency}
+          locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),
@@ -203,35 +220,34 @@ export default async function BookingsPage({
             time: tCal("time"),
             event: tCal("event"),
             noEventsInRange: tCal("noEventsInRange"),
-            jumpTo: tCal("jumpTo"),
+            goTo: tCal("goTo"),
             scrollToTime: tCal("scrollToTime"),
             go: tCal("go"),
           }}
         />
       ) : (
-        <BookingsTable rows={rows} locale={locale} empty={t("table.empty")} />
+        <BookingsTable
+          rows={rows}
+          locale={locale}
+          empty={t("table.empty")}
+          showPast={sp.showPast === "1"}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+        />
       )}
 
       {sp.detail ? (
         <BookingDetailModal bookingId={sp.detail} locale={locale} />
       ) : null}
 
-      {sp.add === "1" ? (
-        <BookingWizardModal
-          mode="create"
-          defaultDate={sp.date}
-          defaultTime={sp.time}
-          defaultCurrency={workspace.currency as SupportedCurrency}
-          locale={locale}
-        />
-      ) : null}
-
-      {sp.edit ? (
+      {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
+      {view !== "calendar" && sp.edit ? (
         <BookingWizardModal
           mode="edit"
           bookingId={sp.edit}
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
+          workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+          clients={initialClients}
         />
       ) : null}
     </div>

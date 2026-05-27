@@ -12,10 +12,11 @@ const activityLogSchema = new Schema(
     entityId: { type: Schema.Types.ObjectId, default: null },
     action: {
       type: String,
-      enum: ["created", "updated", "deleted", "status_changed"],
+      enum: ["created", "updated", "deleted", "status_changed", "client_changed"],
       required: true,
     },
     diff: { type: Schema.Types.Mixed, default: null },
+    meta: { type: Schema.Types.Mixed, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

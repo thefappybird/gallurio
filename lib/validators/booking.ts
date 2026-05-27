@@ -51,7 +51,30 @@ export const bookingSessionSchema = z
   .refine((s) => s.endAt.getTime() >= s.startAt.getTime(), {
     message: "Session end must be on or after session start",
     path: ["endAt"],
-  });
+  })
+  .refine(
+    (s) => {
+      // Best-effort UTC-day check: a cheap sanity guard for callers that do not
+      // have workspace timezone context (e.g. unit tests, CSV import pre-check).
+      // This catches the obvious "next-calendar-day in UTC" cases early.
+      //
+      // NOTE: this check is NOT the authoritative single-day enforcer.
+      // Route handlers that know the workspace timezone MUST also call
+      // `sessionsAreSameDayInTz` from `lib/bookings/session-validation.ts`,
+      // which is the authoritative tz-aware check.  Without it, a Philippines
+      // (UTC+8) booking of 21:00→02:00 wall-time passes this UTC check because
+      // it maps to 13:00→18:00 UTC same day.
+      return (
+        s.startAt.getUTCFullYear() === s.endAt.getUTCFullYear() &&
+        s.startAt.getUTCMonth() === s.endAt.getUTCMonth() &&
+        s.startAt.getUTCDate() === s.endAt.getUTCDate()
+      );
+    },
+    {
+      message: "Session cannot span midnight",
+      path: ["endAt"],
+    }
+  );
 export type BookingSessionInput = z.infer<typeof bookingSessionSchema>;
 
 export const bookingCreateSchema = z.object({
@@ -92,6 +115,7 @@ export const EDITABLE_KEYS = [
   "amount.currency",
   "notes",
   "clientName",
+  "clientId",
 ] as const;
 export type EditableKey = (typeof EDITABLE_KEYS)[number];
 
@@ -110,6 +134,7 @@ export const bookingPatchSchema = z
     "amount.currency": z.enum(SUPPORTED_CURRENCIES).optional(),
     notes: z.string().max(2000).trim().optional(),
     clientName: z.string().min(1).max(120).trim().optional(),
+    clientId: objectIdString.optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, {

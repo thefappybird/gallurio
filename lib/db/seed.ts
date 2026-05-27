@@ -31,6 +31,7 @@ import {
   Transaction,
   ActivityLog,
 } from "./models";
+import { recordBookingForClient } from "./clientTransactions";
 
 const DEMO_WORKSPACES = [
   {
@@ -248,43 +249,77 @@ async function seedWorkspace(
 
   const bookings = await Booking.insertMany(bookingPayloads);
 
-  // 30 transactions across trailing 90 days, mix of types and methods.
-  const txPayloads: Array<{
+  // recordBookingForClient creates Transaction docs and updates client summaries
+  // — replaces the old explicit Transaction.insertMany.
+  for (const b of bookings) {
+    await recordBookingForClient({
+      workspaceId: workspace._id,
+      clientId: b.clientId,
+      booking: {
+        _id: b._id,
+        amount: b.amount,
+        firstSessionStart: b.firstSessionStart,
+      },
+      source: "seed",
+    });
+  }
+
+  // Supplementary transactions for demo variety (does not roll up to Client summaries).
+  // Adds balance payments, refunds, and mixed methods so revenue-by-method and refund
+  // widgets have meaningful data on demo dashboards.
+  const completedBookings = bookings.filter((b) => b.status === "completed");
+  const supplementaryTxs: Array<{
     workspaceId: mongoose.Types.ObjectId;
     bookingId: mongoose.Types.ObjectId;
     clientId: mongoose.Types.ObjectId;
     amount: number;
     currency: string;
-    type: "deposit" | "balance" | "refund" | "subscription" | "other";
-    method: "hitpay" | "cash" | "transfer" | "other";
+    type: "balance" | "refund";
+    method: "hitpay" | "cash" | "transfer";
     paidAt: Date;
   }> = [];
-  const paidBookings = bookings.filter(
-    (b) => b.status === "completed" || b.status === "booked"
-  );
-  for (let i = 0; i < 30; i += 1) {
-    const b = pick(paidBookings);
-    const dayDelta = range(-90, 0);
-    const isRefund = rand() < 0.05;
-    const isDeposit = rand() < 0.5;
-    const type = isRefund ? "refund" : isDeposit ? "deposit" : "balance";
-    const amount = isRefund
-      ? -Math.floor(b.amount.deposit / 2)
-      : isDeposit
-        ? b.amount.deposit
-        : b.amount.total - b.amount.deposit;
-    txPayloads.push({
+
+  const methods = ["hitpay", "cash", "transfer"] as const;
+
+  // Balance payments for completed bookings.
+  for (const b of completedBookings) {
+    const total = (b.amount as { total: number }).total;
+    const deposit = (b.amount as { deposit: number }).deposit;
+    const balance = Math.floor(total - deposit);
+    if (balance <= 0) continue;
+    const offsetDays = range(-89, -1);
+    supplementaryTxs.push({
       workspaceId: workspace._id,
       bookingId: b._id,
       clientId: b.clientId,
-      amount,
+      amount: balance,
       currency: workspace.currency,
-      type,
-      method: pick(["hitpay", "cash", "transfer"] as const),
-      paidAt: dayOffset(dayDelta),
+      type: "balance",
+      method: pick(methods),
+      paidAt: dayOffset(offsetDays),
     });
   }
-  await Transaction.insertMany(txPayloads);
+
+  // A handful of refunds spread across the trailing 90 days.
+  const refundCount = Math.min(5, completedBookings.length);
+  for (let i = 0; i < refundCount; i += 1) {
+    const b = pick(completedBookings);
+    const total = (b.amount as { total: number }).total;
+    supplementaryTxs.push({
+      workspaceId: workspace._id,
+      bookingId: b._id,
+      clientId: b.clientId,
+      amount: -Math.floor(total * range(5, 20) / 100),
+      currency: workspace.currency,
+      type: "refund",
+      method: pick(methods),
+      paidAt: dayOffset(-range(1, 89)),
+    });
+  }
+
+  if (supplementaryTxs.length > 0) {
+    await Transaction.insertMany(supplementaryTxs);
+  }
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
@@ -375,7 +410,7 @@ async function seedWorkspace(
   await ActivityLog.insertMany(activityPayloads);
 
   console.log(
-    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings, ${txPayloads.length} transactions, ${inquiryPayloads.length} inquiries`
+    `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings (+ transactions), ${inquiryPayloads.length} inquiries`
   );
   return workspace;
 }

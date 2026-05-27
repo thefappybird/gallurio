@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { BookingDoc } from "@/lib/db/models";
+import { formatTime } from "@/lib/utils/time-format";
 
 type Props = {
   bookings: BookingDoc[];
@@ -10,7 +11,7 @@ type Props = {
   empty: string;
 };
 
-export function TodaysEventsList({ bookings, locale, title, empty }: Props) {
+export function TodaysEventsList({ bookings, title, empty }: Props) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -30,10 +31,7 @@ export function TodaysEventsList({ bookings, locale, title, empty }: Props) {
                   <span className="truncate text-sm font-medium">{b.title}</span>
                   <span className="text-xs text-muted-foreground">
                     {(b.sessions as { startAt: Date }[])[0]?.startAt
-                      ? new Date((b.sessions as { startAt: Date }[])[0].startAt).toLocaleTimeString(locale, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })
+                      ? formatTime(new Date((b.sessions as { startAt: Date }[])[0].startAt))
                       : "—"}
                     {" · "}
                     {b.clientName}

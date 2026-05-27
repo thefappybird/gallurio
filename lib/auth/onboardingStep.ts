@@ -49,7 +49,16 @@ export async function loadOnboardingContext(): Promise<OnboardingContext> {
       : Promise.resolve(null),
   ]);
 
-  const currentStep: OnboardingStep = user?.onboardingStep ?? "business";
+  let currentStep: OnboardingStep = user?.onboardingStep ?? "business";
+
+  // Users who were mid-flight at the now-removed "template" step get bumped to
+  // "plan" so they are not stranded at a deleted route.
+  if ((currentStep as string) === "template") {
+    currentStep = "plan";
+    if (user) {
+      await User.updateOne({ clerkUserId: session.userId }, { $set: { onboardingStep: "plan" } });
+    }
+  }
 
   return {
     userId: session.userId,

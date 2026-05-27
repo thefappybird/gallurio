@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
 import { StepShell, StepBackButton } from "../_components/step-shell";
@@ -24,15 +25,13 @@ export function DoneStepForm({
   const tPlans = useTranslations("plans");
   const [seedSampleData, setSeedSampleData] = useState(true);
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   const planLabel = tPlans(`${plan}.name`);
 
   function finish() {
-    setError(null);
     startTransition(async () => {
       const result = await completeOnboardingAction({ seedSampleData });
-      if (result?.error) setError(result.error);
+      if (result?.error) toast.error(result.error);
     });
   }
 
@@ -85,12 +84,6 @@ export function DoneStepForm({
             <p className="text-xs text-muted-foreground">{t("seedToggle.description")}</p>
           </div>
         </motion.button>
-
-        {error && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        )}
 
         <div className="flex items-center justify-between gap-2">
           <StepBackButton from="done" />

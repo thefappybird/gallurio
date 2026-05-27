@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   publicPageSettingsSchema,
   type PublicPageSettingsInput,
@@ -30,7 +31,6 @@ export function PublicPageSettingsForm({
   locale: string;
 }) {
   const t = useTranslations("app.settings.publicPage");
-  const [serverError, setServerError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -71,13 +71,8 @@ export function PublicPageSettingsForm({
   }
 
   async function onSubmit(data: PublicPageSettingsInput) {
-    setServerError(null);
     const result = await updatePublicPageSettingsAction(data);
-    if (result?.error) {
-      setServerError(result.error);
-      return;
-    }
-    toast.success(t("savedToast"));
+    if (!toastActionResult(result, t("savedToast"))) return;
     reset(data);
   }
 
@@ -230,12 +225,6 @@ export function PublicPageSettingsForm({
             />
           </div>
         </section>
-
-        {serverError && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !isDirty}>

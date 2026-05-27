@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -30,6 +30,18 @@ import type {
 } from "./booking-wizard-steps/types";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
+import {
+  todayIso,
+  applyTodaySnap,
+} from "./_helpers/today-snap";
+import { wallTimeInTzToUtc, FALLBACK_TZ } from "@/lib/utils/timezone";
+
+type ClientHit = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+};
 
 type Props = {
   mode: WizardMode;
@@ -43,6 +55,16 @@ type Props = {
   /** Pre-fetched booking values for edit mode. */
   initialValues?: Partial<WizardValues>;
   locale: string;
+  /** IANA timezone for the workspace — used to convert wall-clock inputs to UTC. */
+  workspaceTimezone?: string;
+  /** Pre-fetched client list — avoids per-keystroke API calls in ClientStep. */
+  clients?: ClientHit[];
+  /** Called after a new client is successfully created via this wizard. */
+  onClientCreated?: () => void;
+  /** Called on every close path (cancel, save, backdrop, Escape).
+   *  When provided, the parent owns the "is open" gate — the modal still
+   *  manages its own animation state via Dialog's open/onOpenChange. */
+  onClose?: () => void;
 };
 
 type StepDef = {
@@ -50,8 +72,14 @@ type StepDef = {
   fields: (keyof WizardValues | "amount.total" | "amount.deposit")[];
 };
 
-const STEPS: StepDef[] = [
+const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
+  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
+  { id: "pricing", fields: ["amount"] },
+  { id: "review", fields: [] },
+];
+
+const MULTI_SESSION_STEPS: StepDef[] = [
   { id: "event", fields: ["title", "eventType", "sessions", "location"] },
   { id: "pricing", fields: ["amount"] },
   { id: "review", fields: [] },
@@ -65,11 +93,16 @@ export function BookingWizardModal({
   defaultCurrency,
   initialValues,
   locale,
+  workspaceTimezone,
+  clients,
+  onClientCreated,
+  onClose,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.wizard");
+  const tDnd = useTranslations("app.bookings.dnd");
   const [, startTransition] = useTransition();
 
   const [open, setOpen] = useState(true);
@@ -77,11 +110,21 @@ export function BookingWizardModal({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(mode === "edit" && !initialValues);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [conflictCheckError, setConflictCheckError] = useState(false);
   const [editClientName, setEditClientName] = useState<string | undefined>(
     initialValues?.client?.mode === "existing"
       ? initialValues.client.clientName
       : undefined
   );
+  /** Email shown in the multi-session client sub-line (display only). */
+  const [editClientEmail, setEditClientEmail] = useState<string | null>(null);
+  /** Number of sessions on the booking being edited. Determines step list. */
+  const [editSessionCount, setEditSessionCount] = useState<number>(
+    initialValues?.sessions?.length ?? 1
+  );
+  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
+  const reqIdRef = useRef(0);
   /** Steps that have failed validation since the user last interacted with
    *  them. Drives the red-asterisk + shake markers in the header. */
   const [stepErrors, setStepErrors] = useState<Set<number>>(new Set());
@@ -89,19 +132,54 @@ export function BookingWizardModal({
    *  Next without passing validation. Drives the shake animation. */
   const [shakeKey, setShakeKey] = useState(0);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
-  /** Raw shifts per session index — keyed by startDate string.
-   *  Re-fetched whenever any session's startDate changes. */
+  /** Raw shifts keyed by YYYY-MM-DD date string. Treated as a cache — entries
+   *  are added on demand and never evicted (harmless small footprint). */
   const [rawShiftsByDate, setRawShiftsByDate] = useState<Record<string, ShiftHit[]>>({});
+  /** Mirror of rawShiftsByDate in a ref so the fetch effect can read cached keys
+   *  without adding rawShiftsByDate to its dependency array (which would re-trigger
+   *  the effect on every cache write, defeating the cache). */
+  const rawShiftsByDateRef = useRef<Record<string, ShiftHit[]>>({});
+  /** Dates currently being fetched — only in-flight (uncached) dates appear here.
+   *  Used to disable Next and show inline loaders. */
+  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
+  // Effective IANA timezone for wall-clock → UTC conversion. Falls back to
+  // the launch-market default when the workspace has not set a TZ yet.
+  const tz = workspaceTimezone || FALLBACK_TZ;
 
   const defaults = useMemo(
     () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
     [defaultDate, defaultTime, defaultCurrency, initialValues]
   );
 
+  /**
+   * In edit mode, `defaults` is computed once (initialValues is undefined →
+   * empty sessions). After the async fetch resolves and form.reset(next) fires,
+   * this ref updates so buildEditDiff compares against actual fetched values
+   * rather than the empty initial defaults.
+   */
+  const defaultsRef = useRef<WizardValues>(defaults);
+
   const form = useForm<WizardValues>({
     defaultValues: defaults,
     mode: "onChange",
   });
+
+  /**
+   * Strips both wizard-related URL params regardless of which close path ran.
+   * Defined early so it can be referenced in the edit-fetch error handler and
+   * any other async callback below without stale-closure issues.
+   */
+  const clearWizardUrlParams = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    let changed = false;
+    if (params.has("edit")) { params.delete("edit"); changed = true; }
+    if (params.has("detail")) { params.delete("detail"); changed = true; }
+    if (changed) {
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+      });
+    }
+  }, [router, pathname, searchParams]);
 
   // Edit mode: fetch the booking and reset the form with its values.
   useEffect(() => {
@@ -111,25 +189,35 @@ export function BookingWizardModal({
     fetch(`/api/bookings/${bookingId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((b) => {
-        if (cancelled || !b) return;
+        if (cancelled) return;
+        if (!b) {
+          // API returned a non-ok status (404, 403, etc.) — treat as load error.
+          setLoading(false);
+          setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
+          if (!onClose) clearWizardUrlParams();
+          return;
+        }
         const rawSessions: { startAt: string; endAt: string }[] =
           Array.isArray(b.sessions) && b.sessions.length > 0
             ? b.sessions
             : [];
         const today = new Date().toISOString().slice(0, 10);
-        const wizardSessions = rawSessions.map((s) => {
+        // In edit mode: order existing sessions chronologically so they read
+        // top-to-bottom by date. Create mode keeps insertion order because
+        // the user's workflow may have implicit meaning.
+        const sessionsForForm = [...rawSessions].sort(
+          (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        );
+        const wizardSessions = sessionsForForm.map((s) => {
           const sd = new Date(s.startAt);
           const ed = new Date(s.endAt);
           const startDate = sd.toISOString().slice(0, 10);
-          const endDate = ed.toISOString().slice(0, 10);
           const startTime = `${String(sd.getHours()).padStart(2, "0")}:${String(sd.getMinutes()).padStart(2, "0")}`;
           const endTime = `${String(ed.getHours()).padStart(2, "0")}:${String(ed.getMinutes()).padStart(2, "0")}`;
           return {
             startDate,
             startTime,
-            endDate: startDate === endDate ? "" : endDate,
             endTime,
-            singleDay: startDate === endDate,
             allowPastDate: startDate < today,
           };
         });
@@ -145,16 +233,7 @@ export function BookingWizardModal({
           sessions:
             wizardSessions.length > 0
               ? wizardSessions
-              : [
-                  {
-                    startDate: "",
-                    startTime: "10:00",
-                    endDate: "",
-                    endTime: "17:00",
-                    singleDay: true,
-                    allowPastDate: false,
-                  },
-                ],
+              : [{ startDate: "", startTime: "10:00", endTime: "17:00", allowPastDate: false }],
           location: { address: b.location?.address ?? "" },
           amount: {
             total: b.amount?.total ?? 0,
@@ -164,17 +243,33 @@ export function BookingWizardModal({
           notes: b.notes ?? "",
         };
         form.reset(next);
+        // Sync the baseline so buildEditDiff compares against fetched values,
+        // not the empty defaults computed before the fetch resolved.
+        defaultsRef.current = next;
         setEditClientName(b.clientName ?? undefined);
+        setEditClientEmail(b.clientEmail ?? null);
+        setEditSessionCount(rawSessions.length);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
+        console.error("[booking-wizard] failed to load booking", { bookingId, err });
         setLoading(false);
+        setLoadError(t("loadError") || "Couldn't load this booking. Please close and try again.");
+        // Strip the stale ?edit= param so it can't block a fresh open attempt.
+        if (!onClose) {
+          clearWizardUrlParams();
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [mode, bookingId, initialValues, defaultCurrency, form]);
+  // clearWizardUrlParams and onClose are stable across the booking's lifetime.
+  // They're intentionally excluded from the dep array — the effect should only
+  // re-run when the booking identity changes (mode/bookingId), not when URL state
+  // or parent callbacks update. The `cancelled` flag guards against stale closures.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, bookingId, initialValues, defaultCurrency, form, t]);
 
   const {
     control,
@@ -187,43 +282,82 @@ export function BookingWizardModal({
   } = form;
 
   // Watch all session startDates to know which dates need conflict lookups.
-  const watchedSessions = watch("sessions");
+  // useWatch triggers re-renders on individual subfield changes (e.g. sessions.0.startDate),
+  // whereas watch("sessions") only fires on array-level mutations (append/remove).
+  const watchedSessions = useWatch({ control, name: "sessions" });
   const sessionDates = useMemo(
     () => (watchedSessions ?? []).map((s) => s.startDate),
     [watchedSessions]
   );
 
-  // Fetch shifts for each unique startDate. Cached by date so navigating
-  // back to a date doesn't re-fetch. Clears stale dates automatically.
+  // Fetch shifts for new startDates only. Uses rawShiftsByDateRef as a read-only
+  // cache key-check so we don't re-fetch already-known dates. Only new (uncached)
+  // dates are marked loading. Results are merged into the existing cache rather
+  // than replacing it. An incrementing request id discards stale responses.
   useEffect(() => {
-    const uniqueDates = [...new Set(sessionDates.filter(Boolean))];
+    const uniqueDates = [...new Set(sessionDates.filter(isValidDateString))];
     if (uniqueDates.length === 0) return;
 
+    // Skip dates already in the cache — only fetch genuinely new ones.
+    const datesToFetch = uniqueDates.filter(
+      (d) => !(d in rawShiftsByDateRef.current)
+    );
+    if (datesToFetch.length === 0) return;
+
+    const myId = ++reqIdRef.current;
     let cancelled = false;
+
+    // Mark only in-flight (uncached) dates as loading.
+    setLoadingDates(new Set(datesToFetch));
+
     Promise.all(
-      uniqueDates.map(async (date) => {
+      datesToFetch.map(async (date) => {
         const params = new URLSearchParams({ date });
         if (mode === "edit" && bookingId) params.set("excludeId", bookingId);
         try {
           const r = await fetch(
             `/api/bookings/shifts-on-date?${params.toString()}`
           );
-          const data: { shifts: ShiftHit[] } = r.ok
-            ? await r.json()
-            : { shifts: [] };
+          if (!r.ok) {
+            // Non-2xx treated as check unavailable — return null sentinel.
+            return [date, null] as const;
+          }
+          const data: { shifts: ShiftHit[] } = await r.json();
           return [date, data.shifts ?? []] as const;
         } catch {
-          return [date, [] as ShiftHit[]] as const;
+          return [date, null] as const;
         }
       })
     ).then((entries) => {
-      if (cancelled) return;
-      setRawShiftsByDate(Object.fromEntries(entries));
+      if (cancelled || myId !== reqIdRef.current) return;
+      const hasError = entries.some(([, v]) => v === null);
+      if (hasError) {
+        // A new date failed — set the error flag. Cached good dates remain.
+        setConflictCheckError(true);
+      } else {
+        setConflictCheckError(false);
+        // Merge new results into the existing cache rather than overwriting.
+        setRawShiftsByDate((prev) => {
+          const next = {
+            ...prev,
+            ...Object.fromEntries(
+              entries.map(([date, shifts]) => [date, shifts as ShiftHit[]])
+            ),
+          };
+          // Keep the ref in sync so the next effect run can read the latest cache.
+          rawShiftsByDateRef.current = next;
+          return next;
+        });
+      }
+      setLoadingDates(new Set());
     });
 
     return () => {
       cancelled = true;
+      setLoadingDates(new Set());
     };
+  // rawShiftsByDateRef is intentionally omitted — it's a ref, not reactive state.
+  // rawShiftsByDate is omitted to avoid re-running the effect on every cache write.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [JSON.stringify(sessionDates), mode, bookingId]);
 
@@ -248,17 +382,42 @@ export function BookingWizardModal({
     [watchedSessions, rawShiftsByDate]
   );
 
+  // Multi-session edits drop the Client step — client is immutable there.
+  const isMultiSessionEdit = mode === "edit" && editSessionCount > 1;
+  const STEPS = isMultiSessionEdit ? MULTI_SESSION_STEPS : ALL_STEPS;
+
   const close = useCallback(() => {
+    setOpen(false);
+    // If the parent owns the open gate, delegate cleanup to it.
+    if (onClose) {
+      onClose();
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.delete("add");
     params.delete("date");
+    params.delete("time");
     params.delete("edit");
+    params.delete("detail");
     const qs = params.toString();
-    setOpen(false);
     startTransition(() => {
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     });
-  }, [router, pathname, searchParams]);
+  }, [router, pathname, searchParams, onClose]);
+
+  // Defensive unmount cleanup: if the component unmounts without close() having
+  // run (e.g. error boundary, parent re-render, browser back), strip the params.
+  useEffect(() => {
+    return () => {
+      // Only clean up if we actually own the URL (no onClose parent handler).
+      if (!onClose) {
+        clearWizardUrlParams();
+      }
+    };
+    // clearWizardUrlParams captures router/pathname/searchParams at effect
+    // creation time — that's intentional; we only need to run on unmount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Validates a single step's fields. Returns true if the step is good. */
   async function validateStep(index: number): Promise<boolean> {
@@ -267,6 +426,7 @@ export function BookingWizardModal({
     const rhfOk =
       fieldPaths.length === 0 ? true : await trigger(fieldPaths);
     if (step.id === "client") {
+      // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() is non-memoizable; React Compiler skips this component intentionally
       const client = watch("client");
       if (
         (client.mode === "existing" && !client.clientId) ||
@@ -281,8 +441,7 @@ export function BookingWizardModal({
       if (!title?.trim()) return false;
       // Every session must have a start date.
       if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
-      // Any session with overlapping conflicts hard-blocks the step.
-      if (conflictsBySession.some((c) => c.length > 0)) return false;
+      // Conflicts no longer block navigation — they are surfaced on final submit.
     }
     if (step.id === "pricing") {
       const { total, deposit } = watch("amount");
@@ -349,7 +508,7 @@ export function BookingWizardModal({
     setStepIndex(target);
   }
 
-  const onSubmit = handleSubmit(async (values) => {
+  const fireSubmit = useCallback(async (values: WizardValues) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -357,18 +516,35 @@ export function BookingWizardModal({
         const res = await fetch("/api/bookings", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(buildCreatePayload(values)),
+          body: JSON.stringify(buildCreatePayload(values, tz)),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           throw new Error(data.error ?? "Couldn't create booking");
         }
         toast.success(t("createdToast"));
+        // If a new client was created, notify the parent so it can refresh
+        // its client list without a full page reload.
+        if (values.client.mode === "new") {
+          onClientCreated?.();
+        }
       } else {
         if (!bookingId) throw new Error("Missing booking id");
-        const diff = buildEditDiff(values, defaults);
+        const diff = buildEditDiff(values, defaultsRef.current, tz);
+        // For single-session edits, include clientId when the client was changed.
+        const defaultClient = defaultsRef.current.client;
+        const defaultClientId =
+          defaultClient?.mode === "existing" ? defaultClient.clientId : undefined;
+        if (
+          !isMultiSessionEdit &&
+          values.client.mode === "existing" &&
+          values.client.clientId &&
+          values.client.clientId !== defaultClientId
+        ) {
+          diff.clientId = values.client.clientId;
+        }
         if (Object.keys(diff).length === 0) {
-          // No-op submit — just close.
+          // No-op submit — just close (URL cleanup happens inside close()).
           close();
           return;
         }
@@ -384,12 +560,62 @@ export function BookingWizardModal({
         toast.success(t("savedToast"));
       }
       startTransition(() => router.refresh());
+      // Success path: close() strips URL params before the router refresh lands.
       close();
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Couldn't save");
+      // Failed submit: strip URL params so the stale ?edit= doesn't persist if
+      // the user navigates away after seeing the error.
+      if (!onClose) {
+        clearWizardUrlParams();
+      }
     } finally {
       setSubmitting(false);
     }
+  }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz]);
+
+  const eventStepIndex = STEPS.findIndex((s) => s.id === "event");
+
+  /**
+   * Single source of truth for submit readiness.
+   *
+   * Returns { ok: true } when the form may be submitted, or
+   * { ok: false, reason: "loading" | "error" | "conflict" } when it must be
+   * blocked. Both onSubmit and saveFromAnywhere must call this before proceeding.
+   */
+  function canSubmit():
+    | { ok: true }
+    | { ok: false; reason: "loading" | "error" | "conflict" } {
+    if (loadingDates.size > 0) return { ok: false, reason: "loading" };
+    if (conflictCheckError) return { ok: false, reason: "error" };
+    if (conflictsBySession.some((c) => c.length > 0))
+      return { ok: false, reason: "conflict" };
+    return { ok: true };
+  }
+
+  /** Surfaces the appropriate toast and marks the event step as invalid. */
+  function blockOnConflict(reason: "loading" | "error" | "conflict") {
+    setStepErrors((prev) => new Set(prev).add(eventStepIndex));
+    setShakeKey((k) => k + 1);
+    if (reason === "loading") {
+      toast.info(t("event.checkingConflicts"));
+    } else if (reason === "error") {
+      toast.error(tDnd("conflictCheckFailed"));
+    } else {
+      toast.error(tDnd("conflictBlockSubmit"));
+    }
+  }
+
+  const onSubmit = handleSubmit(async (values) => {
+    // Defense in depth: block submit if conflict fetch is in-flight, errored,
+    // or returned actual conflicts. The Next button on the event step enforces
+    // the same guard, but onSubmit must be independently safe.
+    const guard = canSubmit();
+    if (!guard.ok) {
+      blockOnConflict(guard.reason);
+      return;
+    }
+    await fireSubmit(values);
   });
 
   function attemptClose(next: boolean) {
@@ -406,6 +632,12 @@ export function BookingWizardModal({
   /** Save in edit mode without having to navigate to the final step. */
   const saveFromAnywhere = async () => {
     if (mode !== "edit") return;
+    // Guard: block if conflict fetch is unresolved or errored — same gate as onSubmit.
+    const guard = canSubmit();
+    if (!guard.ok) {
+      blockOnConflict(guard.reason);
+      return;
+    }
     // Validate every step's required fields before saving.
     for (let i = 0; i < STEPS.length; i += 1) {
       const ok = await validateStep(i);
@@ -421,20 +653,28 @@ export function BookingWizardModal({
 
   const current = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
-  const isReadOnlyClient = mode === "edit";
+  // Single-session edits now show the full picker; multi-session edits drop
+  // the Client step entirely (handled above via STEPS selection).
+  const isReadOnlyClient = false;
   const values = watch();
 
   return (
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100vh-3rem)] w-full max-w-2xl flex-col gap-0 p-0 sm:max-w-2xl"
+        className="flex max-h-[calc(100vh-4em)] w-full max-w-2xl flex-col gap-0 p-0 transition-[max-height,width] duration-200 ease-out sm:max-w-2xl"
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex flex-col gap-1">
             <DialogTitle>
               {mode === "create" ? t("createTitle") : t("editTitle")}
             </DialogTitle>
+            {isMultiSessionEdit && editClientName ? (
+              <p className="text-xs text-muted-foreground">
+                {t("client.readOnlyLabel")}: {editClientName}
+                {editClientEmail ? ` · ${editClientEmail}` : ""}
+              </p>
+            ) : null}
             <ol className="flex items-center gap-1.5 text-xs text-muted-foreground">
               {STEPS.map((s, i) => {
                 const hasError = stepErrors.has(i);
@@ -501,39 +741,57 @@ export function BookingWizardModal({
           onSubmit={onSubmit}
           className="flex min-h-96 flex-1 flex-col overflow-y-auto"
         >
-          <div className="flex flex-1 flex-col gap-3 px-4 py-3">
+          <div className="flex flex-1 flex-col gap-3 px-4 py-3 transition-[padding] duration-200 ease-out">
             {loading ? (
               <p className="py-10 text-center text-sm text-muted-foreground">
                 {t("loading")}
               </p>
             ) : null}
-            {!loading && current.id === "client" ? (
-              <ClientStep
-                control={control}
-                errors={errors}
-                readOnly={isReadOnlyClient}
-                readOnlyClientName={editClientName}
-              />
+            {loadError ? (
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <p className="text-sm text-destructive">{loadError}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => attemptClose(false)}>
+                  {t("cancel")}
+                </Button>
+              </div>
             ) : null}
-            {!loading && current.id === "event" ? (
-              <EventStep
-                control={control}
-                register={register}
-                watch={watch}
-                setValue={setValue}
-                errors={errors}
-                conflictsBySession={conflictsBySession}
-              />
-            ) : null}
-            {!loading && current.id === "pricing" ? (
-              <PricingStep
-                control={control}
-                register={register}
-                errors={errors}
-              />
-            ) : null}
-            {!loading && current.id === "review" ? (
-              <ReviewStep values={values} locale={locale} />
+            {!loading && !loadError ? (
+              <div
+                key={current.id}
+                className="flex flex-col gap-3 animate-in fade-in-0 slide-in-from-right-1 duration-200"
+              >
+                {current.id === "client" ? (
+                  <ClientStep
+                    control={control}
+                    errors={errors}
+                    readOnly={isReadOnlyClient}
+                    readOnlyClientName={editClientName}
+                    clients={clients}
+                  />
+                ) : null}
+                {current.id === "event" ? (
+                  <EventStep
+                    control={control}
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    errors={errors}
+                    conflictsBySession={conflictsBySession}
+                    loadingDates={loadingDates}
+                    conflictCheckError={conflictCheckError}
+                  />
+                ) : null}
+                {current.id === "pricing" ? (
+                  <PricingStep
+                    control={control}
+                    register={register}
+                    errors={errors}
+                  />
+                ) : null}
+                {current.id === "review" ? (
+                  <ReviewStep values={values} locale={locale} />
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -555,10 +813,10 @@ export function BookingWizardModal({
                 {mode === "edit" ? (
                   <Button
                     type="button"
+                    variant="brand"
                     size="sm"
                     onClick={saveFromAnywhere}
                     disabled={submitting}
-                    className="bg-brand text-brand-foreground hover:bg-brand/90"
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
@@ -583,17 +841,28 @@ export function BookingWizardModal({
                     type="button"
                     size="sm"
                     onClick={nextStep}
-                    disabled={submitting}
+                    disabled={
+                      submitting ||
+                      !!loadError ||
+                      (STEPS[stepIndex].id === "event" &&
+                        (loadingDates.size > 0 ||
+                          conflictCheckError ||
+                          conflictsBySession.some((c) => c.length > 0)))
+                    }
                     key={`next-${stepErrors.has(stepIndex) ? shakeKey : 0}`}
-                    className={cn(
-                      stepErrors.has(stepIndex) && "animate-shake"
-                    )}
+                    variant="brand"
+                    className={cn(stepErrors.has(stepIndex) && "animate-shake")}
                   >
                     {t("next")}
                     <ChevronRightIcon className="size-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" size="sm" disabled={submitting}>
+                  <Button
+                    type="submit"
+                    variant="brand"
+                    size="sm"
+                    disabled={submitting || !!loadError || (mode === "edit" && !isDirty)}
+                  >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
                     ) : null}
@@ -620,6 +889,7 @@ export function BookingWizardModal({
           close();
         }}
       />
+
     </Dialog>
   );
 }
@@ -635,13 +905,33 @@ function makeDefaults({
   defaultCurrency: SupportedCurrency;
   initialValues?: Partial<WizardValues>;
 }): WizardValues {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = todayIso(now);
+
+  // When no explicit time was provided and the default start date is today,
+  // snap to the next 30-min slot after now and adjust end time to preserve
+  // the default 7-hour duration.
+  let resolvedStartDate = defaultDate ?? "";
+  let resolvedStartTime = defaultTime ?? "10:00";
+  let resolvedEndTime = "17:00";
+
+  if (!defaultTime && defaultDate && defaultDate === today) {
+    const snapped = applyTodaySnap({
+      prevStartDate: defaultDate,
+      prevStartTime: "10:00",
+      prevEndDate: "",
+      prevEndTime: "17:00",
+      now,
+    });
+    resolvedStartDate = snapped.startDate;
+    resolvedStartTime = snapped.startTime;
+    resolvedEndTime = snapped.endTime;
+  }
+
   const defaultSession = {
-    startDate: defaultDate ?? "",
-    startTime: defaultTime ?? "10:00",
-    endDate: "",
-    endTime: "17:00",
-    singleDay: true,
+    startDate: resolvedStartDate,
+    startTime: resolvedStartTime,
+    endTime: resolvedEndTime,
     allowPastDate: defaultDate ? defaultDate < today : false,
   };
 
@@ -666,25 +956,17 @@ function makeDefaults({
   };
 }
 
-function combineDateTime(date: string, time: string): string {
-  if (!date) return "";
-  const t = time && /^\d{2}:\d{2}$/.test(time) ? time : "00:00";
-  return new Date(`${date}T${t}:00`).toISOString();
-}
-
 function sessionsToPayload(
-  sessions: WizardValues["sessions"]
+  sessions: WizardValues["sessions"],
+  timeZone: string
 ): { startAt: string; endAt: string }[] {
-  return sessions.map((s) => {
-    const startIso = combineDateTime(s.startDate, s.startTime);
-    // Single-day: end date = start date. Multi-day: use endDate.
-    const endDate = s.singleDay ? s.startDate : s.endDate || s.startDate;
-    const endIso = combineDateTime(endDate, s.endTime || s.startTime);
-    return { startAt: startIso, endAt: endIso };
-  });
+  return sessions.map((s) => ({
+    startAt: wallTimeInTzToUtc(s.startDate, s.startTime, timeZone),
+    endAt: wallTimeInTzToUtc(s.startDate, s.endTime, timeZone),
+  }));
 }
 
-function buildCreatePayload(v: WizardValues) {
+function buildCreatePayload(v: WizardValues, timeZone: string) {
   // POST /api/bookings expects bookingCreateSchema — strip clientName from
   // existing-mode client (server looks it up by id) and pass everything else
   // through. Date + time combine into full ISO strings here.
@@ -703,7 +985,7 @@ function buildCreatePayload(v: WizardValues) {
     title: v.title,
     eventType: v.eventType,
     status: v.status,
-    sessions: sessionsToPayload(v.sessions),
+    sessions: sessionsToPayload(v.sessions, timeZone),
     location: { address: v.location.address },
     amount: {
       total: v.amount.total,
@@ -716,7 +998,8 @@ function buildCreatePayload(v: WizardValues) {
 
 function buildEditDiff(
   v: WizardValues,
-  defaults: WizardValues
+  defaults: WizardValues,
+  timeZone: string
 ): Record<string, unknown> {
   const diff: Record<string, unknown> = {};
   if (v.title !== defaults.title) diff.title = v.title;
@@ -728,7 +1011,7 @@ function buildEditDiff(
   const sessionsChanged =
     JSON.stringify(v.sessions) !== JSON.stringify(defaults.sessions);
   if (sessionsChanged) {
-    diff.sessions = sessionsToPayload(v.sessions);
+    diff.sessions = sessionsToPayload(v.sessions, timeZone);
   }
 
   if (v.location.address !== defaults.location.address)
@@ -749,6 +1032,21 @@ function toMinutes(hhmm: string | undefined | null): number | null {
   const [h, m] = hhmm.split(":").map(Number);
   if (h < 0 || h > 23 || m < 0 || m > 59) return null;
   return h * 60 + m;
+}
+
+/**
+ * Returns true only for a well-formed, calendar-valid YYYY-MM-DD string.
+ * Round-trip check catches out-of-range values like "2025-13-45" or "2025-02-30".
+ * Uses explicit UTC midnight (T00:00:00Z) so the check is timezone-invariant —
+ * local-time construction would shift the date back in UTC+N zones and cause the
+ * round-trip to fail for valid dates near midnight.
+ */
+function isValidDateString(s: string): boolean {
+  if (!s) return false;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.toISOString().slice(0, 10) === s;
 }
 
 // Re-export for the page wrapper.

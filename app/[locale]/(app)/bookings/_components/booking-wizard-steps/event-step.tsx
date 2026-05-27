@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useFieldArray,
   Controller,
@@ -11,7 +11,10 @@ import {
   type UseFormWatch,
 } from "react-hook-form";
 import { useTranslations } from "next-intl";
-import { AlertTriangleIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,6 +30,8 @@ import type { WizardValues } from "./types";
 
 export type ShiftHit = {
   id: string;
+  bookingId?: string;
+  sessionIndex?: number;
   title: string;
   shiftStart: string;
   shiftEnd: string;
@@ -41,6 +46,10 @@ type Props = {
   /** Per-session conflicts — array parallel to sessions[]. Passed in from the
    *  wizard host so the same data gates the Next button. */
   conflictsBySession: ShiftHit[][];
+  /** Dates currently being fetched — used to show inline loading state per card. */
+  loadingDates: Set<string>;
+  /** When true, the conflict-check fetch failed — show an inline warning. */
+  conflictCheckError?: boolean;
 };
 
 function todayIso() {
@@ -49,6 +58,13 @@ function todayIso() {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function nowHHMM() {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 const Asterisk = () => <span className="ml-0.5 text-destructive">*</span>;
@@ -61,6 +77,7 @@ function SessionCard({
   setValue,
   errors,
   conflicts,
+  loading,
   onRemove,
 }: {
   index: number;
@@ -70,18 +87,25 @@ function SessionCard({
   setValue: UseFormSetValue<WizardValues>;
   errors: FieldErrors<WizardValues>;
   conflicts: ShiftHit[];
+  loading: boolean;
   onRemove: () => void;
 }) {
   const t = useTranslations("app.bookings.wizard.event");
   const tSessions = useTranslations("app.bookings.sessions");
 
   const startDate = watch(`sessions.${index}.startDate`);
-  const singleDay = watch(`sessions.${index}.singleDay`);
   const allowPastDate = watch(`sessions.${index}.allowPastDate`);
 
   const isPastDate = !!startDate && startDate < todayIso();
   const startMin = allowPastDate ? undefined : todayIso();
-  const endMin = startDate || startMin;
+  // When the start date is today and past dates aren't allowed, block past
+  // times of day in the start-time input. Matches the drag-and-drop
+  // past-time confirm flow so both entry points enforce the same rule.
+  const startTimeMin =
+    !allowPastDate && startDate === todayIso() ? nowHHMM() : undefined;
+
+  // Track the previous startDate so we can detect transitions to today.
+  const prevStartRef = useRef(startDate);
 
   // When user picks a past date, auto-enable allowPastDate.
   useEffect(() => {
@@ -90,17 +114,60 @@ function SessionCard({
     }
   }, [isPastDate, allowPastDate, setValue, index]);
 
-  // Lock end-date to start-date when singleDay is on.
+  // When start date transitions to today, snap start+end times to the next
+  // 30-min slot after now. If the snap would push end past midnight, clamp
+  // endTime to "23:59" instead of advancing the date (sessions are single-day).
   useEffect(() => {
-    if (singleDay && startDate) {
-      setValue(`sessions.${index}.endDate`, startDate, { shouldDirty: false });
+    const prevStart = prevStartRef.current;
+    prevStartRef.current = startDate;
+
+    if (!startDate) return;
+
+    const startBecameToday = prevStart !== startDate && isToday(startDate);
+    if (!startBecameToday) return;
+
+    const currentStartTime = watch(`sessions.${index}.startTime`);
+    const currentEndTime = watch(`sessions.${index}.endTime`);
+    const snapped = applyTodaySnap({
+      prevStartDate: prevStart || startDate,
+      prevStartTime: currentStartTime,
+      prevEndDate: startDate,
+      prevEndTime: currentEndTime,
+    });
+
+    if (snapped.startDate !== startDate) {
+      // Snap crossed midnight — advance start date to tomorrow.
+      setValue(`sessions.${index}.startDate`, snapped.startDate, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     }
-  }, [singleDay, startDate, setValue, index]);
+
+    setValue(`sessions.${index}.startTime`, snapped.startTime, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+
+    // Clamp end time: sessions are strictly single-day, never cross midnight.
+    const clampedEndTime =
+      snapped.endDate !== (snapped.startDate) ? "23:59" : snapped.endTime;
+    setValue(`sessions.${index}.endTime`, clampedEndTime, {
+      shouldDirty: true,
+      shouldValidate: true,
+    });
+  // prevStartRef is a stable ref and must NOT be in the dep array.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, setValue, index]);
 
   const sessionErrors = errors.sessions?.[index];
 
   return (
-    <div className="flex flex-col gap-3 border border-border p-3">
+    <div
+      className={cn(
+        "flex flex-col gap-3 border p-3",
+        conflicts.length > 0 ? "border-destructive bg-destructive/5" : "border-border"
+      )}
+    >
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">
           {tSessions("label", { n: index + 1 })}
@@ -118,44 +185,80 @@ function SessionCard({
         ) : null}
       </div>
 
-      {/* Start date + time */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor={`wiz-startDate-${index}`}>
-            {t("startAt")}
-            <Asterisk />
-          </Label>
-          <Input
-            id={`wiz-startDate-${index}`}
-            type="date"
-            min={startMin}
-            {...register(`sessions.${index}.startDate`, { required: true })}
-            aria-invalid={sessionErrors?.startDate ? "true" : undefined}
-            onChange={(e) => {
-              setValue(`sessions.${index}.startDate`, e.target.value, { shouldDirty: true });
-              const end = watch(`sessions.${index}.endDate`);
-              if (end && end < e.target.value) {
-                setValue(`sessions.${index}.endDate`, e.target.value, { shouldDirty: true });
-              }
-            }}
-          />
-          {sessionErrors?.startDate ? (
-            <p className="text-xs text-destructive">{t("startAtRequired")}</p>
-          ) : null}
-        </div>
+      {/* Row 1: Start date alone */}
+      <div className="flex flex-col gap-1">
+        <Label htmlFor={`wiz-startDate-${index}`}>
+          {t("startAt")}
+          <Asterisk />
+        </Label>
+        <Input
+          id={`wiz-startDate-${index}`}
+          type="date"
+          min={startMin}
+          {...register(`sessions.${index}.startDate`, { required: true })}
+          aria-invalid={sessionErrors?.startDate ? "true" : undefined}
+        />
+        {sessionErrors?.startDate ? (
+          <p className="text-xs text-destructive">{t("startAtRequired")}</p>
+        ) : null}
+      </div>
+
+      {/* Row 2: Start time + End time, 50/50 */}
+      <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor={`wiz-startTime-${index}`}>{t("startTime")}</Label>
           <Input
             id={`wiz-startTime-${index}`}
             type="time"
-            className="w-32"
-            {...register(`sessions.${index}.startTime`)}
+            lang={DEFAULT_TIME_INPUT_LANG}
+            min={startTimeMin}
+            {...register(`sessions.${index}.startTime`, {
+              required: true,
+              pattern: /^\d{2}:\d{2}$/,
+            })}
+            aria-invalid={sessionErrors?.startTime ? "true" : undefined}
           />
+          {sessionErrors?.startTime ? (
+            <p className="text-xs text-destructive">{t("startTimeRequired")}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor={`wiz-endTime-${index}`}>{t("endTime")}</Label>
+          <Input
+            id={`wiz-endTime-${index}`}
+            type="time"
+            lang={DEFAULT_TIME_INPUT_LANG}
+            {...register(`sessions.${index}.endTime`, {
+              required: true,
+              pattern: /^\d{2}:\d{2}$/,
+              validate: (v: string) => {
+                const start = watch(`sessions.${index}.startTime`);
+                if (!start || !v) return true;
+                return v > start || "endTimeBeforeStart";
+              },
+            })}
+            aria-invalid={sessionErrors?.endTime ? "true" : undefined}
+          />
+          {sessionErrors?.endTime ? (
+            <p className="text-xs text-destructive">
+              {sessionErrors.endTime.message === "endTimeBeforeStart"
+                ? t("endTimeBeforeStart")
+                : t("endTimeRequired")}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      {/* Conflicts for this session */}
-      {conflicts.length > 0 ? (
+      {/* Conflict check loading indicator */}
+      {loading ? (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-live="polite">
+          <Loader2Icon className="size-3.5 animate-spin" />
+          <span>{t("checkingConflicts")}</span>
+        </div>
+      ) : null}
+
+      {/* Conflicts for this session — only shown when not loading */}
+      {!loading && conflicts.length > 0 ? (
         <div className="flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
           <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -191,39 +294,6 @@ function SessionCard({
         />
         {t("allowPastDate")}
       </label>
-
-      {/* End date + time */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor={`wiz-endDate-${index}`}>{t("endAt")}</Label>
-          <Input
-            id={`wiz-endDate-${index}`}
-            type="date"
-            min={endMin}
-            disabled={singleDay}
-            {...register(`sessions.${index}.endDate`)}
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor={`wiz-endTime-${index}`}>{t("endTime")}</Label>
-          <Input
-            id={`wiz-endTime-${index}`}
-            type="time"
-            className="w-32"
-            {...register(`sessions.${index}.endTime`)}
-          />
-        </div>
-      </div>
-
-      {/* Single-day toggle */}
-      <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          {...register(`sessions.${index}.singleDay`)}
-          className="size-3.5 accent-brand"
-        />
-        {t("singleDay")}
-      </label>
     </div>
   );
 }
@@ -235,6 +305,8 @@ export function EventStep({
   setValue,
   errors,
   conflictsBySession,
+  loadingDates,
+  conflictCheckError = false,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
   const tEvent = useTranslations("app.bookings.eventTypes");
@@ -250,9 +322,7 @@ export function EventStep({
     append({
       startDate: "",
       startTime: last?.startTime || "10:00",
-      endDate: "",
       endTime: last?.endTime || "17:00",
-      singleDay: true,
       allowPastDate: false,
     });
   }
@@ -289,12 +359,12 @@ export function EventStep({
                 value={field.value}
                 onValueChange={(v) => v && field.onChange(v)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="capitalize">
                   <SelectValue placeholder={t("eventType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {EVENT_TYPES.map((e) => (
-                    <SelectItem key={e} value={e}>
+                    <SelectItem key={e} value={e} className="capitalize">
                       {safe(tEvent, e, e)}
                     </SelectItem>
                   ))}
@@ -305,21 +375,32 @@ export function EventStep({
         </div>
       </div>
 
-      {/* Sessions list */}
-      <div className="flex flex-col gap-2">
-        {fields.map((field, i) => (
-          <SessionCard
-            key={field.id}
-            index={i}
-            total={fields.length}
-            register={register}
-            watch={watch}
-            setValue={setValue}
-            errors={errors}
-            conflicts={conflictsBySession[i] ?? []}
-            onRemove={() => remove(i)}
-          />
-        ))}
+      {/* Conflict-check error warning */}
+      {conflictCheckError ? (
+        <p className="text-xs text-destructive">
+          {"Couldn't verify conflicts — try again before continuing."}
+        </p>
+      ) : null}
+
+      {/* Sessions list — only this region scrolls */}
+      <div className="flex max-h-100 flex-col gap-3 overflow-y-auto pr-1">
+        {fields.map((field, i) => {
+          const sessionDate = watch(`sessions.${i}.startDate`);
+          return (
+            <SessionCard
+              key={field.id}
+              index={i}
+              total={fields.length}
+              register={register}
+              watch={watch}
+              setValue={setValue}
+              errors={errors}
+              conflicts={conflictsBySession[i] ?? []}
+              loading={!!(sessionDate && loadingDates.has(sessionDate))}
+              onRemove={() => remove(i)}
+            />
+          );
+        })}
       </div>
 
       {/* Add session button */}

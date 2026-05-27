@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { DEFAULT_TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
 
 export type EditableFieldType =
   | "text"
@@ -114,6 +115,14 @@ export function EditableField({
     setError(null);
   }
 
+  /** The value that was active when the user opened the editor. */
+  const originalValue = hasPending ? (pendingValue ?? null) : (value ?? null);
+  const normalizedDraft = normalize(draft, type);
+  const normalizedOriginal = normalize(originalValue, type);
+  const isDirty = String(normalizedDraft) !== String(normalizedOriginal);
+  const validationError = validate?.(normalizedDraft) ?? null;
+  const canCommit = isDirty && !validationError;
+
   const currentDisplay = (() => {
     const v = hasPending ? (pendingValue ?? null) : (value ?? null);
     if (formatDisplay) return formatDisplay(v);
@@ -135,10 +144,7 @@ export function EditableField({
         month: "short",
         day: "numeric",
       });
-      const timePart = d.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      });
+      const timePart = formatTime(d);
       return `${datePart} · ${timePart}`;
     }
     return String(v);
@@ -218,6 +224,7 @@ export function EditableField({
                   />
                   <Input
                     type="time"
+                    lang={DEFAULT_TIME_INPUT_LANG}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>
@@ -298,6 +305,7 @@ export function EditableField({
                 variant="ghost"
                 onClick={commit}
                 aria-label="Confirm"
+                disabled={!canCommit}
               >
                 <CheckIcon className="size-4" />
               </Button>

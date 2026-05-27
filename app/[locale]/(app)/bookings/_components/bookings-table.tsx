@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
+import { dayBoundInTz } from "@/lib/utils/timezone";
+import { isoDateInTz } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type BookingRow = {
@@ -36,6 +38,8 @@ export type BookingRow = {
   title: string;
   clientName: string;
   sessions: { startAt: string; endAt: string }[];
+  /** ISO string of the latest session's endAt — used to compute isPast. */
+  lastSessionEnd: string;
   status: BookingStatus;
   total: number;
   currency: string;
@@ -45,9 +49,30 @@ type Props = {
   rows: BookingRow[];
   locale: string;
   empty: string;
+  showPast?: boolean;
+  workspaceTimezone?: string;
 };
 
-export function BookingsTable({ rows, locale, empty }: Props) {
+/**
+ * Returns true when ALL sessions of a booking ended before today (midnight)
+ * in the given workspace timezone.
+ *
+ * Falls back to UTC when no timezone is provided to keep behaviour
+ * deterministic regardless of the viewer's browser locale.
+ */
+function computeIsPast(lastSessionEnd: string, tz: string): boolean {
+  const todayStr = isoDateInTz(new Date(), tz);
+  const todayStart = dayBoundInTz(todayStr, tz, 0, 0, 0, 0);
+  return new Date(lastSessionEnd) < todayStart;
+}
+
+export function BookingsTable({
+  rows,
+  locale,
+  empty,
+  showPast = false,
+  workspaceTimezone = "UTC",
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -56,6 +81,11 @@ export function BookingsTable({ rows, locale, empty }: Props) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "sessions", desc: false },
   ]);
+
+  // Client-side filter: hide fully-past bookings unless showPast is enabled.
+  const visibleRows = showPast
+    ? rows
+    : rows.filter((r) => !computeIsPast(r.lastSessionEnd, workspaceTimezone));
 
   const openDetail = useCallback(
     (id: string) => {
@@ -116,16 +146,24 @@ export function BookingsTable({ rows, locale, empty }: Props) {
         cell: (info) => {
           const v = info.getValue<BookingStatus>();
           const isBooked = v === "booked";
+          const isPast = computeIsPast(info.row.original.lastSessionEnd, workspaceTimezone);
           return (
-            <Badge
-              variant={isBooked ? "default" : "outline"}
-              className={
-                "font-normal capitalize" +
-                (isBooked ? " bg-brand text-brand-foreground" : "")
-              }
-            >
-              {v}
-            </Badge>
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Badge
+                variant={isBooked ? "default" : "outline"}
+                className={
+                  "font-normal capitalize" +
+                  (isBooked ? " bg-brand text-brand-foreground" : "")
+                }
+              >
+                {v}
+              </Badge>
+              {isPast && (
+                <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t("past")}
+                </span>
+              )}
+            </span>
           );
         },
       },
@@ -173,11 +211,12 @@ export function BookingsTable({ rows, locale, empty }: Props) {
         enableSorting: false,
       },
     ],
-    [locale, t, tActions, openDetail]
+    [locale, t, tActions, openDetail, workspaceTimezone]
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable returns non-memoizable functions; React Compiler skips this component intentionally
   const table = useReactTable({
-    data: rows,
+    data: visibleRows,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -185,7 +224,7 @@ export function BookingsTable({ rows, locale, empty }: Props) {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  if (rows.length === 0) {
+  if (visibleRows.length === 0) {
     return (
       <div className="border border-dashed border-border bg-card p-12 text-center text-sm text-muted-foreground">
         {empty}
@@ -241,13 +280,14 @@ export function BookingsTable({ rows, locale, empty }: Props) {
         <tbody>
           {table.getRowModel().rows.map((row) => {
             const cancelled = row.original.status === "cancelled";
+            const isPast = computeIsPast(row.original.lastSessionEnd, workspaceTimezone);
             return (
               <tr
                 key={row.id}
                 onClick={() => openDetail(row.original.id)}
                 className={cn(
                   "cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40",
-                  cancelled && "opacity-60"
+                  (cancelled || isPast) && "opacity-60"
                 )}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -255,7 +295,10 @@ export function BookingsTable({ rows, locale, empty }: Props) {
                     key={cell.id}
                     className={cn(
                       "px-3 py-2.5 align-middle",
-                      cancelled && cell.column.id === "title" && "line-through"
+                      (cancelled || isPast) &&
+                        (cell.column.id === "title" ||
+                          cell.column.id === "sessions") &&
+                        "line-through"
                     )}
                     onClick={(e) => {
                       if (cell.column.id === "actions") e.stopPropagation();
