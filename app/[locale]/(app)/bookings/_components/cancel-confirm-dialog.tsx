@@ -58,7 +58,7 @@ export function CancelConfirmDialog({
             variant="destructive"
             size="sm"
             onClick={onConfirm}
-            disabled={busy}
+            loading={busy}
           >
             {t("confirm")}
           </Button>
