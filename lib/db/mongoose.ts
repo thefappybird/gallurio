@@ -30,7 +30,16 @@ if (!globalForMongoose.mongoose) {
 }
 
 export async function connectDB(): Promise<Mongoose> {
+  // Fast path: already connected (e.g. connected by a test harness or a previous call).
   if (cached.conn) return cached.conn;
+
+  // Secondary fast path: the underlying mongoose connection is already open
+  // (happens in tests that call mongoose.connect() directly via the in-memory
+  // server helper without going through this cache).
+  if (mongoose.connection.readyState === 1) {
+    cached.conn = mongoose as unknown as Mongoose;
+    return cached.conn;
+  }
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(getMongoUri(), {
