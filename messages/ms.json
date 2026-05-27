@@ -282,6 +282,8 @@
         "pastDateWarning": "Dipindahkan ke tarikh lepas",
         "pastSplitWarning": "Hari-hari lepas dikekalkan — hanya hari-hari akan datang dikemas kini",
         "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang lepas",
+        "updating": "Mengemas kini tempahan…",
+        "updated": "Tempahan dikemas kini",
         "updateError": "Gagal mengemas kini tempahan",
         "conflictCheckFailed": "Tidak dapat mengesahkan konflik — sila cuba lagi",
         "overnightNotAllowed": "Tempahan tidak boleh melepasi tengah malam. Gunakan sesi berulang untuk merangkumi beberapa hari.",
@@ -613,6 +615,10 @@
         "rowsPerPage": "Setiap halaman",
         "previous": "Sebelumnya",
         "next": "Seterusnya"
+      },
+      "toasts": {
+        "reactivating": "Mengaktifkan semula pelanggan…",
+        "deactivating": "Menyahaktifkan pelanggan…"
       }
     }
   },

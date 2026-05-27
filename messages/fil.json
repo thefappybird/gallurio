@@ -282,6 +282,8 @@
         "pastDateWarning": "Inilipat sa nakaraang petsa",
         "pastSplitWarning": "Ang mga nakaraang araw ay napanatili — ang mga susunod na araw lamang ang na-update",
         "thisDayOnlyOnPast": "Hindi maaaring i-edit ang nakaraang araw",
+        "updating": "Ina-update ang booking…",
+        "updated": "Na-update ang booking",
         "updateError": "Hindi na-update ang booking",
         "conflictCheckFailed": "Hindi ma-verify ang mga salungatan — pakisubukan muli",
         "overnightNotAllowed": "Hindi puwedeng tumawid ng hatinggabi ang booking. Gamitin ang repeating sessions para sa maraming araw.",
@@ -613,6 +615,10 @@
         "rowsPerPage": "Bawat pahina",
         "previous": "Nakaraan",
         "next": "Susunod"
+      },
+      "toasts": {
+        "reactivating": "Binubuhay muli ang kliyente…",
+        "deactivating": "Dini-deaktibo ang kliyente…"
       }
     }
   },

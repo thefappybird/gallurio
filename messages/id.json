@@ -282,6 +282,8 @@
         "pastDateWarning": "Dipindahkan ke tanggal lampau",
         "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
         "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang telah berlalu",
+        "updating": "Memperbarui pemesanan…",
+        "updated": "Pemesanan diperbarui",
         "updateError": "Gagal memperbarui pemesanan",
         "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi",
         "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
@@ -613,6 +615,10 @@
         "rowsPerPage": "Per halaman",
         "previous": "Sebelumnya",
         "next": "Berikutnya"
+      },
+      "toasts": {
+        "reactivating": "Mengaktifkan kembali klien…",
+        "deactivating": "Menonaktifkan klien…"
       }
     }
   },
