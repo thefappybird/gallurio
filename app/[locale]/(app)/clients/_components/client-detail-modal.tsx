@@ -107,9 +107,12 @@ function ClientDetailModalInner({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex max-w-lg flex-col gap-0 p-0">
+      {/* Cap modal height to the small viewport so long notes / 50-row
+          booking lists scroll inside the tab panels instead of pushing the
+          header and footer past the screen edge on mobile. */}
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-0 p-0">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <div className="flex flex-col">
             <DialogTitle className="leading-snug">{client.name}</DialogTitle>
             {!client.isActive && (
@@ -268,7 +271,7 @@ function ClientDetailModalInner({
         </Tabs>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-t border-border px-4 py-3">
           <Button
             type="button"
             variant={client.isActive ? "outline" : "default"}
