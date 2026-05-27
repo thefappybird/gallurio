@@ -12,6 +12,7 @@ import {
 } from "@/lib/auth/assertCanAddTeamMember";
 import { Team } from "@/lib/db/models/team";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
+import { User } from "@/lib/db/models/User";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -52,6 +53,19 @@ export async function assignMemberToTeamAction(
     .select({ _id: 1 })
     .lean();
   if (!team) return { error: "TEAM_NOT_FOUND" };
+
+  // Verify the clerkUserId belongs to THIS workspace. The UI only surfaces
+  // real members, but a direct server-action call could otherwise consume
+  // team seats for an arbitrary Clerk user. The Clerk webhook keeps
+  // User.memberships in sync with org membership, so this query is the
+  // authoritative check.
+  const userInWorkspace = await User.findOne({
+    clerkUserId,
+    "memberships.workspaceId": ctx.workspace._id,
+  })
+    .select({ _id: 1 })
+    .lean();
+  if (!userInWorkspace) return { error: "USER_NOT_IN_WORKSPACE" };
 
   const existing = await TeamMembership.findOne({
     teamId: teamObjectId,
