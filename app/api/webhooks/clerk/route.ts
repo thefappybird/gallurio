@@ -15,6 +15,7 @@ import {
   PendingTeamAssignment,
 } from "@/lib/db/models";
 import { releaseTeamSeat } from "@/lib/auth/assertCanAddTeamMember";
+import { claimPendingInviteForAccept } from "@/lib/db/jobs/release-pending-invite-seats";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -152,21 +153,30 @@ export async function POST(req: Request) {
 
         // Drain pending team assignments only on first membership creation.
         // `organizationMembership.updated` can re-fire (e.g. role change) but
-        // the pending row will have already been deleted by then, so the
-        // findOne below is a no-op.
+        // the pending row will have already been deleted by then.
+        //
+        // Concurrency: we atomically claim the row for the "accept" outcome
+        // before reading its teamIds. If a concurrent release path already
+        // claimed it (owner revoked between sending the invite and the user
+        // clicking accept), claimPendingInviteForAccept returns null and we
+        // skip the drain — the seats are being refunded, no TeamMembership
+        // rows should be created for this invite.
         const memberEmail = (
           m.public_user_data.identifier ?? ""
         ).toLowerCase();
         if (memberEmail && role === "staff") {
-          const pending = await PendingTeamAssignment.findOne({
-            workspaceId: workspace._id,
-            email: memberEmail,
-          }).lean();
+          const pending = await claimPendingInviteForAccept(
+            workspace._id,
+            memberEmail,
+          );
           if (pending) {
+            // Need lead flags — claimPendingInviteForAccept already returned
+            // them as part of the claim, kept on the doc for the duration of
+            // the lease.
             const leadSet = new Set(
-              (pending.leadOnTeamIds ?? []).map((id) => String(id)),
+              pending.leadOnTeamIds.map((id) => String(id)),
             );
-            for (const teamId of pending.teamIds ?? []) {
+            for (const teamId of pending.teamIds) {
               const team = await Team.findOne({
                 _id: teamId,
                 workspaceId: workspace._id,

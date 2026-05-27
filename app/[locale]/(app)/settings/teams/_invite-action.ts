@@ -66,6 +66,42 @@ export async function inviteMemberAction(
     return { error: "TEAM_NOT_FOUND", unknownTeamIds: missing };
   }
 
+  // Re-invite over an existing pending invite: release the prior reservation
+  // before reserving new seats. Without this, the upsert below would silently
+  // overwrite `teamIds`, orphaning the old seats — they'd stay reserved on
+  // Team.memberCount forever (no row to revoke or expire through). Also
+  // revoke the prior Clerk invite so the user can't accept an invite for
+  // teams they're no longer being added to.
+  const existingPending = await PendingTeamAssignment.findOne({
+    workspaceId: ctx.workspace._id,
+    email,
+  })
+    .select({ _id: 1, clerkInvitationId: 1 })
+    .lean();
+  if (existingPending) {
+    if (existingPending.clerkInvitationId) {
+      try {
+        const clerk = await clerkClient();
+        await clerk.organizations.revokeOrganizationInvitation({
+          organizationId: ctx.clerkOrgId,
+          invitationId: existingPending.clerkInvitationId,
+          requestingUserId: ctx.userId,
+        });
+      } catch (err) {
+        console.warn(
+          "[inviteMemberAction] failed to revoke prior Clerk invitation",
+          err,
+        );
+      }
+    }
+    const outcome = await claimAndReleasePendingInvite(existingPending._id);
+    if (outcome.status === "claimed-for-accept") {
+      // The user is currently accepting the prior invite via the webhook —
+      // refuse this new invite so we don't double-allocate seats.
+      return { error: "INVITE_IN_PROGRESS" };
+    }
+  }
+
   const reserved: mongoose.Types.ObjectId[] = [];
   const fullTeamNames: string[] = [];
   for (const teamId of validIds) {

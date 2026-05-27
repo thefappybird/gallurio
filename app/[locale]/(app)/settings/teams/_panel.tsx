@@ -33,6 +33,7 @@ import {
 import { InviteForm, type InvitableTeam } from "./_components/invite-form";
 import { MemberList, type PendingInviteRow } from "./_components/member-list";
 import type { MemberSummary } from "./_components/team-assignment-modal";
+import { DowngradeBlockModal } from "./_components/downgrade-block-modal";
 
 const TEAM_COLOR_PALETTE = [
   "#0d7377",
@@ -649,6 +650,12 @@ export function TeamsPanel({
 
   const [createOpen, setCreateOpen] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  // Over-cap state can arise from a subscription cancellation that forced the
+  // workspace to free with more teams than the new plan allows. Surface it
+  // proactively the moment the owner opens this panel so they know which
+  // teams need pruning before plan-gated features return.
+  const overCap = initialTeams.length > maxTeams;
+  const [downgradeBlockOpen, setDowngradeBlockOpen] = useState(overCap);
 
   const [optimisticTeams, dispatch] = useOptimistic(
     initialTeams,
@@ -738,6 +745,23 @@ export function TeamsPanel({
         plan={plan}
         maxTeams={maxTeams}
       />
+
+      {overCap && (
+        <DowngradeBlockModal
+          open={downgradeBlockOpen}
+          onOpenChange={setDowngradeBlockOpen}
+          currentPlan={plan === "free" ? "starter" : (plan as "starter" | "pro")}
+          targetPlan={plan === "pro" ? "starter" : "free"}
+          currentTeamCount={initialTeams.length}
+          maxTeamsOnTargetPlan={maxTeams}
+          teamsToReview={initialTeams.map((tm) => ({
+            id: tm.id,
+            name: tm.name,
+            color: tm.color,
+            isDefault: tm.isDefault,
+          }))}
+        />
+      )}
     </div>
   );
 }

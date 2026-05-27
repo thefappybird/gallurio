@@ -21,6 +21,15 @@ const teamSchema = new Schema(
     isDefault: { type: Boolean, default: false },
     memberCount: { type: Number, default: 0, min: 0 },
     createdByClerkUserId: { type: String, required: true },
+    // Journal of PendingTeamAssignment._ids whose seat reservation has been
+    // refunded back to this team. The seat-refund operation atomically
+    // decrements memberCount AND $addToSets the pendingId here, so any retry
+    // (cron, owner-revoke, invite-rollback) sees the ack and no-ops — making
+    // the refund exactly-once per (teamId, pendingId) without transactions.
+    pendingReleaseAcks: {
+      type: [Schema.Types.ObjectId],
+      default: [],
+    },
   },
   { timestamps: true }
 );

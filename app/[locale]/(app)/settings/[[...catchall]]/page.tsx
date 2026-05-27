@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { Building2, Palette, Globe, AlertTriangle, UsersRound } from "lucide-react";
+import { Building2, Palette, Globe, AlertTriangle, UsersRound, Wrench } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
 import { SettingsUserProfile, CustomPage } from "../_components/settings-user-profile";
@@ -11,6 +11,7 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DangerPanel } from "../danger/_panel";
 import { TeamsPanel } from "../teams/_panel";
+import { DevPlanPanel } from "../dev-plan/_panel";
 import {
   Team,
   TeamMembership,
@@ -30,7 +31,14 @@ import type {
   SupportedCurrency,
 } from "@/lib/validators/workspace";
 
-const OWNER_ONLY_SLUGS = new Set(["workspace", "public-page", "danger", "teams"]);
+const OWNER_ONLY_SLUGS = new Set([
+  "workspace",
+  "public-page",
+  "danger",
+  "teams",
+  "dev-plan",
+]);
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 export async function generateMetadata({
   params,
@@ -195,6 +203,18 @@ export default async function SettingsCatchallPage({
           locale={locale}
         />
       </CustomPage>
+      {IS_DEV && (
+        <CustomPage
+          slug="dev-plan"
+          labelKey="devPlan"
+          labelIcon={<Wrench className="size-4" />}
+          ownerOnly
+        >
+          <DevPlanPanel
+            currentPlan={workspace.plan as "free" | "starter" | "pro"}
+          />
+        </CustomPage>
+      )}
       <CustomPage
         slug="danger"
         labelKey="danger"

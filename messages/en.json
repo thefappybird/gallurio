@@ -306,7 +306,20 @@
         "workspace": "Workspace",
         "teams": "Teams",
         "publicPage": "Public page",
-        "danger": "Danger zone"
+        "danger": "Danger zone",
+        "devPlan": "Dev · plan"
+      },
+      "devPlan": {
+        "title": "Dev plan switcher",
+        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
+        "currentLabel": "Current plan",
+        "teamsSuffix": "teams",
+        "perTeamSuffix": "members/team",
+        "active": "Active",
+        "switch": "Switch",
+        "toasts": {
+          "switched": "Plan switched to {plan}."
+        }
       },
       "workspace": {
         "businessSection": "Business details",

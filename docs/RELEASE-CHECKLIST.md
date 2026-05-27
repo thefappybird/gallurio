@@ -1,0 +1,102 @@
+# Gallurio Release Checklist
+
+Run through this list before promoting to production. It covers the parts of the codebase that are easy to miss in a feature-review pass and the dev-mode shortcuts that must be removed or replaced with real flows.
+
+Last updated: 2026-05-27 (post Phase 1-3 teams management)
+
+## 1. Dev-mode escape hatches
+
+These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "production"` today, but the long-term plan is to replace them with real production flows. Before shipping:
+
+- [ ] **`lib/actions/dev.ts → devActivatePlanAction`**
+  - Currently flips `Workspace.plan` directly without touching HitPay.
+  - Replacement plan: drive `Workspace.plan` from the HitPay webhook only. Owner-initiated upgrades go through `/api/billing/checkout` (already implemented). Owner-initiated downgrades go through a HitPay portal session that the webhook then reconciles back into our `Workspace.plan` field.
+  - When real subscription management lands: keep the team-cap downgrade guard logic — it already mirrors the one in `app/api/webhooks/hitpay/route.ts`. The `DEV plan` settings tab should be removed (or moved behind a `?dev=1` query param).
+- [ ] **`lib/actions/dev.ts → devSeedMemberAction`**
+  - Bypasses the `assertCanAddTeamMember` seat reservation and the `PendingTeamAssignment` row that the real invite flow creates.
+  - Replacement plan: the real owner flow is `inviteMemberAction`. Remove this action — it predates the real one.
+- [ ] **`app/[locale]/(app)/settings/dev-plan/_panel.tsx`** (Dev · plan settings tab)
+  - Gated by `IS_DEV` in `app/[locale]/(app)/settings/[[...catchall]]/page.tsx`. Will not render in production builds, but should be deleted alongside `devActivatePlanAction`.
+
+Search to confirm everything dev-only is gated: `rg "NODE_ENV !== \"production\"" -t ts -t tsx`.
+
+## 2. HitPay subscription wiring
+
+The Phase 3 branch added one piece of real billing behavior (cancellation always drops to free; see `app/api/webhooks/hitpay/route.ts:127-160`) and one dev shim. Before ship:
+
+- [ ] **Owner-initiated downgrades** must be flow-tested end-to-end through HitPay sandbox: create subscription → owner downgrades from Pro to Starter while over the Starter team cap → confirm the webhook refuses the plan change AND the user sees the downgrade-block-modal pointing at teams to delete.
+- [ ] **Cancellation while over-cap** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` flips to `free`, `hitpayRecurringStatus` flips to `cancelled`, and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
+- [ ] **Webhook signature** must use a real `HITPAY_WEBHOOK_SALT` in production env vars. Confirm `verifyHitpayCallback` returns false for unsigned bodies.
+- [ ] **Real prices** in `lib/hitpay/plans.ts` match the HitPay dashboard side (free 0, starter 499 PHP, pro 1199 PHP). Currency code is `PHP`.
+
+## 3. Pending-invite seat lifecycle
+
+These checks belong on the production deploy, not just code review. The atomicity story relies on Mongo indexes existing, so a fresh database needs the indexes built.
+
+- [ ] **Indexes built** — connect to the production Mongo and confirm:
+  - `Team` has the partial-unique index `{ workspaceId: 1 }` where `isDefault: true`.
+  - `TeamMembership` has the compound unique index `{ workspaceId: 1, teamId: 1, clerkUserId: 1 }`.
+  - `PendingTeamAssignment` has `{ workspaceId: 1, email: 1 }` unique and `{ createdAt: 1, claimedAt: 1 }`.
+  - `PendingTeamAssignment` does NOT have a TTL on `createdAt` (the cleanup cron owns deletion so seats get refunded; a TTL would skip the refund).
+  - Mongoose calls `syncIndexes()` on boot via the model setup, but verify post-deploy.
+- [ ] **Vercel cron** — confirm `/api/cron/release-expired-invite-seats` is registered (`vercel.json`) and that `CRON_SECRET` is set as a production env var. Hit the endpoint manually with the bearer token once to confirm it returns 200 with a JSON report.
+- [ ] **Clerk webhook secret** — `CLERK_WEBHOOK_SECRET` is set in production env. The webhook must verify svix signatures or it returns 400.
+
+## 4. Phase 2 deferrals
+
+These are documented gaps from Phase 2 that are intentionally deferred to Phase 4:
+
+- [ ] **Team deletion guard for bookings** — `deleteTeamAction` does not yet refuse to delete a team that has bookings tied to it because `Booking.teamId` is Phase 4. When Phase 4 lands, lift the `TODO(phase-4)` comment in `app/[locale]/(app)/settings/teams/_actions.ts` and add a `Booking.countDocuments({ teamId, workspaceId })` guard that returns a `TEAM_HAS_BOOKINGS` error.
+
+## 5. Multi-tenant isolation spot-checks
+
+Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:
+
+- [ ] Every `Team.find*` / `Team.update*` / `Team.delete*` includes `workspaceId` in the filter — exceptions need to be system jobs (cron, webhook drain) and must be commented as such.
+- [ ] Every `TeamMembership.find*` / `*delete*` includes `workspaceId`.
+- [ ] Every `PendingTeamAssignment.find*` includes `workspaceId` except the cron sweep (intentional: scans all workspaces).
+- [ ] Every `Booking.find*` / `*delete*` etc. still includes `workspaceId` (no regression from teams work).
+
+Run: `rg "Team(Membership|)\.(find|update|delete)" app lib --type ts` and audit the matches.
+
+## 6. Test, lint, build gates
+
+- [ ] `pnpm typecheck` — clean.
+- [ ] `pnpm lint` — 0 errors (existing React Compiler warnings on bookings/branding files are OK).
+- [ ] `pnpm test` — 100% pass.
+- [ ] `pnpm build` — successful Next.js build. The dev-plan settings page should NOT appear in the route list (gated out by `IS_DEV`).
+
+## 7. Locale parity
+
+- [ ] All five locales (`en, fil, ms, id, th`) have every `app.settings.teams.*` key. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
+- [ ] When a new locale is added, copy the entire `app.settings` block first, then translate values.
+
+## 8. Routing / proxy
+
+- [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, and `/settings` (except `/settings/account` for the Clerk profile area). Verify manually by signing in as a member.
+- [ ] AppSidebar shows `[Bookings]` only for members and hides the footer Settings link.
+
+## 9. Env-var matrix
+
+Confirm these are set in the production Vercel project:
+
+- [ ] `DATABASE_URL`
+- [ ] `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY`
+- [ ] `CLERK_WEBHOOK_SECRET`
+- [ ] `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- [ ] `HITPAY_API_KEY`, `HITPAY_WEBHOOK_SALT`, `HITPAY_API_BASE` (production base, not sandbox)
+- [ ] `CRON_SECRET`
+
+`NODE_ENV=production` is set automatically by Vercel.
+
+## 10. Smoke after deploy
+
+In production with a real HitPay account on test mode (or sandbox-redirected to the prod app):
+
+- [ ] Sign up a new workspace — gets a Main team.
+- [ ] Owner invites a teammate — they get an email, accept, and land at `/bookings` with the reduced sidebar.
+- [ ] Owner revokes a pending invite — the row disappears from the member list and the team's member count shows the seat back.
+- [ ] Owner deletes a team — TeamMembership rows for that team disappear; team count drops.
+- [ ] Sign in as a member and try to navigate to `/settings` — proxy redirects to `/bookings`.
+
+When everything in this file is checked, ship it.

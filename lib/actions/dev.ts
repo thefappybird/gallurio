@@ -3,7 +3,20 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, User, type PlanTier } from "@/lib/db/models";
+import { Workspace, User, Team, type PlanTier } from "@/lib/db/models";
+import { planEntitlements } from "@/lib/plans/entitlements";
+
+export type DevPlanActionResult = {
+  error?: string;
+  ok?: boolean;
+  // Populated when the plan change is blocked by the team-cap downgrade
+  // guard so the client can render the DowngradeBlockModal with this data.
+  blocked?: {
+    currentTeamCount: number;
+    maxTeamsOnTargetPlan: number;
+    teams: { id: string; name: string; color: string; isDefault: boolean }[];
+  };
+};
 
 type ActionResult = { error?: string; ok?: boolean };
 
@@ -11,7 +24,13 @@ type ActionResult = { error?: string; ok?: boolean };
 // Useful when iterating on plan-gated UI (custom-domain unlocks, branding
 // removal, invoice PDFs, etc.) without round-tripping HitPay's hosted
 // authorization page. Hard-blocked in production by the NODE_ENV gate.
-export async function devActivatePlanAction(plan: PlanTier): Promise<ActionResult> {
+//
+// The team-cap downgrade guard here mirrors the HitPay webhook's: if the
+// workspace currently has more teams than the target plan's cap allows,
+// refuse the plan change and surface the list of teams to delete. This
+// keeps the dev path forward-compatible with the eventual real HitPay
+// downgrade UX.
+export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActionResult> {
   if (process.env.NODE_ENV === "production") {
     return { error: "Not available in production" };
   }
@@ -21,6 +40,34 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<ActionResul
   if (!session.orgId) return { error: "No active workspace" };
 
   await connectDB();
+  const workspace = await Workspace.findOne({ clerkOrgId: session.orgId })
+    .select({ _id: 1, plan: 1 })
+    .lean();
+  if (!workspace) return { error: "Workspace not found" };
+
+  // Block downgrades that would leave the workspace over-cap.
+  const newEntitlements = planEntitlements(plan);
+  const currentTeamCount = await Team.countDocuments({ workspaceId: workspace._id });
+  if (currentTeamCount > newEntitlements.maxTeams) {
+    const teams = await Team.find({ workspaceId: workspace._id })
+      .sort({ isDefault: -1, createdAt: 1 })
+      .select({ _id: 1, name: 1, color: 1, isDefault: 1 })
+      .lean();
+    return {
+      error: "TEAM_DOWNGRADE_BLOCKED",
+      blocked: {
+        currentTeamCount,
+        maxTeamsOnTargetPlan: newEntitlements.maxTeams,
+        teams: teams.map((t) => ({
+          id: String(t._id),
+          name: t.name,
+          color: t.color,
+          isDefault: t.isDefault ?? false,
+        })),
+      },
+    };
+  }
+
   await Workspace.updateOne(
     { clerkOrgId: session.orgId },
     {
@@ -39,6 +86,7 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<ActionResul
   );
 
   revalidatePath("/onboarding/done");
+  revalidatePath("/settings", "layout");
   return { ok: true };
 }
 
