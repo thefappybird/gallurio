@@ -1,8 +1,12 @@
-import { describe, beforeAll, afterAll, it, expect } from "vitest";
+import { describe, beforeAll, afterAll, beforeEach, it, expect } from "vitest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
-import { assertCanAddTeam, TeamCapExceededError } from "./assertCanAddTeam";
+import {
+  assertCanAddTeam,
+  createTeamWithCapEnforcement,
+  TeamCapExceededError,
+} from "./assertCanAddTeam";
 
 let mongod: MongoMemoryServer;
 
@@ -91,6 +95,64 @@ describe("assertCanAddTeam — pro plan (max 15)", () => {
   it("resolves at 0 teams (edge: fresh pro workspace)", async () => {
     const workspaceId = makeWorkspaceId();
     await expect(assertCanAddTeam(workspaceId, "pro")).resolves.toBeUndefined();
+  });
+});
+
+describe("createTeamWithCapEnforcement — atomic cap guard", () => {
+  beforeEach(async () => {
+    await Team.deleteMany({});
+  });
+
+  it("creates a team when under cap", async () => {
+    const workspaceId = makeWorkspaceId();
+    const team = await createTeamWithCapEnforcement(
+      {
+        workspaceId,
+        name: "Crew A",
+        color: TEAM_COLOR_PALETTE[0],
+        isDefault: false,
+        memberCount: 0,
+        createdByClerkUserId: "user_test",
+      },
+      "starter",
+    );
+    expect(team).toBeTruthy();
+    expect(await Team.countDocuments({ workspaceId })).toBe(1);
+  });
+
+  it("rejects and rolls back the row when two concurrent creates race past the cap", async () => {
+    const workspaceId = makeWorkspaceId();
+    // Pre-seed the workspace right under the free-plan cap of 1.
+    // Two concurrent creates from here must result in exactly 1 success
+    // and exactly 1 cap-exceeded rejection, with at most 1 team in the DB
+    // (the original seeded one). The race-loser's row must be rolled back.
+    await seedTeams(workspaceId, 0);
+
+    const make = (name: string) =>
+      createTeamWithCapEnforcement(
+        {
+          workspaceId,
+          name,
+          color: TEAM_COLOR_PALETTE[0],
+          isDefault: false,
+          memberCount: 0,
+          createdByClerkUserId: "user_test",
+        },
+        "free",
+      );
+
+    const results = await Promise.allSettled([make("Race A"), make("Race B")]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(
+      TeamCapExceededError,
+    );
+
+    // Exactly one team in the DB — the race-loser's insert was rolled back.
+    expect(await Team.countDocuments({ workspaceId })).toBe(1);
   });
 });
 

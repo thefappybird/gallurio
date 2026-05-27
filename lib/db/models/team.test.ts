@@ -94,6 +94,30 @@ describe("ensureDefaultTeam", () => {
     const count = await Team.countDocuments({ workspaceId, isDefault: true });
     expect(count).toBe(1);
   });
+
+  it("two concurrent calls converge on a single default team (unique partial index)", async () => {
+    // Migration runs, parallel onboarding retries, or a webhook-driven backfill
+    // can fire ensureDefaultTeam twice for the same workspace at nearly the
+    // same instant. The partial unique index on { workspaceId } where
+    // isDefault: true must prevent duplicate Main teams.
+    const workspaceId = makeWorkspaceId();
+    // Ensure indexes are actually built so the unique constraint is in force.
+    await Team.syncIndexes();
+
+    const results = await Promise.allSettled([
+      ensureDefaultTeam(workspaceId, "user_owner"),
+      ensureDefaultTeam(workspaceId, "user_owner"),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    // At least one must succeed; the other may either succeed (returning the
+    // same row from the upsert) or fail with a duplicate-key error that the
+    // unique index produces.
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+
+    const count = await Team.countDocuments({ workspaceId, isDefault: true });
+    expect(count).toBe(1);
+  });
 });
 
 describe("Team tenant isolation", () => {

@@ -121,28 +121,35 @@ async function handleSubscriptionUpdated(data: Record<string, unknown> | undefin
 
   // Active subscriptions also promote the plan tier; cancelled/closed/failed
   // drop the workspace back to free.
+  const isCancellation =
+    status === "cancelled" || status === "closed" || status === "failed";
   if (status === "active" && amount != null) {
     const tier = planForAmount(amount);
     if (tier !== "free") update.plan = tier;
-  } else if (status === "cancelled" || status === "closed" || status === "failed") {
+  } else if (isCancellation) {
     update.plan = "free";
     update.hitpayCurrentPeriodEnd = null;
   }
 
   if (Object.keys(update).length === 0) return;
 
-  // Guard: if a plan downgrade is being applied, check whether the workspace
-  // currently has more teams than the new plan allows. If so, refuse to
-  // downgrade the plan field (data corruption prevention). The workspace owner
-  // must delete teams first; UI handling lands in Phase 3.
-  if (update.plan != null) {
+  // Guard rules:
+  // - **Tier swap between paid plans** (e.g. pro -> starter): refuse if the
+  //   workspace currently has more teams than the new tier allows. This is the
+  //   data-corruption guard from Phase 2 — the owner must delete teams first.
+  // - **Subscription cancellation/closure/failure** (status -> "free"): always
+  //   apply the downgrade. Leaving cancelled subscriptions on paid
+  //   entitlements is a billing-leak. Over-cap teams are surfaced to the
+  //   owner in the UI via the downgrade-block modal; team-dependent operations
+  //   degrade naturally because entitlement checks treat the workspace as free.
+  if (update.plan != null && !isCancellation) {
     const ws = await Workspace.findOne(filter).select({ _id: 1, plan: 1 }).lean();
     if (ws) {
       const newPlanEntitlements = planEntitlements(update.plan as "free" | "starter" | "pro");
       const currentTeamCount = await Team.countDocuments({ workspaceId: ws._id });
       if (currentTeamCount > newPlanEntitlements.maxTeams) {
         console.warn(
-          `[hitpay-webhook] refused plan downgrade for workspace ${ws._id}: ${currentTeamCount} teams > ${newPlanEntitlements.maxTeams} maxTeams (${String(update.plan)})`
+          `[hitpay-webhook] refused paid-tier downgrade for workspace ${ws._id}: ${currentTeamCount} teams > ${newPlanEntitlements.maxTeams} maxTeams (${String(update.plan)})`
         );
         delete update.plan;
       }

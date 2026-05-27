@@ -113,14 +113,17 @@ describe("TeamsPanel", () => {
     expect(btn.getAttribute("aria-disabled")).not.toBe("true");
   });
 
-  it("Create team button has aria-disabled at cap", () => {
+  it("Create team button stays interactive at cap (opens upsell instead of being disabled)", () => {
+    // The button is intentionally NOT aria-disabled at cap — clicking it opens
+    // the upsell dialog. Marking it disabled would be a lie to screen readers.
     renderPanel({
       teams: [DEFAULT_TEAM, REGULAR_TEAM, THIRD_TEAM],
       plan: "starter",
       maxTeams: 3,
     });
     const btn = screen.getByRole("button", { name: /create team/i });
-    expect(btn).toHaveAttribute("aria-disabled", "true");
+    expect(btn.getAttribute("aria-disabled")).not.toBe("true");
+    expect(btn).not.toBeDisabled();
   });
 
   it("clicking Create team at cap opens the upsell dialog", () => {

@@ -4,6 +4,7 @@ import { useState, useTransition, useOptimistic, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { MoreHorizontal, Loader2, Pencil, Palette, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "@/lib/i18n/navigation";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,10 +106,12 @@ function ColorDialog({
   const [pending, startTransition] = useTransition();
 
   function handleSelect(color: string) {
+    const previousColor = team.color;
     startTransition(async () => {
       onColorChanged(color);
       const result = await setTeamColorAction({ teamId: team.id, color });
       if (result.error) {
+        onColorChanged(previousColor);
         toast.error(mapActionError(result.error, t));
       } else {
         toast.success(t("toasts.colorChanged"));
@@ -197,10 +200,12 @@ function RenameDialog({
       return;
     }
     setError(null);
+    const previousName = team.name;
     startTransition(async () => {
       onRenamed(trimmed);
       const result = await renameTeamAction({ teamId: team.id, name: trimmed });
       if (result.error) {
+        onRenamed(previousName);
         setError(
           result.error === "DUPLICATE_NAME"
             ? t("errors.duplicateName")
@@ -269,11 +274,13 @@ function DeleteDialog({
   open,
   onOpenChange,
   onDeleted,
+  onDeleteFailed,
 }: {
   team: Team;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => void;
+  onDeleteFailed: (team: Team) => void;
 }) {
   const t = useTranslations("app.settings.teams");
   const [pending, startTransition] = useTransition();
@@ -287,6 +294,7 @@ function DeleteDialog({
       onDeleted();
       const result = await deleteTeamAction({ teamId: team.id });
       if (result.error) {
+        onDeleteFailed(team);
         toast.error(mapActionError(result.error, t));
         return;
       }
@@ -501,12 +509,12 @@ function UpsellDialog({
             {t("createDialog.cancel")}
           </Button>
           {plan !== "pro" && (
-            <a
-              href="/pricing#teams"
+            <Link
+              href="/pricing"
               className={buttonVariants({ variant: "default" })}
             >
               {t("upsell.cta")}
-            </a>
+            </Link>
           )}
         </DialogFooter>
       </DialogContent>
@@ -521,11 +529,13 @@ function TeamRow({
   onRename,
   onColorChange,
   onDelete,
+  onDeleteFailed,
 }: {
   team: Team;
   onRename: (name: string) => void;
   onColorChange: (color: string) => void;
   onDelete: () => void;
+  onDeleteFailed: (team: Team) => void;
 }) {
   const t = useTranslations("app.settings.teams");
   const [renameOpen, setRenameOpen] = useState(false);
@@ -611,6 +621,7 @@ function TeamRow({
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onDeleted={onDelete}
+        onDeleteFailed={onDeleteFailed}
       />
     </>
   );
@@ -649,8 +660,8 @@ export function TeamsPanel({ teams: initialTeams, plan, maxTeams }: TeamsPanelPr
         </div>
         <Button
           onClick={handleCreateClick}
-          aria-disabled={atCap}
           className="shrink-0"
+          variant="outline"
         >
           {t("createButton")}
         </Button>
@@ -669,6 +680,7 @@ export function TeamsPanel({ teams: initialTeams, plan, maxTeams }: TeamsPanelPr
                 onRename={(name) => dispatch({ type: "rename", id: team.id, name })}
                 onColorChange={(color) => dispatch({ type: "color", id: team.id, color })}
                 onDelete={() => dispatch({ type: "delete", id: team.id })}
+                onDeleteFailed={(restored) => dispatch({ type: "add", team: restored })}
               />
             ))}
           </div>

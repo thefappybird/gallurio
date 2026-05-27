@@ -3,7 +3,10 @@
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
-import { assertCanAddTeam, TeamCapExceededError } from "@/lib/auth/assertCanAddTeam";
+import {
+  createTeamWithCapEnforcement,
+  TeamCapExceededError,
+} from "@/lib/auth/assertCanAddTeam";
 import { Team } from "@/lib/db/models/team";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import {
@@ -55,23 +58,17 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
   const { name, color } = parsed.data;
 
   try {
-    await assertCanAddTeam(ctx.workspace._id, ctx.workspace.plan);
-  } catch (err) {
-    if (err instanceof TeamCapExceededError) {
-      return { error: "TEAM_CAP_EXCEEDED" };
-    }
-    throw err;
-  }
-
-  try {
-    const team = await Team.create({
-      workspaceId: ctx.workspace._id,
-      name,
-      color,
-      isDefault: false,
-      memberCount: 0,
-      createdByClerkUserId: ctx.userId,
-    });
+    const team = await createTeamWithCapEnforcement(
+      {
+        workspaceId: ctx.workspace._id,
+        name,
+        color,
+        isDefault: false,
+        memberCount: 0,
+        createdByClerkUserId: ctx.userId,
+      },
+      ctx.workspace.plan,
+    );
 
     revalidatePath("/settings/teams", "page");
     return {
@@ -85,6 +82,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
       },
     };
   } catch (err) {
+    if (err instanceof TeamCapExceededError) return { error: "TEAM_CAP_EXCEEDED" };
     if (isDuplicateKeyError(err)) return { error: "DUPLICATE_NAME" };
     throw err;
   }
@@ -156,7 +154,7 @@ export async function deleteTeamAction(input: DeleteTeamInput): Promise<ActionRe
 
   // TODO(phase-4): reject deletion if bookings reference this team
 
-  await TeamMembership.deleteMany({ teamId: objectId });
+  await TeamMembership.deleteMany({ teamId: objectId, workspaceId: ctx.workspace._id });
   await Team.deleteOne({ _id: objectId, workspaceId: ctx.workspace._id });
 
   revalidatePath("/settings/teams", "page");

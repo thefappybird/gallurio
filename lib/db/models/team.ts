@@ -26,7 +26,16 @@ const teamSchema = new Schema(
 );
 
 teamSchema.index({ workspaceId: 1, name: 1 }, { unique: true });
-teamSchema.index({ workspaceId: 1, isDefault: 1 });
+// Enforce exactly one default ("Main") team per workspace at the index layer
+// so concurrent onboarding retries or migration runs can't create duplicates.
+teamSchema.index(
+  { workspaceId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { isDefault: true },
+    name: "one_default_team_per_workspace",
+  },
+);
 
 export type TeamDoc = InferSchemaType<typeof teamSchema> & { _id: mongoose.Types.ObjectId };
 
