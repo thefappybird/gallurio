@@ -31,10 +31,22 @@ export function UnsavedChangesDialog({ open, onKeepEditing, onDiscard }: Props) 
           </div>
         </div>
         <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" size="sm" onClick={onKeepEditing}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onKeepEditing}
+            className="min-h-11 sm:min-h-0"
+          >
             {t("keep")}
           </Button>
-          <Button type="button" variant="destructive" size="sm" onClick={onDiscard}>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={onDiscard}
+            className="min-h-11 sm:min-h-0"
+          >
             {t("discard")}
           </Button>
         </div>

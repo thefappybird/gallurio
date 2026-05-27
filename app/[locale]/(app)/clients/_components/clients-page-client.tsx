@@ -142,6 +142,7 @@ export function ClientsPageClient({
               size="sm"
               onClick={() => goToPage(page - 1)}
               disabled={page <= 1}
+              className="min-h-11 sm:min-h-0"
             >
               {t("pagination.previous")}
             </Button>
@@ -150,6 +151,7 @@ export function ClientsPageClient({
               size="sm"
               onClick={() => goToPage(page + 1)}
               disabled={page >= totalPages}
+              className="min-h-11 sm:min-h-0"
             >
               {t("pagination.next")}
             </Button>

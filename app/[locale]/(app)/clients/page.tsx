@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags } from "./_data/clients-queries";
@@ -61,6 +62,29 @@ export default async function ClientsPage({
     }),
     getWorkspaceTags(workspace._id),
   ]);
+
+  // If the requested page lies past the end of a non-empty result set (stale
+  // bookmark, post-deactivate URL), redirect to the last valid page rather
+  // than rendering an empty table that looks like a dead end.
+  if (total > 0 && page > 1) {
+    const totalPages = Math.ceil(total / limit);
+    if (page > totalPages) {
+      const next = new URLSearchParams();
+      if (sp.q) next.set("q", sp.q);
+      if (sp.source) next.set("source", sp.source);
+      if (sp.tags) next.set("tags", sp.tags);
+      if (sp.limit) next.set("limit", sp.limit);
+      if (sp.includeInactive) next.set("includeInactive", sp.includeInactive);
+      next.set("page", String(totalPages));
+      redirect({
+        href: {
+          pathname: "/clients",
+          query: Object.fromEntries(next.entries()),
+        },
+        locale,
+      });
+    }
+  }
 
   const rows: ClientRow[] = items.map((c) => ({
     id: c._id.toString(),

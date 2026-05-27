@@ -52,7 +52,12 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
     },
   });
 
-  // Reset form when modal opens/closes or initialData changes
+  const [unsavedOpen, setUnsavedOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+
+  // Reset form (and the in-progress tag draft) when modal opens/closes or
+  // initialData changes so a partial tag typed in one session can't survive
+  // into the next.
   useEffect(() => {
     if (open) {
       form.reset({
@@ -63,11 +68,9 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
         tags: initialData?.tags ?? [],
         notes: initialData?.notes ?? "",
       });
+      setTagInput("");
     }
   }, [open, initialData]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [unsavedOpen, setUnsavedOpen] = useState(false);
-  const [tagInput, setTagInput] = useState("");
 
   function handleOpenChange(next: boolean) {
     if (!next && isDirty) {
@@ -80,6 +83,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   function handleDiscard() {
     setUnsavedOpen(false);
     form.reset();
+    setTagInput("");
     onOpenChange(false);
   }
 
@@ -133,6 +137,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
               size="icon-sm"
               onClick={() => handleOpenChange(false)}
               aria-label={t("detail.close")}
+              className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
             >
               <XIcon className="size-4" />
             </Button>
@@ -220,7 +225,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                         <button
                           type="button"
                           onClick={() => removeTag(tag)}
-                          className="hover:text-foreground"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-foreground sm:min-h-0 sm:min-w-0"
                           aria-label={t("form.removeTag", { tag })}
                         >
                           <XIcon className="size-2.5" />
@@ -257,10 +262,16 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                 size="sm"
                 onClick={() => handleOpenChange(false)}
                 disabled={isSubmitting}
+                className="min-h-11 sm:min-h-0"
               >
                 {t("form.cancel")}
               </Button>
-              <Button type="submit" size="sm" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isSubmitting}
+                className="min-h-11 sm:min-h-0"
+              >
                 {isSubmitting ? t("form.saving") : t("form.save")}
               </Button>
             </div>

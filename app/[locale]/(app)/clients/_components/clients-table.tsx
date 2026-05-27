@@ -154,6 +154,7 @@ export function ClientsTable({
                       variant="ghost"
                       size="icon-sm"
                       aria-label={t("table.openMenu")}
+                      className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
                     >
                       <MoreHorizontalIcon className="size-4" />
                     </Button>

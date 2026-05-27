@@ -68,6 +68,7 @@ export function DeactivateClientDialog({
             size="sm"
             onClick={() => onOpenChange(false)}
             disabled={loading}
+            className="min-h-11 sm:min-h-0"
           >
             {t("deactivate.cancel")}
           </Button>
@@ -77,6 +78,7 @@ export function DeactivateClientDialog({
             size="sm"
             onClick={handleConfirm}
             disabled={loading}
+            className="min-h-11 sm:min-h-0"
           >
             {loading ? "…" : t("deactivate.confirm")}
           </Button>

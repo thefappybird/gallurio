@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
 import { XIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { getClientBookingsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
 import type { ClientRow } from "./clients-table";
@@ -121,6 +122,7 @@ function ClientDetailModalInner({
             size="icon-sm"
             onClick={onClose}
             aria-label={t("detail.close")}
+            className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
           >
             <XIcon className="size-4" />
           </Button>
@@ -271,7 +273,10 @@ function ClientDetailModalInner({
             type="button"
             variant={client.isActive ? "outline" : "default"}
             size="sm"
-            className={client.isActive ? "border-destructive text-destructive hover:bg-destructive/10" : ""}
+            className={cn(
+              "min-h-11 sm:min-h-0",
+              client.isActive && "border-destructive text-destructive hover:bg-destructive/10"
+            )}
             onClick={() => (client.isActive ? onDeactivate(client) : onReactivate(client))}
           >
             {client.isActive ? t("detail.deactivate") : t("detail.reactivate")}
@@ -281,6 +286,7 @@ function ClientDetailModalInner({
             variant="outline"
             size="sm"
             onClick={() => onEdit(client)}
+            className="min-h-11 sm:min-h-0"
           >
             {t("detail.edit")}
           </Button>
