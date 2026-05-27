@@ -41,10 +41,12 @@ export default async function ClientsPage({
   await connectDB();
 
   const sp = await searchParams;
-  const page = Math.max(1, parseInt(sp.page ?? "1", 10));
-  const limit = [25, 50, 100].includes(parseInt(sp.limit ?? "25", 10))
-    ? parseInt(sp.limit ?? "25", 10)
-    : 25;
+  // parseInt("abc") → NaN, Math.max(1, NaN) → NaN; clamp explicitly so a
+  // malformed `?page=` can't flow into Mongo's skip() as NaN.
+  const parsedPage = Number.parseInt(sp.page ?? "1", 10);
+  const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const parsedLimit = Number.parseInt(sp.limit ?? "25", 10);
+  const limit = [25, 50, 100].includes(parsedLimit) ? parsedLimit : 25;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   const [{ items, total }, availableTags] = await Promise.all([

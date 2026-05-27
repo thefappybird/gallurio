@@ -31,14 +31,25 @@ export async function listClients(
   const { workspaceId, q, source, tags, includeInactive, page = 1, limit = 25 } = params;
   const filter: Record<string, unknown> = { workspaceId };
 
+  // Collect into $and so multiple $or groups (active-state, search) don't
+  // collide on a single $or key. Skipped entirely if no conditions apply.
+  const and: Record<string, unknown>[] = [];
+
   if (!includeInactive) {
-    filter.isActive = true;
+    // Treat docs missing `isActive` as active — the field was added after
+    // some clients were already in the collection, and a strict
+    // `isActive: true` would silently hide them from the default view.
+    and.push({ $or: [{ isActive: true }, { isActive: { $exists: false } }] });
   }
 
   if (q && q.trim()) {
     const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const rx = new RegExp(safe, "i");
-    filter.$or = [{ name: rx }, { email: rx }];
+    and.push({ $or: [{ name: rx }, { email: rx }] });
+  }
+
+  if (and.length > 0) {
+    filter.$and = and;
   }
 
   if (source) {
@@ -90,7 +101,12 @@ export async function listClients(
 }
 
 export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string[]> {
-  const result = await Client.distinct("tags", { workspaceId, isActive: true });
+  // Mirror listClients' default-active rule: pre-`isActive` documents should
+  // still contribute their tags to the filter dropdown.
+  const result = await Client.distinct("tags", {
+    workspaceId,
+    $or: [{ isActive: true }, { isActive: { $exists: false } }],
+  });
   return result.filter((t): t is string => typeof t === "string").sort();
 }
 

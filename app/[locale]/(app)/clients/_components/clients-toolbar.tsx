@@ -131,8 +131,12 @@ export function ClientsToolbar({ availableTags, onAddClient }: Props) {
         {availableTags.length > 0 && (
           <Popover>
             <PopoverTrigger
-              className="flex h-8 w-full items-center justify-between border border-input bg-background px-3 text-sm sm:w-44"
-              aria-label={t("toolbar.tagsAll")}
+              className="flex h-11 w-full items-center justify-between border border-input bg-background px-3 text-sm sm:h-9 sm:w-44"
+              aria-label={
+                selectedTags.length > 0
+                  ? t("toolbar.tagsSelected", { count: selectedTags.length })
+                  : t("toolbar.tagsAll")
+              }
             >
               {selectedTags.length > 0
                 ? t("toolbar.tagsSelected", { count: selectedTags.length })

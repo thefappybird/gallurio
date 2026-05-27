@@ -85,6 +85,45 @@ describe("listClients", () => {
     expect(total).toBe(1);
   });
 
+  it("default: includes legacy clients that pre-date the isActive field", async () => {
+    // Simulate a doc inserted before `isActive` existed — drop the field
+    // directly via the raw collection so the schema default doesn't fill it.
+    await Client.collection.insertOne({
+      workspaceId,
+      name: "Legacy Client",
+      source: "manual",
+      tags: [],
+      notes: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await seedClient(workspaceId, { name: "Modern Client", isActive: true });
+
+    const { items, total } = await listClients({ workspaceId });
+
+    const names = items.map((c) => c.name).sort();
+    expect(names).toEqual(["Legacy Client", "Modern Client"]);
+    expect(total).toBe(2);
+  });
+
+  it("default + search: legacy clients still appear when name matches", async () => {
+    await Client.collection.insertOne({
+      workspaceId,
+      name: "Legacy Alice",
+      source: "manual",
+      tags: [],
+      notes: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await seedClient(workspaceId, { name: "Modern Bob", isActive: true });
+
+    const { items } = await listClients({ workspaceId, q: "alice" });
+
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("Legacy Alice");
+  });
+
   it("searches by name (case-insensitive)", async () => {
     await seedClient(workspaceId, { name: "Alice Wonderland" });
     await seedClient(workspaceId, { name: "Bob Smith" });
@@ -183,6 +222,22 @@ describe("getWorkspaceTags", () => {
 
     expect(tags).toContain("wedding");
     expect(tags).not.toContain("corporate");
+  });
+
+  it("includes tags from legacy clients missing the isActive field", async () => {
+    await Client.collection.insertOne({
+      workspaceId,
+      name: "Legacy",
+      source: "manual",
+      tags: ["heritage"],
+      notes: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const tags = await getWorkspaceTags(workspaceId);
+
+    expect(tags).toContain("heritage");
   });
 
   it("returns only tags belonging to the given workspace", async () => {
