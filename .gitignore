@@ -42,7 +42,8 @@ next-env.d.ts
 
 #claude
 /.agents
-/.claude
+/.claude/*
+!/.claude/agents/
 skills-lock.json
 
 #hitpay
