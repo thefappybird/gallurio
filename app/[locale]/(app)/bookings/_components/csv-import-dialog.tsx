@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useTransition } from "react";
+import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useRouter } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -104,13 +105,62 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const [dragging, setDragging] = useState(false);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
 
+  // Keep a ref so the guarded action always sees the latest validRows/defaultCurrency
+  // without needing to recreate the hook on each render.
+  const validRowsRef = useRef<typeof rows>([]);
+  const defaultCurrencyRef = useRef(defaultCurrency);
+
   const validRows = rows.filter((r) => r.valid);
   const invalidRows = rows.filter((r) => !r.valid);
+
+  // Keep refs in sync so the stable action closure always reads current values.
+  validRowsRef.current = validRows;
+  defaultCurrencyRef.current = defaultCurrency;
+
+  const { loading: importing, trigger: triggerImport } = useGuardedAction(
+    useCallback(async () => {
+      const currentValidRows = validRowsRef.current;
+      const currentCurrency = defaultCurrencyRef.current;
+      if (currentValidRows.length === 0) return;
+
+      setImportResult(null);
+      const payload = currentValidRows.map((r) => ({
+        ...r.raw,
+        amountTotal: r.raw.amountTotal || undefined,
+        amountDeposit: r.raw.amountDeposit || undefined,
+        clientEmail: r.raw.clientEmail || null,
+        currency: r.raw.currency || currentCurrency,
+      }));
+
+      const res = await fetch("/api/bookings/import", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ rows: payload }),
+      });
+      const data: ImportResult = await res.json();
+      setImportResult(data);
+
+      if (data.created > 0) {
+        toast.success(t("success", { count: data.created }));
+        startTransition(() => router.refresh());
+      }
+      if (data.errors.length > 0) {
+        setShowResultsDialog(true);
+        if (data.created === 0) {
+          toast.error(tDialog("failedWithDetails"));
+        }
+      }
+    }, [t, tDialog, router, startTransition]),
+    {
+      onError: () => {
+        toast.error(tDialog("failedRetry"));
+      },
+    }
+  );
 
   const processFile = useCallback(
     (file: File) => {
@@ -181,44 +231,6 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
     },
     [processFile]
   );
-
-  async function runImport() {
-    if (validRows.length === 0) return;
-    setImporting(true);
-    setImportResult(null);
-    try {
-      const payload = validRows.map((r) => ({
-        ...r.raw,
-        amountTotal: r.raw.amountTotal || undefined,
-        amountDeposit: r.raw.amountDeposit || undefined,
-        clientEmail: r.raw.clientEmail || null,
-        currency: r.raw.currency || defaultCurrency,
-      }));
-
-      const res = await fetch("/api/bookings/import", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ rows: payload }),
-      });
-      const data: ImportResult = await res.json();
-      setImportResult(data);
-
-      if (data.created > 0) {
-        toast.success(t("success", { count: data.created }));
-        startTransition(() => router.refresh());
-      }
-      if (data.errors.length > 0) {
-        setShowResultsDialog(true);
-        if (data.created === 0) {
-          toast.error(tDialog("failedWithDetails"));
-        }
-      }
-    } catch {
-      toast.error(tDialog("failedRetry"));
-    } finally {
-      setImporting(false);
-    }
-  }
 
   function handleClose() {
     if (importing) return;
@@ -406,7 +418,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                   type="button"
                   variant="brand"
                   size="sm"
-                  onClick={runImport}
+                  onClick={triggerImport}
                   disabled={importing}
                 >
                   {importing ? <Loader2Icon className="size-4 animate-spin" /> : null}

@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { useGuardedAction } from "@/hooks/use-guarded-action";
 
 // ClientsTable has: name, contact, source, totalSpent, actions = 5 columns
 const CLIENTS_TABLE_COLUMNS = 5;
@@ -97,15 +98,23 @@ export function ClientsPageClient({
     setDetailOpen(false);
   }
 
-  async function handleReactivate(client: ClientRow) {
-    const result = await reactivateClientAction(client.id);
-    if ("error" in result) {
-      toast.error(result.error);
-    } else {
-      toast.success(t("form.updateSuccess"));
-      setDetailOpen(false);
-      refreshPage();
+  const { loading: isReactivating, trigger: triggerReactivate } = useGuardedAction(
+    async (client: ClientRow) => {
+      const id_toast = toast.loading(t("toasts.reactivating"));
+      const result = await reactivateClientAction(client.id);
+      if ("error" in result) {
+        toast.error(result.error, { id: id_toast });
+        throw new Error(result.error);
+      } else {
+        toast.success(t("form.updateSuccess"), { id: id_toast });
+        setDetailOpen(false);
+        refreshPage();
+      }
     }
+  );
+
+  async function handleReactivate(client: ClientRow) {
+    await triggerReactivate(client);
   }
 
   // Pagination helpers
@@ -136,6 +145,7 @@ export function ClientsPageClient({
           onEdit={openEdit}
           onDeactivate={openDeactivate}
           onReactivate={handleReactivate}
+          isReactivating={isReactivating}
         />
       )}
 

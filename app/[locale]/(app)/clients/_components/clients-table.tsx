@@ -14,6 +14,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
+  Loader2Icon,
   MoreHorizontalIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,8 @@ type Props = {
   onEdit: (row: ClientRow) => void;
   onDeactivate: (row: ClientRow) => void;
   onReactivate: (row: ClientRow) => void;
+  /** True while a reactivate action is in-flight — disables the menu item. */
+  isReactivating?: boolean;
 };
 
 // Source badge colors — semantic borders, no raw color values
@@ -68,6 +71,7 @@ export function ClientsTable({
   onEdit,
   onDeactivate,
   onReactivate,
+  isReactivating = false,
 }: Props) {
   const t = useTranslations("app.clients");
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
@@ -169,7 +173,13 @@ export function ClientsTable({
                       {t("table.deactivate")}
                     </DropdownMenuItem>
                   ) : (
-                    <DropdownMenuItem onClick={() => onReactivate(row)}>
+                    <DropdownMenuItem
+                      onClick={() => onReactivate(row)}
+                      disabled={isReactivating}
+                    >
+                      {isReactivating && (
+                        <Loader2Icon className="size-3 animate-spin" />
+                      )}
                       {t("table.reactivate")}
                     </DropdownMenuItem>
                   )}
@@ -181,7 +191,7 @@ export function ClientsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, onEdit, onDeactivate, onReactivate]
+    [locale, t, onEdit, onDeactivate, onReactivate, isReactivating]
   );
 
   const table = useReactTable({
