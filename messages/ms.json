@@ -503,6 +503,117 @@
         "deleteConfirm": "Saya faham, padamkan",
         "deleting": "Memadam…"
       }
+    },
+    "clients": {
+      "title": "Pelanggan",
+      "toolbar": {
+        "search": "Cari mengikut nama atau e-mel",
+        "searchLabel": "Cari pelanggan",
+        "sourceAll": "Semua sumber",
+        "tagsAll": "Semua tag",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
+        "showInactive": "Tunjukkan tidak aktif",
+        "add": "Tambah Pelanggan",
+        "clearFilters": "Padam penapis"
+      },
+      "sourceValues": {
+        "form": "Borang",
+        "manual": "Manual",
+        "referral": "Rujukan",
+        "import": "Import"
+      },
+      "table": {
+        "empty": "Tiada pelanggan sepadan dengan penapis anda.",
+        "col": {
+          "name": "Nama",
+          "contact": "Hubungan",
+          "source": "Sumber",
+          "totalSpent": "Jumlah Dibelanjakan",
+          "actions": "Tindakan"
+        },
+        "bookings": "{count} tempahan",
+        "lastBooking": "Terakhir: {date}",
+        "noBookings": "Belum ada tempahan",
+        "openMenu": "Buka tindakan pelanggan",
+        "openClient": "Buka {name}",
+        "edit": "Sunting",
+        "deactivate": "Nyahaktif",
+        "reactivate": "Aktifkan semula"
+      },
+      "form": {
+        "addTitle": "Tambah Pelanggan",
+        "editTitle": "Sunting Pelanggan",
+        "name": "Nama",
+        "namePlaceholder": "cth. Maria Santos",
+        "email": "E-mel",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Telefon",
+        "phonePlaceholder": "+60 12 555 0142",
+        "source": "Sumber",
+        "tags": "Tag",
+        "tagsPlaceholder": "Tambah tag dan tekan Enter",
+        "removeTag": "Buang tag {tag}",
+        "notes": "Nota",
+        "notesPlaceholder": "Sebarang nota tentang pelanggan ini…",
+        "save": "Simpan",
+        "saving": "Menyimpan…",
+        "cancel": "Batal",
+        "createSuccess": "Pelanggan dicipta.",
+        "updateSuccess": "Pelanggan dikemas kini.",
+        "error": "Sesuatu telah berlaku. Cuba lagi."
+      },
+      "detail": {
+        "inactive": "Tidak aktif",
+        "tabs": {
+          "overview": "Gambaran",
+          "bookings": "Tempahan",
+          "payments": "Pembayaran"
+        },
+        "overview": {
+          "totalSpent": "Jumlah Dibelanjakan",
+          "bookingsCount": "Tempahan",
+          "lastBooking": "Tempahan Terakhir",
+          "never": "Tidak pernah",
+          "contact": "Hubungan",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Sumber",
+          "tags": "Tag",
+          "noTags": "Tiada tag",
+          "notes": "Nota",
+          "noNotes": "Tiada nota"
+        },
+        "bookings": {
+          "loading": "Memuatkan tempahan…",
+          "empty": "Belum ada tempahan.",
+          "error": "Gagal memuatkan tempahan."
+        },
+        "payments": {
+          "empty": "Belum ada rekod pembayaran."
+        },
+        "edit": "Sunting",
+        "deactivate": "Nyahaktif",
+        "reactivate": "Aktifkan semula",
+        "close": "Tutup"
+      },
+      "deactivate": {
+        "title": "Nyahaktifkan pelanggan ini?",
+        "body": "Pelanggan ini akan disembunyikan daripada senarai aktif. Anda boleh mengaktifkannya semula pada bila-bila masa dengan mendayakan 'Tunjukkan tidak aktif' dalam senarai pelanggan.",
+        "cancel": "Batal",
+        "confirm": "Nyahaktif"
+      },
+      "unsaved": {
+        "title": "Buang perubahan anda?",
+        "body": "Anda mempunyai perubahan yang belum disimpan untuk pelanggan ini. Ia akan hilang jika anda menutupnya sekarang.",
+        "keep": "Teruskan menyunting",
+        "discard": "Buang dan tutup"
+      },
+      "pagination": {
+        "showing": "Menunjukkan {from}–{to} daripada {total} pelanggan",
+        "rowsPerPage": "Setiap halaman",
+        "previous": "Sebelumnya",
+        "next": "Seterusnya"
+      }
     }
   },
   "onboarding": {

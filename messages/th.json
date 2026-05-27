@@ -503,6 +503,117 @@
         "deleteConfirm": "ฉันเข้าใจ ลบเลย",
         "deleting": "กำลังลบ…"
       }
+    },
+    "clients": {
+      "title": "ลูกค้า",
+      "toolbar": {
+        "search": "ค้นหาด้วยชื่อหรืออีเมล",
+        "searchLabel": "ค้นหาลูกค้า",
+        "sourceAll": "ทุกแหล่งที่มา",
+        "tagsAll": "แท็กทั้งหมด",
+        "tagsSelected": "{count} {count, plural, one {แท็ก} other {แท็ก}}",
+        "showInactive": "แสดงที่ไม่ใช้งาน",
+        "add": "เพิ่มลูกค้า",
+        "clearFilters": "ล้างตัวกรอง"
+      },
+      "sourceValues": {
+        "form": "แบบฟอร์ม",
+        "manual": "ด้วยตนเอง",
+        "referral": "แนะนำ",
+        "import": "นำเข้า"
+      },
+      "table": {
+        "empty": "ไม่มีลูกค้าที่ตรงกับตัวกรองของคุณ",
+        "col": {
+          "name": "ชื่อ",
+          "contact": "ติดต่อ",
+          "source": "แหล่งที่มา",
+          "totalSpent": "ยอดใช้จ่ายรวม",
+          "actions": "การกระทำ"
+        },
+        "bookings": "การจอง {count} รายการ",
+        "lastBooking": "ล่าสุด: {date}",
+        "noBookings": "ยังไม่มีการจอง",
+        "openMenu": "เปิดเมนูการกระทำของลูกค้า",
+        "openClient": "เปิด {name}",
+        "edit": "แก้ไข",
+        "deactivate": "ปิดใช้งาน",
+        "reactivate": "เปิดใช้งานอีกครั้ง"
+      },
+      "form": {
+        "addTitle": "เพิ่มลูกค้า",
+        "editTitle": "แก้ไขลูกค้า",
+        "name": "ชื่อ",
+        "namePlaceholder": "เช่น Maria Santos",
+        "email": "อีเมล",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "โทรศัพท์",
+        "phonePlaceholder": "+66 81 555 0142",
+        "source": "แหล่งที่มา",
+        "tags": "แท็ก",
+        "tagsPlaceholder": "เพิ่มแท็กแล้วกด Enter",
+        "removeTag": "ลบแท็ก {tag}",
+        "notes": "บันทึก",
+        "notesPlaceholder": "บันทึกเกี่ยวกับลูกค้ารายนี้…",
+        "save": "บันทึก",
+        "saving": "กำลังบันทึก…",
+        "cancel": "ยกเลิก",
+        "createSuccess": "สร้างลูกค้าแล้ว",
+        "updateSuccess": "อัปเดตลูกค้าแล้ว",
+        "error": "เกิดข้อผิดพลาด ลองอีกครั้ง"
+      },
+      "detail": {
+        "inactive": "ไม่ใช้งาน",
+        "tabs": {
+          "overview": "ภาพรวม",
+          "bookings": "การจอง",
+          "payments": "การชำระเงิน"
+        },
+        "overview": {
+          "totalSpent": "ยอดใช้จ่ายรวม",
+          "bookingsCount": "การจอง",
+          "lastBooking": "การจองล่าสุด",
+          "never": "ไม่เคย",
+          "contact": "ติดต่อ",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "แหล่งที่มา",
+          "tags": "แท็ก",
+          "noTags": "ไม่มีแท็ก",
+          "notes": "บันทึก",
+          "noNotes": "ไม่มีบันทึก"
+        },
+        "bookings": {
+          "loading": "กำลังโหลดการจอง…",
+          "empty": "ยังไม่มีการจอง",
+          "error": "โหลดการจองไม่สำเร็จ"
+        },
+        "payments": {
+          "empty": "ยังไม่มีบันทึกการชำระเงิน"
+        },
+        "edit": "แก้ไข",
+        "deactivate": "ปิดใช้งาน",
+        "reactivate": "เปิดใช้งานอีกครั้ง",
+        "close": "ปิด"
+      },
+      "deactivate": {
+        "title": "ปิดใช้งานลูกค้ารายนี้?",
+        "body": "ลูกค้ารายนี้จะถูกซ่อนจากรายการที่ใช้งานอยู่ คุณสามารถเปิดใช้งานอีกครั้งได้ตลอดเวลาโดยเปิดใช้ 'แสดงที่ไม่ใช้งาน' ในรายการลูกค้า",
+        "cancel": "ยกเลิก",
+        "confirm": "ปิดใช้งาน"
+      },
+      "unsaved": {
+        "title": "ยกเลิกการเปลี่ยนแปลงของคุณ?",
+        "body": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึกสำหรับลูกค้ารายนี้ จะหายไปหากปิดตอนนี้",
+        "keep": "แก้ไขต่อ",
+        "discard": "ยกเลิกและปิด"
+      },
+      "pagination": {
+        "showing": "แสดง {from}–{to} จาก {total} ลูกค้า",
+        "rowsPerPage": "ต่อหน้า",
+        "previous": "ก่อนหน้า",
+        "next": "ถัดไป"
+      }
     }
   },
   "onboarding": {

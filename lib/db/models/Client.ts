@@ -36,7 +36,9 @@ const clientSchema = new Schema(
     },
     totalSpent: { type: Number, default: 0 },
     lastBookingAt: { type: Date, default: null },
+    bookingsCount: { type: Number, default: 0 },
     notes: { type: String, default: "" },
+    isActive: { type: Boolean, default: true, index: true },
     transactions: { type: [clientTransactionEntrySchema], default: [] },
     lastPaymentAmount: { type: Number, default: 0 },
     lastPaymentDate: { type: Date, default: null },
@@ -48,6 +50,7 @@ const clientSchema = new Schema(
 clientSchema.index({ workspaceId: 1, name: 1 });
 clientSchema.index({ workspaceId: 1, email: 1 });
 clientSchema.index({ workspaceId: 1, createdAt: -1 });
+clientSchema.index({ workspaceId: 1, isActive: 1, name: 1 });
 
 export type ClientDoc = InferSchemaType<typeof clientSchema> & { _id: mongoose.Types.ObjectId };
 

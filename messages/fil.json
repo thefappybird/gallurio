@@ -503,6 +503,117 @@
         "deleteConfirm": "Naiintindihan ko, burahin na",
         "deleting": "Binubura…"
       }
+    },
+    "clients": {
+      "title": "Mga Kliyente",
+      "toolbar": {
+        "search": "Hanapin sa pangalan o email",
+        "searchLabel": "Maghanap ng kliyente",
+        "sourceAll": "Lahat ng pinagmulan",
+        "tagsAll": "Lahat ng tatak",
+        "tagsSelected": "{count} {count, plural, one {tatak} other {tatak}}",
+        "showInactive": "Ipakita ang hindi aktibo",
+        "add": "Magdagdag ng Kliyente",
+        "clearFilters": "Tanggalin ang filter"
+      },
+      "sourceValues": {
+        "form": "Form",
+        "manual": "Manwal",
+        "referral": "Endorso",
+        "import": "Pag-import"
+      },
+      "table": {
+        "empty": "Walang kliyenteng tumutugma sa iyong filter.",
+        "col": {
+          "name": "Pangalan",
+          "contact": "Pakikipag-ugnayan",
+          "source": "Pinagmulan",
+          "totalSpent": "Kabuuang Ginastos",
+          "actions": "Mga Aksyon"
+        },
+        "bookings": "{count} na booking",
+        "lastBooking": "Huli: {date}",
+        "noBookings": "Wala pang booking",
+        "openMenu": "Buksan ang mga aksyon ng kliyente",
+        "openClient": "Buksan ang {name}",
+        "edit": "I-edit",
+        "deactivate": "I-deaktibo",
+        "reactivate": "Buhayin muli"
+      },
+      "form": {
+        "addTitle": "Magdagdag ng Kliyente",
+        "editTitle": "I-edit ang Kliyente",
+        "name": "Pangalan",
+        "namePlaceholder": "hal. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Telepono",
+        "phonePlaceholder": "+63 917 555 0142",
+        "source": "Pinagmulan",
+        "tags": "Mga Tatak",
+        "tagsPlaceholder": "Magdagdag ng tatak at pindutin ang Enter",
+        "removeTag": "Tanggalin ang tatak {tag}",
+        "notes": "Mga Tala",
+        "notesPlaceholder": "Anumang tala tungkol sa kliyenteng ito…",
+        "save": "I-save",
+        "saving": "Sine-save…",
+        "cancel": "Kanselahin",
+        "createSuccess": "Nailikha ang kliyente.",
+        "updateSuccess": "Na-update ang kliyente.",
+        "error": "May nangyaring mali. Subukan muli."
+      },
+      "detail": {
+        "inactive": "Hindi aktibo",
+        "tabs": {
+          "overview": "Pangkalahatan",
+          "bookings": "Mga Booking",
+          "payments": "Mga Bayad"
+        },
+        "overview": {
+          "totalSpent": "Kabuuang Ginastos",
+          "bookingsCount": "Mga Booking",
+          "lastBooking": "Huling Booking",
+          "never": "Wala",
+          "contact": "Pakikipag-ugnayan",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Pinagmulan",
+          "tags": "Mga Tatak",
+          "noTags": "Walang tatak",
+          "notes": "Mga Tala",
+          "noNotes": "Walang tala"
+        },
+        "bookings": {
+          "loading": "Niloload ang mga booking…",
+          "empty": "Wala pang booking.",
+          "error": "Nabigong i-load ang mga booking."
+        },
+        "payments": {
+          "empty": "Wala pang rekord ng bayad."
+        },
+        "edit": "I-edit",
+        "deactivate": "I-deaktibo",
+        "reactivate": "Buhayin muli",
+        "close": "Isara"
+      },
+      "deactivate": {
+        "title": "I-deaktibo ang kliyenteng ito?",
+        "body": "Itatago ang kliyenteng ito mula sa aktibong listahan. Maaari mo siyang buhayin muli anumang oras sa pamamagitan ng pagpapagana ng 'Ipakita ang hindi aktibo' sa listahan ng kliyente.",
+        "cancel": "Kanselahin",
+        "confirm": "I-deaktibo"
+      },
+      "unsaved": {
+        "title": "Itapon ang iyong mga pagbabago?",
+        "body": "May mga hindi pa nai-save na pagbabago ka sa kliyenteng ito. Mawawala ang mga ito kung magsasara ka ngayon.",
+        "keep": "Magpatuloy sa pag-edit",
+        "discard": "Itapon at isara"
+      },
+      "pagination": {
+        "showing": "Ipinapakita ang {from}–{to} ng {total} kliyente",
+        "rowsPerPage": "Bawat pahina",
+        "previous": "Nakaraan",
+        "next": "Susunod"
+      }
     }
   },
   "onboarding": {

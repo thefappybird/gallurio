@@ -503,6 +503,117 @@
         "deleteConfirm": "I understand, delete it",
         "deleting": "Deleting…"
       }
+    },
+    "clients": {
+      "title": "Clients",
+      "toolbar": {
+        "search": "Search by name or email",
+        "searchLabel": "Search clients",
+        "sourceAll": "All sources",
+        "tagsAll": "All tags",
+        "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
+        "showInactive": "Show inactive",
+        "add": "Add Client",
+        "clearFilters": "Clear filters"
+      },
+      "sourceValues": {
+        "form": "Form",
+        "manual": "Manual",
+        "referral": "Referral",
+        "import": "Import"
+      },
+      "table": {
+        "empty": "No clients match your filters.",
+        "col": {
+          "name": "Name",
+          "contact": "Contact",
+          "source": "Source",
+          "totalSpent": "Total Spent",
+          "actions": "Actions"
+        },
+        "bookings": "{count} bookings",
+        "lastBooking": "Last: {date}",
+        "noBookings": "No bookings yet",
+        "openMenu": "Open client actions",
+        "openClient": "Open {name}",
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate"
+      },
+      "form": {
+        "addTitle": "Add Client",
+        "editTitle": "Edit Client",
+        "name": "Name",
+        "namePlaceholder": "e.g. Maria Santos",
+        "email": "Email",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "Phone",
+        "phonePlaceholder": "+63 917 555 0142",
+        "source": "Source",
+        "tags": "Tags",
+        "tagsPlaceholder": "Add tag and press Enter",
+        "removeTag": "Remove tag {tag}",
+        "notes": "Notes",
+        "notesPlaceholder": "Any notes about this client…",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "createSuccess": "Client created.",
+        "updateSuccess": "Client updated.",
+        "error": "Something went wrong. Try again."
+      },
+      "detail": {
+        "inactive": "Inactive",
+        "tabs": {
+          "overview": "Overview",
+          "bookings": "Bookings",
+          "payments": "Payments"
+        },
+        "overview": {
+          "totalSpent": "Total Spent",
+          "bookingsCount": "Bookings",
+          "lastBooking": "Last Booking",
+          "never": "Never",
+          "contact": "Contact",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "Source",
+          "tags": "Tags",
+          "noTags": "No tags",
+          "notes": "Notes",
+          "noNotes": "No notes"
+        },
+        "bookings": {
+          "loading": "Loading bookings…",
+          "empty": "No bookings yet.",
+          "error": "Failed to load bookings."
+        },
+        "payments": {
+          "empty": "No payment records yet."
+        },
+        "edit": "Edit",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "close": "Close"
+      },
+      "deactivate": {
+        "title": "Deactivate this client?",
+        "body": "This client will be hidden from the active list. You can reactivate them at any time by enabling 'Show inactive' in the client list.",
+        "cancel": "Cancel",
+        "confirm": "Deactivate"
+      },
+      "unsaved": {
+        "title": "Discard your changes?",
+        "body": "You have unsaved changes to this client. They'll be lost if you close now.",
+        "keep": "Keep editing",
+        "discard": "Discard and close"
+      },
+      "pagination": {
+        "showing": "Showing {from}–{to} of {total} clients",
+        "rowsPerPage": "Per page",
+        "previous": "Previous",
+        "next": "Next"
+      }
     }
   },
   "onboarding": {
