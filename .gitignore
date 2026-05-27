@@ -43,9 +43,6 @@ next-env.d.ts
 #claude
 /.agents
 /.claude
-AGENTS.md
-SaaS-Blueprint.md
-CLAUDE.md
 skills-lock.json
 
 #hitpay
