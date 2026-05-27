@@ -34,6 +34,20 @@ describe("clientFormSchema", () => {
     }
   });
 
+  it("rejects whitespace-only name (trims before min-length check)", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, name: "   " });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const nameError = result.error.issues.find((i) => i.path[0] === "name");
+      expect(nameError?.message).toBe("Name is required");
+    }
+  });
+
+  it("rejects tab/newline-only name", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, name: "\t\n " });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects name longer than 120 chars", () => {
     const result = clientFormSchema.safeParse({ name: "a".repeat(121) });
     expect(result.success).toBe(false);
@@ -61,6 +75,22 @@ describe("clientFormSchema", () => {
 
   it("lowercases a valid email on parse", () => {
     const result = clientFormSchema.safeParse({ ...validFull, email: "MARIA@Example.COM" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("maria@example.com");
+    }
+  });
+
+  it("accepts an email with trailing whitespace and trims it", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, email: "maria@example.com " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.email).toBe("maria@example.com");
+    }
+  });
+
+  it("accepts a padded uppercase email — trims, then lowercases", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, email: "  MARIA@Example.COM  " });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.email).toBe("maria@example.com");
