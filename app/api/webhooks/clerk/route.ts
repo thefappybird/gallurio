@@ -186,7 +186,7 @@ export async function POST(req: Request) {
               if (!team) {
                 // Team deleted between invite and accept — release the seat
                 // we reserved at invite time. (No-op if already 0.)
-                await releaseTeamSeat(teamId);
+                await releaseTeamSeat(teamId, workspace._id);
                 console.warn(
                   `[clerk-webhook] dropping pending assignment for deleted team`,
                   { workspaceId: String(workspace._id), teamId: String(teamId), email: memberEmail },
@@ -240,7 +240,7 @@ export async function POST(req: Request) {
         });
 
         for (const tm of memberships) {
-          await releaseTeamSeat(tm.teamId);
+          await releaseTeamSeat(tm.teamId, workspace._id);
         }
 
         await User.findOneAndUpdate(

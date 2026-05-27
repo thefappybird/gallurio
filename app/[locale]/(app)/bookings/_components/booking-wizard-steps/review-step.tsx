@@ -71,22 +71,19 @@ export function ReviewStep({ values, locale }: Props) {
 
 function formatSessionRange(s: WizardSession, locale: string): string {
   if (!s.startDate) return "—";
-  const startPretty = formatDateTime(s.startDate, s.startTime, locale);
-  const endDate = s.singleDay ? s.startDate : s.endDate || s.startDate;
-  const endPretty = formatDateTime(endDate, s.endTime, locale);
-  if (startPretty === endPretty) return startPretty;
-  return `${startPretty} – ${endPretty}`;
+  const datePart = formatDate(s.startDate, locale);
+  const timePart =
+    s.startTime && s.endTime ? `${s.startTime} – ${s.endTime}` : s.startTime || "";
+  return timePart ? `${datePart} · ${timePart}` : datePart;
 }
 
-function formatDateTime(date: string, time: string, locale: string): string {
+function formatDate(date: string, locale: string): string {
   if (!date) return "—";
   const d = new Date(`${date}T00:00:00`);
   if (Number.isNaN(d.getTime())) return "—";
-  const datePart = d.toLocaleDateString(locale, {
+  return d.toLocaleDateString(locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
-  if (!time || !/^\d{2}:\d{2}$/.test(time)) return datePart;
-  return `${datePart} · ${time}`;
 }

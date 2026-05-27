@@ -9,7 +9,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     globals: false,
     include: ["**/*.test.{ts,tsx}"],
-    exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**"],
+    exclude: ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/.claude/worktrees/**"],
     testTimeout: 30_000,
     hookTimeout: 180_000,
     pool: "forks",

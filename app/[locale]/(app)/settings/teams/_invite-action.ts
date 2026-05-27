@@ -106,7 +106,7 @@ export async function inviteMemberAction(
   const fullTeamNames: string[] = [];
   for (const teamId of validIds) {
     try {
-      await assertCanAddTeamMember(teamId, ctx.workspace.plan);
+      await assertCanAddTeamMember(teamId, ctx.workspace.plan, ctx.workspace._id);
       reserved.push(teamId);
     } catch (err) {
       if (err instanceof TeamSeatCapExceededError) {
@@ -115,14 +115,14 @@ export async function inviteMemberAction(
       } else if (err instanceof TeamNotFoundError) {
         // Race: deleted between fetch and assert.
       } else {
-        for (const id of reserved) await releaseTeamSeat(id);
+        for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
         throw err;
       }
     }
   }
 
   if (fullTeamNames.length > 0) {
-    for (const id of reserved) await releaseTeamSeat(id);
+    for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
     return { error: "TEAM_SEAT_CAP_EXCEEDED", fullTeamNames };
   }
 
@@ -147,7 +147,8 @@ export async function inviteMemberAction(
           clerkInvitationId: null,
           invitedByClerkUserId: ctx.userId,
           createdAt: new Date(),
-          releasedAt: null,
+          claimedFor: null,
+          claimedAt: null,
         },
       },
       { upsert: true, new: true },
@@ -157,7 +158,7 @@ export async function inviteMemberAction(
     if (!pending) throw new Error("Failed to persist pending assignment");
     pendingId = pending._id;
   } catch (err) {
-    for (const id of reserved) await releaseTeamSeat(id);
+    for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
     throw err;
   }
 

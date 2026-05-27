@@ -1,10 +1,19 @@
 import { notFound } from "next/navigation";
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { Building2, Palette, Globe, AlertTriangle, UsersRound, Wrench } from "lucide-react";
+import {
+  Building2,
+  Palette,
+  Globe,
+  AlertTriangle,
+  ArrowLeftRight,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
-import { SettingsUserProfile, CustomPage } from "../_components/settings-user-profile";
+import { SettingsUserProfile } from "../_components/settings-user-profile";
+import { SettingsOrgSwitcher } from "../_components/settings-org-switcher";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { WorkspaceBrandingForm } from "../workspace/_branding-form";
 import { CustomizePanel } from "../customize/_panel";
@@ -151,78 +160,94 @@ export default async function SettingsCatchallPage({
     inquiryRecipientEmail: workspace.publicPage?.inquiryRecipientEmail ?? "",
   };
 
+  const t = await getTranslations("app.settings.tabs");
+
   const mountPath =
     locale === routing.defaultLocale ? "/settings" : `/${locale}/settings`;
 
   return (
-    <SettingsUserProfile path={mountPath} role={role}>
-      <CustomPage
-        slug="customize"
-        labelKey="customize"
-        labelIcon={<Palette className="size-4" />}
-      >
-        <CustomizePanel />
-      </CustomPage>
-      <CustomPage
-        slug="workspace"
-        labelKey="workspace"
-        labelIcon={<Building2 className="size-4" />}
-        ownerOnly
-      >
-        <div className="flex flex-col gap-8">
-          <WorkspaceBusinessForm defaults={businessDefaults} />
-          <WorkspaceBrandingForm defaults={brandingDefaults} />
-        </div>
-      </CustomPage>
-      <CustomPage
-        slug="teams"
-        labelKey="teams"
-        labelIcon={<UsersRound className="size-4" />}
-        ownerOnly
-      >
-        <TeamsPanel
-          teams={teams}
-          plan={workspace.plan as "free" | "starter" | "pro"}
-          maxTeams={maxTeams}
-          maxMembersPerTeam={maxMembersPerTeam}
-          members={members}
-          pendingInvites={pendingInvites}
-          ownerClerkUserId={workspace.ownerUserId}
-        />
-      </CustomPage>
-      <CustomPage
-        slug="public-page"
-        labelKey="publicPage"
-        labelIcon={<Globe className="size-4" />}
-        ownerOnly
-      >
-        <PublicPageSettingsForm
-          slug={workspace.slug}
-          publishedAt={workspace.publicPage?.publishedAt ?? null}
-          defaults={publicPageDefaults}
-          locale={locale}
-        />
-      </CustomPage>
-      {IS_DEV && (
-        <CustomPage
-          slug="dev-plan"
-          labelKey="devPlan"
-          labelIcon={<Wrench className="size-4" />}
-          ownerOnly
-        >
-          <DevPlanPanel
-            currentPlan={workspace.plan as "free" | "starter" | "pro"}
-          />
-        </CustomPage>
-      )}
-      <CustomPage
-        slug="danger"
-        labelKey="danger"
-        labelIcon={<AlertTriangle className="size-4" />}
-        ownerOnly
-      >
-        <DangerPanel workspaceName={workspace.name} workspaceSlug={workspace.slug} />
-      </CustomPage>
-    </SettingsUserProfile>
+    <SettingsUserProfile
+      path={mountPath}
+      role={role}
+      pages={[
+        {
+          slug: "customize",
+          label: t("customize"),
+          icon: <Palette className="size-4" />,
+          body: <CustomizePanel />,
+        },
+        {
+          slug: "switch-workspace",
+          label: t("switchWorkspace"),
+          icon: <ArrowLeftRight className="size-4" />,
+          body: <SettingsOrgSwitcher />,
+        },
+        {
+          slug: "workspace",
+          label: t("workspace"),
+          icon: <Building2 className="size-4" />,
+          ownerOnly: true,
+          body: (
+            <div className="flex flex-col gap-8">
+              <WorkspaceBusinessForm defaults={businessDefaults} />
+              <WorkspaceBrandingForm defaults={brandingDefaults} />
+            </div>
+          ),
+        },
+        {
+          slug: "teams",
+          label: t("teams"),
+          icon: <UsersRound className="size-4" />,
+          ownerOnly: true,
+          body: (
+            <TeamsPanel
+              teams={teams}
+              plan={workspace.plan as "free" | "starter" | "pro"}
+              maxTeams={maxTeams}
+              maxMembersPerTeam={maxMembersPerTeam}
+              members={members}
+              pendingInvites={pendingInvites}
+              ownerClerkUserId={workspace.ownerUserId}
+            />
+          ),
+        },
+        {
+          slug: "public-page",
+          label: t("publicPage"),
+          icon: <Globe className="size-4" />,
+          ownerOnly: true,
+          body: (
+            <PublicPageSettingsForm
+              slug={workspace.slug}
+              publishedAt={workspace.publicPage?.publishedAt ?? null}
+              defaults={publicPageDefaults}
+              locale={locale}
+            />
+          ),
+        },
+        ...(IS_DEV
+          ? ([
+              {
+                slug: "dev-plan",
+                label: t("devPlan"),
+                icon: <Wrench className="size-4" />,
+                ownerOnly: true,
+                body: (
+                  <DevPlanPanel
+                    currentPlan={workspace.plan as "free" | "starter" | "pro"}
+                  />
+                ),
+              },
+            ] as const)
+          : []),
+        {
+          slug: "danger",
+          label: t("danger"),
+          icon: <AlertTriangle className="size-4" />,
+          ownerOnly: true,
+          body: <DangerPanel workspaceName={workspace.name} workspaceSlug={workspace.slug} />,
+        },
+      ]}
+    />
   );
 }

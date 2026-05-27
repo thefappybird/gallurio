@@ -32,15 +32,41 @@ beforeEach(async () => {
   await PendingTeamAssignment.deleteMany({});
 });
 
-async function makeTeam(memberCount: number) {
+async function makeTeam(
+  memberCount: number,
+  workspaceId: mongoose.Types.ObjectId = new mongoose.Types.ObjectId(),
+) {
   return Team.create({
-    workspaceId: new mongoose.Types.ObjectId(),
+    workspaceId,
     name: `Team ${Math.random().toString(36).slice(2, 8)}`,
     color: TEAM_COLOR_PALETTE[0],
     isDefault: false,
     memberCount,
     createdByClerkUserId: "user_test",
   });
+}
+
+// Helper: create a team + a pending invite that share the same workspaceId.
+// The release helper requires matching workspaceId on the Team filter to
+// satisfy the tenant-scoped query rule, so tests must not pair a team from
+// workspace A with a pending row pointing at workspace B.
+async function makeTeamWithPending(opts: {
+  memberCount: number;
+  email?: string;
+}) {
+  const workspaceId = new mongoose.Types.ObjectId();
+  const team = await makeTeam(opts.memberCount, workspaceId);
+  const pending = await PendingTeamAssignment.create({
+    workspaceId,
+    email: opts.email ?? `t_${Math.random().toString(36).slice(2, 8)}@example.com`,
+    teamIds: [team._id],
+    leadOnTeamIds: [],
+    clerkInvitationId: "clerk_inv_test",
+    invitedByClerkUserId: "user_owner",
+    claimedFor: null,
+    claimedAt: null,
+  });
+  return { team, pending, workspaceId };
 }
 
 async function makePending(
@@ -62,8 +88,7 @@ async function makePending(
 
 describe("claimAndReleasePendingInvite — happy path + idempotency", () => {
   it("decrements memberCount once and deletes the pending row on a fresh release", async () => {
-    const team = await makeTeam(3);
-    const pending = await makePending([team._id]);
+    const { team, pending } = await makeTeamWithPending({ memberCount: 3 });
 
     const result = await claimAndReleasePendingInvite(pending._id);
     expect(result.status).toBe("released");
@@ -79,8 +104,7 @@ describe("claimAndReleasePendingInvite — happy path + idempotency", () => {
   it("two concurrent callers do NOT double-decrement", async () => {
     // Even if both could somehow claim (e.g. stale lease takeover), the Team
     // per-team ack guarantees the seat is only decremented once.
-    const team = await makeTeam(5);
-    const pending = await makePending([team._id]);
+    const { team, pending } = await makeTeamWithPending({ memberCount: 5 });
 
     const [a, b] = await Promise.all([
       claimAndReleasePendingInvite(pending._id),
@@ -110,10 +134,11 @@ describe("claimAndReleasePendingInvite — stuck-release recovery", () => {
     // Simulates a worker that claimed the row but crashed before refunding
     // seats. The cron arrives later, sees the stale lease, re-claims, and
     // finishes the work. memberCount must be decremented exactly once.
-    const team = await makeTeam(4);
+    const workspaceId = new mongoose.Types.ObjectId();
+    const team = await makeTeam(4, workspaceId);
     const stalePast = new Date(Date.now() - PENDING_INVITE_CLAIM_TIMEOUT_MS - 60_000);
     const pending = await PendingTeamAssignment.create({
-      workspaceId: new mongoose.Types.ObjectId(),
+      workspaceId,
       email: "stuck@example.com",
       teamIds: [team._id],
       leadOnTeamIds: [],
@@ -210,8 +235,8 @@ describe("claimPendingInviteForAccept — webhook side", () => {
 
 describe("accept-vs-release race", () => {
   it("only one of {claim-for-accept, claim-for-release} can win a fresh row", async () => {
-    const team = await makeTeam(1);
     const workspaceId = new mongoose.Types.ObjectId();
+    const team = await makeTeam(1, workspaceId);
     const pending = await makePending([team._id], workspaceId, "race@example.com");
 
     const [acceptClaim, releaseOutcome] = await Promise.all([

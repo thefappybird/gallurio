@@ -42,11 +42,11 @@ next-env.d.ts
 
 #claude
 /.agents
-/.claude
-AGENTS.md
-SaaS-Blueprint.md
-CLAUDE.md
+/.claude/*
+!/.claude/agents/
 skills-lock.json
 
 #hitpay
 /cli
+# clerk configuration (can include secrets)
+/.clerk/

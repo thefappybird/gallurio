@@ -76,7 +76,7 @@ export async function assignMemberToTeamAction(
   if (existing) return { error: "ALREADY_ON_TEAM" };
 
   try {
-    await assertCanAddTeamMember(teamObjectId, ctx.workspace.plan);
+    await assertCanAddTeamMember(teamObjectId, ctx.workspace.plan, ctx.workspace._id);
   } catch (err) {
     if (err instanceof TeamSeatCapExceededError) {
       return { error: "TEAM_SEAT_CAP_EXCEEDED" };
@@ -95,7 +95,7 @@ export async function assignMemberToTeamAction(
       role,
     });
   } catch (err) {
-    await releaseTeamSeat(teamObjectId);
+    await releaseTeamSeat(teamObjectId, ctx.workspace._id);
     if (
       typeof err === "object" &&
       err !== null &&
@@ -133,7 +133,7 @@ export async function removeMemberFromTeamAction(
 
   if (result.deletedCount === 0) return { error: "MEMBERSHIP_NOT_FOUND" };
 
-  await releaseTeamSeat(teamObjectId);
+  await releaseTeamSeat(teamObjectId, ctx.workspace._id);
 
   revalidatePath("/settings/teams", "page");
   return { ok: true };
@@ -206,7 +206,7 @@ export async function removeMemberFromWorkspaceAction(
   });
 
   for (const m of memberships) {
-    await releaseTeamSeat(m.teamId);
+    await releaseTeamSeat(m.teamId, ctx.workspace._id);
   }
 
   revalidatePath("/settings/teams", "page");

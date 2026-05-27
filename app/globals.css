@@ -397,57 +397,47 @@
 .rbc-addons-dnd .rbc-addons-dnd-dragged-event {
   opacity: 0.15 !important;
 }
+/*
+ * Bug 3 — disable invalid resize handles on overnight candle halves.
+ *
+ * The bled-tail (isMorningContinuation / .rbc-bled-tail) sits at 00:00 of the
+ * next day. Its TOP (start) anchor would let the user "move the session start
+ * to after midnight" — an invalid mutation. Kill pointer-events on the first
+ * .rbc-addons-dnd-resize-ns-anchor child (the start/top handle).
+ *
+ * The evening-head (isEveningHead / .rbc-evening-head) ends at 23:59:59 of
+ * the first day. Its BOTTOM (end) anchor would let the user push the session
+ * end to midnight — also invalid. Kill pointer-events on the last anchor.
+ *
+ * CSS is the visual layer; the handler guards in handleEventResize are the
+ * primary enforcement so even if rbc's DOM structure changes the mutation
+ * is still blocked in JS.
+ */
+.rbc-calendar .rbc-event.rbc-bled-tail
+  .rbc-addons-dnd-resize-ns-anchor:first-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
+.rbc-calendar .rbc-event.rbc-evening-head
+  .rbc-addons-dnd-resize-ns-anchor:last-child {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  cursor: default !important;
+}
 /* Non-dragged events dim slightly while a drag is in progress. */
 .rbc-addons-dnd.rbc-addons-dnd-is-dragging
   .rbc-event:not(.rbc-addons-dnd-dragged-event):not(.rbc-addons-dnd-drag-preview) {
   opacity: 0.55 !important;
 }
 
-/* "+N more" link: inverted-scheme pill (foreground bg, background text) so it
-   stands out on both light and dark surfaces without relying on the brand color. */
-.rbc-show-more {
-  @apply bg-foreground text-background text-[10px] font-semibold leading-tight;
-  display: block;
-  padding: 1px 6px;
-  margin: 1px 1px 0;
-}
-.rbc-show-more:hover {
-  background-color: color-mix(in oklch, var(--foreground) 80%, transparent);
-}
-/* "+N more" popup: rbc renders this via react-overlays' Portal so it lives
-   outside `.rbc-calendar` — selectors here must NOT scope under `.rbc-calendar`
-   or they will silently fail to match the portaled popup. Force both bg and
-   text to paired tokens so contrast is preserved in light + dark. The
-   :is(html) prefix bumps specificity above the default `.rbc-overlay` rule
-   AND `!important` guards against any future cascade reorder. */
-:is(html) .rbc-overlay,
-.rbc-overlay {
-  background-color: var(--popover) !important;
-  color: var(--popover-foreground) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground) 15%, transparent) !important;
-  padding: 8px !important;
-}
-:is(html) .rbc-overlay > *,
-.rbc-overlay > * {
-  color: var(--popover-foreground) !important;
-}
-:is(html) .rbc-overlay-header,
-.rbc-overlay-header {
-  background-color: var(--popover) !important;
-  color: var(--popover-foreground) !important;
-  border-bottom: 1px solid var(--border) !important;
-  font-weight: 600;
-  padding: 4px 4px 6px !important;
-  margin: 0 0 4px !important;
-}
-/* Events inside the popup are rbc-event nodes that ALSO get the default
-   rbc styling. Make sure the bg comes from our custom event component
-   (it sets bg inline) and the rbc default doesn't repaint over it. */
-.rbc-overlay .rbc-event {
+/* Overflow event pill: rbc wraps the custom event component in .rbc-event which
+   adds its own background/border. Strip those for the overflow placeholder so
+   only the custom pill renders visually. */
+.rbc-calendar .rbc-event.overflow-event {
   background-color: transparent !important;
   border: none !important;
-  padding: 0 !important;
+  box-shadow: none !important;
 }
 .rbc-agenda-table {
   @apply border-collapse;
@@ -471,4 +461,60 @@
 .rbc-calendar .rbc-current-time-indicator {
   background-color: var(--brand);
   height: 2px;
+}
+
+/* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
+@keyframes toast-in {
+  0% {
+    transform: translateX(20px) scale(0.96);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-2px) scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+.animate-toast-in {
+  animation: toast-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sonner richColors palette override — align with Gallurio's oklch tokens.
+   Sonner expects --[type]-bg, --[type]-text, --[type]-border CSS variables. */
+:root {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.95 0.05 145);
+  --success-text: oklch(0.30 0.13 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.95 0.05 25);
+  --error-text: oklch(0.30 0.18 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.95 0.05 75);
+  --warning-text: oklch(0.30 0.14 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.95 0.04 230);
+  --info-text: oklch(0.30 0.10 230);
+  --info-border: oklch(0.55 0.10 230);
+}
+.dark {
+  --normal-bg: var(--popover);
+  --normal-text: var(--popover-foreground);
+  --normal-border: var(--border);
+  --success-bg: oklch(0.22 0.06 145);
+  --success-text: oklch(0.95 0.05 145);
+  --success-border: oklch(0.55 0.13 145);
+  --error-bg: oklch(0.22 0.08 25);
+  --error-text: oklch(0.95 0.05 25);
+  --error-border: oklch(0.60 0.18 25);
+  --warning-bg: oklch(0.22 0.07 75);
+  --warning-text: oklch(0.95 0.05 75);
+  --warning-border: oklch(0.68 0.14 65);
+  --info-bg: oklch(0.22 0.05 230);
+  --info-text: oklch(0.95 0.04 230);
+  --info-border: oklch(0.55 0.10 230);
 }

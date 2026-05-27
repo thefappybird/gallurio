@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { useRouter, usePathname, Link } from "@/lib/i18n/navigation";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DownloadIcon, PlusIcon, SearchIcon, UploadIcon } from "lucide-react";
@@ -20,11 +20,21 @@ import { CsvImportDialog } from "./csv-import-dialog";
 
 const ALL = "__all__";
 
-export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }) {
+export function BookingsToolbar({
+  defaultCurrency,
+  onAddClick,
+}: {
+  defaultCurrency: string;
+  /** When provided, the "New Booking" button calls this directly instead of
+   *  performing a URL push. Allows the parent to own the open state so the
+   *  button always fires even when ?add=1 is already in the URL. */
+  onAddClick?: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.toolbar");
+  const tBookings = useTranslations("app.bookings");
   const [, startTransition] = useTransition();
 
   const [q, setQ] = useState(searchParams.get("q") ?? "");
@@ -37,6 +47,20 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
 
   const status = searchParams.get("status") ?? ALL;
   const includeCancelled = searchParams.get("includeCancelled") === "1";
+  const showPast = searchParams.get("showPast") === "1";
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const exportHref = useMemo(() => {
+    const p = new URLSearchParams();
+    if (status && status !== ALL) p.set("status", status);
+    if (q) p.set("q", q);
+    if (includeCancelled) p.set("includeCancelled", "1");
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    const qs = p.toString();
+    return `/api/bookings/export${qs ? `?${qs}` : ""}`;
+  }, [status, q, includeCancelled, from, to]);
 
   const pushParams = useCallback(
     (updates: Record<string, string | null>) => {
@@ -112,14 +136,38 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
             {t("showCancelled")}
           </span>
         </label>
+
+        <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
+          <Switch
+            checked={showPast}
+            onCheckedChange={(v: boolean) =>
+              pushParams({ showPast: v ? "1" : null })
+            }
+          />
+          <span className="select-none text-muted-foreground">
+            {t("showPast")}
+          </span>
+        </label>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+      <div className="flex w-full items-center sm:w-auto sm:flex-wrap sm:gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+          onClick={() => setImportOpen(true)}
+        >
           <UploadIcon className="size-4" />
           {t("import")}
         </Button>
-        <Button variant="outline" size="sm" disabled>
+        <Button
+          variant="outline"
+          size="sm"
+          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l"
+          title={tBookings("export.tooltip")}
+          nativeButton={false}
+          render={<a href={exportHref} download />}
+        >
           <DownloadIcon className="size-4" />
           {t("export")}
         </Button>
@@ -129,9 +177,21 @@ export function BookingsToolbar({ defaultCurrency }: { defaultCurrency: string }
           defaultCurrency={defaultCurrency}
         />
         <Button
+          variant="brand"
           size="sm"
-          className="bg-brand text-brand-foreground hover:bg-brand/90"
-          render={<Link href={`${pathname}?add=1`} />}
+          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
+          onClick={() => {
+            if (onAddClick) {
+              onAddClick();
+            } else {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("add", "1");
+              const qs = params.toString();
+              startTransition(() => {
+                router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+              });
+            }
+          }}
         >
           <PlusIcon className="size-4" />
           {t("add")}

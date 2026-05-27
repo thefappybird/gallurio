@@ -86,18 +86,28 @@ export async function POST(req: Request) {
   const reference = `sub_${ctx.workspace._id.toString()}_${Date.now()}`;
   const redirectUrl = `${appUrl()}${successPath.replace("{REFERENCE}", reference)}`;
 
-  const billing = await createRecurringBilling({
-    name: PLAN_NAME[plan],
-    cycle: "monthly",
-    amount: catalog.amount,
-    currency: "PHP",
-    customer_email: customerEmail,
-    customer_name: customerName,
-    start_date: todayISO(),
-    reference,
-    redirect_url: redirectUrl,
-    payment_methods: recurringPaymentMethods(),
-  });
+  let billing: Awaited<ReturnType<typeof createRecurringBilling>>;
+  try {
+    billing = await createRecurringBilling({
+      name: PLAN_NAME[plan],
+      cycle: "monthly",
+      amount: catalog.amount,
+      currency: "PHP",
+      customer_email: customerEmail,
+      customer_name: customerName,
+      start_date: todayISO(),
+      reference,
+      redirect_url: redirectUrl,
+      payment_methods: recurringPaymentMethods(),
+    });
+  } catch (err) {
+    console.error("[billing.checkout] createRecurringBilling failed", err);
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: `Failed to create billing: ${msg}` },
+      { status: 502 }
+    );
+  }
 
   await Workspace.updateOne(
     { _id: ctx.workspace._id },

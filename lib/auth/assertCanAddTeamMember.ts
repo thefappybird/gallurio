@@ -23,20 +23,31 @@ export class TeamNotFoundError extends Error {
 
 // Atomically reserves a seat on the team by incrementing `memberCount`, only
 // if it is still below the per-team cap. If the update returns null, the team
-// is either missing or at cap.
+// is either missing, at cap, or scoped to a different workspace.
 //
-// CALLER MUST roll back the increment with `releaseTeamSeat(teamId)` if any
-// downstream step (writing the TeamMembership, issuing the Clerk invite,
+// CALLER MUST roll back the increment with `releaseTeamSeat(teamId, workspaceId)`
+// if any downstream step (writing the TeamMembership, issuing the Clerk invite,
 // upserting the pending assignment) fails. This is the contract that keeps
 // `memberCount` honest under concurrent invites.
+//
+// `workspaceId` is optional only because some legacy callers (webhook drain
+// for deleted-team cleanup) don't have it handy. New callers MUST pass it —
+// the repo rule is that every tenant-scoped query includes workspaceId.
 export async function assertCanAddTeamMember(
   teamId: mongoose.Types.ObjectId | string,
   plan: PlanTier,
+  workspaceId?: mongoose.Types.ObjectId | string,
 ): Promise<void> {
   const { maxMembersPerTeam } = planEntitlements(plan);
 
+  const filter: Record<string, unknown> = {
+    _id: teamId,
+    memberCount: { $lt: maxMembersPerTeam },
+  };
+  if (workspaceId !== undefined) filter.workspaceId = workspaceId;
+
   const updated = await Team.findOneAndUpdate(
-    { _id: teamId, memberCount: { $lt: maxMembersPerTeam } },
+    filter,
     { $inc: { memberCount: 1 } },
     { new: true },
   )
@@ -45,16 +56,21 @@ export async function assertCanAddTeamMember(
 
   if (updated) return;
 
-  const exists = await Team.exists({ _id: teamId });
+  const existsFilter: Record<string, unknown> = { _id: teamId };
+  if (workspaceId !== undefined) existsFilter.workspaceId = workspaceId;
+  const exists = await Team.exists(existsFilter);
   if (!exists) throw new TeamNotFoundError(String(teamId));
   throw new TeamSeatCapExceededError(String(teamId), plan, maxMembersPerTeam);
 }
 
 export async function releaseTeamSeat(
   teamId: mongoose.Types.ObjectId | string,
+  workspaceId?: mongoose.Types.ObjectId | string,
 ): Promise<void> {
-  await Team.updateOne(
-    { _id: teamId, memberCount: { $gt: 0 } },
-    { $inc: { memberCount: -1 } },
-  );
+  const filter: Record<string, unknown> = {
+    _id: teamId,
+    memberCount: { $gt: 0 },
+  };
+  if (workspaceId !== undefined) filter.workspaceId = workspaceId;
+  await Team.updateOne(filter, { $inc: { memberCount: -1 } });
 }

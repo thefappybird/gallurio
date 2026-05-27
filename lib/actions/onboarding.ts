@@ -17,10 +17,8 @@ import { ensureDefaultTeam } from "@/lib/db/models/team";
 import {
   businessStepSchema,
   brandingStepSchema,
-  templateStepSchema,
   type BusinessStepInput,
   type BrandingStepInput,
-  type TemplateStepInput,
 } from "@/lib/validators/workspace";
 
 type ActionResult = { error?: string; ok?: boolean };
@@ -143,23 +141,6 @@ export async function brandingStepAction(input: BrandingStepInput): Promise<Acti
       },
     }
   );
-  await setUserStep(session.userId, "template");
-  return { ok: true };
-}
-
-export async function templateStepAction(input: TemplateStepInput): Promise<ActionResult> {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace — restart onboarding." };
-
-  const parsed = templateStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  await connectDB();
-  await Workspace.updateOne(
-    { clerkOrgId: session.orgId },
-    { $set: { "publicPage.templateId": parsed.data.templateId } }
-  );
   await setUserStep(session.userId, "plan");
   return { ok: true };
 }
@@ -218,6 +199,13 @@ async function seedSampleData(workspaceId: string) {
 
   const now = new Date();
   const day = (n: number) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000);
+  const slot = (n: number, startHour = 10, endHour = 18) => {
+    const start = day(n);
+    start.setHours(startHour, 0, 0, 0);
+    const end = day(n);
+    end.setHours(endHour, 0, 0, 0);
+    return { start, end };
+  };
 
   const clients = await Client.insertMany([
     {
@@ -260,6 +248,10 @@ async function seedSampleData(workspaceId: string) {
     },
   ]);
 
+  const carterSlot = slot(28);
+  const shahSlot = slot(14);
+  const galaSlot = slot(70);
+
   await Booking.insertMany([
     {
       workspaceId,
@@ -268,8 +260,9 @@ async function seedSampleData(workspaceId: string) {
       title: "Carter Wedding — Pier 27",
       eventType: "wedding",
       status: "booked",
-      startAt: day(28),
-      endAt: day(28),
+      sessions: [{ startAt: carterSlot.start, endAt: carterSlot.end }],
+      firstSessionStart: carterSlot.start,
+      lastSessionEnd: carterSlot.end,
       amount: { total: 65000, deposit: 20000, currency: "PHP" },
     },
     {
@@ -279,8 +272,9 @@ async function seedSampleData(workspaceId: string) {
       title: "Shah Engagement Shoot",
       eventType: "wedding",
       status: "quoted",
-      startAt: day(14),
-      endAt: day(14),
+      sessions: [{ startAt: shahSlot.start, endAt: shahSlot.end }],
+      firstSessionStart: shahSlot.start,
+      lastSessionEnd: shahSlot.end,
       amount: { total: 15000, deposit: 5000, currency: "PHP" },
     },
     {
@@ -290,8 +284,9 @@ async function seedSampleData(workspaceId: string) {
       title: "Northwood Annual Gala",
       eventType: "corporate",
       status: "inquiry",
-      startAt: day(70),
-      endAt: day(70),
+      sessions: [{ startAt: galaSlot.start, endAt: galaSlot.end }],
+      firstSessionStart: galaSlot.start,
+      lastSessionEnd: galaSlot.end,
       amount: { total: 90000, deposit: 30000, currency: "PHP" },
     },
   ]);

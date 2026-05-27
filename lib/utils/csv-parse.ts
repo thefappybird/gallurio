@@ -13,14 +13,26 @@ export type ParsedCsv = {
  */
 export function parseCsv(text: string): ParsedCsv {
   const rawLines = splitCsvLines(text);
-  if (rawLines.length === 0) return { headers: [], rows: [] };
 
-  const rawHeaders = parseFields(rawLines[0]);
-  const headers = rawHeaders.map(normalizeCsvHeader);
-
+  // State machine: skip leading comment/blank lines until we find the header,
+  // then parse every remaining line as data — no # stripping after the header.
+  let headers: string[] = [];
+  let headerSeen = false;
   const rows: CsvRow[] = [];
-  for (let i = 1; i < rawLines.length; i++) {
-    const line = rawLines[i];
+
+  for (const rawLine of rawLines) {
+    const line = rawLine.trimEnd();
+
+    if (!headerSeen) {
+      if (!line.trim()) continue; // blank before header — skip
+      if (line.trimStart().startsWith("#")) continue; // comment before header — skip
+      // First non-comment, non-blank line is the header.
+      headers = parseFields(line).map(normalizeCsvHeader);
+      headerSeen = true;
+      continue;
+    }
+
+    // Data row: only skip truly blank lines; # is valid data content.
     if (!line.trim()) continue;
     const values = parseFields(line);
     const row: CsvRow = {};

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
@@ -34,16 +35,13 @@ export function PlanStepForm({
   );
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    setError(null);
-
     if (selected === "free") {
       startTransition(async () => {
         const result = await selectFreePlanAction();
         if (result?.error) {
-          setError(result.error);
+          toast.error(result.error);
           return;
         }
         router.push("/onboarding/done");
@@ -65,17 +63,16 @@ export function PlanStepForm({
       const data = (await res.json()) as { url: string };
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Checkout failed");
+      toast.error(err instanceof Error ? err.message : "Checkout failed");
       setLoading(false);
     }
   }
 
   function devActivate() {
-    setError(null);
     startTransition(async () => {
       const result = await devActivatePlanAction(selected);
       if (result?.error) {
-        setError(result.error);
+        toast.error(result.error);
         return;
       }
       router.push("/onboarding/done");
@@ -152,12 +149,6 @@ export function PlanStepForm({
 
         {selected !== "free" && (
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
-        )}
-
-        {error && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
         )}
 
         <div className="mt-1 flex items-center justify-between gap-2">

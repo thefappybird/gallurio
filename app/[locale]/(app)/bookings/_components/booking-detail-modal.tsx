@@ -14,6 +14,8 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   CheckIcon,
+  EyeIcon,
+  EyeOffIcon,
   Loader2Icon,
   PencilIcon,
   PlusIcon,
@@ -26,6 +28,16 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +57,7 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import {
   countDays,
   countPastDays,
@@ -78,6 +91,23 @@ type Props = {
 
 type PendingChanges = Record<string, string | number | null>;
 
+/** Pending edit for an existing session (keyed by session index in booking.sessions). */
+type PendingSessionEdit = { startAt: Date; endAt: Date };
+
+/** A session row that has been added locally but not yet persisted to the API. */
+type DraftSession = {
+  /** Stable key for React rendering — not sent to the API. */
+  draftId: string;
+  startAt: string;
+  endAt: string;
+  /**
+   * When true the draft has been "confirmed" by the user (✓ clicked) and renders
+   * in display mode like an existing SessionCard. The user can click ✏️ to re-open
+   * the inline editor. Persisted only when the global Save is clicked.
+   */
+  locked: boolean;
+};
+
 /**
  * Describes an in-flight session edit that requires confirmation before commit.
  * Only created when the session spans >1 day AND the edit is time-only (date
@@ -85,7 +115,7 @@ type PendingChanges = Record<string, string | number | null>;
  * shiftSession directly — "this day only" doesn't make semantic sense when the
  * date itself moved.
  */
-type PendingSessionEdit = {
+type PendingSessionEditDialog = {
   sessionIdx: number;
   originalSession: Session;
   newSession: Session;
@@ -118,16 +148,75 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [pendingSessionEdit, setPendingSessionEdit] =
-    useState<PendingSessionEdit>(null);
+  /** Draft sessions appended by "Add session" — not yet persisted. */
+  const [draftSessions, setDraftSessions] = useState<DraftSession[]>([]);
+  /**
+   * Pending edits for EXISTING sessions. Keyed by session index in booking.sessions.
+   * Flushed in the global Save together with `pending` scalar changes.
+   */
+  const [pendingSessionEdits, setPendingSessionEdits] = useState<
+    Record<number, PendingSessionEdit>
+  >({});
+  const [pendingSessionEditDialog, setPendingSessionEditDialog] =
+    useState<PendingSessionEditDialog>(null);
   const [sessionDialogOpen, setSessionDialogOpen] = useState(false);
-  /** Existing shifts on the effective start date (excluding this booking). */
-  const [conflicts, setConflicts] = useState<ShiftHit[]>([]);
+  /**
+   * Confirm-discard dialog state — replaces window.confirm for close-with-unsaved.
+   */
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  /**
+   * Shifts keyed by YYYY-MM-DD date. Treated as a cache — entries are added on
+   * demand and never evicted (harmless; small footprint). Each card derives its
+   * own conflict list by looking up its current effective date in this map.
+   */
+  const [shiftsByDate, setShiftsByDate] = useState<Map<string, ShiftHit[]>>(
+    new Map()
+  );
+  /** Dates currently being fetched for conflict check — used to show inline loading.
+   *  Only contains dates that are genuinely in-flight, never cached dates. */
+  const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
+  /** Incrementing id for in-flight conflict-check requests; stale results are discarded. */
+  const reqIdRef = useRef(0);
+  /**
+   * Mirror of shiftsByDate kept in a ref so the fetch effect can check cached
+   * keys without adding shiftsByDate to its dependency array (which would
+   * re-trigger the effect on every cache write, defeating the cache).
+   */
+  const shiftsByDateRef = useRef<Map<string, ShiftHit[]>>(new Map());
+
+  /**
+   * In-flight draft dates: tracks the date currently typed in an open session
+   * editor before the user clicks ✓ (commit).
+   *
+   * Keys: session index (number as string) for existing sessions being edited,
+   * or "draft:<draftIndex>" for in-progress new drafts.
+   * Values: the YYYY-MM-DD date currently typed.
+   */
+  const [editingDraftDates, setEditingDraftDates] = useState<
+    Record<string, string>
+  >({});
+
+  const handleDraftDateChange = useCallback(
+    (key: string, date: string | null) => {
+      setEditingDraftDates((prev) => {
+        if (date === null) {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }
+        return { ...prev, [key]: date };
+      });
+    },
+    []
+  );
 
   const close = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("detail");
+    params.delete("edit");
     const qs = params.toString();
+    setDraftSessions([]);
     setOpen(false);
     startTransition(() => {
       router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -149,8 +238,6 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-    // Reset + fetch in the async path so no synchronous setState fires in the
-    // effect body (avoids react-hooks/set-state-in-effect).
     Promise.resolve()
       .then(() => {
         if (cancelled) return;
@@ -159,8 +246,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         setPending({});
         return Promise.all([
           fetch(`/api/bookings/${bookingId}`).then((r) => (r.ok ? r.json() : null)),
-          fetch(`/api/bookings/${bookingId}/activity?page=1&pageSize=5`).then((r) =>
-            r.ok ? r.json() : { entries: [], total: 0 }
+          fetch(`/api/bookings/${bookingId}/activity?page=1&pageSize=5`).then(
+            (r) => (r.ok ? r.json() : { entries: [], total: 0 })
           ),
         ]);
       })
@@ -181,52 +268,159 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     };
   }, [bookingId]);
 
-  const effectiveStart = booking?.sessions?.[0]?.startAt ?? "";
-  const effectiveEnd = booking?.sessions?.[0]?.endAt ?? "";
-  const effectiveStartDate = effectiveStart ? isoDate(effectiveStart) : "";
-  const effectiveStartTime = effectiveStart ? hhmm(effectiveStart) : "";
-  const effectiveEndTime = effectiveEnd ? hhmm(effectiveEnd) : "";
+  // Normalize conflicting URL params on mount.
+  useEffect(() => {
+    const detailId = searchParams.get("detail");
+    const editId = searchParams.get("edit");
+    if (detailId && editId && detailId !== editId) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("detail");
+      startTransition(() => {
+        router.replace(`${pathname}?${params.toString()}`);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Per-session conflict fetch ──────────────────────────────────────────────
+  //
+  // Build an array of "visible session dates" (existing committed + locked drafts)
+  // and re-fetch conflicts whenever any date changes. We batch unique dates into
+  // as few network requests as possible: one fetch per unique date.
+  //
+  // Existing sessions can have pending edits — use the edited date if present.
+  // Draft sessions use their own date.
+
+  const allVisibleSessionDates: string[] = useMemo(() => {
+    if (!booking) return [];
+    const dates: string[] = [];
+    for (let i = 0; i < booking.sessions.length; i++) {
+      // If this session is currently being edited, use the in-flight draft date
+      // so conflicts fire while the user is still typing (before ✓ is clicked).
+      const inFlightDate = editingDraftDates[String(i)];
+      if (inFlightDate) {
+        dates.push(inFlightDate);
+      } else {
+        const edit = pendingSessionEdits[i];
+        const s = edit ? edit.startAt : new Date(booking.sessions[i].startAt);
+        dates.push(isoDate(s));
+      }
+    }
+    for (let di = 0; di < draftSessions.length; di++) {
+      const d = draftSessions[di];
+      // For unlocked drafts: use the in-flight typed date if present.
+      const inFlightDate = editingDraftDates[`draft:${di}`];
+      if (inFlightDate) {
+        dates.push(inFlightDate);
+      } else if (d.locked) {
+        dates.push(isoDate(d.startAt));
+      }
+    }
+    // Deduplicate while preserving order (first occurrence wins).
+    const seen = new Set<string>();
+    return dates.filter((d) => {
+      if (!d || seen.has(d)) return false;
+      seen.add(d);
+      return true;
+    });
+  }, [booking, pendingSessionEdits, draftSessions, editingDraftDates]);
 
   useEffect(() => {
+    if (!booking) return;
+
+    const uniqueDates = [...new Set(allVisibleSessionDates.filter(Boolean))];
+    if (uniqueDates.length === 0) return;
+
+    // Only fetch dates that are not already cached — treat shiftsByDateRef as
+    // the cache. Cached entries are never evicted (harmless small footprint).
+    const datesToFetch = uniqueDates.filter((d) => !shiftsByDateRef.current.has(d));
+    if (datesToFetch.length === 0) return;
+
+    const myId = ++reqIdRef.current;
     let cancelled = false;
-    const date = effectiveStartDate;
-    const id = bookingId;
-    const params = date ? new URLSearchParams({ date, excludeId: id }) : null;
-    Promise.resolve()
-      .then(() => {
-        if (cancelled) return;
-        if (!params) {
-          setConflicts([]);
-          return;
-        }
-        return fetch(`/api/bookings/shifts-on-date?${params.toString()}`)
+
+    // Mark only the new in-flight dates as loading.
+    setLoadingDates(new Set(datesToFetch));
+
+    Promise.all(
+      datesToFetch.map((date) =>
+        fetch(
+          `/api/bookings/shifts-on-date?${new URLSearchParams({ date, excludeId: bookingId }).toString()}`
+        )
           .then((r) => (r.ok ? r.json() : { shifts: [] }))
-          .then((data: { shifts: ShiftHit[] }) => {
-            if (cancelled) return;
-            setConflicts(data.shifts ?? []);
-          })
-          .catch(() => {
-            if (cancelled) return;
-            setConflicts([]);
-          });
+          .then((data: { shifts: ShiftHit[] }) => [date, data.shifts ?? []] as const)
+          .catch(() => [date, [] as ShiftHit[]] as const)
+      )
+    ).then((entries) => {
+      if (cancelled || myId !== reqIdRef.current) return;
+      setLoadingDates(new Set());
+      // Merge new results into the existing cache rather than overwriting.
+      setShiftsByDate((prev) => {
+        const next = new Map(prev);
+        for (const [date, shifts] of entries) {
+          next.set(date, shifts);
+        }
+        // Keep the ref in sync with the new map.
+        shiftsByDateRef.current = next;
+        return next;
       });
+    });
+
     return () => {
       cancelled = true;
     };
-  }, [effectiveStartDate, bookingId]);
+    // allVisibleSessionDates is a new array reference each render but its contents
+    // are what matter — JSON.stringify gives a stable dependency.
+    // shiftsByDate intentionally omitted: including it would cause a re-run on
+    // every cache write, defeating the purpose. The filter inside the effect
+    // reads the current snapshot via the functional setState pattern (merge).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(allVisibleSessionDates), bookingId]);
 
-  const actualConflicts = useMemo(() => {
-    if (conflicts.length === 0) return conflicts;
-    const aStart = toMinutes(effectiveStartTime);
-    const aEnd = toMinutes(effectiveEndTime);
-    if (aStart == null || aEnd == null || aEnd <= aStart) return conflicts;
-    return conflicts.filter((c) => {
-      const bStart = toMinutes(c.shiftStart);
-      const bEnd = toMinutes(c.shiftEnd);
-      if (bStart == null || bEnd == null) return false;
-      return aStart < bEnd && bStart < aEnd;
-    });
-  }, [conflicts, effectiveStartTime, effectiveEndTime]);
+  // Whether any session has an unresolved conflict — gates the global Save button.
+  // We only count conflicts for dates that are "committed" (pending or saved),
+  // not for in-flight dates the user hasn't confirmed yet.
+  // Uses the same strict half-open overlap predicate as the wizard: aStart < bEnd && bStart < aEnd.
+  const hasAnyConflict = useMemo(() => {
+    if (!booking) return false;
+    for (let i = 0; i < booking.sessions.length; i++) {
+      const edit = pendingSessionEdits[i];
+      const effectiveStart = edit ? edit.startAt : new Date(booking.sessions[i].startAt);
+      const effectiveEnd = edit ? edit.endAt : new Date(booking.sessions[i].endAt);
+      const date = isoDate(effectiveStart);
+      const rawShifts = shiftsByDate.get(date) ?? [];
+      if (rawShifts.length === 0) continue;
+      const aStart = toMinutes(hhmm(effectiveStart));
+      const aEnd = toMinutes(hhmm(effectiveEnd));
+      if (aStart == null || aEnd == null || aEnd <= aStart) continue;
+      const overlapping = rawShifts.filter((s) => {
+        // Defense in depth: exclude shifts that belong to the same booking.
+        if (s.bookingId === bookingId) return false;
+        const bStart = toMinutes(s.shiftStart);
+        const bEnd = toMinutes(s.shiftEnd);
+        if (bStart == null || bEnd == null) return false;
+        return aStart < bEnd && bStart < aEnd;
+      });
+      if (overlapping.length > 0) return true;
+    }
+    for (const d of draftSessions) {
+      if (!d.locked) continue;
+      const rawShifts = shiftsByDate.get(isoDate(d.startAt)) ?? [];
+      if (rawShifts.length === 0) continue;
+      const aStart = toMinutes(hhmm(d.startAt));
+      const aEnd = toMinutes(hhmm(d.endAt));
+      if (aStart == null || aEnd == null || aEnd <= aStart) continue;
+      const overlapping = rawShifts.filter((s) => {
+        if (s.bookingId === bookingId) return false;
+        const bStart = toMinutes(s.shiftStart);
+        const bEnd = toMinutes(s.shiftEnd);
+        if (bStart == null || bEnd == null) return false;
+        return aStart < bEnd && bStart < aEnd;
+      });
+      if (overlapping.length > 0) return true;
+    }
+    return false;
+  }, [booking, pendingSessionEdits, draftSessions, shiftsByDate, bookingId]);
 
   function prependOptimisticActivity(
     action: "updated" | "status_changed" | "created",
@@ -242,7 +436,11 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setActivityTotal((n) => n + 1);
   }
 
-  const pendingCount = Object.keys(pending).length;
+  const lockedDraftCount = draftSessions.filter((d) => d.locked).length;
+  const pendingCount =
+    Object.keys(pending).length +
+    Object.keys(pendingSessionEdits).length +
+    lockedDraftCount;
   const hasPending = pendingCount > 0;
 
   function commitField(key: EditableKey, value: string | number | null) {
@@ -268,12 +466,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
 
   function discardAll() {
     setPending({});
+    setPendingSessionEdits({});
+    setDraftSessions([]);
     setSaveError(null);
   }
 
   async function save() {
     if (!hasPending || !booking) return;
-    if (actualConflicts.length > 0) {
+    if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
       toast.error(t("conflictBlocksSave"));
       return;
@@ -284,13 +484,35 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     const previous = booking;
     const previousActivity = activity;
     const previousTotal = activityTotal;
+    const previousDrafts = draftSessions;
+    const previousSessionEdits = pendingSessionEdits;
     const optimistic = applyChanges(booking, pending);
-    setBooking(optimistic);
+
+    // Build the final sessions array: overlay pendingSessionEdits onto existing,
+    // then append locked draft sessions.
+    const mergedSessions: SessionDoc[] = optimistic.sessions.map((s, i) => {
+      const edit = pendingSessionEdits[i];
+      return edit
+        ? { startAt: edit.startAt.toISOString(), endAt: edit.endAt.toISOString() }
+        : s;
+    });
+    const lockedDrafts = draftSessions.filter((d) => d.locked);
+    for (const d of lockedDrafts) {
+      mergedSessions.push({ startAt: d.startAt, endAt: d.endAt });
+    }
+
+    setBooking({ ...optimistic, sessions: mergedSessions });
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
     for (const [key, value] of Object.entries(pending)) {
       const before = getCurrentValue(previous, key as EditableKey);
       changes[key] = { before, after: value };
+    }
+    if (
+      Object.keys(pendingSessionEdits).length > 0 ||
+      lockedDrafts.length > 0
+    ) {
+      changes["sessions"] = { before: previous.sessions, after: mergedSessions };
     }
     prependOptimisticActivity(
       "status" in pending ? "status_changed" : "updated",
@@ -298,10 +520,17 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     );
 
     try {
+      const body: Record<string, unknown> = { ...pending };
+      if (
+        Object.keys(pendingSessionEdits).length > 0 ||
+        lockedDrafts.length > 0
+      ) {
+        body["sessions"] = mergedSessions;
+      }
       const res = await fetch(`/api/bookings/${bookingId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(pending),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -310,6 +539,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       const updated: BookingDoc = await res.json();
       setBooking(updated);
       setPending({});
+      setPendingSessionEdits({});
+      setDraftSessions([]);
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
       await refetchInlineActivity();
@@ -317,6 +548,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       setBooking(previous);
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
+      setDraftSessions(previousDrafts);
+      setPendingSessionEdits(previousSessionEdits);
       const msg = err instanceof Error ? err.message : "Couldn't save";
       setSaveError(msg);
       toast.error(msg);
@@ -326,8 +559,9 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   }
 
   /**
-   * Patches the booking with a new full sessions array.
-   * Used by session add/remove and all inline session edits.
+   * Patches the booking with a new full sessions array (used ONLY by
+   * remove-session and the multi-day confirm dialog — NOT by inline edits,
+   * which now go into pendingSessionEdits).
    */
   async function patchSessions(newSessions: SessionDoc[]) {
     if (!booking) return;
@@ -375,11 +609,11 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   }
 
   /**
-   * Called when a session card commits an edit.
-   * For single-day sessions: patch immediately.
-   * For multi-day + time-only edits: open the confirm dialog.
-   * For multi-day + date edits: apply shiftSession directly (skip dialog —
-   * "apply to this day only" has no clear meaning when the date itself moved).
+   * Called when a SessionCard confirms an edit.
+   * For single-day sessions: push into pendingSessionEdits (no immediate API).
+   * For multi-day + time-only edits: open the confirm dialog first.
+   * For multi-day + date edits: apply shiftSession, then push all resulting
+   * sessions into pendingSessionEdits.
    */
   function handleSessionCommit(
     sessionIdx: number,
@@ -398,23 +632,22 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     const days = countDays(originalSession);
 
     if (days <= 1) {
-      // Single-day: apply immediately, no prompt.
-      const updated = booking.sessions.map((s, i) =>
-        i === sessionIdx ? sessionToDoc(newSession) : s
-      );
-      void patchSessions(updated);
+      // Single-day: queue into pending edits.
+      setPendingSessionEdits((prev) => ({
+        ...prev,
+        [sessionIdx]: { startAt: newSession.startAt, endAt: newSession.endAt },
+      }));
       return;
     }
 
     if (kind === "time") {
       // Multi-day, time-only edit: ask the user which scope to apply.
-      setPendingSessionEdit({ sessionIdx, originalSession, newSession, kind });
+      setPendingSessionEditDialog({ sessionIdx, originalSession, newSession, kind });
       setSessionDialogOpen(true);
       return;
     }
 
-    // Multi-day, date changed: apply shiftSession for the whole session with
-    // past-day protection. "This day only" doesn't make sense when the date moved.
+    // Multi-day, date changed: apply shiftSession.
     const today = new Date();
     const shiftMs =
       newSession.startAt.getTime() - originalSession.startAt.getTime();
@@ -422,15 +655,28 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     if (result.length > 1) {
       toast.warning(tDnd("pastSplitWarning"));
     }
+    // Flatten result back into pending: remove original index, insert all results.
     const updated = booking.sessions.flatMap((s, i) =>
       i === sessionIdx ? result.map(sessionToDoc) : [s]
     );
     void patchSessions(updated);
   }
 
+  /**
+   * Discards a pending edit for an existing session (user clicks ✗ while the
+   * session card has an unsaved edit indicator).
+   */
+  function handleDiscardSessionEdit(sessionIdx: number) {
+    setPendingSessionEdits((prev) => {
+      const next = { ...prev };
+      delete next[sessionIdx];
+      return next;
+    });
+  }
+
   function handleSessionApplyToDay() {
-    if (!pendingSessionEdit || !booking) return;
-    const { sessionIdx, originalSession, newSession } = pendingSessionEdit;
+    if (!pendingSessionEditDialog || !booking) return;
+    const { sessionIdx, originalSession, newSession } = pendingSessionEditDialog;
     const today = new Date();
     const todayStart = new Date(
       today.getFullYear(),
@@ -438,9 +684,6 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       today.getDate()
     );
 
-    // "This day only" = split out the first day of the future portion with new times.
-    // We pick the first future day of the session as "the touched day".
-    // If the entire session is in the past, block the action.
     const sessionStart = new Date(
       originalSession.startAt.getFullYear(),
       originalSession.startAt.getMonth(),
@@ -449,23 +692,29 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     if (sessionStart < todayStart) {
       toast.error(tDnd("thisDayOnlyOnPast"));
       setSessionDialogOpen(false);
-      setPendingSessionEdit(null);
+      setPendingSessionEditDialog(null);
       return;
     }
 
     const touchedDay = originalSession.startAt;
-    const result = splitDayOut(originalSession, touchedDay, newSession.startAt, newSession.endAt);
+    const result = splitDayOut(
+      originalSession,
+      touchedDay,
+      newSession.startAt,
+      newSession.endAt
+    );
     const updated = booking.sessions.flatMap((s, i) =>
       i === sessionIdx ? result.map(sessionToDoc) : [s]
     );
     setSessionDialogOpen(false);
-    setPendingSessionEdit(null);
+    setPendingSessionEditDialog(null);
     void patchSessions(updated);
   }
 
   function handleSessionApplyToSession() {
-    if (!pendingSessionEdit || !booking) return;
-    const { sessionIdx, originalSession, newSession, kind } = pendingSessionEdit;
+    if (!pendingSessionEditDialog || !booking) return;
+    const { sessionIdx, originalSession, newSession, kind } =
+      pendingSessionEditDialog;
     const today = new Date();
 
     let result: Session[];
@@ -489,19 +738,22 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       i === sessionIdx ? result.map(sessionToDoc) : [s]
     );
     setSessionDialogOpen(false);
-    setPendingSessionEdit(null);
+    setPendingSessionEditDialog(null);
     void patchSessions(updated);
   }
 
   function handleSessionDialogCancel() {
     setSessionDialogOpen(false);
-    setPendingSessionEdit(null);
+    setPendingSessionEditDialog(null);
   }
 
   function handleAddSession() {
     if (!booking) return;
-    const sessions = booking.sessions;
-    const last = sessions[sessions.length - 1];
+    const allSessions: SessionDoc[] = [
+      ...booking.sessions,
+      ...draftSessions.map((d) => ({ startAt: d.startAt, endAt: d.endAt })),
+    ];
+    const last = allSessions[allSessions.length - 1];
     let newStart: Date;
     let newEnd: Date;
 
@@ -516,9 +768,13 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         0
       );
       newStart = nextDay;
-      const endTime = new Date(last.endAt);
       const endOfNextDay = new Date(nextDay);
-      endOfNextDay.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
+      endOfNextDay.setHours(
+        new Date(last.endAt).getHours(),
+        new Date(last.endAt).getMinutes(),
+        0,
+        0
+      );
       newEnd = endOfNextDay;
     } else {
       const today = new Date();
@@ -529,11 +785,47 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       newEnd = endDefault;
     }
 
-    const newSession: SessionDoc = {
+    const draft: DraftSession = {
+      draftId: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       startAt: newStart.toISOString(),
       endAt: newEnd.toISOString(),
+      locked: false,
     };
-    void patchSessions([...sessions, newSession]);
+    setDraftSessions((prev) => [...prev, draft]);
+  }
+
+  function handleDiscardDraft(draftId: string) {
+    setDraftSessions((prev) => prev.filter((d) => d.draftId !== draftId));
+  }
+
+  function handleUpdateDraft(
+    draftId: string,
+    startAt: string,
+    endAt: string
+  ) {
+    setDraftSessions((prev) =>
+      prev.map((d) =>
+        d.draftId === draftId ? { ...d, startAt, endAt } : d
+      )
+    );
+  }
+
+  /** Locks a draft in place — transforms from editor to display mode. */
+  function handleLockDraft(draftId: string) {
+    setDraftSessions((prev) =>
+      prev.map((d) =>
+        d.draftId === draftId ? { ...d, locked: true } : d
+      )
+    );
+  }
+
+  /** Unlocks a draft — re-opens its inline editor. */
+  function handleUnlockDraft(draftId: string) {
+    setDraftSessions((prev) =>
+      prev.map((d) =>
+        d.draftId === draftId ? { ...d, locked: false } : d
+      )
+    );
   }
 
   function handleRemoveSession(idx: number) {
@@ -546,8 +838,15 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   function attemptClose(next: boolean) {
     if (next) return;
     if (hasPending) {
-      if (!window.confirm(t("unsavedConfirm"))) return;
+      setConfirmDiscardOpen(true);
+      return;
     }
+    close();
+  }
+
+  function confirmDiscard() {
+    setConfirmDiscardOpen(false);
+    discardAll();
     close();
   }
 
@@ -599,13 +898,16 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     await applyStatusChange("cancelled");
   }
 
-  // Compute confirm-dialog props for the current pending session edit.
   const confirmDialogProps = useMemo(() => {
-    if (!pendingSessionEdit) return { sessionDayCount: 1, pastDayCount: 0 };
-    const days = countDays(pendingSessionEdit.originalSession);
-    const pastDays = countPastDays(pendingSessionEdit.originalSession, new Date());
+    if (!pendingSessionEditDialog)
+      return { sessionDayCount: 1, pastDayCount: 0 };
+    const days = countDays(pendingSessionEditDialog.originalSession);
+    const pastDays = countPastDays(
+      pendingSessionEditDialog.originalSession,
+      new Date()
+    );
     return { sessionDayCount: days, pastDayCount: pastDays };
-  }, [pendingSessionEdit]);
+  }, [pendingSessionEditDialog]);
 
   return (
     <Dialog open={open} onOpenChange={attemptClose}>
@@ -639,18 +941,29 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           ) : (
             <BookingTabs
               booking={booking}
+              bookingId={bookingId}
               activity={activity}
               activityTotal={activityTotal}
               pending={pending}
+              draftSessions={draftSessions}
+              pendingSessionEdits={pendingSessionEdits}
+              editingDraftDates={editingDraftDates}
               locale={locale}
               onCommit={commitField}
               onDiscard={discardField}
               onViewAllHistory={() => setHistoryDialogOpen(true)}
               disabled={saving}
-              conflicts={actualConflicts}
+              shiftsByDate={shiftsByDate}
+              loadingDates={loadingDates}
               onSessionCommit={handleSessionCommit}
+              onDiscardSessionEdit={handleDiscardSessionEdit}
               onAddSession={handleAddSession}
               onRemoveSession={handleRemoveSession}
+              onDiscardDraft={handleDiscardDraft}
+              onUpdateDraft={handleUpdateDraft}
+              onLockDraft={handleLockDraft}
+              onUnlockDraft={handleUnlockDraft}
+              onDraftDateChange={handleDraftDateChange}
             />
           )}
         </div>
@@ -662,7 +975,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
             pendingCount={pendingCount}
             saving={saving}
             saveError={saveError}
-            saveBlocked={actualConflicts.length > 0}
+            saveBlocked={hasAnyConflict}
             onToggleCancel={requestCancel}
             onDiscard={discardAll}
             onSave={save}
@@ -694,7 +1007,51 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         onCancel={handleSessionDialogCancel}
         busy={saving}
       />
+
+      {/* Discard-changes confirmation — replaces window.confirm */}
+      <DiscardChangesDialog
+        open={confirmDiscardOpen}
+        pendingCount={pendingCount}
+        onKeepEditing={() => setConfirmDiscardOpen(false)}
+        onDiscard={confirmDiscard}
+      />
     </Dialog>
+  );
+}
+
+// ─── DiscardChangesDialog ─────────────────────────────────────────────────────
+
+function DiscardChangesDialog({
+  open,
+  pendingCount,
+  onKeepEditing,
+  onDiscard,
+}: {
+  open: boolean;
+  pendingCount: number;
+  onKeepEditing: () => void;
+  onDiscard: () => void;
+}) {
+  const t = useTranslations("app.bookings.detail");
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onKeepEditing()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("discardTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("discardDescription", { count: pendingCount })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onKeepEditing}>
+            {t("keepEditing")}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onDiscard}>
+            {t("discardConfirm")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -801,36 +1158,58 @@ function DialogHeaderBar({
 
 function BookingTabs({
   booking,
+  bookingId,
   activity,
   activityTotal,
   pending,
+  draftSessions,
+  pendingSessionEdits,
+  editingDraftDates,
   locale,
   onCommit,
   onDiscard,
   onViewAllHistory,
   disabled,
-  conflicts,
+  shiftsByDate,
+  loadingDates,
   onSessionCommit,
+  onDiscardSessionEdit,
   onAddSession,
   onRemoveSession,
+  onDiscardDraft,
+  onUpdateDraft,
+  onLockDraft,
+  onUnlockDraft,
+  onDraftDateChange,
 }: {
   booking: BookingDoc;
+  bookingId: string;
   activity: ActivityEntry[];
   activityTotal: number;
   pending: PendingChanges;
+  draftSessions: DraftSession[];
+  pendingSessionEdits: Record<number, PendingSessionEdit>;
+  editingDraftDates: Record<string, string>;
   locale: string;
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onViewAllHistory: () => void;
   disabled: boolean;
-  conflicts: ShiftHit[];
+  shiftsByDate: Map<string, ShiftHit[]>;
+  loadingDates: Set<string>;
   onSessionCommit: (
     idx: number,
     newSession: Session,
     kind: "time" | "date" | "both"
   ) => void;
+  onDiscardSessionEdit: (idx: number) => void;
   onAddSession: () => void;
   onRemoveSession: (idx: number) => void;
+  onDiscardDraft: (draftId: string) => void;
+  onUpdateDraft: (draftId: string, startAt: string, endAt: string) => void;
+  onLockDraft: (draftId: string) => void;
+  onUnlockDraft: (draftId: string) => void;
+  onDraftDateChange: (key: string, date: string | null) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
@@ -872,6 +1251,31 @@ function BookingTabs({
   const total = (pending["amount.total"] as number) ?? booking.amount.total;
 
   const tSections = useTranslations("app.bookings.detail.sections");
+
+  const [showPast, setShowPast] = useState(false);
+
+  const { upcomingSessions, pastSessions } = useMemo(() => {
+    const allSessions = booking?.sessions ?? [];
+    const upcoming: SessionDoc[] = [];
+    const past: SessionDoc[] = [];
+    for (const s of allSessions) {
+      if (isPastSession(s)) {
+        past.push(s);
+      } else {
+        upcoming.push(s);
+      }
+    }
+    const byStartAt = (a: SessionDoc, b: SessionDoc) =>
+      new Date(a.startAt).getTime() - new Date(b.startAt).getTime();
+    upcoming.sort(byStartAt);
+    past.sort(byStartAt);
+    return { upcomingSessions: upcoming, pastSessions: past };
+  }, [booking?.sessions]);
+
+  const hasPastSessions = pastSessions.length > 0;
+  const visibleSessions = showPast
+    ? [...upcomingSessions, ...pastSessions]
+    : upcomingSessions;
 
   return (
     <Tabs defaultValue="details">
@@ -933,52 +1337,157 @@ function BookingTabs({
 
         <SectionHeader label={tSections("schedule")} />
 
-        {conflicts.length > 0 ? (
-          <div className="mb-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
-            <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="font-semibold text-destructive">
-                {tFields("conflictsLabel", {
-                  date: new Date(
-                    booking?.sessions?.[0]?.startAt ?? ""
-                  ).toLocaleDateString(locale, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }),
-                })}
+        {/* Sessions list — inline-editable cards */}
+
+        {/* Show past toggle — only visible when there are past sessions */}
+        {hasPastSessions ? (
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPast((v) => !v)}
+              className={cn(
+                showPast && "bg-brand text-brand-foreground border-brand hover:bg-brand/90"
+              )}
+            >
+              {showPast ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+              {showPast ? tSessions("hidePast") : tSessions("showPast")}
+            </Button>
+            {!showPast ? (
+              <span className="text-xs text-muted-foreground">
+                {tSessions("pastHidden", { count: pastSessions.length })}
               </span>
-              <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-destructive">
-                {conflicts.map((c) => (
-                  <li key={c.id}>
-                    <span className="tabular-nums">
-                      {c.shiftStart}–{c.shiftEnd}
-                    </span>{" "}
-                    <span className="opacity-80">{c.title}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            ) : null}
           </div>
         ) : null}
 
-        {/* Sessions list — inline-editable cards */}
         <div className="flex flex-col gap-2">
-          {(booking?.sessions ?? []).map((s, idx) => (
-            <SessionCard
-              key={idx}
-              session={s}
-              total={booking.sessions.length}
-              locale={locale}
-              disabled={disabled}
-              label={tSessions("label", { n: idx + 1 })}
-              removeLabel={tSessions("remove")}
-              onCommit={(newSession, kind) =>
-                onSessionCommit(idx, newSession, kind)
-              }
-              onRemove={() => onRemoveSession(idx)}
-            />
-          ))}
+          {visibleSessions.map((s, idx) => {
+            const originalIdx = (booking?.sessions ?? []).findIndex(
+              (orig) =>
+                orig.startAt === s.startAt && orig.endAt === s.endAt
+            );
+            const resolvedIdx = originalIdx >= 0 ? originalIdx : idx;
+            const hasPendingEdit = resolvedIdx in pendingSessionEdits;
+            // The effective date for this card — in-flight draft date takes priority.
+            const inFlightDate = editingDraftDates[String(resolvedIdx)];
+            const pendingEdit = pendingSessionEdits[resolvedIdx];
+            const committedDate = hasPendingEdit
+              ? isoDate(pendingEdit.startAt)
+              : isoDate(s.startAt);
+            // For conflict display: while editing use in-flight date; otherwise use committed.
+            const effectiveDateForConflict = inFlightDate ?? committedDate;
+            const rawShifts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            // Filter raw shifts by time overlap using the committed/pending times.
+            // The strict half-open predicate (aStart < bEnd && bStart < aEnd) matches
+            // the wizard's canonical pattern. Also exclude any shift that belongs to
+            // this booking (defense in depth — the API should already exclude them via
+            // excludeId, but a stale cache entry or race condition could slip one through).
+            const effectiveStartTime = pendingEdit
+              ? hhmm(pendingEdit.startAt)
+              : hhmm(s.startAt);
+            const effectiveEndTime = pendingEdit
+              ? hhmm(pendingEdit.endAt)
+              : hhmm(s.endAt);
+            const aStart = toMinutes(effectiveStartTime);
+            const aEnd = toMinutes(effectiveEndTime);
+            const sessionConflicts =
+              aStart == null || aEnd == null || aEnd <= aStart
+                ? rawShifts.filter((sh) => sh.bookingId !== bookingId)
+                : rawShifts.filter((sh) => {
+                    if (sh.bookingId === bookingId) return false;
+                    const bStart = toMinutes(sh.shiftStart);
+                    const bEnd = toMinutes(sh.shiftEnd);
+                    if (bStart == null || bEnd == null) return false;
+                    return aStart < bEnd && bStart < aEnd;
+                  });
+            const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
+            return (
+              <SessionCard
+                key={`${s.startAt}-${s.endAt}`}
+                session={s}
+                sessionIndex={resolvedIdx}
+                total={(booking?.sessions ?? []).length}
+                locale={locale}
+                disabled={disabled}
+                isPast={isPastSession(s)}
+                label={tSessions("label", { n: resolvedIdx + 1 })}
+                removeLabel={tSessions("remove")}
+                unsavedLabel={tSessions("unsaved")}
+                hasPendingEdit={hasPendingEdit}
+                pendingEdit={pendingEdit}
+                conflicts={sessionConflicts}
+                isCheckingConflicts={isLoadingConflict}
+                onCommit={(newSession, kind) =>
+                  onSessionCommit(resolvedIdx, newSession, kind)
+                }
+                onRemove={() => onRemoveSession(resolvedIdx)}
+                onDiscardEdit={() => onDiscardSessionEdit(resolvedIdx)}
+                onDraftDateChange={(date) =>
+                  onDraftDateChange(String(resolvedIdx), date)
+                }
+              />
+            );
+          })}
+          {draftSessions.map((draft, draftIdx) => {
+            // The effective date for this draft card — in-flight date takes priority.
+            const inFlightDate = editingDraftDates[`draft:${draftIdx}`];
+            const effectiveDateForConflict = inFlightDate ?? isoDate(draft.startAt);
+            const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
+            const rawDraftShifts = shiftsByDate.get(effectiveDateForConflict) ?? [];
+            // Filter draft conflicts by time overlap (same predicate as the wizard).
+            const draftAStart = toMinutes(hhmm(draft.startAt));
+            const draftAEnd = toMinutes(hhmm(draft.endAt));
+            const draftConflicts =
+              draftAStart == null || draftAEnd == null || draftAEnd <= draftAStart
+                ? rawDraftShifts.filter((sh) => sh.bookingId !== bookingId)
+                : rawDraftShifts.filter((sh) => {
+                    if (sh.bookingId === bookingId) return false;
+                    const bStart = toMinutes(sh.shiftStart);
+                    const bEnd = toMinutes(sh.shiftEnd);
+                    if (bStart == null || bEnd == null) return false;
+                    return draftAStart < bEnd && bStart < draftAEnd;
+                  });
+            return draft.locked ? (
+              <LockedDraftCard
+                key={draft.draftId}
+                draft={draft}
+                locale={locale}
+                disabled={disabled}
+                label={tSessions("label", {
+                  n: booking.sessions.length + draftIdx + 1,
+                })}
+                unsavedLabel={tSessions("unsaved")}
+                removeLabel={tSessions("remove")}
+                conflicts={draftConflicts}
+                loadingConflict={isLoadingConflict}
+                onEdit={() => onUnlockDraft(draft.draftId)}
+                onRemove={() => onDiscardDraft(draft.draftId)}
+              />
+            ) : (
+              <DraftSessionCard
+                key={draft.draftId}
+                draft={draft}
+                draftIndex={draftIdx}
+                locale={locale}
+                disabled={disabled}
+                label={tSessions("label", {
+                  n: booking.sessions.length + draftIdx + 1,
+                })}
+                conflicts={draftConflicts}
+                isCheckingConflicts={isLoadingConflict}
+                onDiscard={() => onDiscardDraft(draft.draftId)}
+                onUpdate={(startAt, endAt) =>
+                  onUpdateDraft(draft.draftId, startAt, endAt)
+                }
+                onLock={() => onLockDraft(draft.draftId)}
+                onDraftDateChange={(date) =>
+                  onDraftDateChange(`draft:${draftIdx}`, date)
+                }
+              />
+            );
+          })}
         </div>
 
         {/* Add session */}
@@ -1103,47 +1612,125 @@ function BookingTabs({
   );
 }
 
+// ─── SessionConflictAlert ─────────────────────────────────────────────────────
+
+function SessionConflictAlert({
+  date,
+  locale,
+  conflicts,
+  loading,
+}: {
+  date: string;
+  locale: string;
+  conflicts: ShiftHit[];
+  loading: boolean;
+}) {
+  const tFields = useTranslations("app.bookings.detail.fields");
+  if (loading) {
+    return (
+      <div
+        className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+        aria-live="polite"
+      >
+        <Loader2Icon className="size-3.5 animate-spin" />
+        <span>Checking for conflicts…</span>
+      </div>
+    );
+  }
+  if (conflicts.length === 0) return null;
+  const displayDate = date
+    ? new Date(`${date}T00:00:00`).toLocaleDateString(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : date;
+  return (
+    <div className="mt-2 flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
+      <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="font-semibold text-destructive">
+          {tFields("conflictsLabel", { date: displayDate })}
+        </span>
+        <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-destructive">
+          {conflicts.map((c) => (
+            <li key={c.id}>
+              <span className="tabular-nums">
+                {c.shiftStart}–{c.shiftEnd}
+              </span>{" "}
+              <span className="opacity-80">{c.title}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // ─── SessionCard ─────────────────────────────────────────────────────────────
 
 /**
- * Inline-editable card for a single session.
+ * Inline-editable card for a single EXISTING session.
  *
- * Uses its own local draft state rather than the global pending-changes map
- * because sessions are patched as a full array replacement — they don't fit
- * the key-indexed EditableField pattern used by scalar fields. Each card is
- * self-contained: the user edits, confirms/cancels inline, then the parent
- * decides what to send to the API.
+ * ✓ no longer fires an immediate API call — it queues the edit into
+ * `pendingSessionEdits` via `onCommit`. The parent renders the "Unsaved" pill
+ * and a ✗ to drop the pending edit without saving.
  */
 function SessionCard({
   session,
+  sessionIndex,
   total,
   locale,
   disabled,
+  isPast,
   label,
   removeLabel,
+  unsavedLabel,
+  hasPendingEdit,
+  pendingEdit,
+  conflicts,
+  isCheckingConflicts,
   onCommit,
   onRemove,
+  onDiscardEdit,
+  onDraftDateChange,
 }: {
   session: SessionDoc;
+  sessionIndex: number;
   total: number;
   locale: string;
   disabled: boolean;
+  isPast: boolean;
   label: string;
   removeLabel: string;
+  unsavedLabel: string;
+  hasPendingEdit: boolean;
+  pendingEdit: PendingSessionEdit | undefined;
+  conflicts: ShiftHit[];
+  isCheckingConflicts: boolean;
   onCommit: (newSession: Session, kind: "time" | "date" | "both") => void;
   onRemove: () => void;
+  onDiscardEdit: () => void;
+  onDraftDateChange: (date: string | null) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
+  const tSessions = useTranslations("app.bookings.sessions");
+
+  // Display values — prefer pendingEdit (the optimistic draft) over the committed session.
+  const displayStart = pendingEdit
+    ? pendingEdit.startAt.toISOString()
+    : session.startAt;
+  const displayEnd = pendingEdit
+    ? pendingEdit.endAt.toISOString()
+    : session.endAt;
 
   const startDate = isoDate(session.startAt);
   const startTime = hhmm(session.startAt);
-  const endDate = isoDate(session.endAt);
   const endTime = hhmm(session.endAt);
 
   const [editing, setEditing] = useState(false);
   const [draftStartDate, setDraftStartDate] = useState(startDate);
   const [draftStartTime, setDraftStartTime] = useState(startTime);
-  const [draftEndDate, setDraftEndDate] = useState(endDate);
   const [draftEndTime, setDraftEndTime] = useState(endTime);
   const [error, setError] = useState<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -1151,53 +1738,59 @@ function SessionCard({
   // Keep draft in sync when the parent updates (e.g. after a PATCH settles).
   useEffect(() => {
     if (editing) return;
-    // Defer to async so no synchronous setState fires in the effect body.
     const startAt = session.startAt;
     const endAt = session.endAt;
     Promise.resolve().then(() => {
       setDraftStartDate(isoDate(startAt));
       setDraftStartTime(hhmm(startAt));
-      setDraftEndDate(isoDate(endAt));
       setDraftEndTime(hhmm(endAt));
       setError(null);
     });
   }, [session.startAt, session.endAt, editing]);
 
+  // Suppress unused-variable lint — sessionIndex is passed to the parent via
+  // the onDraftDateChange closure (the caller already binds the key).
+  void sessionIndex;
+
   function startEdit() {
     if (disabled) return;
-    setDraftStartDate(isoDate(session.startAt));
+    const initialDate = isoDate(session.startAt);
+    setDraftStartDate(initialDate);
     setDraftStartTime(hhmm(session.startAt));
-    setDraftEndDate(isoDate(session.endAt));
     setDraftEndTime(hhmm(session.endAt));
     setError(null);
     setEditing(true);
+    // Emit the initial in-flight date so the parent starts fetching immediately.
+    onDraftDateChange(initialDate || null);
     setTimeout(() => firstInputRef.current?.focus(), 0);
   }
 
   function cancelEdit() {
     setError(null);
     setEditing(false);
+    // Clear the in-flight date from the parent.
+    onDraftDateChange(null);
   }
 
   function commit() {
     const newStartAt = combineDatetime(draftStartDate, draftStartTime);
-    const newEndAt = combineDatetime(draftEndDate, draftEndTime);
+    const newEndAt = combineDatetime(draftStartDate, draftEndTime);
     if (!newStartAt || !newEndAt) {
       setError("Invalid date or time.");
       return;
     }
-    const start = new Date(newStartAt);
-    const end = new Date(newEndAt);
-    if (end < start) {
+    if (draftEndTime <= draftStartTime) {
       setError(tFields("endBeforeStart"));
       return;
     }
+    const start = new Date(newStartAt);
+    const end = new Date(newEndAt);
     setError(null);
     setEditing(false);
+    // Clear the in-flight date — it's now committed.
+    onDraftDateChange(null);
 
-    // Determine what kind of edit this is to decide whether to show the dialog.
-    const dateChanged =
-      draftStartDate !== startDate || draftEndDate !== endDate;
+    const dateChanged = draftStartDate !== startDate;
     const timeChanged =
       draftStartTime !== startTime || draftEndTime !== endTime;
     let kind: "time" | "date" | "both";
@@ -1209,14 +1802,51 @@ function SessionCard({
   }
 
   const isOnlySession = total <= 1;
+  const isDirty =
+    draftStartDate !== startDate ||
+    draftStartTime !== startTime ||
+    draftEndTime !== endTime;
+  const isSessionValid =
+    !!draftStartDate &&
+    !!draftStartTime &&
+    !!draftEndTime &&
+    draftEndTime > draftStartTime;
+  const canCommit = isDirty && isSessionValid;
+
+  // While editing, show the in-flight draft date for conflict lookup; otherwise
+  // use the display date (which already incorporates a pending edit if any).
+  const conflictDate = editing ? draftStartDate : isoDate(displayStart);
 
   return (
-    <div className="border border-border bg-card text-card-foreground p-3">
+    <div
+      className={cn(
+        "border bg-card text-card-foreground p-3",
+        hasPendingEdit ? "border-brand" : "border-border",
+        isPast && !editing && "opacity-60"
+      )}
+    >
       {/* Card header: label + edit/delete controls */}
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground",
+              isPast && !editing && "line-through"
+            )}
+          >
+            {label}
+          </span>
+          {isPast && !editing ? (
+            <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {tSessions("past")}
+            </span>
+          ) : null}
+          {hasPendingEdit && !editing ? (
+            <span className="inline-flex items-center border border-brand bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+              {unsavedLabel}
+            </span>
+          ) : null}
+        </div>
         <div className="flex items-center gap-1">
           {editing ? (
             <>
@@ -1226,9 +1856,13 @@ function SessionCard({
                 variant="ghost"
                 onClick={commit}
                 aria-label="Confirm"
-                disabled={disabled}
+                disabled={disabled || !canCommit || isCheckingConflicts}
               >
-                <CheckIcon className="size-4" />
+                {isCheckingConflicts ? (
+                  <Loader2Icon className="size-3 animate-spin" />
+                ) : (
+                  <CheckIcon className="size-4" />
+                )}
               </Button>
               <Button
                 type="button"
@@ -1241,16 +1875,31 @@ function SessionCard({
               </Button>
             </>
           ) : (
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              onClick={startEdit}
-              disabled={disabled}
-              aria-label={`Edit ${label}`}
-            >
-              <PencilIcon className="size-4" />
-            </Button>
+            <>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                onClick={startEdit}
+                disabled={disabled}
+                aria-label={`Edit ${label}`}
+              >
+                <PencilIcon className="size-4" />
+              </Button>
+              {hasPendingEdit ? (
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={onDiscardEdit}
+                  disabled={disabled}
+                  aria-label="Discard edit"
+                  className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                >
+                  <XIcon className="size-4" />
+                </Button>
+              ) : null}
+            </>
           )}
           <Button
             type="button"
@@ -1273,110 +1922,449 @@ function SessionCard({
       </div>
 
       {!editing ? (
-        /* Read state: two columns on sm+ */
-        <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              {tFields("startAt")}
-            </span>
-            <span className="text-sm text-foreground">
-              {session.startAt
-                ? new Date(session.startAt).toLocaleString(locale, {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })
-                : "—"}
-            </span>
+        <>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tFields("startAt")}
+              </span>
+              <span
+                className={cn(
+                  "text-sm text-foreground",
+                  isPast && "line-through"
+                )}
+              >
+                {displayStart
+                  ? new Date(displayStart).toLocaleString(locale, {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "—"}
+              </span>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tFields("endAt")}
+              </span>
+              <span
+                className={cn(
+                  "text-sm text-foreground",
+                  isPast && "line-through"
+                )}
+              >
+                {displayEnd
+                  ? new Date(displayEnd).toLocaleString(locale, {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "—"}
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              {tFields("endAt")}
-            </span>
-            <span className="text-sm text-foreground">
-              {session.endAt
-                ? new Date(session.endAt).toLocaleString(locale, {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })
-                : "—"}
-            </span>
-          </div>
-        </div>
+          <SessionConflictAlert
+            date={conflictDate}
+            locale={locale}
+            conflicts={conflicts}
+            loading={isCheckingConflicts}
+          />
+        </>
       ) : (
-        /* Edit state: date + time inputs for start and end */
         <div className="flex flex-col gap-3">
           {error ? (
             <span className="text-xs text-destructive">{error}</span>
           ) : null}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {/* Start */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {tFields("date")}
+            </span>
+            <Input
+              ref={firstInputRef}
+              type="date"
+              value={draftStartDate}
+              onChange={(e) => {
+                const val = e.target.value;
+                setDraftStartDate(val);
+                // Emit in-flight date so parent re-fetches conflicts immediately.
+                onDraftDateChange(val || null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") cancelEdit();
+              }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {tFields("startAt")}
+                {tFields("startTime")}
               </span>
-              <div className="flex gap-2">
-                <Input
-                  ref={firstInputRef}
-                  type="date"
-                  value={draftStartDate}
-                  onChange={(e) => setDraftStartDate(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  className="flex-1"
-                />
-                <Input
-                  type="time"
-                  value={draftStartTime}
-                  onChange={(e) => setDraftStartTime(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  className="w-28"
-                />
-              </div>
+              <Input
+                type="time"
+                lang={DEFAULT_TIME_INPUT_LANG}
+                value={draftStartTime}
+                onChange={(e) => setDraftStartTime(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") cancelEdit();
+                }}
+              />
             </div>
-            {/* End */}
             <div className="flex flex-col gap-1">
               <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {tFields("endAt")}
+                {tFields("endTime")}
               </span>
-              <div className="flex gap-2">
-                <Input
-                  type="date"
-                  value={draftEndDate}
-                  onChange={(e) => setDraftEndDate(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  className="flex-1"
-                />
-                <Input
-                  type="time"
-                  value={draftEndTime}
-                  onChange={(e) => setDraftEndTime(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") commit();
-                    if (e.key === "Escape") cancelEdit();
-                  }}
-                  className="w-28"
-                />
-              </div>
+              <Input
+                type="time"
+                lang={DEFAULT_TIME_INPUT_LANG}
+                value={draftEndTime}
+                onChange={(e) => setDraftEndTime(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commit();
+                  if (e.key === "Escape") cancelEdit();
+                }}
+              />
             </div>
           </div>
+          {/* Show conflict alert in edit mode too — using current draft date. */}
+          <SessionConflictAlert
+            date={conflictDate}
+            locale={locale}
+            conflicts={conflicts}
+            loading={isCheckingConflicts}
+          />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── LockedDraftCard ─────────────────────────────────────────────────────────
+
+/**
+ * A locked draft session — visually identical to a SessionCard in display mode,
+ * with an "Unsaved" pill. Edit (✏️) re-opens the DraftSessionCard editor;
+ * Remove (✗) discards the draft entirely.
+ */
+function LockedDraftCard({
+  draft,
+  locale,
+  disabled,
+  label,
+  unsavedLabel,
+  removeLabel,
+  conflicts,
+  loadingConflict,
+  onEdit,
+  onRemove,
+}: {
+  draft: DraftSession;
+  locale: string;
+  disabled: boolean;
+  label: string;
+  unsavedLabel: string;
+  removeLabel: string;
+  conflicts: ShiftHit[];
+  loadingConflict: boolean;
+  onEdit: () => void;
+  onRemove: () => void;
+}) {
+  const tFields = useTranslations("app.bookings.detail.fields");
+  const sessionDate = isoDate(draft.startAt);
+  return (
+    <div className="border border-brand bg-card text-card-foreground p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </span>
+          <span className="inline-flex items-center border border-brand bg-brand/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
+            {unsavedLabel}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            onClick={onEdit}
+            disabled={disabled}
+            aria-label={`Edit ${label}`}
+          >
+            <PencilIcon className="size-4" />
+          </Button>
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            onClick={onRemove}
+            disabled={disabled}
+            aria-label={removeLabel}
+            className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+          >
+            <XIcon className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {tFields("startAt")}
+          </span>
+          <span className="text-sm text-foreground">
+            {draft.startAt
+              ? new Date(draft.startAt).toLocaleString(locale, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "—"}
+          </span>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {tFields("endAt")}
+          </span>
+          <span className="text-sm text-foreground">
+            {draft.endAt
+              ? new Date(draft.endAt).toLocaleString(locale, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "—"}
+          </span>
+        </div>
+      </div>
+      <SessionConflictAlert
+        date={sessionDate}
+        locale={locale}
+        conflicts={conflicts}
+        loading={loadingConflict}
+      />
+    </div>
+  );
+}
+
+// ─── DraftSessionCard ────────────────────────────────────────────────────────
+
+/**
+ * A session row that was appended locally via "Add session" but has not yet
+ * been confirmed. Times are editable inline; clicking ✓ LOCKS the draft
+ * (transforms it to a LockedDraftCard) rather than calling the API; clicking ✗
+ * discards the draft entirely.
+ */
+function DraftSessionCard({
+  draft,
+  draftIndex,
+  locale,
+  disabled,
+  label,
+  conflicts,
+  isCheckingConflicts,
+  onDiscard,
+  onUpdate,
+  onLock,
+  onDraftDateChange,
+}: {
+  draft: DraftSession;
+  draftIndex: number;
+  locale: string;
+  disabled: boolean;
+  label: string;
+  conflicts: ShiftHit[];
+  isCheckingConflicts: boolean;
+  onDiscard: () => void;
+  onUpdate: (startAt: string, endAt: string) => void;
+  onLock: () => void;
+  onDraftDateChange: (date: string | null) => void;
+}) {
+  const tFields = useTranslations("app.bookings.detail.fields");
+
+  // Suppress unused-variable lint — draftIndex is bound by the caller's closure.
+  void draftIndex;
+  // locale is used for the conflict alert.
+  void locale;
+
+  const [draftStartDate, setDraftStartDate] = useState(isoDate(draft.startAt));
+  const [draftStartTime, setDraftStartTime] = useState(hhmm(draft.startAt));
+  const [draftEndTime, setDraftEndTime] = useState(hhmm(draft.endAt));
+  const [error, setError] = useState<string | null>(null);
+  const firstInputRef = useRef<HTMLInputElement>(null);
+
+  // Emit the initial date so conflicts are fetched right when the card mounts.
+  useEffect(() => {
+    const initialDate = isoDate(draft.startAt);
+    if (initialDate) {
+      onDraftDateChange(initialDate);
+    }
+    setTimeout(() => firstInputRef.current?.focus(), 0);
+    // Only run once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Clean up the in-flight date entry when this draft card unmounts (discarded).
+  useEffect(() => {
+    return () => {
+      onDraftDateChange(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isDraftValid =
+    !!draftStartDate &&
+    !!draftStartTime &&
+    !!draftEndTime &&
+    draftEndTime > draftStartTime;
+
+  function commit() {
+    const newStartAt = combineDatetime(draftStartDate, draftStartTime);
+    const newEndAt = combineDatetime(draftStartDate, draftEndTime);
+    if (!newStartAt || !newEndAt) {
+      setError("Invalid date or time.");
+      return;
+    }
+    if (draftEndTime <= draftStartTime) {
+      setError(tFields("endBeforeStart"));
+      return;
+    }
+    setError(null);
+    // Clear in-flight date — it's now committed into the parent's locked state.
+    onDraftDateChange(null);
+    // First persist the current times into parent state, then lock.
+    onUpdate(newStartAt, newEndAt);
+    onLock();
+  }
+
+  return (
+    <div className="border border-dashed border-brand bg-muted/30 p-3">
+      {/* Card header: label + check/discard controls */}
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {label}
+          </span>
+          <span className="inline-flex items-center border border-brand/50 bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-brand">
+            draft
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            onClick={commit}
+            aria-label="Confirm draft session"
+            disabled={disabled || !isDraftValid || isCheckingConflicts}
+          >
+            {isCheckingConflicts ? (
+              <Loader2Icon className="size-3 animate-spin" />
+            ) : (
+              <CheckIcon className="size-4" />
+            )}
+          </Button>
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            onClick={onDiscard}
+            aria-label="Remove draft session"
+            className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+          >
+            <XIcon className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Inline edit — always open for draft rows */}
+      <div className="flex flex-col gap-3">
+        {error ? (
+          <span className="text-xs text-destructive">{error}</span>
+        ) : null}
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {tFields("date")}
+          </span>
+          <Input
+            ref={firstInputRef}
+            type="date"
+            value={draftStartDate}
+            onChange={(e) => {
+              const val = e.target.value;
+              setDraftStartDate(val);
+              setError(null);
+              // Emit in-flight date so parent re-fetches conflicts immediately.
+              onDraftDateChange(val || null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") onDiscard();
+            }}
+            disabled={disabled}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {tFields("startTime")}
+            </span>
+            <Input
+              type="time"
+              lang={DEFAULT_TIME_INPUT_LANG}
+              value={draftStartTime}
+              onChange={(e) => {
+                setDraftStartTime(e.target.value);
+                setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") onDiscard();
+              }}
+              disabled={disabled}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {tFields("endTime")}
+            </span>
+            <Input
+              type="time"
+              lang={DEFAULT_TIME_INPUT_LANG}
+              value={draftEndTime}
+              onChange={(e) => {
+                setDraftEndTime(e.target.value);
+                setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") onDiscard();
+              }}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+        {/* Conflict alert shown inline while editing the draft. */}
+        <SessionConflictAlert
+          date={draftStartDate}
+          locale={locale}
+          conflicts={conflicts}
+          loading={isCheckingConflicts}
+        />
+      </div>
     </div>
   );
 }
@@ -1509,6 +2497,13 @@ function toMinutes(hh: string | undefined | null): number | null {
   const [h, m] = hh.split(":").map(Number);
   if (h < 0 || h > 23 || m < 0 || m > 59) return null;
   return h * 60 + m;
+}
+
+function isPastSession(s: { endAt: Date | string }): boolean {
+  const end = typeof s.endAt === "string" ? new Date(s.endAt) : s.endAt;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return end < todayStart;
 }
 
 function sessionToDoc(s: Session): SessionDoc {

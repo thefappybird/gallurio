@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, type Control, type FieldErrors } from "react-hook-form";
 import { useTranslations } from "next-intl";
 import { SearchIcon, CheckIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
 
-type ClientHit = {
+export type ClientHit = {
   id: string;
   name: string;
   email: string | null;
@@ -22,6 +21,8 @@ type Props = {
   errors: FieldErrors<WizardValues>;
   readOnly?: boolean;
   readOnlyClientName?: string;
+  /** Pre-fetched client list for synchronous filtering (no network on keystroke). */
+  clients?: ClientHit[];
 };
 
 export function ClientStep({
@@ -29,6 +30,7 @@ export function ClientStep({
   errors,
   readOnly,
   readOnlyClientName,
+  clients = [],
 }: Props) {
   const t = useTranslations("app.bookings.wizard.client");
 
@@ -53,6 +55,7 @@ export function ClientStep({
           value={field.value}
           onChange={field.onChange}
           errors={errors}
+          clients={clients}
         />
       )}
     />
@@ -63,44 +66,32 @@ function ClientPicker({
   value,
   onChange,
   errors,
+  clients,
 }: {
   value: WizardValues["client"];
   onChange: (next: WizardValues["client"]) => void;
   errors: FieldErrors<WizardValues>;
+  clients: ClientHit[];
 }) {
   const t = useTranslations("app.bookings.wizard.client");
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ClientHit[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const isNew = value.mode === "new";
 
-  // Debounced fetch when on Existing tab.
-  useEffect(() => {
-    if (isNew) return;
-    let cancelled = false;
-    const q = query;
-    const id = setTimeout(() => {
-      if (cancelled) return;
-      setLoading(true);
-      const url = `/api/clients?limit=10${q.trim() ? `&q=${encodeURIComponent(q.trim())}` : ""}`;
-      fetch(url)
-        .then((r) => (r.ok ? r.json() : []))
-        .then((rows: ClientHit[]) => {
-          if (cancelled) return;
-          setResults(rows ?? []);
-          setLoading(false);
-        })
-        .catch(() => {
-          if (cancelled) return;
-          setLoading(false);
-        });
-    }, 200);
-    return () => {
-      cancelled = true;
-      clearTimeout(id);
-    };
-  }, [query, isNew]);
+  // Client-side filtering — no network call on keystroke. The full list is
+  // pre-fetched once and passed down via the `clients` prop.
+  const results = useMemo(() => {
+    if (isNew) return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return clients.slice(0, 10);
+    return clients
+      .filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.email?.toLowerCase().includes(q) ?? false)
+      )
+      .slice(0, 10);
+  }, [clients, query, isNew]);
 
   const selectedId = useMemo(
     () => (value.mode === "existing" ? value.clientId : null),
@@ -148,13 +139,7 @@ function ClientPicker({
             />
           </div>
           <div className="max-h-48 overflow-y-auto border border-border bg-background">
-            {loading ? (
-              <div className="flex flex-col gap-1 p-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-full" />
-                ))}
-              </div>
-            ) : results.length === 0 ? (
+            {results.length === 0 ? (
               <p className="px-3 py-4 text-center text-xs text-muted-foreground">
                 {t("noResults")}
               </p>

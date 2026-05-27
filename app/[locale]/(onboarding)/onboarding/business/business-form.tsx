@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useOrganizationList } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import {
   businessStepSchema,
@@ -82,7 +83,6 @@ export function BusinessStepForm({
   const tShell = useTranslations("onboarding.shell");
   const router = useRouter();
   const { setActive } = useOrganizationList();
-  const [serverError, setServerError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const {
@@ -103,20 +103,15 @@ export function BusinessStepForm({
   }
 
   async function onSubmit(data: BusinessStepInput) {
-    setServerError(null);
-    try {
-      const result = await businessStepAction(data);
-      if (result?.error) {
-        setServerError(result.error);
-        return;
-      }
-      if (result.orgIdToActivate && setActive) {
-        await setActive({ organization: result.orgIdToActivate });
-      }
-      startTransition(() => router.push("/onboarding/branding"));
-    } catch (err: unknown) {
-      setServerError(err instanceof Error ? err.message : "Something went wrong");
+    const result = await businessStepAction(data);
+    if (result?.error) {
+      toast.error(result.error);
+      return;
     }
+    if (result.orgIdToActivate && setActive) {
+      await setActive({ organization: result.orgIdToActivate });
+    }
+    startTransition(() => router.push("/onboarding/branding"));
   }
 
   const businessTypes = [
@@ -271,12 +266,6 @@ export function BusinessStepForm({
             )}
           </div>
         </div>
-
-        {serverError && (
-          <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {serverError}
-          </p>
-        )}
 
         <div className="mt-2 flex items-center justify-between">
           <div>

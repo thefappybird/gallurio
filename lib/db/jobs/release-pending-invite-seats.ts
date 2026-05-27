@@ -23,10 +23,12 @@ export type ClaimAndReleaseOutcome =
 async function refundSeatForPending(
   teamId: mongoose.Types.ObjectId,
   pendingId: mongoose.Types.ObjectId,
+  workspaceId: mongoose.Types.ObjectId,
 ): Promise<boolean> {
   const result = await Team.findOneAndUpdate(
     {
       _id: teamId,
+      workspaceId,
       pendingReleaseAcks: { $ne: pendingId },
       memberCount: { $gt: 0 },
     },
@@ -76,7 +78,7 @@ export async function claimAndReleasePendingInvite(
     { $set: { claimedFor: "release", claimedAt: now } },
     { new: true },
   )
-    .select({ teamIds: 1 })
+    .select({ teamIds: 1, workspaceId: 1 })
     .lean();
 
   if (!claimed) {
@@ -88,9 +90,14 @@ export async function claimAndReleasePendingInvite(
     return { status: "not-found" };
   }
 
+  // Refund each reserved seat scoped to the pending row's workspace. The
+  // workspaceId filter is defense-in-depth — `_id` is globally unique — but
+  // satisfies the repo rule that every tenant-scoped mutation includes
+  // workspaceId.
+  const workspaceId = claimed.workspaceId;
   let teamsRefunded = 0;
   for (const teamId of claimed.teamIds ?? []) {
-    const refunded = await refundSeatForPending(teamId, pendingId);
+    const refunded = await refundSeatForPending(teamId, pendingId, workspaceId);
     if (refunded) teamsRefunded += 1;
   }
 

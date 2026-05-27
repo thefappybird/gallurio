@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const ctx = await requireOrg();
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") ?? "").trim();
-  const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit")) || 25));
+  const limit = Math.max(1, Math.min(1000, Number(url.searchParams.get("limit")) || 25));
 
   await connectDB();
 
