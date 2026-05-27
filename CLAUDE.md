@@ -83,6 +83,28 @@ Before everything is finished, make sure that all locales are consolidated with 
 
 You have permissions to do git actions such as creating branches and pull/pushing to that local branch. Merging it to dev will be something we decide together.
 
+### Worktree location (Non-negotiable)
+
+**All git worktrees MUST live under `.claude/worktrees/`.** No exceptions. This rule applies to every agent — main session, Sonnet executor, Opus planner, the `superpowers:using-git-worktrees` skill, and the `Agent` tool's `isolation: "worktree"` mode.
+
+- The canonical path is `.claude/worktrees/<branch-with-slashes-replaced-by-+>/` (e.g. `feat/clients/clients-page` → `.claude/worktrees/feat+clients+clients-page/`). Match the existing convention you see in that folder.
+- **Never** create a worktree at the repo root, in a sibling directory (`../gallurio-<branch>/`), in `/tmp`, in the user's home, or anywhere outside `.claude/worktrees/`. If a skill or tool defaults to a different location, override it with `-b <branch>` + an explicit path argument inside `.claude/worktrees/`.
+- **Never** check out a worktree directly inside the main working copy (e.g. `d:\Portfolio\Projects\gallurio\<branch>/`). That creates phantom untracked directories at the repo root and pollutes `git status`.
+- `.claude/worktrees/` is gitignored (see `.gitignore`'s `/.claude/*` + `!/.claude/agents/` rules), so worktree contents will never leak into commits.
+- Before creating a worktree, verify the target path starts with `.claude/worktrees/`. If you find an existing worktree outside that folder, **stop, surface it to the user, and offer to relocate it** — do not silently work around it.
+
+The exact command shape:
+
+```bash
+git worktree add .claude/worktrees/<slug> -b <branch-name> dev
+```
+
+Remove with:
+
+```bash
+git worktree remove .claude/worktrees/<slug>
+```
+
 ## Code Review
 
 Run the code review skill, be as strict as possible, and extract the review into an .md file so we can refer to it even outside of the current session.
