@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -41,19 +42,49 @@ const buttonVariants = cva(
   }
 )
 
+const loaderSizeMap: Record<
+  NonNullable<VariantProps<typeof buttonVariants>["size"]>,
+  string
+> = {
+  default: "size-4",
+  xs: "size-3",
+  sm: "size-3.5",
+  lg: "size-4",
+  icon: "size-4",
+  "icon-xs": "size-3",
+  "icon-sm": "size-3.5",
+  "icon-lg": "size-4",
+}
+
+type ButtonProps = ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    loading?: boolean
+  }
+
 function Button({
   className,
   variant = "default",
   size = "default",
+  loading = false,
+  disabled,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={loading || disabled}
+      aria-busy={loading ? "true" : undefined}
       {...props}
-    />
+    >
+      {loading && (
+        <Loader2 className={cn("animate-spin", loaderSizeMap[size ?? "default"])} />
+      )}
+      {children}
+    </ButtonPrimitive>
   )
 }
 
 export { Button, buttonVariants }
+export type { ButtonProps }
