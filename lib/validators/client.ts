@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPhoneNumber } from "react-phone-number-input";
 
 // Form inputs always submit strings — RHF turns an untouched <input> into "",
 // not null. Coerce "" / whitespace to null on optional fields before running
@@ -14,10 +15,12 @@ const optionalEmail = z.preprocess(
   z.string().trim().email("Invalid email").toLowerCase().nullable().optional()
 );
 
-const optionalPhone = z.preprocess(
-  blankToNull,
-  z.string().trim().max(40).nullable().optional()
-);
+const optionalPhone = z
+  .preprocess(blankToNull, z.string().nullable().optional())
+  .refine(
+    (v) => v === null || v === undefined || isValidPhoneNumber(v as string),
+    { message: "Invalid phone number" }
+  );
 
 export const clientFormSchema = z.object({
   // Trim before .min(1) so whitespace-only names ("   ") fail validation

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { createClientAction, updateClientAction } from "@/lib/actions/clients";
@@ -173,11 +174,21 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="cf-phone">{t("form.phone")}</Label>
-                <Input
-                  id="cf-phone"
-                  placeholder={t("form.phonePlaceholder")}
-                  {...form.register("phone")}
+                <Controller
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <PhoneInput
+                      id="cf-phone"
+                      value={field.value ?? undefined}
+                      onChange={(value: string | undefined) => field.onChange(value ?? null)}
+                      placeholder={t("form.phonePlaceholder")}
+                    />
+                  )}
                 />
+                {form.formState.errors.phone && (
+                  <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
+                )}
               </div>
             </div>
 

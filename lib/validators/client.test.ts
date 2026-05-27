@@ -4,7 +4,7 @@ import { clientFormSchema } from "./client";
 const validFull = {
   name: "Maria Santos",
   email: "maria@example.com",
-  phone: "+63 912 345 6789",
+  phone: "+639171234567",
   source: "referral" as const,
   tags: ["vip", "wedding"],
   notes: "Referred by Ana Reyes.",
@@ -97,8 +97,22 @@ describe("clientFormSchema", () => {
     }
   });
 
-  it("rejects phone longer than 40 chars", () => {
-    const result = clientFormSchema.safeParse({ ...validFull, phone: "1".repeat(41) });
+  it("accepts a valid E.164 phone number", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, phone: "+639171234567" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a non-E.164 phone string ('abc')", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, phone: "abc" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const phoneError = result.error.issues.find((i) => i.path[0] === "phone");
+      expect(phoneError?.message).toBe("Invalid phone number");
+    }
+  });
+
+  it("rejects a non-E.164 phone string (digits only, no country code)", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, phone: "09171234567" });
     expect(result.success).toBe(false);
   });
 
