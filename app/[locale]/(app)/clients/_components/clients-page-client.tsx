@@ -13,6 +13,11 @@ import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import { reactivateClientAction } from "@/lib/actions/clients";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PageSizeSelect } from "@/components/app/page-size-select";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+
+// ClientsTable has: name, contact, source, totalSpent, actions = 5 columns
+const CLIENTS_TABLE_COLUMNS = 5;
 
 type Props = {
   rows: ClientRow[];
@@ -37,7 +42,7 @@ export function ClientsPageClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   // Modal state
   const [formOpen, setFormOpen] = useState(false);
@@ -120,15 +125,19 @@ export function ClientsPageClient({
     <>
       <ClientsToolbar availableTags={availableTags} onAddClient={openAdd} />
 
-      <ClientsTable
-        rows={rows}
-        locale={locale}
-        empty={empty}
-        onClickClient={openDetail}
-        onEdit={openEdit}
-        onDeactivate={openDeactivate}
-        onReactivate={handleReactivate}
-      />
+      {isPending ? (
+        <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={limit} />
+      ) : (
+        <ClientsTable
+          rows={rows}
+          locale={locale}
+          empty={empty}
+          onClickClient={openDetail}
+          onEdit={openEdit}
+          onDeactivate={openDeactivate}
+          onReactivate={handleReactivate}
+        />
+      )}
 
       {/* Pagination */}
       {total > 0 && (
@@ -136,7 +145,8 @@ export function ClientsPageClient({
           <span className="text-sm text-muted-foreground">
             {t("pagination.showing", { from, to, total })}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <PageSizeSelect value={limit} />
             <Button
               variant="outline"
               size="sm"

@@ -46,8 +46,8 @@ export default async function ClientsPage({
   // malformed `?page=` can't flow into Mongo's skip() as NaN.
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "25", 10);
-  const limit = [25, 50, 100].includes(parsedLimit) ? parsedLimit : 25;
+  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
+  const limit = [10, 20, 30, 50].includes(parsedLimit) ? parsedLimit : 10;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   const [{ items, total }, availableTags] = await Promise.all([
