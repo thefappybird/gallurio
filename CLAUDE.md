@@ -318,7 +318,7 @@ Full phase-by-phase implementation plan lives in [`docs/portfolio-maker/`](docs/
 
 ## Deferred tasks
 
-- Some tasks are not doable reliably in develop mode, actions from payments, some features from clerk that needs not a development environment, etc. that we cannot complete in a feature or update task, we will put them in a list inside checklist-before-release.md and we will go through them before prod.
+- Some tasks are not doable reliably in develop mode, actions from payments, some features from clerk that needs not a development environment, etc. that we cannot complete in a feature or update task, we will put them in a list inside docs/RELEASE-CHECKLIST.md and we will go through them before prod.
 
 
 ## Commands
