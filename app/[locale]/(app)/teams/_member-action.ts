@@ -166,6 +166,11 @@ export async function setLeadFlagAction(
   return { ok: true };
 }
 
+// Retained intentionally: workspace-level member removal (vs. the per-team
+// removal the Details drawer exposes) has no UI yet — it belongs to the
+// deferred members page. Kept here so that page can wire to a tested,
+// owner-gated action rather than re-implementing the Clerk org-membership +
+// seat-release cascade. See docs/RELEASE-CHECKLIST.md.
 export async function removeMemberFromWorkspaceAction(
   input: RemoveMemberFromWorkspaceInput,
 ): Promise<ActionResult> {

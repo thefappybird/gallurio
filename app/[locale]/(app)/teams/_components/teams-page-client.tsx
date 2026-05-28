@@ -199,15 +199,18 @@ export function TeamsPageClient({
         </div>
       </div>
 
-      <TeamsTable
-        rows={filteredTeams}
-        empty={committedQuery ? t("table.empty") : t("listEmpty")}
-        onDetails={openDetails}
-        onRename={setRenameTeam}
-        onChangeColor={setColorTeam}
-        onInvite={(team) => openInvite([team.id])}
-        onDelete={setDeleteTeam}
-      />
+      {/* id is the scroll target for the DowngradeBlockModal "Manage teams" link */}
+      <div id="teams-list">
+        <TeamsTable
+          rows={filteredTeams}
+          empty={committedQuery ? t("table.empty") : t("listEmpty")}
+          onDetails={openDetails}
+          onRename={setRenameTeam}
+          onChangeColor={setColorTeam}
+          onInvite={(team) => openInvite([team.id])}
+          onDelete={setDeleteTeam}
+        />
+      </div>
 
       {/* Detail drawer */}
       <TeamDetailDrawer
