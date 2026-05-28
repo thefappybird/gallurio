@@ -150,4 +150,74 @@ describe("findPublishedWorkspaceBySlug", () => {
     const result = await findPublishedWorkspaceBySlug("fake-workspace");
     expect(result).toBeNull();
   });
+
+  // ---------------------------------------------------------------------------
+  // Projection / response shaping (Finding #6)
+  // ---------------------------------------------------------------------------
+
+  it("projection: sensitive billing and identity fields are stripped from the returned doc", async () => {
+    await Workspace.create(
+      makeWorkspaceBase({
+        slug: "sensitive-ws",
+        name: "Sensitive Studio",
+        ownerUserId: "user_sensitive",
+        clerkOrgId: "org_sensitive_abc123",
+        plan: "starter",
+        currency: "PHP",
+        hitpayRecurringBillingId: "hpb_secret_001",
+        hitpayRecurringReference: "hpr_secret_ref",
+        hitpayRecurringStatus: "active",
+        hitpayCurrentPeriodEnd: new Date("2026-12-31"),
+      })
+    );
+
+    const result = await findPublishedWorkspaceBySlug("sensitive-ws");
+    expect(result).not.toBeNull();
+
+    // Sensitive fields must be absent (projected out)
+    const doc = result as Record<string, unknown>;
+    expect(doc.hitpayRecurringBillingId).toBeUndefined();
+    expect(doc.hitpayRecurringReference).toBeUndefined();
+    expect(doc.hitpayRecurringStatus).toBeUndefined();
+    expect(doc.hitpayCurrentPeriodEnd).toBeUndefined();
+    expect(doc.clerkOrgId).toBeUndefined();
+    expect(doc.ownerUserId).toBeUndefined();
+    expect(doc.plan).toBeUndefined();
+  });
+
+  it("projection: public fields needed by consumers are present in the returned doc", async () => {
+    await Workspace.create(
+      makeWorkspaceBase({
+        slug: "public-fields-ws",
+        name: "Public Fields Studio",
+        country: "PH",
+        branding: {
+          tagline: "Your story, beautifully told.",
+          logoUrl: "https://res.cloudinary.com/demo/image/upload/logo.png",
+        },
+        publicPage: {
+          publishedAt: new Date(),
+          seoTitle: "Public Fields Studio — Photography",
+          seoDescription: "Award-winning photography in Manila.",
+          brandKit: { theme: "light", fontPair: "merriweather-only" },
+          data: { home: { content: [], root: { props: {} } }, gallery: null },
+          inquiryRecipientEmail: "hello@publicfields.studio",
+        },
+        contact: { phone: "+63 912 345 6789", address: "Manila, PH" },
+      })
+    );
+
+    const result = await findPublishedWorkspaceBySlug("public-fields-ws");
+    expect(result).not.toBeNull();
+
+    const doc = result as Record<string, unknown>;
+    // _id included by default
+    expect(doc._id).toBeDefined();
+    expect(doc.slug).toBe("public-fields-ws");
+    expect(doc.name).toBe("Public Fields Studio");
+    expect(doc.country).toBe("PH");
+    expect(doc.branding).toBeDefined();
+    expect(doc.publicPage).toBeDefined();
+    expect(doc.contact).toBeDefined();
+  });
 });

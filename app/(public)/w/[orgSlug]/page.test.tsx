@@ -16,14 +16,47 @@
  * is covered by the query-helper tests (unpublished workspace → null) combined
  * with the page code calling notFound() when the helper returns null.
  */
+import React from "react";
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Types } from "mongoose";
 
-import { resolveBrandKit, DEFAULT_BRAND_KIT } from "@/lib/page-builder";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { ContactCardBlock, contactCardDefaultProps } from "@/lib/page-builder/blocks/ContactCardBlock";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 import { generateMetadata } from "./page";
 import type { WorkspaceDoc } from "@/lib/db/models/Workspace";
+
+// ---------------------------------------------------------------------------
+// Mock next-intl/server — page component calls getTranslations(); this avoids
+// requiring a full Next.js request context in happy-dom unit tests.
+// ---------------------------------------------------------------------------
+
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn(async () => (key: string, vars?: Record<string, unknown>) => {
+    const en: Record<string, string> = {
+      comingSoon: "Coming soon",
+      poweredBy: "Powered by Gallurio",
+      notFoundEyebrow: "Gallurio",
+      notFoundTitle: "Portfolio not found",
+      notFoundBody: "This portfolio doesn't exist or hasn't been published yet.",
+      startingFrom: "Starting from {price}",
+    };
+    let s = en[key] ?? key;
+    if (vars) for (const k of Object.keys(vars)) s = s.replace(`{${k}}`, String(vars[k]));
+    return s;
+  }),
+}));
+
+// ---------------------------------------------------------------------------
+// Mock localeForCountry — used by page component
+// ---------------------------------------------------------------------------
+
+vi.mock("@/lib/i18n/localeForCountry", () => ({
+  localeForCountry: vi.fn(() => "en"),
+}));
 
 // ---------------------------------------------------------------------------
 // Mock findPublishedWorkspaceBySlug so generateMetadata doesn't need Mongo
@@ -272,5 +305,65 @@ describe("Portfolio page — ComingSoonFallback integration", () => {
     // happy-dom preserves font-family var() references — sufficient to verify
     // the component wires up --pf-* variables in its inline style.
     expect(style).toContain("--pf-font-body");
+  });
+
+  it("renders labels.comingSoon and labels.poweredBy when provided", () => {
+    const workspace = makePublishedWorkspace();
+    render(
+      <ComingSoonFallback
+        workspace={workspace}
+        labels={{ comingSoon: "Maaga pa", poweredBy: "Pinapagana ng Gallurio" }}
+      />
+    );
+    expect(screen.getByText("Maaga pa")).toBeInTheDocument();
+    expect(screen.getByText("Pinapagana ng Gallurio")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: finding #1 — contact must flow into render context
+// ---------------------------------------------------------------------------
+
+describe("buildRenderWorkspace — contact field regression", () => {
+  it("copies contact onto the render workspace", () => {
+    const doc = {
+      _id: new Types.ObjectId(),
+      name: "Studio",
+      branding: { tagline: "t" },
+      publicPage: { inquiryRecipientEmail: "" },
+      contact: {
+        email: "hello@studio.com",
+        phone: "+63 900 000 0000",
+        address: "Manila",
+        socials: { instagram: "studio_ig" },
+      },
+    };
+    const rw = buildRenderWorkspace(doc);
+    expect(rw.contact?.email).toBe("hello@studio.com");
+    expect(rw.contact?.socials?.instagram).toBe("studio_ig");
+  });
+
+  it("sets contact to null when workspace.contact is absent", () => {
+    const doc = { _id: new Types.ObjectId(), name: "Studio" };
+    const rw = buildRenderWorkspace(doc);
+    expect(rw.contact).toBeNull();
+  });
+
+  it("ContactCardBlock renders contact rows from the built render context", () => {
+    const doc = {
+      _id: new Types.ObjectId(),
+      name: "Studio",
+      contact: {
+        email: "hello@studio.com",
+        phone: "+63 900 000 0000",
+        address: "Manila",
+        socials: { instagram: "studio_ig" },
+      },
+    };
+    const rw = buildRenderWorkspace(doc);
+    const { getByText } = runWithRenderWorkspace(rw, () =>
+      render(React.createElement(ContactCardBlock, contactCardDefaultProps))
+    );
+    expect(getByText("hello@studio.com")).toBeInTheDocument();
   });
 });

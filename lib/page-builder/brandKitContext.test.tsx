@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, renderHook } from "@testing-library/react";
 import React from "react";
-import { BrandKitProvider, useBrandKit, resolveBrandKit } from "./brandKitContext";
+import { BrandKitProvider, useBrandKit } from "./brandKitContext";
+import { resolveBrandKit } from "./resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "./types";
 import type { PortfolioBrandKit } from "./types";
 

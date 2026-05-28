@@ -745,5 +745,15 @@
         "removeBranding": "Alisin ang branding ng Gallurio"
       }
     }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "Malapit nang dumating",
+      "poweredBy": "Pinapagana ng Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "Hindi natagpuan ang portfolio",
+      "notFoundBody": "Wala ang portfolio na ito o hindi pa ito na-publish.",
+      "startingFrom": "Nagsisimula sa {price}"
+    }
   }
 }

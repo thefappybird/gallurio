@@ -52,6 +52,17 @@ const workspaceSchema = new Schema(
       tagline: { type: String, default: "" },
       description: { type: String, default: "" },
     },
+    contact: {
+      email: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      address: { type: String, default: "" },
+      socials: {
+        instagram: { type: String, default: "" },
+        facebook: { type: String, default: "" },
+        tiktok: { type: String, default: "" },
+        website: { type: String, default: "" },
+      },
+    },
     publicPage: {
       templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "default" },
       data: {
@@ -70,6 +81,7 @@ const workspaceSchema = new Schema(
         buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
       },
       publishedAt: { type: Date, default: null },
+      // Publish bookkeeping — written by the publish action.
       lastPublishedAt: { type: Date, default: null },
       latestVersion: { type: Number, default: 0 },
       seoTitle: { type: String, default: "" },

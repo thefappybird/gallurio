@@ -21,7 +21,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -114,6 +114,13 @@ export async function GalleryGridBlock({
   // or an isolated preview context without a real workspace).
   if (!workspaceId) {
     return <GalleryEmptyState message="Gallery not available." />;
+  }
+
+  // Guard: collectionId must be a valid ObjectId — a malformed string is a
+  // configuration error, not a DB outage; render the empty state rather than
+  // letting Mongoose throw a CastError that falls into the DB-outage catch.
+  if (!Types.ObjectId.isValid(collectionId)) {
+    return <GalleryEmptyState message="No collection selected." />;
   }
 
   let items: LeanGalleryItem[] = [];

@@ -100,6 +100,17 @@ describe("GalleryGridBlock — empty collectionId", () => {
     render(element);
     expect(screen.getByText(/no collection selected/i)).toBeInTheDocument();
   });
+
+  it("renders empty state (not DB-outage message) when collectionId is an invalid ObjectId string", async () => {
+    const wsId = makeWorkspaceId();
+    const element = await runWithRenderWorkspace(
+      { _id: wsId.toString(), name: "Test Workspace" },
+      () => GalleryGridBlock({ ...defaultProps, collectionId: "not-an-objectid" })
+    );
+    render(element);
+    expect(screen.getByText(/no collection selected/i)).toBeInTheDocument();
+    expect(screen.queryByText(/gallery temporarily unavailable/i)).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------

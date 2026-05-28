@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
-import { resolveBrandKit, DEFAULT_BRAND_KIT } from "@/lib/page-builder";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { localeForCountry } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
 

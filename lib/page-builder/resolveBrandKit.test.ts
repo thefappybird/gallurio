@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBrandKit } from "./brandKitContext";
+import { resolveBrandKit } from "./resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "./types";
 import type { PortfolioBrandKit } from "./types";
 

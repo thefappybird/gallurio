@@ -14,7 +14,11 @@ type WorkspaceShape = {
 
 type ComingSoonFallbackProps = {
   workspace: WorkspaceShape;
+  /** Pre-resolved chrome strings. Defaults to English so standalone/test usage works without i18n setup. */
+  labels?: { comingSoon: string; poweredBy: string };
 };
+
+const DEFAULT_LABELS = { comingSoon: "Coming soon", poweredBy: "Powered by Gallurio" };
 
 /**
  * Branded "Coming soon" fallback shown when a workspace is published but
@@ -23,7 +27,7 @@ type ComingSoonFallbackProps = {
  * Uses the `--pf-color-*` CSS variables injected by the layout wrapper so
  * branding is consistent with whatever the workspace owner configured.
  */
-export function ComingSoonFallback({ workspace }: ComingSoonFallbackProps) {
+export function ComingSoonFallback({ workspace, labels = DEFAULT_LABELS }: ComingSoonFallbackProps) {
   const logoUrl =
     typeof workspace.branding?.logoUrl === "string" && workspace.branding.logoUrl
       ? workspace.branding.logoUrl
@@ -92,7 +96,7 @@ export function ComingSoonFallback({ workspace }: ComingSoonFallbackProps) {
           margin: 0,
         }}
       >
-        Coming soon
+        {labels.comingSoon}
       </p>
 
       <p
@@ -102,7 +106,7 @@ export function ComingSoonFallback({ workspace }: ComingSoonFallbackProps) {
           marginTop: "2rem",
         }}
       >
-        Powered by Gallurio
+        {labels.poweredBy}
       </p>
     </main>
   );

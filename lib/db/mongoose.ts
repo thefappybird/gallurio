@@ -33,10 +33,14 @@ export async function connectDB(): Promise<Mongoose> {
   // Fast path: already connected (e.g. connected by a test harness or a previous call).
   if (cached.conn) return cached.conn;
 
-  // Secondary fast path: the underlying mongoose connection is already open
-  // (happens in tests that call mongoose.connect() directly via the in-memory
-  // server helper without going through this cache).
-  if (mongoose.connection.readyState === 1) {
+  // TEST-ONLY secondary fast path: the underlying mongoose connection is already
+  // open because the in-memory mongo helper (mongodb-memory-server) calls
+  // mongoose.connect() directly, bypassing this cache. Accepting that pre-opened
+  // connection avoids a double-connect error in tests.
+  // In production this branch is intentionally disabled — every connection MUST
+  // come through the cached.promise path below so that the maxPoolSize: 10 /
+  // bufferCommands: false options are always applied.
+  if (process.env.NODE_ENV === "test" && mongoose.connection.readyState === 1) {
     cached.conn = mongoose as unknown as Mongoose;
     return cached.conn;
   }

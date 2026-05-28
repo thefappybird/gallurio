@@ -5,18 +5,24 @@
  *
  * No app chrome — this page is outside the authenticated shell.
  */
-export default function PortfolioNotFound() {
+import { getTranslations } from "next-intl/server";
+
+// Locale is hardcoded to "en" because this page has no workspace context — there
+// is no workspace doc to call localeForCountry() on when a slug is not found.
+export default async function PortfolioNotFound() {
+  const t = await getTranslations({ locale: "en", namespace: "publicPage.chrome" });
+
   return (
     <main
       style={{ fontFamily: "'Merriweather', serif" }}
-      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-white px-6 text-center text-[#111111]"
+      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground"
     >
-      <p className="text-sm font-semibold tracking-widest uppercase text-[#6b6b6b]">
-        Gallurio
+      <p className="text-sm font-semibold tracking-widest uppercase text-muted-foreground">
+        {t("notFoundEyebrow")}
       </p>
-      <h1 className="text-2xl font-bold">Portfolio not found</h1>
-      <p className="max-w-sm text-base text-[#6b6b6b]">
-        This portfolio doesn&apos;t exist or hasn&apos;t been published yet.
+      <h1 className="text-2xl font-bold">{t("notFoundTitle")}</h1>
+      <p className="max-w-sm text-base text-muted-foreground">
+        {t("notFoundBody")}
       </p>
     </main>
   );

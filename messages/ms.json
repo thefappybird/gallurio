@@ -745,5 +745,15 @@
         "removeBranding": "Buang penjenamaan Gallurio"
       }
     }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "Akan datang",
+      "poweredBy": "Dikuasakan oleh Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "Portfolio tidak dijumpai",
+      "notFoundBody": "Portfolio ini tidak wujud atau belum diterbitkan.",
+      "startingFrom": "Bermula dari {price}"
+    }
   }
 }

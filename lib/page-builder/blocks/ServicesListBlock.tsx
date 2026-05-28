@@ -8,6 +8,7 @@
  */
 
 import type { ComponentConfig } from "@measured/puck";
+import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,6 +60,10 @@ export const servicesListDefaultProps: ServicesListProps = {
 
 export function ServicesListBlock({ heading, items }: ServicesListProps) {
   const cappedItems = items.slice(0, 8);
+  // Read the resolved "Starting from {price}" template from the render context.
+  // Falls back to English so the block still renders correctly in the Puck editor
+  // (which does not wrap renders in runWithRenderWorkspace).
+  const startingFromTemplate = getRenderWorkspace()?.chrome?.startingFrom ?? "Starting from {price}";
 
   return (
     <section
@@ -101,7 +106,7 @@ export function ServicesListBlock({ heading, items }: ServicesListProps) {
           }}
         >
           {cappedItems.map((item, i) => (
-            <ServiceCard key={i} item={item} />
+            <ServiceCard key={i} item={item} startingFromTemplate={startingFromTemplate} />
           ))}
         </div>
       </div>
@@ -127,7 +132,7 @@ export function ServicesListBlock({ heading, items }: ServicesListProps) {
 // Service card
 // ---------------------------------------------------------------------------
 
-function ServiceCard({ item }: { item: ServiceItem }) {
+function ServiceCard({ item, startingFromTemplate }: { item: ServiceItem; startingFromTemplate: string }) {
   return (
     <div
       data-testid="service-card"
@@ -186,7 +191,7 @@ function ServiceCard({ item }: { item: ServiceItem }) {
             margin: 0,
           }}
         >
-          Starting from {item.priceFrom}
+          {startingFromTemplate.replace("{price}", item.priceFrom)}
         </p>
       )}
     </div>

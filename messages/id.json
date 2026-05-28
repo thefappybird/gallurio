@@ -745,5 +745,15 @@
         "removeBranding": "Hilangkan branding Gallurio"
       }
     }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "Segera hadir",
+      "poweredBy": "Didukung oleh Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "Portofolio tidak ditemukan",
+      "notFoundBody": "Portofolio ini tidak ada atau belum dipublikasikan.",
+      "startingFrom": "Mulai dari {price}"
+    }
   }
 }

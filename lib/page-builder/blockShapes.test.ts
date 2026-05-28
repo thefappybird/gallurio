@@ -43,20 +43,6 @@ vi.mock("@/lib/storage/cloudinary", () => ({
   ),
 }));
 
-vi.mock("@/lib/db/mongoose", () => ({
-  connectDB: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("@/lib/db/models/GalleryItem", () => ({
-  GalleryItem: {
-    find: vi.fn().mockReturnValue({
-      sort: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      lean: vi.fn().mockResolvedValue([]),
-    }),
-  },
-}));
-
 // ---------------------------------------------------------------------------
 // Fixture workspace context (used by ContactCardBlock tests)
 // ---------------------------------------------------------------------------
