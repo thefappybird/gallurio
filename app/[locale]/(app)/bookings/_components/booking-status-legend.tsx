@@ -37,6 +37,11 @@ export function BookingStatusLegend({ activeStatus, onToggle }: Props) {
             type="button"
             onClick={() => onToggle(status)}
             aria-pressed={isActive}
+            title={
+              isActive
+                ? tCalendar("filterActive", { status: tStatus(status) })
+                : undefined
+            }
             className={cn(
               "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors",
               "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",

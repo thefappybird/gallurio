@@ -394,7 +394,6 @@
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
           "allowPastDate": "Menambahkan pemesanan lama? Izinkan tanggal lampau",
           "location": "Lokasi",
-          "locationPlaceholder": "Venue atau alamat lengkap",
           "checkingConflicts": "Memeriksa konflik…",
           "repeatingSessions": "Sesi berulang",
           "repeatingHint": "Buat satu sesi pada hari yang sama untuk setiap hari dalam rentang tanggal.",

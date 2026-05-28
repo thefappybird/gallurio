@@ -84,6 +84,37 @@ describe("POST /api/bookings", () => {
     expect(log?.action).toBe("created");
   });
 
+  it("persists location lat/lng when provided", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(
+        makeBody({ location: { address: "Pier 27, Manila", lat: 14.5995, lng: 120.9842 } })
+      )
+    );
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.location?.address).toBe("Pier 27, Manila");
+    expect(booking?.location?.lat).toBe(14.5995);
+    expect(booking?.location?.lng).toBe(120.9842);
+  });
+
+  it("defaults location lat/lng to null when only an address is given", async () => {
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody({ location: { address: "No coords" } })));
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(booking?.location?.lat ?? null).toBeNull();
+    expect(booking?.location?.lng ?? null).toBeNull();
+  });
+
+  it("returns 400 on an out-of-range latitude", async () => {
+    const { POST } = await load();
+    const res = await POST(
+      makeReq(makeBody({ location: { address: "x", lat: 200, lng: 0 } }))
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("returns 400 on missing required field", async () => {
     const { POST } = await load();
     const res = await POST(makeReq(makeBody({ title: "" })));

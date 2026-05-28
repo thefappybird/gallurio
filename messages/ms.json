@@ -394,7 +394,6 @@
           "conflictsLabel": "Syif yang sudah ada pada {date}:",
           "allowPastDate": "Menambah tempahan lama? Benarkan tarikh lepas",
           "location": "Lokasi",
-          "locationPlaceholder": "Venue atau alamat penuh",
           "checkingConflicts": "Menyemak konflik…",
           "repeatingSessions": "Sesi berulang",
           "repeatingHint": "Janakan satu sesi pada hari yang sama setiap hari dalam julat tarikh.",

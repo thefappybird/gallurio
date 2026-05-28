@@ -394,7 +394,6 @@
           "conflictsLabel": "Shifts already on {date}:",
           "allowPastDate": "Adding an old booking? Allow past dates",
           "location": "Location",
-          "locationPlaceholder": "Venue or full address",
           "checkingConflicts": "Checking for conflicts…",
           "repeatingSessions": "Repeating sessions",
           "repeatingHint": "Generate one same-day session per day in a date range.",

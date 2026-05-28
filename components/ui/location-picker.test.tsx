@@ -74,6 +74,29 @@ describe("LocationPicker", () => {
     });
   });
 
+  it("clamps a long Nominatim display_name to 240 chars on select (server max)", async () => {
+    const longName = "A".repeat(400);
+    const fetchMock = mockNominatim([
+      { place_id: 9, display_name: longName, lat: "1.5", lon: "2.5" },
+    ]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onChange = vi.fn();
+    renderWithProviders(<LocationPicker value={EMPTY} onChange={onChange} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "long place" } });
+    const option = await screen.findByText(longName);
+    fireEvent.mouseDown(option);
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ lat: 1.5, lng: 2.5 })
+    );
+    const committed = onChange.mock.calls[0][0] as { address: string };
+    expect(committed.address.length).toBe(240);
+    // The visible input is clamped too, so the follow-up blur can't re-commit a
+    // longer string the server would reject.
+    expect((screen.getByRole("combobox") as HTMLInputElement).value.length).toBe(240);
+  });
+
   it("does not fire a search before the debounce window or for short queries", () => {
     vi.useFakeTimers();
     const fetchMock = mockNominatim([]);

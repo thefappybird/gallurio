@@ -506,6 +506,9 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
     for (const [key, value] of Object.entries(pending)) {
+      // Raw pin coordinates persist but are never logged server-side — keep the
+      // optimistic activity consistent so a coordinate-only save shows nothing.
+      if (key === "location.lat" || key === "location.lng") continue;
       const before = getCurrentValue(previous, key as EditableKey);
       changes[key] = { before, after: value };
     }
@@ -515,10 +518,12 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     ) {
       changes["sessions"] = { before: previous.sessions, after: mergedSessions };
     }
-    prependOptimisticActivity(
-      "status" in pending ? "status_changed" : "updated",
-      changes
-    );
+    if (Object.keys(changes).length > 0) {
+      prependOptimisticActivity(
+        "status" in pending ? "status_changed" : "updated",
+        changes
+      );
+    }
 
     try {
       const body: Record<string, unknown> = { ...pending };

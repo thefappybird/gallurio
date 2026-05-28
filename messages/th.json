@@ -394,7 +394,6 @@
           "conflictsLabel": "กะที่มีอยู่แล้วใน {date}:",
           "allowPastDate": "เพิ่มการจองเก่าหรือไม่? อนุญาตวันที่ผ่านมา",
           "location": "สถานที่",
-          "locationPlaceholder": "สถานที่จัดงานหรือที่อยู่เต็ม",
           "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…",
           "repeatingSessions": "เซสชันซ้ำ",
           "repeatingHint": "สร้างหนึ่งเซสชันในวันเดียวกันต่อวันในช่วงวันที่",

@@ -394,7 +394,6 @@
           "conflictsLabel": "Mga shift na nasa {date} na:",
           "allowPastDate": "Nagdadagdag ng lumang booking? Payagan ang mga nakaraang petsa",
           "location": "Lokasyon",
-          "locationPlaceholder": "Venue o kumpletong address",
           "checkingConflicts": "Sinisiyasat ang mga salungatan…",
           "repeatingSessions": "Mga paulit-ulit na sesyon",
           "repeatingHint": "Gumawa ng isang same-day session bawat araw sa loob ng isang hanay ng petsa.",

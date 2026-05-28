@@ -110,11 +110,14 @@ export function LocationPicker({ value, onChange, disabled, id }: Props) {
   function selectResult(r: NominatimResult) {
     const lat = Number(r.lat);
     const lng = Number(r.lon);
+    // Clamp to the schema's max(240) and keep the visible input in sync, so the
+    // subsequent onBlur doesn't re-commit a longer string the server rejects.
+    const address = r.display_name.slice(0, 240);
     skipNextSearchRef.current = true;
-    setQuery(r.display_name);
+    setQuery(address);
     setOpen(false);
     setResults([]);
-    onChange({ address: r.display_name.slice(0, 240), lat, lng });
+    onChange({ address, lat, lng });
   }
 
   function handlePin(lat: number, lng: number) {
@@ -145,6 +148,7 @@ export function LocationPicker({ value, onChange, disabled, id }: Props) {
             type="text"
             value={query}
             disabled={disabled}
+            maxLength={240}
             autoComplete="off"
             role="combobox"
             aria-expanded={open}
