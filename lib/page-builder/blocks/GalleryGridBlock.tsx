@@ -131,7 +131,8 @@ export async function GalleryGridBlock({
       .sort({ order: 1, _id: 1 })
       .limit(cappedMax)
       .lean()) as unknown as LeanGalleryItem[];
-  } catch {
+  } catch (err) {
+    console.error("GalleryGridBlock query failed", err);
     // DB unavailable during SSG or in isolated preview — degrade gracefully
     return <GalleryEmptyState message="Gallery temporarily unavailable." />;
   }

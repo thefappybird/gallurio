@@ -10,7 +10,7 @@
  * - Inline CTA label (opens contact form — Phase 5)
  *
  * Multi-tenant safety: contact data is read from getRenderWorkspace(), which is
- * scoped per request via React's cache() in serverContext.tsx.
+ * scoped per request via AsyncLocalStorage in serverContext.tsx.
  *
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */

@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import React from "react";
 import { ServicesListBlock, servicesListDefaultProps } from "./ServicesListBlock";
 import type { ServicesListProps } from "./ServicesListBlock";
+import { runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -156,5 +157,61 @@ describe("ServicesListBlock — missing optional props", () => {
 
   it("renders with empty heading (no crash)", () => {
     expect(() => renderServices({ heading: "" })).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Localized startingFrom via render context
+// ---------------------------------------------------------------------------
+
+describe("ServicesListBlock — localized startingFrom via render context", () => {
+  it("uses the locale template when a render context provides one", () => {
+    runWithRenderWorkspace(
+      { _id: "ws1", name: "T", chrome: { startingFrom: "Mula sa {price}" } },
+      () => {
+        render(
+          <ServicesListBlock
+            heading="Serbisyo"
+            items={[{ title: "Kasal", priceFrom: "₱5,000" }]}
+          />
+        );
+      }
+    );
+    expect(screen.getByText("Mula sa ₱5,000")).toBeInTheDocument();
+    expect(screen.queryByText("Starting from ₱5,000")).toBeNull();
+  });
+
+  it("falls back to English when context has no chrome", () => {
+    runWithRenderWorkspace(
+      { _id: "ws1", name: "T" },
+      () => {
+        render(
+          <ServicesListBlock
+            heading="Services"
+            items={[{ title: "Wedding", priceFrom: "₱5,000" }]}
+          />
+        );
+      }
+    );
+    expect(screen.getByText("Starting from ₱5,000")).toBeInTheDocument();
+  });
+
+  it("preserves the {price} token correctly across multiple items", () => {
+    runWithRenderWorkspace(
+      { _id: "ws1", name: "T", chrome: { startingFrom: "เริ่มต้นที่ {price}" } },
+      () => {
+        render(
+          <ServicesListBlock
+            heading="บริการ"
+            items={[
+              { title: "งานแต่งงาน", priceFrom: "₱5,000" },
+              { title: "ภาพบุคคล", priceFrom: "₱2,500" },
+            ]}
+          />
+        );
+      }
+    );
+    expect(screen.getByText("เริ่มต้นที่ ₱5,000")).toBeInTheDocument();
+    expect(screen.getByText("เริ่มต้นที่ ₱2,500")).toBeInTheDocument();
   });
 });

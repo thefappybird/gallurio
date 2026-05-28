@@ -1,7 +1,6 @@
 /**
  * Fixture Puck document containing one entry per Phase 3 block.
- * Used by blockShapes.test.ts (integration test) and by the seed script
- * to populate publicPage.data.home in the dev database.
+ * Used by blockShapes.test.ts (integration test).
  *
  * Sentinel strings are deliberately unique so the integration test can grep
  * for them in the rendered HTML.
