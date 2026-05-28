@@ -1,0 +1,149 @@
+/**
+ * GalleryCarouselBlock — server component that fetches a collection's items and
+ * hands already-resolved thumbnail URLs to the client carousel island.
+ *
+ * Multi-tenant safety: `workspaceId` comes from the server render context, never
+ * Puck props. `listItemsForBlock` drops private/foreign collections.
+ *
+ * Split design: the fetch + tenant scoping happen on the server (AsyncLocalStorage
+ * is server-only); only the interactive scroll/arrow logic ships to the client.
+ */
+
+import type { ComponentConfig, Field } from "@measured/puck";
+import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { listItemsForBlock } from "@/lib/db/queries/gallery";
+import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
+
+export type GalleryCarouselProps = {
+  collectionId: string;
+  aspect: "square" | "landscape" | "portrait";
+  autoplay: boolean;
+  maxItems: number;
+};
+
+export const galleryCarouselDefaultProps: GalleryCarouselProps = {
+  collectionId: "",
+  aspect: "landscape",
+  autoplay: false,
+  maxItems: 12,
+};
+
+const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height: number }> = {
+  square: { width: 800, height: 800 },
+  landscape: { width: 1000, height: 562 },
+  portrait: { width: 700, height: 933 },
+};
+
+export async function GalleryCarouselBlock({
+  collectionId,
+  aspect,
+  autoplay,
+  maxItems,
+}: GalleryCarouselProps) {
+  const workspace = getRenderWorkspace();
+  if (!workspace || !String(workspace._id)) {
+    return <CarouselEmptyState message="Gallery not available." />;
+  }
+
+  if (!collectionId || !collectionId.trim()) {
+    return <CarouselEmptyState message="No collection selected." />;
+  }
+
+  let items;
+  try {
+    items = await listItemsForBlock({
+      workspaceId: String(workspace._id),
+      collectionId,
+      limit: maxItems,
+    });
+  } catch (err) {
+    console.error("GalleryCarouselBlock query failed", err);
+    return <CarouselEmptyState message="Gallery temporarily unavailable." />;
+  }
+
+  if (items.length === 0) {
+    return <CarouselEmptyState message="No photos in this collection yet." />;
+  }
+
+  const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
+  const slides: CarouselSlide[] = items.map((item) => ({
+    id: String(item._id),
+    src: cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+      width: size.width,
+      height: size.height,
+      crop: "fill",
+    }),
+    alt: item.altText || item.caption || "",
+  }));
+
+  return (
+    <section
+      data-block="gallery-carousel"
+      style={{
+        backgroundColor: "var(--pf-color-bg)",
+        padding: "4rem 0.75rem",
+        fontFamily: "var(--pf-font-body)",
+      }}
+    >
+      <GalleryCarouselClient slides={slides} aspect={aspect} autoplay={autoplay} />
+    </section>
+  );
+}
+
+function CarouselEmptyState({ message }: { message: string }) {
+  return (
+    <section
+      data-block="gallery-carousel"
+      data-empty="true"
+      style={{
+        backgroundColor: "var(--pf-color-bg)",
+        padding: "4rem 1.5rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <p
+        style={{
+          fontFamily: "var(--pf-font-body)",
+          color: "var(--pf-color-fg)",
+          opacity: 0.45,
+          fontSize: "0.9375rem",
+          margin: 0,
+        }}
+      >
+        {message}
+      </p>
+    </section>
+  );
+}
+
+export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> = {
+  label: "Gallery Carousel",
+  defaultProps: galleryCarouselDefaultProps,
+  fields: {
+    collectionId: { type: "text", label: "Collection ID" },
+    aspect: {
+      type: "select",
+      label: "Image shape",
+      options: [
+        { label: "Square", value: "square" },
+        { label: "Landscape", value: "landscape" },
+        { label: "Portrait", value: "portrait" },
+      ],
+    },
+    autoplay: {
+      type: "select",
+      label: "Autoplay",
+      options: [
+        { label: "Off", value: false },
+        { label: "On", value: true },
+      ],
+    } as Field<boolean>,
+    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
+  },
+  // Async server component — Puck's PuckComponent type expects sync JSX.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  render: GalleryCarouselBlock as any,
+};

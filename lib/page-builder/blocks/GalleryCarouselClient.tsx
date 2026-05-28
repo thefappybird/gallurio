@@ -1,0 +1,160 @@
+"use client";
+
+/**
+ * Client island for GalleryCarouselBlock. Receives already-resolved thumbnail
+ * URLs from the server block (no data fetching here). Provides scroll-snap
+ * navigation, keyboard-accessible prev/next buttons, and optional autoplay
+ * (disabled under prefers-reduced-motion).
+ */
+
+import { useEffect, useRef, useState } from "react";
+
+export type CarouselSlide = {
+  id: string;
+  src: string;
+  alt: string;
+};
+
+const ASPECT_RATIO: Record<"square" | "landscape" | "portrait", string> = {
+  square: "1 / 1",
+  landscape: "16 / 9",
+  portrait: "3 / 4",
+};
+
+export function GalleryCarouselClient({
+  slides,
+  aspect,
+  autoplay,
+}: {
+  slides: CarouselSlide[];
+  aspect: "square" | "landscape" | "portrait";
+  autoplay: boolean;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  function scrollByDir(dir: 1 | -1) {
+    const track = trackRef.current;
+    if (!track) return;
+    const slide = track.querySelector<HTMLElement>("[data-slide]");
+    const step = slide ? slide.offsetWidth + 16 : track.clientWidth;
+    track.scrollBy({ left: dir * step, behavior: reducedMotion ? "auto" : "smooth" });
+  }
+
+  useEffect(() => {
+    if (!autoplay || reducedMotion || slides.length < 2) return;
+    const id = window.setInterval(() => {
+      const track = trackRef.current;
+      if (!track) return;
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      if (atEnd) {
+        track.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        scrollByDir(1);
+      }
+    }, 4000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoplay, reducedMotion, slides.length]);
+
+  return (
+    <div style={{ position: "relative", maxWidth: "80rem", margin: "0 auto" }}>
+      <div
+        ref={trackRef}
+        style={{
+          display: "flex",
+          gap: "16px",
+          overflowX: "auto",
+          scrollSnapType: "x mandatory",
+          scrollbarWidth: "none",
+        }}
+      >
+        {slides.map((slide) => (
+          <div
+            key={slide.id}
+            data-slide
+            style={{
+              flex: "0 0 88%",
+              maxWidth: "880px",
+              scrollSnapAlign: "center",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={slide.src}
+              alt={slide.alt}
+              loading="lazy"
+              decoding="async"
+              style={{
+                width: "100%",
+                aspectRatio: ASPECT_RATIO[aspect],
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {slides.length > 1 && (
+        <>
+          <CarouselButton dir="prev" onClick={() => scrollByDir(-1)} />
+          <CarouselButton dir="next" onClick={() => scrollByDir(1)} />
+        </>
+      )}
+
+      <p
+        style={{
+          textAlign: "center",
+          fontSize: "0.75rem",
+          color: "var(--pf-color-fg)",
+          opacity: 0.5,
+          marginTop: "0.75rem",
+        }}
+      >
+        Swipe or use the arrows to browse
+      </p>
+    </div>
+  );
+}
+
+function CarouselButton({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) {
+  const isPrev = dir === "prev";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={isPrev ? "Previous image" : "Next image"}
+      style={{
+        position: "absolute",
+        top: "50%",
+        [isPrev ? "left" : "right"]: "0.5rem",
+        transform: "translateY(-50%)",
+        width: "44px",
+        height: "44px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "var(--pf-color-bg)",
+        color: "var(--pf-color-fg)",
+        border: "1px solid var(--pf-color-fg)",
+        borderRadius: "var(--pf-radius)",
+        cursor: "pointer",
+        opacity: 0.85,
+        fontSize: "1.25rem",
+        lineHeight: 1,
+      }}
+    >
+      <span aria-hidden="true">{isPrev ? "‹" : "›"}</span>
+    </button>
+  );
+}
