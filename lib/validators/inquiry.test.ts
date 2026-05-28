@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   inquirySubmissionSchema,
   inquirySessionsToBookingSessions,
-  type InquirySubmissionInput,
 } from "./inquiry";
 import { bookingSessionSchema } from "./booking";
 
@@ -21,7 +20,7 @@ function isoOffsetDays(days: number): string {
 
 const FUTURE = isoOffsetDays(30);
 
-function validPayload(overrides: Partial<InquirySubmissionInput> = {}): Record<string, unknown> {
+function validPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     name: "Ada Lovelace",
     email: "ADA@example.com",
@@ -53,7 +52,7 @@ describe("inquirySubmissionSchema", () => {
         sessions: [
           { startDate: FUTURE, startTime: "09:00", endTime: "12:00" },
           { startDate: isoOffsetDays(31), startTime: "14:00", endTime: "18:00" },
-        ] as InquirySubmissionInput["sessions"],
+        ],
       })
     );
     expect(result.success).toBe(true);
@@ -80,7 +79,7 @@ describe("inquirySubmissionSchema", () => {
       validPayload({
         sessions: [
           { startDate: isoOffsetDays(-2), startTime: "09:00", endTime: "17:00" },
-        ] as InquirySubmissionInput["sessions"],
+        ],
       })
     );
     expect(result.success).toBe(false);
@@ -91,7 +90,7 @@ describe("inquirySubmissionSchema", () => {
       validPayload({
         sessions: [
           { startDate: isoOffsetDays(365 * 6), startTime: "09:00", endTime: "17:00" },
-        ] as InquirySubmissionInput["sessions"],
+        ],
       })
     );
     expect(result.success).toBe(false);
@@ -102,7 +101,7 @@ describe("inquirySubmissionSchema", () => {
       validPayload({
         sessions: [
           { startDate: FUTURE, startTime: "17:00", endTime: "09:00" },
-        ] as InquirySubmissionInput["sessions"],
+        ],
       })
     );
     expect(result.success).toBe(false);
@@ -116,13 +115,13 @@ describe("inquirySubmissionSchema", () => {
 
   it("rejects a filled honeypot", () => {
     const result = inquirySubmissionSchema.safeParse(
-      validPayload({ company_name: "Acme Corp" } as Partial<InquirySubmissionInput>)
+      validPayload({ company_name: "Acme Corp" })
     );
     expect(result.success).toBe(false);
   });
 
   it("treats empty guestCount as undefined (not 0)", () => {
-    const result = inquirySubmissionSchema.safeParse(validPayload({ guestCount: "" } as never));
+    const result = inquirySubmissionSchema.safeParse(validPayload({ guestCount: "" }));
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.guestCount).toBeUndefined();
   });
