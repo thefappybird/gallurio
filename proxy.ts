@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
 
@@ -21,6 +22,18 @@ const isPublicBase = createRouteMatcher([
   "/w/(.*)",
 ]);
 
+// Owner-only app surfaces. Non-owner members get bounced to /bookings, except
+// for /settings/account which is Clerk's own user profile area.
+const MEMBER_BLOCKED_PREFIXES = [
+  "/dashboard",
+  "/clients",
+  "/inquiries",
+  "/gallery",
+  "/settings",
+];
+
+const MEMBER_ALLOWED_SETTINGS = ["/settings/account"];
+
 function isPublicRoute(req: NextRequest): boolean {
   const original = req.nextUrl.pathname;
   if (isPublicBase(req)) return true;
@@ -29,6 +42,28 @@ function isPublicRoute(req: NextRequest): boolean {
   const url = req.nextUrl.clone();
   url.pathname = stripped;
   return isPublicBase({ nextUrl: url } as NextRequest);
+}
+
+function stripLocale(pathname: string): string {
+  return pathname.replace(LOCALE_PREFIX_RE, "") || "/";
+}
+
+function isMemberBlocked(pathname: string): boolean {
+  const stripped = stripLocale(pathname);
+  if (MEMBER_ALLOWED_SETTINGS.some((p) => stripped === p || stripped.startsWith(p + "/"))) {
+    return false;
+  }
+  return MEMBER_BLOCKED_PREFIXES.some(
+    (prefix) => stripped === prefix || stripped.startsWith(prefix + "/"),
+  );
+}
+
+function redirectToBookings(req: NextRequest): NextResponse {
+  const url = req.nextUrl.clone();
+  const localeMatch = req.nextUrl.pathname.match(LOCALE_PREFIX_RE);
+  url.pathname = `${localeMatch ? localeMatch[0] : ""}/bookings`;
+  url.search = "";
+  return NextResponse.redirect(url);
 }
 
 export default clerkMiddleware(async (auth, req) => {
@@ -43,6 +78,21 @@ export default clerkMiddleware(async (auth, req) => {
 
   if (!isPublicRoute(req)) {
     await auth.protect();
+
+    // Non-owner members can only see /bookings + their Clerk profile area.
+    // The DB-aware ownerContext() still runs in server actions; this is a
+    // cheap UX gate to keep members out of UI they shouldn't see.
+    const session = await auth();
+    const orgRole = session.sessionClaims?.org_role ?? session.orgRole;
+    if (
+      session.userId &&
+      session.orgId &&
+      orgRole &&
+      orgRole !== "org:admin" &&
+      isMemberBlocked(req.nextUrl.pathname)
+    ) {
+      return redirectToBookings(req);
+    }
   }
 
   return intlMiddleware(req);

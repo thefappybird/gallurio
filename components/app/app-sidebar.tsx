@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 
-const NAV = [
+const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
@@ -37,14 +37,21 @@ const NAV = [
   { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
 ];
 
+const MEMBER_NAV = [
+  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
+];
+
 type AppSidebarProps = {
+  role: "owner" | "staff";
   workspaceName: string;
   workspaceLogoUrl?: string | null;
 };
 
-export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps) {
+export function AppSidebar({ role, workspaceName, workspaceLogoUrl }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const isOwner = role === "owner";
+  const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
 
@@ -76,7 +83,7 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV.map(({ href, labelKey, icon: Icon }) => {
+              {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);
                 return (
                   <SidebarMenuItem key={href}>
@@ -103,16 +110,18 @@ export function AppSidebar({ workspaceName, workspaceLogoUrl }: AppSidebarProps)
           <SidebarMenuItem>
             <ThemeToggle />
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              render={<Link href="/settings" />}
-              tooltip={t("settings")}
-              className="group-data-[collapsible=icon]:mx-auto"
-            >
-              <SettingsIcon className="size-5! shrink-0" />
-              <span>{t("settings")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isOwner && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/settings" />}
+                tooltip={t("settings")}
+                className="group-data-[collapsible=icon]:mx-auto"
+              >
+                <SettingsIcon className="size-5! shrink-0" />
+                <span>{t("settings")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <div className="grid size-7 shrink-0 place-items-center">

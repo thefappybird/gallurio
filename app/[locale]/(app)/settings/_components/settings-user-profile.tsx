@@ -9,7 +9,14 @@ import { buildUserProfileAppearance } from "@/lib/auth/userProfileAppearance";
 type Role = "owner" | "staff";
 
 export type SettingsPage = {
-  slug: "customize" | "workspace" | "public-page" | "danger" | "switch-workspace";
+  slug:
+    | "customize"
+    | "workspace"
+    | "public-page"
+    | "danger"
+    | "switch-workspace"
+    | "teams"
+    | "dev-plan";
   label: string;
   icon: ReactNode;
   body: ReactNode;
@@ -31,7 +38,9 @@ export function SettingsUserProfile({
   const customize = pages.find((p) => p.slug === "customize");
   const switchWorkspace = pages.find((p) => p.slug === "switch-workspace");
   const workspace = pages.find((p) => p.slug === "workspace");
+  const teams = pages.find((p) => p.slug === "teams");
   const publicPage = pages.find((p) => p.slug === "public-page");
+  const devPlan = pages.find((p) => p.slug === "dev-plan");
   const danger = pages.find((p) => p.slug === "danger");
 
   return (
@@ -63,6 +72,15 @@ export function SettingsUserProfile({
           {workspace.body}
         </UserProfile.Page>
       )}
+      {teams && (role === "owner" || !teams.ownerOnly) && (
+        <UserProfile.Page
+          label={teams.label}
+          url={teams.slug}
+          labelIcon={teams.icon}
+        >
+          {teams.body}
+        </UserProfile.Page>
+      )}
       {publicPage && (role === "owner" || !publicPage.ownerOnly) && (
         <UserProfile.Page
           label={publicPage.label}
@@ -70,6 +88,15 @@ export function SettingsUserProfile({
           labelIcon={publicPage.icon}
         >
           {publicPage.body}
+        </UserProfile.Page>
+      )}
+      {devPlan && (role === "owner" || !devPlan.ownerOnly) && (
+        <UserProfile.Page
+          label={devPlan.label}
+          url={devPlan.slug}
+          labelIcon={devPlan.icon}
+        >
+          {devPlan.body}
         </UserProfile.Page>
       )}
       {danger && (role === "owner" || !danger.ownerOnly) && (

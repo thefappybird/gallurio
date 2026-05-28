@@ -1,8 +1,7 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { connectDB } from "@/lib/db/mongoose";
 import {
   Workspace,
   User,
@@ -24,24 +23,7 @@ import {
 } from "@/lib/validators/workspace";
 import { cancelRecurringBilling } from "@/lib/hitpay/client";
 import { destroyAsset } from "@/lib/storage/cloudinary";
-
-type ActionResult = { error?: string; ok?: boolean };
-
-async function ownerContext() {
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" as const };
-  if (!session.orgId) return { error: "No active workspace" as const };
-
-  await connectDB();
-  const workspace = await Workspace.findOne({ clerkOrgId: session.orgId });
-  if (!workspace) return { error: "Workspace not found" as const };
-
-  const isOwner =
-    session.orgRole === "org:admin" || workspace.ownerUserId === session.userId;
-  if (!isOwner) return { error: "Only the workspace owner can change this" as const };
-
-  return { userId: session.userId, clerkOrgId: session.orgId, workspace };
-}
+import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 
 export async function updateWorkspaceBusinessAction(
   input: UpdateWorkspaceBusinessInput

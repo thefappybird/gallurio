@@ -434,9 +434,23 @@
         "security": "Seguridad",
         "customize": "I-customize",
         "workspace": "Workspace",
+        "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
         "danger": "Danger zone",
+        "devPlan": "Dev · plan",
         "switchWorkspace": "Palitan ang Workspace"
+      },
+      "devPlan": {
+        "title": "Dev plan switcher",
+        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
+        "currentLabel": "Current plan",
+        "teamsSuffix": "teams",
+        "perTeamSuffix": "members/team",
+        "active": "Active",
+        "switch": "Switch",
+        "toasts": {
+          "switched": "Plan switched to {plan}."
+        }
       },
       "workspace": {
         "businessSection": "Mga detalye ng negosyo",
@@ -459,6 +473,141 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
+        }
+      },
+      "teams": {
+        "title": "Mga Koponan",
+        "description": "I-grupo ang mga katrabaho sa mga koponan. Ang bawat koponan ay may sariling kalendaryo. Ang mga miyembro ay makakakita lamang ng mga booking mula sa mga koponan na kanilang kinabibilangan.",
+        "listEmpty": "Wala ka pang anumang koponan.",
+        "createButton": "Lumikha ng koponan",
+        "createDialog": {
+          "title": "Lumikha ng koponan",
+          "description": "Bigyan ang koponan ng pangalan at pumili ng kulay para sa mga chip ng kalendaryo nito.",
+          "nameLabel": "Pangalan ng koponan",
+          "namePlaceholder": "hal. Wedding crew",
+          "colorLabel": "Kulay",
+          "submit": "Lumikha ng koponan",
+          "cancel": "Kanselahin",
+          "creating": "Nililikha…"
+        },
+        "renameDialog": {
+          "title": "Palitan ang pangalan ng koponan",
+          "submit": "I-save",
+          "saving": "Nini-save…",
+          "cancel": "Kanselahin"
+        },
+        "deleteDialog": {
+          "title": "Burahin ang koponan?",
+          "description": "Ang mga miyembro ng koponan na ito ay mawawalan ng access. Ang mga booking na nakakonekta sa koponan ay kailangang muling italaga. Hindi ito maaaring ibalik.",
+          "confirm": "Burahin ang koponan",
+          "deleting": "Binubura…",
+          "cancel": "Kanselahin"
+        },
+        "team": {
+          "memberCount": "{count, plural, =0 {Walang miyembro pa} =1 {1 miyembro} other {# mga miyembro}}",
+          "defaultBadge": "Default",
+          "rename": "Palitan ang pangalan",
+          "changeColor": "Baguhin ang kulay",
+          "delete": "Burahin"
+        },
+        "upsell": {
+          "atCapTitle": "Naabot mo na ang iyong limitasyon sa koponan",
+          "atCapBody": "Ang iyong plano sa {plan} ay nagpapahintulot ng {max} {max, plural, =1 {koponan} other {mga koponan}}. Mag-upgrade para magdagdag ng higit pa.",
+          "cta": "Tingnan ang mga plano",
+          "proAtCapBody": "Ang Pro ay limitado sa {max} na koponan. Makipag-ugnayan sa suporta kung kailangan mo ng higit pa."
+        },
+        "errors": {
+          "nameRequired": "Kinakailangan ang pangalan ng koponan.",
+          "nameTooLong": "Ang pangalan ng koponan ay dapat na 40 character o mas kaunti.",
+          "duplicateName": "May koponan na na may ganitong pangalan sa workspace na ito.",
+          "cannotDeleteDefault": "Hindi mabubura ang default na koponan.",
+          "teamNotFound": "Hindi nahanap ang koponan.",
+          "generic": "May nangyaring mali. Pakisubukan muli."
+        },
+        "toasts": {
+          "created": "Nalikha ang koponan.",
+          "renamed": "Napalitan ang pangalan ng koponan.",
+          "colorChanged": "Na-update ang kulay.",
+          "deleted": "Nabura ang koponan."
+        },
+        "teamsHeading": "Mga Koponan",
+        "invite": {
+          "button": "Mag-imbita ng miyembro",
+          "dialog": {
+            "title": "Mag-imbita ng katrabaho",
+            "description": "Makakatanggap sila ng email mula sa Clerk. Kapag tinanggap na, lalabas sila sa iyong listahan ng miyembro na naitalaga sa mga koponang pipiliin mo.",
+            "emailLabel": "Email address",
+            "emailPlaceholder": "katrabaho@halimbawa.com",
+            "teamsLabel": "Idagdag sa mga koponang ito",
+            "leadLabel": "Lead",
+            "teamFull": "Puno na",
+            "submit": "Magpadala ng imbitasyon",
+            "sending": "Nagpapadala…"
+          },
+          "errors": {
+            "emailRequired": "Maglagay ng wastong email address.",
+            "pickAtLeastOneTeam": "Pumili ng kahit isang koponan para idagdag sila.",
+            "teamFull": "Puno na ang mga koponang ito at hindi makakatanggap ng bagong miyembro: {teams}.",
+            "teamNotFound": "Hindi nahanap ang isa sa mga napiling koponan.",
+            "alreadyInvitedOrMember": "Mayroon na itong imbitasyon ang email na iyon o miyembro na ng workspace.",
+            "noTeamsExist": "Gumawa muna ng koponan bago mag-imbita ng mga miyembro."
+          },
+          "toasts": {
+            "sent": "Naipadala ang imbitasyon.",
+            "revoked": "Binawi ang imbitasyon."
+          },
+          "revokeDialog": {
+            "title": "Bawiin ang imbitasyon?",
+            "description": "Makakansela ang imbitasyon para sa {email} at palalabasin ang mga reserbadong puwesto sa koponan.",
+            "confirm": "Bawiin ang imbitasyon"
+          }
+        },
+        "members": {
+          "heading": "Mga Miyembro",
+          "empty": "Wala pang katrabaho. Mag-imbita ng isa sa itaas para makapagsimula.",
+          "ownerBadge": "May-ari",
+          "leadBadge": "Lead",
+          "pendingBadge": "Nakabinbin",
+          "manageTeams": "Pamahalaan ang mga koponan",
+          "removeFromWorkspace": "Alisin sa workspace",
+          "revokeInvite": "Bawiin ang imbitasyon",
+          "rowActionsLabel": "Mga aksyon para kay {name}",
+          "removeDialog": {
+            "title": "Alisin ang miyembro?",
+            "description": "Mawawalan agad ng access si {name} sa workspace na ito. Nananatili ang kanilang mga booking; palalabasin ang mga puwesto sa koponan. Hindi ito maaaring ibalik.",
+            "confirm": "Alisin ang miyembro"
+          },
+          "errors": {
+            "cannotRemoveOwner": "Hindi maaaring alisin ang may-ari ng workspace."
+          },
+          "toasts": {
+            "removed": "Naalis ang miyembro."
+          }
+        },
+        "assignment": {
+          "dialog": {
+            "title": "Pamahalaan ang mga takdang koponan",
+            "description": "Idagdag o alisin si {name} sa mga koponan. I-toggle ang lead flag para bigyan sila ng karapatang mag-edit sa loob ng koponan.",
+            "add": "Idagdag",
+            "remove": "Alisin",
+            "done": "Tapos na"
+          },
+          "errors": {
+            "alreadyOnTeam": "Miyembro na ng koponang iyon ang taong iyon."
+          },
+          "toasts": {
+            "added": "Naidagdag sa koponan.",
+            "removed": "Naalis sa koponan.",
+            "promoted": "Na-promote bilang lead.",
+            "demoted": "Nababa sa miyembro."
+          }
+        },
+        "downgradeBlock": {
+          "title": "Naharang ang downgrade",
+          "description": "Nasa {currentPlan} ka na plano na may mas maraming koponan kaysa sa pinahihintulutan ng {targetPlan} na plano ({maxTeams} ang maximum). Burahin ang {excess} na koponan bago magpalit ng plano.",
+          "teamsHeading": "Mga kasalukuyang koponan",
+          "dismiss": "Naiintindihan ko",
+          "manageTeams": "Pamahalaan ang mga koponan"
         }
       },
       "publicPage": {

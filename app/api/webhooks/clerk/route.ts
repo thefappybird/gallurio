@@ -7,7 +7,15 @@ import type {
   DeletedObjectJSON,
 } from "@clerk/nextjs/server";
 import { connectDB } from "@/lib/db/mongoose";
-import { User, Workspace } from "@/lib/db/models";
+import {
+  User,
+  Workspace,
+  Team,
+  TeamMembership,
+  PendingTeamAssignment,
+} from "@/lib/db/models";
+import { releaseTeamSeat } from "@/lib/auth/assertCanAddTeamMember";
+import { claimPendingInviteForAccept } from "@/lib/db/jobs/release-pending-invite-seats";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -133,18 +141,82 @@ export async function POST(req: Request) {
           .lean();
         if (!workspace) break;
         const role = m.role === "org:admin" ? "owner" : "staff";
+        const clerkUserId = m.public_user_data.user_id;
         await User.findOneAndUpdate(
-          { clerkUserId: m.public_user_data.user_id },
-          {
-            $pull: { memberships: { workspaceId: workspace._id } },
-          }
+          { clerkUserId },
+          { $pull: { memberships: { workspaceId: workspace._id } } }
         );
         await User.findOneAndUpdate(
-          { clerkUserId: m.public_user_data.user_id },
-          {
-            $push: { memberships: { workspaceId: workspace._id, role } },
-          }
+          { clerkUserId },
+          { $push: { memberships: { workspaceId: workspace._id, role } } }
         );
+
+        // Drain pending team assignments only on first membership creation.
+        // `organizationMembership.updated` can re-fire (e.g. role change) but
+        // the pending row will have already been deleted by then.
+        //
+        // Concurrency: we atomically claim the row for the "accept" outcome
+        // before reading its teamIds. If a concurrent release path already
+        // claimed it (owner revoked between sending the invite and the user
+        // clicking accept), claimPendingInviteForAccept returns null and we
+        // skip the drain — the seats are being refunded, no TeamMembership
+        // rows should be created for this invite.
+        const memberEmail = (
+          m.public_user_data.identifier ?? ""
+        ).toLowerCase();
+        if (memberEmail && role === "staff") {
+          const pending = await claimPendingInviteForAccept(
+            workspace._id,
+            memberEmail,
+          );
+          if (pending) {
+            // Need lead flags — claimPendingInviteForAccept already returned
+            // them as part of the claim, kept on the doc for the duration of
+            // the lease.
+            const leadSet = new Set(
+              pending.leadOnTeamIds.map((id) => String(id)),
+            );
+            for (const teamId of pending.teamIds) {
+              const team = await Team.findOne({
+                _id: teamId,
+                workspaceId: workspace._id,
+              })
+                .select({ _id: 1 })
+                .lean();
+              if (!team) {
+                // Team deleted between invite and accept — release the seat
+                // we reserved at invite time. (No-op if already 0.)
+                await releaseTeamSeat(teamId, workspace._id);
+                console.warn(
+                  `[clerk-webhook] dropping pending assignment for deleted team`,
+                  { workspaceId: String(workspace._id), teamId: String(teamId), email: memberEmail },
+                );
+                continue;
+              }
+              try {
+                await TeamMembership.create({
+                  workspaceId: workspace._id,
+                  teamId,
+                  clerkUserId,
+                  role: leadSet.has(String(teamId)) ? "lead" : "member",
+                });
+              } catch (err) {
+                if (
+                  typeof err === "object" &&
+                  err !== null &&
+                  "code" in err &&
+                  (err as { code: unknown }).code === 11000
+                ) {
+                  // Idempotent: webhook retry. Seat was reserved exactly once
+                  // at invite time, so do not release.
+                  continue;
+                }
+                throw err;
+              }
+            }
+            await PendingTeamAssignment.deleteOne({ _id: pending._id });
+          }
+        }
         break;
       }
       case "organizationMembership.deleted": {
@@ -153,8 +225,26 @@ export async function POST(req: Request) {
           .select({ _id: 1 })
           .lean();
         if (!workspace) break;
+        const clerkUserId = m.public_user_data.user_id;
+
+        const memberships = await TeamMembership.find({
+          workspaceId: workspace._id,
+          clerkUserId,
+        })
+          .select({ teamId: 1 })
+          .lean();
+
+        await TeamMembership.deleteMany({
+          workspaceId: workspace._id,
+          clerkUserId,
+        });
+
+        for (const tm of memberships) {
+          await releaseTeamSeat(tm.teamId, workspace._id);
+        }
+
         await User.findOneAndUpdate(
-          { clerkUserId: m.public_user_data.user_id },
+          { clerkUserId },
           { $pull: { memberships: { workspaceId: workspace._id } } }
         );
         break;

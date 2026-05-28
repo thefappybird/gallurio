@@ -9,7 +9,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { workspace } = await requireOrg();
+  const { role, workspace } = await requireOrg();
 
   const cookieStore = await cookies();
   const sidebarState = cookieStore.get("sidebar_state");
@@ -18,6 +18,7 @@ export default async function AppLayout({
   return (
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar
+        role={role}
         workspaceName={workspace.name}
         workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
       />

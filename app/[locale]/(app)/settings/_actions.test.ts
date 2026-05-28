@@ -10,7 +10,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Workspace, Booking, Client } from "@/lib/db/models";
+import { Workspace, Booking, Client, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
 
@@ -115,6 +115,16 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mockAuthAsOwnerA();
   (clerkClient as ReturnType<typeof vi.fn>).mockResolvedValue(makeClerkClientStub());
+  // Owner must have finished onboarding for ownerContext() to admit them; the
+  // settings UI is post-onboarding. Tests that exercise the pre-onboarding
+  // path should overwrite this user inside the test.
+  await User.create({
+    clerkUserId: OWNER_USER_ID,
+    email: "owner@test.com",
+    onboardingStep: "done",
+    onboardingCompletedAt: new Date(),
+    memberships: [],
+  });
 });
 
 // ---- updateWorkspaceBusinessAction ------------------------------------------

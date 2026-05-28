@@ -1,4 +1,8 @@
 import type { PlanTier } from "@/lib/db/models";
+import {
+  type PlanEntitlements,
+  PLAN_ENTITLEMENTS,
+} from "@/lib/plans/entitlements";
 
 export type PlanCatalogEntry = {
   id: PlanTier;
@@ -9,6 +13,7 @@ export type PlanCatalogEntry = {
   taglineKey: string;
   featureKeys: string[];
   highlight?: boolean;
+  entitlements: PlanEntitlements;
 };
 
 // Pricing is in PHP. HitPay's recurring API accepts the major-unit amount as a
@@ -28,6 +33,7 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
       "plans.free.features.storage",
       "plans.free.features.publicPage",
     ],
+    entitlements: PLAN_ENTITLEMENTS.free,
   },
   {
     id: "starter",
@@ -42,6 +48,7 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
       "plans.starter.features.brandedForm",
       "plans.starter.features.acceptPayments",
     ],
+    entitlements: PLAN_ENTITLEMENTS.starter,
   },
   {
     id: "pro",
@@ -58,6 +65,7 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
       "plans.pro.features.removeBranding",
     ],
     highlight: true,
+    entitlements: PLAN_ENTITLEMENTS.pro,
   },
 ];
 
