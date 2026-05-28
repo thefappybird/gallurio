@@ -73,8 +73,6 @@ export function BookingsTable({
   showPast = false,
   workspaceTimezone = "UTC",
 }: Props) {
-  // TEMP-DEBUG
-  console.count("render: BookingsTable");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -223,14 +221,18 @@ export function BookingsTable({
     [locale, t, tActions, openDetail, workspaceTimezone]
   );
 
+  const coreRowModel = useMemo(() => getCoreRowModel(), []);
+  const sortedRowModel = useMemo(() => getSortedRowModel(), []);
+  const tableState = useMemo(() => ({ sorting }), [sorting]);
+
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable returns non-memoizable functions; React Compiler skips this component intentionally
   const table = useReactTable({
     data: visibleRows,
     columns,
-    state: { sorting },
+    state: tableState,
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+    getCoreRowModel: coreRowModel,
+    getSortedRowModel: sortedRowModel,
   });
 
   if (visibleRows.length === 0) {

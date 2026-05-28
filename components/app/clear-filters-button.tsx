@@ -13,8 +13,6 @@ type Props = {
 };
 
 export function ClearFiltersButton({ paramKeys, defaultValues = {} }: Props) {
-  // TEMP-DEBUG
-  console.count("render: ClearFiltersButton");
   const t = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();

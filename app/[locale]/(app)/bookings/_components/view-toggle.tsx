@@ -16,8 +16,6 @@ type Props = {
 };
 
 export function ViewToggle({ view }: Props) {
-  // TEMP-DEBUG
-  console.count("render: ViewToggle");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -27,8 +25,6 @@ export function ViewToggle({ view }: Props) {
   // saved preference, redirect to that view so the user lands where they left
   // off. The server-side default (table) renders first, then this snaps over.
   useEffect(() => {
-    // TEMP-DEBUG
-    console.count("effect: ViewToggle");
     const urlHasView = searchParams.get("view") !== null;
     if (urlHasView) return;
     try {

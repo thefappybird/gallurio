@@ -33,8 +33,6 @@ export function BookingsPageClient({
   showPast = false,
   workspaceTimezone,
 }: Props) {
-  // TEMP-DEBUG
-  console.count("render: BookingsPageClient");
   const t = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
