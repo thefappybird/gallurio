@@ -315,6 +315,9 @@ Full phase-by-phase implementation plan lives in [`docs/portfolio-maker/`](docs/
 - **Run `pnpm test` before reporting any task complete.** If tests fail, fix the source — never weaken the test to make it pass.
 - **Mocking rule**: mock external services (HitPay, Cloudinary, openexchangerates). **Never mock Mongoose** — use an in-memory MongoDB (`mongodb-memory-server`) so query semantics stay real. Mocked DB tests have repeatedly missed real bugs across this team's history.
 
+## Pull Request Summary
+
+- Always include a testing check mark list so testing is easily done. Be as thorough as possible, walk the tester through the whole testing process and fix verification in a streamlined way.
 
 ## Deferred tasks
 

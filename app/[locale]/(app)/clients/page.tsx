@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
-import { PAGE_SIZE_OPTIONS } from "@/components/app/page-size-select";
+import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 
 export async function generateMetadata({
   params,

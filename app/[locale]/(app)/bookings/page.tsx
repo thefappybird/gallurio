@@ -12,7 +12,7 @@ import {
   type BookingRow,
 } from "./_components/bookings-table";
 import { BookingsPageClient } from "./_components/bookings-page-client";
-import { PAGE_SIZE_OPTIONS } from "@/components/app/page-size-select";
+import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";

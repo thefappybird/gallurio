@@ -12,10 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
-// Shared allowed page sizes — also used by server pages to clamp the `limit`
-// search param so the dropdown and the server stay in sync.
-export const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
+import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 
 type Props = {
   value: number;
