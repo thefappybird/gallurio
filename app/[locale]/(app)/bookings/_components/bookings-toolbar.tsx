@@ -31,6 +31,8 @@ export function BookingsToolbar({
    *  button always fires even when ?add=1 is already in the URL. */
   onAddClick?: () => void;
 }) {
+  // TEMP-DEBUG
+  console.count("render: BookingsToolbar");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -43,7 +45,8 @@ export function BookingsToolbar({
 
   useEffect(() => {
     const next = searchParams.get("q") ?? "";
-    Promise.resolve().then(() => setQ(next));
+    // TEMP-DEBUG
+    Promise.resolve().then(() => { console.count("effect[searchParams->setQ]: BookingsToolbar"); setQ(next); });
   }, [searchParams]);
 
   const status = searchParams.get("status") ?? ALL;
@@ -65,6 +68,8 @@ export function BookingsToolbar({
 
   const pushParams = useCallback(
     (updates: Record<string, string | null>) => {
+      // TEMP-DEBUG
+      console.count("pushParams: BookingsToolbar");
       const params = new URLSearchParams(searchParams.toString());
       for (const [k, v] of Object.entries(updates)) {
         if (v === null || v === "") params.delete(k);
@@ -80,9 +85,11 @@ export function BookingsToolbar({
 
   // debounce the search input
   useEffect(() => {
+    // TEMP-DEBUG
+    console.count("effect[debounce]: BookingsToolbar");
     const current = searchParams.get("q") ?? "";
     if (q === current) return;
-    const id = setTimeout(() => pushParams({ q: q || null }), 250);
+    const id = setTimeout(() => pushParams({ q: q || null }), 500);
     return () => clearTimeout(id);
   }, [q, searchParams, pushParams]);
 

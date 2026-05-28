@@ -35,6 +35,8 @@ export function TableBookingManager({
   workspaceTimezone,
   clients,
 }: Props) {
+  // TEMP-DEBUG
+  console.count("render: TableBookingManager");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -50,6 +52,8 @@ export function TableBookingManager({
   // The lazy initializer handles the first render; this effect catches subsequent
   // URL changes so the modal closes when ?add=1 is removed from the URL.
   useEffect(() => {
+    // TEMP-DEBUG
+    console.count("effect[searchParams->setAddOpen]: TableBookingManager");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: mirrors URL ?add=1 into modal open state (external → React sync for browser back/forward support)
     setAddOpen(searchParams.get("add") === "1");
   }, [searchParams]);

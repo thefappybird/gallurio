@@ -73,6 +73,8 @@ export function BookingsTable({
   showPast = false,
   workspaceTimezone = "UTC",
 }: Props) {
+  // TEMP-DEBUG
+  console.count("render: BookingsTable");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -83,9 +85,16 @@ export function BookingsTable({
   ]);
 
   // Client-side filter: hide fully-past bookings unless showPast is enabled.
-  const visibleRows = showPast
-    ? rows
-    : rows.filter((r) => !computeIsPast(r.lastSessionEnd, workspaceTimezone));
+  // Wrapped in useMemo so the array reference is stable across renders —
+  // useReactTable compares `data` by reference and a new array every render
+  // triggers an internal state update that causes an infinite re-render loop.
+  const visibleRows = useMemo(
+    () =>
+      showPast
+        ? rows
+        : rows.filter((r) => !computeIsPast(r.lastSessionEnd, workspaceTimezone)),
+    [rows, showPast, workspaceTimezone]
+  );
 
   const openDetail = useCallback(
     (id: string) => {

@@ -27,6 +27,8 @@ export function PageSizeSelect({
   options = PAGE_SIZE_OPTIONS,
   className,
 }: Props) {
+  // TEMP-DEBUG
+  console.count("render: PageSizeSelect");
   const t = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
