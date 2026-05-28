@@ -911,6 +911,13 @@
       "notFoundTitle": "Hindi natagpuan ang portfolio",
       "notFoundBody": "Wala ang portfolio na ito o hindi pa ito na-publish.",
       "startingFrom": "Nagsisimula sa {price}"
+    },
+    "nav": {
+      "home": "Home",
+      "gallery": "Gallery",
+      "contact": "Makipag-ugnayan",
+      "openMenu": "Buksan ang menu",
+      "closeMenu": "Isara ang menu"
     }
   }
 }

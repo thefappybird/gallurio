@@ -911,6 +911,13 @@
       "notFoundTitle": "Portfolio not found",
       "notFoundBody": "This portfolio doesn't exist or hasn't been published yet.",
       "startingFrom": "Starting from {price}"
+    },
+    "nav": {
+      "home": "Home",
+      "gallery": "Gallery",
+      "contact": "Contact",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     }
   }
 }

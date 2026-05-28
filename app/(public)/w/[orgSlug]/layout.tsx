@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { localeForCountry } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
+import { PortfolioHeader } from "./_components/PortfolioHeader";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -35,6 +37,7 @@ export default async function PublicPortfolioLayout({
   const { cssVars, className } = resolveBrandKit(brandKit);
 
   const locale = localeForCountry(workspace.country);
+  const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
 
   return (
     <div
@@ -42,6 +45,17 @@ export default async function PublicPortfolioLayout({
       style={cssVars as React.CSSProperties}
       className={className}
     >
+      <PortfolioHeader
+        slug={workspace.slug}
+        labels={{
+          brand: workspace.name,
+          home: tNav("home"),
+          gallery: tNav("gallery"),
+          contact: tNav("contact"),
+          openMenu: tNav("openMenu"),
+          closeMenu: tNav("closeMenu"),
+        }}
+      />
       {children}
     </div>
   );

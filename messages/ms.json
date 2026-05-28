@@ -911,6 +911,13 @@
       "notFoundTitle": "Portfolio tidak dijumpai",
       "notFoundBody": "Portfolio ini tidak wujud atau belum diterbitkan.",
       "startingFrom": "Bermula dari {price}"
+    },
+    "nav": {
+      "home": "Laman Utama",
+      "gallery": "Galeri",
+      "contact": "Hubungi",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu"
     }
   }
 }
