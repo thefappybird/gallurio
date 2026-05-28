@@ -918,6 +918,50 @@
       "contact": "Kontak",
       "openMenu": "Buka menu",
       "closeMenu": "Tutup menu"
+    },
+    "inquiryForm": {
+      "title": "Hubungi kami",
+      "description": "Ceritakan tentang acara Anda dan kami akan segera menghubungi Anda.",
+      "close": "Tutup",
+      "confirmTitle": "Terima kasih — kami akan menghubungi Anda!",
+      "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
+      "confirmClose": "Selesai",
+      "tabClient": "Detail Anda",
+      "tabBooking": "Detail acara",
+      "name": "Nama",
+      "email": "Email",
+      "phone": "Telepon (opsional)",
+      "preferredContact": "Metode kontak pilihan",
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepon",
+        "either": "Salah satu"
+      },
+      "sessionsLabel": "Tanggal acara",
+      "sessionLabel": "Hari {n}",
+      "startDate": "Tanggal",
+      "startTime": "Waktu mulai",
+      "endTime": "Waktu selesai",
+      "addSession": "Tambah hari",
+      "removeSession": "Hapus",
+      "shiftHint": "Setiap hari adalah satu sesi — atur waktu mulai dan selesainya. Tambahkan hari untuk acara beberapa hari.",
+      "eventType": "Jenis acara",
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Hari jadi",
+        "other": "Lainnya"
+      },
+      "guestCount": "Tamu (opsional)",
+      "location": "Lokasi (opsional)",
+      "message": "Ceritakan lebih lanjut",
+      "messagePlaceholder": "Bagikan detail acara Anda…",
+      "submit": "Kirim pertanyaan",
+      "submitting": "Mengirim…",
+      "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
+      "requiredHint": "Wajib"
     }
   }
 }

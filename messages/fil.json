@@ -918,6 +918,50 @@
       "contact": "Makipag-ugnayan",
       "openMenu": "Buksan ang menu",
       "closeMenu": "Isara ang menu"
+    },
+    "inquiryForm": {
+      "title": "Makipag-ugnayan",
+      "description": "Sabihin sa amin ang tungkol sa iyong kaganapan at makikipag-ugnayan kami sa lalong madaling panahon.",
+      "close": "Isara",
+      "confirmTitle": "Salamat — makikipag-ugnayan kami!",
+      "confirmBody": "Naipadala na ang iyong katanungan. Makikipag-ugnayan kami sa pamamagitan ng iyong piniling paraan sa lalong madaling panahon.",
+      "confirmClose": "Tapos",
+      "tabClient": "Iyong detalye",
+      "tabBooking": "Detalye ng kaganapan",
+      "name": "Pangalan",
+      "email": "Email",
+      "phone": "Telepono (opsyonal)",
+      "preferredContact": "Piniling paraan ng pakikipag-ugnayan",
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepono",
+        "either": "Alinman"
+      },
+      "sessionsLabel": "Mga petsa ng kaganapan",
+      "sessionLabel": "Araw {n}",
+      "startDate": "Petsa",
+      "startTime": "Oras ng simula",
+      "endTime": "Oras ng pagtatapos",
+      "addSession": "Magdagdag ng araw",
+      "removeSession": "Alisin",
+      "shiftHint": "Ang bawat araw ay isang shift — itakda ang simula at pagtatapos nito. Magdagdag ng araw para sa maraming-araw na kaganapan.",
+      "eventType": "Uri ng kaganapan",
+      "eventTypes": {
+        "wedding": "Kasal",
+        "corporate": "Korporasyon",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anibersaryo",
+        "other": "Iba pa"
+      },
+      "guestCount": "Mga bisita (opsyonal)",
+      "location": "Lokasyon (opsyonal)",
+      "message": "Sabihin pa sa amin",
+      "messagePlaceholder": "Ibahagi ang mga detalye ng iyong kaganapan…",
+      "submit": "Ipadala ang katanungan",
+      "submitting": "Ipinapadala…",
+      "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
+      "requiredHint": "Kinakailangan"
     }
   }
 }

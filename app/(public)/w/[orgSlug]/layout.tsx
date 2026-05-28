@@ -6,6 +6,10 @@ import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { localeForCountry } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
+import { ContactModal } from "./_components/ContactModal";
+import { buildContactLabels } from "./_components/buildContactLabels";
+import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
+import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -38,6 +42,10 @@ export default async function PublicPortfolioLayout({
 
   const locale = localeForCountry(workspace.country);
   const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
+  const tContact = await getTranslations({ locale, namespace: "publicPage.inquiryForm" });
+
+  const contactLabels = buildContactLabels(tContact);
+  const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
 
   return (
     <div
@@ -57,6 +65,8 @@ export default async function PublicPortfolioLayout({
         }}
       />
       {children}
+      <ContactTriggerDelegate />
+      <ContactModal workspaceSlug={workspace.slug} contact={contactConfig} labels={contactLabels} />
     </div>
   );
 }
