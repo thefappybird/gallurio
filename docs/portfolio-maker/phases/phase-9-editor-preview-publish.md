@@ -137,6 +137,8 @@ For real fidelity preview (Phase 10's polish item), a future enhancement could m
 
 The right sidebar's bottom section embeds the `BrandKitPicker` from Phase 8. Changes propagate via `updateBrandKitAction(brandKit)` which writes to `publicPage.brandKit`. The editor canvas re-applies CSS variables immediately so users see the change in place. The Puck data itself does not contain brand kit values — they're applied at the renderer wrapper.
 
+> **Note (added during Phase 5):** the prebuilt **Contact modal** is now config-driven via `publicPage.contact = { title, description, buttonStyle, buttonColor }` (model + `portfolioContactConfigSchema` already exist). The editor must expose a small **Contact panel** (alongside the brand-kit panel) so owners can edit the contact `title`/`description` and pick the button `buttonStyle`/`buttonColor` (curated brand slots — see `CONTACT_BUTTON_COLORS`/`BRAND_KIT_BUTTON_STYLES` in `lib/page-builder/types.ts`). The **form fields stay fixed** — only this copy + button presentation is editable. Persist via an `updateContactConfigAction` mirroring `updateBrandKitAction`. The public modal (`app/(public)/w/[orgSlug]/_components/ContactModal.tsx`) already reads this config with brand-kit fallbacks.
+
 ---
 
 ## Tests
