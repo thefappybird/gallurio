@@ -193,6 +193,13 @@
         "completed": "Selesai",
         "cancelled": "Dibatalkan"
       },
+      "locationPicker": {
+        "searchPlaceholder": "Cari venue atau alamat…",
+        "searching": "Mencari…",
+        "noResults": "Tidak ada hasil. Coba pencarian lain.",
+        "dragHint": "Seret pin untuk menyesuaikan titik yang tepat.",
+        "clear": "Hapus lokasi"
+      },
       "eventTypes": {
         "wedding": "Pernikahan",
         "corporate": "Korporat",
@@ -207,7 +214,9 @@
         "hidePast": "Sembunyikan sesi yang lalu",
         "pastSessionsHidden": "{count, plural, one {# sesi lalu disembunyikan — toggle untuk tampilkan} other {# sesi lalu disembunyikan — toggle untuk tampilkan}}",
         "tabs": {
-          "details": "Detail",
+          "client": "Klien",
+          "event": "Acara",
+          "pricing": "Harga",
           "activity": "Catatan & aktivitas"
         },
         "sections": {
@@ -308,7 +317,9 @@
           "cancel": "Batal"
         },
         "showPast": "Tampilkan yang lalu",
-        "hidePast": "Sembunyikan yang lalu"
+        "hidePast": "Sembunyikan yang lalu",
+        "filterByStatus": "Filter berdasarkan status",
+        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -380,7 +391,6 @@
           "startTime": "Waktu mulai shift",
           "endAt": "Tanggal selesai shift",
           "endTime": "Waktu selesai shift",
-          "shiftHint": "Jam shift berulang setiap hari sepanjang rentang tanggal — ini adalah waktu mulai dan selesai harian, bukan satu acara 24 jam.",
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
           "allowPastDate": "Menambahkan pemesanan lama? Izinkan tanggal lampau",
           "location": "Lokasi",

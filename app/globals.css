@@ -463,6 +463,36 @@
   height: 2px;
 }
 
+/* Leaflet (location picker) — re-pair the library's light-mode-assuming chrome
+   to Gallurio tokens so the zoom controls, attribution, and any popups read
+   correctly in both themes. Tiles are raster images and stay untouched. */
+.leaflet-container {
+  background-color: var(--muted);
+  font-family: inherit;
+}
+.leaflet-bar a,
+.leaflet-bar a:hover {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-bottom-color: var(--border);
+}
+.leaflet-bar a.leaflet-disabled {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+.leaflet-control-attribution {
+  background-color: color-mix(in oklch, var(--card) 80%, transparent);
+  color: var(--muted-foreground);
+}
+.leaflet-control-attribution a {
+  color: var(--foreground);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
 /* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
 @keyframes toast-in {
   0% {

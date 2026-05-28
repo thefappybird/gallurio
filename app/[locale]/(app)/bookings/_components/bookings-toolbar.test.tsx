@@ -113,6 +113,24 @@ describe("BookingsToolbar — Show past toggle", () => {
   });
 });
 
+describe("BookingsToolbar — status dropdown visibility by view", () => {
+  it("renders the status dropdown in table view (default)", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" />, { wrapper });
+    // SelectValue shows app.bookings.toolbar.statusAll → "All statuses"
+    expect(screen.getByText(/all statuses/i)).toBeInTheDocument();
+  });
+
+  it("renders the status dropdown when view='table' explicitly", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" view="table" />, { wrapper });
+    expect(screen.getByText(/all statuses/i)).toBeInTheDocument();
+  });
+
+  it("hides the status dropdown in calendar view (legend owns filtering)", () => {
+    render(<BookingsToolbar defaultCurrency="PHP" view="calendar" />, { wrapper });
+    expect(screen.queryByText(/all statuses/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("BookingsToolbar — Week view button visibility classes (Bug 2)", () => {
   // We test the class strings that drive visibility rather than actual media
   // query evaluation — Tailwind classes are the source of truth; JSDOM does

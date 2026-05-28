@@ -43,6 +43,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { EditableField } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
@@ -79,7 +80,7 @@ type BookingDoc = {
   sessions: SessionDoc[];
   firstSessionStart: string;
   lastSessionEnd: string;
-  location: { address: string };
+  location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: string };
   notes: string;
 };
@@ -1278,24 +1279,35 @@ function BookingTabs({
     : upcomingSessions;
 
   return (
-    <Tabs defaultValue="details">
-      <TabsList>
-        <TabsTab value="details">{t("details")}</TabsTab>
-        <TabsTab value="activity">{t("activity")}</TabsTab>
+    <Tabs defaultValue="client">
+      <TabsList className="overflow-x-auto">
+        <TabsTab
+          value="client"
+          className="data-[selected]:border-brand data-[selected]:text-brand"
+        >
+          {t("client")}
+        </TabsTab>
+        <TabsTab
+          value="event"
+          className="data-[selected]:border-brand data-[selected]:text-brand"
+        >
+          {t("event")}
+        </TabsTab>
+        <TabsTab
+          value="pricing"
+          className="data-[selected]:border-brand data-[selected]:text-brand"
+        >
+          {t("pricing")}
+        </TabsTab>
+        <TabsTab
+          value="activity"
+          className="data-[selected]:border-brand data-[selected]:text-brand"
+        >
+          {t("activity")}
+        </TabsTab>
       </TabsList>
 
-      <TabsPanel value="details">
-        <EditableField
-          label={tFields("title")}
-          type="text"
-          {...get("title")}
-          onCommit={(v) => onCommit("title", v)}
-          onDiscardPending={() => onDiscard("title")}
-          disabled={disabled}
-          validate={(v) =>
-            !v || String(v).trim() === "" ? tFields("titleRequired") : null
-          }
-        />
+      <TabsPanel value="client">
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <EditableField
             label={tFields("clientName")}
@@ -1315,22 +1327,53 @@ function BookingTabs({
             disabled={disabled}
           />
         </div>
-        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <EditableField
-            label={tFields("eventType")}
-            type="select"
-            options={eventTypeOptions}
-            {...get("eventType")}
-            onCommit={(v) => onCommit("eventType", v)}
-            onDiscardPending={() => onDiscard("eventType")}
-            disabled={disabled}
-          />
-          <EditableField
-            label={tFields("location")}
-            type="text"
-            {...get("location.address")}
-            onCommit={(v) => onCommit("location.address", v)}
-            onDiscardPending={() => onDiscard("location.address")}
+      </TabsPanel>
+
+      <TabsPanel value="event">
+        <EditableField
+          label={tFields("title")}
+          type="text"
+          {...get("title")}
+          onCommit={(v) => onCommit("title", v)}
+          onDiscardPending={() => onDiscard("title")}
+          disabled={disabled}
+          validate={(v) =>
+            !v || String(v).trim() === "" ? tFields("titleRequired") : null
+          }
+        />
+        <EditableField
+          label={tFields("eventType")}
+          type="select"
+          options={eventTypeOptions}
+          {...get("eventType")}
+          onCommit={(v) => onCommit("eventType", v)}
+          onDiscardPending={() => onDiscard("eventType")}
+          disabled={disabled}
+        />
+        <div className="flex flex-col gap-1 py-1.5">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {tFields("location")}
+          </span>
+          <LocationPicker
+            value={{
+              address:
+                "location.address" in pending
+                  ? ((pending["location.address"] as string) ?? "")
+                  : (booking.location?.address ?? ""),
+              lat:
+                "location.lat" in pending
+                  ? (pending["location.lat"] as number | null)
+                  : (booking.location?.lat ?? null),
+              lng:
+                "location.lng" in pending
+                  ? (pending["location.lng"] as number | null)
+                  : (booking.location?.lng ?? null),
+            }}
+            onChange={(v) => {
+              onCommit("location.address", v.address);
+              onCommit("location.lat", v.lat);
+              onCommit("location.lng", v.lng);
+            }}
             disabled={disabled}
           />
         </div>
@@ -1506,8 +1549,9 @@ function BookingTabs({
           <PlusIcon className="size-4" />
           {tSessions("add")}
         </button>
+      </TabsPanel>
 
-        <SectionHeader label={tSections("pricing")} />
+      <TabsPanel value="pricing">
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
           <EditableField
             label={tFields("total")}
@@ -2518,6 +2562,10 @@ function getCurrentValue(booking: BookingDoc | null, key: EditableKey): unknown 
   switch (key) {
     case "location.address":
       return booking.location?.address ?? "";
+    case "location.lat":
+      return booking.location?.lat ?? null;
+    case "location.lng":
+      return booking.location?.lng ?? null;
     case "amount.total":
       return booking.amount?.total ?? 0;
     case "amount.deposit":
@@ -2535,6 +2583,10 @@ function applyChanges(booking: BookingDoc, changes: PendingChanges): BookingDoc 
     const k = key as EditableKey;
     if (k === "location.address") {
       next.location.address = String(value ?? "");
+    } else if (k === "location.lat") {
+      next.location.lat = value == null ? null : Number(value);
+    } else if (k === "location.lng") {
+      next.location.lng = value == null ? null : Number(value);
     } else if (k === "amount.total") {
       next.amount.total = Number(value) || 0;
     } else if (k === "amount.deposit") {

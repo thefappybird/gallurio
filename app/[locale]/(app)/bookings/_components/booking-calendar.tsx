@@ -25,6 +25,7 @@ import {
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { STATUS_COLOR_VAR as STATUS_COLOR } from "@/lib/bookings/status-style";
 
 export type OverflowEvent = {
   type: "overflow";
@@ -124,16 +125,6 @@ type Props = {
   /** Set of bookingIds that have an in-flight PATCH. Matching events are dimmed
    *  and made non-interactive so the user cannot drag the same event twice. */
   pendingIds?: Set<string>;
-};
-
-// Status colors are theme-invariant — same hex/oklch in light AND dark so the
-// calendar's color vocabulary is stable. White text on all of these.
-const STATUS_COLOR: Record<BookingStatus, string> = {
-  booked: "var(--event-booked)",
-  quoted: "var(--event-quoted)",
-  inquiry: "var(--event-inquiry)",
-  completed: "var(--event-completed)",
-  cancelled: "var(--event-cancelled)",
 };
 
 /**

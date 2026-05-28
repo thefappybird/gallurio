@@ -193,6 +193,13 @@
         "completed": "Completed",
         "cancelled": "Cancelled"
       },
+      "locationPicker": {
+        "searchPlaceholder": "Search venue or address…",
+        "searching": "Searching…",
+        "noResults": "No matches. Try a different search.",
+        "dragHint": "Drag the pin to fine-tune the exact spot.",
+        "clear": "Clear location"
+      },
       "eventTypes": {
         "wedding": "Wedding",
         "corporate": "Corporate",
@@ -207,7 +214,9 @@
         "hidePast": "Hide past sessions",
         "pastSessionsHidden": "{count, plural, one {# past session hidden — toggle to show} other {# past sessions hidden — toggle to show}}",
         "tabs": {
-          "details": "Details",
+          "client": "Client",
+          "event": "Event",
+          "pricing": "Pricing",
           "activity": "Notes & activity"
         },
         "sections": {
@@ -308,7 +317,9 @@
           "cancel": "Cancel"
         },
         "showPast": "Show past",
-        "hidePast": "Hide past"
+        "hidePast": "Hide past",
+        "filterByStatus": "Filter by status",
+        "filterActive": "Filtering by {status} — tap again to clear"
       },
       "sessions": {
         "label": "Session {n}",
@@ -380,7 +391,6 @@
           "startTime": "Shift start time",
           "endAt": "Shift end date",
           "endTime": "Shift end time",
-          "shiftHint": "Shift hours repeat daily across the date range — they're the daily start and end, not a single 24-hour event.",
           "conflictsLabel": "Shifts already on {date}:",
           "allowPastDate": "Adding an old booking? Allow past dates",
           "location": "Location",

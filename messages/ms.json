@@ -193,6 +193,13 @@
         "completed": "Selesai",
         "cancelled": "Dibatalkan"
       },
+      "locationPicker": {
+        "searchPlaceholder": "Cari tempat atau alamat…",
+        "searching": "Mencari…",
+        "noResults": "Tiada padanan. Cuba carian lain.",
+        "dragHint": "Seret pin untuk menentukan lokasi tepat.",
+        "clear": "Kosongkan lokasi"
+      },
       "eventTypes": {
         "wedding": "Perkahwinan",
         "corporate": "Korporat",
@@ -207,7 +214,9 @@
         "hidePast": "Sembunyi sesi lepas",
         "pastSessionsHidden": "{count, plural, one {# sesi lepas disembunyikan — toggle untuk tunjuk} other {# sesi lepas disembunyikan — toggle untuk tunjuk}}",
         "tabs": {
-          "details": "Butiran",
+          "client": "Pelanggan",
+          "event": "Acara",
+          "pricing": "Harga",
           "activity": "Nota & aktiviti"
         },
         "sections": {
@@ -308,7 +317,9 @@
           "cancel": "Batal"
         },
         "showPast": "Tunjukkan lepas",
-        "hidePast": "Sembunyi lepas"
+        "hidePast": "Sembunyi lepas",
+        "filterByStatus": "Tapis mengikut status",
+        "filterActive": "Menapis mengikut {status} — ketik sekali lagi untuk kosongkan"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -380,7 +391,6 @@
           "startTime": "Masa mula syif",
           "endAt": "Tarikh tamat syif",
           "endTime": "Masa tamat syif",
-          "shiftHint": "Waktu syif berulang setiap hari sepanjang julat tarikh — ia adalah mula dan tamat harian, bukan acara 24 jam tunggal.",
           "conflictsLabel": "Syif yang sudah ada pada {date}:",
           "allowPastDate": "Menambah tempahan lama? Benarkan tarikh lepas",
           "location": "Lokasi",
