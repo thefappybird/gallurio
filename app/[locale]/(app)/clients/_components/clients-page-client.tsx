@@ -40,6 +40,7 @@ export function ClientsPageClient({
   empty,
 }: Props) {
   const t = useTranslations("app.clients");
+  const tc = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -98,23 +99,33 @@ export function ClientsPageClient({
     setDetailOpen(false);
   }
 
-  const { loading: isReactivating, trigger: triggerReactivate } = useGuardedAction(
+  // Track the specific client being reactivated so only that row shows a
+  // spinner / disabled state — a shared boolean would dim every inactive row.
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+
+  const { trigger: triggerReactivate } = useGuardedAction(
     async (client: ClientRow) => {
-      const id_toast = toast.loading(t("toasts.reactivating"));
-      const result = await reactivateClientAction(client.id);
-      if ("error" in result) {
-        toast.error(result.error, { id: id_toast });
-        throw new Error(result.error);
-      } else {
-        toast.success(t("form.updateSuccess"), { id: id_toast });
+      setReactivatingId(client.id);
+      const toastId = toast.loading(t("toasts.reactivating"));
+      try {
+        const result = await reactivateClientAction(client.id);
+        if ("error" in result) {
+          toast.error(result.error, { id: toastId });
+          return;
+        }
+        toast.success(t("form.updateSuccess"), { id: toastId });
         setDetailOpen(false);
         refreshPage();
+      } finally {
+        setReactivatingId(null);
       }
     }
   );
 
-  async function handleReactivate(client: ClientRow) {
-    await triggerReactivate(client);
+  // Fire-and-forget: the guarded action handles its own errors via toast and
+  // never rejects, so there is no rejection to await or catch here.
+  function handleReactivate(client: ClientRow) {
+    void triggerReactivate(client);
   }
 
   // Pagination helpers
@@ -145,7 +156,7 @@ export function ClientsPageClient({
           onEdit={openEdit}
           onDeactivate={openDeactivate}
           onReactivate={handleReactivate}
-          isReactivating={isReactivating}
+          reactivatingId={reactivatingId}
         />
       )}
 
@@ -153,7 +164,7 @@ export function ClientsPageClient({
       {total > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">
-            {t("pagination.showing", { from, to, total })}
+            {tc("showing", { from, to, total })}
           </span>
           <div className="flex items-center gap-2 flex-wrap">
             <PageSizeSelect value={limit} />
@@ -164,7 +175,7 @@ export function ClientsPageClient({
               disabled={page <= 1}
               className="min-h-11 sm:min-h-0"
             >
-              {t("pagination.previous")}
+              {tc("previous")}
             </Button>
             <Button
               variant="outline"
@@ -173,7 +184,7 @@ export function ClientsPageClient({
               disabled={page >= totalPages}
               className="min-h-11 sm:min-h-0"
             >
-              {t("pagination.next")}
+              {tc("next")}
             </Button>
           </div>
         </div>

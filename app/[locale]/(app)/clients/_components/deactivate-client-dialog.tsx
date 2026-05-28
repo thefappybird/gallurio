@@ -34,18 +34,18 @@ export function DeactivateClientDialog({
       const id_toast = toast.loading(t("toasts.deactivating"));
       const result = await deactivateClientAction(clientId);
       if ("error" in result) {
+        // Error surfaced via toast; keep the dialog open so the user can retry.
         toast.error(result.error, { id: id_toast });
-        throw new Error(result.error);
-      } else {
-        toast.success(t("form.updateSuccess"), { id: id_toast });
-        onSuccess();
-        onOpenChange(false);
+        return;
       }
+      toast.success(t("form.updateSuccess"), { id: id_toast });
+      onSuccess();
+      onOpenChange(false);
     }
   );
 
-  async function handleConfirm() {
-    await triggerDeactivate();
+  function handleConfirm() {
+    void triggerDeactivate();
   }
 
   return (

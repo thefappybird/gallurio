@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
 import { useRouter } from "@/lib/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import {
   CheckCircleIcon,
   FileTextIcon,
-  Loader2Icon,
   UploadIcon,
   XCircleIcon,
 } from "lucide-react";
@@ -109,31 +108,20 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
   const [parseError, setParseError] = useState<string | null>(null);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
 
-  // Keep a ref so the guarded action always sees the latest validRows/defaultCurrency
-  // without needing to recreate the hook on each render.
-  const validRowsRef = useRef<typeof rows>([]);
-  const defaultCurrencyRef = useRef(defaultCurrency);
-
-  const validRows = rows.filter((r) => r.valid);
-  const invalidRows = rows.filter((r) => !r.valid);
-
-  // Keep refs in sync so the stable action closure always reads current values.
-  validRowsRef.current = validRows;
-  defaultCurrencyRef.current = defaultCurrency;
+  const validRows = useMemo(() => rows.filter((r) => r.valid), [rows]);
+  const invalidRows = useMemo(() => rows.filter((r) => !r.valid), [rows]);
 
   const { loading: importing, trigger: triggerImport } = useGuardedAction(
     useCallback(async () => {
-      const currentValidRows = validRowsRef.current;
-      const currentCurrency = defaultCurrencyRef.current;
-      if (currentValidRows.length === 0) return;
+      if (validRows.length === 0) return;
 
       setImportResult(null);
-      const payload = currentValidRows.map((r) => ({
+      const payload = validRows.map((r) => ({
         ...r.raw,
         amountTotal: r.raw.amountTotal || undefined,
         amountDeposit: r.raw.amountDeposit || undefined,
         clientEmail: r.raw.clientEmail || null,
-        currency: r.raw.currency || currentCurrency,
+        currency: r.raw.currency || defaultCurrency,
       }));
 
       const res = await fetch("/api/bookings/import", {
@@ -154,7 +142,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
           toast.error(tDialog("failedWithDetails"));
         }
       }
-    }, [t, tDialog, router, startTransition]),
+    }, [validRows, defaultCurrency, t, tDialog, router, startTransition]),
     {
       onError: () => {
         toast.error(tDialog("failedRetry"));
@@ -419,9 +407,8 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                   variant="brand"
                   size="sm"
                   onClick={triggerImport}
-                  disabled={importing}
+                  loading={importing}
                 >
-                  {importing ? <Loader2Icon className="size-4 animate-spin" /> : null}
                   {importing ? t("importing") : t("importButton", { count: validRows.length })}
                 </Button>
               ) : (

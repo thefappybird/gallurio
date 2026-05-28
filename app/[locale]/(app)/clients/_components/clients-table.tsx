@@ -51,8 +51,8 @@ type Props = {
   onEdit: (row: ClientRow) => void;
   onDeactivate: (row: ClientRow) => void;
   onReactivate: (row: ClientRow) => void;
-  /** True while a reactivate action is in-flight — disables the menu item. */
-  isReactivating?: boolean;
+  /** Id of the client currently being reactivated — disables/loads only that row. */
+  reactivatingId?: string | null;
 };
 
 // Source badge colors — semantic borders, no raw color values
@@ -71,7 +71,7 @@ export function ClientsTable({
   onEdit,
   onDeactivate,
   onReactivate,
-  isReactivating = false,
+  reactivatingId = null,
 }: Props) {
   const t = useTranslations("app.clients");
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
@@ -149,6 +149,7 @@ export function ClientsTable({
         header: () => <span className="sr-only">{t("table.col.actions")}</span>,
         cell: (info) => {
           const row = info.row.original;
+          const isRowReactivating = reactivatingId === row.id;
           return (
             <div className="flex justify-end">
               <DropdownMenu>
@@ -175,9 +176,9 @@ export function ClientsTable({
                   ) : (
                     <DropdownMenuItem
                       onClick={() => onReactivate(row)}
-                      disabled={isReactivating}
+                      disabled={isRowReactivating}
                     >
-                      {isReactivating && (
+                      {isRowReactivating && (
                         <Loader2Icon className="size-3 animate-spin" />
                       )}
                       {t("table.reactivate")}
@@ -191,7 +192,7 @@ export function ClientsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, onEdit, onDeactivate, onReactivate, isReactivating]
+    [locale, t, onEdit, onDeactivate, onReactivate, reactivatingId]
   );
 
   const table = useReactTable({

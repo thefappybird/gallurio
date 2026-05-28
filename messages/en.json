@@ -515,8 +515,7 @@
         "tagsAll": "All tags",
         "tagsSelected": "{count} {count, plural, one {tag} other {tags}}",
         "showInactive": "Show inactive",
-        "add": "Add Client",
-        "clearFilters": "Clear filters"
+        "add": "Add Client"
       },
       "sourceValues": {
         "form": "Form",
@@ -610,17 +609,20 @@
         "keep": "Keep editing",
         "discard": "Discard and close"
       },
-      "pagination": {
-        "showing": "Showing {from}–{to} of {total} clients",
-        "rowsPerPage": "Per page",
-        "previous": "Previous",
-        "next": "Next"
-      },
       "toasts": {
         "reactivating": "Reactivating client…",
         "deactivating": "Deactivating client…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Showing {from}–{to} of {total}",
+      "rowsPerPage": "Per page",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "clearFilters": "Clear filters"
   },
   "onboarding": {
     "shell": {

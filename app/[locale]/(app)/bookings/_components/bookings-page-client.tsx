@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
@@ -32,6 +33,7 @@ export function BookingsPageClient({
   showPast = false,
   workspaceTimezone,
 }: Props) {
+  const t = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,8 +69,7 @@ export function BookingsPageClient({
       {total > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">
-            {/* TODO: add app.bookings.pagination.showing i18n key */}
-            Showing {from}–{to} of {total}
+            {t("showing", { from, to, total })}
           </span>
           <div className="flex items-center gap-2 flex-wrap">
             <PageSizeSelect value={limit} />
@@ -79,8 +80,7 @@ export function BookingsPageClient({
               disabled={page <= 1}
               className="min-h-11 sm:min-h-0"
             >
-              {/* TODO: use app.bookings.pagination.previous i18n key */}
-              Previous
+              {t("previous")}
             </Button>
             <Button
               variant="outline"
@@ -89,8 +89,7 @@ export function BookingsPageClient({
               disabled={page >= totalPages}
               className="min-h-11 sm:min-h-0"
             >
-              {/* TODO: use app.bookings.pagination.next i18n key */}
-              Next
+              {t("next")}
             </Button>
           </div>
         </div>

@@ -121,6 +121,14 @@ describe("clientFormSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("trims surrounding whitespace before validating phone", () => {
+    const result = clientFormSchema.safeParse({ ...validFull, phone: "  +639171234567  " });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.phone).toBe("+639171234567");
+    }
+  });
+
   it("normalizes empty-string email to null (so blank inputs do not fail .email())", () => {
     const result = clientFormSchema.safeParse({ ...validFull, email: "" });
     expect(result.success).toBe(true);

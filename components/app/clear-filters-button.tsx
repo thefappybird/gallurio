@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function ClearFiltersButton({ paramKeys, defaultValues = {} }: Props) {
+  const t = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -40,7 +42,7 @@ export function ClearFiltersButton({ paramKeys, defaultValues = {} }: Props) {
   return (
     <Button variant="ghost" size="sm" onClick={handleClear}>
       <XIcon className="size-4" />
-      Clear filters
+      {t("clearFilters")}
     </Button>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 
 type GuardedActionOptions = {
   /** Called when the action throws or rejects. Defaults to re-throwing. */
@@ -25,7 +25,12 @@ function useGuardedAction<TArgs extends unknown[], TResult>(
   const [loading, setLoading] = useState(false)
   const loadingRef = useRef(false)
   const onErrorRef = useRef(options?.onError)
-  onErrorRef.current = options?.onError
+  // Keep the latest onError reachable from the stable `trigger` closure without
+  // making it a dependency. Synced after commit (not during render) per the
+  // rules of refs.
+  useEffect(() => {
+    onErrorRef.current = options?.onError
+  })
 
   const trigger = useCallback(
     async (...args: TArgs): Promise<TResult | undefined> => {
@@ -45,7 +50,6 @@ function useGuardedAction<TArgs extends unknown[], TResult>(
         setLoading(false)
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [action]
   )
 

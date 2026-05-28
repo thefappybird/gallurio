@@ -50,7 +50,9 @@ vi.mock("@/lib/actions/clients", () => ({
   reactivateClientAction: (...args: unknown[]) => reactivateMock(...args),
 }));
 
-// Sonner toasts have no DOM side-effect we care about here; silence them.
+// Sonner toasts have no DOM side-effect we care about here; capture the mock so
+// the error path can assert the failure toast fires.
+import { toast } from "sonner";
 vi.mock("sonner", () => ({
   toast: { loading: vi.fn(() => "toast-id"), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
 }));
@@ -104,6 +106,7 @@ describe("ClientsPageClient", () => {
     routerPush.mockClear();
     routerRefresh.mockClear();
     reactivateMock.mockReset();
+    vi.mocked(toast.error).mockClear();
   });
 
   it("renders toolbar, table rows, and pagination summary together", () => {
@@ -151,18 +154,8 @@ describe("ClientsPageClient", () => {
     await waitFor(() => expect(routerRefresh).toHaveBeenCalledTimes(1));
   });
 
-  it("reactivation does not refresh on server error", async () => {
+  it("reactivation surfaces an error toast and does not refresh on server error", async () => {
     reactivateMock.mockResolvedValue({ error: "boom" });
-
-    // The component re-throws the error from useGuardedAction when the server
-    // returns an error, creating an unhandled rejection in the fire-and-forget
-    // onClick handler. Suppress it for this test so Vitest doesn't count it as
-    // a test failure — the assertion below still verifies correct behavior.
-    const suppressExpectedRejection = (reason: unknown) => {
-      if (reason instanceof Error && reason.message === "boom") return;
-      throw reason;
-    };
-    process.on("unhandledRejection", suppressExpectedRejection);
 
     renderWithProviders(<ClientsPageClient {...build()} />);
 
@@ -171,8 +164,11 @@ describe("ClientsPageClient", () => {
     fireEvent.click(await screen.findByText(/reactivate/i));
 
     await waitFor(() => expect(reactivateMock).toHaveBeenCalled());
+    // The guarded action handles the failure via toast and never throws, so
+    // there is no unhandled rejection to suppress here.
+    await waitFor(() =>
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("boom", { id: "toast-id" })
+    );
     expect(routerRefresh).not.toHaveBeenCalled();
-
-    process.off("unhandledRejection", suppressExpectedRejection);
   });
 });

@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,9 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_OPTIONS = [10, 20, 30, 50];
+// Shared allowed page sizes — also used by server pages to clamp the `limit`
+// search param so the dropdown and the server stay in sync.
+export const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 type Props = {
   value: number;
@@ -24,9 +27,10 @@ type Props = {
 export function PageSizeSelect({
   value,
   paramName = "limit",
-  options = DEFAULT_OPTIONS,
+  options = PAGE_SIZE_OPTIONS,
   className,
 }: Props) {
+  const t = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -44,8 +48,7 @@ export function PageSizeSelect({
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* TODO: add common.rowsPerPage i18n key */}
-      <span className="text-sm text-muted-foreground whitespace-nowrap">Rows per page</span>
+      <span className="text-sm text-muted-foreground whitespace-nowrap">{t("rowsPerPage")}</span>
       <Select<string> value={String(value)} onValueChange={handleChange}>
         <SelectTrigger className="h-8 w-18 text-sm">
           <SelectValue />

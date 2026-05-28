@@ -515,8 +515,7 @@
         "tagsAll": "แท็กทั้งหมด",
         "tagsSelected": "{count} {count, plural, one {แท็ก} other {แท็ก}}",
         "showInactive": "แสดงที่ไม่ใช้งาน",
-        "add": "เพิ่มลูกค้า",
-        "clearFilters": "ล้างตัวกรอง"
+        "add": "เพิ่มลูกค้า"
       },
       "sourceValues": {
         "form": "แบบฟอร์ม",
@@ -610,17 +609,20 @@
         "keep": "แก้ไขต่อ",
         "discard": "ยกเลิกและปิด"
       },
-      "pagination": {
-        "showing": "แสดง {from}–{to} จาก {total} ลูกค้า",
-        "rowsPerPage": "ต่อหน้า",
-        "previous": "ก่อนหน้า",
-        "next": "ถัดไป"
-      },
       "toasts": {
         "reactivating": "กำลังเปิดใช้งานลูกค้าอีกครั้ง…",
         "deactivating": "กำลังปิดใช้งานลูกค้า…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "แสดง {from}–{to} จาก {total}",
+      "rowsPerPage": "ต่อหน้า",
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป"
+    },
+    "clearFilters": "ล้างตัวกรอง"
   },
   "onboarding": {
     "shell": {

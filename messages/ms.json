@@ -515,8 +515,7 @@
         "tagsAll": "Semua tag",
         "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
         "showInactive": "Tunjukkan tidak aktif",
-        "add": "Tambah Pelanggan",
-        "clearFilters": "Padam penapis"
+        "add": "Tambah Pelanggan"
       },
       "sourceValues": {
         "form": "Borang",
@@ -610,17 +609,20 @@
         "keep": "Teruskan menyunting",
         "discard": "Buang dan tutup"
       },
-      "pagination": {
-        "showing": "Menunjukkan {from}–{to} daripada {total} pelanggan",
-        "rowsPerPage": "Setiap halaman",
-        "previous": "Sebelumnya",
-        "next": "Seterusnya"
-      },
       "toasts": {
         "reactivating": "Mengaktifkan semula pelanggan…",
         "deactivating": "Menyahaktifkan pelanggan…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Menunjukkan {from}–{to} daripada {total}",
+      "rowsPerPage": "Setiap halaman",
+      "previous": "Sebelumnya",
+      "next": "Seterusnya"
+    },
+    "clearFilters": "Padam penapis"
   },
   "onboarding": {
     "shell": {

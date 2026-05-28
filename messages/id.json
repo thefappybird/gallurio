@@ -515,8 +515,7 @@
         "tagsAll": "Semua tag",
         "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
         "showInactive": "Tampilkan tidak aktif",
-        "add": "Tambah Klien",
-        "clearFilters": "Hapus filter"
+        "add": "Tambah Klien"
       },
       "sourceValues": {
         "form": "Formulir",
@@ -610,17 +609,20 @@
         "keep": "Lanjutkan mengubah",
         "discard": "Buang dan tutup"
       },
-      "pagination": {
-        "showing": "Menampilkan {from}–{to} dari {total} klien",
-        "rowsPerPage": "Per halaman",
-        "previous": "Sebelumnya",
-        "next": "Berikutnya"
-      },
       "toasts": {
         "reactivating": "Mengaktifkan kembali klien…",
         "deactivating": "Menonaktifkan klien…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total}",
+      "rowsPerPage": "Per halaman",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "clearFilters": "Hapus filter"
   },
   "onboarding": {
     "shell": {

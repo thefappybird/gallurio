@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
+import { PAGE_SIZE_OPTIONS } from "@/components/app/page-size-select";
 
 export async function generateMetadata({
   params,
@@ -47,7 +48,7 @@ export default async function ClientsPage({
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
   const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
-  const limit = [10, 20, 30, 50].includes(parsedLimit) ? parsedLimit : 10;
+  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   const [{ items, total }, availableTags] = await Promise.all([
