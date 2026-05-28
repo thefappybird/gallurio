@@ -201,11 +201,13 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                   >
                     <SelectTrigger>
                       <SelectValue>
-                        {(value: string) => (
-                          <span className="capitalize">
-                            {t(`sourceValues.${value}` as Parameters<typeof t>[0])}
-                          </span>
-                        )}
+                        {(value: string | null) =>
+                          value ? (
+                            <span className="capitalize">
+                              {t(`sourceValues.${value}` as Parameters<typeof t>[0])}
+                            </span>
+                          ) : null
+                        }
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>

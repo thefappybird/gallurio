@@ -28,6 +28,8 @@ describe("SourceBadge", () => {
       return cls;
     });
     // Every source must yield a unique class string — no two pills share a color.
+    // Note: class uniqueness ≠ perceptual distinctness; the actual contrast/hue
+    // separation between the four pills is verified visually, not here.
     expect(new Set(classNames).size).toBe(SOURCES.length);
   });
 
