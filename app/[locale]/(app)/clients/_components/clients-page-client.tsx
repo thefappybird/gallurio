@@ -13,6 +13,12 @@ import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import { reactivateClientAction } from "@/lib/actions/clients";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { PageSizeSelect } from "@/components/app/page-size-select";
+import { TableSkeleton } from "@/components/app/table-skeleton";
+import { useGuardedAction } from "@/hooks/use-guarded-action";
+
+// ClientsTable has: name, contact, source, totalSpent, actions = 5 columns
+const CLIENTS_TABLE_COLUMNS = 5;
 
 type Props = {
   rows: ClientRow[];
@@ -34,10 +40,11 @@ export function ClientsPageClient({
   empty,
 }: Props) {
   const t = useTranslations("app.clients");
+  const tc = useTranslations("common.pagination");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   // Modal state
   const [formOpen, setFormOpen] = useState(false);
@@ -92,15 +99,33 @@ export function ClientsPageClient({
     setDetailOpen(false);
   }
 
-  async function handleReactivate(client: ClientRow) {
-    const result = await reactivateClientAction(client.id);
-    if ("error" in result) {
-      toast.error(result.error);
-    } else {
-      toast.success(t("form.updateSuccess"));
-      setDetailOpen(false);
-      refreshPage();
+  // Track the specific client being reactivated so only that row shows a
+  // spinner / disabled state — a shared boolean would dim every inactive row.
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
+
+  const { trigger: triggerReactivate } = useGuardedAction(
+    async (client: ClientRow) => {
+      setReactivatingId(client.id);
+      const toastId = toast.loading(t("toasts.reactivating"));
+      try {
+        const result = await reactivateClientAction(client.id);
+        if ("error" in result) {
+          toast.error(result.error, { id: toastId });
+          return;
+        }
+        toast.success(t("form.updateSuccess"), { id: toastId });
+        setDetailOpen(false);
+        refreshPage();
+      } finally {
+        setReactivatingId(null);
+      }
     }
+  );
+
+  // Fire-and-forget: the guarded action handles its own errors via toast and
+  // never rejects, so there is no rejection to await or catch here.
+  function handleReactivate(client: ClientRow) {
+    void triggerReactivate(client);
   }
 
   // Pagination helpers
@@ -120,23 +145,29 @@ export function ClientsPageClient({
     <>
       <ClientsToolbar availableTags={availableTags} onAddClient={openAdd} />
 
-      <ClientsTable
-        rows={rows}
-        locale={locale}
-        empty={empty}
-        onClickClient={openDetail}
-        onEdit={openEdit}
-        onDeactivate={openDeactivate}
-        onReactivate={handleReactivate}
-      />
+      {isPending ? (
+        <TableSkeleton columns={CLIENTS_TABLE_COLUMNS} rows={limit} />
+      ) : (
+        <ClientsTable
+          rows={rows}
+          locale={locale}
+          empty={empty}
+          onClickClient={openDetail}
+          onEdit={openEdit}
+          onDeactivate={openDeactivate}
+          onReactivate={handleReactivate}
+          reactivatingId={reactivatingId}
+        />
+      )}
 
       {/* Pagination */}
       {total > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-sm text-muted-foreground">
-            {t("pagination.showing", { from, to, total })}
+            {tc("showing", { from, to, total })}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <PageSizeSelect value={limit} />
             <Button
               variant="outline"
               size="sm"
@@ -144,7 +175,7 @@ export function ClientsPageClient({
               disabled={page <= 1}
               className="min-h-11 sm:min-h-0"
             >
-              {t("pagination.previous")}
+              {tc("previous")}
             </Button>
             <Button
               variant="outline"
@@ -153,7 +184,7 @@ export function ClientsPageClient({
               disabled={page >= totalPages}
               className="min-h-11 sm:min-h-0"
             >
-              {t("pagination.next")}
+              {tc("next")}
             </Button>
           </div>
         </div>

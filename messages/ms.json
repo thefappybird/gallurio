@@ -282,6 +282,8 @@
         "pastDateWarning": "Dipindahkan ke tarikh lepas",
         "pastSplitWarning": "Hari-hari lepas dikekalkan — hanya hari-hari akan datang dikemas kini",
         "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang lepas",
+        "updating": "Mengemas kini tempahan…",
+        "updated": "Tempahan dikemas kini",
         "updateError": "Gagal mengemas kini tempahan",
         "conflictCheckFailed": "Tidak dapat mengesahkan konflik — sila cuba lagi",
         "overnightNotAllowed": "Tempahan tidak boleh melepasi tengah malam. Gunakan sesi berulang untuk merangkumi beberapa hari.",
@@ -662,8 +664,7 @@
         "tagsAll": "Semua tag",
         "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
         "showInactive": "Tunjukkan tidak aktif",
-        "add": "Tambah Pelanggan",
-        "clearFilters": "Padam penapis"
+        "add": "Tambah Pelanggan"
       },
       "sourceValues": {
         "form": "Borang",
@@ -757,13 +758,20 @@
         "keep": "Teruskan menyunting",
         "discard": "Buang dan tutup"
       },
-      "pagination": {
-        "showing": "Menunjukkan {from}–{to} daripada {total} pelanggan",
-        "rowsPerPage": "Setiap halaman",
-        "previous": "Sebelumnya",
-        "next": "Seterusnya"
+      "toasts": {
+        "reactivating": "Mengaktifkan semula pelanggan…",
+        "deactivating": "Menyahaktifkan pelanggan…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Menunjukkan {from}–{to} daripada {total}",
+      "rowsPerPage": "Setiap halaman",
+      "previous": "Sebelumnya",
+      "next": "Seterusnya"
+    },
+    "clearFilters": "Padam penapis"
   },
   "onboarding": {
     "shell": {

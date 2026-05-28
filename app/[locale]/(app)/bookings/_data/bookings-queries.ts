@@ -12,10 +12,21 @@ export type BookingListFilters = {
   includeCancelled?: boolean;
 };
 
+export type BookingListPagination = {
+  page?: number;
+  limit?: number;
+};
+
+export type BookingListResult = {
+  rows: BookingDoc[];
+  total: number;
+};
+
 export async function listBookings(
   workspaceId: WorkspaceId,
-  filters: BookingListFilters = {}
-): Promise<BookingDoc[]> {
+  filters: BookingListFilters = {},
+  pagination?: BookingListPagination
+): Promise<BookingListResult> {
   const query: Record<string, unknown> = { workspaceId };
 
   if (filters.status) {
@@ -41,7 +52,21 @@ export async function listBookings(
     query.$or = [{ title: rx }, { clientName: rx }, { "location.address": rx }];
   }
 
-  return Booking.find(query).sort({ firstSessionStart: 1 }).lean();
+  const baseQuery = Booking.find(query).sort({ firstSessionStart: 1 });
+
+  if (pagination) {
+    const { page = 1, limit = 10 } = pagination;
+    const skip = (page - 1) * limit;
+    const [rows, total] = await Promise.all([
+      baseQuery.skip(skip).limit(limit).lean(),
+      Booking.countDocuments(query),
+    ]);
+    return { rows, total };
+  }
+
+  // No pagination: return all matching docs (used by calendar view and tests).
+  const rows = await baseQuery.lean();
+  return { rows, total: rows.length };
 }
 
 export async function getBookingById(

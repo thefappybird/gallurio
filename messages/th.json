@@ -282,6 +282,8 @@
         "pastDateWarning": "ย้ายไปยังวันที่ผ่านมาแล้ว",
         "pastSplitWarning": "วันที่ผ่านมาถูกเก็บไว้ — อัปเดตเฉพาะวันที่ในอนาคตเท่านั้น",
         "thisDayOnlyOnPast": "ไม่สามารถแก้ไขวันที่ผ่านมาได้",
+        "updating": "กำลังอัปเดตการจอง…",
+        "updated": "อัปเดตการจองแล้ว",
         "updateError": "ไม่สามารถอัปเดตการจองได้",
         "conflictCheckFailed": "ไม่สามารถตรวจสอบความขัดแย้งได้ — โปรดลองอีกครั้ง",
         "overnightNotAllowed": "การจองไม่สามารถข้ามเที่ยงคืนได้ ใช้เซสชันซ้ำสำหรับหลายวัน",
@@ -662,8 +664,7 @@
         "tagsAll": "แท็กทั้งหมด",
         "tagsSelected": "{count} {count, plural, one {แท็ก} other {แท็ก}}",
         "showInactive": "แสดงที่ไม่ใช้งาน",
-        "add": "เพิ่มลูกค้า",
-        "clearFilters": "ล้างตัวกรอง"
+        "add": "เพิ่มลูกค้า"
       },
       "sourceValues": {
         "form": "แบบฟอร์ม",
@@ -757,13 +758,20 @@
         "keep": "แก้ไขต่อ",
         "discard": "ยกเลิกและปิด"
       },
-      "pagination": {
-        "showing": "แสดง {from}–{to} จาก {total} ลูกค้า",
-        "rowsPerPage": "ต่อหน้า",
-        "previous": "ก่อนหน้า",
-        "next": "ถัดไป"
+      "toasts": {
+        "reactivating": "กำลังเปิดใช้งานลูกค้าอีกครั้ง…",
+        "deactivating": "กำลังปิดใช้งานลูกค้า…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "แสดง {from}–{to} จาก {total}",
+      "rowsPerPage": "ต่อหน้า",
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป"
+    },
+    "clearFilters": "ล้างตัวกรอง"
   },
   "onboarding": {
     "shell": {

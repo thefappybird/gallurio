@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SUPPORTED_CURRENCIES } from "./workspace";
+import { optionalPhone } from "./client";
 
 export const BOOKING_STATUSES = [
   "inquiry",
@@ -35,7 +36,7 @@ const clientNewBlock = z.object({
   mode: z.literal("new"),
   name: z.string().min(1, "Required").max(120).trim(),
   email: z.string().email("Invalid email").toLowerCase().trim().optional().nullable(),
-  phone: z.string().max(40).trim().optional().nullable(),
+  phone: optionalPhone,
 });
 export const bookingClientSchema = z.discriminatedUnion("mode", [
   clientExistingBlock,

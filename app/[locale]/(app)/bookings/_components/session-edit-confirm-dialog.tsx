@@ -54,7 +54,7 @@ export function SessionEditConfirmDialog({
             size="sm"
             className="min-h-11 flex-1"
             onClick={onApplyToDay}
-            disabled={busy}
+            loading={busy}
           >
             {t("thisDay")}
           </Button>
@@ -66,7 +66,7 @@ export function SessionEditConfirmDialog({
               size="sm"
               className="min-h-11 w-full"
               onClick={onApplyToSession}
-              disabled={busy}
+              loading={busy}
             >
               {t("wholeSession")}
             </Button>

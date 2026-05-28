@@ -200,6 +200,18 @@ export function CalendarView({
   const [optimisticEvents, setOptimisticEvents] =
     useState<CalendarEvent[]>(events);
 
+  // Tracks booking IDs that have an in-flight PATCH. While a booking is pending
+  // the calendar dims the event via eventPropGetter and pointer-events:none so
+  // the user cannot drag the same event again mid-flight.
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+
+  // Synchronous re-drag lock. pendingIds (state) only updates after applySplit
+  // runs — i.e. after the async conflict-check round-trip — so a rapid second
+  // drag could slip past a state-based guard during that window. This ref is
+  // claimed before any await and released in handleAnyDrop's finally, closing
+  // that gap. pendingIds remains the source of truth for the visual dim.
+  const inFlightRef = useRef<Set<string>>(new Set());
+
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState<Date>(defaultDate ?? new Date());
   const showPast = searchParams.get("showPast") === "1";
@@ -313,21 +325,37 @@ export function CalendarView({
         })
       );
 
+      setPendingIds((s) => new Set(s).add(event.bookingId));
       try {
-        const ok = await patchBookingSessions(event.bookingId, newSessions);
-        if (!ok) throw new Error("PATCH returned non-ok");
-      } catch (err) {
-        const errInfo =
-          err instanceof Error
-            ? { name: err.name, message: err.message, stack: err.stack }
-            : String(err);
-        console.error("[calendar-view] patchBookingSessions failed", {
-          bookingId: event.bookingId,
-          newSessions,
-          err: errInfo,
+        await toast.promise(
+          (async () => {
+            const ok = await patchBookingSessions(event.bookingId, newSessions);
+            if (!ok) throw new Error("PATCH returned non-ok");
+          })(),
+          {
+            loading: t("updating"),
+            success: t("updated"),
+            error: (err: unknown) => {
+              const errInfo =
+                err instanceof Error
+                  ? { name: err.name, message: err.message, stack: err.stack }
+                  : String(err);
+              console.error("[calendar-view] patchBookingSessions failed", {
+                bookingId: event.bookingId,
+                newSessions,
+                err: errInfo,
+              });
+              setOptimisticEvents(prev);
+              return t("updateError");
+            },
+          }
+        );
+      } finally {
+        setPendingIds((s) => {
+          const next = new Set(s);
+          next.delete(event.bookingId);
+          return next;
         });
-        setOptimisticEvents(prev);
-        toast.error(t("updateError"));
       }
     },
     [optimisticEvents, t]
@@ -356,96 +384,106 @@ export function CalendarView({
       isDateOnlyDrag: boolean,
       touchedDay: Date
     ) => {
-      const tz = workspaceTimezone || FALLBACK_TZ;
-      const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
+      // Guard: ignore if a PATCH is already in flight for this booking. Claimed
+      // synchronously (before any await) so a rapid second drag during the
+      // conflict-check round-trip can't slip through; released in `finally`.
+      if (inFlightRef.current.has(event.bookingId)) return;
+      inFlightRef.current.add(event.bookingId);
 
-      // 1. Compute candle times.
-      let newCandleStart: Date;
-      let newCandleEnd: Date;
+      try {
+        const tz = workspaceTimezone || FALLBACK_TZ;
+        const bookingSessions = reconstructSessions(optimisticEvents, event.bookingId);
 
-      if (isDateOnlyDrag) {
-        const dayDiff = Math.round(
-          (startOfDay(newRbcStart).getTime() - startOfDay(event.start).getTime()) /
-            86_400_000
-        );
-        newCandleStart = new Date(event.start);
-        newCandleStart.setDate(newCandleStart.getDate() + dayDiff);
-        newCandleEnd = new Date(event.end);
-        newCandleEnd.setDate(newCandleEnd.getDate() + dayDiff);
-      } else {
-        newCandleStart = newRbcStart;
-        newCandleEnd = newRbcEnd;
-      }
+        // 1. Compute candle times.
+        let newCandleStart: Date;
+        let newCandleEnd: Date;
 
-      // 2. Same-position no-op.
-      if (
-        newCandleStart.getTime() === event.start.getTime() &&
-        newCandleEnd.getTime() === event.end.getTime()
-      ) {
-        return;
-      }
+        if (isDateOnlyDrag) {
+          const dayDiff = Math.round(
+            (startOfDay(newRbcStart).getTime() - startOfDay(event.start).getTime()) /
+              86_400_000
+          );
+          newCandleStart = new Date(event.start);
+          newCandleStart.setDate(newCandleStart.getDate() + dayDiff);
+          newCandleEnd = new Date(event.end);
+          newCandleEnd.setDate(newCandleEnd.getDate() + dayDiff);
+        } else {
+          newCandleStart = newRbcStart;
+          newCandleEnd = newRbcEnd;
+        }
 
-      // 2b. Reject overnight moves — bookings cannot cross midnight.
-      // The repeating-sessions form generates one same-day session per day, so
-      // DnD must enforce the same invariant.
-      const dragStartDateStr = isoDateInTz(newCandleStart, tz);
-      const dragEndDateStr = isoDateInTz(newCandleEnd, tz);
-      if (dragStartDateStr !== dragEndDateStr) {
-        toast.error(t("overnightNotAllowed"));
-        return;
-      }
-
-      // 3. Reject drops onto past dates / past times. Hard block — no override.
-      //
-      // Skip when the session being moved is ALREADY in the past — the user has
-      // already accepted its pastness and re-blocking every intra-past drag is
-      // friction without benefit.
-      //
-      // "Start of today" is derived in the workspace timezone so users in Manila
-      // see the Manila calendar day boundary, not the server's/browser's UTC one.
-      const todayDateStr = isoDateInTz(new Date(), tz);
-      const startOfTodayInTz = dayBoundInTz(todayDateStr, tz, 0, 0, 0, 0);
-      const sessionAlreadyPast = event.sessionStartAt < startOfTodayInTz;
-      if (!sessionAlreadyPast) {
-        const now = new Date();
-        const droppedDateStr = isoDateInTz(newCandleStart, tz);
-        const droppedDayStartInTz = dayBoundInTz(droppedDateStr, tz, 0, 0, 0, 0);
-        const isPastDay = droppedDayStartInTz < startOfTodayInTz;
-        const isPastTimeToday =
-          droppedDateStr === todayDateStr && newCandleStart < now;
-        if (isPastDay || isPastTimeToday) {
-          toast.error(t("pastDropNotAllowed"));
+        // 2. Same-position no-op.
+        if (
+          newCandleStart.getTime() === event.start.getTime() &&
+          newCandleEnd.getTime() === event.end.getTime()
+        ) {
           return;
         }
+
+        // 2b. Reject overnight moves — bookings cannot cross midnight.
+        // The repeating-sessions form generates one same-day session per day, so
+        // DnD must enforce the same invariant.
+        const dragStartDateStr = isoDateInTz(newCandleStart, tz);
+        const dragEndDateStr = isoDateInTz(newCandleEnd, tz);
+        if (dragStartDateStr !== dragEndDateStr) {
+          toast.error(t("overnightNotAllowed"));
+          return;
+        }
+
+        // 3. Reject drops onto past dates / past times. Hard block — no override.
+        //
+        // Skip when the session being moved is ALREADY in the past — the user has
+        // already accepted its pastness and re-blocking every intra-past drag is
+        // friction without benefit.
+        //
+        // "Start of today" is derived in the workspace timezone so users in Manila
+        // see the Manila calendar day boundary, not the server's/browser's UTC one.
+        const todayDateStr = isoDateInTz(new Date(), tz);
+        const startOfTodayInTz = dayBoundInTz(todayDateStr, tz, 0, 0, 0, 0);
+        const sessionAlreadyPast = event.sessionStartAt < startOfTodayInTz;
+        if (!sessionAlreadyPast) {
+          const now = new Date();
+          const droppedDateStr = isoDateInTz(newCandleStart, tz);
+          const droppedDayStartInTz = dayBoundInTz(droppedDateStr, tz, 0, 0, 0, 0);
+          const isPastDay = droppedDayStartInTz < startOfTodayInTz;
+          const isPastTimeToday =
+            droppedDateStr === todayDateStr && newCandleStart < now;
+          if (isPastDay || isPastTimeToday) {
+            toast.error(t("pastDropNotAllowed"));
+            return;
+          }
+        }
+
+        // 4. Conflict check — fetch shifts for the (single) date.
+        const startDateStr = isoDateInTz(newCandleStart, tz);
+        const aStart = dateToTzMinutes(newCandleStart, tz);
+        const aEnd = dateToTzMinutes(newCandleEnd, tz);
+
+        const allShifts = await fetchConflicts(startDateStr, event.bookingId, event.sessionIndex);
+        if (allShifts === null) {
+          toast.error(t("conflictCheckFailed"));
+          return;
+        }
+
+        const conflicts = overlappingShifts(allShifts, aStart, aEnd);
+
+        // 4b. Hard block — overlapping shifts are forbidden.
+        if (conflicts.length > 0) {
+          const first = conflicts[0];
+          const more = conflicts.length - 1;
+          toast.error(
+            more > 0
+              ? t("conflictBlockDndMany", { title: first.title, more })
+              : t("conflictBlockDnd", { title: first.title })
+          );
+          return;
+        }
+
+        // 5. Apply.
+        await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
+      } finally {
+        inFlightRef.current.delete(event.bookingId);
       }
-
-      // 4. Conflict check — fetch shifts for the (single) date.
-      const startDateStr = isoDateInTz(newCandleStart, tz);
-      const aStart = dateToTzMinutes(newCandleStart, tz);
-      const aEnd = dateToTzMinutes(newCandleEnd, tz);
-
-      const allShifts = await fetchConflicts(startDateStr, event.bookingId, event.sessionIndex);
-      if (allShifts === null) {
-        toast.error(t("conflictCheckFailed"));
-        return;
-      }
-
-      const conflicts = overlappingShifts(allShifts, aStart, aEnd);
-
-      // 4b. Hard block — overlapping shifts are forbidden.
-      if (conflicts.length > 0) {
-        const first = conflicts[0];
-        const more = conflicts.length - 1;
-        toast.error(
-          more > 0
-            ? t("conflictBlockDndMany", { title: first.title, more })
-            : t("conflictBlockDnd", { title: first.title })
-        );
-        return;
-      }
-
-      // 5. Apply.
-      await applySplit(event, bookingSessions, touchedDay, newCandleStart, newCandleEnd);
     },
     [optimisticEvents, applySplit, workspaceTimezone, t]
   );
@@ -577,6 +615,7 @@ export function CalendarView({
         onExternalDragEnd={handleExternalDragEnd}
         onDropFromOutside={handleDropFromOutside}
         dragFromOutsideItem={dragFromOutsideItem}
+        pendingIds={pendingIds}
         messages={messages}
         showPast={showPast}
       />

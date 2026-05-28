@@ -9,9 +9,10 @@ import { ViewToggle, type BookingsView } from "./_components/view-toggle";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
 import { TableBookingManager } from "./_components/table-booking-manager";
 import {
-  BookingsTable,
   type BookingRow,
 } from "./_components/bookings-table";
+import { BookingsPageClient } from "./_components/bookings-page-client";
+import { PAGE_SIZE_OPTIONS } from "@/components/app/page-size-select";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
@@ -50,6 +51,8 @@ type SearchParams = {
   detail?: string;
   add?: string;
   edit?: string;
+  page?: string;
+  limit?: string;
 };
 
 export default async function BookingsPage({
@@ -70,22 +73,55 @@ export default async function BookingsPage({
   const sp = await searchParams;
   const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
 
-  const bookings = await listBookings(workspace._id, {
+  // Parse pagination params (table view only).
+  const parsedPage = Number.parseInt(sp.page ?? "1", 10);
+  const tablePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
+  const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
+
+  const filters = {
     status: sp.status ?? null,
     q: sp.q ?? null,
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
-  });
+  };
 
-  // Fetch all clients for the workspace — used by the booking wizard's
-  // client picker. Limit 1000 covers all realistic workspace sizes and avoids
-  // per-keystroke API calls in the modal.
-  const allClients = await Client.find({ workspaceId: workspace._id })
-    .select({ _id: 1, name: 1, email: 1, phone: 1 })
-    .sort({ name: 1 })
-    .limit(1000)
-    .lean();
+  // These two reads are independent — run them together to save a round-trip.
+  //  - Calendar view: fetch all bookings (no pagination) for event splitting.
+  //    Table view: fetch only one page of bookings.
+  //  - All clients for the workspace power the booking wizard's client picker.
+  //    Limit 1000 covers all realistic workspace sizes and avoids per-keystroke
+  //    API calls in the modal.
+  const [{ rows: bookings, total: bookingsTotal }, allClients] = await Promise.all([
+    listBookings(
+      workspace._id,
+      filters,
+      view === "table" ? { page: tablePage, limit: tableLimit } : undefined
+    ),
+    Client.find({ workspaceId: workspace._id })
+      .select({ _id: 1, name: 1, email: 1, phone: 1 })
+      .sort({ name: 1 })
+      .limit(1000)
+      .lean(),
+  ]);
+
+  // If the requested table page lies past the end of a non-empty result set
+  // (stale bookmark, post-filter narrowing), redirect to the last valid page
+  // rather than render an empty table whose footer claims rows exist.
+  if (view === "table" && bookingsTotal > 0 && tablePage > 1) {
+    const totalPages = Math.ceil(bookingsTotal / tableLimit);
+    if (tablePage > totalPages) {
+      const next = new URLSearchParams(
+        Object.entries(sp).filter(
+          ([k, v]) => k !== "page" && v !== undefined
+        ) as [string, string][]
+      );
+      next.set("page", String(totalPages));
+      redirect(`/${locale}/bookings?${next.toString()}`);
+    }
+  }
+
   const initialClients: ClientHit[] = allClients.map((c) => ({
     id: c._id.toString(),
     name: c.name,
@@ -105,38 +141,43 @@ export default async function BookingsPage({
   // one calendar day within the session's date range, running at the session's
   // shift-start → shift-end time. Candle id encodes booking + session index +
   // date so each candle is unique and stable.
-  const events: CalendarEvent[] = bookings.flatMap((b) => {
-    const bookingId = b._id.toString();
-    const sessions = b.sessions as { startAt: Date; endAt: Date }[];
+  // Only the calendar view consumes candle events; skip the split work in table
+  // view (where `bookings` is a single page that would be discarded anyway).
+  const events: CalendarEvent[] =
+    view !== "calendar"
+      ? []
+      : bookings.flatMap((b) => {
+          const bookingId = b._id.toString();
+          const sessions = b.sessions as { startAt: Date; endAt: Date }[];
 
-    return sessions.flatMap((session, sessionIdx) => {
-      const sessionStart = new Date(session.startAt);
-      const sessionEnd = new Date(session.endAt);
+          return sessions.flatMap((session, sessionIdx) => {
+            const sessionStart = new Date(session.startAt);
+            const sessionEnd = new Date(session.endAt);
 
-      const result = splitSessionIntoCandles(
-        { startAt: sessionStart, endAt: sessionEnd },
-        today
-      );
+            const result = splitSessionIntoCandles(
+              { startAt: sessionStart, endAt: sessionEnd },
+              today
+            );
 
-      return result.candles.map((candle) => ({
-        id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
-        bookingId,
-        title: b.title,
-        start: candle.start,
-        end: candle.end,
-        status: b.status as BookingStatus,
-        clientName: b.clientName,
-        clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
-        rangeStart: result.rangeStart,
-        rangeEnd: result.rangeEnd,
-        sessionIndex: sessionIdx,
-        sessionStartAt: sessionStart,
-        sessionEndAt: sessionEnd,
-        sessionDayCount: result.totalShiftDays,
-        sessionPastDayCount: result.pastShiftDays,
-      }));
-    });
-  });
+            return result.candles.map((candle) => ({
+              id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
+              bookingId,
+              title: b.title,
+              start: candle.start,
+              end: candle.end,
+              status: b.status as BookingStatus,
+              clientName: b.clientName,
+              clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
+              rangeStart: result.rangeStart,
+              rangeEnd: result.rangeEnd,
+              sessionIndex: sessionIdx,
+              sessionStartAt: sessionStart,
+              sessionEndAt: sessionEnd,
+              sessionDayCount: result.totalShiftDays,
+              sessionPastDayCount: result.pastShiftDays,
+            }));
+          });
+        });
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
@@ -226,8 +267,11 @@ export default async function BookingsPage({
           }}
         />
       ) : (
-        <BookingsTable
+        <BookingsPageClient
           rows={rows}
+          total={bookingsTotal}
+          page={tablePage}
+          limit={tableLimit}
           locale={locale}
           empty={t("table.empty")}
           showPast={sp.showPast === "1"}

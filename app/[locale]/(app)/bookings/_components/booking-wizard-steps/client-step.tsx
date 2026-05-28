@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { SearchIcon, CheckIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
 
@@ -220,14 +221,13 @@ function ClientPicker({
           </div>
           <div className="flex flex-col gap-1">
             <Label htmlFor="client-new-phone">{t("phone")}</Label>
-            <Input
+            <PhoneInput
               id="client-new-phone"
-              type="tel"
-              value={value.mode === "new" ? (value.phone ?? "") : ""}
-              onChange={(e) =>
+              value={(value.mode === "new" ? (value.phone ?? "") : "") as string | undefined}
+              onChange={(phoneValue: string | undefined) =>
                 onChange({
                   ...(value as Extract<WizardValues["client"], { mode: "new" }>),
-                  phone: e.target.value,
+                  phone: phoneValue ?? "",
                 })
               }
               placeholder={t("phonePlaceholder")}

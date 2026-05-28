@@ -282,6 +282,8 @@
         "pastDateWarning": "Dipindahkan ke tanggal lampau",
         "pastSplitWarning": "Hari-hari lampau dipertahankan — hanya hari-hari mendatang yang diperbarui",
         "thisDayOnlyOnPast": "Tidak dapat mengedit hari yang telah berlalu",
+        "updating": "Memperbarui pemesanan…",
+        "updated": "Pemesanan diperbarui",
         "updateError": "Gagal memperbarui pemesanan",
         "conflictCheckFailed": "Tidak dapat memverifikasi konflik — silakan coba lagi",
         "overnightNotAllowed": "Pemesanan tidak boleh melewati tengah malam. Gunakan sesi berulang untuk beberapa hari.",
@@ -662,8 +664,7 @@
         "tagsAll": "Semua tag",
         "tagsSelected": "{count} {count, plural, one {tag} other {tag}}",
         "showInactive": "Tampilkan tidak aktif",
-        "add": "Tambah Klien",
-        "clearFilters": "Hapus filter"
+        "add": "Tambah Klien"
       },
       "sourceValues": {
         "form": "Formulir",
@@ -757,13 +758,20 @@
         "keep": "Lanjutkan mengubah",
         "discard": "Buang dan tutup"
       },
-      "pagination": {
-        "showing": "Menampilkan {from}–{to} dari {total} klien",
-        "rowsPerPage": "Per halaman",
-        "previous": "Sebelumnya",
-        "next": "Berikutnya"
+      "toasts": {
+        "reactivating": "Mengaktifkan kembali klien…",
+        "deactivating": "Menonaktifkan klien…"
       }
     }
+  },
+  "common": {
+    "pagination": {
+      "showing": "Menampilkan {from}–{to} dari {total}",
+      "rowsPerPage": "Per halaman",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    },
+    "clearFilters": "Hapus filter"
   },
   "onboarding": {
     "shell": {

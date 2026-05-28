@@ -4,6 +4,7 @@ import {
   bookingPatchSchema,
   bookingImportRowSchema,
   bookingSessionSchema,
+  bookingClientSchema,
   EDITABLE_KEYS,
 } from "./booking";
 
@@ -22,6 +23,42 @@ const validCreate = {
   amount: { total: 75_000, deposit: 25_000, currency: "PHP" as const },
   notes: "",
 };
+
+describe("bookingClientSchema (new-client phone shares client.ts E.164 rule)", () => {
+  const base = { mode: "new" as const, name: "Emma Carter", email: "emma@example.com" };
+
+  it("accepts a new client without a phone", () => {
+    expect(bookingClientSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("accepts a valid E.164 phone", () => {
+    expect(
+      bookingClientSchema.safeParse({ ...base, phone: "+639171234567" }).success
+    ).toBe(true);
+  });
+
+  it("trims surrounding whitespace before validating the phone", () => {
+    const result = bookingClientSchema.safeParse({ ...base, phone: " +639171234567 " });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.mode === "new") {
+      expect(result.data.phone).toBe("+639171234567");
+    }
+  });
+
+  it("rejects a non-E.164 phone (local format) — same as the clients flow", () => {
+    expect(
+      bookingClientSchema.safeParse({ ...base, phone: "09171234567" }).success
+    ).toBe(false);
+  });
+
+  it("normalizes a blank phone to null", () => {
+    const result = bookingClientSchema.safeParse({ ...base, phone: "" });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.mode === "new") {
+      expect(result.data.phone).toBeNull();
+    }
+  });
+});
 
 describe("bookingSessionSchema", () => {
   it("accepts a valid session", () => {

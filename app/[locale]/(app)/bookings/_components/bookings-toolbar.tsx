@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { DownloadIcon, PlusIcon, SearchIcon, UploadIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ClearFiltersButton } from "@/components/app/clear-filters-button";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -151,6 +152,9 @@ export function BookingsToolbar({
       </div>
 
       <div className="flex w-full items-center sm:w-auto sm:flex-wrap sm:gap-2">
+        <ClearFiltersButton
+          paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
+        />
         <Button
           variant="outline"
           size="sm"

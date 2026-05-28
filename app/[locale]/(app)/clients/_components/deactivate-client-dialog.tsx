@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AlertCircleIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { deactivateClientAction } from "@/lib/actions/clients";
+import { useGuardedAction } from "@/hooks/use-guarded-action";
 
 type Props = {
   clientId: string;
@@ -28,22 +28,24 @@ export function DeactivateClientDialog({
   onSuccess,
 }: Props) {
   const t = useTranslations("app.clients");
-  const [loading, setLoading] = useState(false);
 
-  async function handleConfirm() {
-    setLoading(true);
-    try {
+  const { loading, trigger: triggerDeactivate } = useGuardedAction(
+    async () => {
+      const id_toast = toast.loading(t("toasts.deactivating"));
       const result = await deactivateClientAction(clientId);
       if ("error" in result) {
-        toast.error(result.error);
-      } else {
-        toast.success(t("form.updateSuccess"));
-        onSuccess();
-        onOpenChange(false);
+        // Error surfaced via toast; keep the dialog open so the user can retry.
+        toast.error(result.error, { id: id_toast });
+        return;
       }
-    } finally {
-      setLoading(false);
+      toast.success(t("form.updateSuccess"), { id: id_toast });
+      onSuccess();
+      onOpenChange(false);
     }
+  );
+
+  function handleConfirm() {
+    void triggerDeactivate();
   }
 
   return (
@@ -77,10 +79,10 @@ export function DeactivateClientDialog({
             variant="destructive"
             size="sm"
             onClick={handleConfirm}
-            disabled={loading}
+            loading={loading}
             className="min-h-11 sm:min-h-0"
           >
-            {loading ? "…" : t("deactivate.confirm")}
+            {t("deactivate.confirm")}
           </Button>
         </div>
       </DialogContent>

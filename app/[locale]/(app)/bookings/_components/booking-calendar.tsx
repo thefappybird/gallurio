@@ -121,6 +121,9 @@ type Props = {
   };
   /** When true, past candles render with opacity-60, title strikethrough, and a "Past" pill. */
   showPast?: boolean;
+  /** Set of bookingIds that have an in-flight PATCH. Matching events are dimmed
+   *  and made non-interactive so the user cannot drag the same event twice. */
+  pendingIds?: Set<string>;
 };
 
 // Status colors are theme-invariant — same hex/oklch in light AND dark so the
@@ -775,6 +778,7 @@ export function BookingCalendar({
   dragFromOutsideItem,
   messages,
   showPast = false,
+  pendingIds,
 }: Props) {
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
@@ -923,9 +927,13 @@ export function BookingCalendar({
             if ("type" in event && (event as OverflowEvent).type === "overflow") {
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };
             }
-            const bg = STATUS_COLOR[(event as CalendarEvent).status];
+            const calEvent = event as CalendarEvent;
+            const bg = STATUS_COLOR[calEvent.status];
+            const isPending = pendingIds?.has(calEvent.bookingId) ?? false;
             return {
-              className: "cursor-pointer",
+              className: isPending
+                ? "opacity-60 pointer-events-none"
+                : "cursor-pointer",
               style: { borderColor: bg, padding: 0 },
             };
           }}

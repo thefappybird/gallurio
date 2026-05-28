@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { PlusIcon, SearchIcon, ChevronDownIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ClearFiltersButton } from "@/components/app/clear-filters-button";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -176,15 +177,20 @@ export function ClientsToolbar({ availableTags, onAddClient }: Props) {
         </label>
       </div>
 
-      {/* Add Client */}
-      <Button
-        size="sm"
-        className="bg-brand text-brand-foreground hover:bg-brand/90"
-        onClick={onAddClient}
-      >
-        <PlusIcon className="size-4" />
-        {t("toolbar.add")}
-      </Button>
+      {/* Right-side controls */}
+      <div className="flex items-center gap-2">
+        <ClearFiltersButton
+          paramKeys={["q", "source", "tags", "includeInactive"]}
+        />
+        <Button
+          size="sm"
+          className="bg-brand text-brand-foreground hover:bg-brand/90"
+          onClick={onAddClient}
+        >
+          <PlusIcon className="size-4" />
+          {t("toolbar.add")}
+        </Button>
+      </div>
     </div>
   );
 }

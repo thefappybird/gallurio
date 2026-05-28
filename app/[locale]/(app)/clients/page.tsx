@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { listClients, getWorkspaceTags } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
+import { PAGE_SIZE_OPTIONS } from "@/components/app/page-size-select";
 
 export async function generateMetadata({
   params,
@@ -46,8 +47,8 @@ export default async function ClientsPage({
   // malformed `?page=` can't flow into Mongo's skip() as NaN.
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
-  const parsedLimit = Number.parseInt(sp.limit ?? "25", 10);
-  const limit = [25, 50, 100].includes(parsedLimit) ? parsedLimit : 25;
+  const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
+  const limit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
   const tagFilter = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   const [{ items, total }, availableTags] = await Promise.all([
