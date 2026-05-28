@@ -107,7 +107,7 @@ export async function assignMemberToTeamAction(
     throw err;
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -135,7 +135,7 @@ export async function removeMemberFromTeamAction(
 
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -162,7 +162,7 @@ export async function setLeadFlagAction(
     .lean();
   if (!updated) return { error: "MEMBERSHIP_NOT_FOUND" };
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -209,6 +209,6 @@ export async function removeMemberFromWorkspaceAction(
     await releaseTeamSeat(m.teamId, ctx.workspace._id);
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
