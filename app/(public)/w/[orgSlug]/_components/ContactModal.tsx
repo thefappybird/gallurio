@@ -102,10 +102,11 @@ export function ContactModal({
             </div>
             <DialogPrimitive.Close
               aria-label={labels.close}
+              className="pf-modal-close"
               style={{
                 flexShrink: 0,
-                width: "40px",
-                height: "40px",
+                width: "44px",
+                height: "44px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -143,6 +144,8 @@ export function ContactModal({
       </DialogPrimitive.Portal>
 
       <style>{`
+        .pf-modal-close:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+        .pf-modal-close:hover { background-color: color-mix(in srgb, var(--pf-color-fg) 8%, transparent); }
         .pf-contact-popup {
           top: 0; left: 0; right: 0; bottom: 0;
           width: 100%; max-height: 100dvh;

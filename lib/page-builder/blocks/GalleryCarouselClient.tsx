@@ -7,12 +7,18 @@
  * (disabled under prefers-reduced-motion).
  */
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export type CarouselSlide = {
   id: string;
   src: string;
   alt: string;
+};
+
+export type CarouselLabels = {
+  hint: string;
+  prev: string;
+  next: string;
 };
 
 const ASPECT_RATIO: Record<"square" | "landscape" | "portrait", string> = {
@@ -39,12 +45,15 @@ export function GalleryCarouselClient({
   slides,
   aspect,
   autoplay,
+  labels,
 }: {
   slides: CarouselSlide[];
   aspect: "square" | "landscape" | "portrait";
   autoplay: boolean;
+  labels: CarouselLabels;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotionSnapshot,
@@ -60,7 +69,7 @@ export function GalleryCarouselClient({
   }
 
   useEffect(() => {
-    if (!autoplay || reducedMotion || slides.length < 2) return;
+    if (!autoplay || reducedMotion || paused || slides.length < 2) return;
     const id = window.setInterval(() => {
       const track = trackRef.current;
       if (!track) return;
@@ -73,10 +82,21 @@ export function GalleryCarouselClient({
     }, 4000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoplay, reducedMotion, slides.length]);
+  }, [autoplay, reducedMotion, paused, slides.length]);
 
   return (
-    <div style={{ position: "relative", maxWidth: "80rem", margin: "0 auto" }}>
+    <div
+      style={{ position: "relative", maxWidth: "80rem", margin: "0 auto" }}
+      // Pause autoplay while the user is interacting (WCAG 2.2.2).
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
+      <style>{`
+        .pf-carousel-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+        .pf-carousel-btn:hover { opacity: 1; }
+      `}</style>
       <div
         ref={trackRef}
         style={{
@@ -116,8 +136,8 @@ export function GalleryCarouselClient({
 
       {slides.length > 1 && (
         <>
-          <CarouselButton dir="prev" onClick={() => scrollByDir(-1)} />
-          <CarouselButton dir="next" onClick={() => scrollByDir(1)} />
+          <CarouselButton dir="prev" label={labels.prev} onClick={() => scrollByDir(-1)} />
+          <CarouselButton dir="next" label={labels.next} onClick={() => scrollByDir(1)} />
         </>
       )}
 
@@ -130,19 +150,28 @@ export function GalleryCarouselClient({
           marginTop: "0.75rem",
         }}
       >
-        Swipe or use the arrows to browse
+        {labels.hint}
       </p>
     </div>
   );
 }
 
-function CarouselButton({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) {
+function CarouselButton({
+  dir,
+  label,
+  onClick,
+}: {
+  dir: "prev" | "next";
+  label: string;
+  onClick: () => void;
+}) {
   const isPrev = dir === "prev";
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={isPrev ? "Previous image" : "Next image"}
+      aria-label={label}
+      className="pf-carousel-btn"
       style={{
         position: "absolute",
         top: "50%",

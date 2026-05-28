@@ -13,7 +13,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 
 export type GalleryMasonryProps = {
@@ -53,14 +53,15 @@ export async function GalleryMasonryBlock({
 }: GalleryMasonryProps) {
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
+  const labels = getGalleryChromeLabels();
 
   const workspace = getRenderWorkspace();
   if (!workspace || !String(workspace._id)) {
-    return <MasonryEmptyState message="Gallery not available." />;
+    return <MasonryEmptyState message={labels.unavailable} />;
   }
 
   if (!collectionId || !collectionId.trim()) {
-    return <MasonryEmptyState message="No collection selected." />;
+    return <MasonryEmptyState message={labels.noCollection} />;
   }
 
   let items;
@@ -71,12 +72,16 @@ export async function GalleryMasonryBlock({
       limit: maxItems,
     });
   } catch (err) {
-    console.error("GalleryMasonryBlock query failed", err);
-    return <MasonryEmptyState message="Gallery temporarily unavailable." />;
+    console.error("GalleryMasonryBlock query failed", {
+      workspaceId: String(workspace._id),
+      collectionId,
+      err,
+    });
+    return <MasonryEmptyState message={labels.error} />;
   }
 
   if (items.length === 0) {
-    return <MasonryEmptyState message="No photos in this collection yet." />;
+    return <MasonryEmptyState message={labels.empty} />;
   }
 
   return (
@@ -88,7 +93,14 @@ export async function GalleryMasonryBlock({
         fontFamily: "var(--pf-font-body)",
       }}
     >
+      {/* Mobile-first: cap columns on small viewports (inline columnCount is the
+          desktop value; the stylesheet overrides it with !important below 640px). */}
+      <style>{`
+        @media (max-width: 639px) { .pf-masonry { column-count: 2 !important; } }
+        @media (max-width: 399px) { .pf-masonry { column-count: 1 !important; } }
+      `}</style>
       <div
+        className="pf-masonry"
         style={{
           maxWidth: "80rem",
           margin: "0 auto",

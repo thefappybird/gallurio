@@ -103,6 +103,29 @@ describe("FeaturedWorkBlock", () => {
     expect(container.querySelectorAll("img")).toHaveLength(1);
   });
 
+  it("renders when itemIds arrive in Puck's stored object shape ([{ id }])", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    const created = await seed(ws, col._id, 2);
+    const puckShape = created.map((d) => ({ id: d._id.toString() }));
+    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
+      FeaturedWorkBlock({ ...base, itemIds: puckShape })
+    );
+    const { container } = render(el);
+    expect(container.querySelectorAll("img")).toHaveLength(2);
+  });
+
+  it("ignores malformed object rows (missing/blank id) without crashing", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    const created = await seed(ws, col._id, 1);
+    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
+      FeaturedWorkBlock({ ...base, itemIds: [{ id: created[0]._id.toString() }, { id: "" }, {}] })
+    );
+    const { container } = render(el);
+    expect(container.querySelectorAll("img")).toHaveLength(1);
+  });
+
   it("drops missing ids without crashing", async () => {
     const ws = new Types.ObjectId();
     const col = await makeCollection(ws);

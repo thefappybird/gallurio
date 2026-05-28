@@ -910,14 +910,25 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Hindi natagpuan ang portfolio",
       "notFoundBody": "Wala ang portfolio na ito o hindi pa ito na-publish.",
-      "startingFrom": "Nagsisimula sa {price}"
+      "startingFrom": "Nagsisimula sa {price}",
+      "gallery": {
+        "empty": "Wala pang larawan sa koleksiyong ito.",
+        "noCollection": "Walang napiling koleksiyon.",
+        "unavailable": "Hindi available ang gallery.",
+        "error": "Pansamantalang hindi available ang gallery.",
+        "featuredEmpty": "Wala pang piniling itinatampok na larawan.",
+        "carouselHint": "Mag-swipe o gamitin ang mga arrow para mag-browse",
+        "carouselPrev": "Nakaraang larawan",
+        "carouselNext": "Susunod na larawan"
+      }
     },
     "nav": {
       "home": "Home",
       "gallery": "Gallery",
       "contact": "Makipag-ugnayan",
       "openMenu": "Buksan ang menu",
-      "closeMenu": "Isara ang menu"
+      "closeMenu": "Isara ang menu",
+      "navLandmark": "Portfolio"
     },
     "inquiryForm": {
       "title": "Makipag-ugnayan",

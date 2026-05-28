@@ -53,8 +53,24 @@ export type RenderWorkspace = {
    * Pre-resolved chrome strings for the public page. Set by the page boundary after
    * calling getTranslations(). The `startingFrom` value is an ICU template with the
    * literal "{price}" token preserved for per-item substitution in ServicesListBlock.
+   * `gallery` holds the localized empty/error/carousel strings for the gallery blocks.
    */
-  chrome?: { startingFrom?: string } | null;
+  chrome?: {
+    startingFrom?: string;
+    gallery?: GalleryChromeLabels;
+  } | null;
+};
+
+/** Localized strings consumed by the gallery blocks (resolved at the page boundary). */
+export type GalleryChromeLabels = {
+  empty?: string;
+  noCollection?: string;
+  unavailable?: string;
+  error?: string;
+  featuredEmpty?: string;
+  carouselHint?: string;
+  carouselPrev?: string;
+  carouselNext?: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -157,6 +173,26 @@ export function getRenderWorkspace(): RenderWorkspace | null {
  * Throws if called outside a workspace render context (i.e., without first
  * wrapping the render in `runWithRenderWorkspace`). This is a programming error.
  */
+/**
+ * Returns the localized gallery chrome strings from the active render context,
+ * filling any missing value with an English default. Centralizes the fallbacks
+ * so blocks never hardcode user-visible copy, and so unit tests that render a
+ * block without setting `chrome` still get sensible English text.
+ */
+export function getGalleryChromeLabels(): Required<GalleryChromeLabels> {
+  const g = getRenderWorkspace()?.chrome?.gallery ?? {};
+  return {
+    empty: g.empty ?? "No photos in this collection yet.",
+    noCollection: g.noCollection ?? "No collection selected.",
+    unavailable: g.unavailable ?? "Gallery not available.",
+    error: g.error ?? "Gallery temporarily unavailable.",
+    featuredEmpty: g.featuredEmpty ?? "No featured photos selected yet.",
+    carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
+    carouselPrev: g.carouselPrev ?? "Previous image",
+    carouselNext: g.carouselNext ?? "Next image",
+  };
+}
+
 export function getRenderWorkspaceIdOrThrow(): string {
   const ws = getRenderWorkspace();
   if (!ws) {

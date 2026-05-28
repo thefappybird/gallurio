@@ -62,7 +62,19 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
-    chrome: { startingFrom: t("startingFrom", { price: "{price}" }) },
+    chrome: {
+      startingFrom: t("startingFrom", { price: "{price}" }),
+      gallery: {
+        empty: t("gallery.empty"),
+        noCollection: t("gallery.noCollection"),
+        unavailable: t("gallery.unavailable"),
+        error: t("gallery.error"),
+        featuredEmpty: t("gallery.featuredEmpty"),
+        carouselHint: t("gallery.carouselHint"),
+        carouselPrev: t("gallery.carouselPrev"),
+        carouselNext: t("gallery.carouselNext"),
+      },
+    },
   };
 
   return runWithRenderWorkspace(renderWorkspace, () => (

@@ -910,14 +910,25 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "ไม่พบพอร์ตโฟลิโอ",
       "notFoundBody": "พอร์ตโฟลิโอนี้ไม่มีอยู่หรือยังไม่ได้เผยแพร่",
-      "startingFrom": "เริ่มต้นที่ {price}"
+      "startingFrom": "เริ่มต้นที่ {price}",
+      "gallery": {
+        "empty": "ยังไม่มีรูปภาพในคอลเลกชันนี้",
+        "noCollection": "ยังไม่ได้เลือกคอลเลกชัน",
+        "unavailable": "แกลเลอรีไม่พร้อมใช้งาน",
+        "error": "แกลเลอรีไม่พร้อมใช้งานชั่วคราว",
+        "featuredEmpty": "ยังไม่ได้เลือกผลงานเด่น",
+        "carouselHint": "ปัดหรือใช้ลูกศรเพื่อดู",
+        "carouselPrev": "รูปก่อนหน้า",
+        "carouselNext": "รูปถัดไป"
+      }
     },
     "nav": {
       "home": "หน้าแรก",
       "gallery": "แกลเลอรี",
       "contact": "ติดต่อ",
       "openMenu": "เปิดเมนู",
-      "closeMenu": "ปิดเมนู"
+      "closeMenu": "ปิดเมนู",
+      "navLandmark": "Portfolio"
     },
     "inquiryForm": {
       "title": "ติดต่อเรา",

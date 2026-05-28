@@ -910,14 +910,25 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Portfolio not found",
       "notFoundBody": "This portfolio doesn't exist or hasn't been published yet.",
-      "startingFrom": "Starting from {price}"
+      "startingFrom": "Starting from {price}",
+      "gallery": {
+        "empty": "No photos in this collection yet.",
+        "noCollection": "No collection selected.",
+        "unavailable": "Gallery not available.",
+        "error": "Gallery temporarily unavailable.",
+        "featuredEmpty": "No featured photos selected yet.",
+        "carouselHint": "Swipe or use the arrows to browse",
+        "carouselPrev": "Previous image",
+        "carouselNext": "Next image"
+      }
     },
     "nav": {
       "home": "Home",
       "gallery": "Gallery",
       "contact": "Contact",
       "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+      "closeMenu": "Close menu",
+      "navLandmark": "Portfolio"
     },
     "inquiryForm": {
       "title": "Get in touch",

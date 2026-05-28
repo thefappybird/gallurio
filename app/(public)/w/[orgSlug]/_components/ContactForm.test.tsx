@@ -147,6 +147,20 @@ describe("ContactForm", () => {
     resolveFetch({ ok: true });
   });
 
+  it("switches to the booking tab when submit fails validation there", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    // Fill Tab 1 validly; leave Tab 2 (date + description) empty.
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    // Booking fields are not mounted while the client tab is active.
+    expect(screen.queryByLabelText("Date")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+
+    // Invalid submit should reveal the booking tab so its errors are visible.
+    await waitFor(() => expect(screen.getByLabelText("Date")).toBeInTheDocument());
+  });
+
   it("shows a validation error for an invalid email (rendered as a role=alert on the client tab)", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada" } });

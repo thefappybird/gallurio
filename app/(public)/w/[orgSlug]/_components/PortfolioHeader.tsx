@@ -14,6 +14,8 @@ import Link from "next/link";
 
 export type PortfolioHeaderLabels = {
   brand: string;
+  /** Localized landmark label for the <nav>. */
+  navLandmark: string;
   home: string;
   gallery: string;
   contact: string;
@@ -54,7 +56,7 @@ export function PortfolioHeader({
       }}
     >
       <nav
-        aria-label="Portfolio"
+        aria-label={labels.navLandmark}
         style={{
           maxWidth: "80rem",
           margin: "0 auto",
@@ -136,6 +138,14 @@ export function PortfolioHeader({
       <style>{`
         .pf-nav-desktop { display: none; }
         .pf-nav-toggle { display: flex !important; }
+        .pf-nav-link:focus-visible,
+        .pf-nav-contact:focus-visible,
+        .pf-nav-toggle:focus-visible {
+          outline: 2px solid var(--pf-color-accent);
+          outline-offset: 2px;
+        }
+        .pf-nav-link:hover { background-color: color-mix(in srgb, var(--pf-color-fg) 8%, transparent); }
+        .pf-nav-contact:hover { opacity: 0.9; }
         @media (min-width: 640px) {
           .pf-nav-desktop { display: flex !important; }
           .pf-nav-toggle { display: none !important; }
@@ -191,6 +201,7 @@ function ContactButton({
     <button
       type="button"
       data-cta="contact"
+      className="pf-nav-contact"
       onClick={onActivate}
       style={{
         display: block ? "block" : "inline-flex",

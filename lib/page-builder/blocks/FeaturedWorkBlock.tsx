@@ -9,15 +9,26 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
 import { getItemsByIds } from "@/lib/db/queries/gallery";
+
+// Puck `array` fields persist an array of objects, so `itemIds` round-trips as
+// `Array<{ id }>` from the editor. Tests/fixtures may pass a plain `string[]`.
+// `normalizeItemIds` accepts both shapes.
+export type FeaturedWorkItemId = string | { id?: string | null };
 
 export type FeaturedWorkProps = {
   heading: string;
   subheading: string;
-  itemIds: string[];
+  itemIds: FeaturedWorkItemId[];
   layout: "row" | "stagger";
 };
+
+function normalizeItemIds(itemIds: FeaturedWorkItemId[]): string[] {
+  return (Array.isArray(itemIds) ? itemIds : [])
+    .map((x) => (typeof x === "string" ? x : x?.id))
+    .filter((x): x is string => typeof x === "string" && x.length > 0);
+}
 
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
   heading: "Featured work",
@@ -38,16 +49,22 @@ export async function FeaturedWorkBlock({
 
   let items: Awaited<ReturnType<typeof getItemsByIds>> = [];
   if (workspace && String(workspace._id)) {
-    const ids = (Array.isArray(itemIds) ? itemIds : []).slice(0, MAX_FEATURED);
+    const ids = normalizeItemIds(itemIds).slice(0, MAX_FEATURED);
     if (ids.length > 0) {
       try {
         items = await getItemsByIds({ workspaceId: String(workspace._id), itemIds: ids });
       } catch (err) {
-        console.error("FeaturedWorkBlock query failed", err);
+        console.error("FeaturedWorkBlock query failed", {
+          workspaceId: String(workspace._id),
+          itemIds: ids,
+          err,
+        });
         items = [];
       }
     }
   }
+
+  const labels = getGalleryChromeLabels();
 
   return (
     <section
@@ -59,6 +76,10 @@ export async function FeaturedWorkBlock({
         fontFamily: "var(--pf-font-body)",
       }}
     >
+      {/* Mobile-first: stack to a single column below 640px. */}
+      <style>{`
+        @media (max-width: 639px) { .pf-featured-grid { grid-template-columns: 1fr !important; } }
+      `}</style>
       <div style={{ maxWidth: "72rem", margin: "0 auto" }}>
         {heading && (
           <h2
@@ -98,10 +119,11 @@ export async function FeaturedWorkBlock({
               marginTop: "2rem",
             }}
           >
-            No featured photos selected yet.
+            {labels.featuredEmpty}
           </p>
         ) : (
           <div
+            className="pf-featured-grid"
             style={{
               display: "grid",
               gridTemplateColumns: `repeat(${items.length}, 1fr)`,
@@ -168,13 +190,12 @@ export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
     itemIds: {
       type: "array",
       label: "Gallery item IDs (max 3)",
+      // Puck persists each row as `{ id }`; the component's normalizeItemIds
+      // flattens these objects back to id strings at render time.
       arrayFields: {
-        // Each entry is a plain item-id string.
         id: { type: "text", label: "Item ID" },
       },
-      // Stored as string[]; Puck array fields hold objects, so we expose a
-      // single text field per row and map at the edges. See getArrayItemLabel.
-    } as unknown as Field<string[]>,
+    } as unknown as Field<FeaturedWorkItemId[]>,
     layout: {
       type: "select",
       label: "Layout",

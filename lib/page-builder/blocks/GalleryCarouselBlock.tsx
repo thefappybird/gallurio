@@ -11,7 +11,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
 
@@ -41,13 +41,14 @@ export async function GalleryCarouselBlock({
   autoplay,
   maxItems,
 }: GalleryCarouselProps) {
+  const labels = getGalleryChromeLabels();
   const workspace = getRenderWorkspace();
   if (!workspace || !String(workspace._id)) {
-    return <CarouselEmptyState message="Gallery not available." />;
+    return <CarouselEmptyState message={labels.unavailable} />;
   }
 
   if (!collectionId || !collectionId.trim()) {
-    return <CarouselEmptyState message="No collection selected." />;
+    return <CarouselEmptyState message={labels.noCollection} />;
   }
 
   let items;
@@ -58,12 +59,16 @@ export async function GalleryCarouselBlock({
       limit: maxItems,
     });
   } catch (err) {
-    console.error("GalleryCarouselBlock query failed", err);
-    return <CarouselEmptyState message="Gallery temporarily unavailable." />;
+    console.error("GalleryCarouselBlock query failed", {
+      workspaceId: String(workspace._id),
+      collectionId,
+      err,
+    });
+    return <CarouselEmptyState message={labels.error} />;
   }
 
   if (items.length === 0) {
-    return <CarouselEmptyState message="No photos in this collection yet." />;
+    return <CarouselEmptyState message={labels.empty} />;
   }
 
   const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
@@ -86,7 +91,12 @@ export async function GalleryCarouselBlock({
         fontFamily: "var(--pf-font-body)",
       }}
     >
-      <GalleryCarouselClient slides={slides} aspect={aspect} autoplay={autoplay} />
+      <GalleryCarouselClient
+        slides={slides}
+        aspect={aspect}
+        autoplay={autoplay}
+        labels={{ hint: labels.carouselHint, prev: labels.carouselPrev, next: labels.carouselNext }}
+      />
     </section>
   );
 }

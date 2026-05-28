@@ -4,6 +4,7 @@ import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
 
 const labels: PortfolioHeaderLabels = {
   brand: "Luna Studio",
+  navLandmark: "Portfolio",
   home: "Home",
   gallery: "Gallery",
   contact: "Contact",

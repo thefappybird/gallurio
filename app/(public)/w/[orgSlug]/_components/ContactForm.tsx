@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, type CSSProperties } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useEffect, useState, type CSSProperties } from "react";
+import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   inquirySubmissionSchema,
@@ -159,6 +159,14 @@ export function ContactForm({
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const minDate = todayIso();
+  const [activeTab, setActiveTab] = useState<"client" | "booking">("client");
+
+  // On a failed client-side validation, surface the first tab that has an error
+  // so the user isn't left staring at a submit button that "does nothing".
+  function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
+    const tab1HasError = Boolean(errs.name || errs.email || errs.phone || errs.preferredContact);
+    setActiveTab(tab1HasError ? "client" : "booking");
+  }
 
   // Attach tracking params once on mount.
   useEffect(() => {
@@ -187,8 +195,15 @@ export function ContactForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ fontFamily: "var(--pf-font-body)" }}>
-      <Tabs defaultValue="client">
+    <form
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      noValidate
+      style={{ fontFamily: "var(--pf-font-body)" }}
+    >
+      <style>{`
+        .pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+      `}</style>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "booking")}>
         <TabsList>
           <TabsTab value="client">{labels.tabClient}</TabsTab>
           <TabsTab value="booking">{labels.tabBooking}</TabsTab>
@@ -278,11 +293,12 @@ export function ContactForm({
                     {fields.length > 1 && (
                       <button
                         type="button"
+                        className="pf-cf-btn"
                         onClick={() => remove(index)}
                         aria-label={`${labels.removeSession} ${index + 1}`}
                         style={{
-                          minHeight: "32px",
-                          padding: "0 0.5rem",
+                          minHeight: "44px",
+                          padding: "0 0.75rem",
                           background: "transparent",
                           color: "var(--pf-color-fg)",
                           border: "1px solid color-mix(in srgb, var(--pf-color-fg) 24%, transparent)",
@@ -351,10 +367,11 @@ export function ContactForm({
 
             <button
               type="button"
+              className="pf-cf-btn"
               onClick={() => append({ startDate: "", startTime: "10:00", endTime: "17:00" })}
               style={{
                 marginTop: "0.5rem",
-                minHeight: "40px",
+                minHeight: "44px",
                 padding: "0 0.75rem",
                 background: "transparent",
                 color: "var(--pf-color-fg)",
@@ -445,6 +462,7 @@ export function ContactForm({
 
       <button
         type="submit"
+        className="pf-cf-btn"
         disabled={isSubmitting}
         style={submitButtonStyle(submitAppearance, isSubmitting)}
       >

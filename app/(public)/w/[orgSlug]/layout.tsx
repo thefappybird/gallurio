@@ -57,6 +57,7 @@ export default async function PublicPortfolioLayout({
         slug={workspace.slug}
         labels={{
           brand: workspace.name,
+          navLandmark: tNav("navLandmark"),
           home: tNav("home"),
           gallery: tNav("gallery"),
           contact: tNav("contact"),

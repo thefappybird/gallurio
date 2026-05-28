@@ -910,14 +910,25 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Portfolio tidak dijumpai",
       "notFoundBody": "Portfolio ini tidak wujud atau belum diterbitkan.",
-      "startingFrom": "Bermula dari {price}"
+      "startingFrom": "Bermula dari {price}",
+      "gallery": {
+        "empty": "Belum ada foto dalam koleksi ini.",
+        "noCollection": "Tiada koleksi dipilih.",
+        "unavailable": "Galeri tidak tersedia.",
+        "error": "Galeri tidak tersedia buat sementara.",
+        "featuredEmpty": "Belum ada foto pilihan dipilih.",
+        "carouselHint": "Leret atau guna anak panah untuk melihat",
+        "carouselPrev": "Imej sebelumnya",
+        "carouselNext": "Imej seterusnya"
+      }
     },
     "nav": {
       "home": "Laman Utama",
       "gallery": "Galeri",
       "contact": "Hubungi",
       "openMenu": "Buka menu",
-      "closeMenu": "Tutup menu"
+      "closeMenu": "Tutup menu",
+      "navLandmark": "Portfolio"
     },
     "inquiryForm": {
       "title": "Hubungi kami",
