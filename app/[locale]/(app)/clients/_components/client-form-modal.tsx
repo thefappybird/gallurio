@@ -129,8 +129,8 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent showCloseButton={false} className="flex max-w-lg flex-col gap-0 p-0">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <DialogContent showCloseButton={false} className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-0 p-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
             <DialogTitle>{isEdit ? t("form.editTitle") : t("form.addTitle")}</DialogTitle>
             <Button
               type="button"
@@ -144,22 +144,22 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
             </Button>
           </div>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4 px-4 py-4">
-            {/* Row 1: Name */}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cf-name">{t("form.name")} *</Label>
-              <Input
-                id="cf-name"
-                placeholder={t("form.namePlaceholder")}
-                {...form.register("name")}
-              />
-              {form.formState.errors.name && (
-                <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
-              )}
-            </div>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+              {/* Row 1: Name */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cf-name">{t("form.name")} *</Label>
+                <Input
+                  id="cf-name"
+                  placeholder={t("form.namePlaceholder")}
+                  {...form.register("name")}
+                />
+                {form.formState.errors.name && (
+                  <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+                )}
+              </div>
 
-            {/* Row 2: Email + Phone */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Row 2: Email */}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="cf-email">{t("form.email")}</Label>
                 <Input
@@ -172,46 +172,54 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                   <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="cf-phone">{t("form.phone")}</Label>
-                <Controller
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <PhoneInput
-                      id="cf-phone"
-                      value={field.value ?? undefined}
-                      onChange={(value: string | undefined) => field.onChange(value ?? null)}
-                      placeholder={t("form.phonePlaceholder")}
-                    />
-                  )}
-                />
-                {form.formState.errors.phone && (
-                  <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
-                )}
-              </div>
-            </div>
 
-            {/* Row 3: Source + Tags */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <Label>{t("form.source")}</Label>
-                <Select
-                  value={form.watch("source")}
-                  onValueChange={(v) => form.setValue("source", v as ClientFormInput["source"], { shouldDirty: true })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SOURCES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {t(`sourceValues.${s}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Row 3: Phone + Source */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="cf-phone">{t("form.phone")}</Label>
+                  <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <PhoneInput
+                        id="cf-phone"
+                        value={field.value ?? undefined}
+                        onChange={(value: string | undefined) => field.onChange(value ?? null)}
+                        placeholder={t("form.phonePlaceholder")}
+                      />
+                    )}
+                  />
+                  {form.formState.errors.phone && (
+                    <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>{t("form.source")}</Label>
+                  <Select
+                    value={form.watch("source")}
+                    onValueChange={(v) => form.setValue("source", v as ClientFormInput["source"], { shouldDirty: true })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue>
+                        {(value: string) => (
+                          <span className="capitalize">
+                            {t(`sourceValues.${value}` as Parameters<typeof t>[0])}
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SOURCES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {t(`sourceValues.${s}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+
+              {/* Row 4: Tags */}
               <div className="flex flex-col gap-1.5">
                 <Label>{t("form.tags")}</Label>
                 <Input
@@ -226,7 +234,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                   }}
                 />
                 {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
                     {tags.map((tag) => (
                       <span
                         key={tag}
@@ -236,7 +244,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                         <button
                           type="button"
                           onClick={() => removeTag(tag)}
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-foreground sm:min-h-0 sm:min-w-0"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-0 sm:min-w-0"
                           aria-label={t("form.removeTag", { tag })}
                         >
                           <XIcon className="size-2.5" />
@@ -246,27 +254,27 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Row 4: Notes */}
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cf-notes">{t("form.notes")}</Label>
-              <textarea
-                id="cf-notes"
-                placeholder={t("form.notesPlaceholder")}
-                rows={3}
-                className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                {...form.register("notes")}
-              />
-            </div>
+              {/* Row 5: Notes */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="cf-notes">{t("form.notes")}</Label>
+                <textarea
+                  id="cf-notes"
+                  placeholder={t("form.notesPlaceholder")}
+                  rows={3}
+                  className="w-full resize-none border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  {...form.register("notes")}
+                />
+              </div>
 
-            {/* Root error */}
-            {form.formState.errors.root && (
-              <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
-            )}
+              {/* Root error */}
+              {form.formState.errors.root && (
+                <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
+              )}
+            </div>
 
             {/* Footer */}
-            <div className="flex flex-col-reverse gap-2 border-t border-border pt-3 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border px-4 py-3 sm:flex-row sm:justify-end">
               <Button
                 type="button"
                 variant="outline"

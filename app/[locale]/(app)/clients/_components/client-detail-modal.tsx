@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { getClientBookingsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
 import type { ClientRow } from "./clients-table";
+import { SourceBadge } from "./source-badge";
 
 type Props = {
   client: ClientRow | null;
@@ -21,13 +22,6 @@ type Props = {
   onDeactivate: (client: ClientRow) => void;
   onReactivate: (client: ClientRow) => void;
   locale: string;
-};
-
-const SOURCE_BADGE_CLASS: Record<string, string> = {
-  form: "border-brand text-brand",
-  manual: "border-muted-foreground text-muted-foreground",
-  referral: "border-foreground text-foreground",
-  import: "border-muted-foreground text-muted-foreground",
 };
 
 export function ClientDetailModal({
@@ -175,12 +169,7 @@ function ClientDetailModalInner({
                 <span className="text-muted-foreground">{client.phone ?? t("detail.overview.noPhone")}</span>
               </div>
               <div className="mt-1 flex items-center gap-1.5">
-                <Badge
-                  variant="outline"
-                  className={SOURCE_BADGE_CLASS[client.source] ?? ""}
-                >
-                  {t(`sourceValues.${client.source}` as Parameters<typeof t>[0])}
-                </Badge>
+                <SourceBadge source={client.source} />
               </div>
             </div>
 
