@@ -1,13 +1,11 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
-
-const publicPageBlockSchema = new Schema(
-  {
-    type: { type: String, required: true },
-    props: { type: Schema.Types.Mixed, default: {} },
-  },
-  { _id: true }
-);
+import {
+  BRAND_KIT_THEME_PRESETS,
+  BRAND_KIT_FONT_PAIRS,
+  BRAND_KIT_RADII,
+  BRAND_KIT_BUTTON_STYLES,
+} from "@/lib/page-builder/types";
 
 export const PLAN_TIERS = ["free", "starter", "pro"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
@@ -54,11 +52,38 @@ const workspaceSchema = new Schema(
       tagline: { type: String, default: "" },
       description: { type: String, default: "" },
     },
+    contact: {
+      email: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      address: { type: String, default: "" },
+      socials: {
+        instagram: { type: String, default: "" },
+        facebook: { type: String, default: "" },
+        tiktok: { type: String, default: "" },
+        website: { type: String, default: "" },
+      },
+    },
     publicPage: {
       templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "default" },
-      data: { type: Schema.Types.Mixed, default: null },
-      blocks: { type: [publicPageBlockSchema], default: [] },
+      data: {
+        home: { type: Schema.Types.Mixed, default: null },
+        gallery: { type: Schema.Types.Mixed, default: null },
+      },
+      brandKit: {
+        themePreset: { type: String, enum: BRAND_KIT_THEME_PRESETS, default: "minimal" },
+        fontPair: { type: String, enum: BRAND_KIT_FONT_PAIRS, default: "merriweather-only" },
+        primaryColor: { type: String, default: "#111111" },
+        secondaryColor: { type: String, default: "#f5f5f5" },
+        accentColor: { type: String, default: "#2f5d56" },
+        backgroundColor: { type: String, default: "#ffffff" },
+        foregroundColor: { type: String, default: "#111111" },
+        radius: { type: String, enum: BRAND_KIT_RADII, default: "sharp" },
+        buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
+      },
       publishedAt: { type: Date, default: null },
+      // Publish bookkeeping — written by the publish action.
+      lastPublishedAt: { type: Date, default: null },
+      latestVersion: { type: Number, default: 0 },
       seoTitle: { type: String, default: "" },
       seoDescription: { type: String, default: "" },
       inquiryRecipientEmail: { type: String, default: "" },
