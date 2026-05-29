@@ -272,6 +272,30 @@ describe("BookingsTable", () => {
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
     expect(screen.queryByText("Old Completed Shoot")).not.toBeInTheDocument();
   });
+
+  // ── Status pill: translated label + status color ─────────────────────────────
+
+  it("renders a status pill with the translated label and its status color", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    // statusValues.booked → "Booked"
+    const pill = screen.getByText("Booked");
+    expect(pill).toBeInTheDocument();
+    // Solid fill keyed off the shared status-color var (matches the calendar candle).
+    expect(pill.getAttribute("style")).toContain("--event-booked");
+  });
+
+  // ── Total cell alignment (Task 7): cell is left-aligned to match the header ──
+
+  it("does NOT right-align the Total cell value", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const totalValue = screen.getByText(/75,000/);
+    expect(totalValue.className).not.toMatch(/text-right/);
+    expect(totalValue.className).toMatch(/tabular-nums/);
+  });
 });
 
 // ---------------------------------------------------------------------------

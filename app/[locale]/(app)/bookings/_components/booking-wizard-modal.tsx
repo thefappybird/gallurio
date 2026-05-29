@@ -234,7 +234,11 @@ export function BookingWizardModal({
             wizardSessions.length > 0
               ? wizardSessions
               : [{ startDate: "", startTime: "10:00", endTime: "17:00", allowPastDate: false }],
-          location: { address: b.location?.address ?? "" },
+          location: {
+            address: b.location?.address ?? "",
+            lat: b.location?.lat ?? null,
+            lng: b.location?.lng ?? null,
+          },
           amount: {
             total: b.amount?.total ?? 0,
             deposit: b.amount?.deposit ?? 0,
@@ -946,7 +950,7 @@ function makeDefaults({
       initialValues?.sessions && initialValues.sessions.length > 0
         ? initialValues.sessions
         : [defaultSession],
-    location: initialValues?.location ?? { address: "" },
+    location: initialValues?.location ?? { address: "", lat: null, lng: null },
     amount: {
       total: initialValues?.amount?.total ?? 0,
       deposit: initialValues?.amount?.deposit ?? 0,
@@ -986,7 +990,11 @@ function buildCreatePayload(v: WizardValues, timeZone: string) {
     eventType: v.eventType,
     status: v.status,
     sessions: sessionsToPayload(v.sessions, timeZone),
-    location: { address: v.location.address },
+    location: {
+      address: v.location.address,
+      lat: v.location.lat,
+      lng: v.location.lng,
+    },
     amount: {
       total: v.amount.total,
       deposit: v.amount.deposit,
@@ -1016,6 +1024,10 @@ function buildEditDiff(
 
   if (v.location.address !== defaults.location.address)
     diff["location.address"] = v.location.address;
+  if (v.location.lat !== defaults.location.lat)
+    diff["location.lat"] = v.location.lat;
+  if (v.location.lng !== defaults.location.lng)
+    diff["location.lng"] = v.location.lng;
   if (v.amount.total !== defaults.amount.total)
     diff["amount.total"] = v.amount.total;
   if (v.amount.deposit !== defaults.amount.deposit)

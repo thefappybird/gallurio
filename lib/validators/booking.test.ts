@@ -144,6 +144,43 @@ describe("bookingCreateSchema", () => {
     });
     expect(bad.success).toBe(false);
   });
+
+  it("defaults location lat/lng to null when only an address is given", () => {
+    const result = bookingCreateSchema.safeParse(validCreate);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.location.lat).toBeNull();
+      expect(result.data.location.lng).toBeNull();
+    }
+  });
+
+  it("accepts location with valid lat/lng coordinates", () => {
+    const result = bookingCreateSchema.safeParse({
+      ...validCreate,
+      location: { address: "Manila", lat: 14.5995, lng: 120.9842 },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.location.lat).toBe(14.5995);
+      expect(result.data.location.lng).toBe(120.9842);
+    }
+  });
+
+  it("rejects out-of-range latitude (> 90)", () => {
+    const bad = bookingCreateSchema.safeParse({
+      ...validCreate,
+      location: { address: "x", lat: 91, lng: 0 },
+    });
+    expect(bad.success).toBe(false);
+  });
+
+  it("rejects out-of-range longitude (< -180)", () => {
+    const bad = bookingCreateSchema.safeParse({
+      ...validCreate,
+      location: { address: "x", lat: 0, lng: -181 },
+    });
+    expect(bad.success).toBe(false);
+  });
 });
 
 describe("bookingPatchSchema", () => {
@@ -187,6 +224,16 @@ describe("bookingPatchSchema", () => {
     expect(bad.success).toBe(false);
   });
 
+  it("accepts location.lat / location.lng patches", () => {
+    expect(bookingPatchSchema.safeParse({ "location.lat": 14.6 }).success).toBe(true);
+    expect(bookingPatchSchema.safeParse({ "location.lng": 120.98 }).success).toBe(true);
+    expect(bookingPatchSchema.safeParse({ "location.lat": null }).success).toBe(true);
+  });
+
+  it("rejects an out-of-range location.lat patch", () => {
+    expect(bookingPatchSchema.safeParse({ "location.lat": 200 }).success).toBe(false);
+  });
+
   it("accepts every key listed in EDITABLE_KEYS individually", () => {
     const samples: Record<string, unknown> = {
       title: "x",
@@ -194,6 +241,8 @@ describe("bookingPatchSchema", () => {
       status: "booked",
       sessions: [validSession],
       "location.address": "addr",
+      "location.lat": 14.6,
+      "location.lng": 120.98,
       "amount.total": 1,
       "amount.deposit": 0,
       "amount.currency": "PHP",

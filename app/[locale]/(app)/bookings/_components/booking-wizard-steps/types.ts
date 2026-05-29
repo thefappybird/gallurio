@@ -22,7 +22,7 @@ export type WizardValues = {
   eventType: EventType;
   status: BookingStatus;
   sessions: WizardSession[];
-  location: { address: string };
+  location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: SupportedCurrency };
   notes: string;
 };

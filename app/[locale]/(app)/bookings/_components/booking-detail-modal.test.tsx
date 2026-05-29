@@ -56,6 +56,13 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
 
+// The Event tab now renders the LocationPicker, which dynamically imports a
+// Leaflet map. Stub it — this suite covers session/pricing logic, not the map
+// (the picker has its own test).
+vi.mock("@/components/ui/location-picker", () => ({
+  LocationPicker: () => null,
+}));
+
 // ── Fixture data ─────────────────────────────────────────────────────────────
 
 const BOOKING_ID = "booking-abc-123";
@@ -148,6 +155,9 @@ async function waitForLoad() {
     // The title appears as a DialogTitle (<h2>). Use heading role to be precise.
     expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
   });
+  // Sessions, pricing, and location live under the Event tab after the
+  // tab-grouping rework — activate it so that content is in the DOM.
+  fireEvent.click(screen.getByRole("tab", { name: "Event" }));
 }
 
 /** Click the inline-edit pencil for Session N (1-indexed). */
@@ -615,6 +625,8 @@ describe("False-conflict regression — time-overlap filtering", () => {
         screen.getByRole("heading", { name: "Multi-Session Booking" })
       ).toBeInTheDocument();
     });
+    // Session cards live under the Event tab after the tab-grouping rework.
+    fireEvent.click(screen.getByRole("tab", { name: "Event" }));
   }
 
   it("does NOT show a conflict when the only shift on the date belongs to the same booking", async () => {
@@ -642,10 +654,12 @@ describe("False-conflict regression — time-overlap filtering", () => {
     });
   });
 
-  it("does NOT show a conflict when a shift on the same date does not overlap session 1's time window", async () => {
+  it("does NOT bleed a shift into session 1 when it only overlaps session 2's time window", async () => {
     const twoSessBooking = makeTwoSessionBooking();
-    // Shift is 16:30–20:30 on the same date — no overlap with session 1 (08:30–15:30).
-    const nonOverlappingShift = {
+    // Shift 16:30–20:30 on the same date: overlaps session 2 (16:30–20:30) but
+    // NOT session 1 (08:30–15:30). The time-overlap filter must surface it on
+    // session 2's card only — exactly one mention, never bleeding into session 1.
+    const session2OnlyShift = {
       id: "other-booking-xyz",
       bookingId: "other-booking-xyz",
       title: "Evening Event",
@@ -654,14 +668,15 @@ describe("False-conflict regression — time-overlap filtering", () => {
     };
     vi.stubGlobal(
       "fetch",
-      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [nonOverlappingShift] })
+      makeFetch({ booking: twoSessBooking as typeof MOCK_BOOKING, shifts: [session2OnlyShift] })
     );
     renderModal();
     await waitForMultiSessionLoad();
 
-    // No conflict should appear for session 1 — times don't overlap.
+    // Appears exactly once (session 2's card). A second mention would mean it
+    // wrongly bled into session 1, which the time-overlap filter must prevent.
     await waitFor(() => {
-      expect(screen.queryByText(/Evening Event/)).not.toBeInTheDocument();
+      expect(screen.getAllByText(/Evening Event/)).toHaveLength(1);
     });
   });
 

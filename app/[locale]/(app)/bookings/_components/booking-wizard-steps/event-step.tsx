@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { LocationPicker } from "@/components/ui/location-picker";
 import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import type { WizardValues } from "./types";
 
@@ -279,9 +280,6 @@ function SessionCard({
         </div>
       ) : null}
 
-      {/* Hint */}
-      <p className="text-xs text-muted-foreground">{t("shiftHint")}</p>
-
       {/* Allow-past-date toggle */}
       <label
         className={`flex items-center gap-2 text-xs text-muted-foreground ${isPastDate ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
@@ -418,10 +416,20 @@ export function EventStep({
       {/* Location — applies to all sessions */}
       <div className="flex flex-col gap-1">
         <Label htmlFor="wiz-location">{t("location")}</Label>
-        <Input
-          id="wiz-location"
-          {...register("location.address")}
-          placeholder={t("locationPlaceholder")}
+        <Controller
+          control={control}
+          name="location"
+          render={({ field }) => (
+            <LocationPicker
+              id="wiz-location"
+              value={{
+                address: field.value?.address ?? "",
+                lat: field.value?.lat ?? null,
+                lng: field.value?.lng ?? null,
+              }}
+              onChange={field.onChange}
+            />
+          )}
         />
       </div>
     </div>
