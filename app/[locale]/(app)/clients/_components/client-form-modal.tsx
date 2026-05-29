@@ -129,7 +129,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent showCloseButton={false} className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-0 p-0">
+        <DialogContent showCloseButton={false} className="flex max-h-[calc(100dvh-2rem)] sm:max-w-lg flex-col gap-0 p-0">
           <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
             <DialogTitle>{isEdit ? t("form.editTitle") : t("form.addTitle")}</DialogTitle>
             <Button

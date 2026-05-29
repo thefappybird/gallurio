@@ -50,7 +50,7 @@ export function DeactivateClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="flex max-w-md flex-col gap-0 p-0">
+      <DialogContent showCloseButton={false} className="flex sm:max-w-md flex-col gap-0 p-0">
         <div className="flex items-start gap-3 border-b border-border px-4 py-3">
           <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center border border-border bg-muted text-muted-foreground">
             <AlertCircleIcon className="size-4" />

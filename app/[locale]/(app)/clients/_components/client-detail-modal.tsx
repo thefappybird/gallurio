@@ -104,7 +104,7 @@ function ClientDetailModalInner({
       {/* Cap modal height to the small viewport so long notes / 50-row
           booking lists scroll inside the tab panels instead of pushing the
           header and footer past the screen edge on mobile. */}
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-0 p-0">
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] sm:max-w-lg flex-col gap-0 p-0">
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
           <div className="flex flex-col">
