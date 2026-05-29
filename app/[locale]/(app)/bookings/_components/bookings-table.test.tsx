@@ -1,7 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BookingsTable, type BookingRow } from "./bookings-table";
+
+// ---------------------------------------------------------------------------
+// Partial mock of @tanstack/react-table used only by the render-stability
+// describe block below.  We keep the REAL useReactTable running so the table
+// renders normally; we just intercept the `data` argument on each call.
+//
+// `capturedData` is declared via vi.hoisted so it exists before the vi.mock
+// factory is executed (vi.mock is hoisted to the top of the compiled output).
+// ---------------------------------------------------------------------------
+const capturedData = vi.hoisted<unknown[]>(() => []);
+
+vi.mock("@tanstack/react-table", async (importActual) => {
+  const actual = await importActual<typeof import("@tanstack/react-table")>();
+  return {
+    ...actual,
+    useReactTable: (opts: Parameters<typeof actual.useReactTable>[0]) => {
+      capturedData.push(opts.data);
+      return actual.useReactTable(opts);
+    },
+  };
+});
 
 const TEST_TZ = "UTC";
 
@@ -274,5 +295,74 @@ describe("BookingsTable", () => {
     const totalValue = screen.getByText(/75,000/);
     expect(totalValue.className).not.toMatch(/text-right/);
     expect(totalValue.className).toMatch(/tabular-nums/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: infinite re-render loop caused by `visibleRows` being a fresh
+// array reference every render.  The fix is the `useMemo` wrapping
+// `visibleRows` in bookings-table.tsx.  This suite FAILS if that memo is
+// removed because `.filter()` returns a new array on every call, causing
+// TanStack's internal state update → re-render → another filter → ...
+// ---------------------------------------------------------------------------
+describe("render stability (regression: infinite re-render loop)", () => {
+  beforeEach(() => {
+    // Reset the capture array before each test in this suite so tests are
+    // isolated even though the array lives at module scope.
+    capturedData.length = 0;
+  });
+
+  it("passes the same `data` reference to useReactTable across re-renders triggered by sort toggle", () => {
+    // futureRow is the only row that survives the showPast=false filter, so
+    // the `.filter()` path is exercised (not the `rows` shortcut for showPast=true).
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow, pastRow]}
+        locale="en"
+        empty="No rows"
+        showPast={false}
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+
+    // Sanity: table rendered — at least the initial call captured data.
+    expect(capturedData.length).toBeGreaterThanOrEqual(1);
+    const firstDataRef = capturedData[0];
+
+    // Click the "Date" column header to toggle sorting — this changes the
+    // internal `sorting` state and causes a re-render without touching
+    // `rows`, `showPast`, or `workspaceTimezone`.
+    const dateHeader = screen.getByText(/date/i);
+    fireEvent.click(dateHeader);
+
+    // After the re-render at least one more call must have been captured.
+    expect(capturedData.length).toBeGreaterThanOrEqual(2);
+
+    // Every `data` reference captured must be the identical object: the
+    // memoized `visibleRows` array.  A fresh `.filter()` on each render
+    // would produce a different reference, making this assertion fail.
+    for (const ref of capturedData) {
+      expect(ref).toBe(firstDataRef);
+    }
+  });
+
+  it("renders only non-past rows when showPast is false — memoization did not change filtering behaviour", () => {
+    renderWithProviders(
+      <BookingsTable
+        rows={[futureRow, pastRow]}
+        locale="en"
+        empty="No rows"
+        showPast={false}
+        workspaceTimezone={TEST_TZ}
+      />
+    );
+
+    // futureRow must be visible; pastRow must be hidden.
+    expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
+    expect(screen.queryByText("Old Completed Shoot")).not.toBeInTheDocument();
+
+    // Only the one surviving row should be in the table body.
+    const rows = document.querySelectorAll("tbody tr");
+    expect(rows).toHaveLength(1);
   });
 });
