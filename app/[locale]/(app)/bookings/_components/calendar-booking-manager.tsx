@@ -57,6 +57,7 @@ export function CalendarBookingManager({
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
+        view="calendar"
       />
       <CalendarView
         events={events}

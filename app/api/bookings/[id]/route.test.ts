@@ -211,6 +211,63 @@ describe("PATCH /api/bookings/[id]", () => {
   });
 });
 
+describe("PATCH /api/bookings/[id] — location pin (lat/lng)", () => {
+  it("persists address + lat + lng but logs only the address in the activity diff", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch(
+        { "location.address": "Pier 27, Manila", "location.lat": 14.6, "location.lng": 120.98 },
+        b._id.toString()
+      ),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.location?.address).toBe("Pier 27, Manila");
+    expect(fresh?.location?.lat).toBe(14.6);
+    expect(fresh?.location?.lng).toBe(120.98);
+
+    const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).lean();
+    expect(logs).toHaveLength(1);
+    const changes = (logs[0].diff as { changes?: Record<string, unknown> }).changes ?? {};
+    expect(changes).toHaveProperty("location.address");
+    expect(changes).not.toHaveProperty("location.lat");
+    expect(changes).not.toHaveProperty("location.lng");
+  });
+
+  it("persists a coordinate-only nudge WITHOUT writing an activity entry", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ "location.lat": 1.23, "location.lng": 4.56 }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+
+    const fresh = await Booking.findById(b._id).lean();
+    expect(fresh?.location?.lat).toBe(1.23);
+    expect(fresh?.location?.lng).toBe(4.56);
+
+    const logs = await ActivityLog.find({ workspaceId, entity: "booking" }).lean();
+    expect(logs).toHaveLength(0);
+  });
+
+  it("rejects an out-of-range latitude with 400", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ "location.lat": 200 }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("PATCH /api/bookings/[id] — client reassignment", () => {
   it("single-session: PATCH with new clientId updates booking and logs client_changed", async () => {
     const oldClient = await seedClient(workspaceId, {

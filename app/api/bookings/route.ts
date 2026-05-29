@@ -111,7 +111,11 @@ export async function POST(req: Request) {
             sessions,
             firstSessionStart,
             lastSessionEnd,
-            location: { address: location.address },
+            location: {
+              address: location.address,
+              lat: location.lat,
+              lng: location.lng,
+            },
             amount: {
               total: amount.total,
               deposit: amount.deposit,

@@ -89,8 +89,10 @@ export const bookingCreateSchema = z.object({
   location: z
     .object({
       address: z.string().max(240).trim().default(""),
+      lat: z.number().min(-90).max(90).nullable().default(null),
+      lng: z.number().min(-180).max(180).nullable().default(null),
     })
-    .default({ address: "" }),
+    .default({ address: "", lat: null, lng: null }),
   amount: z
     .object({
       total: nonNegMoney.default(0),
@@ -111,6 +113,8 @@ export const EDITABLE_KEYS = [
   "status",
   "sessions",
   "location.address",
+  "location.lat",
+  "location.lng",
   "amount.total",
   "amount.deposit",
   "amount.currency",
@@ -130,6 +134,8 @@ export const bookingPatchSchema = z
       .min(1, "At least one session required")
       .optional(),
     "location.address": z.string().max(240).trim().optional(),
+    "location.lat": z.number().min(-90).max(90).nullable().optional(),
+    "location.lng": z.number().min(-180).max(180).nullable().optional(),
     "amount.total": nonNegMoney.optional(),
     "amount.deposit": nonNegMoney.optional(),
     "amount.currency": z.enum(SUPPORTED_CURRENCIES).optional(),

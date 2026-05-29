@@ -121,6 +121,10 @@ export async function PATCH(req: Request, { params }: Params) {
     switch (key) {
       case "location.address":
         return existing.location?.address ?? null;
+      case "location.lat":
+        return existing.location?.lat ?? null;
+      case "location.lng":
+        return existing.location?.lng ?? null;
       case "amount.total":
         return existing.amount?.total ?? null;
       case "amount.deposit":
@@ -136,6 +140,11 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   };
 
+  // Raw map coordinates persist but are kept out of the human-readable activity
+  // diff — a pin nudge shouldn't spam history; the address change carries the
+  // meaning. A patch that only moves the pin therefore produces no log entry.
+  const SILENT_KEYS = new Set<EditableKey>(["location.lat", "location.lng"]);
+
   for (const [key, value] of Object.entries(parsed.data)) {
     const k = key as EditableKey;
     // Skip clientId here — handled separately with transaction logic below.
@@ -145,7 +154,7 @@ export async function PATCH(req: Request, { params }: Params) {
     // and the client only sends sessions when it intends to update).
     if (k !== "sessions" && before === value) continue;
     setOp[k] = value;
-    diff[k] = { before, after: value };
+    if (!SILENT_KEYS.has(k)) diff[k] = { before, after: value };
   }
 
   // When sessions are being updated, recompute denormalized bounds in the
@@ -263,14 +272,18 @@ export async function PATCH(req: Request, { params }: Params) {
       { $set: setOp }
     );
 
-    await ActivityLog.create({
-      workspaceId: ctx.workspace._id,
-      actorUserId: ctx.userId,
-      entity: "booking",
-      entityId: existing._id,
-      action: "status" in setOp ? "status_changed" : "updated",
-      diff: { changes: diff },
-    });
+    // Skip the activity entry when the only change was a silent coordinate
+    // nudge (diff is empty but setOp persisted lat/lng).
+    if (Object.keys(diff).length > 0) {
+      await ActivityLog.create({
+        workspaceId: ctx.workspace._id,
+        actorUserId: ctx.userId,
+        entity: "booking",
+        entityId: existing._id,
+        action: "status" in setOp ? "status_changed" : "updated",
+        diff: { changes: diff },
+      });
+    }
   }
 
   const updated = await Booking.findOne({

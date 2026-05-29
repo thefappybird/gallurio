@@ -193,6 +193,13 @@
         "completed": "Natapos",
         "cancelled": "Nakansela"
       },
+      "locationPicker": {
+        "searchPlaceholder": "Maghanap ng venue o address…",
+        "searching": "Naghahanap…",
+        "noResults": "Walang tugma. Subukan ang ibang paghahanap.",
+        "dragHint": "I-drag ang pin para tumpak na itakda ang eksaktong lugar.",
+        "clear": "Alisin ang lokasyon"
+      },
       "eventTypes": {
         "wedding": "Kasal",
         "corporate": "Corporate",
@@ -207,7 +214,9 @@
         "hidePast": "Itago ang lipas na sesyon",
         "pastSessionsHidden": "{count, plural, one {# nakatagong lipas na sesyon — i-toggle para makita} other {# nakatagong lipas na sesyon — i-toggle para makita}}",
         "tabs": {
-          "details": "Mga detalye",
+          "client": "Kliyente",
+          "event": "Event",
+          "pricing": "Presyo",
           "activity": "Mga tala at aktibidad"
         },
         "sections": {
@@ -308,7 +317,9 @@
           "cancel": "Kanselahin"
         },
         "showPast": "Ipakita ang nakaraan",
-        "hidePast": "Itago ang nakaraan"
+        "hidePast": "Itago ang nakaraan",
+        "filterByStatus": "I-filter ayon sa status",
+        "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin"
       },
       "sessions": {
         "label": "Sesyon {n}",
@@ -380,11 +391,9 @@
           "startTime": "Oras ng simula ng shift",
           "endAt": "Petsa ng katapusan ng shift",
           "endTime": "Oras ng katapusan ng shift",
-          "shiftHint": "Ang mga oras ng shift ay inuulit araw-araw sa buong hanay ng petsa — ito ang pang-araw-araw na simula at katapusan, hindi isang 24-oras na event.",
           "conflictsLabel": "Mga shift na nasa {date} na:",
           "allowPastDate": "Nagdadagdag ng lumang booking? Payagan ang mga nakaraang petsa",
           "location": "Lokasyon",
-          "locationPlaceholder": "Venue o kumpletong address",
           "checkingConflicts": "Sinisiyasat ang mga salungatan…",
           "repeatingSessions": "Mga paulit-ulit na sesyon",
           "repeatingHint": "Gumawa ng isang same-day session bawat araw sa loob ng isang hanay ng petsa.",
