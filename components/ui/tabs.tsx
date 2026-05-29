@@ -33,7 +33,7 @@ function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
       className={cn(
-        "relative inline-flex h-9 items-center justify-center whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-medium transition-colors outline-none hover:text-foreground focus-visible:text-foreground data-[selected]:border-foreground data-[selected]:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative inline-flex h-9 items-center justify-center whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-medium transition-colors outline-none hover:text-foreground focus-visible:text-foreground data-active:border-foreground data-active:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
         className
       )}
       {...props}
