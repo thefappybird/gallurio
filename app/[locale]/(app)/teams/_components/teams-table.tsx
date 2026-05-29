@@ -112,26 +112,26 @@ export function TeamsTable({
                   }
                 />
                 <DropdownMenuContent align="end" side="bottom">
-                  <DropdownMenuItem onSelect={() => onDetails(team)}>
+                  <DropdownMenuItem onClick={() => onDetails(team)}>
                     <Eye className="size-4" />
                     {t("table.details")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => onRename(team)}>
+                  <DropdownMenuItem onClick={() => onRename(team)}>
                     <Pencil className="size-4" />
                     {t("team.rename")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => onChangeColor(team)}>
+                  <DropdownMenuItem onClick={() => onChangeColor(team)}>
                     <Palette className="size-4" />
                     {t("team.changeColor")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => onInvite(team)}>
+                  <DropdownMenuItem onClick={() => onInvite(team)}>
                     <MailPlus className="size-4" />
                     {t("team.invite")}
                   </DropdownMenuItem>
                   {!team.isDefault && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onSelect={() => onDelete(team)}>
+                      <DropdownMenuItem variant="destructive" onClick={() => onDelete(team)}>
                         <Trash2 className="size-4" />
                         {t("team.delete")}
                       </DropdownMenuItem>
