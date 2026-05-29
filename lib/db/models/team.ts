@@ -1,13 +1,10 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
+import { TEAM_COLOR_PALETTE } from "@/lib/teams/team-colors";
 
-export const TEAM_COLOR_PALETTE = [
-  "#0d7377", // brand teal
-  "#7c5cff", // violet
-  "#e87a4f", // terracotta
-  "#c9aa55", // gold
-  "#5fb3a8", // mint
-  "#8a8b94", // slate
-] as const;
+// Re-exported so existing server/test imports of `TEAM_COLOR_PALETTE` from the
+// model keep working. Client components must import from "@/lib/teams/team-colors"
+// directly to avoid bundling Mongoose into the browser.
+export { TEAM_COLOR_PALETTE };
 
 const teamSchema = new Schema(
   {

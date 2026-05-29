@@ -17,7 +17,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
+import { TEAM_COLOR_PALETTE } from "@/lib/teams/team-colors";
 import {
   createTeamAction,
   renameTeamAction,
