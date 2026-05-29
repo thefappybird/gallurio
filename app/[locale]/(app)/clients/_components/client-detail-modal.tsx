@@ -106,12 +106,21 @@ function ClientDetailModalInner({
           header and footer past the screen edge on mobile. */}
       <DialogContent showCloseButton={false} className="flex max-h-[calc(100dvh-2rem)] sm:max-w-lg flex-col gap-0 p-0">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex min-w-0 flex-col">
-            <DialogTitle className="truncate leading-snug">{client.name}</DialogTitle>
-            {!client.isActive && (
-              <span className="text-xs text-muted-foreground">{t("detail.inactive")}</span>
-            )}
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <DialogTitle className="truncate leading-snug">{client.name}</DialogTitle>
+              {!client.isActive && (
+                <span className="shrink-0 text-xs text-muted-foreground">{t("detail.inactive")}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <SourceBadge source={client.source} />
+              {client.email && (
+                <span className="min-w-0 wrap-break-word">{client.email}</span>
+              )}
+              {client.phone && <span className="wrap-break-word">{client.phone}</span>}
+            </div>
           </div>
           <Button
             type="button"
@@ -156,20 +165,6 @@ function ClientDetailModalInner({
                   {lastBookingDate ?? t("detail.overview.never")}
                 </span>
                 <span className="text-xs text-muted-foreground">{t("detail.overview.lastBooking")}</span>
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div className="mb-3 flex flex-col gap-1 border-b border-border pb-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("detail.overview.contact")}
-              </span>
-              <div className="flex min-w-0 flex-col gap-0.5 text-sm">
-                <span className="wrap-break-word">{client.email ?? t("detail.overview.noEmail")}</span>
-                <span className="wrap-break-word text-muted-foreground">{client.phone ?? t("detail.overview.noPhone")}</span>
-              </div>
-              <div className="mt-1 flex items-center gap-1.5">
-                <SourceBadge source={client.source} />
               </div>
             </div>
 
