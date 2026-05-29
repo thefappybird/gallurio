@@ -980,15 +980,16 @@ describe("Client tab — contact block + reassign picker", () => {
     expect(screen.getByText("+63 917 555 0100")).toBeInTheDocument();
   });
 
-  it("shows the Open client link with the client id", async () => {
+  it("shows the Open client link pointing to /clients (no client-specific route exists)", async () => {
     renderModal();
     await waitForLoad();
     await switchToClientTab();
 
-    // The Open client link navigates to /clients
+    // The clients page uses a state-based modal with no /clients/[id] route and
+    // no ?client= deep-link param. The link therefore points to /clients (the list).
     const link = screen.getByRole("link", { name: /open client/i });
     expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute("href");
+    expect(link).toHaveAttribute("href", "/clients");
   });
 
   it("shows 'No email' when client has no email", async () => {
@@ -1059,6 +1060,134 @@ describe("Client tab — contact block + reassign picker", () => {
     // After selecting, the Save button should appear (pending count > 0)
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+  });
+
+  // H2 — after staging a reassignment the picked client's email/phone show immediately
+  it("H2: contact block shows the staged client email/phone after picking a reassignment", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    // Bob Jones has email but no phone in the search results fixture
+    fireEvent.click(screen.getByRole("button", { name: /change client/i }));
+    await waitFor(() => {
+      expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Bob Jones"));
+
+    // The picker closes and the contact block should now show Bob's email
+    // instead of Alice's email — staged optimistically before save
+    await waitFor(() => {
+      expect(screen.getByText("bob@example.com")).toBeInTheDocument();
+    });
+    // Alice's email should no longer be visible in the contact block
+    expect(screen.queryByText("alice@example.com")).not.toBeInTheDocument();
+  });
+
+  // H3 — multi-session bookings should hide the "Change client" trigger
+  it("H3: hides the Change client button for a multi-session booking", async () => {
+    // Build a two-session booking (server rejects reassign with 422 for these)
+    const base = new Date();
+    base.setDate(base.getDate() + 5);
+    base.setHours(10, 0, 0, 0);
+    const s1Start = base.toISOString();
+    base.setHours(17, 0, 0, 0);
+    const s1End = base.toISOString();
+    base.setDate(base.getDate() + 1);
+    base.setHours(10, 0, 0, 0);
+    const s2Start = base.toISOString();
+    base.setHours(17, 0, 0, 0);
+    const s2End = base.toISOString();
+
+    const multiSessionBooking = {
+      ...MOCK_BOOKING,
+      sessions: [
+        { startAt: s1Start, endAt: s1End },
+        { startAt: s2Start, endAt: s2End },
+      ],
+    };
+    vi.stubGlobal("fetch", makeFetch({ booking: multiSessionBooking }));
+    renderModal();
+
+    // Wait for the multi-session booking to load
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    });
+
+    // Client tab is default — the "Change client" button must be absent
+    // and the multi-session caption must appear instead
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /change client/i })).not.toBeInTheDocument();
+    });
+    // The explanatory caption should render
+    expect(screen.getByText(/reassigning isn't available for multi-session/i)).toBeInTheDocument();
+  });
+
+  // T6 — PATCH response without a `client` block (realistic) must not collapse email/phone (H1)
+  it("T6/H1: email and phone remain visible after saving an unrelated field (title) — realistic PATCH response has no client block", async () => {
+    // Realistic PATCH response: no `client` key (real API omits it)
+    const patchResponse = {
+      ...MOCK_BOOKING,
+      title: "Updated Title",
+      client: undefined,
+    } as unknown as typeof MOCK_BOOKING;
+
+    const fetchMock = makeFetch({ patchResponse });
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    // Verify email shows before save
+    await switchToClientTab();
+    expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+
+    // Navigate back to Event tab, edit session date to create a pending change
+    // (simpler: use the title inline edit to stage a pending change)
+    fireEvent.click(screen.getByRole("tab", { name: /client/i }));
+    // Use the title inline edit to stage a pending change
+    const titleBtn = screen.getByRole("button", { name: /edit title/i });
+    fireEvent.click(titleBtn);
+    const titleInput = await screen.findByDisplayValue("Test Wedding");
+    fireEvent.change(titleInput, { target: { value: "Updated Title" } });
+    fireEvent.keyDown(titleInput, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    // Save — PATCH returns no client block
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    // After save settles, email must still be visible (not collapsed to "No email")
+    await waitFor(() => {
+      // The client tab is active; email should persist
+      expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("No email")).not.toBeInTheDocument();
+  });
+
+  // Search error state test
+  it("shows search error message when the client search API fails", async () => {
+    const failingFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes("/api/clients")) {
+        return { ok: false, json: async () => ({ error: "Server error" }) };
+      }
+      // Delegate everything else to the normal mock
+      return makeFetch()(url, init);
+    });
+    vi.stubGlobal("fetch", failingFetch);
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    fireEvent.click(screen.getByRole("button", { name: /change client/i }));
+
+    // Wait for the error to appear after the fetch fails
+    await waitFor(() => {
+      expect(screen.getByText(/search failed/i)).toBeInTheDocument();
     });
   });
 });

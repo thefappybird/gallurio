@@ -255,7 +255,15 @@
           "changeClientSearch": "Maghanap ng mga kliyente…",
           "noEmail": "Walang email",
           "noPhone": "Walang telepono",
-          "noClientResults": "Walang nahanap na kliyente"
+          "noClientResults": "Walang nahanap na kliyente",
+          "changeClientMultiSession": "Hindi available ang paglipat ng kliyente para sa multi-session na booking",
+          "searchFailed": "Nabigo ang paghahanap. Subukan muli.",
+          "editTitle": "I-edit ang pamagat",
+          "confirmTitle": "Kumpirmahin",
+          "cancelTitleEdit": "Ikansela",
+          "editEventType": "Baguhin ang uri ng event",
+          "sendEmail": "Magpadala ng email",
+          "callClient": "Tumawag"
         },
         "cancelConfirm": {
           "title": "Kanselahin ang booking na ito?",
@@ -277,7 +285,8 @@
             "deleted": "Natanggal"
           },
           "today": "Ngayon",
-          "yesterday": "Kahapon"
+          "yesterday": "Kahapon",
+          "timelineLabel": "Timeline ng aktibidad"
         },
         "cancel": "Kanselahin ang booking",
         "restore": "I-restore ang booking",

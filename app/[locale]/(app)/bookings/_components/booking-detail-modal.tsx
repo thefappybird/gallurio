@@ -160,6 +160,19 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDoc | null>(null);
+  /**
+   * Staged client for an in-progress reassignment. Holds the picked client's
+   * full contact info so the contact block shows fresh email/phone between
+   * "stage" and "save" — the pending `clientId`/`clientName` changes alone
+   * would leave the old `booking.client` object in place (H2 fix). Cleared on
+   * discardAll and on successful save.
+   */
+  const [reassignedClient, setReassignedClient] = useState<{
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [activityTotal, setActivityTotal] = useState(0);
   const [pending, setPending] = useState<PendingChanges>({});
@@ -488,6 +501,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setPendingSessionEdits({});
     setDraftSessions([]);
     setSaveError(null);
+    setReassignedClient(null);
   }
 
   async function save() {
@@ -561,10 +575,20 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         throw new Error(data.error ?? "Save failed");
       }
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      // The PATCH response does not include the `client` block (the GET does).
+      // Preserve it from the previous state so email/phone don't collapse.
+      // If a clientId reassignment was just saved, use the staged reassigned
+      // client's data; otherwise keep the existing client block.
+      const clientAfterSave = "clientId" in pending
+        ? (reassignedClient
+            ? { id: reassignedClient.id, name: reassignedClient.name, email: reassignedClient.email, phone: reassignedClient.phone }
+            : null)
+        : previous.client;
+      setBooking({ ...updated, client: clientAfterSave });
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
+      setReassignedClient(null);
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
       await refetchInlineActivity();
@@ -977,8 +1001,19 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               pendingSessionEdits={pendingSessionEdits}
               editingDraftDates={editingDraftDates}
               locale={locale}
+              reassignedClient={reassignedClient}
               onCommit={commitField}
               onDiscard={discardField}
+              onReassign={(c) => {
+                setReassignedClient(c);
+                commitField("clientId", c.id);
+                commitField("clientName", c.name);
+              }}
+              onClearReassign={() => {
+                setReassignedClient(null);
+                discardField("clientId");
+                discardField("clientName");
+              }}
               onViewAllHistory={() => setHistoryDialogOpen(true)}
               disabled={saving}
               shiftsByDate={shiftsByDate}
@@ -1187,7 +1222,7 @@ function DialogHeaderBar({
                     variant="ghost"
                     onClick={commitTitle}
                     disabled={disabled || !titleDraft.trim()}
-                    aria-label="Confirm title"
+                    aria-label={t("confirmTitle")}
                     className="shrink-0"
                   >
                     <CheckIcon className="size-3.5" />
@@ -1197,7 +1232,7 @@ function DialogHeaderBar({
                     size="icon-sm"
                     variant="ghost"
                     onClick={cancelTitleEdit}
-                    aria-label="Cancel title edit"
+                    aria-label={t("cancelTitleEdit")}
                     className="shrink-0"
                   >
                     <XIcon className="size-3.5" />
@@ -1215,7 +1250,7 @@ function DialogHeaderBar({
                       "disabled:pointer-events-none disabled:opacity-60",
                       hasTitlePending && "text-brand"
                     )}
-                    aria-label={`Edit title: ${effectiveTitle}`}
+                    aria-label={t("editTitle")}
                   >
                     <span className="truncate">{effectiveTitle}</span>
                     <PencilIcon className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60" />
@@ -1243,7 +1278,7 @@ function DialogHeaderBar({
                               ? "border-brand bg-brand/10 text-brand"
                               : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
                           )}
-                          aria-label={`Event type: ${eventTypeLabel}`}
+                          aria-label={t("editEventType")}
                         >
                           <SelectValue>{eventTypeLabel}</SelectValue>
                         </SelectTrigger>
@@ -1340,8 +1375,11 @@ function BookingTabs({
   pendingSessionEdits,
   editingDraftDates,
   locale,
+  reassignedClient,
   onCommit,
   onDiscard,
+  onReassign,
+  onClearReassign,
   onViewAllHistory,
   disabled,
   shiftsByDate,
@@ -1365,8 +1403,11 @@ function BookingTabs({
   pendingSessionEdits: Record<number, PendingSessionEdit>;
   editingDraftDates: Record<string, string>;
   locale: string;
+  reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
+  onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
+  onClearReassign: () => void;
   onViewAllHistory: () => void;
   disabled: boolean;
   shiftsByDate: Map<string, ShiftHit[]>;
@@ -1443,6 +1484,17 @@ function BookingTabs({
 
   const [reassignOpen, setReassignOpen] = useState(false);
 
+  // H2: The contact block shows the staged reassigned client when a clientId
+  // change is pending, otherwise falls back to booking.client.
+  const clientIdPending = "clientId" in pending;
+  const displayClient = clientIdPending && reassignedClient
+    ? reassignedClient
+    : booking.client;
+
+  // H3: Reassignment is blocked server-side for multi-session bookings.
+  // Hide the "Change client" trigger up front to avoid a foreseeable 422.
+  const isMultiSession = booking.sessions.length > 1;
+
   return (
     <Tabs defaultValue="client">
       <TabsList className="mb-1 h-auto overflow-x-auto gap-1 border-b-0 bg-transparent pb-0">
@@ -1493,7 +1545,10 @@ function BookingTabs({
       </TabsList>
 
       <TabsPanel value="client">
-        {/* Client contact block — read-only snapshot */}
+        {/* Client contact block — read-only snapshot.
+            H2: uses displayClient (staging-aware) instead of booking.client directly.
+            L2: Open client links to /clients — the clients page uses a state-based
+                modal (no /clients/[id] route and no ?client= deep-link param exists). */}
         <div className="mb-3 flex flex-col gap-2 border border-border bg-card p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -1501,26 +1556,26 @@ function BookingTabs({
                 {tFields("clientName")}
               </span>
               <span className="truncate text-sm font-medium text-foreground">
-                {booking.client?.name ?? booking.clientName}
+                {displayClient?.name ?? booking.clientName}
               </span>
-              {booking.client?.email ? (
+              {displayClient?.email ? (
                 <a
-                  href={`mailto:${booking.client.email}`}
+                  href={`mailto:${displayClient.email}`}
                   className="truncate text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-                  aria-label={`Email ${booking.client.email}`}
+                  aria-label={tFields("sendEmail")}
                 >
-                  {booking.client.email}
+                  {displayClient.email}
                 </a>
               ) : (
                 <span className="text-xs text-muted-foreground">{tFields("noEmail")}</span>
               )}
-              {booking.client?.phone ? (
+              {displayClient?.phone ? (
                 <a
-                  href={`tel:${booking.client.phone}`}
+                  href={`tel:${displayClient.phone}`}
                   className="text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
-                  aria-label={`Call ${booking.client.phone}`}
+                  aria-label={tFields("callClient")}
                 >
-                  {booking.client.phone}
+                  {displayClient.phone}
                 </a>
               ) : (
                 <span className="text-xs text-muted-foreground">{tFields("noPhone")}</span>
@@ -1528,7 +1583,7 @@ function BookingTabs({
             </div>
             {booking.client ? (
               <Link
-                href={`/clients`}
+                href="/clients"
                 aria-label={tFields("openClient")}
                 className={cn(
                   "flex shrink-0 items-center gap-1 border border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
@@ -1540,15 +1595,21 @@ function BookingTabs({
               </Link>
             ) : null}
           </div>
-          {/* Reassign client */}
-          {reassignOpen ? (
+          {/* Reassign client — H3: hidden for multi-session bookings (server rejects it). */}
+          {isMultiSession ? (
+            <p className="text-xs text-muted-foreground">
+              {tFields("changeClientMultiSession")}
+            </p>
+          ) : reassignOpen ? (
             <ClientReassignPicker
               onSelect={(c) => {
-                onCommit("clientId", c.id);
-                onCommit("clientName", c.name);
+                onReassign(c);
                 setReassignOpen(false);
               }}
-              onCancel={() => setReassignOpen(false)}
+              onCancel={() => {
+                onClearReassign();
+                setReassignOpen(false);
+              }}
               disabled={disabled}
             />
           ) : (
@@ -2662,7 +2723,7 @@ function ClientReassignPicker({
           if (!cancelled) setResults(data);
         } catch {
           if (!cancelled) {
-            setSearchError("Search failed. Try again.");
+            setSearchError(tFields("searchFailed"));
             setResults([]);
           }
         } finally {

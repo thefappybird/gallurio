@@ -17,9 +17,17 @@ export type ActivityTimelineProps = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns the ISO date string YYYY-MM-DD for a given date. */
-function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+/**
+ * Returns the local-calendar YYYY-MM-DD for a given date.
+ * Uses `toLocaleDateString('en-CA')` which produces YYYY-MM-DD in the
+ * Gregorian calendar, based on the browser/runtime local timezone — so
+ * grouping and the per-entry toLocaleTimeString agree on which calendar day
+ * an event falls on. This prevents UTC-vs-local skew near midnight (e.g. an
+ * entry at 06:00 PH local that is 22:00Z the previous day no longer lands in
+ * the wrong day bucket).
+ */
+function localIsoDate(date: Date): string {
+  return date.toLocaleDateString("en-CA"); // YYYY-MM-DD in local timezone
 }
 
 /** Maps a diff key to { ns, key } for translation lookup. */
@@ -47,8 +55,8 @@ const ACTION_STYLES: Record<
   { pill: string; dot: string }
 > = {
   created: {
-    pill: "border-[var(--brand)]/40 bg-[var(--brand)]/10 text-[var(--brand)]",
-    dot: "bg-[var(--brand)]",
+    pill: "border-brand/40 bg-brand/10 text-brand",
+    dot: "bg-brand",
   },
   updated: {
     pill: "border-border bg-muted text-muted-foreground",
@@ -109,7 +117,7 @@ function ChangePill({
   return (
     <span
       title={content}
-      className="inline-flex max-w-[200px] shrink-0 items-center truncate border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground"
+      className="inline-flex max-w-50 shrink-0 items-center truncate border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground"
     >
       {content}
     </span>
@@ -142,14 +150,18 @@ export function ActivityTimeline({
     );
   }
 
-  // ── Group entries by calendar day ───────────────────────────────────────────
-  const today = isoDate(nowRef);
-  const yesterday = isoDate(new Date(nowRef.getTime() - 86_400_000));
+  // ── Group entries by LOCAL calendar day ─────────────────────────────────────
+  // localIsoDate uses the browser/runtime local timezone so that grouping and
+  // the per-entry toLocaleTimeString agree — no UTC-vs-local skew near midnight.
+  const today = localIsoDate(nowRef);
+  // Compute yesterday by subtracting 24 h then converting to local calendar day
+  // (not UTC slice) to stay consistent.
+  const yesterday = localIsoDate(new Date(nowRef.getTime() - 86_400_000));
 
   const groups: { dayKey: string; dayLabel: string; entries: ActivityEntry[] }[] = [];
   for (const entry of entries) {
     const date = new Date(entry.createdAt);
-    const dayKey = isoDate(date);
+    const dayKey = localIsoDate(date);
     let dayLabel: string;
     if (dayKey === today) {
       dayLabel = tHistory("today");
@@ -197,7 +209,7 @@ export function ActivityTimeline({
   }
 
   return (
-    <ol className={cn("flex flex-col", className)} aria-label="Activity timeline">
+    <ol className={cn("flex flex-col", className)} aria-label={tHistory("timelineLabel")}>
       {groups.map((group) => (
         <li key={group.dayKey}>
           {/* Day header */}

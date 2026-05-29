@@ -255,7 +255,15 @@
           "changeClientSearch": "Search clients…",
           "noEmail": "No email",
           "noPhone": "No phone",
-          "noClientResults": "No clients found"
+          "noClientResults": "No clients found",
+          "changeClientMultiSession": "Reassigning isn't available for multi-session bookings",
+          "searchFailed": "Search failed. Try again.",
+          "editTitle": "Edit title",
+          "confirmTitle": "Confirm",
+          "cancelTitleEdit": "Cancel",
+          "editEventType": "Change event type",
+          "sendEmail": "Send email",
+          "callClient": "Call"
         },
         "cancelConfirm": {
           "title": "Cancel this booking?",
@@ -277,7 +285,8 @@
             "deleted": "Deleted"
           },
           "today": "Today",
-          "yesterday": "Yesterday"
+          "yesterday": "Yesterday",
+          "timelineLabel": "Activity timeline"
         },
         "cancel": "Cancel booking",
         "restore": "Restore booking",

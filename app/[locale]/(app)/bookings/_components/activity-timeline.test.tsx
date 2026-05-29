@@ -207,4 +207,35 @@ describe("ActivityTimeline", () => {
     expect(pill.textContent).toContain("—");
     expect(pill.textContent).toContain("Some note added");
   });
+
+  // M1 — local day bucketing: two entries on different local calendar days must get
+  // separate day headers regardless of their UTC representation. We construct two
+  // entries whose local YYYY-MM-DD values (via toLocaleDateString('en-CA')) differ,
+  // which means one lands in "Today" and the other in "Yesterday".
+  it("M1: entries on different LOCAL calendar days group into separate day headers", () => {
+    // Anchor to the start of today's local day (midnight local time) then subtract
+    // one millisecond to get a timestamp that is still "yesterday" in local time.
+    const now = new Date();
+    const localMidnightToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0, 0, 0, 0
+    );
+    // 1 ms before local midnight = yesterday in local timezone
+    const yesterdayLocal = new Date(localMidnightToday.getTime() - 1);
+    // 1 hour after local midnight = today in local timezone
+    const todayLocal = new Date(localMidnightToday.getTime() + 3_600_000);
+
+    const entries: ActivityEntry[] = [
+      { _id: "today-entry", action: "created", createdAt: todayLocal.toISOString(), diff: null },
+      { _id: "yesterday-entry", action: "updated", createdAt: yesterdayLocal.toISOString(), diff: null },
+    ];
+    renderWithProviders(
+      <ActivityTimeline entries={entries} locale="en" currency="PHP" />
+    );
+    // Both headers must be present — the entries are in different local calendar days
+    expect(screen.getByText("Today")).toBeInTheDocument();
+    expect(screen.getByText("Yesterday")).toBeInTheDocument();
+  });
 });

@@ -313,6 +313,64 @@ describe("PATCH /api/bookings/[id] — location pin (lat/lng)", () => {
   });
 });
 
+describe("PATCH /api/bookings/[id] — client block in response", () => {
+  it("PATCH on a non-client field includes client block with correct email and phone", async () => {
+    const c = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      email: "emma@example.com",
+      phone: "+639171234567",
+    });
+    const b = await seedBooking(workspaceId, c._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "Emma's Wedding" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.title).toBe("Emma's Wedding");
+    expect(json.client).toEqual({
+      id: c._id.toString(),
+      name: "Emma Carter",
+      email: "emma@example.com",
+      phone: "+639171234567",
+    });
+  });
+
+  it("PATCH response has client: null when client doc is missing from DB (hard-deleted before patch)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    // Hard-delete the client so the booking is orphaned
+    await Client.deleteOne({ _id: c._id });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "Orphaned Title Edit" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    // buildClientBlock must return null when the client doc no longer exists
+    expect(json.client).toBeNull();
+    expect(json.title).toBe("Orphaned Title Edit");
+  });
+
+  it("PATCH response has client: null when client doc is hard-deleted (orphan booking)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    // Hard-delete the client to simulate an orphan booking
+    await Client.deleteOne({ _id: c._id });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "Orphan Booking" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.client).toBeNull();
+    expect(json.title).toBe("Orphan Booking");
+  });
+});
+
 describe("PATCH /api/bookings/[id] — client reassignment", () => {
   it("single-session: PATCH with new clientId updates booking and logs client_changed", async () => {
     const oldClient = await seedClient(workspaceId, {
@@ -481,6 +539,38 @@ describe("PATCH /api/bookings/[id] — client reassignment", () => {
     const tx = await Transaction.findOne({ bookingId: b._id }).lean();
     expect(tx?.clientId?.toString()).toBe(newClient._id.toString());
     expect(tx?.amount).toBe(40_000);
+  });
+
+  it("PATCH response includes client block reflecting NEW client after reassignment", async () => {
+    const oldClient = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      email: "emma@example.com",
+      phone: "+639171234567",
+      bookingsCount: 1,
+      totalSpent: 75_000,
+    });
+    const newClient = await seedClient(workspaceId, {
+      name: "Liam Carter",
+      email: "liam@example.com",
+      phone: "+639179999999",
+      bookingsCount: 0,
+      totalSpent: 0,
+    });
+    const b = await seedBooking(workspaceId, oldClient._id);
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ clientId: newClient._id.toString() }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    // client block must reflect the NEW client, not the old one
+    expect(json.client).toEqual({
+      id: newClient._id.toString(),
+      name: "Liam Carter",
+      email: "liam@example.com",
+      phone: "+639179999999",
+    });
   });
 
   it("concurrent clientId + sessions change: new client gets the updated firstSessionStart", async () => {

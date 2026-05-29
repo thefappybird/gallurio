@@ -255,7 +255,15 @@
           "changeClientSearch": "Cari klien…",
           "noEmail": "Tidak ada email",
           "noPhone": "Tidak ada telepon",
-          "noClientResults": "Tidak ada klien ditemukan"
+          "noClientResults": "Tidak ada klien ditemukan",
+          "changeClientMultiSession": "Penugasan ulang tidak tersedia untuk pemesanan multi-sesi",
+          "searchFailed": "Pencarian gagal. Coba lagi.",
+          "editTitle": "Edit judul",
+          "confirmTitle": "Konfirmasi",
+          "cancelTitleEdit": "Batal",
+          "editEventType": "Ubah jenis acara",
+          "sendEmail": "Kirim email",
+          "callClient": "Hubungi"
         },
         "cancelConfirm": {
           "title": "Batalkan pemesanan ini?",
@@ -277,7 +285,8 @@
             "deleted": "Dihapus"
           },
           "today": "Hari ini",
-          "yesterday": "Kemarin"
+          "yesterday": "Kemarin",
+          "timelineLabel": "Linimasa aktivitas"
         },
         "cancel": "Batalkan pemesanan",
         "restore": "Pulihkan pemesanan",

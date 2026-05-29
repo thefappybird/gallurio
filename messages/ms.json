@@ -255,7 +255,15 @@
           "changeClientSearch": "Cari klien…",
           "noEmail": "Tiada e-mel",
           "noPhone": "Tiada telefon",
-          "noClientResults": "Tiada klien dijumpai"
+          "noClientResults": "Tiada klien dijumpai",
+          "changeClientMultiSession": "Penugasan semula tidak tersedia untuk tempahan berbilang sesi",
+          "searchFailed": "Carian gagal. Cuba lagi.",
+          "editTitle": "Edit tajuk",
+          "confirmTitle": "Sahkan",
+          "cancelTitleEdit": "Batal",
+          "editEventType": "Tukar jenis acara",
+          "sendEmail": "Hantar e-mel",
+          "callClient": "Hubungi"
         },
         "cancelConfirm": {
           "title": "Batalkan tempahan ini?",
@@ -277,7 +285,8 @@
             "deleted": "Dipadam"
           },
           "today": "Hari ini",
-          "yesterday": "Semalam"
+          "yesterday": "Semalam",
+          "timelineLabel": "Garis masa aktiviti"
         },
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",

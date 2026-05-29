@@ -11,6 +11,27 @@ export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
 
+/** Fetches and shapes the client sub-document for a booking response. */
+async function buildClientBlock(
+  clientId: mongoose.Types.ObjectId | null | undefined,
+  workspaceId: mongoose.Types.ObjectId
+) {
+  if (!clientId) return null;
+  const clientDoc = await Client.findOne({
+    _id: clientId,
+    workspaceId,
+  })
+    .select({ _id: 1, name: 1, email: 1, phone: 1 })
+    .lean();
+  if (!clientDoc) return null;
+  return {
+    id: clientDoc._id.toString(),
+    name: clientDoc.name,
+    email: clientDoc.email ?? null,
+    phone: clientDoc.phone ?? null,
+  };
+}
+
 export async function GET(_req: Request, { params }: Params) {
   const ctx = await requireOrg();
   const { id } = await params;
@@ -29,23 +50,7 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const clientDoc = booking.clientId
-    ? await Client.findOne({
-        _id: booking.clientId,
-        workspaceId: ctx.workspace._id,
-      })
-        .select({ _id: 1, name: 1, email: 1, phone: 1 })
-        .lean()
-    : null;
-
-  const client = clientDoc
-    ? {
-        id: clientDoc._id.toString(),
-        name: clientDoc.name,
-        email: clientDoc.email ?? null,
-        phone: clientDoc.phone ?? null,
-      }
-    : null;
+  const client = await buildClientBlock(booking.clientId, ctx.workspace._id);
 
   return NextResponse.json({ ...booking, client });
 }
@@ -189,7 +194,11 @@ export async function PATCH(req: Request, { params }: Params) {
   const isClientChange = !!newClientId;
 
   if (Object.keys(setOp).length === 0 && !isClientChange) {
-    return NextResponse.json(existing.toObject());
+    const client = await buildClientBlock(
+      existing.clientId as mongoose.Types.ObjectId | null | undefined,
+      ctx.workspace._id
+    );
+    return NextResponse.json({ ...existing.toObject(), client });
   }
 
   if (isClientChange) {
@@ -309,5 +318,11 @@ export async function PATCH(req: Request, { params }: Params) {
     _id: id,
     workspaceId: ctx.workspace._id,
   }).lean();
-  return NextResponse.json(updated);
+
+  const client = await buildClientBlock(
+    updated?.clientId as mongoose.Types.ObjectId | null | undefined,
+    ctx.workspace._id
+  );
+
+  return NextResponse.json({ ...updated, client });
 }
