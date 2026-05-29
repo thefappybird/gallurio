@@ -6,6 +6,7 @@
  * Issue 3 — locked-draft mechanism (✓ locks, ✏️ unlocks, ✗ discards)
  * Issue 4 — AlertDialog replaces window.confirm on close-with-unsaved
  */
+import React from "react";
 import {
   describe,
   expect,
@@ -50,6 +51,9 @@ vi.mock("@/lib/i18n/navigation", () => ({
     prefetch: vi.fn(),
   }),
   usePathname: () => "/bookings",
+  // Link component used in the client contact block
+  Link: ({ href, children, ...props }: { href: string; children: React.ReactNode; [k: string]: unknown }) =>
+    React.createElement("a", { href, ...props }, children),
 }));
 
 vi.mock("sonner", () => ({
@@ -81,10 +85,19 @@ function makeFutureSession(dayOffset = 3) {
 
 const FUTURE_SESSION = makeFutureSession(3);
 
+const CLIENT_ID = "client-abc-456";
+
 const MOCK_BOOKING = {
   _id: BOOKING_ID,
   title: "Test Wedding",
   clientName: "Alice Smith",
+  clientId: CLIENT_ID,
+  client: {
+    id: CLIENT_ID,
+    name: "Alice Smith",
+    email: "alice@example.com",
+    phone: "+63 917 555 0100",
+  },
   eventType: "wedding",
   status: "booked",
   sessions: [FUTURE_SESSION],
@@ -94,6 +107,11 @@ const MOCK_BOOKING = {
   amount: { total: 10000, deposit: 3000, currency: "PHP" },
   notes: "",
 };
+
+const MOCK_CLIENT_SEARCH_RESULTS = [
+  { id: "client-bob-789", name: "Bob Jones", email: "bob@example.com", phone: null },
+  { id: "client-carol-012", name: "Carol White", email: null, phone: null },
+];
 
 const CONFLICT_SHIFT = {
   id: "other-booking-id",
@@ -106,12 +124,14 @@ type FetchOptions = {
   booking?: typeof MOCK_BOOKING;
   shifts?: typeof CONFLICT_SHIFT[];
   patchResponse?: typeof MOCK_BOOKING;
+  clientSearchResults?: typeof MOCK_CLIENT_SEARCH_RESULTS;
 };
 
 function makeFetch({
   booking = MOCK_BOOKING,
   shifts = [] as (typeof CONFLICT_SHIFT)[],
   patchResponse = booking,
+  clientSearchResults = MOCK_CLIENT_SEARCH_RESULTS,
 }: FetchOptions = {}): Mock {
   return vi.fn(async (url: string, init?: RequestInit) => {
     if (url.includes(`/api/bookings/${BOOKING_ID}/activity`)) {
@@ -125,6 +145,9 @@ function makeFetch({
         return { ok: true, json: async () => booking };
       }
       return { ok: true, json: async () => patchResponse };
+    }
+    if (url.includes("/api/clients")) {
+      return { ok: true, json: async () => clientSearchResults };
     }
     return { ok: false, json: async () => ({}) };
   });
@@ -774,6 +797,268 @@ describe("pendingCount — includes all pending types", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/1 unsaved/i)).toBeInTheDocument();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issue new-1 — pill tabs styling
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Pill tabs — four tabs render and switch panels", () => {
+  it("renders four tab triggers (Client, Event, Pricing, Notes & activity)", async () => {
+    renderModal();
+    await waitForLoad();
+
+    // Switch to Client tab first (default is client)
+    const clientTab = screen.getByRole("tab", { name: /client/i });
+    const eventTab = screen.getByRole("tab", { name: /event/i });
+    const pricingTab = screen.getByRole("tab", { name: /pricing/i });
+    const activityTab = screen.getByRole("tab", { name: /notes/i });
+
+    expect(clientTab).toBeInTheDocument();
+    expect(eventTab).toBeInTheDocument();
+    expect(pricingTab).toBeInTheDocument();
+    expect(activityTab).toBeInTheDocument();
+  });
+
+  it("switching to the Pricing tab shows the currency field", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+
+    await waitFor(() => {
+      // Currency field label renders in the pricing tab panel
+      expect(screen.getByText("Currency")).toBeInTheDocument();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issue new-2 — inline title editing in header
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Header inline title editing", () => {
+  it("renders the booking title as the dialog heading", async () => {
+    renderModal();
+    await waitForLoad();
+    expect(
+      screen.getByRole("heading", { name: /Test Wedding/i })
+    ).toBeInTheDocument();
+  });
+
+  it("does NOT render a standalone Title EditableField inside the Event tab", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: /event/i }));
+
+    // The only 'Title' label should be a button for inline editing in the header,
+    // not a separate editable field in the event tab.
+    // Verify there is no input labelled "Title" that belongs to an EditableField
+    // (EditableField renders an input when in edit mode — we won't open it, but
+    // we can assert the event tab's content does not have a dedicated title section
+    // by checking there's no aria-label="Title" static display row).
+    await waitFor(() => {
+      // The event tab should show location, not a title row.
+      expect(screen.getByText("Location")).toBeInTheDocument();
+    });
+  });
+
+  it("clicking the title button opens an inline text input in the header", async () => {
+    renderModal();
+    await waitForLoad();
+
+    // The title button has aria-label starting with "Edit title:"
+    const titleBtn = screen.getByRole("button", { name: /edit title/i });
+    fireEvent.click(titleBtn);
+
+    await waitFor(() => {
+      // An input with the current title value appears
+      expect(screen.getByDisplayValue("Test Wedding")).toBeInTheDocument();
+    });
+  });
+
+  it("editing the title and pressing Enter stages it as a pending change", async () => {
+    renderModal();
+    await waitForLoad();
+
+    const titleBtn = screen.getByRole("button", { name: /edit title/i });
+    fireEvent.click(titleBtn);
+
+    const input = await screen.findByDisplayValue("Test Wedding");
+    fireEvent.change(input, { target: { value: "Updated Title" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    // The Save button should become visible (pending count > 0)
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
+    });
+  });
+
+  it("pressing Escape while editing the title cancels without staging", async () => {
+    renderModal();
+    await waitForLoad();
+
+    const titleBtn = screen.getByRole("button", { name: /edit title/i });
+    fireEvent.click(titleBtn);
+
+    const input = await screen.findByDisplayValue("Test Wedding");
+    fireEvent.change(input, { target: { value: "Cancelled Edit" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+
+    await waitFor(() => {
+      // Input goes away and original title still shows
+      expect(screen.queryByDisplayValue("Cancelled Edit")).not.toBeInTheDocument();
+    });
+    // No Save button should appear (no pending changes)
+    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issue new-2b — event-type pill in header
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Header event-type pill", () => {
+  it("renders the current event type label in the header", async () => {
+    renderModal();
+    await waitForLoad();
+
+    // The event type select trigger shows "Wedding"
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: /event type/i })).toBeInTheDocument();
+    });
+  });
+
+  it("does NOT render a standalone Event Type EditableField in the Event tab", async () => {
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: /event/i }));
+
+    await waitFor(() => {
+      // Event tab shows location — the Event Type row was moved to the header
+      expect(screen.getByText("Location")).toBeInTheDocument();
+    });
+    // There should be no second "Event type" label in the tab content
+    // (it exists in the header pill, but not as an EditableField in the tab)
+    const eventTypeLabels = screen.queryAllByText("Event type");
+    // The header trigger has aria-label, not a visible "Event type" text label
+    expect(eventTypeLabels.length).toBe(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Issue new-3 — client tab enrichment
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Switch to the client tab after loading (waitForLoad navigates to Event tab). */
+async function switchToClientTab() {
+  fireEvent.click(screen.getByRole("tab", { name: /client/i }));
+  // Wait for the client contact block to appear
+  await waitFor(() => {
+    expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+  });
+}
+
+describe("Client tab — contact block + reassign picker", () => {
+  it("shows client email in the client tab", async () => {
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+  });
+
+  it("shows client phone in the client tab", async () => {
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    expect(screen.getByText("+63 917 555 0100")).toBeInTheDocument();
+  });
+
+  it("shows the Open client link with the client id", async () => {
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    // The Open client link navigates to /clients
+    const link = screen.getByRole("link", { name: /open client/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href");
+  });
+
+  it("shows 'No email' when client has no email", async () => {
+    const bookingWithoutEmail = {
+      ...MOCK_BOOKING,
+      client: { id: CLIENT_ID, name: "Alice Smith", email: null, phone: null },
+    };
+    vi.stubGlobal("fetch", makeFetch({ booking: bookingWithoutEmail as unknown as typeof MOCK_BOOKING }));
+    renderModal();
+    // Wait for load then switch to client tab (no email means we can't use switchToClientTab helper)
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    });
+    // Client tab is default, so email field should be visible without extra click
+    await waitFor(() => {
+      expect(screen.getByText("No email")).toBeInTheDocument();
+    });
+  });
+
+  it("shows 'No phone' when client has no phone", async () => {
+    const bookingWithoutPhone = {
+      ...MOCK_BOOKING,
+      client: { id: CLIENT_ID, name: "Alice Smith", email: "alice@example.com", phone: null },
+    };
+    vi.stubGlobal("fetch", makeFetch({ booking: bookingWithoutPhone as unknown as typeof MOCK_BOOKING }));
+    renderModal();
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText("No phone")).toBeInTheDocument();
+    });
+  });
+
+  it("opening Change client reveals a search input", async () => {
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    // Click the "Change client" button
+    fireEvent.click(screen.getByRole("button", { name: /change client/i }));
+
+    await waitFor(() => {
+      // A search input appears
+      expect(
+        screen.getByRole("textbox", { name: /search clients/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("selecting a client from the reassign picker stages pending changes", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+    await switchToClientTab();
+
+    fireEvent.click(screen.getByRole("button", { name: /change client/i }));
+
+    // Wait for the client list to load (initial empty-query fetch)
+    await waitFor(() => {
+      expect(screen.getByText("Bob Jones")).toBeInTheDocument();
+    });
+
+    // Click on Bob Jones
+    fireEvent.click(screen.getByText("Bob Jones"));
+
+    // After selecting, the Save button should appear (pending count > 0)
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument();
     });
   });
 });

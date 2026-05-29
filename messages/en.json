@@ -246,7 +246,16 @@
           "viewAllHistory": "View all {count} entries",
           "endBeforeStart": "End can't be before start.",
           "conflictsLabel": "Shifts already on {date}:",
-          "draftHint": "Adjust the times below, then click Save changes to add this session."
+          "draftHint": "Adjust the times below, then click Save changes to add this session.",
+          "email": "Email",
+          "phone": "Phone",
+          "openClient": "Open client",
+          "changeClient": "Change client",
+          "changeClientCancel": "Keep current",
+          "changeClientSearch": "Search clients…",
+          "noEmail": "No email",
+          "noPhone": "No phone",
+          "noClientResults": "No clients found"
         },
         "cancelConfirm": {
           "title": "Cancel this booking?",
@@ -259,7 +268,16 @@
           "totalCount": "{count} entries",
           "pageOf": "Page {page} of {total}",
           "previous": "Previous page",
-          "next": "Next page"
+          "next": "Next page",
+          "actions": {
+            "created": "Created",
+            "updated": "Updated",
+            "status_changed": "Status changed",
+            "client_changed": "Client changed",
+            "deleted": "Deleted"
+          },
+          "today": "Today",
+          "yesterday": "Yesterday"
         },
         "cancel": "Cancel booking",
         "restore": "Restore booking",

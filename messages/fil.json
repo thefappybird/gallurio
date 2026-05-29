@@ -246,7 +246,16 @@
           "viewAllHistory": "Tingnan ang lahat ng {count} entry",
           "endBeforeStart": "Hindi maaaring mas maaga ang katapusan kaysa sa simula.",
           "conflictsLabel": "Mga shift na nasa {date} na:",
-          "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito."
+          "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito.",
+          "email": "Email",
+          "phone": "Telepono",
+          "openClient": "Buksan ang kliyente",
+          "changeClient": "Palitan ang kliyente",
+          "changeClientCancel": "Panatilihin ang kasalukuyan",
+          "changeClientSearch": "Maghanap ng mga kliyente…",
+          "noEmail": "Walang email",
+          "noPhone": "Walang telepono",
+          "noClientResults": "Walang nahanap na kliyente"
         },
         "cancelConfirm": {
           "title": "Kanselahin ang booking na ito?",
@@ -259,7 +268,16 @@
           "totalCount": "{count} entry",
           "pageOf": "Pahina {page} ng {total}",
           "previous": "Nakaraang pahina",
-          "next": "Susunod na pahina"
+          "next": "Susunod na pahina",
+          "actions": {
+            "created": "Nilikha",
+            "updated": "Na-update",
+            "status_changed": "Nabago ang status",
+            "client_changed": "Nabago ang kliyente",
+            "deleted": "Natanggal"
+          },
+          "today": "Ngayon",
+          "yesterday": "Kahapon"
         },
         "cancel": "Kanselahin ang booking",
         "restore": "I-restore ang booking",

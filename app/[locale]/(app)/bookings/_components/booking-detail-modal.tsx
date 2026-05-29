@@ -8,17 +8,19 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter, usePathname } from "@/lib/i18n/navigation";
+import { useRouter, usePathname, Link } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
+  ArrowUpRightIcon,
   CheckIcon,
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
   PencilIcon,
   PlusIcon,
+  SearchIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
@@ -39,6 +41,13 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,6 +58,7 @@ import { EditableField } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
+import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
 import type { ShiftHit } from "./booking-wizard-steps/event-step";
 import {
@@ -75,6 +85,8 @@ type BookingDoc = {
   _id: string;
   title: string;
   clientName: string;
+  clientId: string;
+  client: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventType: string;
   status: string;
   sessions: SessionDoc[];
@@ -137,7 +149,13 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
   const tDnd = useTranslations("app.bookings.dnd");
+  const tEvent = useTranslations("app.bookings.eventTypes");
   const [, startTransition] = useTransition();
+
+  const eventTypeOptions = useMemo(
+    () => EVENT_TYPES.map((e) => ({ value: e, label: safeT(tEvent, e, e) })),
+    [tEvent]
+  );
 
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -926,6 +944,10 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           pending={pending}
           loading={loading}
           locale={locale}
+          disabled={saving}
+          eventTypeOptions={eventTypeOptions}
+          onCommit={commitField}
+          onDiscard={discardField}
           onEditAll={() => {
             const params = new URLSearchParams(searchParams.toString());
             params.delete("detail");
@@ -1002,6 +1024,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         open={historyDialogOpen}
         onClose={() => setHistoryDialogOpen(false)}
         locale={locale}
+        currency={booking?.amount.currency}
       />
 
       <SessionEditConfirmDialog
@@ -1068,6 +1091,10 @@ function DialogHeaderBar({
   pending,
   loading,
   locale,
+  disabled,
+  eventTypeOptions,
+  onCommit,
+  onDiscard,
   onEditAll,
   onClose,
 }: {
@@ -1075,11 +1102,20 @@ function DialogHeaderBar({
   pending: PendingChanges;
   loading: boolean;
   locale: string;
+  disabled: boolean;
+  eventTypeOptions: { value: string; label: string }[];
+  onCommit: (key: EditableKey, value: string | number | null) => void;
+  onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
   onClose: () => void;
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
+  const tEvent = useTranslations("app.bookings.eventTypes");
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   let outstanding = 0;
   let currency = "PHP";
@@ -1092,13 +1128,145 @@ function DialogHeaderBar({
   }
   const isOverdue = booking ? outstanding > 0 : false;
 
+  const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
+  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking?.eventType ?? "";
+  const hasTitlePending = "title" in pending;
+  const hasEventTypePending = "eventType" in pending;
+  const isCancelled = booking?.status === "cancelled";
+
+  function startTitleEdit() {
+    if (disabled || isCancelled || !booking) return;
+    setTitleDraft(effectiveTitle);
+    setEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }
+
+  function commitTitle() {
+    const val = titleDraft.trim();
+    if (!val) {
+      cancelTitleEdit();
+      return;
+    }
+    onCommit("title", val);
+    setEditingTitle(false);
+  }
+
+  function cancelTitleEdit() {
+    setEditingTitle(false);
+    setTitleDraft("");
+    if (hasTitlePending) onDiscard("title");
+  }
+
+  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
+
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         {loading ? (
           <Skeleton className="h-5 w-48" />
         ) : (
-          <DialogTitle className="truncate">{booking?.title ?? "—"}</DialogTitle>
+          <DialogTitle>
+            <div className="flex min-w-0 items-center gap-2">
+              {editingTitle ? (
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <Input
+                    ref={titleInputRef}
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitTitle();
+                      if (e.key === "Escape") cancelTitleEdit();
+                    }}
+                    className="h-7 min-w-0 flex-1 text-sm font-semibold"
+                    aria-label={t("title")}
+                    disabled={disabled}
+                  />
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={commitTitle}
+                    disabled={disabled || !titleDraft.trim()}
+                    aria-label="Confirm title"
+                    className="shrink-0"
+                  >
+                    <CheckIcon className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={cancelTitleEdit}
+                    aria-label="Cancel title edit"
+                    className="shrink-0"
+                  >
+                    <XIcon className="size-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={startTitleEdit}
+                    disabled={disabled || isCancelled}
+                    className={cn(
+                      "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
+                      "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
+                      "disabled:pointer-events-none disabled:opacity-60",
+                      hasTitlePending && "text-brand"
+                    )}
+                    aria-label={`Edit title: ${effectiveTitle}`}
+                  >
+                    <span className="truncate">{effectiveTitle}</span>
+                    <PencilIcon className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60" />
+                    {hasTitlePending ? (
+                      <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                    ) : null}
+                  </button>
+
+                  {/* Event-type pill */}
+                  {booking ? (
+                    <div className="relative shrink-0">
+                      <Select
+                        value={effectiveEventType}
+                        onValueChange={(v) => {
+                          onCommit("eventType", v);
+                          if (hasEventTypePending && v === booking.eventType)
+                            onDiscard("eventType");
+                        }}
+                        disabled={disabled || isCancelled}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                            hasEventTypePending
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                          )}
+                          aria-label={`Event type: ${eventTypeLabel}`}
+                        >
+                          <SelectValue>{eventTypeLabel}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {eventTypeOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {hasEventTypePending ? (
+                        <span
+                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </DialogTitle>
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1220,7 +1388,6 @@ function BookingTabs({
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tStatus = useTranslations("app.bookings.statusValues");
-  const tEvent = useTranslations("app.bookings.eventTypes");
   const tSessions = useTranslations("app.bookings.sessions");
 
   const statusOptions = useMemo(
@@ -1230,15 +1397,6 @@ function BookingTabs({
         label: safeT(tStatus, s, s),
       })),
     [tStatus]
-  );
-
-  const eventTypeOptions = useMemo(
-    () =>
-      EVENT_TYPES.map((e) => ({
-        value: e,
-        label: safeT(tEvent, e, e),
-      })),
-    [tEvent]
   );
 
   const currencyOptions = useMemo(
@@ -1283,36 +1441,132 @@ function BookingTabs({
     ? [...upcomingSessions, ...pastSessions]
     : upcomingSessions;
 
+  const [reassignOpen, setReassignOpen] = useState(false);
+
   return (
     <Tabs defaultValue="client">
-      <TabsList className="overflow-x-auto">
+      <TabsList className="mb-1 h-auto overflow-x-auto gap-1 border-b-0 bg-transparent pb-0">
         <TabsTab
           value="client"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
+          className={cn(
+            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
+            "active:bg-accent/40",
+            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
+          )}
         >
           {t("client")}
         </TabsTab>
         <TabsTab
           value="event"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
+          className={cn(
+            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
+            "active:bg-accent/40",
+            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
+          )}
         >
           {t("event")}
         </TabsTab>
         <TabsTab
           value="pricing"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
+          className={cn(
+            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
+            "active:bg-accent/40",
+            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
+          )}
         >
           {t("pricing")}
         </TabsTab>
         <TabsTab
           value="activity"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
+          className={cn(
+            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
+            "active:bg-accent/40",
+            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
+          )}
         >
           {t("activity")}
         </TabsTab>
       </TabsList>
 
       <TabsPanel value="client">
+        {/* Client contact block — read-only snapshot */}
+        <div className="mb-3 flex flex-col gap-2 border border-border bg-card p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tFields("clientName")}
+              </span>
+              <span className="truncate text-sm font-medium text-foreground">
+                {booking.client?.name ?? booking.clientName}
+              </span>
+              {booking.client?.email ? (
+                <a
+                  href={`mailto:${booking.client.email}`}
+                  className="truncate text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                  aria-label={`Email ${booking.client.email}`}
+                >
+                  {booking.client.email}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">{tFields("noEmail")}</span>
+              )}
+              {booking.client?.phone ? (
+                <a
+                  href={`tel:${booking.client.phone}`}
+                  className="text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                  aria-label={`Call ${booking.client.phone}`}
+                >
+                  {booking.client.phone}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">{tFields("noPhone")}</span>
+              )}
+            </div>
+            {booking.client ? (
+              <Link
+                href={`/clients`}
+                aria-label={tFields("openClient")}
+                className={cn(
+                  "flex shrink-0 items-center gap-1 border border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
+                  "hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none"
+                )}
+              >
+                <ArrowUpRightIcon className="size-3.5" aria-hidden />
+                {tFields("openClient")}
+              </Link>
+            ) : null}
+          </div>
+          {/* Reassign client */}
+          {reassignOpen ? (
+            <ClientReassignPicker
+              onSelect={(c) => {
+                onCommit("clientId", c.id);
+                onCommit("clientName", c.name);
+                setReassignOpen(false);
+              }}
+              onCancel={() => setReassignOpen(false)}
+              disabled={disabled}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReassignOpen(true)}
+              disabled={disabled}
+              className={cn(
+                "self-start text-xs font-medium text-muted-foreground underline-offset-4 transition-colors",
+                "hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none",
+                "disabled:pointer-events-none disabled:opacity-50"
+              )}
+            >
+              {tFields("changeClient")}
+            </button>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           <EditableField
             label={tFields("clientName")}
@@ -1335,26 +1589,6 @@ function BookingTabs({
       </TabsPanel>
 
       <TabsPanel value="event">
-        <EditableField
-          label={tFields("title")}
-          type="text"
-          {...get("title")}
-          onCommit={(v) => onCommit("title", v)}
-          onDiscardPending={() => onDiscard("title")}
-          disabled={disabled}
-          validate={(v) =>
-            !v || String(v).trim() === "" ? tFields("titleRequired") : null
-          }
-        />
-        <EditableField
-          label={tFields("eventType")}
-          type="select"
-          options={eventTypeOptions}
-          {...get("eventType")}
-          onCommit={(v) => onCommit("eventType", v)}
-          onDiscardPending={() => onDiscard("eventType")}
-          disabled={disabled}
-        />
         <div className="flex flex-col gap-1 py-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {tFields("location")}
@@ -1608,54 +1842,20 @@ function BookingTabs({
         />
 
         <SectionHeader label={tSections("history")} />
-        {activity.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            {tFields("activityEmpty")}
-          </p>
-        ) : (
-          <>
-            <ul className="flex flex-col divide-y divide-border">
-              {activity.slice(0, 5).map((entry) => (
-                <li
-                  key={entry._id}
-                  className="flex items-start justify-between gap-3 py-2.5"
-                >
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-sm capitalize">
-                      {entry.action.replace("_", " ")}
-                    </span>
-                    {entry.diff?.changes ? (
-                      <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        {Object.entries(entry.diff.changes).map(([k]) => (
-                          <li key={k} className="capitalize">
-                            · {k.replace(".", " · ")}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {new Date(entry.createdAt).toLocaleString(locale, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {activityTotal > 5 ? (
-              <button
-                type="button"
-                onClick={onViewAllHistory}
-                className="mt-2 self-start text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
-              >
-                {tFields("viewAllHistory", { count: activityTotal })}
-              </button>
-            ) : null}
-          </>
-        )}
+        <ActivityTimeline
+          entries={activity.slice(0, 5)}
+          locale={locale}
+          currency={currency}
+        />
+        {activityTotal > 5 && activity.length > 0 ? (
+          <button
+            type="button"
+            onClick={onViewAllHistory}
+            className="mt-2 self-start text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+          >
+            {tFields("viewAllHistory", { count: activityTotal })}
+          </button>
+        ) : null}
       </TabsPanel>
     </Tabs>
   );
@@ -2413,6 +2613,141 @@ function DraftSessionCard({
           conflicts={conflicts}
           loading={isCheckingConflicts}
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── ClientReassignPicker ─────────────────────────────────────────────────────
+
+type ClientSearchHit = { id: string; name: string; email: string | null; phone: string | null };
+
+function ClientReassignPicker({
+  onSelect,
+  onCancel,
+  disabled,
+}: {
+  onSelect: (client: ClientSearchHit) => void;
+  onCancel: () => void;
+  disabled: boolean;
+}) {
+  const tFields = useTranslations("app.bookings.detail.fields");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ClientSearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+
+    // Show initial list when empty, debounce on non-empty.
+    // All state updates happen inside the setTimeout callback to avoid
+    // synchronous setState calls in the effect body (React Compiler rule).
+    let cancelled = false;
+    debounceRef.current = setTimeout(
+      async () => {
+        if (cancelled) return;
+        setSearchError(null);
+        setSearching(true);
+        try {
+          const params = new URLSearchParams({ limit: "20" });
+          if (q) params.set("q", q);
+          const res = await fetch(`/api/clients?${params.toString()}`);
+          if (cancelled) return;
+          if (!res.ok) throw new Error("Search failed");
+          const data = await res.json() as ClientSearchHit[];
+          if (!cancelled) setResults(data);
+        } catch {
+          if (!cancelled) {
+            setSearchError("Search failed. Try again.");
+            setResults([]);
+          }
+        } finally {
+          if (!cancelled) setSearching(false);
+        }
+      },
+      q ? 250 : 0
+    );
+
+    return () => {
+      cancelled = true;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  return (
+    <div className="mt-1 flex flex-col gap-2 border border-border bg-background p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">{tFields("changeClient")}</span>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className={cn(
+            "text-xs text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:text-foreground focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-50"
+          )}
+        >
+          {tFields("changeClientCancel")}
+        </button>
+      </div>
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={tFields("changeClientSearch")}
+          className="h-8 pl-8 text-sm"
+          disabled={disabled}
+          aria-label={tFields("changeClientSearch")}
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto border border-border bg-background">
+        {searching ? (
+          <div className="flex items-center justify-center gap-2 px-3 py-4 text-xs text-muted-foreground">
+            <Loader2Icon className="size-3.5 animate-spin" />
+          </div>
+        ) : searchError ? (
+          <p className="px-3 py-4 text-center text-xs text-destructive">{searchError}</p>
+        ) : results.length === 0 ? (
+          <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+            {tFields("noClientResults")}
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {results.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(c.id);
+                    onSelect(c);
+                  }}
+                  disabled={disabled}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition-colors last:border-b-0",
+                    "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+                    "active:bg-accent/60",
+                    "disabled:pointer-events-none disabled:opacity-50",
+                    selectedId === c.id && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate font-medium">{c.name}</span>
+                    {c.email ? (
+                      <span className="truncate text-xs text-muted-foreground">{c.email}</span>
+                    ) : null}
+                  </span>
+                  {selectedId === c.id ? <CheckIcon className="size-4 shrink-0" /> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

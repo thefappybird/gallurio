@@ -110,6 +110,51 @@ describe("GET /api/bookings/[id]", () => {
     const res = await GET(makeGet("not-an-id"), ctx("not-an-id"));
     expect(res.status).toBe(400);
   });
+
+  it("GET includes client block with id, name, email, phone when client exists", async () => {
+    const c = await seedClient(workspaceId, {
+      name: "Emma Carter",
+      email: "emma@example.com",
+      phone: "+639171234567",
+    });
+    const b = await seedBooking(workspaceId, c._id);
+    const { GET } = await load();
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.client).toEqual({
+      id: c._id.toString(),
+      name: "Emma Carter",
+      email: "emma@example.com",
+      phone: "+639171234567",
+    });
+  });
+
+  it("GET tenant isolation: org B cannot fetch org A's booking (404, no client leak)", async () => {
+    // Seed booking in org A (workspaceId). requireOrg is mocked to return
+    // workspaceId, so a booking seeded under otherWorkspaceId must 404.
+    const c = await seedClient(otherWorkspaceId, { name: "Other Client" });
+    const b = await seedBooking(otherWorkspaceId, c._id);
+    const { GET } = await load();
+    // requireOrg returns workspaceId (the mock is fixed) — so looking up a
+    // booking owned by otherWorkspaceId must never return data.
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(404);
+  });
+
+  it("GET returns client: null when client doc is missing (hard-deleted)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    // Hard-delete the client to simulate orphan booking
+    await Client.deleteOne({ _id: c._id });
+    const { GET } = await load();
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.client).toBeNull();
+    // The booking itself must still be present.
+    expect(json.title).toBe("Carter Wedding");
+  });
 });
 
 describe("PATCH /api/bookings/[id]", () => {

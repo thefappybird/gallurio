@@ -246,7 +246,16 @@
           "viewAllHistory": "ดูทั้งหมด {count} รายการ",
           "endBeforeStart": "เวลาสิ้นสุดต้องไม่อยู่ก่อนเวลาเริ่ม",
           "conflictsLabel": "กะที่มีอยู่แล้วใน {date}:",
-          "draftHint": "ปรับเวลาด้านล่าง จากนั้นคลิกบันทึกการเปลี่ยนแปลงเพื่อเพิ่มเซสชันนี้"
+          "draftHint": "ปรับเวลาด้านล่าง จากนั้นคลิกบันทึกการเปลี่ยนแปลงเพื่อเพิ่มเซสชันนี้",
+          "email": "อีเมล",
+          "phone": "โทรศัพท์",
+          "openClient": "เปิดข้อมูลลูกค้า",
+          "changeClient": "เปลี่ยนลูกค้า",
+          "changeClientCancel": "เก็บลูกค้าเดิม",
+          "changeClientSearch": "ค้นหาลูกค้า…",
+          "noEmail": "ไม่มีอีเมล",
+          "noPhone": "ไม่มีโทรศัพท์",
+          "noClientResults": "ไม่พบลูกค้า"
         },
         "cancelConfirm": {
           "title": "ยกเลิกการจองนี้หรือไม่?",
@@ -259,7 +268,16 @@
           "totalCount": "{count} รายการ",
           "pageOf": "หน้า {page} จาก {total}",
           "previous": "หน้าก่อนหน้า",
-          "next": "หน้าถัดไป"
+          "next": "หน้าถัดไป",
+          "actions": {
+            "created": "สร้างแล้ว",
+            "updated": "อัปเดตแล้ว",
+            "status_changed": "เปลี่ยนสถานะแล้ว",
+            "client_changed": "เปลี่ยนลูกค้าแล้ว",
+            "deleted": "ลบแล้ว"
+          },
+          "today": "วันนี้",
+          "yesterday": "เมื่อวาน"
         },
         "cancel": "ยกเลิกการจอง",
         "restore": "กู้คืนการจอง",

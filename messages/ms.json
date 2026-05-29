@@ -246,7 +246,16 @@
           "viewAllHistory": "Lihat semua {count} entri",
           "endBeforeStart": "Tamat tidak boleh sebelum mula.",
           "conflictsLabel": "Syif yang sudah ada pada {date}:",
-          "draftHint": "Laraskan masa di bawah, kemudian klik Simpan perubahan untuk menambah sesi ini."
+          "draftHint": "Laraskan masa di bawah, kemudian klik Simpan perubahan untuk menambah sesi ini.",
+          "email": "E-mel",
+          "phone": "Telefon",
+          "openClient": "Buka klien",
+          "changeClient": "Tukar klien",
+          "changeClientCancel": "Kekalkan semasa",
+          "changeClientSearch": "Cari klien…",
+          "noEmail": "Tiada e-mel",
+          "noPhone": "Tiada telefon",
+          "noClientResults": "Tiada klien dijumpai"
         },
         "cancelConfirm": {
           "title": "Batalkan tempahan ini?",
@@ -259,7 +268,16 @@
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
           "previous": "Halaman sebelumnya",
-          "next": "Halaman seterusnya"
+          "next": "Halaman seterusnya",
+          "actions": {
+            "created": "Dicipta",
+            "updated": "Dikemas kini",
+            "status_changed": "Status diubah",
+            "client_changed": "Klien diubah",
+            "deleted": "Dipadam"
+          },
+          "today": "Hari ini",
+          "yesterday": "Semalam"
         },
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",

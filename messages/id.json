@@ -246,7 +246,16 @@
           "viewAllHistory": "Lihat semua {count} entri",
           "endBeforeStart": "Selesai tidak boleh sebelum mulai.",
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
-          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini."
+          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini.",
+          "email": "Email",
+          "phone": "Telepon",
+          "openClient": "Buka klien",
+          "changeClient": "Ganti klien",
+          "changeClientCancel": "Pertahankan saat ini",
+          "changeClientSearch": "Cari klien…",
+          "noEmail": "Tidak ada email",
+          "noPhone": "Tidak ada telepon",
+          "noClientResults": "Tidak ada klien ditemukan"
         },
         "cancelConfirm": {
           "title": "Batalkan pemesanan ini?",
@@ -259,7 +268,16 @@
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
           "previous": "Halaman sebelumnya",
-          "next": "Halaman berikutnya"
+          "next": "Halaman berikutnya",
+          "actions": {
+            "created": "Dibuat",
+            "updated": "Diperbarui",
+            "status_changed": "Status diubah",
+            "client_changed": "Klien diubah",
+            "deleted": "Dihapus"
+          },
+          "today": "Hari ini",
+          "yesterday": "Kemarin"
         },
         "cancel": "Batalkan pemesanan",
         "restore": "Pulihkan pemesanan",

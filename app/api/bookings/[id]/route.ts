@@ -28,7 +28,26 @@ export async function GET(_req: Request, { params }: Params) {
   if (!booking) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  return NextResponse.json(booking);
+
+  const clientDoc = booking.clientId
+    ? await Client.findOne({
+        _id: booking.clientId,
+        workspaceId: ctx.workspace._id,
+      })
+        .select({ _id: 1, name: 1, email: 1, phone: 1 })
+        .lean()
+    : null;
+
+  const client = clientDoc
+    ? {
+        id: clientDoc._id.toString(),
+        name: clientDoc.name,
+        email: clientDoc.email ?? null,
+        phone: clientDoc.phone ?? null,
+      }
+    : null;
+
+  return NextResponse.json({ ...booking, client });
 }
 
 export async function PATCH(req: Request, { params }: Params) {
