@@ -1,6 +1,55 @@
 import { describe, it, expect } from "vitest";
-import { brandKitSchema, portfolioPuckDataSchema } from "./publicPage";
+import {
+  brandKitSchema,
+  portfolioPuckDataSchema,
+  portfolioContactConfigSchema,
+} from "./publicPage";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+
+// ---------------------------------------------------------------------------
+// portfolioContactConfigSchema
+// ---------------------------------------------------------------------------
+
+describe("portfolioContactConfigSchema", () => {
+  it("accepts an empty object (all fields optional → brand-kit fallbacks)", () => {
+    expect(portfolioContactConfigSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts a fully specified valid config", () => {
+    const result = portfolioContactConfigSchema.safeParse({
+      title: "Let's work together",
+      description: "Tell us about your event.",
+      buttonStyle: "outline",
+      buttonColor: "accent",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty-string values for optional fields", () => {
+    const result = portfolioContactConfigSchema.safeParse({
+      title: "",
+      description: "",
+      buttonStyle: "",
+      buttonColor: "",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an out-of-set button style", () => {
+    const result = portfolioContactConfigSchema.safeParse({ buttonStyle: "ghost" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an out-of-set button color (arbitrary hex is not allowed)", () => {
+    const result = portfolioContactConfigSchema.safeParse({ buttonColor: "#ff0000" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an over-long title", () => {
+    const result = portfolioContactConfigSchema.safeParse({ title: "x".repeat(81) });
+    expect(result.success).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // brandKitSchema

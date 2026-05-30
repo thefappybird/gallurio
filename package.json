@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx lib/db/seed.ts",
+    "seed:portfolio": "tsx lib/db/seed-portfolio.ts",
     "reindex": "tsx lib/db/reindex.ts",
     "hitpay:sim": "tsx scripts/hitpay-sim.ts"
   },

@@ -10,6 +10,9 @@ import type { PuckData } from "../types";
 import { heroDefaultProps } from "../blocks/HeroBlock";
 import { aboutDefaultProps } from "../blocks/AboutBlock";
 import { galleryGridDefaultProps } from "../blocks/GalleryGridBlock";
+import { galleryMasonryDefaultProps } from "../blocks/GalleryMasonryBlock";
+import { galleryCarouselDefaultProps } from "../blocks/GalleryCarouselBlock";
+import { featuredWorkDefaultProps } from "../blocks/FeaturedWorkBlock";
 import { servicesListDefaultProps } from "../blocks/ServicesListBlock";
 import { ctaBannerDefaultProps } from "../blocks/CTABannerBlock";
 import { contactCardDefaultProps } from "../blocks/ContactCardBlock";
@@ -46,6 +49,30 @@ export const homeDataFixture: PuckData = {
         ...galleryGridDefaultProps,
         collectionId: "",
         // Empty collection → renders empty state placeholder in fixture tests
+      },
+    },
+    {
+      type: "GalleryMasonry",
+      props: {
+        id: "fixture-masonry-1",
+        ...galleryMasonryDefaultProps,
+        collectionId: "",
+      },
+    },
+    {
+      type: "GalleryCarousel",
+      props: {
+        id: "fixture-carousel-1",
+        ...galleryCarouselDefaultProps,
+        collectionId: "",
+      },
+    },
+    {
+      type: "FeaturedWork",
+      props: {
+        id: "fixture-featured-1",
+        ...featuredWorkDefaultProps,
+        itemIds: [],
       },
     },
     {

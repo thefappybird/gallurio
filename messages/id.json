@@ -919,7 +919,69 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Portofolio tidak ditemukan",
       "notFoundBody": "Portofolio ini tidak ada atau belum dipublikasikan.",
-      "startingFrom": "Mulai dari {price}"
+      "startingFrom": "Mulai dari {price}",
+      "gallery": {
+        "empty": "Belum ada foto di koleksi ini.",
+        "noCollection": "Tidak ada koleksi yang dipilih.",
+        "unavailable": "Galeri tidak tersedia.",
+        "error": "Galeri sementara tidak tersedia.",
+        "featuredEmpty": "Belum ada foto unggulan yang dipilih.",
+        "carouselHint": "Geser atau gunakan panah untuk menjelajah",
+        "carouselPrev": "Gambar sebelumnya",
+        "carouselNext": "Gambar berikutnya"
+      }
+    },
+    "nav": {
+      "home": "Beranda",
+      "gallery": "Galeri",
+      "contact": "Kontak",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "Hubungi kami",
+      "description": "Ceritakan tentang acara Anda dan kami akan segera menghubungi Anda.",
+      "close": "Tutup",
+      "confirmTitle": "Terima kasih — kami akan menghubungi Anda!",
+      "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
+      "confirmClose": "Selesai",
+      "tabClient": "Detail Anda",
+      "tabBooking": "Detail acara",
+      "name": "Nama",
+      "email": "Email",
+      "phone": "Telepon (opsional)",
+      "preferredContact": "Metode kontak pilihan",
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepon",
+        "either": "Salah satu"
+      },
+      "sessionsLabel": "Tanggal acara",
+      "sessionLabel": "Hari {n}",
+      "startDate": "Tanggal",
+      "startTime": "Waktu mulai",
+      "endTime": "Waktu selesai",
+      "addSession": "Tambah hari",
+      "removeSession": "Hapus",
+      "shiftHint": "Setiap hari adalah satu sesi — atur waktu mulai dan selesainya. Tambahkan hari untuk acara beberapa hari.",
+      "eventType": "Jenis acara",
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Hari jadi",
+        "other": "Lainnya"
+      },
+      "guestCount": "Tamu (opsional)",
+      "location": "Lokasi (opsional)",
+      "message": "Ceritakan lebih lanjut",
+      "messagePlaceholder": "Bagikan detail acara Anda…",
+      "submit": "Kirim pertanyaan",
+      "submitting": "Mengirim…",
+      "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
+      "requiredHint": "Wajib"
     }
   }
 }
