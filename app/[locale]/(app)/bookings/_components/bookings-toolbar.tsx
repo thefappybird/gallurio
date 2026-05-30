@@ -18,18 +18,23 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import type { BookingsView } from "./view-toggle";
 
 const ALL = "__all__";
 
 export function BookingsToolbar({
   defaultCurrency,
   onAddClick,
+  view = "table",
 }: {
   defaultCurrency: string;
   /** When provided, the "New Booking" button calls this directly instead of
    *  performing a URL push. Allows the parent to own the open state so the
    *  button always fires even when ?add=1 is already in the URL. */
   onAddClick?: () => void;
+  /** Active view. In calendar view the status dropdown is hidden — the
+   *  calendar's clickable color legend owns status filtering there. */
+  view?: BookingsView;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -99,32 +104,34 @@ export function BookingsToolbar({
           />
         </div>
 
-        <Select<string>
-          value={status}
-          onValueChange={(v) =>
-            pushParams({ status: !v || v === ALL ? null : v })
-          }
-        >
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue>
-              {(value: string) =>
-                !value || value === ALL ? (
-                  <span>{t("statusAll")}</span>
-                ) : (
-                  <span className="capitalize">{value}</span>
-                )
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
-            {BOOKING_STATUSES.map((s: BookingStatus) => (
-              <SelectItem key={s} value={s} className="capitalize">
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {view !== "calendar" ? (
+          <Select<string>
+            value={status}
+            onValueChange={(v) =>
+              pushParams({ status: !v || v === ALL ? null : v })
+            }
+          >
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue>
+                {(value: string) =>
+                  !value || value === ALL ? (
+                    <span>{t("statusAll")}</span>
+                  ) : (
+                    <span className="capitalize">{value}</span>
+                  )
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
+              {BOOKING_STATUSES.map((s: BookingStatus) => (
+                <SelectItem key={s} value={s} className="capitalize">
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
 
         <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
           <Switch

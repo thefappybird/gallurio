@@ -193,6 +193,13 @@
         "completed": "เสร็จสิ้น",
         "cancelled": "ยกเลิกแล้ว"
       },
+      "locationPicker": {
+        "searchPlaceholder": "ค้นหาสถานที่จัดงานหรือที่อยู่…",
+        "searching": "กำลังค้นหา…",
+        "noResults": "ไม่พบผลลัพธ์ ลองค้นหาด้วยคำอื่น",
+        "dragHint": "ลากหมุดเพื่อปรับตำแหน่งที่แน่นอน",
+        "clear": "ล้างสถานที่"
+      },
       "eventTypes": {
         "wedding": "งานแต่งงาน",
         "corporate": "องค์กร",
@@ -207,7 +214,9 @@
         "hidePast": "ซ่อนเซสชันที่ผ่านมา",
         "pastSessionsHidden": "{count, plural, one {ซ่อน # เซสชันที่ผ่านมา — สลับเพื่อแสดง} other {ซ่อน # เซสชันที่ผ่านมา — สลับเพื่อแสดง}}",
         "tabs": {
-          "details": "รายละเอียด",
+          "client": "ลูกค้า",
+          "event": "งาน",
+          "pricing": "ราคา",
           "activity": "บันทึกและกิจกรรม"
         },
         "sections": {
@@ -308,7 +317,9 @@
           "cancel": "ยกเลิก"
         },
         "showPast": "แสดงที่ผ่านมา",
-        "hidePast": "ซ่อนที่ผ่านมา"
+        "hidePast": "ซ่อนที่ผ่านมา",
+        "filterByStatus": "กรองตามสถานะ",
+        "filterActive": "กรองตาม {status} — แตะอีกครั้งเพื่อล้าง"
       },
       "sessions": {
         "label": "เซสชัน {n}",
@@ -380,11 +391,9 @@
           "startTime": "เวลาเริ่มกะ",
           "endAt": "วันที่สิ้นสุดกะ",
           "endTime": "เวลาสิ้นสุดกะ",
-          "shiftHint": "ชั่วโมงกะจะซ้ำทุกวันตลอดช่วงวันที่ — เป็นเวลาเริ่มและสิ้นสุดรายวัน ไม่ใช่งานเดียว 24 ชั่วโมง",
           "conflictsLabel": "กะที่มีอยู่แล้วใน {date}:",
           "allowPastDate": "เพิ่มการจองเก่าหรือไม่? อนุญาตวันที่ผ่านมา",
           "location": "สถานที่",
-          "locationPlaceholder": "สถานที่จัดงานหรือที่อยู่เต็ม",
           "checkingConflicts": "กำลังตรวจสอบความขัดแย้ง…",
           "repeatingSessions": "เซสชันซ้ำ",
           "repeatingHint": "สร้างหนึ่งเซสชันในวันเดียวกันต่อวันในช่วงวันที่",
@@ -954,7 +963,69 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "ไม่พบพอร์ตโฟลิโอ",
       "notFoundBody": "พอร์ตโฟลิโอนี้ไม่มีอยู่หรือยังไม่ได้เผยแพร่",
-      "startingFrom": "เริ่มต้นที่ {price}"
+      "startingFrom": "เริ่มต้นที่ {price}",
+      "gallery": {
+        "empty": "ยังไม่มีรูปภาพในคอลเลกชันนี้",
+        "noCollection": "ยังไม่ได้เลือกคอลเลกชัน",
+        "unavailable": "แกลเลอรีไม่พร้อมใช้งาน",
+        "error": "แกลเลอรีไม่พร้อมใช้งานชั่วคราว",
+        "featuredEmpty": "ยังไม่ได้เลือกผลงานเด่น",
+        "carouselHint": "ปัดหรือใช้ลูกศรเพื่อดู",
+        "carouselPrev": "รูปก่อนหน้า",
+        "carouselNext": "รูปถัดไป"
+      }
+    },
+    "nav": {
+      "home": "หน้าแรก",
+      "gallery": "แกลเลอรี",
+      "contact": "ติดต่อ",
+      "openMenu": "เปิดเมนู",
+      "closeMenu": "ปิดเมนู",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "ติดต่อเรา",
+      "description": "บอกเราเกี่ยวกับงานของคุณ แล้วเราจะติดต่อกลับโดยเร็ว",
+      "close": "ปิด",
+      "confirmTitle": "ขอบคุณ — เราจะติดต่อกลับ!",
+      "confirmBody": "ส่งคำสอบถามของคุณแล้ว เราจะติดต่อกลับผ่านช่องทางที่คุณเลือกโดยเร็ว",
+      "confirmClose": "เสร็จสิ้น",
+      "tabClient": "ข้อมูลของคุณ",
+      "tabBooking": "รายละเอียดงาน",
+      "name": "ชื่อ",
+      "email": "อีเมล",
+      "phone": "โทรศัพท์ (ไม่บังคับ)",
+      "preferredContact": "ช่องทางติดต่อที่ต้องการ",
+      "preferred": {
+        "email": "อีเมล",
+        "phone": "โทรศัพท์",
+        "either": "อย่างใดอย่างหนึ่ง"
+      },
+      "sessionsLabel": "วันที่จัดงาน",
+      "sessionLabel": "วันที่ {n}",
+      "startDate": "วันที่",
+      "startTime": "เวลาเริ่ม",
+      "endTime": "เวลาสิ้นสุด",
+      "addSession": "เพิ่มวัน",
+      "removeSession": "ลบ",
+      "shiftHint": "แต่ละวันคือหนึ่งช่วงเวลา — กำหนดเวลาเริ่มและสิ้นสุด เพิ่มวันสำหรับงานหลายวัน",
+      "eventType": "ประเภทงาน",
+      "eventTypes": {
+        "wedding": "งานแต่งงาน",
+        "corporate": "งานองค์กร",
+        "portrait": "ภาพบุคคล",
+        "engagement": "งานหมั้น",
+        "anniversary": "วันครบรอบ",
+        "other": "อื่นๆ"
+      },
+      "guestCount": "จำนวนแขก (ไม่บังคับ)",
+      "location": "สถานที่ (ไม่บังคับ)",
+      "message": "บอกรายละเอียดเพิ่มเติม",
+      "messagePlaceholder": "แชร์รายละเอียดงานของคุณ…",
+      "submit": "ส่งคำสอบถาม",
+      "submitting": "กำลังส่ง…",
+      "errorGeneric": "ไม่สามารถส่งได้ — โปรดลองอีกครั้งภายหลัง",
+      "requiredHint": "จำเป็น"
     }
   }
 }

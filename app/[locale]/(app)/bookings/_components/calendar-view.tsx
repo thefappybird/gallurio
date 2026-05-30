@@ -10,7 +10,9 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
+import { BookingStatusLegend } from "./booking-status-legend";
 import { BookingWizardModal } from "./booking-wizard-modal";
+import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { Views, type View } from "react-big-calendar";
 import {
@@ -598,8 +600,34 @@ export function CalendarView({
     return optimisticEvents.filter((e) => e.end.getTime() >= startOfTodayMs);
   }, [optimisticEvents, showPast, startOfTodayMs]);
 
+  const activeStatus = useMemo<BookingStatus | null>(() => {
+    const s = searchParams.get("status");
+    return s && (BOOKING_STATUSES as readonly string[]).includes(s)
+      ? (s as BookingStatus)
+      : null;
+  }, [searchParams]);
+
+  const toggleStatusFilter = useCallback(
+    (status: BookingStatus) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (params.get("status") === status) params.delete("status");
+      else params.set("status", status);
+      const qs = params.toString();
+      startTransition(() => {
+        router.push(qs ? `${pathname}?${qs}` : pathname);
+      });
+    },
+    [router, pathname, searchParams]
+  );
+
   return (
     <>
+      <div className="mb-3">
+        <BookingStatusLegend
+          activeStatus={activeStatus}
+          onToggle={toggleStatusFilter}
+        />
+      </div>
       <BookingCalendar
         events={visibleEvents}
         defaultDate={defaultDate}

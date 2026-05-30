@@ -19,7 +19,6 @@ import {
   EyeIcon,
   MoreHorizontalIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,6 +30,7 @@ import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 import { isoDateInTz } from "./_helpers/calendar-helpers";
+import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type BookingRow = {
@@ -78,6 +78,7 @@ export function BookingsTable({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.table");
   const tActions = useTranslations("app.bookings.row");
+  const tStatus = useTranslations("app.bookings.statusValues");
   const [sorting, setSorting] = useState<SortingState>([
     { id: "sessions", desc: false },
   ]);
@@ -145,19 +146,15 @@ export function BookingsTable({
         header: () => t("col.status"),
         cell: (info) => {
           const v = info.getValue<BookingStatus>();
-          const isBooked = v === "booked";
           const isPast = computeIsPast(info.row.original.lastSessionEnd, workspaceTimezone);
           return (
             <span className="flex flex-wrap items-center gap-1.5">
-              <Badge
-                variant={isBooked ? "default" : "outline"}
-                className={
-                  "font-normal capitalize" +
-                  (isBooked ? " bg-brand text-brand-foreground" : "")
-                }
+              <span
+                className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-white"
+                style={{ backgroundColor: STATUS_COLOR_VAR[v] }}
               >
-                {v}
-              </Badge>
+                {tStatus(v)}
+              </span>
               {isPast && (
                 <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   {t("past")}
@@ -171,7 +168,7 @@ export function BookingsTable({
         accessorKey: "total",
         header: () => <span className="block text-right">{t("col.total")}</span>,
         cell: (info) => (
-          <span className="block text-right tabular-nums">
+          <span className="tabular-nums">
             {formatMoney(
               info.getValue<number>(),
               info.row.original.currency,
@@ -211,7 +208,7 @@ export function BookingsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, tActions, openDetail, workspaceTimezone]
+    [locale, t, tActions, tStatus, openDetail, workspaceTimezone]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable returns non-memoizable functions; React Compiler skips this component intentionally

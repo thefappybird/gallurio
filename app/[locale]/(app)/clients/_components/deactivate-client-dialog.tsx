@@ -50,17 +50,15 @@ export function DeactivateClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="flex max-w-md flex-col gap-0 p-0">
+      <DialogContent showCloseButton={false} className="flex sm:max-w-md flex-col gap-0 p-0">
         <div className="flex items-start gap-3 border-b border-border px-4 py-3">
           <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center border border-border bg-muted text-muted-foreground">
             <AlertCircleIcon className="size-4" />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <DialogTitle>{t("deactivate.title")}</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{clientName}</span>{" "}
-              {t("deactivate.body")}
-            </p>
+            <span className="truncate text-lg font-semibold text-foreground">{clientName}</span>
+            <p className="text-sm text-muted-foreground">{t("deactivate.body")}</p>
           </div>
         </div>
         <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end">

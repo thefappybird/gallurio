@@ -595,7 +595,7 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
           allowPastDate: false,
         },
       ],
-      location: { address: "" },
+      location: { address: "", lat: null, lng: null },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -755,7 +755,7 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
               sessions: [{ startAt: "2026-08-15T10:00:00Z", endAt: "2026-08-15T17:00:00Z" }],
               amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
               notes: "",
-              location: { address: "" },
+              location: { address: "", lat: null, lng: null },
               eventType: "wedding",
             }),
           };
@@ -890,7 +890,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       sessions: [
         { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "" },
+      location: { address: "", lat: null, lng: null },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -983,7 +983,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       sessions: [
         { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "" },
+      location: { address: "", lat: null, lng: null },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -1050,7 +1050,7 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
     sessions: [
       { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
     ],
-    location: { address: "" },
+    location: { address: "", lat: null, lng: null },
     amount: { total: 0, deposit: 0, currency: "PHP" as const },
     notes: "",
   };
@@ -1223,7 +1223,7 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
       sessions: [
         { startDate: "2026-07-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "" },
+      location: { address: "", lat: null, lng: null },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -1397,7 +1397,7 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
                 ],
                 amount: { total: 150_000, deposit: 50_000, currency: "PHP" },
                 notes: "",
-                location: { address: "" },
+                location: { address: "", lat: null, lng: null },
                 eventType: "wedding",
               }),
             };

@@ -27,6 +27,8 @@ Phase 8 ships:
   - `venue-stylist.ts`
   - `minimal.ts`
 - Each template exports `{ id, label, businessType, description, previewImage, defaultBrandKit, seedData(opts) }` where `seedData({ workspace })` returns a valid `{ home: PuckData; gallery: PuckData }` object using the blocks shipped in Phases 3–4.
+
+> **Note (added during Phase 5):** `publicPage.contact` is now a real config object (`{ title, description, buttonStyle, buttonColor }`) consumed by the prebuilt contact modal. Each template/`defaultBrandKit` should also seed sensible **contact defaults** (a `title` + `description`, optionally a `buttonStyle`/`buttonColor`) so a freshly-launched portfolio has on-brand contact copy. Validate against `portfolioContactConfigSchema` in `lib/validators/publicPage.ts`. The form fields themselves remain fixed/non-configurable.
 - Template registry (`lib/page-builder/templates/index.ts`) exports an array and a `getTemplate(id)` lookup.
 - Wizard at `/page-builder/wizard` is a 5-step flow with browser-back/next support:
   1. **Pick template** — grid of 5 cards with preview image, label, description. Defaults to the closest match for `workspace.businessType`.
