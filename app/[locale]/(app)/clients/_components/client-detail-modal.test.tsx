@@ -49,6 +49,16 @@ describe("ClientDetailModal", () => {
     expect(screen.getByText("Maria Santos")).toBeInTheDocument();
   });
 
+  it("shows source, email, and phone in the header (no separate contact section)", () => {
+    renderWithProviders(<ClientDetailModal {...defaultProps} />);
+    // Contact details now live in the header metadata row.
+    expect(screen.getByText("maria@example.com")).toBeInTheDocument();
+    expect(screen.getByText("+63 917 555 0142")).toBeInTheDocument();
+    expect(screen.getByText("Manual")).toBeInTheDocument(); // source badge (source: "manual")
+    // The standalone "Contact" overview section is gone.
+    expect(screen.queryByText(/^contact$/i)).not.toBeInTheDocument();
+  });
+
   it("Overview tab shows total spent and bookings count", () => {
     renderWithProviders(<ClientDetailModal {...defaultProps} />);
     expect(screen.getByText("3")).toBeInTheDocument(); // bookingsCount

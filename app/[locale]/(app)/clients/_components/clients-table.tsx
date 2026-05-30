@@ -6,6 +6,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   type ColumnDef,
+  type RowData,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -17,7 +18,6 @@ import {
   Loader2Icon,
   MoreHorizontalIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,6 +27,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatMoney } from "@/lib/utils/format-currency";
 import { cn } from "@/lib/utils";
+import { SourceBadge } from "./source-badge";
+
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    align?: "left" | "right";
+  }
+}
 
 export type ClientRow = {
   id: string;
@@ -53,14 +61,6 @@ type Props = {
   onReactivate: (row: ClientRow) => void;
   /** Id of the client currently being reactivated — disables/loads only that row. */
   reactivatingId?: string | null;
-};
-
-// Source badge colors — semantic borders, no raw color values
-const SOURCE_BADGE_CLASS: Record<string, string> = {
-  form: "border-brand text-brand",
-  manual: "border-muted-foreground text-muted-foreground",
-  referral: "border-foreground text-foreground",
-  import: "border-muted-foreground text-muted-foreground",
 };
 
 export function ClientsTable({
@@ -120,29 +120,18 @@ export function ClientsTable({
       {
         accessorKey: "source",
         header: () => t("table.col.source"),
-        cell: (info) => {
-          const src = info.getValue<string>();
-          return (
-            <Badge
-              variant="outline"
-              className={cn("font-normal capitalize", SOURCE_BADGE_CLASS[src] ?? "")}
-            >
-              {t(`sourceValues.${src}` as Parameters<typeof t>[0])}
-            </Badge>
-          );
-        },
+        cell: (info) => <SourceBadge source={info.getValue<string>()} />,
         enableSorting: false,
       },
       {
         accessorKey: "totalSpent",
-        header: () => (
-          <span className="block text-right">{t("table.col.totalSpent")}</span>
-        ),
+        header: () => t("table.col.totalSpent"),
         cell: (info) => (
-          <span className="block text-right tabular-nums text-brand">
+          <span className="block tabular-nums text-brand">
             {formatMoney(info.getValue<number>(), info.row.original.currency, locale)}
           </span>
         ),
+        meta: { align: "right" },
       },
       {
         id: "actions",
@@ -231,18 +220,22 @@ export function ClientsTable({
                     ? "descending"
                     : "none"
                   : undefined;
+                const alignRight = header.column.columnDef.meta?.align === "right";
                 return (
                   <th
                     key={header.id}
                     scope="col"
                     aria-sort={ariaSort}
-                    className="px-3 py-2 font-medium"
+                    className={cn("px-3 py-2 font-medium", alignRight && "text-right")}
                   >
                     {canSort ? (
                       <button
                         type="button"
                         onClick={header.column.getToggleSortingHandler()}
-                        className="inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                        className={cn(
+                          "inline-flex items-center gap-1 font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          alignRight && "w-full justify-end"
+                        )}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {sorted === "asc" ? (
@@ -254,7 +247,12 @@ export function ClientsTable({
                         )}
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1",
+                          alignRight && "w-full justify-end"
+                        )}
+                      >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </span>
                     )}
@@ -289,7 +287,10 @@ export function ClientsTable({
               {row.getVisibleCells().map((cell) => (
                 <td
                   key={cell.id}
-                  className="px-3 py-2.5 align-middle"
+                  className={cn(
+                    "px-3 py-2.5 align-middle",
+                    cell.column.columnDef.meta?.align === "right" && "text-right"
+                  )}
                   onClick={(e) => {
                     if (cell.column.id === "actions") e.stopPropagation();
                   }}
