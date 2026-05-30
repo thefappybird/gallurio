@@ -31,7 +31,7 @@ export function DowngradeBlockModal({
   maxTeamsOnTargetPlan,
   teamsToReview,
 }: DowngradeBlockModalProps) {
-  const t = useTranslations("app.settings.teams");
+  const t = useTranslations("app.teams");
   const excess = Math.max(0, currentTeamCount - maxTeamsOnTargetPlan);
 
   return (

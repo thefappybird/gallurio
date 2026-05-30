@@ -107,7 +107,7 @@ export async function assignMemberToTeamAction(
     throw err;
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -135,7 +135,7 @@ export async function removeMemberFromTeamAction(
 
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -162,10 +162,15 @@ export async function setLeadFlagAction(
     .lean();
   if (!updated) return { error: "MEMBERSHIP_NOT_FOUND" };
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
+// Retained intentionally: workspace-level member removal (vs. the per-team
+// removal the Details drawer exposes) has no UI yet — it belongs to the
+// deferred members page. Kept here so that page can wire to a tested,
+// owner-gated action rather than re-implementing the Clerk org-membership +
+// seat-release cascade. See docs/RELEASE-CHECKLIST.md.
 export async function removeMemberFromWorkspaceAction(
   input: RemoveMemberFromWorkspaceInput,
 ): Promise<ActionResult> {
@@ -209,6 +214,6 @@ export async function removeMemberFromWorkspaceAction(
     await releaseTeamSeat(m.teamId, ctx.workspace._id);
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }

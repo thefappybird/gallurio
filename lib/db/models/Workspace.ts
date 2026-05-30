@@ -5,6 +5,7 @@ import {
   BRAND_KIT_FONT_PAIRS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
+  CONTACT_BUTTON_COLORS,
 } from "@/lib/page-builder/types";
 
 export const PLAN_TIERS = ["free", "starter", "pro"] as const;
@@ -87,6 +88,15 @@ const workspaceSchema = new Schema(
       seoTitle: { type: String, default: "" },
       seoDescription: { type: String, default: "" },
       inquiryRecipientEmail: { type: String, default: "" },
+      // Customizable chrome for the prebuilt contact modal. The form fields are
+      // fixed; only this copy + button presentation can be edited. Editing UI
+      // lands with the page-builder editor (Phase 9); seeded defaults in Phase 8.
+      contact: {
+        title: { type: String, default: "" },
+        description: { type: String, default: "" },
+        buttonStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
+        buttonColor: { type: String, enum: [...CONTACT_BUTTON_COLORS, ""], default: "" },
+      },
     },
     customDomain: { type: String, default: null },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },

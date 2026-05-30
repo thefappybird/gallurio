@@ -177,6 +177,25 @@
   animation: shake 380ms ease-in-out;
 }
 
+/* react-colorful — the picker injects its own stylesheet at runtime (fixed
+   200px width, 8px rounded corners) which lands after globals in the cascade,
+   so we need !important to win. Make it fill the dialog width, flatten to the
+   app's sharp-edge design, and give the saturation area room. Pointers stay
+   circular (a deliberate affordance); the gradients are color data, not theme
+   surfaces, so no token re-pairing is needed. */
+.react-colorful {
+  width: 100% !important;
+  height: 12rem !important;
+}
+.react-colorful,
+.react-colorful__saturation,
+.react-colorful__last-control {
+  border-radius: 0 !important;
+}
+.react-colorful__last-control {
+  height: 1.5rem !important;
+}
+
 /* react-big-calendar — flatten to sharp edges + semantic tokens. */
 .rbc-calendar {
   @apply font-sans text-sm text-foreground;

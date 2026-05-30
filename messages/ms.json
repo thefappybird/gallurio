@@ -462,6 +462,7 @@
       "calendar": "Kalendar",
       "inquiries": "Pertanyaan",
       "gallery": "Galeri",
+      "teams": "Pasukan",
       "settings": "Tetapan",
       "account": "Akaun",
       "logOut": "Log keluar"
@@ -521,141 +522,6 @@
           "th": "ภาษาไทย"
         }
       },
-      "teams": {
-        "title": "Pasukan",
-        "description": "Kumpulkan rakan sepasukan ke dalam pasukan. Setiap pasukan mempunyai kalendarnya sendiri. Ahli hanya dapat melihat tempahan daripada pasukan yang mereka sertai.",
-        "listEmpty": "Anda belum mempunyai sebarang pasukan.",
-        "createButton": "Buat pasukan",
-        "createDialog": {
-          "title": "Buat pasukan",
-          "description": "Berikan nama kepada pasukan dan pilih warna untuk cip kalendarnya.",
-          "nameLabel": "Nama pasukan",
-          "namePlaceholder": "cth. Kru perkahwinan",
-          "colorLabel": "Warna",
-          "submit": "Buat pasukan",
-          "cancel": "Batal",
-          "creating": "Sedang dibuat…"
-        },
-        "renameDialog": {
-          "title": "Namakan semula pasukan",
-          "submit": "Simpan",
-          "saving": "Sedang disimpan…",
-          "cancel": "Batal"
-        },
-        "deleteDialog": {
-          "title": "Padam pasukan?",
-          "description": "Ahli pasukan ini akan kehilangan akses. Tempahan yang dikaitkan dengan pasukan perlu ditetapkan semula. Ini tidak boleh dibatalkan.",
-          "confirm": "Padam pasukan",
-          "deleting": "Sedang dipadamkan…",
-          "cancel": "Batal"
-        },
-        "team": {
-          "memberCount": "{count, plural, =0 {Tiada ahli lagi} =1 {1 ahli} other {# ahli}}",
-          "defaultBadge": "Lalai",
-          "rename": "Namakan semula",
-          "changeColor": "Tukar warna",
-          "delete": "Padam"
-        },
-        "upsell": {
-          "atCapTitle": "Anda telah mencapai had pasukan anda",
-          "atCapBody": "Pelan {plan} anda membenarkan {max} {max, plural, =1 {pasukan} other {pasukan}}. Naik taraf untuk menambah lebih banyak.",
-          "cta": "Lihat pelan",
-          "proAtCapBody": "Pro dihadkan pada {max} pasukan. Hubungi sokongan jika anda memerlukan lebih banyak."
-        },
-        "errors": {
-          "nameRequired": "Nama pasukan diperlukan.",
-          "nameTooLong": "Nama pasukan mestilah 40 aksara atau kurang.",
-          "duplicateName": "Pasukan dengan nama ini sudah wujud dalam ruang kerja ini.",
-          "cannotDeleteDefault": "Pasukan lalai tidak boleh dipadamkan.",
-          "teamNotFound": "Pasukan tidak dijumpai.",
-          "generic": "Sesuatu telah berlaku. Sila cuba lagi."
-        },
-        "toasts": {
-          "created": "Pasukan telah dibuat.",
-          "renamed": "Pasukan telah dinamakan semula.",
-          "colorChanged": "Warna telah dikemas kini.",
-          "deleted": "Pasukan telah dipadamkan."
-        },
-        "teamsHeading": "Pasukan",
-        "invite": {
-          "button": "Jemput ahli",
-          "dialog": {
-            "title": "Jemput rakan sepasukan",
-            "description": "Mereka akan menerima e-mel daripada Clerk. Setelah menerima, mereka akan muncul dalam senarai ahli anda dan ditugaskan ke pasukan yang anda pilih.",
-            "emailLabel": "Alamat e-mel",
-            "emailPlaceholder": "rakansekerja@contoh.com",
-            "teamsLabel": "Tambah ke pasukan ini",
-            "leadLabel": "Ketua",
-            "teamFull": "Penuh",
-            "submit": "Hantar jemputan",
-            "sending": "Menghantar…"
-          },
-          "errors": {
-            "emailRequired": "Masukkan alamat e-mel yang sah.",
-            "pickAtLeastOneTeam": "Pilih sekurang-kurangnya satu pasukan untuk menambahkan mereka.",
-            "teamFull": "Pasukan-pasukan ini penuh dan tidak boleh menerima ahli baru: {teams}.",
-            "teamNotFound": "Salah satu pasukan yang dipilih tidak dijumpai.",
-            "alreadyInvitedOrMember": "E-mel tersebut sudah mempunyai jemputan atau sudah menjadi ahli ruang kerja.",
-            "noTeamsExist": "Buat pasukan dahulu sebelum menjemput ahli."
-          },
-          "toasts": {
-            "sent": "Jemputan dihantar.",
-            "revoked": "Jemputan dibatalkan."
-          },
-          "revokeDialog": {
-            "title": "Batalkan jemputan?",
-            "description": "Jemputan untuk {email} akan dibatalkan dan tempat pasukan yang ditempah akan dilepaskan.",
-            "confirm": "Batalkan jemputan"
-          }
-        },
-        "members": {
-          "heading": "Ahli",
-          "empty": "Belum ada rakan sepasukan. Jemput seseorang di atas untuk bermula.",
-          "ownerBadge": "Pemilik",
-          "leadBadge": "Ketua",
-          "pendingBadge": "Belum selesai",
-          "manageTeams": "Urus pasukan",
-          "removeFromWorkspace": "Buang dari ruang kerja",
-          "revokeInvite": "Batalkan jemputan",
-          "rowActionsLabel": "Tindakan untuk {name}",
-          "removeDialog": {
-            "title": "Buang ahli?",
-            "description": "{name} akan kehilangan akses ke ruang kerja ini dengan serta-merta. Tempahan mereka kekal; tempat pasukan dilepaskan. Ini tidak boleh dibatalkan.",
-            "confirm": "Buang ahli"
-          },
-          "errors": {
-            "cannotRemoveOwner": "Pemilik ruang kerja tidak boleh dibuang."
-          },
-          "toasts": {
-            "removed": "Ahli telah dibuang."
-          }
-        },
-        "assignment": {
-          "dialog": {
-            "title": "Urus penugasan pasukan",
-            "description": "Tambah atau buang {name} daripada pasukan. Togol bendera ketua untuk memberikan mereka hak mengedit dalam pasukan.",
-            "add": "Tambah",
-            "remove": "Buang",
-            "done": "Selesai"
-          },
-          "errors": {
-            "alreadyOnTeam": "Ahli tersebut sudah berada dalam pasukan ini."
-          },
-          "toasts": {
-            "added": "Ditambah ke pasukan.",
-            "removed": "Dibuang daripada pasukan.",
-            "promoted": "Dinaikkan pangkat menjadi ketua.",
-            "demoted": "Diturunkan pangkat menjadi ahli."
-          }
-        },
-        "downgradeBlock": {
-          "title": "Penurunan taraf disekat",
-          "description": "Anda berada pada pelan {currentPlan} dengan lebih banyak pasukan berbanding yang dibenarkan oleh pelan {targetPlan} ({maxTeams} maksimum). Padam {excess} pasukan sebelum menukar pelan.",
-          "teamsHeading": "Pasukan semasa",
-          "dismiss": "Faham",
-          "manageTeams": "Urus pasukan"
-        }
-      },
       "publicPage": {
         "visibilitySection": "Keterlihatan",
         "visibilityHint": "Kawal sama ada halaman awam anda boleh dicapai.",
@@ -697,6 +563,184 @@
         "deleteCancel": "Batal",
         "deleteConfirm": "Saya faham, padamkan",
         "deleting": "Memadam…"
+      }
+    },
+    "teams": {
+      "title": "Pasukan",
+      "description": "Kumpulkan rakan sepasukan ke dalam pasukan. Setiap pasukan mempunyai kalendarnya sendiri. Ahli hanya dapat melihat tempahan daripada pasukan yang mereka sertai.",
+      "listEmpty": "Anda belum mempunyai sebarang pasukan.",
+      "createButton": "Buat pasukan",
+      "toolbar": {
+        "search": "Cari pasukan",
+        "searchLabel": "Cari pasukan mengikut nama"
+      },
+      "table": {
+        "empty": "Tiada pasukan yang sepadan dengan carian anda.",
+        "col": {
+          "color": "Warna",
+          "name": "Pasukan",
+          "members": "Ahli",
+          "actions": "Tindakan"
+        },
+        "details": "Butiran"
+      },
+      "colorPicker": {
+        "presetsLabel": "Praset",
+        "customLabel": "Warna tersuai",
+        "hexLabel": "Hex"
+      },
+      "createDialog": {
+        "title": "Buat pasukan",
+        "description": "Berikan nama kepada pasukan dan pilih warna untuk cip kalendarnya.",
+        "nameLabel": "Nama pasukan",
+        "namePlaceholder": "cth. Kru perkahwinan",
+        "colorLabel": "Warna",
+        "submit": "Buat pasukan",
+        "cancel": "Batal",
+        "creating": "Sedang dibuat…"
+      },
+      "renameDialog": {
+        "title": "Namakan semula pasukan",
+        "submit": "Simpan",
+        "saving": "Sedang disimpan…",
+        "cancel": "Batal"
+      },
+      "deleteDialog": {
+        "title": "Padam pasukan?",
+        "description": "Pasukan ini dan penugasan ahlinya akan dibuang. Ahli kekal dalam ruang kerja dan boleh ditambahkan ke pasukan lain selepas ini. Ini tidak boleh dibatalkan.",
+        "confirm": "Padam pasukan",
+        "deleting": "Sedang dipadamkan…",
+        "cancel": "Batal"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {Tiada ahli lagi} =1 {1 ahli} other {# ahli}}",
+        "defaultBadge": "Lalai",
+        "rename": "Namakan semula",
+        "changeColor": "Tukar warna",
+        "invite": "Jemput rakan sepasukan",
+        "delete": "Padam",
+        "actionsLabel": "Tindakan untuk {name}",
+        "edit": "Edit"
+      },
+      "drawer": {
+        "membersHeading": "Ahli",
+        "memberCount": "{count}/{max} ahli",
+        "noMembers": "Belum ada ahli dalam pasukan ini.",
+        "addMemberLabel": "Tambah ahli sedia ada",
+        "addMemberPlaceholder": "Pilih ahli…",
+        "noAssignableMembers": "Semua orang dalam ruang kerja ini sudah berada dalam pasukan ini.",
+        "pendingHeading": "Jemputan belum selesai",
+        "noPending": "Tiada jemputan belum selesai untuk pasukan ini.",
+        "inviteToTeam": "Jemput ke pasukan ini",
+        "leadToggleLabel": "Ketua",
+        "removeFromTeam": "Buang",
+        "teamFull": "Pasukan ini sudah penuh.",
+        "close": "Tutup"
+      },
+      "upsell": {
+        "atCapTitle": "Anda telah mencapai had pasukan anda",
+        "atCapBody": "Pelan {plan} anda membenarkan {max} {max, plural, =1 {pasukan} other {pasukan}}. Naik taraf untuk menambah lebih banyak.",
+        "cta": "Lihat pelan",
+        "proAtCapBody": "Pro dihadkan pada {max} pasukan. Hubungi sokongan jika anda memerlukan lebih banyak."
+      },
+      "errors": {
+        "nameRequired": "Nama pasukan diperlukan.",
+        "nameTooLong": "Nama pasukan mestilah 40 aksara atau kurang.",
+        "duplicateName": "Pasukan dengan nama ini sudah wujud dalam ruang kerja ini.",
+        "cannotDeleteDefault": "Pasukan lalai tidak boleh dipadamkan.",
+        "teamNotFound": "Pasukan tidak dijumpai.",
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+      },
+      "toasts": {
+        "created": "Pasukan telah dibuat.",
+        "renamed": "Pasukan telah dinamakan semula.",
+        "colorChanged": "Warna telah dikemas kini.",
+        "deleted": "Pasukan telah dipadamkan.",
+        "saved": "Pasukan dikemas kini."
+      },
+      "teamsHeading": "Pasukan",
+      "invite": {
+        "button": "Jemput ahli",
+        "dialog": {
+          "title": "Jemput rakan sepasukan",
+          "description": "Mereka akan menerima e-mel jemputan. Setelah menerima, mereka akan muncul dalam senarai ahli anda dan ditugaskan ke pasukan yang anda pilih.",
+          "emailLabel": "Alamat e-mel",
+          "emailPlaceholder": "rakansekerja@contoh.com",
+          "teamsLabel": "Tambah ke pasukan ini",
+          "leadLabel": "Ketua",
+          "teamFull": "Penuh",
+          "submit": "Hantar jemputan",
+          "sending": "Menghantar…"
+        },
+        "errors": {
+          "emailRequired": "Masukkan alamat e-mel yang sah.",
+          "pickAtLeastOneTeam": "Pilih sekurang-kurangnya satu pasukan untuk menambahkan mereka.",
+          "teamFull": "Pasukan-pasukan ini penuh dan tidak boleh menerima ahli baru: {teams}.",
+          "teamNotFound": "Salah satu pasukan yang dipilih tidak dijumpai.",
+          "alreadyInvitedOrMember": "E-mel tersebut sudah mempunyai jemputan atau sudah menjadi ahli ruang kerja.",
+          "noTeamsExist": "Buat pasukan dahulu sebelum menjemput ahli."
+        },
+        "toasts": {
+          "sent": "Jemputan dihantar.",
+          "revoked": "Jemputan dibatalkan."
+        },
+        "revokeDialog": {
+          "title": "Batalkan jemputan?",
+          "description": "Jemputan untuk {email} akan dibatalkan dan tempat pasukan yang ditempah akan dilepaskan.",
+          "confirm": "Batalkan jemputan"
+        }
+      },
+      "members": {
+        "heading": "Ahli",
+        "empty": "Belum ada rakan sepasukan. Jemput seseorang untuk bermula.",
+        "ownerBadge": "Pemilik",
+        "leadBadge": "Ketua",
+        "pendingBadge": "Belum selesai",
+        "manageTeams": "Urus pasukan",
+        "removeFromWorkspace": "Buang dari ruang kerja",
+        "revokeInvite": "Batalkan jemputan",
+        "rowActionsLabel": "Tindakan untuk {name}",
+        "removeDialog": {
+          "title": "Buang ahli?",
+          "description": "{name} akan kehilangan akses ke ruang kerja ini dengan serta-merta. Tempahan mereka kekal; tempat pasukan dilepaskan. Ini tidak boleh dibatalkan.",
+          "confirm": "Buang ahli"
+        },
+        "errors": {
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak boleh dibuang."
+        },
+        "toasts": {
+          "removed": "Ahli telah dibuang."
+        }
+      },
+      "assignment": {
+        "dialog": {
+          "title": "Urus penugasan pasukan",
+          "description": "Tambah atau buang {name} daripada pasukan. Togol bendera ketua untuk memberikan mereka hak mengedit dalam pasukan.",
+          "add": "Tambah",
+          "remove": "Buang",
+          "done": "Selesai"
+        },
+        "errors": {
+          "alreadyOnTeam": "Ahli tersebut sudah berada dalam pasukan ini."
+        },
+        "toasts": {
+          "added": "Ditambah ke pasukan.",
+          "removed": "Dibuang daripada pasukan.",
+          "promoted": "Dinaikkan pangkat menjadi ketua.",
+          "demoted": "Diturunkan pangkat menjadi ahli."
+        }
+      },
+      "downgradeBlock": {
+        "title": "Penurunan taraf disekat",
+        "description": "Anda berada pada pelan {currentPlan} dengan lebih banyak pasukan berbanding yang dibenarkan oleh pelan {targetPlan} ({maxTeams} maksimum). Padam {excess} pasukan sebelum menukar pelan.",
+        "teamsHeading": "Pasukan semasa",
+        "dismiss": "Faham",
+        "manageTeams": "Urus pasukan"
+      },
+      "editDialog": {
+        "title": "Edit pasukan",
+        "submit": "Simpan perubahan",
+        "saving": "Menyimpan…"
       }
     },
     "clients": {
@@ -954,7 +998,69 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Portfolio tidak dijumpai",
       "notFoundBody": "Portfolio ini tidak wujud atau belum diterbitkan.",
-      "startingFrom": "Bermula dari {price}"
+      "startingFrom": "Bermula dari {price}",
+      "gallery": {
+        "empty": "Belum ada foto dalam koleksi ini.",
+        "noCollection": "Tiada koleksi dipilih.",
+        "unavailable": "Galeri tidak tersedia.",
+        "error": "Galeri tidak tersedia buat sementara.",
+        "featuredEmpty": "Belum ada foto pilihan dipilih.",
+        "carouselHint": "Leret atau guna anak panah untuk melihat",
+        "carouselPrev": "Imej sebelumnya",
+        "carouselNext": "Imej seterusnya"
+      }
+    },
+    "nav": {
+      "home": "Laman Utama",
+      "gallery": "Galeri",
+      "contact": "Hubungi",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "Hubungi kami",
+      "description": "Beritahu kami tentang acara anda dan kami akan menghubungi anda tidak lama lagi.",
+      "close": "Tutup",
+      "confirmTitle": "Terima kasih — kami akan menghubungi anda!",
+      "confirmBody": "Pertanyaan anda telah dihantar. Kami akan menghubungi melalui kaedah pilihan anda tidak lama lagi.",
+      "confirmClose": "Selesai",
+      "tabClient": "Butiran anda",
+      "tabBooking": "Butiran acara",
+      "name": "Nama",
+      "email": "E-mel",
+      "phone": "Telefon (pilihan)",
+      "preferredContact": "Kaedah hubungan pilihan",
+      "preferred": {
+        "email": "E-mel",
+        "phone": "Telefon",
+        "either": "Mana-mana"
+      },
+      "sessionsLabel": "Tarikh acara",
+      "sessionLabel": "Hari {n}",
+      "startDate": "Tarikh",
+      "startTime": "Masa mula",
+      "endTime": "Masa tamat",
+      "addSession": "Tambah hari",
+      "removeSession": "Buang",
+      "shiftHint": "Setiap hari ialah satu syif — tetapkan masa mula dan tamatnya. Tambah hari untuk acara berbilang hari.",
+      "eventType": "Jenis acara",
+      "eventTypes": {
+        "wedding": "Perkahwinan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "other": "Lain-lain"
+      },
+      "guestCount": "Tetamu (pilihan)",
+      "location": "Lokasi (pilihan)",
+      "message": "Beritahu kami lagi",
+      "messagePlaceholder": "Kongsi butiran acara anda…",
+      "submit": "Hantar pertanyaan",
+      "submitting": "Menghantar…",
+      "errorGeneric": "Tidak dapat dihantar — sila cuba lagi nanti.",
+      "requiredHint": "Diperlukan"
     }
   }
 }

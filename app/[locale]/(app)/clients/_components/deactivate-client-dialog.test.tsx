@@ -30,6 +30,16 @@ describe("DeactivateClientDialog", () => {
     expect(screen.getAllByText(/deactivate/i).length).toBeGreaterThan(0);
   });
 
+  it("shows the client name on its own emphasized line, separate from the body", () => {
+    renderWithProviders(<DeactivateClientDialog {...defaultProps} />);
+    const nameEl = screen.getByText("Maria Santos");
+    // Name stands alone (not embedded in the description) and is larger/bolder.
+    expect(nameEl.tagName).toBe("SPAN");
+    expect(nameEl.className).toContain("text-lg");
+    expect(nameEl.className).toContain("font-semibold");
+    expect(nameEl.textContent).toBe("Maria Santos");
+  });
+
   it("Cancel button calls onOpenChange(false)", () => {
     const onOpenChange = vi.fn();
     renderWithProviders(

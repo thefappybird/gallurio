@@ -4,6 +4,7 @@ import {
   BRAND_KIT_FONT_PAIRS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
+  CONTACT_BUTTON_COLORS,
 } from "@/lib/page-builder/types";
 
 // ---------------------------------------------------------------------------
@@ -31,6 +32,23 @@ export const brandKitSchema = z.object({
 });
 
 export type BrandKitInput = z.infer<typeof brandKitSchema>;
+
+// ---------------------------------------------------------------------------
+// portfolioContactConfigSchema
+//
+// The only editable surface of the prebuilt contact modal: title/description
+// copy and which curated brand color/style the button uses. The form fields
+// stay fixed. All fields optional → modal falls back to brand kit + i18n.
+// ---------------------------------------------------------------------------
+
+export const portfolioContactConfigSchema = z.object({
+  title: z.string().trim().max(80).optional().or(z.literal("")),
+  description: z.string().trim().max(280).optional().or(z.literal("")),
+  buttonStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
+  buttonColor: z.enum(CONTACT_BUTTON_COLORS).optional().or(z.literal("")),
+});
+
+export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigSchema>;
 
 // ---------------------------------------------------------------------------
 // portfolioPuckDataSchema

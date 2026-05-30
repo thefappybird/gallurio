@@ -462,6 +462,7 @@
       "calendar": "Kalender",
       "inquiries": "Pertanyaan",
       "gallery": "Galeri",
+      "teams": "Tim",
       "settings": "Pengaturan",
       "account": "Akun",
       "logOut": "Keluar"
@@ -521,141 +522,6 @@
           "th": "ภาษาไทย"
         }
       },
-      "teams": {
-        "title": "Tim",
-        "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
-        "listEmpty": "Anda belum memiliki tim apa pun.",
-        "createButton": "Buat tim",
-        "createDialog": {
-          "title": "Buat tim",
-          "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
-          "nameLabel": "Nama tim",
-          "namePlaceholder": "mis. Kru pernikahan",
-          "colorLabel": "Warna",
-          "submit": "Buat tim",
-          "cancel": "Batal",
-          "creating": "Membuat…"
-        },
-        "renameDialog": {
-          "title": "Ganti nama tim",
-          "submit": "Simpan",
-          "saving": "Menyimpan…",
-          "cancel": "Batal"
-        },
-        "deleteDialog": {
-          "title": "Hapus tim?",
-          "description": "Anggota tim ini akan kehilangan akses. Pemesanan yang terkait dengan tim perlu ditetapkan ulang. Ini tidak dapat dibatalkan.",
-          "confirm": "Hapus tim",
-          "deleting": "Menghapus…",
-          "cancel": "Batal"
-        },
-        "team": {
-          "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
-          "defaultBadge": "Default",
-          "rename": "Ganti nama",
-          "changeColor": "Ubah warna",
-          "delete": "Hapus"
-        },
-        "upsell": {
-          "atCapTitle": "Anda telah mencapai batas tim Anda",
-          "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
-          "cta": "Lihat paket",
-          "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
-        },
-        "errors": {
-          "nameRequired": "Nama tim diperlukan.",
-          "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
-          "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
-          "cannotDeleteDefault": "Tim default tidak dapat dihapus.",
-          "teamNotFound": "Tim tidak ditemukan.",
-          "generic": "Terjadi kesalahan. Silakan coba lagi."
-        },
-        "toasts": {
-          "created": "Tim berhasil dibuat.",
-          "renamed": "Tim berhasil diganti nama.",
-          "colorChanged": "Warna berhasil diperbarui.",
-          "deleted": "Tim berhasil dihapus."
-        },
-        "teamsHeading": "Tim",
-        "invite": {
-          "button": "Undang anggota",
-          "dialog": {
-            "title": "Undang rekan kerja",
-            "description": "Mereka akan mendapatkan email dari Clerk. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke tim yang Anda pilih.",
-            "emailLabel": "Alamat email",
-            "emailPlaceholder": "rekankerja@contoh.com",
-            "teamsLabel": "Tambahkan ke tim ini",
-            "leadLabel": "Lead",
-            "teamFull": "Penuh",
-            "submit": "Kirim undangan",
-            "sending": "Mengirim…"
-          },
-          "errors": {
-            "emailRequired": "Masukkan alamat email yang valid.",
-            "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
-            "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
-            "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
-            "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
-            "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
-          },
-          "toasts": {
-            "sent": "Undangan terkirim.",
-            "revoked": "Undangan dicabut."
-          },
-          "revokeDialog": {
-            "title": "Cabut undangan?",
-            "description": "Undangan untuk {email} akan dibatalkan dan kursi tim yang telah dipesan akan dibebaskan.",
-            "confirm": "Cabut undangan"
-          }
-        },
-        "members": {
-          "heading": "Anggota",
-          "empty": "Belum ada rekan kerja. Undang seseorang di atas untuk memulai.",
-          "ownerBadge": "Pemilik",
-          "leadBadge": "Lead",
-          "pendingBadge": "Menunggu",
-          "manageTeams": "Kelola tim",
-          "removeFromWorkspace": "Hapus dari ruang kerja",
-          "revokeInvite": "Cabut undangan",
-          "rowActionsLabel": "Tindakan untuk {name}",
-          "removeDialog": {
-            "title": "Hapus anggota?",
-            "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
-            "confirm": "Hapus anggota"
-          },
-          "errors": {
-            "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus."
-          },
-          "toasts": {
-            "removed": "Anggota dihapus."
-          }
-        },
-        "assignment": {
-          "dialog": {
-            "title": "Kelola penugasan tim",
-            "description": "Tambahkan atau hapus {name} dari tim. Aktifkan tanda lead untuk memberi mereka hak edit di dalam tim.",
-            "add": "Tambahkan",
-            "remove": "Hapus",
-            "done": "Selesai"
-          },
-          "errors": {
-            "alreadyOnTeam": "Anggota tersebut sudah ada di tim ini."
-          },
-          "toasts": {
-            "added": "Ditambahkan ke tim.",
-            "removed": "Dihapus dari tim.",
-            "promoted": "Dipromosikan menjadi lead.",
-            "demoted": "Diturunkan menjadi anggota."
-          }
-        },
-        "downgradeBlock": {
-          "title": "Downgrade diblokir",
-          "description": "Anda berada di paket {currentPlan} dengan lebih banyak tim daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} tim sebelum mengganti paket.",
-          "teamsHeading": "Tim saat ini",
-          "dismiss": "Mengerti",
-          "manageTeams": "Kelola tim"
-        }
-      },
       "publicPage": {
         "visibilitySection": "Visibilitas",
         "visibilityHint": "Kendalikan apakah halaman publik Anda dapat diakses.",
@@ -697,6 +563,184 @@
         "deleteCancel": "Batal",
         "deleteConfirm": "Saya mengerti, hapus",
         "deleting": "Menghapus…"
+      }
+    },
+    "teams": {
+      "title": "Tim",
+      "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
+      "listEmpty": "Anda belum memiliki tim apa pun.",
+      "createButton": "Buat tim",
+      "toolbar": {
+        "search": "Cari tim",
+        "searchLabel": "Cari tim berdasarkan nama"
+      },
+      "table": {
+        "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.",
+        "col": {
+          "color": "Warna",
+          "name": "Tim",
+          "members": "Anggota",
+          "actions": "Tindakan"
+        },
+        "details": "Detail"
+      },
+      "colorPicker": {
+        "presetsLabel": "Pra-setel",
+        "customLabel": "Warna kustom",
+        "hexLabel": "Hex"
+      },
+      "createDialog": {
+        "title": "Buat tim",
+        "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
+        "nameLabel": "Nama tim",
+        "namePlaceholder": "mis. Kru pernikahan",
+        "colorLabel": "Warna",
+        "submit": "Buat tim",
+        "cancel": "Batal",
+        "creating": "Membuat…"
+      },
+      "renameDialog": {
+        "title": "Ganti nama tim",
+        "submit": "Simpan",
+        "saving": "Menyimpan…",
+        "cancel": "Batal"
+      },
+      "deleteDialog": {
+        "title": "Hapus tim?",
+        "description": "Tim ini beserta penugasan anggotanya akan dihapus. Anggota tetap berada di ruang kerja dan dapat ditambahkan ke tim lain setelahnya. Tindakan ini tidak dapat dibatalkan.",
+        "confirm": "Hapus tim",
+        "deleting": "Menghapus…",
+        "cancel": "Batal"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+        "defaultBadge": "Default",
+        "rename": "Ganti nama",
+        "changeColor": "Ubah warna",
+        "invite": "Undang rekan kerja",
+        "delete": "Hapus",
+        "actionsLabel": "Tindakan untuk {name}",
+        "edit": "Edit"
+      },
+      "drawer": {
+        "membersHeading": "Anggota",
+        "memberCount": "{count}/{max} anggota",
+        "noMembers": "Belum ada anggota di tim ini.",
+        "addMemberLabel": "Tambah anggota yang sudah ada",
+        "addMemberPlaceholder": "Pilih anggota…",
+        "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di tim ini.",
+        "pendingHeading": "Undangan tertunda",
+        "noPending": "Tidak ada undangan tertunda untuk tim ini.",
+        "inviteToTeam": "Undang ke tim ini",
+        "leadToggleLabel": "Lead",
+        "removeFromTeam": "Hapus",
+        "teamFull": "Tim ini sudah penuh.",
+        "close": "Tutup"
+      },
+      "upsell": {
+        "atCapTitle": "Anda telah mencapai batas tim Anda",
+        "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
+        "cta": "Lihat paket",
+        "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
+      },
+      "errors": {
+        "nameRequired": "Nama tim diperlukan.",
+        "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
+        "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
+        "cannotDeleteDefault": "Tim default tidak dapat dihapus.",
+        "teamNotFound": "Tim tidak ditemukan.",
+        "generic": "Terjadi kesalahan. Silakan coba lagi."
+      },
+      "toasts": {
+        "created": "Tim dibuat.",
+        "renamed": "Tim diganti nama.",
+        "colorChanged": "Warna diperbarui.",
+        "deleted": "Tim dihapus.",
+        "saved": "Tim diperbarui."
+      },
+      "teamsHeading": "Tim",
+      "invite": {
+        "button": "Undang anggota",
+        "dialog": {
+          "title": "Undang rekan kerja",
+          "description": "Mereka akan mendapatkan undangan email. Setelah menerima, mereka akan muncul di daftar anggota Anda yang ditugaskan ke tim yang Anda pilih.",
+          "emailLabel": "Alamat email",
+          "emailPlaceholder": "rekankerja@contoh.com",
+          "teamsLabel": "Tambahkan ke tim ini",
+          "leadLabel": "Lead",
+          "teamFull": "Penuh",
+          "submit": "Kirim undangan",
+          "sending": "Mengirim…"
+        },
+        "errors": {
+          "emailRequired": "Masukkan alamat email yang valid.",
+          "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
+          "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+          "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
+          "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
+          "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
+        },
+        "toasts": {
+          "sent": "Undangan terkirim.",
+          "revoked": "Undangan dicabut."
+        },
+        "revokeDialog": {
+          "title": "Cabut undangan?",
+          "description": "Undangan untuk {email} akan dibatalkan dan kursi tim yang telah dipesan akan dibebaskan.",
+          "confirm": "Cabut undangan"
+        }
+      },
+      "members": {
+        "heading": "Anggota",
+        "empty": "Belum ada rekan kerja. Undang seseorang untuk memulai.",
+        "ownerBadge": "Pemilik",
+        "leadBadge": "Lead",
+        "pendingBadge": "Menunggu",
+        "manageTeams": "Kelola tim",
+        "removeFromWorkspace": "Hapus dari ruang kerja",
+        "revokeInvite": "Cabut undangan",
+        "rowActionsLabel": "Tindakan untuk {name}",
+        "removeDialog": {
+          "title": "Hapus anggota?",
+          "description": "{name} akan langsung kehilangan akses ke ruang kerja ini. Pemesanan mereka tetap ada; kursi tim dibebaskan. Tindakan ini tidak dapat dibatalkan.",
+          "confirm": "Hapus anggota"
+        },
+        "errors": {
+          "cannotRemoveOwner": "Pemilik ruang kerja tidak dapat dihapus."
+        },
+        "toasts": {
+          "removed": "Anggota dihapus."
+        }
+      },
+      "assignment": {
+        "dialog": {
+          "title": "Kelola penugasan tim",
+          "description": "Tambahkan atau hapus {name} dari tim. Aktifkan tanda lead untuk memberi mereka hak edit di dalam tim.",
+          "add": "Tambahkan",
+          "remove": "Hapus",
+          "done": "Selesai"
+        },
+        "errors": {
+          "alreadyOnTeam": "Anggota tersebut sudah ada di tim ini."
+        },
+        "toasts": {
+          "added": "Ditambahkan ke tim.",
+          "removed": "Dihapus dari tim.",
+          "promoted": "Dipromosikan menjadi lead.",
+          "demoted": "Diturunkan menjadi anggota."
+        }
+      },
+      "downgradeBlock": {
+        "title": "Downgrade diblokir",
+        "description": "Anda berada di paket {currentPlan} dengan lebih banyak tim daripada yang diizinkan paket {targetPlan} (maks {maxTeams}). Hapus {excess} tim sebelum mengganti paket.",
+        "teamsHeading": "Tim saat ini",
+        "dismiss": "Mengerti",
+        "manageTeams": "Kelola tim"
+      },
+      "editDialog": {
+        "title": "Edit tim",
+        "submit": "Simpan perubahan",
+        "saving": "Menyimpan…"
       }
     },
     "clients": {
@@ -954,7 +998,69 @@
       "notFoundEyebrow": "Gallurio",
       "notFoundTitle": "Portofolio tidak ditemukan",
       "notFoundBody": "Portofolio ini tidak ada atau belum dipublikasikan.",
-      "startingFrom": "Mulai dari {price}"
+      "startingFrom": "Mulai dari {price}",
+      "gallery": {
+        "empty": "Belum ada foto di koleksi ini.",
+        "noCollection": "Tidak ada koleksi yang dipilih.",
+        "unavailable": "Galeri tidak tersedia.",
+        "error": "Galeri sementara tidak tersedia.",
+        "featuredEmpty": "Belum ada foto unggulan yang dipilih.",
+        "carouselHint": "Geser atau gunakan panah untuk menjelajah",
+        "carouselPrev": "Gambar sebelumnya",
+        "carouselNext": "Gambar berikutnya"
+      }
+    },
+    "nav": {
+      "home": "Beranda",
+      "gallery": "Galeri",
+      "contact": "Kontak",
+      "openMenu": "Buka menu",
+      "closeMenu": "Tutup menu",
+      "navLandmark": "Portfolio"
+    },
+    "inquiryForm": {
+      "title": "Hubungi kami",
+      "description": "Ceritakan tentang acara Anda dan kami akan segera menghubungi Anda.",
+      "close": "Tutup",
+      "confirmTitle": "Terima kasih — kami akan menghubungi Anda!",
+      "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
+      "confirmClose": "Selesai",
+      "tabClient": "Detail Anda",
+      "tabBooking": "Detail acara",
+      "name": "Nama",
+      "email": "Email",
+      "phone": "Telepon (opsional)",
+      "preferredContact": "Metode kontak pilihan",
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepon",
+        "either": "Salah satu"
+      },
+      "sessionsLabel": "Tanggal acara",
+      "sessionLabel": "Hari {n}",
+      "startDate": "Tanggal",
+      "startTime": "Waktu mulai",
+      "endTime": "Waktu selesai",
+      "addSession": "Tambah hari",
+      "removeSession": "Hapus",
+      "shiftHint": "Setiap hari adalah satu sesi — atur waktu mulai dan selesainya. Tambahkan hari untuk acara beberapa hari.",
+      "eventType": "Jenis acara",
+      "eventTypes": {
+        "wedding": "Pernikahan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Hari jadi",
+        "other": "Lainnya"
+      },
+      "guestCount": "Tamu (opsional)",
+      "location": "Lokasi (opsional)",
+      "message": "Ceritakan lebih lanjut",
+      "messagePlaceholder": "Bagikan detail acara Anda…",
+      "submit": "Kirim pertanyaan",
+      "submitting": "Mengirim…",
+      "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
+      "requiredHint": "Wajib"
     }
   }
 }

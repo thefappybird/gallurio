@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { getClientBookingsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
 import type { ClientRow } from "./clients-table";
+import { SourceBadge } from "./source-badge";
 
 type Props = {
   client: ClientRow | null;
@@ -21,13 +22,6 @@ type Props = {
   onDeactivate: (client: ClientRow) => void;
   onReactivate: (client: ClientRow) => void;
   locale: string;
-};
-
-const SOURCE_BADGE_CLASS: Record<string, string> = {
-  form: "border-brand text-brand",
-  manual: "border-muted-foreground text-muted-foreground",
-  referral: "border-foreground text-foreground",
-  import: "border-muted-foreground text-muted-foreground",
 };
 
 export function ClientDetailModal({
@@ -110,14 +104,23 @@ function ClientDetailModalInner({
       {/* Cap modal height to the small viewport so long notes / 50-row
           booking lists scroll inside the tab panels instead of pushing the
           header and footer past the screen edge on mobile. */}
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-lg flex-col gap-0 p-0">
+      <DialogContent showCloseButton={false} className="flex max-h-[calc(100dvh-2rem)] sm:max-w-lg flex-col gap-0 p-0">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex flex-col">
-            <DialogTitle className="leading-snug">{client.name}</DialogTitle>
-            {!client.isActive && (
-              <span className="text-xs text-muted-foreground">{t("detail.inactive")}</span>
-            )}
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <DialogTitle className="truncate leading-snug">{client.name}</DialogTitle>
+              {!client.isActive && (
+                <span className="shrink-0 text-xs text-muted-foreground">{t("detail.inactive")}</span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <SourceBadge source={client.source} />
+              {client.email && (
+                <span className="min-w-0 wrap-break-word">{client.email}</span>
+              )}
+              {client.phone && <span className="wrap-break-word">{client.phone}</span>}
+            </div>
           </div>
           <Button
             type="button"
@@ -125,7 +128,7 @@ function ClientDetailModalInner({
             size="icon-sm"
             onClick={onClose}
             aria-label={t("detail.close")}
-            className="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
+            className="shrink-0 min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
           >
             <XIcon className="size-4" />
           </Button>
@@ -165,25 +168,6 @@ function ClientDetailModalInner({
               </div>
             </div>
 
-            {/* Contact */}
-            <div className="mb-3 flex flex-col gap-1 border-b border-border pb-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {t("detail.overview.contact")}
-              </span>
-              <div className="flex flex-col gap-0.5 text-sm">
-                <span>{client.email ?? t("detail.overview.noEmail")}</span>
-                <span className="text-muted-foreground">{client.phone ?? t("detail.overview.noPhone")}</span>
-              </div>
-              <div className="mt-1 flex items-center gap-1.5">
-                <Badge
-                  variant="outline"
-                  className={SOURCE_BADGE_CLASS[client.source] ?? ""}
-                >
-                  {t(`sourceValues.${client.source}` as Parameters<typeof t>[0])}
-                </Badge>
-              </div>
-            </div>
-
             {/* Tags */}
             <div className="mb-3 flex flex-col gap-1 border-b border-border pb-3">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -194,7 +178,7 @@ function ClientDetailModalInner({
                   {client.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="border border-border bg-muted px-1.5 py-0.5 text-xs"
+                      className="max-w-full wrap-break-word border border-border bg-muted px-1.5 py-0.5 text-xs"
                     >
                       {tag}
                     </span>
@@ -210,7 +194,7 @@ function ClientDetailModalInner({
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t("detail.overview.notes")}
               </span>
-              <p className="whitespace-pre-wrap text-sm">
+              <p className="whitespace-pre-wrap wrap-break-word text-sm">
                 {client.notes || <span className="text-muted-foreground">{t("detail.overview.noNotes")}</span>}
               </p>
             </div>
@@ -234,9 +218,9 @@ function ClientDetailModalInner({
               ) : (
                 <div className="flex flex-col divide-y divide-border border border-border">
                   {bookings.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between px-3 py-2.5">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">{b.title}</span>
+                    <div key={b.id} className="flex items-center justify-between gap-2 px-3 py-2.5">
+                      <div className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm font-medium">{b.title}</span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(b.firstSessionStart).toLocaleDateString(locale, {
                             month: "short",
@@ -245,7 +229,7 @@ function ClientDetailModalInner({
                           })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-2">
                         <Badge variant="outline" className="text-xs capitalize">
                           {tBookingStatus(b.status as "inquiry" | "quoted" | "booked" | "completed" | "cancelled")}
                         </Badge>

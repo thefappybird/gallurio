@@ -1,7 +1,13 @@
 import { z } from "zod";
-import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 
-const validColor = (c: string) => (TEAM_COLOR_PALETTE as readonly string[]).includes(c);
+// Any 6-digit hex color is allowed — the picker offers curated presets but the
+// owner may dial in an exact brand color via the spectrum. Normalize to a
+// lowercase #rrggbb so the stored value is stable regardless of input casing.
+const hexColor = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^#[0-9a-f]{6}$/, "Invalid team color");
 
 export const createTeamSchema = z.object({
   name: z
@@ -9,7 +15,7 @@ export const createTeamSchema = z.object({
     .trim()
     .min(1, "Team name is required")
     .max(40, "Team name must be 40 characters or fewer"),
-  color: z.string().refine(validColor, "Invalid team color"),
+  color: hexColor,
 });
 export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 
@@ -25,7 +31,7 @@ export type RenameTeamInput = z.infer<typeof renameTeamSchema>;
 
 export const setTeamColorSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
-  color: z.string().refine(validColor, "Invalid team color"),
+  color: hexColor,
 });
 export type SetTeamColorInput = z.infer<typeof setTeamColorSchema>;
 

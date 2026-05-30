@@ -87,7 +87,19 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     locale,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.
-    chrome: { startingFrom: t("startingFrom", { price: "{price}" }) },
+    chrome: {
+      startingFrom: t("startingFrom", { price: "{price}" }),
+      gallery: {
+        empty: t("gallery.empty"),
+        noCollection: t("gallery.noCollection"),
+        unavailable: t("gallery.unavailable"),
+        error: t("gallery.error"),
+        featuredEmpty: t("gallery.featuredEmpty"),
+        carouselHint: t("gallery.carouselHint"),
+        carouselPrev: t("gallery.carouselPrev"),
+        carouselNext: t("gallery.carouselNext"),
+      },
+    },
   };
 
   // runWithRenderWorkspace gives every server block rendered inside this tree

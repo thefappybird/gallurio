@@ -70,7 +70,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
       ctx.workspace.plan,
     );
 
-    revalidatePath("/settings/teams", "page");
+    revalidatePath("/[locale]/teams", "page");
     return {
       ok: true,
       team: {
@@ -111,7 +111,7 @@ export async function renameTeamAction(input: RenameTeamInput): Promise<ActionRe
     throw err;
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -133,7 +133,7 @@ export async function setTeamColorAction(input: SetTeamColorInput): Promise<Acti
   );
   if (!team) return { error: "Team not found" };
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -157,6 +157,6 @@ export async function deleteTeamAction(input: DeleteTeamInput): Promise<ActionRe
   await TeamMembership.deleteMany({ teamId: objectId, workspaceId: ctx.workspace._id });
   await Team.deleteOne({ _id: objectId, workspaceId: ctx.workspace._id });
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
