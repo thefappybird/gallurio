@@ -250,6 +250,7 @@
           "email": "Email",
           "phone": "Telepon",
           "openClient": "Buka klien",
+          "viewClient": "Lihat klien",
           "changeClient": "Ganti klien",
           "changeClientCancel": "Pertahankan saat ini",
           "changeClientSearch": "Cari klien…",
@@ -304,7 +305,13 @@
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
         "notFound": "Pemesanan tidak ditemukan.",
         "editAll": "Edit semua",
-        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan."
+        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
+        "unconfirmedDrafts": {
+          "title": "Draft sesi yang belum dikonfirmasi",
+          "description": "{count, plural, one {Anda memiliki # draft sesi yang belum dikonfirmasi.} other {Anda memiliki # draft sesi yang belum dikonfirmasi.}} Kembali dan konfirmasi, atau kirimkan perubahan lain Anda dan buang draft.",
+          "submit": "Kirim & buang draft",
+          "cancel": "Kembali"
+        }
       },
       "confirm": {
         "title": "Terapkan perubahan",
@@ -362,6 +369,7 @@
       "wizard": {
         "createTitle": "Pemesanan baru",
         "editTitle": "Edit pemesanan",
+        "editTitleNamed": "Edit {title}",
         "loading": "Memuat pemesanan…",
         "previous": "Sebelumnya",
         "next": "Berikutnya",

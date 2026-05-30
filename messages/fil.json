@@ -250,6 +250,7 @@
           "email": "Email",
           "phone": "Telepono",
           "openClient": "Buksan ang kliyente",
+          "viewClient": "Tingnan ang kliyente",
           "changeClient": "Palitan ang kliyente",
           "changeClientCancel": "Panatilihin ang kasalukuyan",
           "changeClientSearch": "Maghanap ng mga kliyente…",
@@ -304,7 +305,13 @@
         "actionFailed": "May naganap na mali. Subukan muli.",
         "notFound": "Hindi natagpuan ang booking.",
         "editAll": "I-edit lahat",
-        "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save."
+        "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
+        "unconfirmedDrafts": {
+          "title": "Mga hindi pa nakumpirmang draft ng sesyon",
+          "description": "{count, plural, one {Mayroon kang # draft ng sesyon na hindi mo pa nakumpirmahan.} other {Mayroon kang # mga draft ng sesyon na hindi mo pa nakumpirmahan.}} Bumalik at kumpirmahin ang mga ito, o isumite ang iyong ibang mga pagbabago at itapon ang mga draft.",
+          "submit": "Isumite at itapon ang mga draft",
+          "cancel": "Bumalik"
+        }
       },
       "confirm": {
         "title": "Ilapat ang mga pagbabago",
@@ -362,6 +369,7 @@
       "wizard": {
         "createTitle": "Bagong booking",
         "editTitle": "I-edit ang booking",
+        "editTitleNamed": "I-edit ang {title}",
         "loading": "Nilo-load ang booking…",
         "previous": "Nakaraan",
         "next": "Susunod",

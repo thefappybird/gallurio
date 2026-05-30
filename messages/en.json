@@ -250,6 +250,7 @@
           "email": "Email",
           "phone": "Phone",
           "openClient": "Open client",
+          "viewClient": "View client",
           "changeClient": "Change client",
           "changeClientCancel": "Keep current",
           "changeClientSearch": "Search clients…",
@@ -304,7 +305,13 @@
         "actionFailed": "Something went wrong. Try again.",
         "notFound": "Booking not found.",
         "editAll": "Edit all",
-        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving."
+        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
+        "unconfirmedDrafts": {
+          "title": "Unconfirmed session drafts",
+          "description": "{count, plural, one {You have # session draft you haven't confirmed yet.} other {You have # session drafts you haven't confirmed yet.}} Go back and confirm them, or submit your other changes and discard the drafts.",
+          "submit": "Submit & discard drafts",
+          "cancel": "Go back"
+        }
       },
       "confirm": {
         "title": "Apply changes",
@@ -362,6 +369,7 @@
       "wizard": {
         "createTitle": "New booking",
         "editTitle": "Edit booking",
+        "editTitleNamed": "Edit {title}",
         "loading": "Loading booking…",
         "previous": "Previous",
         "next": "Next",

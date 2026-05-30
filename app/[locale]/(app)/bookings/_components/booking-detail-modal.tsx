@@ -8,7 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useRouter, usePathname, Link } from "@/lib/i18n/navigation";
+import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -54,6 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
+import { StatusPill } from "./status-pill";
 import { EditableField } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
@@ -475,6 +476,10 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     lockedDraftCount;
   const hasPending = pendingCount > 0;
 
+  const unconfirmedDraftCount = draftSessions.filter((d) => !d.locked).length;
+  const hasUnconfirmedDrafts = unconfirmedDraftCount > 0;
+  const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
+
   function commitField(key: EditableKey, value: string | number | null) {
     setPending((prev) => {
       const next = { ...prev };
@@ -504,7 +509,21 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setReassignedClient(null);
   }
 
-  async function save() {
+  function save() {
+    if (!hasPending || !booking) return;
+    if (hasUnconfirmedDrafts) {
+      setUnconfirmedDraftsOpen(true);
+      return;
+    }
+    void runSave();
+  }
+
+  function confirmSubmitDiscardDrafts() {
+    setUnconfirmedDraftsOpen(false);
+    void runSave();
+  }
+
+  async function runSave() {
     if (!hasPending || !booking) return;
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
@@ -1079,6 +1098,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         onKeepEditing={() => setConfirmDiscardOpen(false)}
         onDiscard={confirmDiscard}
       />
+
+      {/* Unconfirmed-drafts warning — shown when Save is clicked with unlocked drafts */}
+      <UnconfirmedDraftsDialog
+        open={unconfirmedDraftsOpen}
+        count={unconfirmedDraftCount}
+        onCancel={() => setUnconfirmedDraftsOpen(false)}
+        onSubmit={confirmSubmitDiscardDrafts}
+      />
     </Dialog>
   );
 }
@@ -1112,6 +1139,42 @@ function DiscardChangesDialog({
           </AlertDialogCancel>
           <AlertDialogAction onClick={onDiscard}>
             {t("discardConfirm")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// ─── UnconfirmedDraftsDialog ──────────────────────────────────────────────────
+
+function UnconfirmedDraftsDialog({
+  open,
+  count,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  count: number;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const t = useTranslations("app.bookings.detail");
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("unconfirmedDrafts.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("unconfirmedDrafts.description", { count })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel}>
+            {t("unconfirmedDrafts.cancel")}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onSubmit}>
+            {t("unconfirmedDrafts.submit")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -1253,7 +1316,7 @@ function DialogHeaderBar({
                     aria-label={t("editTitle")}
                   >
                     <span className="truncate">{effectiveTitle}</span>
-                    <PencilIcon className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-60" />
+                    <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
                     {hasTitlePending ? (
                       <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
                     ) : null}
@@ -1305,9 +1368,7 @@ function DialogHeaderBar({
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline" className="capitalize">
-              {booking.status}
-            </Badge>
+            <StatusPill status={booking.status} />
             <span className="ml-1">{booking.clientName}</span>
             <span>·</span>
             <span>
@@ -1431,6 +1492,9 @@ function BookingTabs({
   const tStatus = useTranslations("app.bookings.statusValues");
   const tSessions = useTranslations("app.bookings.sessions");
 
+  const navRouter = useRouter();
+  const [isNavigating, startNav] = useTransition();
+
   const statusOptions = useMemo(
     () =>
       BOOKING_STATUSES.map((s) => ({
@@ -1497,49 +1561,17 @@ function BookingTabs({
 
   return (
     <Tabs defaultValue="client">
-      <TabsList className="mb-1 h-auto overflow-x-auto gap-1 border-b-0 bg-transparent pb-0">
-        <TabsTab
-          value="client"
-          className={cn(
-            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
-            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
-            "active:bg-accent/40",
-            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
-          )}
-        >
+      <TabsList className="mb-3 h-auto justify-start overflow-x-auto">
+        <TabsTab value="client" className="min-h-11 data-[selected]:border-brand">
           {t("client")}
         </TabsTab>
-        <TabsTab
-          value="event"
-          className={cn(
-            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
-            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
-            "active:bg-accent/40",
-            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
-          )}
-        >
+        <TabsTab value="event" className="min-h-11 data-[selected]:border-brand">
           {t("event")}
         </TabsTab>
-        <TabsTab
-          value="pricing"
-          className={cn(
-            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
-            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
-            "active:bg-accent/40",
-            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
-          )}
-        >
+        <TabsTab value="pricing" className="min-h-11 data-[selected]:border-brand">
           {t("pricing")}
         </TabsTab>
-        <TabsTab
-          value="activity"
-          className={cn(
-            "min-h-11 border border-border px-3 py-2 text-muted-foreground transition-colors",
-            "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none",
-            "active:bg-accent/40",
-            "data-[selected]:border-brand data-[selected]:bg-brand data-[selected]:text-brand-foreground"
-          )}
-        >
+        <TabsTab value="activity" className="min-h-11 data-[selected]:border-brand">
           {t("activity")}
         </TabsTab>
       </TabsList>
@@ -1581,19 +1613,39 @@ function BookingTabs({
                 <span className="text-xs text-muted-foreground">{tFields("noPhone")}</span>
               )}
             </div>
-            {booking.client ? (
-              <Link
-                href="/clients"
-                aria-label={tFields("openClient")}
-                className={cn(
-                  "flex shrink-0 items-center gap-1 border border-border px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors",
-                  "hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none"
-                )}
-              >
-                <ArrowUpRightIcon className="size-3.5" aria-hidden />
-                {tFields("openClient")}
-              </Link>
-            ) : null}
+            <div className="flex shrink-0 flex-col gap-1.5">
+              {booking.client ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    startNav(() =>
+                      navRouter.push(`/clients?client=${booking.client!.id}`)
+                    )
+                  }
+                  disabled={isNavigating}
+                  aria-disabled={isNavigating}
+                  aria-label={tFields("viewClient")}
+                  className="flex min-h-11 items-center justify-center gap-1.5 border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {isNavigating ? (
+                    <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <ArrowUpRightIcon className="size-3.5" aria-hidden />
+                  )}
+                  {tFields("viewClient")}
+                </button>
+              ) : null}
+              {!isMultiSession && !reassignOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setReassignOpen(true)}
+                  disabled={disabled}
+                  className="flex min-h-11 items-center justify-center gap-1.5 border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {tFields("changeClient")}
+                </button>
+              ) : null}
+            </div>
           </div>
           {/* Reassign client — H3: hidden for multi-session bookings (server rejects it). */}
           {isMultiSession ? (
@@ -1612,20 +1664,7 @@ function BookingTabs({
               }}
               disabled={disabled}
             />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setReassignOpen(true)}
-              disabled={disabled}
-              className={cn(
-                "self-start text-xs font-medium text-muted-foreground underline-offset-4 transition-colors",
-                "hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none",
-                "disabled:pointer-events-none disabled:opacity-50"
-              )}
-            >
-              {tFields("changeClient")}
-            </button>
-          )}
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">

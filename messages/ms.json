@@ -250,6 +250,7 @@
           "email": "E-mel",
           "phone": "Telefon",
           "openClient": "Buka klien",
+          "viewClient": "Lihat klien",
           "changeClient": "Tukar klien",
           "changeClientCancel": "Kekalkan semasa",
           "changeClientSearch": "Cari klien…",
@@ -304,7 +305,13 @@
         "actionFailed": "Ada yang tidak kena. Cuba lagi.",
         "notFound": "Tempahan tidak dijumpai.",
         "editAll": "Edit semua",
-        "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan."
+        "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan.",
+        "unconfirmedDrafts": {
+          "title": "Draf sesi yang belum disahkan",
+          "description": "{count, plural, one {Anda mempunyai # draf sesi yang belum anda sahkan.} other {Anda mempunyai # draf sesi yang belum anda sahkan.}} Kembali dan sahkan, atau hantar perubahan lain anda dan buang draf.",
+          "submit": "Hantar & buang draf",
+          "cancel": "Kembali"
+        }
       },
       "confirm": {
         "title": "Guna perubahan",
@@ -362,6 +369,7 @@
       "wizard": {
         "createTitle": "Tempahan baru",
         "editTitle": "Edit tempahan",
+        "editTitleNamed": "Edit {title}",
         "loading": "Memuatkan tempahan…",
         "previous": "Sebelumnya",
         "next": "Seterusnya",

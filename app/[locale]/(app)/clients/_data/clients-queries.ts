@@ -20,7 +20,7 @@ export type ListClientsParams = {
 // maintain Client.bookingsCount or Client.lastBookingAt, so deriving avoids
 // drift. The output uses these derived values, falling back to the persisted
 // fields only as a safety net (e.g. legacy seed data).
-type ClientListItem = ClientDoc & {
+export type ClientListItem = ClientDoc & {
   bookingsCount: number;
   lastBookingAt: Date | null;
 };
@@ -98,6 +98,41 @@ export async function listClients(
   });
 
   return { items: merged, total };
+}
+
+export async function getClientById(
+  workspaceId: WorkspaceId,
+  clientId: string
+): Promise<ClientListItem | null> {
+  if (!Types.ObjectId.isValid(clientId)) return null;
+
+  const c = await Client.findOne({
+    _id: new Types.ObjectId(clientId),
+    workspaceId,
+  }).lean();
+
+  if (!c) return null;
+
+  const stats = await Booking.aggregate<{
+    _id: Types.ObjectId;
+    count: number;
+    lastStart: Date | null;
+  }>([
+    { $match: { workspaceId, clientId: c._id } },
+    {
+      $group: {
+        _id: "$clientId",
+        count: { $sum: 1 },
+        lastStart: { $max: "$firstSessionStart" },
+      },
+    },
+  ]);
+
+  return {
+    ...c,
+    bookingsCount: stats[0]?.count ?? 0,
+    lastBookingAt: stats[0]?.lastStart ?? null,
+  };
 }
 
 export async function getWorkspaceTags(workspaceId: WorkspaceId): Promise<string[]> {
