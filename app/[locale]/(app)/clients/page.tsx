@@ -132,9 +132,16 @@ export default async function ClientsPage({
     let found: Awaited<ReturnType<typeof getClientById>> = null;
     try {
       found = await getClientById(workspace._id, sp.client);
-    } catch {
-      // Unexpected error (e.g. transient DB failure) — treat as not-found and
-      // strip the stale param rather than crashing the page.
+    } catch (err) {
+      // Unexpected error (e.g. transient DB failure) — log with context, then
+      // treat as not-found and strip the stale param rather than crashing the
+      // page. (redirect() below is outside this try, so NEXT_REDIRECT is never
+      // swallowed here.)
+      console.error("[clients] getClientById failed", {
+        clientId: sp.client,
+        workspaceId: String(workspace._id),
+        err,
+      });
       found = null;
     }
     if (found === null) {

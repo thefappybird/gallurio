@@ -1264,18 +1264,18 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     const saveBtn = screen.getByRole("button", { name: /save changes/i });
     fireEvent.click(saveBtn);
 
-    // The unconfirmed-drafts dialog should appear
-    await waitFor(() => {
-      // The dialog title should be visible (the key maps to the title)
-      // Since translations may be missing (parallel stream), just check no PATCH fired
-      const patchCalls = (fetchMock as Mock).mock.calls.filter(
-        (args: unknown[]) => {
-          const [url, init] = args as [string, RequestInit | undefined];
-          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
-        }
-      );
-      expect(patchCalls).toHaveLength(0);
-    });
+    // The unconfirmed-drafts warning dialog should appear (its localized title)
+    // and NO PATCH should have fired — the save is intercepted, not sent.
+    expect(
+      await screen.findByText("Unconfirmed session drafts")
+    ).toBeInTheDocument();
+    const patchCalls = (fetchMock as Mock).mock.calls.filter(
+      (args: unknown[]) => {
+        const [url, init] = args as [string, RequestInit | undefined];
+        return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+      }
+    );
+    expect(patchCalls).toHaveLength(0);
   });
 
   it("confirming 'Submit & discard' in the unconfirmed-drafts dialog proceeds with save", async () => {
@@ -1332,32 +1332,24 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       expect(patchCallsBefore).toHaveLength(0);
     });
 
-    // Find and click the confirm/submit button in the warning dialog
-    // AlertDialogAction is the "proceed" button — it will have role="button"
-    // and contains the submit translation key value
-    // Since translations may not be loaded yet, we find by being the last
-    // role="button" in an open alert dialog overlay
-    const alertDialogActions = screen.queryAllByRole("button");
-    // The submit button in AlertDialogFooter is the last button (after Cancel)
-    const submitDialogBtn = alertDialogActions.find(
-      (btn) =>
-        btn.closest('[role="alertdialog"]') !== null &&
-        !btn.textContent?.match(/cancel/i)
-    );
+    // Click the "Submit & discard drafts" action in the warning dialog. Match
+    // by its localized label (the cancel action reads "Go back"), so there is
+    // no ambiguity — and no conditional guard that could let the test pass
+    // without actually exercising the submit path.
+    const submitDialogBtn = await screen.findByRole("button", {
+      name: /submit.*discard/i,
+    });
+    fireEvent.click(submitDialogBtn);
 
-    if (submitDialogBtn) {
-      fireEvent.click(submitDialogBtn);
-
-      // After confirming, the save should proceed and fire PATCH
-      await waitFor(() => {
-        const patchCalls = (fetchMock as Mock).mock.calls.filter(
-          (args: unknown[]) => {
-            const [url, init] = args as [string, RequestInit | undefined];
-            return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
-          }
-        );
-        expect(patchCalls).toHaveLength(1);
-      });
-    }
+    // After confirming, the save proceeds and fires exactly one PATCH.
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+    });
   });
 });

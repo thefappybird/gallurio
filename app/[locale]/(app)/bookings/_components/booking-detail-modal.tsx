@@ -1562,16 +1562,16 @@ function BookingTabs({
   return (
     <Tabs defaultValue="client">
       <TabsList className="mb-3 h-auto justify-start overflow-x-auto">
-        <TabsTab value="client" className="min-h-11 data-[selected]:border-brand">
+        <TabsTab value="client" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
           {t("client")}
         </TabsTab>
-        <TabsTab value="event" className="min-h-11 data-[selected]:border-brand">
+        <TabsTab value="event" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
           {t("event")}
         </TabsTab>
-        <TabsTab value="pricing" className="min-h-11 data-[selected]:border-brand">
+        <TabsTab value="pricing" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
           {t("pricing")}
         </TabsTab>
-        <TabsTab value="activity" className="min-h-11 data-[selected]:border-brand">
+        <TabsTab value="activity" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
           {t("activity")}
         </TabsTab>
       </TabsList>

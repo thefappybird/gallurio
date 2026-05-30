@@ -33,7 +33,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 border border-border bg-card px-2 py-0.5 text-xs font-medium capitalize text-card-foreground",
+        "inline-flex shrink-0 items-center gap-1.5 border border-border bg-card px-2 py-0.5 text-xs font-medium text-card-foreground",
         className
       )}
     >
