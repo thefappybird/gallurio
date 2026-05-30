@@ -10,6 +10,10 @@ export type BookingListFilters = {
   from?: Date | null;
   to?: Date | null;
   includeCancelled?: boolean;
+  // Draft bookings are auto-created from public inquiries and stay hidden from
+  // every owner-facing list until the inquiry is approved (Phase 6). The lead
+  // inbox is the only caller that opts in.
+  includeDrafts?: boolean;
 };
 
 export type BookingListPagination = {
@@ -30,9 +34,14 @@ export async function listBookings(
   const query: Record<string, unknown> = { workspaceId };
 
   if (filters.status) {
+    // Explicit status wins — lets the lead inbox ask for "draft" directly.
     query.status = filters.status;
-  } else if (!filters.includeCancelled) {
-    query.status = { $ne: "cancelled" };
+  } else {
+    const excluded: string[] = [];
+    if (!filters.includeDrafts) excluded.push("draft");
+    if (!filters.includeCancelled) excluded.push("cancelled");
+    if (excluded.length === 1) query.status = { $ne: excluded[0] };
+    else if (excluded.length > 1) query.status = { $nin: excluded };
   }
 
   // Use denormalized bounds for the range filter — a booking "overlaps" the

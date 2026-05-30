@@ -67,7 +67,9 @@ export async function GET(req: Request) {
   // whose range overlaps [dayStart, dayEnd].
   const filter: Record<string, unknown> = {
     workspaceId: ctx.workspace._id,
-    status: { $ne: "cancelled" },
+    // Drafts are unapproved inquiry requests — they must not block availability
+    // or surface as scheduling conflicts in the booking wizard.
+    status: { $nin: ["cancelled", "draft"] },
     $or: [
       {
         sessions: {

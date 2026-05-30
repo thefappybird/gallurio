@@ -49,6 +49,16 @@ These are documented gaps from Phase 2 that are intentionally deferred to Phase 
 - [ ] **Team deletion guard for bookings** — `deleteTeamAction` does not yet refuse to delete a team that has bookings tied to it because `Booking.teamId` is Phase 4. When Phase 4 lands, lift the `TODO(phase-4)` comment in `app/[locale]/(app)/teams/_actions.ts` and add a `Booking.countDocuments({ teamId, workspaceId })` guard that returns a `TEAM_HAS_BOOKINGS` error.
 - [ ] **Teams table booking columns** — the standalone `/teams` table intentionally omits per-team "bookings completed" / "confirmed bookings" columns because `Booking.teamId` does not exist until Phase 4. When Phase 4 lands, add a per-team status-count aggregation and surface the two columns in `app/[locale]/(app)/teams/_components/teams-table.tsx`.
 
+## 4b. Inquiry email notifications (Portfolio maker Phase 6)
+
+The public inquiry form sends a best-effort notification email to the workspace owner on every submission. Transport is **Resend** over its plain HTTPS API (`lib/email/send.ts`). It never blocks or rolls back a submission — a mail failure is logged and swallowed.
+
+- [ ] **`RESEND_API_KEY`** set in production env (Resend dashboard → API Keys). Without it, the transport logs the email to the server console and reports `skipped: true` — fine for dev, NOT acceptable for production.
+- [ ] **`EMAIL_FROM`** set to a sender on a **Resend-verified domain** (e.g. `Gallurio <hello@gallurio.com>`). The dev default `onboarding@resend.dev` only delivers to the Resend account owner and must not ship to prod.
+- [ ] **`EMAIL_REPLY_TO`** (optional) — global reply-to override. By default each notification's reply-to is set to the inquiring client's email so the owner can reply directly.
+- [ ] **`NEXT_PUBLIC_APP_URL`** set (e.g. `https://app.gallurio.com`) so the notification's "Review & approve" button deep-links to `/inquiries/[id]`. Without it the email omits the link and tells the owner to open the lead inbox manually.
+- [ ] Recipient resolution order is `Workspace.publicPage.inquiryRecipientEmail` → `Workspace.contact.email`. Confirm at least one is populated for live workspaces (set in Settings → Public page → Inquiry routing).
+
 ## 5. Multi-tenant isolation spot-checks
 
 Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:

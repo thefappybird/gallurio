@@ -100,6 +100,7 @@ export async function getTodaysEvents(workspaceId: WorkspaceId) {
   // "Starts today" — firstSessionStart within today's bounds.
   return Booking.find({
     workspaceId,
+    status: { $ne: "draft" },
     firstSessionStart: { $gte: startOfDay(now), $lte: endOfDay(now) },
   })
     .sort({ firstSessionStart: 1 })
@@ -206,6 +207,7 @@ export async function getBookingsByDay(
     {
       $match: {
         workspaceId,
+        status: { $ne: "draft" },
         firstSessionStart: { $lte: end },
         lastSessionEnd: { $gte: start },
       },
@@ -240,7 +242,7 @@ export async function getEventTypeBreakdown(
   workspaceId: WorkspaceId
 ): Promise<EventTypeBreakdown[]> {
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
-    { $match: { workspaceId } },
+    { $match: { workspaceId, status: { $ne: "draft" } } },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
@@ -321,7 +323,7 @@ export async function getBookingsByWeekday(
   workspaceId: WorkspaceId
 ): Promise<WeeklyBookingsPoint[]> {
   const rows = await Booking.aggregate<{ _id: number; count: number }>([
-    { $match: { workspaceId } },
+    { $match: { workspaceId, status: { $ne: "draft" } } },
     {
       $group: {
         _id: { $dayOfWeek: "$firstSessionStart" }, // 1=Sun .. 7=Sat (Mongo)

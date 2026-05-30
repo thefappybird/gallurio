@@ -77,7 +77,9 @@ export async function listClients(
     count: number;
     lastStart: Date | null;
   }>([
-    { $match: { workspaceId, clientId: { $in: clientIds } } },
+    // Exclude draft bookings — an unapproved inquiry must not inflate a client's
+    // booking count or "last booking" date in the clients list.
+    { $match: { workspaceId, status: { $ne: "draft" }, clientId: { $in: clientIds } } },
     {
       $group: {
         _id: "$clientId",
@@ -124,7 +126,7 @@ export async function getClientBookings(
   workspaceId: WorkspaceId,
   clientId: WorkspaceId
 ): Promise<ClientBookingRow[]> {
-  const bookings = await Booking.find({ workspaceId, clientId })
+  const bookings = await Booking.find({ workspaceId, clientId, status: { $ne: "draft" } })
     .sort({ firstSessionStart: -1 })
     .limit(50)
     .lean();
