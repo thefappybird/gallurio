@@ -185,22 +185,25 @@ export function CreateDialog({
   );
 }
 
-// --- Rename ---
+// --- Edit (name + color) ---
 
-export function RenameDialog({
+export function EditDialog({
   team,
   open,
   onOpenChange,
   onRenamed,
+  onColorChanged,
 }: {
   team: TeamRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRenamed: (name: string) => void;
+  onColorChanged: (color: string) => void;
 }) {
   const t = useTranslations("app.teams");
   const router = useRouter();
   const [name, setName] = useState(team.name);
+  const [color, setColor] = useState(team.color);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -209,6 +212,7 @@ export function RenameDialog({
     onOpenChange(next);
     if (!next) {
       setName(team.name);
+      setColor(team.color);
       setError(null);
     }
   }
@@ -224,20 +228,46 @@ export function RenameDialog({
       return;
     }
     setError(null);
-    const previousName = team.name;
+
+    const nameChanged = trimmed !== team.name;
+    const colorChanged = color !== team.color;
+    if (!nameChanged && !colorChanged) {
+      onOpenChange(false);
+      return;
+    }
+
+    const prevName = team.name;
+    const prevColor = team.color;
+
     startTransition(async () => {
-      onRenamed(trimmed);
-      const result = await renameTeamAction({ teamId: team.id, name: trimmed });
-      if (result.error) {
-        onRenamed(previousName);
-        setError(
-          result.error === "DUPLICATE_NAME"
-            ? t("errors.duplicateName")
-            : t("errors.generic"),
-        );
-        return;
+      // Optimistically apply both changes; roll back per-field on failure.
+      if (nameChanged) onRenamed(trimmed);
+      if (colorChanged) onColorChanged(color);
+
+      if (nameChanged) {
+        const result = await renameTeamAction({ teamId: team.id, name: trimmed });
+        if (result.error) {
+          onRenamed(prevName);
+          if (colorChanged) onColorChanged(prevColor);
+          setError(
+            result.error === "DUPLICATE_NAME"
+              ? t("errors.duplicateName")
+              : t("errors.generic"),
+          );
+          return;
+        }
       }
-      toast.success(t("toasts.renamed"));
+
+      if (colorChanged) {
+        const result = await setTeamColorAction({ teamId: team.id, color });
+        if (result.error) {
+          onColorChanged(prevColor);
+          setError(mapActionError(result.error, t));
+          return;
+        }
+      }
+
+      toast.success(t("toasts.saved"));
       onOpenChange(false);
       router.refresh();
     });
@@ -247,106 +277,46 @@ export function RenameDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("renameDialog.title")}</DialogTitle>
+          <DialogTitle>{t("editDialog.title")}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="rename-team-input">{t("createDialog.nameLabel")}</Label>
-          <Input
-            id="rename-team-input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            disabled={pending}
-            maxLength={40}
-            autoFocus
-          />
-          {error && (
-            <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
-          )}
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="edit-team-name">{t("createDialog.nameLabel")}</Label>
+            <Input
+              id="edit-team-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              disabled={pending}
+              maxLength={40}
+              autoFocus
+            />
+            {error && (
+              <p className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>{t("createDialog.colorLabel")}</Label>
+            <ColorField value={color} onChange={setColor} disabled={pending} t={t} />
+          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={() => handleOpenChange(false)}>
-            {t("renameDialog.cancel")}
+            {t("createDialog.cancel")}
           </Button>
           <Button disabled={pending || !name.trim()} onClick={handleSubmit}>
             {pending ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                {t("renameDialog.saving")}
+                {t("editDialog.saving")}
               </>
             ) : (
-              t("renameDialog.submit")
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// --- Change color ---
-
-export function ColorDialog({
-  team,
-  open,
-  onOpenChange,
-  onColorChanged,
-}: {
-  team: TeamRow;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onColorChanged: (color: string) => void;
-}) {
-  const t = useTranslations("app.teams");
-  const router = useRouter();
-  const [color, setColor] = useState(team.color);
-  const [pending, startTransition] = useTransition();
-
-  function handleOpenChange(next: boolean) {
-    if (pending) return;
-    onOpenChange(next);
-    if (!next) setColor(team.color);
-  }
-
-  function handleSave() {
-    const previousColor = team.color;
-    startTransition(async () => {
-      onColorChanged(color);
-      const result = await setTeamColorAction({ teamId: team.id, color });
-      if (result.error) {
-        onColorChanged(previousColor);
-        toast.error(mapActionError(result.error, t));
-        return;
-      }
-      toast.success(t("toasts.colorChanged"));
-      onOpenChange(false);
-      router.refresh();
-    });
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("team.changeColor")}</DialogTitle>
-        </DialogHeader>
-        <ColorField value={color} onChange={setColor} disabled={pending} t={t} />
-        <DialogFooter>
-          <Button variant="outline" disabled={pending} onClick={() => handleOpenChange(false)}>
-            {t("createDialog.cancel")}
-          </Button>
-          <Button disabled={pending} onClick={handleSave}>
-            {pending ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                {t("renameDialog.saving")}
-              </>
-            ) : (
-              t("renameDialog.submit")
+              t("editDialog.submit")
             )}
           </Button>
         </DialogFooter>

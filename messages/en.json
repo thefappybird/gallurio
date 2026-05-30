@@ -571,11 +571,17 @@
       "team": {
         "memberCount": "{count, plural, =0 {No members yet} =1 {1 member} other {# members}}",
         "defaultBadge": "Default",
+        "edit": "Edit",
         "rename": "Rename",
         "changeColor": "Change color",
         "invite": "Invite teammate",
         "delete": "Delete",
         "actionsLabel": "Actions for {name}"
+      },
+      "editDialog": {
+        "title": "Edit team",
+        "submit": "Save changes",
+        "saving": "Saving…"
       },
       "drawer": {
         "membersHeading": "Members",
@@ -610,6 +616,7 @@
         "created": "Team created.",
         "renamed": "Team renamed.",
         "colorChanged": "Color updated.",
+        "saved": "Team updated.",
         "deleted": "Team deleted."
       },
       "teamsHeading": "Teams",

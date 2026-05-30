@@ -41,8 +41,7 @@ vi.mock("@/components/ui/dropdown-menu", () => {
 function makeHandlers() {
   return {
     onDetails: vi.fn(),
-    onRename: vi.fn(),
-    onChangeColor: vi.fn(),
+    onEdit: vi.fn(),
     onInvite: vi.fn(),
     onDelete: vi.fn(),
   };
@@ -86,16 +85,13 @@ describe("TeamsTable", () => {
     expect(screen.getAllByText("Delete")).toHaveLength(1);
   });
 
-  it("fires rename / change-color / invite / delete handlers from the menu", () => {
+  it("fires edit / invite / delete handlers from the menu", () => {
     const handlers = makeHandlers();
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} />);
 
     // First row (Main) menu items come first in DOM order.
-    fireEvent.click(screen.getAllByText("Rename")[0]);
-    expect(handlers.onRename).toHaveBeenCalledWith(ROWS[0]);
-
-    fireEvent.click(screen.getAllByText("Change color")[0]);
-    expect(handlers.onChangeColor).toHaveBeenCalledWith(ROWS[0]);
+    fireEvent.click(screen.getAllByText("Edit")[0]);
+    expect(handlers.onEdit).toHaveBeenCalledWith(ROWS[0]);
 
     fireEvent.click(screen.getAllByText("Invite teammate")[0]);
     expect(handlers.onInvite).toHaveBeenCalledWith(ROWS[0]);
@@ -105,10 +101,16 @@ describe("TeamsTable", () => {
     expect(handlers.onDelete).toHaveBeenCalledWith(ROWS[1]);
   });
 
-  it("opens details from the menu item", () => {
+  it("opens details from the menu item AND from a row click", () => {
     const handlers = makeHandlers();
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} />);
+
     fireEvent.click(screen.getAllByText("Details")[1]);
+    expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
+
+    // Clicking anywhere on the row (e.g. the team name) also opens details.
+    handlers.onDetails.mockClear();
+    fireEvent.click(screen.getByText("Wedding crew"));
     expect(handlers.onDetails).toHaveBeenCalledWith(ROWS[1]);
   });
 });

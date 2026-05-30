@@ -575,7 +575,8 @@
         "changeColor": "Tukar warna",
         "invite": "Jemput rakan sepasukan",
         "delete": "Padam",
-        "actionsLabel": "Tindakan untuk {name}"
+        "actionsLabel": "Tindakan untuk {name}",
+        "edit": "Edit"
       },
       "drawer": {
         "membersHeading": "Ahli",
@@ -610,7 +611,8 @@
         "created": "Pasukan telah dibuat.",
         "renamed": "Pasukan telah dinamakan semula.",
         "colorChanged": "Warna telah dikemas kini.",
-        "deleted": "Pasukan telah dipadamkan."
+        "deleted": "Pasukan telah dipadamkan.",
+        "saved": "Pasukan dikemas kini."
       },
       "teamsHeading": "Pasukan",
       "invite": {
@@ -690,6 +692,11 @@
         "teamsHeading": "Pasukan semasa",
         "dismiss": "Faham",
         "manageTeams": "Urus pasukan"
+      },
+      "editDialog": {
+        "title": "Edit pasukan",
+        "submit": "Simpan perubahan",
+        "saving": "Menyimpan…"
       }
     },
     "clients": {

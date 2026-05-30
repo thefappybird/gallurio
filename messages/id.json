@@ -526,17 +526,94 @@
       "description": "Kelompokkan anggota tim ke dalam tim. Setiap tim memiliki kalendarnya sendiri. Anggota hanya dapat melihat pemesanan dari tim yang mereka ikuti.",
       "listEmpty": "Anda belum memiliki tim apa pun.",
       "createButton": "Buat tim",
-      "toolbar": { "search": "Cari tim", "searchLabel": "Cari tim berdasarkan nama" },
-      "table": { "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.", "col": { "color": "Warna", "name": "Tim", "members": "Anggota", "actions": "Tindakan" }, "details": "Detail" },
-      "colorPicker": { "presetsLabel": "Pra-setel", "customLabel": "Warna kustom", "hexLabel": "Hex" },
-      "createDialog": { "title": "Buat tim", "description": "Beri nama tim dan pilih warna untuk chip kalendernya.", "nameLabel": "Nama tim", "namePlaceholder": "mis. Kru pernikahan", "colorLabel": "Warna", "submit": "Buat tim", "cancel": "Batal", "creating": "Membuat…" },
-      "renameDialog": { "title": "Ganti nama tim", "submit": "Simpan", "saving": "Menyimpan…", "cancel": "Batal" },
-      "deleteDialog": { "title": "Hapus tim?", "description": "Tim ini beserta penugasan anggotanya akan dihapus. Anggota tetap berada di ruang kerja dan dapat ditambahkan ke tim lain setelahnya. Tindakan ini tidak dapat dibatalkan.", "confirm": "Hapus tim", "deleting": "Menghapus…", "cancel": "Batal" },
-      "team": { "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}", "defaultBadge": "Default", "rename": "Ganti nama", "changeColor": "Ubah warna", "invite": "Undang rekan kerja", "delete": "Hapus", "actionsLabel": "Tindakan untuk {name}" },
-      "drawer": { "membersHeading": "Anggota", "memberCount": "{count}/{max} anggota", "noMembers": "Belum ada anggota di tim ini.", "addMemberLabel": "Tambah anggota yang sudah ada", "addMemberPlaceholder": "Pilih anggota…", "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di tim ini.", "pendingHeading": "Undangan tertunda", "noPending": "Tidak ada undangan tertunda untuk tim ini.", "inviteToTeam": "Undang ke tim ini", "leadToggleLabel": "Lead", "removeFromTeam": "Hapus", "teamFull": "Tim ini sudah penuh.", "close": "Tutup" },
-      "upsell": { "atCapTitle": "Anda telah mencapai batas tim Anda", "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.", "cta": "Lihat paket", "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak." },
-      "errors": { "nameRequired": "Nama tim diperlukan.", "nameTooLong": "Nama tim harus 40 karakter atau kurang.", "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.", "cannotDeleteDefault": "Tim default tidak dapat dihapus.", "teamNotFound": "Tim tidak ditemukan.", "generic": "Terjadi kesalahan. Silakan coba lagi." },
-      "toasts": { "created": "Tim dibuat.", "renamed": "Tim diganti nama.", "colorChanged": "Warna diperbarui.", "deleted": "Tim dihapus." },
+      "toolbar": {
+        "search": "Cari tim",
+        "searchLabel": "Cari tim berdasarkan nama"
+      },
+      "table": {
+        "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.",
+        "col": {
+          "color": "Warna",
+          "name": "Tim",
+          "members": "Anggota",
+          "actions": "Tindakan"
+        },
+        "details": "Detail"
+      },
+      "colorPicker": {
+        "presetsLabel": "Pra-setel",
+        "customLabel": "Warna kustom",
+        "hexLabel": "Hex"
+      },
+      "createDialog": {
+        "title": "Buat tim",
+        "description": "Beri nama tim dan pilih warna untuk chip kalendernya.",
+        "nameLabel": "Nama tim",
+        "namePlaceholder": "mis. Kru pernikahan",
+        "colorLabel": "Warna",
+        "submit": "Buat tim",
+        "cancel": "Batal",
+        "creating": "Membuat…"
+      },
+      "renameDialog": {
+        "title": "Ganti nama tim",
+        "submit": "Simpan",
+        "saving": "Menyimpan…",
+        "cancel": "Batal"
+      },
+      "deleteDialog": {
+        "title": "Hapus tim?",
+        "description": "Tim ini beserta penugasan anggotanya akan dihapus. Anggota tetap berada di ruang kerja dan dapat ditambahkan ke tim lain setelahnya. Tindakan ini tidak dapat dibatalkan.",
+        "confirm": "Hapus tim",
+        "deleting": "Menghapus…",
+        "cancel": "Batal"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {Belum ada anggota} =1 {1 anggota} other {# anggota}}",
+        "defaultBadge": "Default",
+        "rename": "Ganti nama",
+        "changeColor": "Ubah warna",
+        "invite": "Undang rekan kerja",
+        "delete": "Hapus",
+        "actionsLabel": "Tindakan untuk {name}",
+        "edit": "Edit"
+      },
+      "drawer": {
+        "membersHeading": "Anggota",
+        "memberCount": "{count}/{max} anggota",
+        "noMembers": "Belum ada anggota di tim ini.",
+        "addMemberLabel": "Tambah anggota yang sudah ada",
+        "addMemberPlaceholder": "Pilih anggota…",
+        "noAssignableMembers": "Semua orang di ruang kerja ini sudah ada di tim ini.",
+        "pendingHeading": "Undangan tertunda",
+        "noPending": "Tidak ada undangan tertunda untuk tim ini.",
+        "inviteToTeam": "Undang ke tim ini",
+        "leadToggleLabel": "Lead",
+        "removeFromTeam": "Hapus",
+        "teamFull": "Tim ini sudah penuh.",
+        "close": "Tutup"
+      },
+      "upsell": {
+        "atCapTitle": "Anda telah mencapai batas tim Anda",
+        "atCapBody": "Paket {plan} Anda memungkinkan {max} {max, plural, =1 {tim} other {tim}}. Upgrade untuk menambahkan lebih banyak.",
+        "cta": "Lihat paket",
+        "proAtCapBody": "Pro dibatasi hingga {max} tim. Hubungi dukungan jika Anda membutuhkan lebih banyak."
+      },
+      "errors": {
+        "nameRequired": "Nama tim diperlukan.",
+        "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
+        "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
+        "cannotDeleteDefault": "Tim default tidak dapat dihapus.",
+        "teamNotFound": "Tim tidak ditemukan.",
+        "generic": "Terjadi kesalahan. Silakan coba lagi."
+      },
+      "toasts": {
+        "created": "Tim dibuat.",
+        "renamed": "Tim diganti nama.",
+        "colorChanged": "Warna diperbarui.",
+        "deleted": "Tim dihapus.",
+        "saved": "Tim diperbarui."
+      },
       "teamsHeading": "Tim",
       "invite": {
         "button": "Undang anggota",
@@ -615,6 +692,11 @@
         "teamsHeading": "Tim saat ini",
         "dismiss": "Mengerti",
         "manageTeams": "Kelola tim"
+      },
+      "editDialog": {
+        "title": "Edit tim",
+        "submit": "Simpan perubahan",
+        "saving": "Menyimpan…"
       }
     },
     "clients": {

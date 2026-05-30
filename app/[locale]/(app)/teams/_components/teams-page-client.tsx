@@ -20,8 +20,7 @@ import { InviteForm } from "./invite-form";
 import { DowngradeBlockModal } from "./downgrade-block-modal";
 import {
   CreateDialog,
-  RenameDialog,
-  ColorDialog,
+  EditDialog,
   DeleteDialog,
   UpsellDialog,
 } from "./team-dialogs";
@@ -134,8 +133,7 @@ export function TeamsPageClient({
   const overCap = initialTeams.length > maxTeams;
   const [downgradeBlockOpen, setDowngradeBlockOpen] = useState(overCap);
 
-  const [renameTeam, setRenameTeam] = useState<TeamRow | null>(null);
-  const [colorTeam, setColorTeam] = useState<TeamRow | null>(null);
+  const [editTeam, setEditTeam] = useState<TeamRow | null>(null);
   const [deleteTeam, setDeleteTeam] = useState<TeamRow | null>(null);
 
   const [drawerTeam, setDrawerTeam] = useState<TeamRow | null>(null);
@@ -205,8 +203,7 @@ export function TeamsPageClient({
           rows={filteredTeams}
           empty={committedQuery ? t("table.empty") : t("listEmpty")}
           onDetails={openDetails}
-          onRename={setRenameTeam}
-          onChangeColor={setColorTeam}
+          onEdit={setEditTeam}
           onInvite={(team) => openInvite([team.id])}
           onDelete={setDeleteTeam}
         />
@@ -242,20 +239,13 @@ export function TeamsPageClient({
         onCreated={(team) => dispatch({ type: "add", team })}
         onCapExceeded={() => setUpsellOpen(true)}
       />
-      {renameTeam && (
-        <RenameDialog
-          team={renameTeam}
-          open={Boolean(renameTeam)}
-          onOpenChange={(open) => !open && setRenameTeam(null)}
-          onRenamed={(name) => dispatch({ type: "rename", id: renameTeam.id, name })}
-        />
-      )}
-      {colorTeam && (
-        <ColorDialog
-          team={colorTeam}
-          open={Boolean(colorTeam)}
-          onOpenChange={(open) => !open && setColorTeam(null)}
-          onColorChanged={(color) => dispatch({ type: "color", id: colorTeam.id, color })}
+      {editTeam && (
+        <EditDialog
+          team={editTeam}
+          open={Boolean(editTeam)}
+          onOpenChange={(open) => !open && setEditTeam(null)}
+          onRenamed={(name) => dispatch({ type: "rename", id: editTeam.id, name })}
+          onColorChanged={(color) => dispatch({ type: "color", id: editTeam.id, color })}
         />
       )}
       {deleteTeam && (

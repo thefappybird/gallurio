@@ -17,7 +17,6 @@ import {
   Eye,
   MailPlus,
   MoreHorizontal,
-  Palette,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -37,8 +36,7 @@ type Props = {
   rows: TeamRow[];
   empty: string;
   onDetails: (team: TeamRow) => void;
-  onRename: (team: TeamRow) => void;
-  onChangeColor: (team: TeamRow) => void;
+  onEdit: (team: TeamRow) => void;
   onInvite: (team: TeamRow) => void;
   onDelete: (team: TeamRow) => void;
 };
@@ -47,8 +45,7 @@ export function TeamsTable({
   rows,
   empty,
   onDetails,
-  onRename,
-  onChangeColor,
+  onEdit,
   onInvite,
   onDelete,
 }: Props) {
@@ -116,13 +113,9 @@ export function TeamsTable({
                     <Eye className="size-4" />
                     {t("table.details")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onRename(team)}>
+                  <DropdownMenuItem onClick={() => onEdit(team)}>
                     <Pencil className="size-4" />
-                    {t("team.rename")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onChangeColor(team)}>
-                    <Palette className="size-4" />
-                    {t("team.changeColor")}
+                    {t("team.edit")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onInvite(team)}>
                     <MailPlus className="size-4" />
@@ -145,7 +138,7 @@ export function TeamsTable({
         enableSorting: false,
       },
     ],
-    [t, onDetails, onRename, onChangeColor, onInvite, onDelete],
+    [t, onDetails, onEdit, onInvite, onDelete],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions; React Compiler skips this component intentionally

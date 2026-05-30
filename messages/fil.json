@@ -526,9 +526,25 @@
       "description": "I-grupo ang mga katrabaho sa mga koponan. Ang bawat koponan ay may sariling kalendaryo. Ang mga miyembro ay makakakita lamang ng mga booking mula sa mga koponan na kanilang kinabibilangan.",
       "listEmpty": "Wala ka pang anumang koponan.",
       "createButton": "Lumikha ng koponan",
-      "toolbar": { "search": "Maghanap ng koponan", "searchLabel": "Maghanap ng koponan ayon sa pangalan" },
-      "table": { "empty": "Walang koponang tumutugma sa iyong paghahanap.", "col": { "color": "Kulay", "name": "Koponan", "members": "Mga Miyembro", "actions": "Mga Aksyon" }, "details": "Mga Detalye" },
-      "colorPicker": { "presetsLabel": "Mga preset", "customLabel": "Custom na kulay", "hexLabel": "Hex" },
+      "toolbar": {
+        "search": "Maghanap ng koponan",
+        "searchLabel": "Maghanap ng koponan ayon sa pangalan"
+      },
+      "table": {
+        "empty": "Walang koponang tumutugma sa iyong paghahanap.",
+        "col": {
+          "color": "Kulay",
+          "name": "Koponan",
+          "members": "Mga Miyembro",
+          "actions": "Mga Aksyon"
+        },
+        "details": "Mga Detalye"
+      },
+      "colorPicker": {
+        "presetsLabel": "Mga preset",
+        "customLabel": "Custom na kulay",
+        "hexLabel": "Hex"
+      },
       "createDialog": {
         "title": "Lumikha ng koponan",
         "description": "Bigyan ang koponan ng pangalan at pumili ng kulay para sa mga chip ng kalendaryo nito.",
@@ -559,7 +575,8 @@
         "changeColor": "Baguhin ang kulay",
         "invite": "Mag-imbita ng katrabaho",
         "delete": "Burahin",
-        "actionsLabel": "Mga aksyon para sa {name}"
+        "actionsLabel": "Mga aksyon para sa {name}",
+        "edit": "I-edit"
       },
       "drawer": {
         "membersHeading": "Mga Miyembro",
@@ -594,7 +611,8 @@
         "created": "Nalikha ang koponan.",
         "renamed": "Napalitan ang pangalan ng koponan.",
         "colorChanged": "Na-update ang kulay.",
-        "deleted": "Nabura ang koponan."
+        "deleted": "Nabura ang koponan.",
+        "saved": "Na-update ang koponan."
       },
       "teamsHeading": "Mga Koponan",
       "invite": {
@@ -674,6 +692,11 @@
         "teamsHeading": "Mga kasalukuyang koponan",
         "dismiss": "Naiintindihan ko",
         "manageTeams": "Pamahalaan ang mga koponan"
+      },
+      "editDialog": {
+        "title": "I-edit ang koponan",
+        "submit": "I-save ang mga pagbabago",
+        "saving": "Sina-save…"
       }
     },
     "clients": {

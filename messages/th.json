@@ -575,7 +575,8 @@
         "changeColor": "เปลี่ยนสี",
         "invite": "เชิญเพื่อนร่วมทีม",
         "delete": "ลบ",
-        "actionsLabel": "การดำเนินการสำหรับ {name}"
+        "actionsLabel": "การดำเนินการสำหรับ {name}",
+        "edit": "แก้ไข"
       },
       "drawer": {
         "membersHeading": "สมาชิก",
@@ -610,7 +611,8 @@
         "created": "สร้างทีมแล้ว",
         "renamed": "เปลี่ยนชื่อทีมแล้ว",
         "colorChanged": "อัปเดตสีแล้ว",
-        "deleted": "ลบทีมแล้ว"
+        "deleted": "ลบทีมแล้ว",
+        "saved": "อัปเดตทีมแล้ว"
       },
       "teamsHeading": "ทีม",
       "invite": {
@@ -690,6 +692,11 @@
         "teamsHeading": "ทีมปัจจุบัน",
         "dismiss": "รับทราบ",
         "manageTeams": "จัดการทีม"
+      },
+      "editDialog": {
+        "title": "แก้ไขทีม",
+        "submit": "บันทึกการเปลี่ยนแปลง",
+        "saving": "กำลังบันทึก…"
       }
     },
     "clients": {
