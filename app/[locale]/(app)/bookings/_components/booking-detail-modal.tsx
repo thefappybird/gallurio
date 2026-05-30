@@ -54,7 +54,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
-import { StatusPill } from "./status-pill";
+import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
 import { EditableField } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
@@ -65,6 +65,7 @@ import type { ShiftHit } from "./booking-wizard-steps/event-step";
 import {
   BOOKING_STATUSES,
   EVENT_TYPES,
+  type BookingStatus,
   type EditableKey,
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
@@ -1210,6 +1211,7 @@ function DialogHeaderBar({
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
   const tEvent = useTranslations("app.bookings.eventTypes");
+  const tStatus = useTranslations("app.bookings.statusValues");
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -1228,9 +1230,20 @@ function DialogHeaderBar({
 
   const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
   const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking?.eventType ?? "";
+  const effectiveStatus =
+    (pending["status"] as string | undefined) ?? booking?.status ?? "";
   const hasTitlePending = "title" in pending;
   const hasEventTypePending = "eventType" in pending;
+  const hasStatusPending = "status" in pending;
   const isCancelled = booking?.status === "cancelled";
+
+  const statusOptions = useMemo(
+    () =>
+      BOOKING_STATUSES.map((s) => ({ value: s, label: safeT(tStatus, s, s) })),
+    [tStatus]
+  );
+  const statusLabel = safeT(tStatus, effectiveStatus, effectiveStatus);
+  const statusColor = STATUS_COLOR_VAR[effectiveStatus as BookingStatus];
 
   function startTitleEdit() {
     if (disabled || isCancelled || !booking) return;
@@ -1361,6 +1374,58 @@ function DialogHeaderBar({
                       ) : null}
                     </div>
                   ) : null}
+
+                  {/* Status pill — editable dropdown, mirrors the event-type
+                      pill but keeps the status color dot. */}
+                  {booking ? (
+                    <div className="relative shrink-0">
+                      <Select
+                        value={effectiveStatus}
+                        onValueChange={(v) => {
+                          onCommit("status", v);
+                          if (hasStatusPending && v === booking.status)
+                            onDiscard("status");
+                        }}
+                        disabled={disabled || isCancelled}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                            hasStatusPending
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                          )}
+                          aria-label={t("status")}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              aria-hidden
+                              className="size-2 shrink-0"
+                              style={
+                                statusColor
+                                  ? { backgroundColor: statusColor }
+                                  : undefined
+                              }
+                            />
+                            <SelectValue>{statusLabel}</SelectValue>
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {hasStatusPending ? (
+                        <span
+                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
                 </>
               )}
             </div>
@@ -1368,8 +1433,7 @@ function DialogHeaderBar({
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <StatusPill status={booking.status} />
-            <span className="ml-1">{booking.clientName}</span>
+            <span>{booking.clientName}</span>
             <span>·</span>
             <span>
               {booking.sessions?.[0]?.startAt
@@ -1489,20 +1553,10 @@ function BookingTabs({
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
-  const tStatus = useTranslations("app.bookings.statusValues");
   const tSessions = useTranslations("app.bookings.sessions");
 
   const navRouter = useRouter();
   const [isNavigating, startNav] = useTransition();
-
-  const statusOptions = useMemo(
-    () =>
-      BOOKING_STATUSES.map((s) => ({
-        value: s,
-        label: safeT(tStatus, s, s),
-      })),
-    [tStatus]
-  );
 
   const currencyOptions = useMemo(
     () => SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
@@ -1561,17 +1615,21 @@ function BookingTabs({
 
   return (
     <Tabs defaultValue="client">
-      <TabsList className="mb-3 h-auto justify-start overflow-x-auto">
-        <TabsTab value="client" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
+      {/* Same subtle base treatment as the client detail modal's tabs (bare
+          TabsTab → active tab gets the foreground underline) for cross-modal
+          consistency. min-h-11 keeps the touch target ≥44px and overflow-x-auto
+          lets the four tabs scroll at 375px. */}
+      <TabsList className="h-auto overflow-x-auto">
+        <TabsTab value="client" className="min-h-11">
           {t("client")}
         </TabsTab>
-        <TabsTab value="event" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
+        <TabsTab value="event" className="min-h-11">
           {t("event")}
         </TabsTab>
-        <TabsTab value="pricing" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
+        <TabsTab value="pricing" className="min-h-11">
           {t("pricing")}
         </TabsTab>
-        <TabsTab value="activity" className="min-h-11 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset data-[selected]:border-brand">
+        <TabsTab value="activity" className="min-h-11">
           {t("activity")}
         </TabsTab>
       </TabsList>
@@ -1665,26 +1723,6 @@ function BookingTabs({
               disabled={disabled}
             />
           ) : null}
-        </div>
-
-        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <EditableField
-            label={tFields("clientName")}
-            type="text"
-            {...get("clientName")}
-            onCommit={(v) => onCommit("clientName", v)}
-            onDiscardPending={() => onDiscard("clientName")}
-            disabled={disabled}
-          />
-          <EditableField
-            label={tFields("status")}
-            type="select"
-            options={statusOptions}
-            {...get("status")}
-            onCommit={(v) => onCommit("status", v)}
-            onDiscardPending={() => onDiscard("status")}
-            disabled={disabled}
-          />
         </div>
       </TabsPanel>
 

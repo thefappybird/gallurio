@@ -950,6 +950,39 @@ describe("Header event-type pill", () => {
   });
 });
 
+describe("Header status pill", () => {
+  it("renders status as an editable dropdown in the header with the current label", async () => {
+    renderModal();
+    await waitForLoad();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("combobox", { name: /status/i })
+      ).toBeInTheDocument();
+    });
+    // MOCK_BOOKING.status === "booked" → label "Booked" shows in the trigger.
+    const trigger = screen.getByRole("combobox", { name: /status/i });
+    expect(within(trigger).getByText("Booked")).toBeInTheDocument();
+  });
+
+  it("removes the editable Client name and Status fields from the Client tab", async () => {
+    renderModal();
+    await waitForLoad(); // switches to the Event tab
+    fireEvent.click(screen.getByRole("tab", { name: /client/i }));
+
+    await waitFor(() => {
+      // Contact block still shows the read-only client-name label.
+      expect(screen.getByText("Client name")).toBeInTheDocument();
+    });
+    // Status moved to the header (aria-label, not visible text) — no "Status"
+    // text/field remains in the body.
+    expect(screen.queryAllByText("Status").length).toBe(0);
+    // "Client name" appears only once now (the contact-block label); the
+    // editable field that duplicated it was removed.
+    expect(screen.queryAllByText("Client name").length).toBe(1);
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Issue new-3 — client tab enrichment
 // ─────────────────────────────────────────────────────────────────────────────
