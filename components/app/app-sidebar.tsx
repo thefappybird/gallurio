@@ -9,6 +9,7 @@ import {
   MessageSquareIcon,
   SettingsIcon,
   UsersIcon,
+  UsersRound,
   BookOpenIcon,
 } from "lucide-react";
 import NextImage from "next/image";
@@ -35,6 +36,7 @@ const OWNER_NAV = [
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
   { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
   { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
+  { href: "/teams" as const, labelKey: "teams", icon: UsersRound },
 ];
 
 const MEMBER_NAV = [

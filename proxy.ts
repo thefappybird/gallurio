@@ -29,6 +29,7 @@ const MEMBER_BLOCKED_PREFIXES = [
   "/clients",
   "/inquiries",
   "/gallery",
+  "/teams",
   "/settings",
 ];
 

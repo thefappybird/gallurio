@@ -48,7 +48,7 @@ export function BookingsToolbar({
 
   useEffect(() => {
     const next = searchParams.get("q") ?? "";
-    Promise.resolve().then(() => { setQ((prev) => (prev === next ? prev : next)); });
+    Promise.resolve().then(() => setQ(next));
   }, [searchParams]);
 
   const status = searchParams.get("status") ?? ALL;
@@ -87,7 +87,7 @@ export function BookingsToolbar({
   useEffect(() => {
     const current = searchParams.get("q") ?? "";
     if (q === current) return;
-    const id = setTimeout(() => pushParams({ q: q || null }), 500);
+    const id = setTimeout(() => pushParams({ q: q || null }), 250);
     return () => clearTimeout(id);
   }, [q, searchParams, pushParams]);
 

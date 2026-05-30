@@ -2,7 +2,7 @@
 
 Run through this list before promoting to production. It covers the parts of the codebase that are easy to miss in a feature-review pass and the dev-mode shortcuts that must be removed or replaced with real flows.
 
-Last updated: 2026-05-27 (post Phase 1-3 teams management)
+Last updated: 2026-05-28 (post teams-enhancements: standalone /teams page)
 
 ## 1. Dev-mode escape hatches
 
@@ -46,7 +46,8 @@ These checks belong on the production deploy, not just code review. The atomicit
 
 These are documented gaps from Phase 2 that are intentionally deferred to Phase 4:
 
-- [ ] **Team deletion guard for bookings** — `deleteTeamAction` does not yet refuse to delete a team that has bookings tied to it because `Booking.teamId` is Phase 4. When Phase 4 lands, lift the `TODO(phase-4)` comment in `app/[locale]/(app)/settings/teams/_actions.ts` and add a `Booking.countDocuments({ teamId, workspaceId })` guard that returns a `TEAM_HAS_BOOKINGS` error.
+- [ ] **Team deletion guard for bookings** — `deleteTeamAction` does not yet refuse to delete a team that has bookings tied to it because `Booking.teamId` is Phase 4. When Phase 4 lands, lift the `TODO(phase-4)` comment in `app/[locale]/(app)/teams/_actions.ts` and add a `Booking.countDocuments({ teamId, workspaceId })` guard that returns a `TEAM_HAS_BOOKINGS` error.
+- [ ] **Teams table booking columns** — the standalone `/teams` table intentionally omits per-team "bookings completed" / "confirmed bookings" columns because `Booking.teamId` does not exist until Phase 4. When Phase 4 lands, add a per-team status-count aggregation and surface the two columns in `app/[locale]/(app)/teams/_components/teams-table.tsx`.
 
 ## 5. Multi-tenant isolation spot-checks
 
@@ -68,13 +69,21 @@ Run: `rg "Team(Membership|)\.(find|update|delete)" app lib --type ts` and audit 
 
 ## 7. Locale parity
 
-- [ ] All five locales (`en, fil, ms, id, th`) have every `app.settings.teams.*` key. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
-- [ ] When a new locale is added, copy the entire `app.settings` block first, then translate values.
+- [ ] All five locales (`en, fil, ms, id, th`) have every `app.teams.*` key (the block moved out of `app.settings.teams` when Teams became a standalone page) and the `app.sidebar.teams` nav label. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
+- [ ] When a new locale is added, copy the entire `app` block first, then translate values.
 
 ## 8. Routing / proxy
 
-- [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, and `/settings` (except `/settings/account` for the Clerk profile area). Verify manually by signing in as a member.
-- [ ] AppSidebar shows `[Bookings]` only for members and hides the footer Settings link.
+- [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, `/teams`, and `/settings` (except `/settings/account` for the Clerk profile area). Verify manually by signing in as a member.
+- [ ] AppSidebar shows `[Bookings]` only for members and hides the footer Settings link. The `/teams` link only appears for owners.
+
+## 8a. Invitation email delivery (NO email service wired yet)
+
+The invite flow (`inviteMemberAction`) creates the `PendingTeamAssignment` row and calls Clerk's `createOrganizationInvitation`, but **no invitation email is delivered in the current dev setup** — Clerk's org-invitation email is not configured. The owner sees the pending invite in the team's Details drawer, but the invitee receives nothing. Before production:
+
+- [ ] **Enable Clerk organization-invitation emails** in the Clerk dashboard (Organizations → invitations), OR wire a transactional email provider and send the invite link yourself. Confirm a real email lands in the invitee's inbox in a staging environment.
+- [ ] Consider passing a `redirectUrl` to `createOrganizationInvitation` so accepted invites land directly in the in-app accept flow rather than Clerk's default page.
+- [ ] Re-test the full accept → webhook drain → `TeamMembership` creation path once emails actually send.
 
 ## 9. Env-var matrix
 
@@ -94,9 +103,9 @@ Confirm these are set in the production Vercel project:
 In production with a real HitPay account on test mode (or sandbox-redirected to the prod app):
 
 - [ ] Sign up a new workspace — gets a Main team.
-- [ ] Owner invites a teammate — they get an email, accept, and land at `/bookings` with the reduced sidebar.
-- [ ] Owner revokes a pending invite — the row disappears from the member list and the team's member count shows the seat back.
-- [ ] Owner deletes a team — TeamMembership rows for that team disappear; team count drops.
+- [ ] Owner invites a teammate (from the `/teams` toolbar, a team's 3-dot menu, or its Details drawer) — they get an email (requires §8a), accept, and land at `/bookings` with the reduced sidebar.
+- [ ] Owner revokes a pending invite from the team's Details drawer — the row disappears and the team's member count shows the seat back.
+- [ ] Owner deletes a non-default team from the `/teams` 3-dot menu — TeamMembership rows for that team disappear and team count drops; a member who was only on that team becomes teamless and can be re-added via another team's "Add existing member" dropdown.
 - [ ] Sign in as a member and try to navigate to `/settings` — proxy redirects to `/bookings`.
 
 ## 11. Location pin picker — geocoding provider

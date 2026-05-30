@@ -189,7 +189,7 @@ export async function inviteMemberAction(
     { $set: { clerkInvitationId: invitationId } },
   );
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
 
@@ -234,6 +234,6 @@ export async function revokeInviteAction(
     // cleanup cron. Seats were already refunded; nothing more to do.
   }
 
-  revalidatePath("/settings/teams", "page");
+  revalidatePath("/[locale]/teams", "page");
   return { ok: true };
 }
