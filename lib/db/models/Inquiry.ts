@@ -57,7 +57,13 @@ const inquirySchema = new Schema(
 inquirySchema.index({ workspaceId: 1, status: 1, createdAt: -1 });
 inquirySchema.index({ workspaceId: 1, createdAt: -1 });
 
-export type InquiryDoc = InferSchemaType<typeof inquirySchema> & { _id: mongoose.Types.ObjectId };
+export type InquiryDoc = InferSchemaType<typeof inquirySchema> & {
+  _id: mongoose.Types.ObjectId;
+  // `timestamps: true` adds these at runtime; InferSchemaType doesn't surface
+  // them, so declare them explicitly for the read paths that sort/display by date.
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export const Inquiry: Model<InquiryDoc> =
   (mongoose.models.Inquiry as Model<InquiryDoc>) ??

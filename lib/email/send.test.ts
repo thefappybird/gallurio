@@ -9,14 +9,15 @@ beforeEach(() => {
 
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
 describe("sendEmail", () => {
-  it("skips (logs) and succeeds when no API key is configured", async () => {
+  it("skips and succeeds without sending when no API key is configured", async () => {
     delete process.env.RESEND_API_KEY;
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const fetchSpy = vi.spyOn(globalThis, "fetch");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const res = await sendEmail({
       to: "owner@example.com",
@@ -27,7 +28,25 @@ describe("sendEmail", () => {
 
     expect(res).toEqual({ ok: true, id: null, skipped: true });
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("logs the full body only in development, never the PII in other envs", async () => {
+    delete process.env.RESEND_API_KEY;
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    // Non-dev (test) env: envelope-only warning, no body.
+    vi.stubEnv("NODE_ENV", "test");
+    await sendEmail({ to: "owner@example.com", subject: "S", html: "x", text: "SECRET BODY" });
+    expect(info).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0][0]).not.toContain("SECRET BODY");
+
+    // Development: full body logged for local testing.
+    vi.stubEnv("NODE_ENV", "development");
+    await sendEmail({ to: "owner@example.com", subject: "S", html: "x", text: "SECRET BODY" });
     expect(info).toHaveBeenCalledOnce();
+    expect(info.mock.calls[0][0]).toContain("SECRET BODY");
   });
 
   it("posts to Resend with bearer auth and returns the message id", async () => {

@@ -56,7 +56,7 @@ export function rateLimit(key: string, opts: RateLimitOptions): RateLimitResult 
     return {
       ok: false,
       remaining: 0,
-      resetAt: recent[0] + windowMs,
+      resetAt: (recent[0] ?? now) + windowMs,
     };
   }
 

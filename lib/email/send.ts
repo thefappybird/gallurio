@@ -40,10 +40,19 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 
   if (!apiKey) {
     // No transport configured — log and succeed so dev flows aren't blocked.
-    console.info(
-      `[email:dev] (no RESEND_API_KEY) would send to ${recipients.join(", ")} — ` +
-        `subject: ${input.subject}\n${input.text}`
-    );
+    // Only print the full body (which contains client PII) in local dev. In a
+    // prod-like env without a key (e.g. a misconfigured preview deploy) log just
+    // the envelope so PII doesn't leak into shared function logs.
+    if (process.env.NODE_ENV === "development") {
+      console.info(
+        `[email:dev] (no RESEND_API_KEY) would send to ${recipients.join(", ")} — ` +
+          `subject: ${input.subject}\n${input.text}`
+      );
+    } else {
+      console.warn(
+        `[email] RESEND_API_KEY is not set — skipped sending "${input.subject}" to ${recipients.length} recipient(s).`
+      );
+    }
     return { ok: true, id: null, skipped: true };
   }
 

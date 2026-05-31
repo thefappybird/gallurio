@@ -84,7 +84,7 @@ export async function approveInquiryBookingAction(
       // Promote the draft. The `status: "draft"` guard makes the write a no-op
       // if a concurrent approval already promoted it — belt-and-suspenders with
       // the idempotency check above.
-      await Booking.updateOne(
+      const promoted = await Booking.updateOne(
         { _id: booking._id, workspaceId, status: "draft" },
         {
           $set: {
@@ -96,6 +96,11 @@ export async function approveInquiryBookingAction(
         },
         { session }
       );
+
+      // A concurrent approval already promoted this draft — skip recording so
+      // the client isn't double-credited. Returning commits this (empty) txn;
+      // the caller still resolves ok since the booking is promoted either way.
+      if (promoted.matchedCount === 0) return;
 
       // Now the booking is real, fold it into the client's financial footprint
       // (mirrors the manual booking-create flow — drafts are deliberately not

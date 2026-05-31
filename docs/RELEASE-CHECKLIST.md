@@ -59,6 +59,14 @@ The public inquiry form sends a best-effort notification email to the workspace 
 - [ ] **`NEXT_PUBLIC_APP_URL`** set (e.g. `https://app.gallurio.com`) so the notification's "Review & approve" button deep-links to `/inquiries/[id]`. Without it the email omits the link and tells the owner to open the lead inbox manually.
 - [ ] Recipient resolution order is `Workspace.publicPage.inquiryRecipientEmail` → `Workspace.contact.email`. Confirm at least one is populated for live workspaces (set in Settings → Public page → Inquiry routing).
 
+## 4c. Public inquiry endpoint hardening (Portfolio maker Phase 6)
+
+`POST /api/inquiries` is public and unauthenticated. It ships with a honeypot, Zod validation, and an in-process per-IP rate limiter (`lib/server/rateLimit.ts`, 5 / 10 min). The limiter is **best-effort** — it holds only within a warm Fluid Compute instance and keys on the client IP.
+
+- [ ] **Trusted client IP** — `getClientIp` in `app/api/inquiries/route.ts` prefers `x-vercel-forwarded-for` (platform-set, tamper-resistant) and only falls back to the client-controllable `X-Forwarded-For`. Confirm the production proxy actually sets a trusted header; if the deployment topology differs, update `getClientIp` accordingly. Without this, an attacker rotating `X-Forwarded-For` bypasses the per-IP limiter.
+- [ ] **Edge/WAF rate limit** — add a platform-level rate limit (Vercel WAF / Firewall) on `/api/inquiries` for real abuse protection; the in-process limiter is only a first line against accidental double-submits and casual spam.
+- [ ] **Referrer field** — `lib/validators/inquiry.ts` accepts `referrer` as a freeform string (not URL-validated) so non-URL referrers survive. It is HTML-escaped before email rendering and stored verbatim; decide whether to tighten to `z.string().url()` if analytics hygiene matters more than capturing odd referrers.
+
 ## 5. Multi-tenant isolation spot-checks
 
 Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:

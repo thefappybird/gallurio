@@ -53,7 +53,7 @@ describe("POST /api/inquiries", () => {
     const res = await POST(makeReq(makeBody()));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ ok: true, inquiryId: "inq_1", draftBookingId: "bk_1" });
+    expect(json).toEqual({ ok: true, inquiryId: "inq_1" });
     expect(submitInquiry).toHaveBeenCalledOnce();
   });
 

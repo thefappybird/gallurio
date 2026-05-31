@@ -80,6 +80,13 @@ export async function submitInquiry(
 
   // Convert the wall-clock inquiry sessions into UTC instants for the booking.
   const bookingSessions = inquirySessionsToBookingSessions(payload.sessions, timeZone);
+  // Defensive: the Zod schema enforces sessions.min(1), but this helper is
+  // exported and trusts its input — an empty array would make Math.min(...[])
+  // → Infinity → Invalid Date. Fail loudly instead of writing a bad booking.
+  if (bookingSessions.length === 0) {
+    console.error("[inquiry] submission rejected: no sessions provided");
+    return { ok: false, error: "submission_failed" };
+  }
   const sessionStarts = bookingSessions.map((s) => s.startAt.getTime());
   const sessionEnds = bookingSessions.map((s) => s.endAt.getTime());
   const firstSessionStart = new Date(Math.min(...sessionStarts));

@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import {
   listInquiries,
@@ -83,6 +84,24 @@ export default async function InquiriesPage({
     getInquiryStatusCounts(workspace._id),
   ]);
 
+  // Stale/over-range page (e.g. after archiving the last row on a page): send the
+  // owner to the last valid page instead of an empty table that looks like a dead end.
+  if (total > 0 && page > 1) {
+    const totalPages = Math.ceil(total / limit);
+    if (page > totalPages) {
+      const next = new URLSearchParams();
+      if (sp.status) next.set("status", sp.status);
+      if (sp.from) next.set("from", sp.from);
+      if (sp.to) next.set("to", sp.to);
+      if (sp.limit) next.set("limit", sp.limit);
+      next.set("page", String(totalPages));
+      redirect({
+        href: { pathname: "/inquiries", query: Object.fromEntries(next.entries()) },
+        locale,
+      });
+    }
+  }
+
   const rows: InquiryRow[] = items.map((q) => ({
     id: q._id.toString(),
     name: q.name,
@@ -90,7 +109,7 @@ export default async function InquiriesPage({
     status: q.status,
     eventDate: q.eventDate ? new Date(q.eventDate).toISOString() : null,
     eventType: q.eventType ?? "other",
-    submittedAt: new Date(q.createdAt as unknown as Date).toISOString(),
+    submittedAt: q.createdAt.toISOString(),
     source: compactSource(q.source),
   }));
 

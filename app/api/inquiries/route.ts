@@ -8,7 +8,15 @@ export const runtime = "nodejs";
 
 const RATE_LIMIT = { limit: 5, windowMs: 10 * 60_000 };
 
+// Resolve the client IP for rate-limit keying. Prefer Vercel's tamper-resistant
+// `x-vercel-forwarded-for` (set by the platform, not the client) so a spoofed
+// `X-Forwarded-For` can't mint a fresh bucket per request. Fall back to the
+// first XFF hop for non-Vercel/local runs. NOTE: this in-process limiter is
+// best-effort spam control; real abuse protection belongs at the edge/WAF
+// (see docs/RELEASE-CHECKLIST.md).
 function getClientIp(req: Request): string {
+  const trusted = req.headers.get("x-vercel-forwarded-for");
+  if (trusted) return trusted.split(",")[0]?.trim() || "unknown";
   const xff = req.headers.get("x-forwarded-for");
   if (xff) return xff.split(",")[0]?.trim() || "unknown";
   return req.headers.get("x-real-ip")?.trim() || "unknown";
@@ -34,7 +42,9 @@ export async function POST(req: Request) {
       { ok: false, error: "rate_limited" },
       {
         status: 429,
-        headers: { "Retry-After": String(Math.ceil((limited.resetAt - Date.now()) / 1000)) },
+        headers: {
+          "Retry-After": String(Math.max(0, Math.ceil((limited.resetAt - Date.now()) / 1000))),
+        },
       }
     );
   }
@@ -60,11 +70,7 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json(
-    {
-      ok: true,
-      inquiryId: result.inquiryId,
-      draftBookingId: result.draftBookingId,
-    },
+    { ok: true, inquiryId: result.inquiryId },
     { status: 200 }
   );
 }

@@ -29,7 +29,7 @@ export default async function InquiryDetailPage({
   if (!result) notFound();
 
   const { inquiry, booking } = result;
-  const submittedAt = new Date(inquiry.createdAt as unknown as Date);
+  const submittedAt = new Date(inquiry.createdAt);
   const submittedLabel = submittedAt.toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
@@ -108,7 +108,7 @@ export default async function InquiryDetailPage({
                   <li className="flex items-baseline justify-between gap-3 text-sm">
                     <span>{t("history.converted")}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {new Date(inquiry.updatedAt as unknown as Date).toLocaleDateString(locale, {
+                      {new Date(inquiry.updatedAt).toLocaleDateString(locale, {
                         month: "long",
                         day: "numeric",
                         year: "numeric",

@@ -20,9 +20,14 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   await connectDB();
+  // Drafts are inquiry placeholders, not real bookings — they're invisible to
+  // the bookings surfaces (Phase 6 contract) and are only viewed via the lead
+  // inbox. Excluding the draft status here keeps a draft id from pulling an
+  // unapproved booking into the bookings drawer.
   const booking = await Booking.findOne({
     _id: id,
     workspaceId: ctx.workspace._id,
+    status: { $ne: "draft" },
   }).lean();
 
   if (!booking) {
@@ -50,9 +55,13 @@ export async function PATCH(req: Request, { params }: Params) {
 
   await connectDB();
 
+  // Drafts cannot be edited via the bookings API — promotion happens only
+  // through the inquiry approval flow (which records client financials). A
+  // direct PATCH would bypass that, so drafts 404 here too.
   const existing = await Booking.findOne({
     _id: id,
     workspaceId: ctx.workspace._id,
+    status: { $ne: "draft" },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
