@@ -81,10 +81,19 @@ export async function PATCH(req: Request, { params }: Params) {
 
   await connectDB();
 
-  const existing = await Booking.findOne({
+  // Team-scope the lookup for non-owners so a member cannot probe — via a
+  // 403-vs-404 oracle — which booking ids exist on teams they can't see. A
+  // cross-team id returns a uniform 404, matching GET. The canEditBooking check
+  // below still distinguishes member-vs-lead and active-vs-inactive within a
+  // team the caller CAN see.
+  const scope = await resolveBookingTeamScope(ctx);
+  const existingFilter: Record<string, unknown> = {
     _id: id,
     workspaceId: ctx.workspace._id,
-  });
+  };
+  if (scope !== undefined) existingFilter.teamId = { $in: scope };
+
+  const existing = await Booking.findOne(existingFilter);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

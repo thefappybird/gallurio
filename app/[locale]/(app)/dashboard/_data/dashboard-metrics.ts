@@ -1,5 +1,5 @@
 import "server-only";
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog } from "@/lib/db/models";
 
 type WorkspaceId = Types.ObjectId;
@@ -208,7 +208,13 @@ export async function getBookingsByDay(
     lastSessionEnd: { $gte: start },
   };
   if (teamIds !== undefined) {
-    matchStage.teamId = { $in: teamIds };
+    // Aggregation $match does NOT auto-cast like find() does — cast the string
+    // team ids to ObjectId or the $in matches zero ObjectId-typed documents.
+    matchStage.teamId = {
+      $in: teamIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id)),
+    };
   }
   // Unwind sessions so each session contributes its own days to the count.
   const rows = await Booking.aggregate<{ _id: string; count: number }>([

@@ -689,4 +689,16 @@ describe("team-based visibility + edit permission on /api/bookings/[id]", () => 
     const res = await PATCH(makePatch({ title: "Nope" }, b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(403);
   });
+
+  it("PATCH: a non-owner NOT on the booking's team gets 404, not 403 (no existence oracle)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { title: "Original" });
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(new Types.ObjectId()), role: "lead" }];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Hacked" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(404);
+    const after = await Booking.findById(b._id).lean();
+    expect(after?.title).toBe("Original");
+  });
 });

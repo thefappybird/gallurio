@@ -50,12 +50,13 @@ async function seedBooking(
     startAt: Date;
     total: number;
     deposit: number;
+    teamId: mongoose.Types.ObjectId;
   }> = {}
 ) {
   const start = overrides.startAt ?? daysFromNow(1);
   return Booking.create({
     workspaceId: wid,
-    teamId: new mongoose.Types.ObjectId(),
+    teamId: overrides.teamId ?? new mongoose.Types.ObjectId(),
     clientId,
     clientName: "Demo Client",
     title: "Demo Booking",
@@ -302,6 +303,40 @@ describe("getBookingsByDay", () => {
     const key = day1.toISOString().slice(0, 10);
     const entry = days.find((d) => d.date === key);
     expect(entry?.count).toBe(2);
+  });
+
+  it("scopes to the given teamIds (string ids cast to ObjectId in the aggregation)", async () => {
+    const teamA = new mongoose.Types.ObjectId();
+    const teamB = new mongoose.Types.ObjectId();
+    const day = new Date();
+    day.setDate(12);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(workspaceId, { startAt: day, teamId: teamA });
+    await seedBooking(workspaceId, { startAt: day, teamId: teamB });
+
+    const key = day.toISOString().slice(0, 10);
+    const days = await getBookingsByDay(workspaceId, day, [String(teamA)]);
+    expect(days.find((d) => d.date === key)?.count).toBe(1);
+  });
+
+  it("returns nothing for an empty teamIds array (member with no teams — fail closed)", async () => {
+    const day = new Date();
+    day.setDate(13);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(workspaceId, { startAt: day });
+
+    const days = await getBookingsByDay(workspaceId, day, []);
+    expect(days).toHaveLength(0);
+  });
+
+  it("never counts another workspace's bookings", async () => {
+    const day = new Date();
+    day.setDate(14);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(otherWorkspaceId, { startAt: day });
+
+    const days = await getBookingsByDay(workspaceId, day);
+    expect(days.find((d) => d.date === day.toISOString().slice(0, 10))).toBeUndefined();
   });
 });
 
