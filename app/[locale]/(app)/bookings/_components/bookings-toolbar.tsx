@@ -148,8 +148,9 @@ export function BookingsToolbar({
         </Select>
 
         {/* Team filter — dropdown in TABLE view only; calendar uses the
-            clickable team legend (color key + filter) inside the calendar. */}
-        {view !== "calendar" && teams.length > 0 ? (
+            clickable team legend inside the calendar. Hidden for single-team
+            members/leads (nothing to filter); always shown for owners. */}
+        {view !== "calendar" && (isOwner || teams.length > 1) ? (
           <TeamPicker
             teams={teams}
             selected={selectedTeams}

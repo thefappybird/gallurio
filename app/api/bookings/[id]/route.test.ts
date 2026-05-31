@@ -702,3 +702,76 @@ describe("team-based visibility + edit permission on /api/bookings/[id]", () => 
     expect(after?.title).toBe("Original");
   });
 });
+
+describe("PATCH team reassignment", () => {
+  async function makeTeam(opts: { name: string; isActive?: boolean; wid?: Types.ObjectId }) {
+    return Team.create({
+      workspaceId: opts.wid ?? workspaceId,
+      name: opts.name,
+      color: TEAM_COLOR_PALETTE[1],
+      isActive: opts.isActive ?? true,
+      deactivatedAt: opts.isActive === false ? new Date() : null,
+      memberCount: 0,
+      createdByClerkUserId: userId,
+    });
+  }
+
+  it("owner reassigns a booking to another active team", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id); // starts on `teamId` (Main)
+    const target = await makeTeam({ name: "Crew B" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(target._id) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    const after = await Booking.findById(b._id).lean();
+    expect(String(after?.teamId)).toBe(String(target._id));
+  });
+
+  it("rejects reassignment to a deactivated team (400)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const dead = await makeTeam({ name: "Dead", isActive: false });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(dead._id) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(400);
+    expect(String((await Booking.findById(b._id).lean())?.teamId)).toBe(String(teamId));
+  });
+
+  it("rejects reassignment to a team in another workspace (404)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const foreign = await makeTeam({ name: "Foreign", wid: otherWorkspaceId });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(foreign._id) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(404);
+  });
+
+  it("lead can reassign to an active team they also lead", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id); // on Main (teamId)
+    const target = await makeTeam({ name: "Lead Team" });
+    auth.role = "staff";
+    auth.memberships = [
+      { teamId: String(teamId), role: "lead" },
+      { teamId: String(target._id), role: "lead" },
+    ];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(target._id) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+  });
+
+  it("forbids a lead from reassigning to a team they do NOT lead (403)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    const target = await makeTeam({ name: "Other Team" });
+    auth.role = "staff";
+    auth.memberships = [
+      { teamId: String(teamId), role: "lead" }, // can edit the booking
+      { teamId: String(target._id), role: "member" }, // but only a member of the target
+    ];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ teamId: String(target._id) }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(403);
+    expect(String((await Booking.findById(b._id).lean())?.teamId)).toBe(String(teamId));
+  });
+});

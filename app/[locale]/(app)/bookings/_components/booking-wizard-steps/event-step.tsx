@@ -380,37 +380,33 @@ export function EventStep({
         </div>
       </div>
 
-      {/* Team selector — create mode only */}
-      {mode === "create" && teams && teams.length > 0 ? (
+      {/* Team selector — create + edit. Only shown when the caller can choose
+          among >1 writable teams; a single team is auto-applied (seeded into
+          teamId), so no field is needed. */}
+      {teams && teams.length > 1 ? (
         <div className="flex flex-col gap-1">
           <Label htmlFor="wiz-teamId">{tWiz("teamLabel")}</Label>
-          {teams.length === 1 ? (
-            <p id="wiz-teamId" className="text-sm text-foreground">
-              {teams[0].name}
-            </p>
-          ) : (
-            <Controller
-              control={control}
-              name="teamId"
-              render={({ field }) => (
-                <Select
-                  value={field.value ?? ""}
-                  onValueChange={(v) => v && field.onChange(v)}
-                >
-                  <SelectTrigger id="wiz-teamId">
-                    <SelectValue placeholder={tWiz("teamPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          )}
+          <Controller
+            control={control}
+            name="teamId"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? ""}
+                onValueChange={(v) => v && field.onChange(v)}
+              >
+                <SelectTrigger id="wiz-teamId">
+                  <SelectValue placeholder={tWiz("teamPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map((team) => (
+                    <SelectItem key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
       ) : null}
 

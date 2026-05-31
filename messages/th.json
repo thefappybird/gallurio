@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "การจอง",
+      "titleForTeam": "การจองของ {team}",
       "view": {
         "table": "ตาราง",
         "calendar": "ปฏิทิน"

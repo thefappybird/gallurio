@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Tempahan",
+      "titleForTeam": "Tempahan {team}",
       "view": {
         "table": "Jadual",
         "calendar": "Kalendar"

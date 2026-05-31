@@ -237,6 +237,15 @@ describe("bookingPatchSchema", () => {
     expect(bad.success).toBe(false);
   });
 
+  it("accepts a teamId reassignment (valid ObjectId)", () => {
+    const ok = bookingPatchSchema.safeParse({ teamId: "507f1f77bcf86cd799439011" });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects a malformed teamId", () => {
+    expect(bookingPatchSchema.safeParse({ teamId: "nope" }).success).toBe(false);
+  });
+
   it("accepts location.lat / location.lng patches", () => {
     expect(bookingPatchSchema.safeParse({ "location.lat": 14.6 }).success).toBe(true);
     expect(bookingPatchSchema.safeParse({ "location.lng": 120.98 }).success).toBe(true);

@@ -255,6 +255,7 @@ export function BookingWizardModal({
             currency: b.amount?.currency ?? defaultCurrency,
           },
           notes: b.notes ?? "",
+          teamId: b.teamId ?? "",
         };
         form.reset(next);
         // Sync the baseline so buildEditDiff compares against fetched values,
@@ -804,7 +805,7 @@ export function BookingWizardModal({
                     conflictsBySession={conflictsBySession}
                     loadingDates={loadingDates}
                     conflictCheckError={conflictCheckError}
-                    teams={mode === "create" ? teams : undefined}
+                    teams={teams}
                     mode={mode}
                   />
                 ) : null}
@@ -1067,6 +1068,8 @@ function buildEditDiff(
   if (v.amount.currency !== defaults.amount.currency)
     diff["amount.currency"] = v.amount.currency;
   if (v.notes !== defaults.notes) diff.notes = v.notes;
+  // Only include teamId when it actually changed and is non-empty.
+  if (v.teamId !== defaults.teamId && v.teamId) diff.teamId = v.teamId;
   return diff;
 }
 

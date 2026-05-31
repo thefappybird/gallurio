@@ -48,6 +48,16 @@ the Phase-4 owner-only stopgap).
   team, and passes `writableTeams` (owner: all active; lead: their active lead teams) to the
   wizard — the Phase-4 owner-only stopgap is gone. The server already enforced this via
   `canWriteBookingForTeam`.
+- **Team reassignment on edit:** `bookingPatchSchema` + the PATCH route accept a `teamId` change,
+  validated as active + writable by the caller (owner, or lead of the target team). The full edit
+  wizard and the **detail modal** (a team pill in the header, next to the status pill) expose it.
+  GET returns `teamId` so both prefill the current team.
+- **Single-team simplification:** when a caller can act within only one team (a member/lead with a
+  single team — and any single-writable-team context), the team **filter is hidden** (toolbar +
+  calendar legend gate on `isOwner || teams.length > 1`) and the team **selector is omitted** from
+  the add/edit wizard + detail modal (the one team is auto-applied in the payload). The page title
+  becomes **"{team}'s Bookings"** whenever exactly one team is in the effective scope (a single-team
+  user, or anyone filtered to one team); otherwise "Bookings".
 
 ## Tests
 

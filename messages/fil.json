@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Mga Booking",
+      "titleForTeam": "Mga Booking ng {team}",
       "view": {
         "table": "Talahanayan",
         "calendar": "Kalendaryo"

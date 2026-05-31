@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Pemesanan",
+      "titleForTeam": "Pemesanan {team}",
       "view": {
         "table": "Tabel",
         "calendar": "Kalender"

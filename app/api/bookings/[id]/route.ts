@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getTeamsForUser } from "@/lib/auth/teamContext";
-import { canEditBooking } from "@/lib/auth/canEditBooking";
+import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog, Client, Team } from "@/lib/db/models";
@@ -124,6 +124,42 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   }
 
+  // Team reassignment (optional). The target team must belong to the workspace,
+  // be ACTIVE, and be writable by the caller (owner always; lead of that team).
+  // Applied via setOp below so it persists in whichever update path runs.
+  let teamReassignment: { from: string | null; to: mongoose.Types.ObjectId } | null = null;
+  if (parsed.data.teamId && parsed.data.teamId !== String(existing.teamId ?? "")) {
+    const target = await Team.findOne({
+      _id: parsed.data.teamId,
+      workspaceId: ctx.workspace._id,
+    })
+      .select({ _id: 1, isActive: 1 })
+      .lean();
+    if (!target) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+    if (!target.isActive) {
+      return NextResponse.json(
+        { error: "Cannot assign a booking to a deactivated team" },
+        { status: 400 }
+      );
+    }
+    const memberships =
+      ctx.role === "owner" ? [] : await getTeamsForUser(ctx.workspace._id, ctx.userId);
+    if (
+      !canWriteBookingForTeam(
+        { role: ctx.role, memberships },
+        { id: String(target._id), isActive: true }
+      )
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    teamReassignment = {
+      from: existing.teamId ? String(existing.teamId) : null,
+      to: target._id,
+    };
+  }
+
   // Authoritative timezone-aware midnight check for session patches.
   // The Zod UTC-day check is a cheap baseline; this is the definitive guard.
   if (parsed.data.sessions) {
@@ -213,8 +249,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
   for (const [key, value] of Object.entries(parsed.data)) {
     const k = key as EditableKey;
-    // Skip clientId here — handled separately with transaction logic below.
-    if (k === "clientId") continue;
+    // Skip clientId + teamId here — both are validated and applied separately.
+    if (k === "clientId" || k === "teamId") continue;
     const before = beforeOf(k);
     // For sessions arrays, always treat as changed (deep equality is expensive
     // and the client only sends sessions when it intends to update).
@@ -231,6 +267,12 @@ export async function PATCH(req: Request, { params }: Params) {
     const ends = sessions.map((s) => new Date(s.endAt).getTime());
     setOp.firstSessionStart = new Date(Math.min(...starts));
     setOp.lastSessionEnd = new Date(Math.max(...ends));
+  }
+
+  // Apply the validated team reassignment into the same $set + activity diff.
+  if (teamReassignment) {
+    setOp.teamId = teamReassignment.to;
+    diff.teamId = { before: teamReassignment.from, after: String(teamReassignment.to) };
   }
 
   const isClientChange = !!newClientId;

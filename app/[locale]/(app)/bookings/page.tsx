@@ -111,6 +111,17 @@ export default async function BookingsPage({
       ? selectedTeamIds[0]
       : (writableTeams[0]?.id ?? null);
 
+  // When exactly one team is in the effective scope — a single-team member/lead,
+  // or anyone filtered down to one team — title the page "{team}'s Bookings".
+  // Otherwise the plain "Bookings". (Single-team non-owners also lose the filter,
+  // gated in the toolbar/calendar via isOwner + team count.)
+  const effectiveTeamIds = selectedTeamIds.length > 0 ? selectedTeamIds : teamOptions.map((o) => o.id);
+  const scopedTeamName =
+    effectiveTeamIds.length === 1
+      ? (teamOptions.find((o) => o.id === effectiveTeamIds[0])?.name ?? null)
+      : null;
+  const pageTitle = scopedTeamName ? t("titleForTeam", { team: scopedTeamName }) : t("title");
+
   // Parse pagination params (table view only).
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const tablePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -269,7 +280,7 @@ export default async function BookingsPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
         <ViewToggle view={view} />
       </div>
 
@@ -336,7 +347,12 @@ export default async function BookingsPage({
       )}
 
       {sp.detail ? (
-        <BookingDetailModal bookingId={sp.detail} locale={locale} />
+        <BookingDetailModal
+          bookingId={sp.detail}
+          locale={locale}
+          teams={teamOptions}
+          writableTeams={writableTeams}
+        />
       ) : null}
 
       {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
@@ -348,6 +364,7 @@ export default async function BookingsPage({
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           clients={initialClients}
+          teams={writableTeams}
         />
       ) : null}
     </div>

@@ -652,7 +652,7 @@ export function CalendarView({
       {/* Calendar team filter — the clickable color legend (counterpart to the
           table view's team dropdown). Status is filtered via the toolbar
           dropdown and shown per-candle as a status pill. */}
-      {teams && teams.length > 0 ? (
+      {teams && (isOwner || teams.length > 1) ? (
         <div className="mb-3 flex flex-wrap items-start gap-y-2">
           <TeamLegend teams={teams} selected={selectedTeams} isOwner={isOwner} onChange={setTeamFilter} />
         </div>

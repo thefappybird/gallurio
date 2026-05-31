@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Bookings",
+      "titleForTeam": "{team}'s Bookings",
       "view": {
         "table": "Table",
         "calendar": "Calendar"
