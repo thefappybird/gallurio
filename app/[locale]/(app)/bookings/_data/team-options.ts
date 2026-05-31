@@ -34,7 +34,7 @@ export async function getBookingTeamOptions(ctx: Ctx): Promise<BookingTeamOption
       id: String(t._id),
       name: t.name,
       color: t.color,
-      isActive: t.isActive,
+      isActive: t.isActive ?? true,
       isLead: true,
     }));
   }

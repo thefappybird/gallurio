@@ -197,7 +197,7 @@ export async function reactivateTeamAction(input: ReactivateTeamInput): Promise<
     const { maxTeams } = planEntitlements(ctx.workspace.plan);
     const activeCount = await Team.countDocuments({
       workspaceId: ctx.workspace._id,
-      isActive: true,
+      isActive: { $ne: false },
     });
     if (activeCount >= maxTeams) return { error: "REACTIVATE_CAP_EXCEEDED" };
 

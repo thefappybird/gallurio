@@ -23,8 +23,9 @@ export async function assertCanAddTeam(
 ): Promise<void> {
   const { maxTeams } = planEntitlements(plan);
   // Only ACTIVE teams count toward the cap — a deactivated team's history is
-  // preserved but never blocks creating new ones.
-  const currentCount = await Team.countDocuments({ workspaceId, isActive: true });
+  // preserved but never blocks creating new ones. `$ne: false` so legacy teams
+  // created before the isActive field (missing field) count as active.
+  const currentCount = await Team.countDocuments({ workspaceId, isActive: { $ne: false } });
   if (currentCount >= maxTeams) {
     throw new TeamCapExceededError(plan, currentCount, maxTeams);
   }
@@ -58,7 +59,8 @@ export async function createTeamWithCapEnforcement(
 
   // Re-count ACTIVE teams only (the new team defaults to active). Deactivated
   // teams never consume cap, so they're excluded from the survivor set.
-  const all = await Team.find({ workspaceId: doc.workspaceId, isActive: true })
+  // `$ne: false` so legacy teams (missing isActive) still count as active.
+  const all = await Team.find({ workspaceId: doc.workspaceId, isActive: { $ne: false } })
     .sort({ _id: 1 })
     .select({ _id: 1 })
     .lean();
