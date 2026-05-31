@@ -23,15 +23,18 @@ import { updateContactConfigAction } from "../_actions";
 
 type Props = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
   contact: PortfolioContactConfig;
   onContactChange: (next: PortfolioContactConfig) => void;
+  /** Persisted successfully — parent closes and keeps the change. */
+  onSaved: () => void;
+  /** Closed without saving — parent reverts to the snapshot. */
+  onCancel: () => void;
 };
 
 const selectClass =
   "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function ContactPanelDialog({ open, onOpenChange, contact, onContactChange }: Props) {
+export function ContactPanelDialog({ open, contact, onContactChange, onSaved, onCancel }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const te = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
@@ -49,14 +52,14 @@ export function ContactPanelDialog({ open, onOpenChange, contact, onContactChang
         return;
       }
       toast.success(te("savedToast"));
-      onOpenChange(false);
+      onSaved();
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
@@ -128,7 +131,7 @@ export function ContactPanelDialog({ open, onOpenChange, contact, onContactChang
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
             {te("publishDialog.cancel")}
           </Button>
           <Button type="button" onClick={save} loading={saving}>

@@ -2,7 +2,7 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Puck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -86,6 +86,10 @@ export function EditorShell({
   // Skip that first emission so merely loading a zone doesn't autosave/bump the
   // version — only genuine edits should.
   const ignoreNextChange = useRef(true);
+  // Snapshots taken when a side panel opens, so closing it without saving reverts
+  // the live preview to the last-saved value (no "looks saved but isn't" trap).
+  const themeSnapshot = useRef<PortfolioBrandKit | null>(null);
+  const contactSnapshot = useRef<PortfolioContactConfig | null>(null);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -95,16 +99,35 @@ export function EditorShell({
     ensureIds(initialData.home ?? EMPTY_ZONE)
   );
 
-  const saveZone = useCallback(async (zone: Zone, data: PuckData) => {
+  const saveZone = useCallback(async (zone: Zone, data: PuckData): Promise<boolean> => {
     setSaveStatus("saving");
     const res = await savePortfolioDraftAction({ zone, data });
     if ("error" in res) {
       setSaveStatus("idle");
       toast.error(t("errorToast"));
-      return;
+      return false;
     }
     setSaveStatus("saved");
+    return true;
   }, [t]);
+
+  // Flush a pending autosave when leaving the active zone (effect cleanup runs on
+  // zone change) and on unmount — so a final edit made within the debounce window
+  // isn't lost, and the debounced timer never fires after the component is gone.
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+        // Intentionally read the LATEST ref value at flush time — that's the
+        // freshest edit for the zone this effect was set up for (captured in
+        // `activeZone`). Not a DOM-node ref, so the exhaustive-deps caution
+        // about stale refs doesn't apply.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        void saveZone(activeZone, zoneDataRef.current[activeZone]);
+      }
+    };
+  }, [activeZone, saveZone]);
 
   const handleChange = useCallback(
     (data: Data) => {
@@ -123,25 +146,24 @@ export function EditorShell({
 
   function switchZone(zone: Zone) {
     if (zone === activeZone) return;
-    // Flush a pending autosave for the zone we're leaving.
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-      void saveZone(activeZone, zoneDataRef.current[activeZone]);
-    }
-    // The new zone remounts <Puck> (key change) and will echo onChange — ignore it.
+    // The leaving zone's pending autosave is flushed by the effect cleanup that
+    // runs when activeZone changes. The new zone remounts <Puck> (key change)
+    // and will echo onChange — ignore that first emission.
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[zone]));
     setActiveZone(zone);
   }
 
   async function handlePublish() {
-    // Make sure the active zone's latest edits are persisted before publishing.
+    // Persist the active zone's latest edits FIRST and only publish if that
+    // succeeds — otherwise we'd flip publishedAt against a stale draft while
+    // telling the owner their newest edits went live.
     if (saveTimer.current) {
       clearTimeout(saveTimer.current);
       saveTimer.current = null;
     }
-    await saveZone(activeZone, zoneDataRef.current[activeZone]);
+    const saved = await saveZone(activeZone, zoneDataRef.current[activeZone]);
+    if (!saved) return;
     const res = await publishPortfolioAction();
     if ("error" in res) {
       toast.error(t("errorToast"));
@@ -149,6 +171,23 @@ export function EditorShell({
     }
     setPublishOpen(false);
     toast.success(t("publishedToast"));
+  }
+
+  function openTheme() {
+    themeSnapshot.current = brandKit;
+    setThemeOpen(true);
+  }
+  function closeTheme(saved: boolean) {
+    if (!saved && themeSnapshot.current) setBrandKit(themeSnapshot.current);
+    setThemeOpen(false);
+  }
+  function openContact() {
+    contactSnapshot.current = contact;
+    setContactOpen(true);
+  }
+  function closeContact(saved: boolean) {
+    if (!saved && contactSnapshot.current) setContact(contactSnapshot.current);
+    setContactOpen(false);
   }
 
   const { cssVars, className } = resolveBrandKit(brandKit);
@@ -197,10 +236,10 @@ export function EditorShell({
                 <span className="text-xs text-muted-foreground" aria-live="polite">
                   {saveStatus === "saving" ? t("save.saving") : saveStatus === "saved" ? t("save.saved") : t("save.idle")}
                 </span>
-                <Button type="button" size="sm" variant="outline" onClick={() => setThemeOpen(true)}>
+                <Button type="button" size="sm" variant="outline" onClick={openTheme}>
                   {t("theme")}
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setContactOpen(true)}>
+                <Button type="button" size="sm" variant="outline" onClick={openContact}>
                   {t("contact")}
                 </Button>
                 {/* Puck's default Publish button (wired to onPublish → dialog). */}
@@ -219,15 +258,17 @@ export function EditorShell({
       />
       <ThemePanelDialog
         open={themeOpen}
-        onOpenChange={setThemeOpen}
         brandKit={brandKit}
         onBrandKitChange={setBrandKit}
+        onSaved={() => closeTheme(true)}
+        onCancel={() => closeTheme(false)}
       />
       <ContactPanelDialog
         open={contactOpen}
-        onOpenChange={setContactOpen}
         contact={contact}
         onContactChange={setContact}
+        onSaved={() => closeContact(true)}
+        onCancel={() => closeContact(false)}
       />
     </>
   );

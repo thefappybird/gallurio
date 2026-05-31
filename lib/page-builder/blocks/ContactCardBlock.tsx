@@ -252,6 +252,16 @@ type Socials = {
   website?: string | null;
 };
 
+// Normalize a stored website value into a safe http(s) href. Rejects
+// javascript:/data:/etc. so a malicious stored value can't become a clickable
+// XSS link on the public page. Bare domains get an https:// prefix.
+function safeWebsiteHref(raw: string): string | null {
+  const v = raw.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[\w-]+(\.[\w-]+)+/.test(v)) return `https://${v}`;
+  return null;
+}
+
 function SocialsRow({ socials }: { socials: Socials }) {
   const links: { label: string; href: string }[] = [];
 
@@ -276,11 +286,10 @@ function SocialsRow({ socials }: { socials: Socials }) {
         ? socials.tiktok
         : `https://tiktok.com/@${socials.tiktok}`,
     });
-  if (socials.website)
-    links.push({
-      label: "Website",
-      href: socials.website,
-    });
+  if (socials.website) {
+    const websiteHref = safeWebsiteHref(socials.website);
+    if (websiteHref) links.push({ label: "Website", href: websiteHref });
+  }
 
   if (links.length === 0) return null;
 

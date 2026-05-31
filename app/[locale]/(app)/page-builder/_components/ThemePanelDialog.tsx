@@ -17,13 +17,16 @@ import { updateBrandKitAction } from "../_actions";
 
 type Props = {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
   brandKit: PortfolioBrandKit;
   /** Live preview: applied to the canvas immediately as the owner edits. */
   onBrandKitChange: (next: PortfolioBrandKit) => void;
+  /** Persisted successfully — parent closes and keeps the change. */
+  onSaved: () => void;
+  /** Closed without saving — parent reverts the canvas to the snapshot. */
+  onCancel: () => void;
 };
 
-export function ThemePanelDialog({ open, onOpenChange, brandKit, onBrandKitChange }: Props) {
+export function ThemePanelDialog({ open, brandKit, onBrandKitChange, onSaved, onCancel }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
 
@@ -36,21 +39,21 @@ export function ThemePanelDialog({ open, onOpenChange, brandKit, onBrandKitChang
         return;
       }
       toast.success(t("savedToast"));
-      onOpenChange(false);
+      onSaved();
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("themeDialog.title")}</DialogTitle>
         </DialogHeader>
         <BrandKitPicker value={brandKit} onChange={onBrandKitChange} />
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
             {t("publishDialog.cancel")}
           </Button>
           <Button type="button" onClick={save} loading={saving}>

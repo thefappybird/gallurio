@@ -223,6 +223,31 @@ describe("ContactCardBlock — socials URL building", () => {
     expect(screen.queryByText("TikTok")).toBeNull();
   });
 
+  it("rejects a javascript: website URL (no XSS href)", () => {
+    const ws: RenderWorkspace = {
+      _id: "ws",
+      name: "S",
+      contact: { socials: { website: "javascript:alert(document.cookie)" } },
+    };
+    const { container } = renderContact({ showSocials: true }, ws);
+    // No anchor carries the javascript: scheme, and the Website link is dropped.
+    expect(container.querySelector("a[href^='javascript:']")).toBeNull();
+    expect(screen.queryByText("Website")).toBeNull();
+  });
+
+  it("prefixes https:// for a bare-domain website", () => {
+    const ws: RenderWorkspace = {
+      _id: "ws",
+      name: "S",
+      contact: { socials: { website: "studio.example" } },
+    };
+    const { container } = renderContact({ showSocials: true }, ws);
+    const link = container.querySelector(
+      "a[href='https://studio.example']"
+    ) as HTMLAnchorElement;
+    expect(link).not.toBeNull();
+  });
+
   it("links open in new tab with noopener", () => {
     const { container } = renderContact({ showSocials: true });
     const socialLinks = container.querySelectorAll("[data-testid='socials-row'] a");

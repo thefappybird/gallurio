@@ -16,6 +16,11 @@ export type EditorActionResult =
   | { error: string };
 
 const PORTFOLIO_ZONES = ["home", "gallery"] as const;
+// Prevent a single Puck zone save from pushing the Workspace doc toward
+// MongoDB's 16 MB BSON limit. 512 KB covers every realistic portfolio while
+// blocking runaway autosave abuse. Measured after JSON.stringify because that
+// is what Mongoose serialises to BSON.
+const MAX_PUCK_ZONE_BYTES = 512 * 1024; // 512 KB
 const saveDraftSchema = z.object({
   zone: z.enum(PORTFOLIO_ZONES),
   data: puckDataSchema,
@@ -39,11 +44,17 @@ export async function savePortfolioDraftAction(
     return { error: parsed.error.errors[0]?.message ?? "invalid_data" };
   }
 
+  if (JSON.stringify(parsed.data.data).length > MAX_PUCK_ZONE_BYTES) {
+    return { error: "payload_too_large" };
+  }
+
   await connectDB();
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: { [`publicPage.data.${parsed.data.zone}`]: parsed.data.data },
+      // Monotonic write counter (bumps on every autosave, not per "published
+      // version") — a cheap marker a future history/version UI can build on.
       $inc: { "publicPage.latestVersion": 1 },
     }
   );

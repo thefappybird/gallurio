@@ -75,6 +75,12 @@ The first-visit wizard uploads starter images straight to Cloudinary, then persi
 - [ ] **Cloudinary upload preset limits** — confirm the Cloudinary account enforces `allowed_formats` (images only) and a max file size on the signed-upload path, to bound abuse of the public-ish upload surface. The server already scopes the folder to `gallurio/{workspaceId}/…` and `saveWizardOutputAction` rejects any `cloudinaryPublicId` outside the caller's workspace folder (incl. `..` traversal), so cross-tenant asset references are blocked — but format/size limits are a Cloudinary-dashboard config item.
 - [ ] **Template preview assets** — `lib/page-builder/templates/*` reference `/template-previews/*.svg`; the wizard currently renders a CSS palette preview instead, so these files are optional. Add real preview thumbnails under `public/template-previews/` if/when the picker switches to image previews.
 
+## 4e. Page-builder editor (Portfolio maker Phase 9)
+
+- [ ] **`socials.website` settings-side validation** — the public ContactCardBlock now sanitizes the website href at render (rejects `javascript:`/`data:`, https-prefixes bare domains), so a stored bad value can't become a clickable XSS link. Belt-and-suspenders: also validate `website` with `z.string().url()` (or empty) in the settings action that writes `workspace.contact.socials`, mirroring the handle validation already there.
+- [ ] **Block image-URL fields bypass Cloudinary** — `HeroBlock.backgroundImageUrl` and `CTABannerBlock.backgroundImageUrl` accept any URL (designed fallback for non-Cloudinary images). No script execution risk (`<img src>`), but a public visitor's browser will fetch the third-party origin (IP/UA leak). Before prod, decide whether to drop the raw-URL fallback once Cloudinary upload is the standard path, or constrain to `https://res.cloudinary.com` / Next `images.remotePatterns`.
+- [ ] **Puck zone payload cap** — `savePortfolioDraftAction` rejects a single-zone Puck payload over 512 KB to keep the embedded Workspace doc well under MongoDB's 16 MB limit. Confirm the cap is comfortable for the largest real portfolios before launch.
+
 ## 5. Multi-tenant isolation spot-checks
 
 Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:

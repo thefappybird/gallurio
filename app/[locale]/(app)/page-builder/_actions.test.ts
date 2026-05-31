@@ -89,6 +89,19 @@ describe("savePortfolioDraftAction", () => {
     expect("error" in res).toBe(true);
   });
 
+  it("rejects a payload that exceeds the 512 KB size cap", async () => {
+    // Build a Puck data document whose JSON serialisation exceeds 512 KB.
+    const bigContent = Array.from({ length: 6000 }, (_, i) => ({
+      type: "Text",
+      props: { id: `blk-${i}`, text: "x".repeat(100) },
+    }));
+    const res = await savePortfolioDraftAction({
+      zone: "home",
+      data: { content: bigContent, root: {} },
+    });
+    expect(res).toEqual({ error: "payload_too_large" });
+  });
+
   it("is owner-only", async () => {
     mockCtx.role = "staff";
     const res = await savePortfolioDraftAction({ zone: "home", data: samplePuck });
