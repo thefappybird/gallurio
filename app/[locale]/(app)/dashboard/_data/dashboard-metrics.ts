@@ -1,6 +1,7 @@
 import "server-only";
 import { Types } from "mongoose";
-import { Booking, Client, Inquiry, Transaction, ActivityLog } from "@/lib/db/models";
+import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
+import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -278,6 +279,59 @@ export async function getTransactionsByMethod(
     { $sort: { total: -1 } },
   ]);
   return rows.map((r) => ({ method: r._id ?? "other", total: r.total }));
+}
+
+export type TransactionsByTeam = {
+  teamId: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  total: number;
+};
+
+export async function getTransactionsByTeam(
+  workspaceId: WorkspaceId,
+  days = 90
+): Promise<TransactionsByTeam[]> {
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  const rows = await Transaction.aggregate<{ _id: Types.ObjectId | null; total: number }>([
+    {
+      $match: {
+        workspaceId,
+        paidAt: { $gte: start },
+        type: { $in: ["deposit", "balance"] },
+      },
+    },
+    { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
+    { $sort: { total: -1 } },
+  ]);
+
+  // Drop the null-teamId bucket — only show real teams.
+  const withTeam = rows.filter((r) => r._id != null) as { _id: Types.ObjectId; total: number }[];
+  if (withTeam.length === 0) return [];
+
+  const teamIds = withTeam.map((r) => r._id);
+  const teams = await Team.find({ workspaceId, _id: { $in: teamIds } })
+    .select({ _id: 1, name: 1, color: 1, isActive: 1 })
+    .lean();
+
+  const teamMap = new Map(teams.map((t) => [t._id.toString(), t]));
+
+  return withTeam.flatMap((r) => {
+    const team = teamMap.get(r._id.toString());
+    if (!team) return [];
+    return [
+      {
+        teamId: r._id.toString(),
+        name: team.name,
+        color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
+        isActive: team.isActive,
+        total: r.total,
+      },
+    ];
+  });
 }
 
 export type RevenueComparison = {

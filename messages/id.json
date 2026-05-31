@@ -30,6 +30,7 @@
         "calendar": "Kalender pemesanan",
         "eventTypes": "Rincian jenis acara",
         "transactionsByMethod": "Pembayaran per metode (90 hari)",
+        "transactionsByTeam": "Pendapatan per tim",
         "weeklyBookings": "Pemesanan per hari dalam seminggu",
         "topClients": "Klien teratas berdasarkan pengeluaran"
       },

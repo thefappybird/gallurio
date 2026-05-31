@@ -30,6 +30,7 @@
         "calendar": "ปฏิทินการจอง",
         "eventTypes": "สัดส่วนประเภทงาน",
         "transactionsByMethod": "การชำระเงินตามวิธี (90 วัน)",
+        "transactionsByTeam": "รายได้ตามทีม",
         "weeklyBookings": "การจองตามวันในสัปดาห์",
         "topClients": "ลูกค้าชั้นนำตามยอดใช้จ่าย"
       },

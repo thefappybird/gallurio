@@ -352,6 +352,8 @@ export async function PATCH(req: Request, { params }: Params) {
               currency: mergedCurrency,
             },
             firstSessionStart: mergedFirstSessionStart,
+            // Carry the post-patch team (a same-request team reassignment wins).
+            teamId: teamReassignment ? teamReassignment.to : existing.teamId,
           },
           session: mongoSession,
         });

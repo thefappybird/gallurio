@@ -30,6 +30,7 @@
         "calendar": "Booking calendar",
         "eventTypes": "Breakdown ng uri ng event",
         "transactionsByMethod": "Mga bayad ayon sa paraan (90d)",
+        "transactionsByTeam": "Kita ayon sa koponan",
         "weeklyBookings": "Mga booking ayon sa araw ng linggo",
         "topClients": "Mga nangungunang kliyente ayon sa gastos"
       },

@@ -18,6 +18,7 @@ import {
   getBookingsByDay,
   getEventTypeBreakdown,
   getTransactionsByMethod,
+  getTransactionsByTeam,
   getBookingsByWeekday,
   getTopClients,
 } from "./_data/dashboard-metrics";
@@ -33,6 +34,7 @@ import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
 import { EventTypeDonut } from "./_components/event-type-donut";
 import { TopClientsBar } from "./_components/top-clients-bar";
 import { TransactionsByMethodBar } from "./_components/transactions-by-method-bar";
+import { TransactionsByTeamBar } from "./_components/transactions-by-team-bar";
 import { WeeklyBookingsBar } from "./_components/weekly-bookings-bar";
 
 export async function generateMetadata({
@@ -79,6 +81,7 @@ export default async function DashboardPage({
     monthBookings,
     eventTypes,
     txByMethod,
+    txByTeam,
     weekly,
     topClients,
   ] = await Promise.all([
@@ -92,6 +95,7 @@ export default async function DashboardPage({
     getBookingsByDay(wid, new Date()),
     getEventTypeBreakdown(wid),
     getTransactionsByMethod(wid, 90),
+    getTransactionsByTeam(wid, 90),
     getBookingsByWeekday(wid),
     getTopClients(wid, 5),
   ]);
@@ -146,6 +150,15 @@ export default async function DashboardPage({
           title={t("sections.transactionsByMethod")}
           empty={t("empty")}
         />
+        {txByTeam.length > 1 && (
+          <TransactionsByTeamBar
+            data={txByTeam}
+            currency={workspace.currency}
+            locale={locale}
+            title={t("sections.transactionsByTeam")}
+            empty={t("empty")}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

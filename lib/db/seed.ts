@@ -277,6 +277,7 @@ async function seedWorkspace(
         _id: b._id,
         amount: b.amount,
         firstSessionStart: b.firstSessionStart,
+        teamId: mainTeam._id,
       },
       source: "seed",
     });

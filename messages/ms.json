@@ -30,6 +30,7 @@
         "calendar": "Kalendar tempahan",
         "eventTypes": "Pecahan jenis acara",
         "transactionsByMethod": "Pembayaran mengikut kaedah (90 hari)",
+        "transactionsByTeam": "Hasil mengikut pasukan",
         "weeklyBookings": "Tempahan mengikut hari dalam seminggu",
         "topClients": "Pelanggan teratas mengikut perbelanjaan"
       },

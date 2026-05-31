@@ -30,6 +30,7 @@
         "calendar": "Booking calendar",
         "eventTypes": "Event type breakdown",
         "transactionsByMethod": "Payments by method (90d)",
+        "transactionsByTeam": "Revenue by team",
         "weeklyBookings": "Bookings by weekday",
         "topClients": "Top clients by spend"
       },

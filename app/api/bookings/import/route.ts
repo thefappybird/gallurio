@@ -223,6 +223,7 @@ export async function POST(req: Request) {
             _id: booking._id,
             amount: booking.amount!,
             firstSessionStart: booking.firstSessionStart,
+            teamId: booking.teamId,
           },
           source: "import",
           session,
