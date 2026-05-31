@@ -102,6 +102,10 @@ describe("getKpiSnapshot", () => {
 
   it("ignores transactions outside the current month", async () => {
     const lastMonth = new Date();
+    // Anchor to mid-month before shifting: on a 31st, setMonth(-1) would
+    // overflow a shorter previous month back into the current month (e.g.
+    // May 31 → "Apr 31" → May 1), making this assertion flaky at month-end.
+    lastMonth.setDate(15);
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     await seedTransaction(workspaceId, 99_000, lastMonth, "deposit");
 

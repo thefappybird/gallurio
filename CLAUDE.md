@@ -69,7 +69,10 @@ Every Sonnet executor and every Opus planner ships work as a **senior full-stack
 
 **Cross-cutting attention to detail**
 
+- Always ask me all questions you may have before development. There should be less or no speculation at all on your part, so you can focus on implementation.
 - Every change ships with tests (see Testing section). A regression test for the specific bug or feature is part of the patch — not a follow-up issue.
+- Only run tests for files touched or may be affected by the changes we created. 
+- Make sure to scan all trickle down effects from code changes so we can track it all and make sure no unexpected side effects occur.
 - "Done" means: passes tests, passes typecheck (`pnpm typecheck`), passes lint, all five locales updated, mobile checked at 375px, optimistic UI where applicable, no swallowed errors, no missing index. Anything less is in progress.
 - Read deprecation notices and consult `node_modules/next/dist/docs/01-app/` before adopting a Next.js API — your training data is older than this codebase. For library questions, use `mcp__plugin_context7_context7__query-docs` over web search.
 - If you spot improvable surrounding code, verify the current behavior works, **then ask before changing it** — drive-by refactors without confirmation are forbidden.

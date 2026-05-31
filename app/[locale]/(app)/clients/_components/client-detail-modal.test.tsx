@@ -94,4 +94,64 @@ describe("ClientDetailModal", () => {
     renderWithProviders(<ClientDetailModal {...defaultProps} client={null} />);
     expect(screen.queryByText("Maria Santos")).not.toBeInTheDocument();
   });
+
+  it("hides the footer entirely when no action handlers are provided (read-only embedded view)", () => {
+    // Render without onEdit, onDeactivate, or onReactivate — as used when
+    // the modal is stacked from the booking detail modal.
+    renderWithProviders(
+      <ClientDetailModal
+        client={sampleClient}
+        open={true}
+        onClose={vi.fn()}
+        locale="en"
+      />
+    );
+    // Neither Edit nor Deactivate/Reactivate button should be in the DOM.
+    expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /deactivate/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reactivate/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only Edit button when only onEdit is provided", () => {
+    renderWithProviders(
+      <ClientDetailModal
+        client={sampleClient}
+        open={true}
+        onClose={vi.fn()}
+        onEdit={vi.fn()}
+        locale="en"
+      />
+    );
+    expect(screen.getByRole("button", { name: /^edit$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /deactivate/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only Deactivate when only onDeactivate is provided for an active client", () => {
+    renderWithProviders(
+      <ClientDetailModal
+        client={sampleClient}
+        open={true}
+        onClose={vi.fn()}
+        onDeactivate={vi.fn()}
+        locale="en"
+      />
+    );
+    expect(screen.getByRole("button", { name: /deactivate/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+  });
+
+  it("shows only Reactivate when only onReactivate is provided for an inactive client", () => {
+    const inactiveClient: ClientRow = { ...sampleClient, isActive: false };
+    renderWithProviders(
+      <ClientDetailModal
+        client={inactiveClient}
+        open={true}
+        onClose={vi.fn()}
+        onReactivate={vi.fn()}
+        locale="en"
+      />
+    );
+    expect(screen.getByRole("button", { name: /reactivate/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^edit$/i })).not.toBeInTheDocument();
+  });
 });

@@ -246,7 +246,25 @@
           "viewAllHistory": "Lihat semua {count} entri",
           "endBeforeStart": "Tamat tidak boleh sebelum mula.",
           "conflictsLabel": "Syif yang sudah ada pada {date}:",
-          "draftHint": "Laraskan masa di bawah, kemudian klik Simpan perubahan untuk menambah sesi ini."
+          "draftHint": "Laraskan masa di bawah, kemudian klik Simpan perubahan untuk menambah sesi ini.",
+          "email": "E-mel",
+          "phone": "Telefon",
+          "openClient": "Buka klien",
+          "viewClient": "Lihat klien",
+          "changeClient": "Tukar klien",
+          "changeClientCancel": "Kekalkan semasa",
+          "changeClientSearch": "Cari klien…",
+          "noEmail": "Tiada e-mel",
+          "noPhone": "Tiada telefon",
+          "noClientResults": "Tiada klien dijumpai",
+          "changeClientMultiSession": "Penugasan semula tidak tersedia untuk tempahan berbilang sesi",
+          "searchFailed": "Carian gagal. Cuba lagi.",
+          "editTitle": "Edit tajuk",
+          "confirmTitle": "Sahkan",
+          "cancelTitleEdit": "Batal",
+          "editEventType": "Tukar jenis acara",
+          "sendEmail": "Hantar e-mel",
+          "callClient": "Hubungi"
         },
         "cancelConfirm": {
           "title": "Batalkan tempahan ini?",
@@ -259,7 +277,17 @@
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
           "previous": "Halaman sebelumnya",
-          "next": "Halaman seterusnya"
+          "next": "Halaman seterusnya",
+          "actions": {
+            "created": "Dicipta",
+            "updated": "Dikemas kini",
+            "status_changed": "Status diubah",
+            "client_changed": "Klien diubah",
+            "deleted": "Dipadam"
+          },
+          "today": "Hari ini",
+          "yesterday": "Semalam",
+          "timelineLabel": "Garis masa aktiviti"
         },
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",
@@ -277,7 +305,15 @@
         "actionFailed": "Ada yang tidak kena. Cuba lagi.",
         "notFound": "Tempahan tidak dijumpai.",
         "editAll": "Edit semua",
-        "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan."
+        "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan.",
+        "unconfirmedDrafts": {
+          "title": "Perubahan yang belum disahkan",
+          "description": "{count, plural, one {Anda mempunyai # perubahan yang belum disahkan.} other {Anda mempunyai # perubahan yang belum disahkan.}} Hantarkan bersama perubahan yang telah disimpan, atau buang yang belum disahkan dan simpan hanya yang telah anda sahkan.",
+          "submitAll": "Hantar semua perubahan",
+          "discard": "Buang yang belum disahkan & simpan",
+          "cancel": "Kembali",
+          "invalidError": "Sesetengah perubahan mengandungi ralat — betulkan sebelum menghantar."
+        }
       },
       "confirm": {
         "title": "Guna perubahan",
@@ -335,6 +371,7 @@
       "wizard": {
         "createTitle": "Tempahan baru",
         "editTitle": "Edit tempahan",
+        "editTitleNamed": "Edit {title}",
         "loading": "Memuatkan tempahan…",
         "previous": "Sebelumnya",
         "next": "Seterusnya",

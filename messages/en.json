@@ -246,7 +246,25 @@
           "viewAllHistory": "View all {count} entries",
           "endBeforeStart": "End can't be before start.",
           "conflictsLabel": "Shifts already on {date}:",
-          "draftHint": "Adjust the times below, then click Save changes to add this session."
+          "draftHint": "Adjust the times below, then click Save changes to add this session.",
+          "email": "Email",
+          "phone": "Phone",
+          "openClient": "Open client",
+          "viewClient": "View client",
+          "changeClient": "Change client",
+          "changeClientCancel": "Keep current",
+          "changeClientSearch": "Search clients…",
+          "noEmail": "No email",
+          "noPhone": "No phone",
+          "noClientResults": "No clients found",
+          "changeClientMultiSession": "Reassigning isn't available for multi-session bookings",
+          "searchFailed": "Search failed. Try again.",
+          "editTitle": "Edit title",
+          "confirmTitle": "Confirm",
+          "cancelTitleEdit": "Cancel",
+          "editEventType": "Change event type",
+          "sendEmail": "Send email",
+          "callClient": "Call"
         },
         "cancelConfirm": {
           "title": "Cancel this booking?",
@@ -259,7 +277,17 @@
           "totalCount": "{count} entries",
           "pageOf": "Page {page} of {total}",
           "previous": "Previous page",
-          "next": "Next page"
+          "next": "Next page",
+          "actions": {
+            "created": "Created",
+            "updated": "Updated",
+            "status_changed": "Status changed",
+            "client_changed": "Client changed",
+            "deleted": "Deleted"
+          },
+          "today": "Today",
+          "yesterday": "Yesterday",
+          "timelineLabel": "Activity timeline"
         },
         "cancel": "Cancel booking",
         "restore": "Restore booking",
@@ -277,7 +305,15 @@
         "actionFailed": "Something went wrong. Try again.",
         "notFound": "Booking not found.",
         "editAll": "Edit all",
-        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving."
+        "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
+        "unconfirmedDrafts": {
+          "title": "Unconfirmed changes",
+          "description": "{count, plural, one {You have # unconfirmed change.} other {You have # unconfirmed changes.}} Submit them along with your saved changes, or discard the unconfirmed ones and save only what you've confirmed.",
+          "submitAll": "Submit all changes",
+          "discard": "Discard unconfirmed & save",
+          "cancel": "Go back",
+          "invalidError": "Some changes have errors — fix them before submitting."
+        }
       },
       "confirm": {
         "title": "Apply changes",
@@ -335,6 +371,7 @@
       "wizard": {
         "createTitle": "New booking",
         "editTitle": "Edit booking",
+        "editTitleNamed": "Edit {title}",
         "loading": "Loading booking…",
         "previous": "Previous",
         "next": "Next",

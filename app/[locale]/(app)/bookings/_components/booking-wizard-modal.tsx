@@ -30,6 +30,7 @@ import type {
 } from "./booking-wizard-steps/types";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
+import { StatusPill } from "./status-pill";
 import {
   todayIso,
   applyTodaySnap,
@@ -670,8 +671,17 @@ export function BookingWizardModal({
       >
         <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex flex-col gap-1">
-            <DialogTitle>
-              {mode === "create" ? t("createTitle") : t("editTitle")}
+            <DialogTitle className="flex items-center gap-2">
+              {mode === "create" ? (
+                t("createTitle")
+              ) : (
+                <>
+                  <span className="truncate">
+                    {values.title ? t("editTitleNamed", { title: values.title }) : t("editTitle")}
+                  </span>
+                  {!loading && values.status ? <StatusPill status={values.status} /> : null}
+                </>
+              )}
             </DialogTitle>
             {isMultiSessionEdit && editClientName ? (
               <p className="text-xs text-muted-foreground">
