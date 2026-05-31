@@ -2,16 +2,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { BookingDoc } from "@/lib/db/models";
-import { formatTime } from "@/lib/utils/time-format";
+import { formatTime, type TimeMode } from "@/lib/utils/time-format";
 
 type Props = {
   bookings: BookingDoc[];
   locale: string;
   title: string;
   empty: string;
+  timeMode: TimeMode;
 };
 
-export function TodaysEventsList({ bookings, title, empty }: Props) {
+export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
@@ -31,7 +32,7 @@ export function TodaysEventsList({ bookings, title, empty }: Props) {
                   <span className="truncate text-sm font-medium">{b.title}</span>
                   <span className="text-xs text-muted-foreground">
                     {(b.sessions as { startAt: Date }[])[0]?.startAt
-                      ? formatTime(new Date((b.sessions as { startAt: Date }[])[0].startAt))
+                      ? formatTime(new Date((b.sessions as { startAt: Date }[])[0].startAt), timeMode)
                       : "—"}
                     {" · "}
                     {b.clientName}

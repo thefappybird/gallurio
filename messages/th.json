@@ -522,7 +522,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "รูปแบบเวลา",
+        "timeFormatHint": "เลือกวิธีแสดงเวลาในแอปพลิเคชัน",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "การมองเห็น",
@@ -1064,5 +1068,10 @@
       "errorGeneric": "ไม่สามารถส่งได้ — โปรดลองอีกครั้งภายหลัง",
       "requiredHint": "จำเป็น"
     }
+  },
+  "notFound": {
+    "title": "ไม่พบหน้า",
+    "description": "หน้าที่คุณกำลังมองหาไม่มีอยู่หรือถูกย้ายแล้ว",
+    "backToDashboard": "กลับไปที่แดชบอร์ด"
   }
 }

@@ -3,6 +3,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { cookies } from "next/headers";
+import { TimeFormatProvider } from "@/lib/time-format/context";
+import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 
 export default async function AppLayout({
   children,
@@ -11,11 +13,15 @@ export default async function AppLayout({
 }) {
   const { role, workspace } = await requireOrg();
 
-  const cookieStore = await cookies();
+  const [cookieStore, timeFormat] = await Promise.all([
+    cookies(),
+    getUserTimeFormat(),
+  ]);
   const sidebarState = cookieStore.get("sidebar_state");
   const defaultOpen = sidebarState ? sidebarState.value === "true" : true;
 
   return (
+    <TimeFormatProvider initialValue={timeFormat}>
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar
         role={role}
@@ -30,5 +36,6 @@ export default async function AppLayout({
         <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>
       </div>
     </SidebarProvider>
+    </TimeFormatProvider>
   );
 }

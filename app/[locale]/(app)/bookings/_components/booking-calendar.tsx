@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/popover";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
-import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR } from "@/lib/bookings/status-style";
 
 export type OverflowEvent = {
@@ -136,17 +137,6 @@ function stripeBg(color: string): string {
   return `repeating-linear-gradient(135deg, color-mix(in oklch, ${color} 70%, white) 0 4px, transparent 4px 8px)`;
 }
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatTimeRange(start: Date, end: Date) {
-  return `${formatTime(start)} – ${formatTime(end)}`;
-}
-
 /** Build a candle-styled DOM element on the fly, append to body, return it.
  *  Used as the HTML5 drag image. Chrome refuses to snapshot offscreen React
  *  elements reliably, so we create a real on-screen (but visually negligible)
@@ -215,9 +205,10 @@ function OverflowPopoverRow({
   onExternalDragEnd?: () => void;
   onClose: () => void;
 }) {
+  const timeMode = useTimeFormat();
   const bg = STATUS_COLOR[e.status];
   const clientDisplay = e.clientName || "—";
-  const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt);
+  const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt, timeMode);
   return (
     <button
       key={e.id}
@@ -292,6 +283,7 @@ export function MonthBookingEvent({
   const [open, setOpen] = useState(false);
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const timeMode = useTimeFormat();
 
   if ("type" in ev && ev.type === "overflow") {
     return (
@@ -330,7 +322,7 @@ export function MonthBookingEvent({
   const booking = ev as CalendarEvent;
   const bg = STATUS_COLOR[booking.status];
   const clientDisplay = booking.clientName || "—";
-  const timeRange = formatTimeRange(booking.start, booking.end);
+  const timeRange = formatTimeRange(booking.start, booking.end, timeMode);
   const isPast = booking.end < new Date();
   const isStatusMuted =
     booking.status === "cancelled" || booking.status === "completed";
@@ -370,6 +362,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const timeMode = useTimeFormat();
   // Overflow events never appear in week/day view (only month view produces them).
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
@@ -378,7 +371,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
-  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt);
+  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt, timeMode);
   const isContinuation = ev.isMorningContinuation === true;
   const isPast = ev.end < new Date();
   const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
@@ -521,6 +514,7 @@ function CalendarToolbar({
   view,
 }: ToolbarProps<CalendarEvent>) {
   const ctx = useContext(CalendarToolbarCtx);
+  const timeMode = useTimeFormat();
   const [jumpDate, setJumpDate] = useState("");
   const [jumpTime, setJumpTime] = useState("");
 
@@ -618,7 +612,7 @@ function CalendarToolbar({
                   </label>
                   <input
                     type="time"
-                    lang={DEFAULT_TIME_INPUT_LANG}
+                    lang={TIME_INPUT_LANG[timeMode]}
                     value={jumpTime}
                     onChange={(e) => setJumpTime(e.target.value)}
                     className="h-9 w-full border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"

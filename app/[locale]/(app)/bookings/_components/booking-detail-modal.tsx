@@ -73,7 +73,8 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
   countPastDays,
@@ -2292,6 +2293,7 @@ function SessionCard({
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
+  const timeMode = useTimeFormat();
 
   // Display values — prefer pendingEdit (the optimistic draft) over the committed session.
   const displayStart = pendingEdit
@@ -2585,7 +2587,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
-                lang={DEFAULT_TIME_INPUT_LANG}
+                lang={TIME_INPUT_LANG[timeMode]}
                 value={draftStartTime}
                 onChange={(e) => setDraftStartTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -2600,7 +2602,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
-                lang={DEFAULT_TIME_INPUT_LANG}
+                lang={TIME_INPUT_LANG[timeMode]}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -2771,6 +2773,7 @@ function DraftSessionCard({
   onDraftDateChange: (date: string | null) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
+  const timeMode = useTimeFormat();
 
   // Suppress unused-variable lint — draftIndex is bound by the caller's closure.
   void draftIndex;
@@ -2901,7 +2904,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
-              lang={DEFAULT_TIME_INPUT_LANG}
+              lang={TIME_INPUT_LANG[timeMode]}
               value={draftStartTime}
               onChange={(e) => {
                 setDraftStartTime(e.target.value);
@@ -2920,7 +2923,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
-              lang={DEFAULT_TIME_INPUT_LANG}
+              lang={TIME_INPUT_LANG[timeMode]}
               value={draftEndTime}
               onChange={(e) => {
                 setDraftEndTime(e.target.value);

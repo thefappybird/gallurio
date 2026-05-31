@@ -2,6 +2,8 @@
 
 import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { z } from "zod";
 import {
   Workspace,
   User,
@@ -24,6 +26,8 @@ import {
 import { cancelRecurringBilling } from "@/lib/hitpay/client";
 import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
+import { connectDB } from "@/lib/db/mongoose";
+import { serializeCsv } from "@/lib/utils/csv-serialize";
 
 export async function updateWorkspaceBusinessAction(
   input: UpdateWorkspaceBusinessInput
@@ -204,14 +208,120 @@ export async function deleteWorkspaceAction(
   return { ok: true };
 }
 
-// Stub — wiring the export pipeline (zip CSVs + email link) is a separate
-// task. The settings UI captures the request so the entry point is in place
-// the moment we have an export worker ready.
 export async function requestDataExportAction(): Promise<ActionResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };
-  console.info("[settings] data-export requested", {
-    workspaceId: ctx.workspace._id.toString(),
+
+  await connectDB();
+
+  const ownerUser = await User.findOne({ clerkUserId: ctx.userId })
+    .select({ email: 1 })
+    .lean();
+  if (!ownerUser?.email) return { error: "Could not find owner email" };
+
+  const [bookings, clients, inquiries] = await Promise.all([
+    Booking.find({ workspaceId: ctx.workspace._id }).lean(),
+    Client.find({ workspaceId: ctx.workspace._id }).lean(),
+    Inquiry.find({ workspaceId: ctx.workspace._id }).lean(),
+  ]);
+
+  const bookingsCsv = serializeCsv(
+    ["id", "title", "status", "eventType", "clientName", "firstSessionStart", "lastSessionEnd", "locationAddress", "amountTotal", "amountDeposit", "currency", "notes"],
+    bookings.map((b) => [
+      String(b._id),
+      b.title,
+      b.status,
+      b.eventType ?? "",
+      b.clientName,
+      b.firstSessionStart?.toISOString() ?? "",
+      b.lastSessionEnd?.toISOString() ?? "",
+      b.location?.address ?? "",
+      String(b.amount?.total ?? 0),
+      String(b.amount?.deposit ?? 0),
+      b.amount?.currency ?? "PHP",
+      b.notes ?? "",
+    ])
+  );
+
+  const clientsCsv = serializeCsv(
+    ["id", "name", "email", "phone", "tags", "source", "totalSpent", "bookingsCount", "lastBookingAt", "isActive", "notes"],
+    clients.map((c) => [
+      String(c._id),
+      c.name,
+      c.email ?? "",
+      c.phone ?? "",
+      (c.tags ?? []).join(";"),
+      c.source ?? "",
+      String(c.totalSpent ?? 0),
+      String(c.bookingsCount ?? 0),
+      c.lastBookingAt?.toISOString() ?? "",
+      String(c.isActive !== false),
+      c.notes ?? "",
+    ])
+  );
+
+  const inquiriesCsv = serializeCsv(
+    ["id", "name", "email", "phone", "message", "eventDate", "eventType", "status", "createdAt"],
+    inquiries.map((i) => [
+      String(i._id),
+      i.name,
+      i.email,
+      i.phone ?? "",
+      i.message ?? "",
+      i.eventDate?.toISOString() ?? "",
+      i.eventType ?? "",
+      i.status,
+      (i as unknown as { createdAt?: Date }).createdAt?.toISOString() ?? "",
+    ])
+  );
+
+  const { resend } = await import("@/lib/email/resend");
+  const { buildDataExportEmailBody } = await import("@/lib/email/templates/data-export");
+
+  const from = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
+  const result = await resend.emails.send({
+    from,
+    to: ownerUser.email,
+    subject: `Your workspace data export — ${ctx.workspace.name}`,
+    text: buildDataExportEmailBody({ workspaceName: ctx.workspace.name }),
+    attachments: [
+      { filename: "bookings.csv", content: Buffer.from(bookingsCsv) },
+      { filename: "clients.csv", content: Buffer.from(clientsCsv) },
+      { filename: "inquiries.csv", content: Buffer.from(inquiriesCsv) },
+    ],
   });
+
+  if (result.error) {
+    console.error("[settings] data-export email failed", result.error);
+    return { error: "Failed to send export email. Please try again." };
+  }
+
+  return { ok: true };
+}
+
+const timeModeSchema = z.enum(["24h", "12h"]);
+
+export async function updateTimeFormatAction(
+  format: string
+): Promise<ActionResult> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = timeModeSchema.safeParse(format);
+  if (!parsed.success) return { error: "Invalid time format" };
+
+  await User.updateOne(
+    { clerkUserId: ctx.userId },
+    { $set: { timeFormat: parsed.data } }
+  );
+
+  const cookieStore = await cookies();
+  cookieStore.set("timeFormat", parsed.data, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    httpOnly: false,
+    sameSite: "lax",
+  });
+
   return { ok: true };
 }
