@@ -39,6 +39,9 @@ describe("Team model", () => {
     expect(found!.createdByClerkUserId).toBe("user_abc");
     expect(found!.isDefault).toBe(false);
     expect(found!.memberCount).toBe(0);
+    // Teams are born active with no deactivation timestamp.
+    expect(found!.isActive).toBe(true);
+    expect(found!.deactivatedAt).toBeNull();
   });
 
   it("rejects a duplicate name within the same workspace", async () => {
@@ -81,6 +84,8 @@ describe("ensureDefaultTeam", () => {
     expect(team.color).toBe(TEAM_COLOR_PALETTE[0]);
     expect(team.workspaceId.toString()).toBe(workspaceId.toString());
     expect(team.createdByClerkUserId).toBe("user_owner");
+    expect(team.isActive).toBe(true);
+    expect(team.deactivatedAt).toBeNull();
   });
 
   it("is idempotent — second call returns the same _id, count stays at 1", async () => {

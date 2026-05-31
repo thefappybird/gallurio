@@ -197,18 +197,23 @@ export type CalendarDayCount = { date: string; count: number };
 
 export async function getBookingsByDay(
   workspaceId: WorkspaceId,
-  month: Date
+  month: Date,
+  teamIds?: readonly string[]
 ): Promise<CalendarDayCount[]> {
   const start = startOfMonth(month);
   const end = endOfMonth(month);
+  const matchStage: Record<string, unknown> = {
+    workspaceId,
+    firstSessionStart: { $lte: end },
+    lastSessionEnd: { $gte: start },
+  };
+  if (teamIds !== undefined) {
+    matchStage.teamId = { $in: teamIds };
+  }
   // Unwind sessions so each session contributes its own days to the count.
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
     {
-      $match: {
-        workspaceId,
-        firstSessionStart: { $lte: end },
-        lastSessionEnd: { $gte: start },
-      },
+      $match: matchStage,
     },
     { $unwind: "$sessions" },
     {

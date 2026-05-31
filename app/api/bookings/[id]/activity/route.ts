@@ -3,6 +3,7 @@ import { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, ActivityLog } from "@/lib/db/models";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 
 export const runtime = "nodejs";
 
@@ -30,9 +31,14 @@ export async function GET(req: Request, { params }: Params) {
   );
 
   await connectDB();
+  const scope = await resolveBookingTeamScope(ctx);
 
-  // Ownership guard — never expose another workspace's activity, even accidentally.
-  const exists = await Booking.exists({ _id: id, workspaceId: ctx.workspace._id });
+  // Ownership guard — confirms workspace scope and (for non-owners) team scope
+  // before returning any activity. A member cannot read activity for a booking
+  // outside their teams.
+  const bookingFilter: Record<string, unknown> = { _id: id, workspaceId: ctx.workspace._id };
+  if (scope !== undefined) bookingFilter.teamId = { $in: scope };
+  const exists = await Booking.exists(bookingFilter);
   if (!exists) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

@@ -80,6 +80,9 @@ export type BookingSessionInput = z.infer<typeof bookingSessionSchema>;
 
 export const bookingCreateSchema = z.object({
   client: bookingClientSchema,
+  // Every new booking is worked by a team. The server additionally verifies the
+  // team belongs to the workspace, is active, and the caller may write to it.
+  teamId: objectIdString,
   title: z.string().min(1, "Required").max(160).trim(),
   eventType: z.enum(EVENT_TYPES).default("other"),
   status: z.enum(BOOKING_STATUSES).default("inquiry"),

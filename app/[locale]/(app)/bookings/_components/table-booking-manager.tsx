@@ -19,6 +19,10 @@ type Props = {
   locale: string;
   workspaceTimezone?: string;
   clients: ClientHit[];
+  /** Whether the current user may create bookings (owner-only in Phase 4). */
+  canCreate: boolean;
+  /** The Main team id to attach new bookings to (null when canCreate is false). */
+  defaultTeamId: string | null;
 };
 
 /**
@@ -34,6 +38,8 @@ export function TableBookingManager({
   locale,
   workspaceTimezone,
   clients,
+  canCreate,
+  defaultTeamId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +71,7 @@ export function TableBookingManager({
   );
 
   const handleAddClick = useCallback(() => {
+    if (!canCreate) return;
     // Bump nonce so the modal remounts fresh even if it was already open.
     nonceRef.current += 1;
     setNonce(nonceRef.current);
@@ -74,7 +81,7 @@ export function TableBookingManager({
     sp.set("add", "1");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+  }, [canCreate, router, pathname, searchParams]);
 
   const handleClose = useCallback(() => {
     setAddOpen(false);
@@ -86,6 +93,7 @@ export function TableBookingManager({
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
+        canCreate={canCreate}
       />
       {addOpen ? (
         <BookingWizardModal
@@ -95,6 +103,7 @@ export function TableBookingManager({
           locale={locale}
           workspaceTimezone={workspaceTimezone}
           clients={clients}
+          teamId={defaultTeamId ?? undefined}
           onClose={handleClose}
         />
       ) : null}

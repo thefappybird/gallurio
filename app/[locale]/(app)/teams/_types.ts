@@ -3,6 +3,7 @@ export type TeamRow = {
   name: string;
   color: string;
   isDefault: boolean;
+  isActive: boolean;
   memberCount: number;
 };
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, Client, ActivityLog } from "@/lib/db/models";
+import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingImportRowSchema } from "@/lib/validators/booking";
 import type { BookingImportRowInput } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
@@ -34,6 +34,10 @@ export type ImportResult = {
 export async function POST(req: Request) {
   const ctx = await requireOrg();
 
+  if (ctx.role !== "owner") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const json = await req.json().catch(() => ({}));
   if (!Array.isArray(json.rows) || json.rows.length === 0) {
     return NextResponse.json({ error: "rows must be a non-empty array" }, { status: 400 });
@@ -43,6 +47,13 @@ export async function POST(req: Request) {
   }
 
   await connectDB();
+
+  const mainTeam = await Team.findOne({ workspaceId: ctx.workspace._id, isDefault: true })
+    .select({ _id: 1 })
+    .lean();
+  if (!mainTeam) {
+    return NextResponse.json({ error: "No default team for workspace" }, { status: 500 });
+  }
 
   const created: number[] = [];
   const errors: ImportErrorEntry[] = [];
@@ -171,6 +182,7 @@ export async function POST(req: Request) {
           [
             {
               workspaceId: ctx.workspace._id,
+              teamId: mainTeam._id,
               clientId,
               clientName,
               title: row.title,

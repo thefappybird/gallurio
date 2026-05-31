@@ -10,6 +10,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
+import { Types } from "mongoose";
 import { Workspace, Booking, Client, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
@@ -317,6 +318,7 @@ describe("deleteWorkspaceAction", () => {
     });
     await Booking.create({
       workspaceId: ws._id,
+      teamId: new Types.ObjectId(),
       clientId: client._id,
       clientName: "Emma Carter",
       title: "Carter Wedding",

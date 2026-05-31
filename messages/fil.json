@@ -574,7 +574,8 @@
       "createButton": "Lumikha ng koponan",
       "toolbar": {
         "search": "Maghanap ng koponan",
-        "searchLabel": "Maghanap ng koponan ayon sa pangalan"
+        "searchLabel": "Maghanap ng koponan ayon sa pangalan",
+        "showDeactivated": "Ipakita ang mga na-deactivate"
       },
       "table": {
         "empty": "Walang koponang tumutugma sa iyong paghahanap.",
@@ -607,11 +608,18 @@
         "saving": "Nini-save…",
         "cancel": "Kanselahin"
       },
-      "deleteDialog": {
-        "title": "Burahin ang koponan?",
-        "description": "Aalisin ang koponang ito at ang mga takdang miyembro nito. Nananatili ang mga miyembro sa workspace at maaaring idagdag sa ibang koponan pagkatapos. Hindi ito maaaring ibalik.",
-        "confirm": "Burahin ang koponan",
-        "deleting": "Binubura…",
+      "deactivateDialog": {
+        "title": "I-deactivate ang koponan?",
+        "description": "Ang “{name}” ay itatago mula sa iyong mga aktibong koponan at hindi na maaaring tumanggap ng mga bagong booking. Ang mga miyembro, booking, at kasaysayan nito ay nananatili, at maaari mo itong i-reactivate anumang oras.",
+        "confirm": "I-deactivate ang koponan",
+        "deactivating": "Dina-deactivate…",
+        "cancel": "Kanselahin"
+      },
+      "reactivateDialog": {
+        "title": "I-reactivate ang koponan?",
+        "description": "Ang “{name}” ay magiging aktibo muli at maaaring tumanggap ng mga bagong booking. Ito ay mabibilang sa limitasyon ng aktibong koponan ng iyong plano.",
+        "confirm": "I-reactivate ang koponan",
+        "reactivating": "Rina-reactivate…",
         "cancel": "Kanselahin"
       },
       "team": {
@@ -620,9 +628,11 @@
         "rename": "Palitan ang pangalan",
         "changeColor": "Baguhin ang kulay",
         "invite": "Mag-imbita ng katrabaho",
-        "delete": "Burahin",
         "actionsLabel": "Mga aksyon para sa {name}",
-        "edit": "I-edit"
+        "edit": "I-edit",
+        "deactivate": "I-deactivate",
+        "reactivate": "I-reactivate",
+        "inactiveBadge": "Hindi aktibo"
       },
       "drawer": {
         "membersHeading": "Mga Miyembro",
@@ -649,16 +659,18 @@
         "nameRequired": "Kinakailangan ang pangalan ng koponan.",
         "nameTooLong": "Ang pangalan ng koponan ay dapat na 40 character o mas kaunti.",
         "duplicateName": "May koponan na na may ganitong pangalan sa workspace na ito.",
-        "cannotDeleteDefault": "Hindi mabubura ang default na koponan.",
         "teamNotFound": "Hindi nahanap ang koponan.",
-        "generic": "May nangyaring mali. Pakisubukan muli."
+        "generic": "May nangyaring mali. Pakisubukan muli.",
+        "cannotDeactivateDefault": "Hindi maaaring i-deactivate ang default na koponan.",
+        "reactivateCapExceeded": "Ang pag-reactivate ay lalampas sa limitasyon ng aktibong koponan ng iyong plano. I-deactivate muna ang ibang koponan o i-upgrade ang iyong plano."
       },
       "toasts": {
         "created": "Nalikha ang koponan.",
         "renamed": "Napalitan ang pangalan ng koponan.",
         "colorChanged": "Na-update ang kulay.",
-        "deleted": "Nabura ang koponan.",
-        "saved": "Na-update ang koponan."
+        "saved": "Na-update ang koponan.",
+        "deactivated": "Na-deactivate ang koponan.",
+        "reactivated": "Na-reactivate ang koponan."
       },
       "teamsHeading": "Mga Koponan",
       "invite": {

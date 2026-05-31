@@ -46,8 +46,8 @@ These checks belong on the production deploy, not just code review. The atomicit
 
 These are documented gaps from Phase 2 that are intentionally deferred to Phase 4:
 
-- [ ] **Team deletion guard for bookings** — `deleteTeamAction` does not yet refuse to delete a team that has bookings tied to it because `Booking.teamId` is Phase 4. When Phase 4 lands, lift the `TODO(phase-4)` comment in `app/[locale]/(app)/teams/_actions.ts` and add a `Booking.countDocuments({ teamId, workspaceId })` guard that returns a `TEAM_HAS_BOOKINGS` error.
-- [ ] **Teams table booking columns** — the standalone `/teams` table intentionally omits per-team "bookings completed" / "confirmed bookings" columns because `Booking.teamId` does not exist until Phase 4. When Phase 4 lands, add a per-team status-count aggregation and surface the two columns in `app/[locale]/(app)/teams/_components/teams-table.tsx`.
+- [x] **Team deletion guard for bookings** — RESOLVED in Phase 4 by switching to **soft-delete**: `deleteTeamAction` was removed in favor of `deactivateTeamAction`/`reactivateTeamAction`. Teams are never hard-deleted once bookings reference them, so no `TEAM_HAS_BOOKINGS` guard is needed — deactivation always succeeds and preserves history.
+- [ ] **Teams table booking columns** — the standalone `/teams` table omits per-team "bookings completed" / "confirmed bookings" columns. `Booking.teamId` now exists (Phase 4), so this is unblocked: add a per-team status-count aggregation (backed by the `{ workspaceId, teamId, status, firstSessionStart }` index) and surface the columns in `app/[locale]/(app)/teams/_components/teams-table.tsx`. Deferred to a later Teams polish pass.
 
 ## 5. Multi-tenant isolation spot-checks
 

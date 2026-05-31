@@ -75,6 +75,7 @@ async function seedBooking(
 
   return Booking.create({
     workspaceId: wsId,
+    teamId: new Types.ObjectId(),
     clientId: client._id,
     clientName: client.name,
     title: (overrides.title as string | undefined) ?? "Smith Wedding",

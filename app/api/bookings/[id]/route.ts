@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getTeamsForUser } from "@/lib/auth/teamContext";
+import { canEditBooking } from "@/lib/auth/canEditBooking";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog, Client } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team } from "@/lib/db/models";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
@@ -41,10 +44,14 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   await connectDB();
-  const booking = await Booking.findOne({
-    _id: id,
-    workspaceId: ctx.workspace._id,
-  }).lean();
+
+  // Team-scope the read for non-owners: a member can only fetch a booking owned
+  // by a team they belong to. Owners (scope === undefined) see everything.
+  const scope = await resolveBookingTeamScope(ctx);
+  const query: Record<string, unknown> = { _id: id, workspaceId: ctx.workspace._id };
+  if (scope !== undefined) query.teamId = { $in: scope };
+
+  const booking = await Booking.findOne(query).lean();
 
   if (!booking) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -80,6 +87,32 @@ export async function PATCH(req: Request, { params }: Params) {
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Edit authorization. Owners may edit any booking (incl. one whose team was
+  // since deactivated). Non-owners must be a lead of the booking's still-active
+  // team — plain members are view-only. Owners short-circuit without the extra
+  // membership/team lookups.
+  if (ctx.role !== "owner") {
+    const memberships = await getTeamsForUser(ctx.workspace._id, ctx.userId);
+    let team: { id: string; isActive: boolean } | null = null;
+    if (existing.teamId) {
+      const t = await Team.findOne({
+        _id: existing.teamId,
+        workspaceId: ctx.workspace._id,
+      })
+        .select({ _id: 1, isActive: 1 })
+        .lean();
+      if (t) team = { id: String(t._id), isActive: t.isActive };
+    }
+    const allowed = canEditBooking(
+      { role: ctx.role, memberships },
+      { teamId: existing.teamId ? String(existing.teamId) : null },
+      team
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   // Authoritative timezone-aware midnight check for session patches.

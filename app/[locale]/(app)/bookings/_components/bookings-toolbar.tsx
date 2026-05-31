@@ -26,6 +26,7 @@ export function BookingsToolbar({
   defaultCurrency,
   onAddClick,
   view = "table",
+  canCreate = true,
 }: {
   defaultCurrency: string;
   /** When provided, the "New Booking" button calls this directly instead of
@@ -35,6 +36,10 @@ export function BookingsToolbar({
   /** Active view. In calendar view the status dropdown is hidden — the
    *  calendar's clickable color legend owns status filtering there. */
   view?: BookingsView;
+  /** When false, the "New Booking" and "Import" buttons are hidden. Members
+   *  are view-only — only owners can create or bulk-import bookings. Export
+   *  remains visible because it is team-scoped server-side. */
+  canCreate?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -162,15 +167,17 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
-          onClick={() => setImportOpen(true)}
-        >
-          <UploadIcon className="size-4" />
-          {t("import")}
-        </Button>
+        {canCreate ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onClick={() => setImportOpen(true)}
+          >
+            <UploadIcon className="size-4" />
+            {t("import")}
+          </Button>
+        ) : null}
         <Button
           variant="outline"
           size="sm"
@@ -187,26 +194,28 @@ export function BookingsToolbar({
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
         />
-        <Button
-          variant="brand"
-          size="sm"
-          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
-          onClick={() => {
-            if (onAddClick) {
-              onAddClick();
-            } else {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set("add", "1");
-              const qs = params.toString();
-              startTransition(() => {
-                router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-              });
-            }
-          }}
-        >
-          <PlusIcon className="size-4" />
-          {t("add")}
-        </Button>
+        {canCreate ? (
+          <Button
+            variant="brand"
+            size="sm"
+            className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
+            onClick={() => {
+              if (onAddClick) {
+                onAddClick();
+              } else {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("add", "1");
+                const qs = params.toString();
+                startTransition(() => {
+                  router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+                });
+              }
+            }}
+          >
+            <PlusIcon className="size-4" />
+            {t("add")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

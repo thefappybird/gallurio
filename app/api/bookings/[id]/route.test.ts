@@ -5,11 +5,19 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, ActivityLog, Client } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team, TEAM_COLOR_PALETTE } from "@/lib/db/models";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
 const userId = "user_test";
+const teamId = new Types.ObjectId();
+
+// Mutable auth holder so tests can flip role/memberships to exercise the
+// canEditBooking + team-scope wiring (reset in beforeEach).
+const auth = vi.hoisted(() => ({
+  role: "owner" as "owner" | "staff",
+  memberships: [] as { teamId: string; role: "member" | "lead" }[],
+}));
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
@@ -19,9 +27,13 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
     clerkOrgId: "org_test",
-    role: "owner",
+    role: auth.role,
     workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t" },
   }),
+}));
+
+vi.mock("@/lib/auth/teamContext", () => ({
+  getTeamsForUser: async () => auth.memberships,
 }));
 
 beforeAll(async () => {
@@ -32,6 +44,18 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  auth.role = "owner";
+  auth.memberships = [];
+  await Team.create({
+    _id: teamId,
+    workspaceId,
+    name: "Main",
+    color: TEAM_COLOR_PALETTE[0],
+    isDefault: true,
+    isActive: true,
+    memberCount: 0,
+    createdByClerkUserId: userId,
+  });
 });
 
 async function load() {
@@ -58,6 +82,7 @@ async function seedBooking(
   const defaultStart = new Date("2026-08-15T10:00:00Z");
   return Booking.create({
     workspaceId: wid,
+    teamId,
     clientId,
     clientName: "Emma Carter",
     title: "Carter Wedding",
@@ -606,5 +631,62 @@ describe("PATCH /api/bookings/[id] — client reassignment", () => {
     expect(new Date(json.firstSessionStart).toISOString()).toBe(newStart.toISOString());
     // New client owns the booking.
     expect(json.clientId.toString()).toBe(newClient._id.toString());
+  });
+});
+
+describe("team-based visibility + edit permission on /api/bookings/[id]", () => {
+  it("GET: a non-owner member of the booking's team can read it", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "member" }];
+    const { GET } = await load();
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+  });
+
+  it("GET: a non-owner NOT on the booking's team gets 404 (no cross-team leak)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id);
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(new Types.ObjectId()), role: "lead" }];
+    const { GET } = await load();
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(404);
+  });
+
+  it("PATCH: a plain member of the team is forbidden (view-only)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { title: "Original" });
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "member" }];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Hacked" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(403);
+    const after = await Booking.findById(b._id).lean();
+    expect(after?.title).toBe("Original");
+  });
+
+  it("PATCH: a lead of the booking's active team can edit", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { title: "Original" });
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "lead" }];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Updated" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    const after = await Booking.findById(b._id).lean();
+    expect(after?.title).toBe("Updated");
+  });
+
+  it("PATCH: a lead cannot edit once the team is deactivated (only owner can)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { title: "Original" });
+    await Team.updateOne({ _id: teamId }, { $set: { isActive: false, deactivatedAt: new Date() } });
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "lead" }];
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Nope" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(403);
   });
 });

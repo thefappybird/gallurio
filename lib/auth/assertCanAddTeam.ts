@@ -22,7 +22,9 @@ export async function assertCanAddTeam(
   plan: PlanTier,
 ): Promise<void> {
   const { maxTeams } = planEntitlements(plan);
-  const currentCount = await Team.countDocuments({ workspaceId });
+  // Only ACTIVE teams count toward the cap — a deactivated team's history is
+  // preserved but never blocks creating new ones.
+  const currentCount = await Team.countDocuments({ workspaceId, isActive: true });
   if (currentCount >= maxTeams) {
     throw new TeamCapExceededError(plan, currentCount, maxTeams);
   }
@@ -54,7 +56,9 @@ export async function createTeamWithCapEnforcement(
 
   const created = await Team.create(doc);
 
-  const all = await Team.find({ workspaceId: doc.workspaceId })
+  // Re-count ACTIVE teams only (the new team defaults to active). Deactivated
+  // teams never consume cap, so they're excluded from the survivor set.
+  const all = await Team.find({ workspaceId: doc.workspaceId, isActive: true })
     .sort({ _id: 1 })
     .select({ _id: 1 })
     .lean();

@@ -574,7 +574,8 @@
       "createButton": "Create team",
       "toolbar": {
         "search": "Search teams",
-        "searchLabel": "Search teams by name"
+        "searchLabel": "Search teams by name",
+        "showDeactivated": "Show deactivated"
       },
       "table": {
         "empty": "No teams match your search.",
@@ -607,11 +608,18 @@
         "saving": "Saving…",
         "cancel": "Cancel"
       },
-      "deleteDialog": {
-        "title": "Delete team?",
-        "description": "This team and its member assignments will be removed. Members stay in the workspace and can be added to another team afterwards. This cannot be undone.",
-        "confirm": "Delete team",
-        "deleting": "Deleting…",
+      "deactivateDialog": {
+        "title": "Deactivate team?",
+        "description": "\"{name}\" will be hidden from your active teams and can no longer take new bookings. Its members, bookings, and history are kept, and you can reactivate it anytime.",
+        "confirm": "Deactivate team",
+        "deactivating": "Deactivating…",
+        "cancel": "Cancel"
+      },
+      "reactivateDialog": {
+        "title": "Reactivate team?",
+        "description": "\"{name}\" will become active again and can take new bookings. This counts toward your plan’s active-team limit.",
+        "confirm": "Reactivate team",
+        "reactivating": "Reactivating…",
         "cancel": "Cancel"
       },
       "team": {
@@ -621,8 +629,10 @@
         "rename": "Rename",
         "changeColor": "Change color",
         "invite": "Invite teammate",
-        "delete": "Delete",
-        "actionsLabel": "Actions for {name}"
+        "actionsLabel": "Actions for {name}",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "inactiveBadge": "Inactive"
       },
       "editDialog": {
         "title": "Edit team",
@@ -654,16 +664,18 @@
         "nameRequired": "Team name is required.",
         "nameTooLong": "Team name must be 40 characters or fewer.",
         "duplicateName": "A team with this name already exists in this workspace.",
-        "cannotDeleteDefault": "The default team can't be deleted.",
         "teamNotFound": "Team not found.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "cannotDeactivateDefault": "The default team can't be deactivated.",
+        "reactivateCapExceeded": "Reactivating would exceed your plan's active-team limit. Deactivate another team or upgrade your plan first."
       },
       "toasts": {
         "created": "Team created.",
         "renamed": "Team renamed.",
         "colorChanged": "Color updated.",
         "saved": "Team updated.",
-        "deleted": "Team deleted."
+        "deactivated": "Team deactivated.",
+        "reactivated": "Team reactivated."
       },
       "teamsHeading": "Teams",
       "invite": {

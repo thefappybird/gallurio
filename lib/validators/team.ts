@@ -35,10 +35,17 @@ export const setTeamColorSchema = z.object({
 });
 export type SetTeamColorInput = z.infer<typeof setTeamColorSchema>;
 
-export const deleteTeamSchema = z.object({
+// Teams are soft-deleted (deactivated), never hard-deleted, once any booking or
+// transaction references them. Both actions take just the team id.
+export const deactivateTeamSchema = z.object({
   teamId: z.string().min(1, "Team ID is required"),
 });
-export type DeleteTeamInput = z.infer<typeof deleteTeamSchema>;
+export type DeactivateTeamInput = z.infer<typeof deactivateTeamSchema>;
+
+export const reactivateTeamSchema = z.object({
+  teamId: z.string().min(1, "Team ID is required"),
+});
+export type ReactivateTeamInput = z.infer<typeof reactivateTeamSchema>;
 
 export const inviteMemberSchema = z
   .object({

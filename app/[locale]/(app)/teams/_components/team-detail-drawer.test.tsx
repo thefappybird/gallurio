@@ -23,6 +23,7 @@ const TEAM: TeamRow = {
   name: "Wedding crew",
   color: "#7c5cff",
   isDefault: false,
+  isActive: true,
   memberCount: 1,
 };
 

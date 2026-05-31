@@ -15,6 +15,8 @@ import {
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
 const clientId = new Types.ObjectId();
+const teamA = new Types.ObjectId();
+const teamB = new Types.ObjectId();
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -42,11 +44,13 @@ async function seedBooking(
     status: string;
     startAt: Date;
     location: { address: string };
+    teamId: Types.ObjectId;
   }> = {}
 ) {
   const start = overrides.startAt ?? days(1);
   return Booking.create({
     workspaceId: wid,
+    teamId: overrides.teamId ?? teamA,
     clientId,
     clientName: overrides.clientName ?? "Demo Client",
     title: overrides.title ?? "Demo Booking",
@@ -168,6 +172,38 @@ describe("listBookings", () => {
     expect(rows).toHaveLength(1);
     expect(total).toBe(2);
   });
+
+  describe("team scoping (member visibility)", () => {
+    it("owner (teamIds undefined) sees bookings across all teams", async () => {
+      await seedBooking(workspaceId, { teamId: teamA });
+      await seedBooking(workspaceId, { teamId: teamB });
+      const { rows } = await listBookings(workspaceId);
+      expect(rows).toHaveLength(2);
+    });
+
+    it("restricts to the given teams when teamIds is provided", async () => {
+      await seedBooking(workspaceId, { teamId: teamA, title: "A work" });
+      await seedBooking(workspaceId, { teamId: teamB, title: "B work" });
+      const { rows } = await listBookings(workspaceId, { teamIds: [String(teamA)] });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].title).toBe("A work");
+    });
+
+    it("matches NOTHING for an empty teamIds array (member with no teams — fail closed)", async () => {
+      await seedBooking(workspaceId, { teamId: teamA });
+      await seedBooking(workspaceId, { teamId: teamB });
+      const { rows, total } = await listBookings(workspaceId, { teamIds: [] });
+      expect(rows).toHaveLength(0);
+      expect(total).toBe(0);
+    });
+
+    it("combines team scope with workspace isolation", async () => {
+      await seedBooking(workspaceId, { teamId: teamA });
+      await seedBooking(otherWorkspaceId, { teamId: teamA });
+      const { rows } = await listBookings(workspaceId, { teamIds: [String(teamA)] });
+      expect(rows).toHaveLength(1);
+    });
+  });
 });
 
 describe("getBookingById", () => {
@@ -186,6 +222,30 @@ describe("getBookingById", () => {
   it("returns null for a non-existent id", async () => {
     const found = await getBookingById(workspaceId, new Types.ObjectId());
     expect(found).toBeNull();
+  });
+
+  it("returns the doc when its team is in allowedTeamIds", async () => {
+    const b = await seedBooking(workspaceId, { teamId: teamA, title: "Mine" });
+    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
+    expect(found?.title).toBe("Mine");
+  });
+
+  it("returns null when the booking's team is NOT in allowedTeamIds (member cannot fetch another team's booking)", async () => {
+    const b = await seedBooking(workspaceId, { teamId: teamB });
+    const found = await getBookingById(workspaceId, b._id, [String(teamA)]);
+    expect(found).toBeNull();
+  });
+
+  it("returns null for an empty allowedTeamIds array (member with no teams)", async () => {
+    const b = await seedBooking(workspaceId, { teamId: teamA });
+    const found = await getBookingById(workspaceId, b._id, []);
+    expect(found).toBeNull();
+  });
+
+  it("owner (allowedTeamIds undefined) fetches regardless of team", async () => {
+    const b = await seedBooking(workspaceId, { teamId: teamB });
+    const found = await getBookingById(workspaceId, b._id);
+    expect(found).not.toBeNull();
   });
 });
 

@@ -574,7 +574,8 @@
       "createButton": "Buat pasukan",
       "toolbar": {
         "search": "Cari pasukan",
-        "searchLabel": "Cari pasukan mengikut nama"
+        "searchLabel": "Cari pasukan mengikut nama",
+        "showDeactivated": "Tunjukkan yang dinyahaktifkan"
       },
       "table": {
         "empty": "Tiada pasukan yang sepadan dengan carian anda.",
@@ -607,11 +608,18 @@
         "saving": "Sedang disimpan…",
         "cancel": "Batal"
       },
-      "deleteDialog": {
-        "title": "Padam pasukan?",
-        "description": "Pasukan ini dan penugasan ahlinya akan dibuang. Ahli kekal dalam ruang kerja dan boleh ditambahkan ke pasukan lain selepas ini. Ini tidak boleh dibatalkan.",
-        "confirm": "Padam pasukan",
-        "deleting": "Sedang dipadamkan…",
+      "deactivateDialog": {
+        "title": "Nyahaktifkan pasukan?",
+        "description": "“{name}” akan disembunyikan daripada pasukan aktif anda dan tidak lagi boleh menerima tempahan baharu. Ahli, tempahan, dan sejarahnya disimpan, dan anda boleh mengaktifkannya semula bila-bila masa.",
+        "confirm": "Nyahaktifkan pasukan",
+        "deactivating": "Sedang dinyahaktifkan…",
+        "cancel": "Batal"
+      },
+      "reactivateDialog": {
+        "title": "Aktifkan semula pasukan?",
+        "description": "“{name}” akan menjadi aktif semula dan boleh menerima tempahan baharu. Ini dikira dalam had pasukan aktif pelan anda.",
+        "confirm": "Aktifkan semula pasukan",
+        "reactivating": "Sedang diaktifkan semula…",
         "cancel": "Batal"
       },
       "team": {
@@ -620,9 +628,11 @@
         "rename": "Namakan semula",
         "changeColor": "Tukar warna",
         "invite": "Jemput rakan sepasukan",
-        "delete": "Padam",
         "actionsLabel": "Tindakan untuk {name}",
-        "edit": "Edit"
+        "edit": "Edit",
+        "deactivate": "Nyahaktifkan",
+        "reactivate": "Aktifkan semula",
+        "inactiveBadge": "Tidak aktif"
       },
       "drawer": {
         "membersHeading": "Ahli",
@@ -649,16 +659,18 @@
         "nameRequired": "Nama pasukan diperlukan.",
         "nameTooLong": "Nama pasukan mestilah 40 aksara atau kurang.",
         "duplicateName": "Pasukan dengan nama ini sudah wujud dalam ruang kerja ini.",
-        "cannotDeleteDefault": "Pasukan lalai tidak boleh dipadamkan.",
         "teamNotFound": "Pasukan tidak dijumpai.",
-        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
+        "cannotDeactivateDefault": "Pasukan lalai tidak boleh dinyahaktifkan.",
+        "reactivateCapExceeded": "Pengaktifan semula akan melebihi had pasukan aktif pelan anda. Nyahaktifkan pasukan lain atau naik taraf pelan anda dahulu."
       },
       "toasts": {
         "created": "Pasukan telah dibuat.",
         "renamed": "Pasukan telah dinamakan semula.",
         "colorChanged": "Warna telah dikemas kini.",
-        "deleted": "Pasukan telah dipadamkan.",
-        "saved": "Pasukan dikemas kini."
+        "saved": "Pasukan dikemas kini.",
+        "deactivated": "Pasukan telah dinyahaktifkan.",
+        "reactivated": "Pasukan telah diaktifkan semula."
       },
       "teamsHeading": "Pasukan",
       "invite": {

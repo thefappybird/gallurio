@@ -3,6 +3,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking, Client } from "@/lib/db/models";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,7 @@ const CSV_HEADERS = [
 export async function GET(req: Request) {
   const ctx = await requireOrg();
   await connectDB();
+  const scope = await resolveBookingTeamScope(ctx);
 
   const params = new URL(req.url).searchParams;
   const status = params.get("status");
@@ -36,6 +38,7 @@ export async function GET(req: Request) {
   const to = params.get("to");
 
   const filter: Record<string, unknown> = { workspaceId: ctx.workspace._id };
+  if (scope !== undefined) filter.teamId = { $in: scope };
 
   if (status) {
     filter.status = status;

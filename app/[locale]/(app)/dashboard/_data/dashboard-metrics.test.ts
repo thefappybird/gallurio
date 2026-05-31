@@ -55,6 +55,7 @@ async function seedBooking(
   const start = overrides.startAt ?? daysFromNow(1);
   return Booking.create({
     workspaceId: wid,
+    teamId: new mongoose.Types.ObjectId(),
     clientId,
     clientName: "Demo Client",
     title: "Demo Booking",
@@ -312,6 +313,7 @@ describe("getEventTypeBreakdown", () => {
     const now = new Date();
     await Booking.create({
       workspaceId,
+      teamId: new mongoose.Types.ObjectId(),
       clientId,
       clientName: "C",
       title: "T",
@@ -324,6 +326,7 @@ describe("getEventTypeBreakdown", () => {
     });
     await Booking.create({
       workspaceId,
+      teamId: new mongoose.Types.ObjectId(),
       clientId,
       clientName: "C",
       title: "T",

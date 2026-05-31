@@ -15,6 +15,7 @@ const validSession = {
 
 const validCreate = {
   client: { mode: "new" as const, name: "Emma Carter", email: "emma@example.com" },
+  teamId: "507f1f77bcf86cd799439011",
   title: "Carter Wedding",
   eventType: "wedding" as const,
   status: "booked" as const,
@@ -96,6 +97,18 @@ describe("bookingCreateSchema", () => {
       ],
     });
     expect(ok.success).toBe(true);
+  });
+
+  it("requires teamId — rejects a payload with no team", () => {
+    const { teamId, ...noTeam } = validCreate;
+    void teamId;
+    expect(bookingCreateSchema.safeParse(noTeam).success).toBe(false);
+  });
+
+  it("rejects a malformed teamId (not a 24-char hex ObjectId)", () => {
+    expect(bookingCreateSchema.safeParse({ ...validCreate, teamId: "not-an-id" }).success).toBe(
+      false,
+    );
   });
 
   it("rejects when sessions array is empty", () => {

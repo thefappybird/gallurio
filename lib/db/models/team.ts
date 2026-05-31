@@ -16,6 +16,12 @@ const teamSchema = new Schema(
       match: /^#[0-9a-f]{6}$/i,
     },
     isDefault: { type: Boolean, default: false },
+    // Teams are never hard-deleted once bookings/transactions reference them —
+    // deactivating preserves history forever. An inactive team is hidden from
+    // default lists, excluded from the active-team plan cap, and not assignable
+    // to new bookings, but stays fully resolvable for display.
+    isActive: { type: Boolean, default: true },
+    deactivatedAt: { type: Date, default: null },
     memberCount: { type: Number, default: 0, min: 0 },
     createdByClerkUserId: { type: String, required: true },
     // Journal of PendingTeamAssignment._ids whose seat reservation has been
@@ -32,6 +38,10 @@ const teamSchema = new Schema(
 );
 
 teamSchema.index({ workspaceId: 1, name: 1 }, { unique: true });
+// Active-team lookups: the plan cap counts only active teams, and default list
+// views filter to active. A deactivated team keeps its name reserved (the
+// unique index above is intentionally NOT partial on isActive).
+teamSchema.index({ workspaceId: 1, isActive: 1 });
 // Enforce exactly one default ("Main") team per workspace at the index layer
 // so concurrent onboarding retries or migration runs can't create duplicates.
 teamSchema.index(

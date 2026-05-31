@@ -5,10 +5,18 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, ActivityLog, Transaction } from "@/lib/db/models";
+import { Booking, Client, ActivityLog, Transaction, Team, TEAM_COLOR_PALETTE } from "@/lib/db/models";
 
 const workspaceId = new Types.ObjectId();
 const userId = "user_test";
+const teamId = new Types.ObjectId();
+
+// Mutable auth holder so individual tests can flip role/memberships to exercise
+// the team write-permission wiring (defaults reset in beforeEach).
+const auth = vi.hoisted(() => ({
+  role: "owner" as "owner" | "staff",
+  memberships: [] as { teamId: string; role: "member" | "lead" }[],
+}));
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
@@ -18,9 +26,13 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
     clerkOrgId: "org_test",
-    role: "owner",
+    role: auth.role,
     workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", timezone: "UTC" },
   }),
+}));
+
+vi.mock("@/lib/auth/teamContext", () => ({
+  getTeamsForUser: async () => auth.memberships,
 }));
 
 beforeAll(async () => {
@@ -31,6 +43,19 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  auth.role = "owner";
+  auth.memberships = [];
+  // An active team must exist for new bookings to attach to.
+  await Team.create({
+    _id: teamId,
+    workspaceId,
+    name: "Main",
+    color: TEAM_COLOR_PALETTE[0],
+    isDefault: true,
+    isActive: true,
+    memberCount: 0,
+    createdByClerkUserId: userId,
+  });
 });
 
 async function load() {
@@ -40,6 +65,7 @@ async function load() {
 function makeBody(overrides: Record<string, unknown> = {}) {
   return {
     client: { mode: "new", name: "Emma Carter", email: "emma@example.com" },
+    teamId: String(teamId),
     title: "Carter Wedding",
     eventType: "wedding",
     status: "booked",
@@ -82,6 +108,47 @@ describe("POST /api/bookings", () => {
 
     const log = await ActivityLog.findOne({ workspaceId, entity: "booking" }).lean();
     expect(log?.action).toBe("created");
+  });
+
+  it("persists the teamId on the created booking", async () => {
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(201);
+    const booking = await Booking.findOne({ workspaceId }).lean();
+    expect(String(booking?.teamId)).toBe(String(teamId));
+  });
+
+  it("returns 404 when the teamId is not a team in this workspace", async () => {
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody({ teamId: String(new Types.ObjectId()) })));
+    expect(res.status).toBe(404);
+    expect(await Booking.countDocuments({ workspaceId })).toBe(0);
+  });
+
+  it("returns 400 when the target team is deactivated (no new work on dead teams)", async () => {
+    await Team.updateOne({ _id: teamId }, { $set: { isActive: false, deactivatedAt: new Date() } });
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(400);
+    expect(await Booking.countDocuments({ workspaceId })).toBe(0);
+  });
+
+  it("forbids a non-owner who is only a member of the team (view-only)", async () => {
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "member" }];
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(403);
+    expect(await Booking.countDocuments({ workspaceId })).toBe(0);
+  });
+
+  it("allows a non-owner who is a LEAD of the target active team", async () => {
+    auth.role = "staff";
+    auth.memberships = [{ teamId: String(teamId), role: "lead" }];
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(201);
+    expect(await Booking.countDocuments({ workspaceId })).toBe(1);
   });
 
   it("persists location lat/lng when provided", async () => {

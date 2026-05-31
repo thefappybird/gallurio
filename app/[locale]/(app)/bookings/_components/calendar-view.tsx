@@ -50,6 +50,12 @@ type Props = {
    * button always fires even when ?add=1 is already set.
    */
   externalAddNonce?: number;
+  /** When false, slot clicks and toolbar nonce changes do NOT open the create
+   *  wizard. Editing / viewing existing bookings is still available. */
+  canCreate?: boolean;
+  /** The Main team id to attach new bookings to. Passed through to the create
+   *  wizard as teamId. */
+  defaultTeamId?: string | null;
 };
 
 /**
@@ -117,6 +123,8 @@ export function CalendarView({
   locale = "en",
   workspaceTimezone,
   externalAddNonce,
+  canCreate = true,
+  defaultTeamId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -143,7 +151,8 @@ export function CalendarView({
     const spEdit = searchParams.get("edit");
     const spDate = searchParams.get("date") ?? "";
     const spTime = searchParams.get("time") ?? undefined;
-    if (spAdd === "1") {
+    // Non-owners cannot create bookings — skip seeding the add modal from URL.
+    if (spAdd === "1" && canCreate) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: seeds local modal state from URL on mount (external → React sync)
       setAddState({ date: spDate, time: spTime, nonce: 0 });
     } else if (spEdit) {
@@ -154,8 +163,10 @@ export function CalendarView({
 
   // Respond to the toolbar's "New Booking" button via an incrementing nonce.
   // Skip nonce=0 (initial mount value — the URL-seed effect above handles that).
+  // Non-owners cannot create bookings — ignore the nonce entirely.
   const prevExternalNonceRef = useRef(0);
   useEffect(() => {
+    if (!canCreate) return;
     if (!externalAddNonce || externalAddNonce === prevExternalNonceRef.current) return;
     prevExternalNonceRef.current = externalAddNonce;
     setAddState((prev) => ({
@@ -163,7 +174,7 @@ export function CalendarView({
       time: undefined,
       nonce: (prev?.nonce ?? 0) + 1,
     }));
-  }, [externalAddNonce]);
+  }, [canCreate, externalAddNonce]);
 
   // Respond to URL-driven edit requests set by the BookingDetailModal's
   // "Edit all" button. The detail modal sets ?edit=<id> to hand off to the
@@ -272,6 +283,8 @@ export function CalendarView({
 
   const openAddForDate = useCallback(
     (date: Date, time?: string) => {
+      // Non-owners cannot create bookings — slot clicks are view-only for them.
+      if (!canCreate) return;
       // Always open the modal directly (no URL round-trip that may no-op).
       setAddState((prev) => ({
         date: isoDate(date),
@@ -288,7 +301,7 @@ export function CalendarView({
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     },
-    [router, pathname, searchParams]
+    [canCreate, router, pathname, searchParams]
   );
 
   // ─── Core session apply ───────────────────────────────────────────────────
@@ -657,6 +670,7 @@ export function CalendarView({
           locale={locale}
           workspaceTimezone={workspaceTimezone}
           clients={clients}
+          teamId={defaultTeamId ?? undefined}
           onClientCreated={refetchClients}
           onClose={() => {
             setAddState(null);

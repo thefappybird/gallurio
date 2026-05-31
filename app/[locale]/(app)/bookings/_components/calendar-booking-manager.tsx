@@ -16,6 +16,10 @@ type Props = {
   workspaceTimezone?: string;
   initialClients?: ClientHit[];
   messages: React.ComponentProps<typeof CalendarView>["messages"];
+  /** Whether the current user may create bookings (owner-only in Phase 4). */
+  canCreate: boolean;
+  /** The Main team id to attach new bookings to (null when canCreate is false). */
+  defaultTeamId: string | null;
 };
 
 /**
@@ -31,6 +35,8 @@ export function CalendarBookingManager({
   workspaceTimezone,
   initialClients,
   messages,
+  canCreate,
+  defaultTeamId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +47,7 @@ export function CalendarBookingManager({
   const [addNonce, setAddNonce] = useState(0);
 
   const handleAddClick = useCallback(() => {
+    if (!canCreate) return;
     nonceRef.current += 1;
     setAddNonce(nonceRef.current);
     // Side-effect: set ?add=1 for shareability.
@@ -50,7 +57,7 @@ export function CalendarBookingManager({
     sp.delete("time");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+  }, [canCreate, router, pathname, searchParams]);
 
   return (
     <>
@@ -58,6 +65,7 @@ export function CalendarBookingManager({
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
         view="calendar"
+        canCreate={canCreate}
       />
       <CalendarView
         events={events}
@@ -68,6 +76,8 @@ export function CalendarBookingManager({
         initialClients={initialClients}
         messages={messages}
         externalAddNonce={addNonce}
+        canCreate={canCreate}
+        defaultTeamId={defaultTeamId}
       />
     </>
   );

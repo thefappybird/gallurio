@@ -66,6 +66,11 @@ type Props = {
    *  When provided, the parent owns the "is open" gate — the modal still
    *  manages its own animation state via Dialog's open/onOpenChange. */
   onClose?: () => void;
+  /** Team this new booking belongs to (create mode only). Required for POST
+   *  /api/bookings. If missing in create mode the submit button is disabled
+   *  as a safety net — the add affordance should already be hidden for
+   *  non-owners who cannot supply a teamId. */
+  teamId?: string;
 };
 
 type StepDef = {
@@ -98,6 +103,7 @@ export function BookingWizardModal({
   clients,
   onClientCreated,
   onClose,
+  teamId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -521,7 +527,7 @@ export function BookingWizardModal({
         const res = await fetch("/api/bookings", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(buildCreatePayload(values, tz)),
+          body: JSON.stringify(buildCreatePayload(values, tz, teamId)),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -875,7 +881,12 @@ export function BookingWizardModal({
                     type="submit"
                     variant="brand"
                     size="sm"
-                    disabled={submitting || !!loadError || (mode === "edit" && !isDirty)}
+                    disabled={
+                      submitting ||
+                      !!loadError ||
+                      (mode === "edit" && !isDirty) ||
+                      (mode === "create" && !teamId)
+                    }
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
@@ -980,7 +991,7 @@ function sessionsToPayload(
   }));
 }
 
-function buildCreatePayload(v: WizardValues, timeZone: string) {
+function buildCreatePayload(v: WizardValues, timeZone: string, teamId?: string) {
   // POST /api/bookings expects bookingCreateSchema — strip clientName from
   // existing-mode client (server looks it up by id) and pass everything else
   // through. Date + time combine into full ISO strings here.
@@ -1011,6 +1022,7 @@ function buildCreatePayload(v: WizardValues, timeZone: string) {
       currency: v.amount.currency,
     },
     notes: v.notes,
+    teamId,
   };
 }
 

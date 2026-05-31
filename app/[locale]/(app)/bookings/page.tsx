@@ -1,6 +1,7 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client } from "@/lib/db/models";
+import { Client, Team } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -67,8 +68,25 @@ export default async function BookingsPage({
   const t = await getTranslations("app.bookings");
   const tCal = await getTranslations("app.calendar");
 
-  const { workspace } = await requireOrg();
+  const { workspace, role, userId } = await requireOrg();
   await connectDB();
+
+  // Team visibility: owners see the whole workspace; non-owners (staff) see only
+  // bookings owned by teams they belong to. An empty membership list yields an
+  // empty `teamIds` array → the query matches nothing (fail-closed).
+  const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
+
+  // Phase 4: only owners get the create affordance; new bookings default to the
+  // Main team. The in-wizard team picker (and lead/member create) lands in
+  // Phase 5 — the server already permits leads via canWriteBookingForTeam.
+  const canCreate = role === "owner";
+  let defaultTeamId: string | null = null;
+  if (canCreate) {
+    const mainTeam = await Team.findOne({ workspaceId: workspace._id, isDefault: true })
+      .select({ _id: 1 })
+      .lean();
+    defaultTeamId = mainTeam ? String(mainTeam._id) : null;
+  }
 
   const sp = await searchParams;
   const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
@@ -85,6 +103,7 @@ export default async function BookingsPage({
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
+    teamIds: allowedTeamIds,
   };
 
   // These two reads are independent — run them together to save a round-trip.
@@ -209,7 +228,7 @@ export default async function BookingsPage({
   if (sp.detail) {
     let detailExists = false;
     try {
-      const found = await getBookingById(workspace._id, sp.detail);
+      const found = await getBookingById(workspace._id, sp.detail, allowedTeamIds);
       detailExists = found !== null;
     } catch {
       // Invalid ObjectId format — treat as not found.
@@ -239,6 +258,8 @@ export default async function BookingsPage({
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           clients={initialClients}
+          canCreate={canCreate}
+          defaultTeamId={defaultTeamId}
         />
       ) : null}
 
@@ -250,6 +271,8 @@ export default async function BookingsPage({
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+          canCreate={canCreate}
+          defaultTeamId={defaultTeamId}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),
