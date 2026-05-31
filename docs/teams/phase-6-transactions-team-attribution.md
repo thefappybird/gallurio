@@ -8,6 +8,7 @@
 
 ## Goal
 
+The Bookings Page will have {team}'s Bookings as the title header instead of just Bookings. there will be a dropdown where the user can select multiple teams to show in the list, in that case the title will now be back to 'Bookings'. If there is only one team selected, that team will automatically populate the teams selector in the booking, they can still edit it, but its there by default. if there are multiple selections, the teams dropdown will be shown with no default team.
 Attribute each transaction to the team that worked the related booking. Denormalize `teamId`
 at write time; surface it where transactions show; survive team rename/deactivate.
 

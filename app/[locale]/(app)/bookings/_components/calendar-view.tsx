@@ -658,8 +658,16 @@ export function CalendarView({
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-start gap-y-2">
-        {colorMode === "team" ? (
+      {/* The status legend is the calendar's status FILTER — always shown.
+          In the "All teams" overlay we ALSO show a team color key (read-only)
+          so the team-colored candles are legible; team FILTERING lives in the
+          toolbar's team picker, so this stays a key, not a second filter. */}
+      <div className="mb-3 flex flex-col gap-2">
+        <BookingStatusLegend
+          activeStatus={activeStatus}
+          onToggle={toggleStatusFilter}
+        />
+        {colorMode === "team" && (activeTeams.length > 0 || hasInactiveTeam) ? (
           <div
             role="group"
             aria-label={tCalendar("teamsLegend")}
@@ -689,12 +697,7 @@ export function CalendarView({
               </span>
             )}
           </div>
-        ) : (
-          <BookingStatusLegend
-            activeStatus={activeStatus}
-            onToggle={toggleStatusFilter}
-          />
-        )}
+        ) : null}
       </div>
       <BookingCalendar
         events={visibleEvents}

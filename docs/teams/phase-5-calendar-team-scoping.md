@@ -31,8 +31,10 @@ the Phase-4 owner-only stopgap).
   **status colors**. All four color sites route through one `eventColor()` helper.
 - **Inactive-team candles (locked):** any booking whose team isn't in the active color map renders
   in `INACTIVE_TEAM_COLOR` (a desaturated neutral, [lib/teams/team-colors.ts](../../lib/teams/team-colors.ts))
-  in team mode. `calendar-view.tsx` shows a team legend (active teams + an "Inactive team" entry)
-  when in team mode, replacing the status legend.
+  in team mode.
+- **Legends:** the status legend (which is also the clickable status **filter**) is **always**
+  shown. In team mode, a read-only team color legend (active teams + an "Inactive team" entry) is
+  shown *in addition* — it's a color key, not a filter (team filtering lives in the toolbar picker).
 - **Wizard team selection:** `teamId` is now a first-class `WizardValues` field
   ([booking-wizard-steps/types.ts](<../../app/[locale]/(app)/bookings/_components/booking-wizard-steps/types.ts>)),
   prefilled from the active `?team`/default team. The event step shows a team `Select` when the
