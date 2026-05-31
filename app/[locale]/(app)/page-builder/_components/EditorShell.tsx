@@ -6,7 +6,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Puck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { puckConfig } from "@/lib/page-builder/config";
+// Client-safe editor config (lightweight previews, identical fields). The real
+// server blocks render only on the public page via <Render>; importing them here
+// would pull Mongo + AsyncLocalStorage into the client bundle (build break).
+import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import type {
   PortfolioBrandKit,
@@ -202,10 +205,9 @@ export function EditorShell({
       >
         <Puck
           key={activeZone}
-          // Pass the base Config (not Config<Components>) so Puck's deep generic
-          // inference doesn't blow tsc's stack. The components are still typed at
-          // their own block configs; the editor only needs the runtime registry.
-          config={puckConfig as unknown as Config}
+          // Cast to the base Config so Puck's deep generic inference doesn't blow
+          // tsc's stack; editorPuckConfig is typed at the component level already.
+          config={editorPuckConfig as unknown as Config}
           data={puckSeed}
           onChange={handleChange}
           onPublish={() => setPublishOpen(true)}
