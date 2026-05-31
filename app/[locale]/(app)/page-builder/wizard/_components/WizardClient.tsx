@@ -89,6 +89,14 @@ export function WizardClient({
 
   // Seed state from an in-progress draft if one exists (refresh-safe), else from
   // the businessType-matched template. Lazy initializers run once — no effect.
+  //
+  // Deliberate tradeoff: reading sessionStorage in the initializer means that on
+  // a same-tab mid-wizard refresh the client's first render reflects the saved
+  // draft while the server rendered defaults, so React reconciles that subtree
+  // once (a benign, invisible re-render that lands on the *correct* resumed
+  // state). We prefer this to a post-mount restore effect, which would trip the
+  // react-hooks "no setState in effect" rule and add a visible defaults→draft
+  // flash. This page is authed + dynamically rendered (never prerendered/SEO).
   const [draft] = useState(() => readDraft());
   const [templateId, setTemplateId] = useState<PortfolioTemplateId>(() =>
     draft?.templateId && templates.some((tpl) => tpl.id === draft.templateId)

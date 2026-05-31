@@ -36,14 +36,16 @@ async function seedWorkspace() {
 }
 
 function makeInput(overrides: Partial<SaveWizardInput> = {}): SaveWizardInput {
+  // cloudinaryPublicIds must be scoped to the caller's workspace folder.
+  const wsId = workspaceId?.toHexString() ?? "placeholder";
   return {
     templateId: "wedding-photographer",
     brandKit: DEFAULT_BRAND_KIT,
     contact: { title: "Hi", description: "Reach out", buttonStyle: "solid", buttonColor: "accent" },
     branding: { tagline: "New tagline" },
     starterImages: [
-      { cloudinaryPublicId: "g/1", url: "https://res.cloudinary.com/x/1.jpg", width: 800, height: 600 },
-      { cloudinaryPublicId: "g/2", url: "https://res.cloudinary.com/x/2.jpg", width: 800, height: 600 },
+      { cloudinaryPublicId: `gallurio/${wsId}/portfolio/1.jpg`, url: "https://res.cloudinary.com/x/1.jpg", width: 800, height: 600 },
+      { cloudinaryPublicId: `gallurio/${wsId}/portfolio/2.jpg`, url: "https://res.cloudinary.com/x/2.jpg", width: 800, height: 600 },
     ],
     ...overrides,
   };
@@ -92,12 +94,15 @@ describe("saveWizardOutputAction", () => {
     expect(galleryBlock?.props.collectionId).toBe(String(collection!._id));
   });
 
-  it("seeds FeaturedWork itemIds from the uploaded images", async () => {
+  it("seeds FeaturedWork itemIds as { id } rows from the uploaded images", async () => {
     await saveWizardOutputAction(makeInput());
     const ws = await Workspace.findById(workspaceId).lean();
     const home = ws!.publicPage!.data!.home as { content: { type: string; props: Record<string, unknown> }[] };
     const featured = home.content.find((b) => b.type === "FeaturedWork");
-    expect((featured?.props.itemIds as string[]).length).toBeGreaterThan(0);
+    const itemIds = featured?.props.itemIds as Array<{ id: string }>;
+    expect(itemIds.length).toBeGreaterThan(0);
+    // Editor round-trip shape: each row is a { id } object, not a bare string.
+    expect(itemIds[0]).toEqual({ id: expect.any(String) });
   });
 
   it("reuses the existing featured-work collection on a second run (no duplicate)", async () => {
@@ -137,6 +142,81 @@ describe("saveWizardOutputAction", () => {
     expect(res).toEqual({ ok: true });
     expect(await GalleryItem.countDocuments({ workspaceId })).toBe(0);
     expect(await GalleryCollection.countDocuments({ workspaceId })).toBe(1);
+  });
+
+  // -----------------------------------------------------------------------
+  // Cross-tenant asset isolation (High severity regression tests)
+  // -----------------------------------------------------------------------
+
+  it("rejects a starterImage whose cloudinaryPublicId belongs to another workspace", async () => {
+    const otherWorkspaceId = new Types.ObjectId().toHexString();
+    const res = await saveWizardOutputAction(
+      makeInput({
+        starterImages: [
+          {
+            cloudinaryPublicId: `gallurio/${otherWorkspaceId}/portfolio/stolen.jpg`,
+            url: "https://res.cloudinary.com/x/stolen.jpg",
+          },
+        ],
+      })
+    );
+    expect(res).toEqual({ error: "invalid_image_ownership" });
+    // Nothing written to DB
+    expect(await GalleryItem.countDocuments({ workspaceId })).toBe(0);
+  });
+
+  it("accepts a starterImage whose cloudinaryPublicId is under the caller's workspace folder", async () => {
+    const validPublicId = `gallurio/${workspaceId.toHexString()}/portfolio/mine.jpg`;
+    const res = await saveWizardOutputAction(
+      makeInput({
+        starterImages: [
+          {
+            cloudinaryPublicId: validPublicId,
+            url: "https://res.cloudinary.com/x/mine.jpg",
+            width: 800,
+            height: 600,
+          },
+        ],
+      })
+    );
+    expect(res).toEqual({ ok: true });
+    const item = await GalleryItem.findOne({ workspaceId }).lean();
+    expect(item?.cloudinaryPublicId).toBe(validPublicId);
+  });
+
+  it("rejects a branding.logoCloudinaryPublicId that belongs to another workspace", async () => {
+    const otherWorkspaceId = new Types.ObjectId().toHexString();
+    const res = await saveWizardOutputAction(
+      makeInput({
+        branding: {
+          tagline: "hello",
+          logoUrl: "https://res.cloudinary.com/x/logo.jpg",
+          logoCloudinaryPublicId: `gallurio/${otherWorkspaceId}/logos/logo.jpg`,
+        },
+        starterImages: [],
+      })
+    );
+    expect(res).toEqual({ error: "invalid_logo_ownership" });
+  });
+
+  it("rejects a cloudinaryPublicId with a path-traversal prefix that looks like another workspace", async () => {
+    // e.g. gallurio/<workspaceId>/../<otherWorkspaceId>/file
+    const ownId = workspaceId.toHexString();
+    const otherWorkspaceId = new Types.ObjectId().toHexString();
+    const res = await saveWizardOutputAction(
+      makeInput({
+        starterImages: [
+          {
+            cloudinaryPublicId: `gallurio/${ownId}/../${otherWorkspaceId}/portfolio/escape.jpg`,
+            url: "https://res.cloudinary.com/x/escape.jpg",
+          },
+        ],
+      })
+    );
+    // Cloudinary public IDs don't do path resolution, but we still reject because
+    // the string does not start with the expected prefix after normalization —
+    // the `..` makes the prefix check fail naturally.
+    expect(res).toEqual({ error: "invalid_image_ownership" });
   });
 });
 

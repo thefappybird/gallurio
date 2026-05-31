@@ -14,6 +14,16 @@ import type { PortfolioPuckData, PuckData } from "@/lib/page-builder/types";
 const FEATURED_COLLECTION_SLUG = "featured-work";
 const FEATURED_COLLECTION_NAME = "Featured work";
 
+// Returns a predicate that verifies a Cloudinary public_id belongs to this
+// workspace's folder. We also reject any id containing ".." segments because
+// Cloudinary normalises path components server-side, meaning
+// "gallurio/<ownId>/../<otherId>/file" resolves to "gallurio/<otherId>/file".
+function makeWorkspacePrefixCheck(workspaceId: string) {
+  const prefix = `gallurio/${workspaceId}/`;
+  return (publicId: string) =>
+    !publicId.includes("..") && publicId.startsWith(prefix);
+}
+
 const starterImageSchema = z.object({
   cloudinaryPublicId: z.string().min(1).max(300),
   url: z.string().url().max(1000),
@@ -49,6 +59,10 @@ export type WizardActionResult = { ok: true } | { error: string };
 // Fill any seeded gallery block's empty collectionId with the real collection,
 // and seed FeaturedWork.itemIds with the first few uploaded images so a fresh
 // portfolio isn't visibly empty. Mutates the provided data in place.
+//
+// FeaturedWork.itemIds is seeded as `{ id }` objects — that's the row shape the
+// Puck array editor round-trips (see FeaturedWorkBlock), so the seed loads
+// cleanly into the Phase 9 editor. The renderer accepts both shapes.
 function injectGalleryRefs(
   data: PortfolioPuckData,
   collectionId: string,
@@ -62,7 +76,7 @@ function injectGalleryRefs(
         block.props.collectionId = collectionId;
       }
       if (block.type === "FeaturedWork" && Array.isArray(block.props.itemIds) && block.props.itemIds.length === 0) {
-        block.props.itemIds = itemIds.slice(0, 3);
+        block.props.itemIds = itemIds.slice(0, 3).map((id) => ({ id }));
       }
     }
   }
@@ -85,6 +99,21 @@ export async function saveWizardOutputAction(
 
   await connectDB();
   const workspaceId = ctx.workspace._id;
+
+  // Reject any starter image whose cloudinaryPublicId does not live under
+  // this workspace's folder. This prevents a malicious owner from referencing
+  // another tenant's Cloudinary assets (cross-tenant asset theft / spoofing).
+  const prefixCheck = makeWorkspacePrefixCheck(workspaceId.toString());
+  const badImage = starterImages.find((img) => !prefixCheck(img.cloudinaryPublicId));
+  if (badImage) return { error: "invalid_image_ownership" };
+
+  // Reject logoCloudinaryPublicId that escapes the workspace folder.
+  if (
+    branding?.logoCloudinaryPublicId &&
+    !prefixCheck(branding.logoCloudinaryPublicId)
+  ) {
+    return { error: "invalid_logo_ownership" };
+  }
 
   // Re-read the workspace fresh (requireOrg's is lean) to seed copy from current
   // branding, and to know whether to archive existing portfolio data.

@@ -67,6 +67,14 @@ The public inquiry form sends a best-effort notification email to the workspace 
 - [ ] **Edge/WAF rate limit** — add a platform-level rate limit (Vercel WAF / Firewall) on `/api/inquiries` for real abuse protection; the in-process limiter is only a first line against accidental double-submits and casual spam.
 - [ ] **Referrer field** — `lib/validators/inquiry.ts` accepts `referrer` as a freeform string (not URL-validated) so non-URL referrers survive. It is HTML-escaped before email rendering and stored verbatim; decide whether to tighten to `z.string().url()` if analytics hygiene matters more than capturing odd referrers.
 
+## 4d. Page-builder wizard (Portfolio maker Phase 8)
+
+The first-visit wizard uploads starter images straight to Cloudinary, then persists them via `saveWizardOutputAction`.
+
+- [ ] **Orphaned Cloudinary assets** — images are uploaded to Cloudinary *before* the wizard's save runs. If the owner abandons the wizard (closes the tab, cancels the overwrite gate, or clicks **Skip**, which sends `starterImages: []`), those uploaded assets are never written to a `GalleryItem` and leak in Cloudinary. Add a pre-prod cleanup job (cron sweeping `gallurio/{workspaceId}/portfolio` for public IDs with no matching `GalleryItem`), or delete un-persisted public IDs client-side on skip/abandon. Tracked, not blocking MVP.
+- [ ] **Cloudinary upload preset limits** — confirm the Cloudinary account enforces `allowed_formats` (images only) and a max file size on the signed-upload path, to bound abuse of the public-ish upload surface. The server already scopes the folder to `gallurio/{workspaceId}/…` and `saveWizardOutputAction` rejects any `cloudinaryPublicId` outside the caller's workspace folder (incl. `..` traversal), so cross-tenant asset references are blocked — but format/size limits are a Cloudinary-dashboard config item.
+- [ ] **Template preview assets** — `lib/page-builder/templates/*` reference `/template-previews/*.svg`; the wizard currently renders a CSS palette preview instead, so these files are optional. Add real preview thumbnails under `public/template-previews/` if/when the picker switches to image previews.
+
 ## 5. Multi-tenant isolation spot-checks
 
 Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:
