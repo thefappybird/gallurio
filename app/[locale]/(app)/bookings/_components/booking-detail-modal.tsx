@@ -55,7 +55,7 @@ import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
-import { EditableField } from "./editable-field";
+import { EditableField, type FieldHandle } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
@@ -490,8 +490,57 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     (k) => !k.startsWith("draft:")
   ).length;
   const unconfirmedDraftCount = draftSessions.filter((d) => !d.locked).length;
-  // Total undrafted work: open existing-session editors + unlocked draft editors.
-  const undraftedCount = openSessionEditorCount + unconfirmedDraftCount;
+
+  /**
+   * Registry of FieldHandle objects for currently-mounted EditableField instances.
+   * Keyed by editKey (e.g. "amount.total"). The Map is stable across renders;
+   * only its contents change.
+   */
+  const fieldHandleRegistry = useRef<Map<string, FieldHandle>>(new Map());
+
+  /**
+   * Set of editKey strings whose editor is currently open (user is mid-edit).
+   * Updated via onFieldEditingChange which is wired to each EditableField's
+   * `onEditingChange` prop. Drives `openFieldCount`.
+   */
+  const [openFieldKeys, setOpenFieldKeys] = useState<Set<string>>(new Set());
+  const openFieldCount = openFieldKeys.size;
+
+  const registerFieldHandle = useCallback(
+    (editKey: string, handle: FieldHandle | null) => {
+      if (handle) {
+        fieldHandleRegistry.current.set(editKey, handle);
+      } else {
+        fieldHandleRegistry.current.delete(editKey);
+        // If the field unmounts while open, remove it from open set too.
+        setOpenFieldKeys((prev) => {
+          if (!prev.has(editKey)) return prev;
+          const next = new Set(prev);
+          next.delete(editKey);
+          return next;
+        });
+      }
+    },
+    []
+  );
+
+  const onFieldEditingChange = useCallback(
+    (editKey: string, isEditing: boolean) => {
+      setOpenFieldKeys((prev) => {
+        const has = prev.has(editKey);
+        if (isEditing === has) return prev; // no change
+        const next = new Set(prev);
+        if (isEditing) next.add(editKey);
+        else next.delete(editKey);
+        return next;
+      });
+    },
+    []
+  );
+
+  // Total undrafted work: open existing-session editors + unlocked draft editors
+  // + open EditableField editors.
+  const undraftedCount = openSessionEditorCount + unconfirmedDraftCount + openFieldCount;
   const hasUndrafted = undraftedCount > 0;
   const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
 
@@ -533,18 +582,85 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     void runSave();
   }
 
-  function confirmSubmitDiscardDrafts() {
+  /**
+   * "Discard undrafted & save" — cancel every open EditableField editor, drop
+   * unlocked drafts, reset open session editors, then proceed with the save
+   * using only the already-drafted `pending` map.
+   */
+  function confirmDiscardUndraftedAndSave() {
     setUnconfirmedDraftsOpen(false);
-    // Discard undrafted work: drop unlocked drafts, clear open-editor tracking,
-    // and bump the nonce so any open inline editors remount closed.
+    // Cancel every open EditableField editor (discard in-progress draft).
+    for (const handle of fieldHandleRegistry.current.values()) {
+      if (handle.isEditing()) handle.cancel();
+    }
+    // Drop unlocked drafts and reset open session-editor tracking.
     setDraftSessions((prev) => prev.filter((d) => d.locked));
     setEditingDraftDates({});
     setEditorResetNonce((n) => n + 1);
     void runSave();
   }
 
-  async function runSave() {
-    if (!hasPending || !booking) return;
+  /**
+   * "Submit all changes" — commit every valid open EditableField editor into a
+   * merged pending map, cancel all open editors, then save everything in one
+   * PATCH. If any open editor is invalid, show a toast and leave it open.
+   */
+  function confirmSubmitAll() {
+    if (!booking) return;
+
+    // Gather open dirty handles.
+    const openDirty: Array<{ key: string; handle: FieldHandle }> = [];
+    for (const [key, handle] of fieldHandleRegistry.current) {
+      if (handle.isEditing() && handle.isDirty()) {
+        openDirty.push({ key, handle });
+      }
+    }
+
+    // Block if any open editor has a validation error.
+    const hasInvalid = openDirty.some(({ handle }) => !handle.canCommit());
+    if (hasInvalid) {
+      setUnconfirmedDraftsOpen(false);
+      toast.error(t("unconfirmedDrafts.invalidError"));
+      return;
+    }
+
+    // Build the merged pending synchronously — capture normalized values before
+    // calling cancel() (which clears the editor state).
+    const merged: PendingChanges = { ...pending };
+    for (const { key, handle } of openDirty) {
+      const v = handle.getNormalizedValue();
+      const current = getCurrentValue(booking, key as EditableKey);
+      if (v === current || String(v) === String(current)) {
+        delete merged[key];
+      } else {
+        merged[key] = v;
+      }
+    }
+
+    // Cancel all open EditableField editors (values already captured above).
+    for (const { handle } of openDirty) {
+      handle.cancel();
+    }
+
+    // Also discard unlocked draft sessions and reset open session editors.
+    setDraftSessions((prev) => prev.filter((d) => d.locked));
+    setEditingDraftDates({});
+    setEditorResetNonce((n) => n + 1);
+
+    // Reflect the merged map in state so UI stays consistent.
+    setPending(merged);
+
+    setUnconfirmedDraftsOpen(false);
+    void runSave({ pendingOverride: merged });
+  }
+
+  async function runSave(opts?: { pendingOverride?: PendingChanges }) {
+    const effectivePending = opts?.pendingOverride ?? pending;
+    const hasSomethingToSave =
+      Object.keys(effectivePending).length > 0 ||
+      Object.keys(pendingSessionEdits).length > 0 ||
+      draftSessions.some((d) => d.locked);
+    if (!hasSomethingToSave || !booking) return;
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
       toast.error(t("conflictBlocksSave"));
@@ -558,7 +674,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     const previousTotal = activityTotal;
     const previousDrafts = draftSessions;
     const previousSessionEdits = pendingSessionEdits;
-    const optimistic = applyChanges(booking, pending);
+    const optimistic = applyChanges(booking, effectivePending);
 
     // Build the final sessions array: overlay pendingSessionEdits onto existing,
     // then append locked draft sessions.
@@ -576,7 +692,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setBooking({ ...optimistic, sessions: mergedSessions });
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
-    for (const [key, value] of Object.entries(pending)) {
+    for (const [key, value] of Object.entries(effectivePending)) {
       // Raw pin coordinates persist but are never logged server-side — keep the
       // optimistic activity consistent so a coordinate-only save shows nothing.
       if (key === "location.lat" || key === "location.lng") continue;
@@ -591,13 +707,13 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     }
     if (Object.keys(changes).length > 0) {
       prependOptimisticActivity(
-        "status" in pending ? "status_changed" : "updated",
+        "status" in effectivePending ? "status_changed" : "updated",
         changes
       );
     }
 
     try {
-      const body: Record<string, unknown> = { ...pending };
+      const body: Record<string, unknown> = { ...effectivePending };
       if (
         Object.keys(pendingSessionEdits).length > 0 ||
         lockedDrafts.length > 0
@@ -618,7 +734,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
       // Preserve it from the previous state so email/phone don't collapse.
       // If a clientId reassignment was just saved, use the staged reassigned
       // client's data; otherwise keep the existing client block.
-      const clientAfterSave = "clientId" in pending
+      const clientAfterSave = "clientId" in effectivePending
         ? (reassignedClient
             ? { id: reassignedClient.id, name: reassignedClient.name, email: reassignedClient.email, phone: reassignedClient.phone }
             : null)
@@ -1000,7 +1116,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col gap-0 p-0 sm:max-w-3xl"
+        className="flex max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeaderBar
           booking={booking}
@@ -1022,7 +1138,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           onClose={() => attemptClose(false)}
         />
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <ModalSkeleton />
           ) : !booking ? (
@@ -1067,6 +1183,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               onLockDraft={handleLockDraft}
               onUnlockDraft={handleUnlockDraft}
               onDraftDateChange={handleDraftDateChange}
+              registerFieldHandle={registerFieldHandle}
+              onFieldEditingChange={onFieldEditingChange}
             />
           )}
         </div>
@@ -1125,7 +1243,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         open={unconfirmedDraftsOpen}
         count={undraftedCount}
         onCancel={() => setUnconfirmedDraftsOpen(false)}
-        onSubmit={confirmSubmitDiscardDrafts}
+        onSubmitAll={confirmSubmitAll}
+        onDiscardUndrafted={confirmDiscardUndraftedAndSave}
       />
     </Dialog>
   );
@@ -1173,17 +1292,21 @@ function UnconfirmedDraftsDialog({
   open,
   count,
   onCancel,
-  onSubmit,
+  onSubmitAll,
+  onDiscardUndrafted,
 }: {
   open: boolean;
   count: number;
   onCancel: () => void;
-  onSubmit: () => void;
+  onSubmitAll: () => void;
+  onDiscardUndrafted: () => void;
 }) {
   const t = useTranslations("app.bookings.detail");
   return (
     <AlertDialog open={open} onOpenChange={(next) => !next && onCancel()}>
-      <AlertDialogContent>
+      {/* Wider than the default alert dialog so the three footer actions sit on
+          one row at sm+ without overflowing (they stack on mobile). */}
+      <AlertDialogContent className="sm:max-w-xl">
         <AlertDialogHeader>
           <AlertDialogTitle>{t("unconfirmedDrafts.title")}</AlertDialogTitle>
           <AlertDialogDescription>
@@ -1194,8 +1317,11 @@ function UnconfirmedDraftsDialog({
           <AlertDialogCancel onClick={onCancel}>
             {t("unconfirmedDrafts.cancel")}
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onSubmit}>
-            {t("unconfirmedDrafts.submit")}
+          <AlertDialogAction onClick={onDiscardUndrafted}>
+            {t("unconfirmedDrafts.discard")}
+          </AlertDialogAction>
+          <AlertDialogAction onClick={onSubmitAll} autoFocus>
+            {t("unconfirmedDrafts.submitAll")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -1291,7 +1417,7 @@ function DialogHeaderBar({
   const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
 
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         {loading ? (
           <Skeleton className="h-5 w-48" />
@@ -1539,6 +1665,8 @@ function BookingTabs({
   onLockDraft,
   onUnlockDraft,
   onDraftDateChange,
+  registerFieldHandle,
+  onFieldEditingChange,
 }: {
   booking: BookingDoc;
   bookingId: string;
@@ -1572,6 +1700,8 @@ function BookingTabs({
   onLockDraft: (draftId: string) => void;
   onUnlockDraft: (draftId: string) => void;
   onDraftDateChange: (key: string, date: string | null) => void;
+  registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
+  onFieldEditingChange: (editKey: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
@@ -1961,6 +2091,9 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
             disabled={disabled}
+            editKey="amount.total"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
           <EditableField
             label={tFields("deposit")}
@@ -1978,6 +2111,9 @@ function BookingTabs({
               }
               return null;
             }}
+            editKey="amount.deposit"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
           <EditableField
             label={tFields("currency")}
@@ -1987,6 +2123,9 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
             disabled={disabled}
+            editKey="amount.currency"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
         </div>
       </TabsPanel>
@@ -1999,6 +2138,9 @@ function BookingTabs({
           onCommit={(v) => onCommit("notes", v)}
           onDiscardPending={() => onDiscard("notes")}
           disabled={disabled}
+          editKey="notes"
+          registerHandle={registerFieldHandle}
+          onEditingChange={onFieldEditingChange}
         />
 
         <SectionHeader label={tSections("history")} />
@@ -2951,7 +3093,7 @@ function DialogFooterBar({
 }) {
   const t = useTranslations("app.bookings.detail");
   return (
-    <div className="flex flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
+    <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
       {saveError ? (
         <p className="text-xs text-destructive">{saveError}</p>
       ) : null}

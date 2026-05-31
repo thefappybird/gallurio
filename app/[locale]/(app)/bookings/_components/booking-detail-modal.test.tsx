@@ -1418,12 +1418,12 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       expect(patchCallsBefore).toHaveLength(0);
     });
 
-    // Click the "Submit & discard drafts" action in the warning dialog. Match
+    // Click the "Discard undrafted & save" action in the warning dialog. Match
     // by its localized label (the cancel action reads "Go back"), so there is
     // no ambiguity — and no conditional guard that could let the test pass
     // without actually exercising the submit path.
     const submitDialogBtn = await screen.findByRole("button", {
-      name: /submit.*discard/i,
+      name: /discard unconfirmed/i,
     });
     fireEvent.click(submitDialogBtn);
 
@@ -1437,6 +1437,234 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       );
       expect(patchCalls).toHaveLength(1);
     });
+  });
+
+  // ── EditableField undrafted tests ──────────────────────────────────────────
+
+  /**
+   * Switch to the Pricing tab and open the Deposit field's inline editor
+   * WITHOUT clicking ✓ (leaving an undrafted change).
+   */
+  async function openDepositEditorWithoutConfirm(depositValue = "5000") {
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Deposit")).toBeInTheDocument()
+    );
+    // Click the pencil to open the Deposit field editor
+    fireEvent.click(screen.getByRole("button", { name: /edit deposit/i }));
+    await waitFor(() =>
+      // The number input for the money field becomes visible
+      expect(screen.getByRole("spinbutton")).toBeInTheDocument()
+    );
+    // Type a new value
+    const input = screen.getByRole("spinbutton");
+    fireEvent.change(input, { target: { value: depositValue } });
+    // Do NOT click ✓ — editor stays open
+  }
+
+  it("EF-1: with a drafted Total change AND an open Deposit editor, clicking Save opens the warning dialog and fires no PATCH", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    // Switch to Pricing tab and draft the Total via ✓
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], {
+      target: { value: "12000" },
+    });
+    // Confirm the Total edit (✓)
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    // hasPending should now be true (total changed)
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Now open the Deposit editor WITHOUT confirming
+    await openDepositEditorWithoutConfirm("4000");
+
+    // Click Save — the warning dialog must appear (open EditableField editor = undrafted)
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+
+    // No PATCH should have fired
+    const patchCalls = (fetchMock as Mock).mock.calls.filter(
+      (args: unknown[]) => {
+        const [url, init] = args as [string, RequestInit | undefined];
+        return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+      }
+    );
+    expect(patchCalls).toHaveLength(0);
+  });
+
+  it("EF-2: choosing 'Discard undrafted & save' closes the Deposit editor and fires one PATCH without the discarded deposit value", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    // Draft the Total via ✓
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], {
+      target: { value: "12000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Open Deposit editor without confirming
+    await openDepositEditorWithoutConfirm("999");
+
+    // Trigger the warning dialog
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+
+    // Choose "Discard unconfirmed & save"
+    fireEvent.click(screen.getByRole("button", { name: /discard unconfirmed/i }));
+
+    // Deposit editor should close (no spinbutton for it / no ✓ button)
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument()
+    );
+
+    // Exactly one PATCH should fire, and its body must NOT include amount.deposit=999
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      // Total change should be included
+      expect(body).toHaveProperty("amount.total", 12000);
+      // The discarded deposit (999) must NOT be in the body
+      expect(body).not.toHaveProperty("amount.deposit", 999);
+    });
+  });
+
+  it("EF-3: choosing 'Submit all changes' with a valid open Deposit editor fires one PATCH including the deposit value", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    // Draft the Total via ✓
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], {
+      target: { value: "12000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Open Deposit editor with a valid value (does not exceed total=12000)
+    await openDepositEditorWithoutConfirm("4000");
+
+    // Trigger the warning dialog
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+
+    // Choose "Submit all changes"
+    fireEvent.click(screen.getByRole("button", { name: /submit all changes/i }));
+
+    // Exactly one PATCH, body includes both total and deposit
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(1);
+      const body = JSON.parse(
+        ((patchCalls[0] as unknown[])[1] as RequestInit).body as string
+      );
+      expect(body).toHaveProperty("amount.total", 12000);
+      expect(body).toHaveProperty("amount.deposit", 4000);
+    });
+  });
+
+  it("EF-4: choosing 'Submit all changes' with an INVALID open Deposit editor (deposit > total) fires no PATCH and keeps the editor open", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    // toast.error is already mocked via sonner mock
+    const { toast } = await import("sonner");
+    renderModal();
+    await waitForLoad();
+
+    // Draft the Total via ✓ — keep it at 10000 (the MOCK_BOOKING default)
+    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    // Confirm the Total at the current default value so hasPending stays false for Total.
+    // Instead, let's stage Total=10000 explicitly so hasPending=true.
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], {
+      target: { value: "15000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Open Deposit editor with an INVALID value (20000 > 15000 total)
+    await openDepositEditorWithoutConfirm("20000");
+
+    // Trigger the warning dialog
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+
+    // Choose "Submit all changes" — should be blocked by validation
+    fireEvent.click(screen.getByRole("button", { name: /submit all changes/i }));
+
+    // No PATCH should fire
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(0);
+    });
+
+    // The error toast should have been called
+    expect(toast.error).toHaveBeenCalled();
+
+    // The Deposit editor should still be open (spinbutton still visible)
+    expect(screen.getByRole("spinbutton")).toBeInTheDocument();
   });
 
   it("clicking Save with an open (uncommitted) existing-session inline editor shows the warning dialog", async () => {

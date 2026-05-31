@@ -308,9 +308,11 @@
         "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
         "unconfirmedDrafts": {
           "title": "Mga hindi pa nakumpirmang pagbabago",
-          "description": "{count, plural, one {Mayroon kang # hindi pa nakumpirmang pagbabago.} other {Mayroon kang # mga hindi pa nakumpirmang pagbabago.}} Ang pag-save ngayon ay magtatanggal ng lahat ng hindi pa na-draft na mga edit — kumpirmahin muna ang mga ito, o isumite ang iyong mga na-save na pagbabago at itapon ang natitira.",
-          "submit": "Isumite at itapon",
-          "cancel": "Bumalik"
+          "description": "{count, plural, one {Mayroon kang # hindi pa nakumpirmang pagbabago.} other {Mayroon kang # mga hindi pa nakumpirmang pagbabago.}} Isumite ang mga ito kasama ang iyong mga na-save na pagbabago, o itapon ang mga hindi pa nakumpirma at i-save lamang ang mga nakumpirma mo.",
+          "submitAll": "Isumite ang lahat ng pagbabago",
+          "discard": "Itapon ang hindi pa nakumpirma at i-save",
+          "cancel": "Bumalik",
+          "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
         }
       },
       "confirm": {

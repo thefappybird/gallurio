@@ -308,9 +308,11 @@
         "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan.",
         "unconfirmedDrafts": {
           "title": "Perubahan yang belum disahkan",
-          "description": "{count, plural, one {Anda mempunyai # perubahan yang belum disahkan.} other {Anda mempunyai # perubahan yang belum disahkan.}} Menyimpan sekarang akan membuang semua pengeditan yang belum draf — sahkan dahulu, atau hantar perubahan yang telah disimpan dan buang yang selebihnya.",
-          "submit": "Hantar & buang",
-          "cancel": "Kembali"
+          "description": "{count, plural, one {Anda mempunyai # perubahan yang belum disahkan.} other {Anda mempunyai # perubahan yang belum disahkan.}} Hantarkan bersama perubahan yang telah disimpan, atau buang yang belum disahkan dan simpan hanya yang telah anda sahkan.",
+          "submitAll": "Hantar semua perubahan",
+          "discard": "Buang yang belum disahkan & simpan",
+          "cancel": "Kembali",
+          "invalidError": "Sesetengah perubahan mengandungi ralat — betulkan sebelum menghantar."
         }
       },
       "confirm": {
