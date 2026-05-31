@@ -522,7 +522,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "Format Waktu",
+        "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "Visibilitas",
@@ -1064,5 +1068,10 @@
       "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
       "requiredHint": "Wajib"
     }
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
+    "backToDashboard": "Kembali ke dasbor"
   }
 }

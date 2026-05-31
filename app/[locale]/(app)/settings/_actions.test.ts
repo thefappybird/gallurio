@@ -38,6 +38,25 @@ vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({
+    get: vi.fn().mockReturnValue(undefined),
+    set: vi.fn(),
+  }),
+}));
+
+vi.mock("@/lib/email/resend", () => ({
+  resend: {
+    emails: {
+      send: vi.fn().mockResolvedValue({ data: { id: "email_test_id" }, error: null }),
+    },
+  },
+}));
+
+vi.mock("@/lib/email/templates/data-export", () => ({
+  buildDataExportEmailBody: vi.fn().mockReturnValue("Your data export is attached."),
+}));
+
 // ---- Lazy imports (after mocks are registered) ------------------------------
 // We import the actions after vi.mock so that the mocked modules are used.
 import {
@@ -46,8 +65,12 @@ import {
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
   deleteWorkspaceAction,
+  updateTimeFormatAction,
+  requestDataExportAction,
 } from "./_actions";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
+import { resend } from "@/lib/email/resend";
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -340,5 +363,82 @@ describe("deleteWorkspaceAction", () => {
 
     const bookings = await Booking.find({ workspaceId: ws._id }).lean();
     expect(bookings).toHaveLength(0);
+  });
+});
+
+// ---- updateTimeFormatAction --------------------------------------------------
+
+describe("updateTimeFormatAction", () => {
+  it("updates timeFormat to 12h and sets cookie", async () => {
+    mockAuthAsOwnerA();
+    await seedWorkspaceA();
+    const mockCookieStore = { get: vi.fn(), set: vi.fn() };
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await updateTimeFormatAction("12h");
+    expect(result.ok).toBe(true);
+    expect(result.error).toBeUndefined();
+
+    const user = await User.findOne({ clerkUserId: OWNER_USER_ID }).lean();
+    expect(user?.timeFormat).toBe("12h");
+
+    expect(mockCookieStore.set).toHaveBeenCalledWith(
+      "timeFormat",
+      "12h",
+      expect.objectContaining({ path: "/" })
+    );
+  });
+
+  it("rejects invalid format value", async () => {
+    mockAuthAsOwnerA();
+    await seedWorkspaceA();
+    const result = await updateTimeFormatAction("invalid");
+    expect(result.error).toBeDefined();
+  });
+
+  it("rejects non-owner", async () => {
+    await seedWorkspaceA();
+    // Simulate a member who is not the workspace owner
+    (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      userId: "user_some_member",
+      orgId: ORG_ID_A,
+      orgRole: "org:member",
+    });
+    const result = await updateTimeFormatAction("12h");
+    expect(result.error).toBeDefined();
+  });
+});
+
+// ---- requestDataExportAction ------------------------------------------------
+
+describe("requestDataExportAction", () => {
+  it("sends email with 3 CSV attachments", async () => {
+    mockAuthAsOwnerA();
+    await seedWorkspaceA();
+    vi.mocked(cookies).mockResolvedValue({ get: vi.fn(), set: vi.fn() } as never);
+
+    const result = await requestDataExportAction();
+    expect(result.ok).toBe(true);
+    expect(result.error).toBeUndefined();
+
+    expect(vi.mocked(resend.emails.send)).toHaveBeenCalledOnce();
+    const call = vi.mocked(resend.emails.send).mock.calls[0][0];
+    const filenames = (call.attachments ?? []).map((a) => String(a.filename ?? ""));
+    expect(filenames).toContain("bookings.csv");
+    expect(filenames).toContain("clients.csv");
+    expect(filenames).toContain("inquiries.csv");
+  });
+
+  it("returns error when Resend fails", async () => {
+    mockAuthAsOwnerA();
+    await seedWorkspaceA();
+    vi.mocked(cookies).mockResolvedValue({ get: vi.fn(), set: vi.fn() } as never);
+    vi.mocked(resend.emails.send).mockResolvedValueOnce({
+      data: null,
+      error: { name: "validation_error", message: "bad sender" },
+    } as never);
+
+    const result = await requestDataExportAction();
+    expect(result.error).toBeDefined();
   });
 });

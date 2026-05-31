@@ -522,7 +522,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "Format ng Oras",
+        "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "Visibility",
@@ -1064,5 +1068,10 @@
       "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
       "requiredHint": "Kinakailangan"
     }
+  },
+  "notFound": {
+    "title": "Hindi nahanap ang pahina",
+    "description": "Ang pahinang hinahanap mo ay hindi umiiral o inilipat na.",
+    "backToDashboard": "Bumalik sa dashboard"
   }
 }

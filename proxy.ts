@@ -96,6 +96,18 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
+  // Redirect authenticated users away from the marketing root.
+  if (stripLocale(req.nextUrl.pathname) === "/") {
+    const session = await auth();
+    if (session.userId && session.orgId) {
+      const url = req.nextUrl.clone();
+      const localeMatch = req.nextUrl.pathname.match(LOCALE_PREFIX_RE);
+      url.pathname = `${localeMatch ? localeMatch[0] : ""}/dashboard`;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return intlMiddleware(req);
 });
 

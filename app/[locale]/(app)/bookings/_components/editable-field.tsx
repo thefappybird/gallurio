@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 
 export type EditableFieldType =
   | "text"
@@ -110,6 +111,7 @@ export function EditableField({
   onEditingChange,
   registerHandle,
 }: Props) {
+  const timeMode = useTimeFormat();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | number | null>(
     hasPending ? (pendingValue ?? null) : (value ?? null)
@@ -225,7 +227,7 @@ export function EditableField({
         month: "short",
         day: "numeric",
       });
-      const timePart = formatTime(d);
+      const timePart = formatTime(d, timeMode);
       return `${datePart} · ${timePart}`;
     }
     return String(v);
@@ -305,7 +307,7 @@ export function EditableField({
                   />
                   <Input
                     type="time"
-                    lang={DEFAULT_TIME_INPUT_LANG}
+                    lang={TIME_INPUT_LANG[timeMode]}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>
