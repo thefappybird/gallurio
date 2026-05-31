@@ -307,9 +307,9 @@
         "editAll": "Edit semua",
         "conflictBlocksSave": "Masa-masa ini bertindih dengan syif sedia ada. Laraskan masa atau tarikh sebelum menyimpan.",
         "unconfirmedDrafts": {
-          "title": "Draf sesi yang belum disahkan",
-          "description": "{count, plural, one {Anda mempunyai # draf sesi yang belum anda sahkan.} other {Anda mempunyai # draf sesi yang belum anda sahkan.}} Kembali dan sahkan, atau hantar perubahan lain anda dan buang draf.",
-          "submit": "Hantar & buang draf",
+          "title": "Perubahan yang belum disahkan",
+          "description": "{count, plural, one {Anda mempunyai # perubahan yang belum disahkan.} other {Anda mempunyai # perubahan yang belum disahkan.}} Menyimpan sekarang akan membuang semua pengeditan yang belum draf — sahkan dahulu, atau hantar perubahan yang telah disimpan dan buang yang selebihnya.",
+          "submit": "Hantar & buang",
           "cancel": "Kembali"
         }
       },

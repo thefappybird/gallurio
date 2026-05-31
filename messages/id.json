@@ -307,9 +307,9 @@
         "editAll": "Edit semua",
         "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
         "unconfirmedDrafts": {
-          "title": "Draft sesi yang belum dikonfirmasi",
-          "description": "{count, plural, one {Anda memiliki # draft sesi yang belum dikonfirmasi.} other {Anda memiliki # draft sesi yang belum dikonfirmasi.}} Kembali dan konfirmasi, atau kirimkan perubahan lain Anda dan buang draft.",
-          "submit": "Kirim & buang draft",
+          "title": "Perubahan yang belum dikonfirmasi",
+          "description": "{count, plural, one {Anda memiliki # perubahan yang belum dikonfirmasi.} other {Anda memiliki # perubahan yang belum dikonfirmasi.}} Menyimpan sekarang akan menghapus semua pengeditan yang belum di-draft — konfirmasi terlebih dahulu, atau kirimkan perubahan yang telah disimpan dan buang sisanya.",
+          "submit": "Kirim & buang",
           "cancel": "Kembali"
         }
       },

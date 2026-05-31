@@ -200,6 +200,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
   /**
+   * Incrementing nonce that forces SessionCard components to remount when
+   * bumped. This resets any open inline editor (internal `editing` state) on
+   * confirm-discard so uncommitted editors close without losing
+   * `pendingSessionEdits` (parent state, re-read on mount).
+   */
+  const [editorResetNonce, setEditorResetNonce] = useState(0);
+
+  /**
    * Shifts keyed by YYYY-MM-DD date. Treated as a cache — entries are added on
    * demand and never evicted (harmless; small footprint). Each card derives its
    * own conflict list by looking up its current effective date in this map.
@@ -477,8 +485,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     lockedDraftCount;
   const hasPending = pendingCount > 0;
 
+  // Count open inline editors for EXISTING sessions (keys are numeric strings).
+  const openSessionEditorCount = Object.keys(editingDraftDates).filter(
+    (k) => !k.startsWith("draft:")
+  ).length;
   const unconfirmedDraftCount = draftSessions.filter((d) => !d.locked).length;
-  const hasUnconfirmedDrafts = unconfirmedDraftCount > 0;
+  // Total undrafted work: open existing-session editors + unlocked draft editors.
+  const undraftedCount = openSessionEditorCount + unconfirmedDraftCount;
+  const hasUndrafted = undraftedCount > 0;
   const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
 
   function commitField(key: EditableKey, value: string | number | null) {
@@ -512,7 +526,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
 
   function save() {
     if (!hasPending || !booking) return;
-    if (hasUnconfirmedDrafts) {
+    if (hasUndrafted) {
       setUnconfirmedDraftsOpen(true);
       return;
     }
@@ -521,6 +535,11 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
 
   function confirmSubmitDiscardDrafts() {
     setUnconfirmedDraftsOpen(false);
+    // Discard undrafted work: drop unlocked drafts, clear open-editor tracking,
+    // and bump the nonce so any open inline editors remount closed.
+    setDraftSessions((prev) => prev.filter((d) => d.locked));
+    setEditingDraftDates({});
+    setEditorResetNonce((n) => n + 1);
     void runSave();
   }
 
@@ -1020,6 +1039,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               draftSessions={draftSessions}
               pendingSessionEdits={pendingSessionEdits}
               editingDraftDates={editingDraftDates}
+              editorResetNonce={editorResetNonce}
               locale={locale}
               reassignedClient={reassignedClient}
               onCommit={commitField}
@@ -1100,10 +1120,10 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         onDiscard={confirmDiscard}
       />
 
-      {/* Unconfirmed-drafts warning — shown when Save is clicked with unlocked drafts */}
+      {/* Unconfirmed-drafts warning — shown when Save is clicked with undrafted changes */}
       <UnconfirmedDraftsDialog
         open={unconfirmedDraftsOpen}
-        count={unconfirmedDraftCount}
+        count={undraftedCount}
         onCancel={() => setUnconfirmedDraftsOpen(false)}
         onSubmit={confirmSubmitDiscardDrafts}
       />
@@ -1499,6 +1519,7 @@ function BookingTabs({
   draftSessions,
   pendingSessionEdits,
   editingDraftDates,
+  editorResetNonce,
   locale,
   reassignedClient,
   onCommit,
@@ -1527,6 +1548,7 @@ function BookingTabs({
   draftSessions: DraftSession[];
   pendingSessionEdits: Record<number, PendingSessionEdit>;
   editingDraftDates: Record<string, string>;
+  editorResetNonce: number;
   locale: string;
   reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
   onCommit: (key: EditableKey, value: string | number | null) => void;
@@ -1825,7 +1847,7 @@ function BookingTabs({
             const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
             return (
               <SessionCard
-                key={`${s.startAt}-${s.endAt}`}
+                key={`${s.startAt}-${s.endAt}-${editorResetNonce}`}
                 session={s}
                 sessionIndex={resolvedIdx}
                 total={(booking?.sessions ?? []).length}
@@ -3081,11 +3103,15 @@ function applyChanges(booking: BookingDoc, changes: PendingChanges): BookingDoc 
 }
 
 function safeT(
-  t: (key: string) => string,
+  t: { (key: string): string; has?: (key: string) => boolean },
   key: string,
   fallback: string
 ): string {
+  if (!key) return fallback;
   try {
+    // next-intl's t.has() checks existence without firing the onError logger,
+    // so an unknown/empty key never produces a MISSING_MESSAGE console error.
+    if (typeof t.has === "function" && !t.has(key)) return fallback;
     const v = t(key);
     return v && v !== key ? v : fallback;
   } catch {

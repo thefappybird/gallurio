@@ -230,6 +230,59 @@ describe("BookingDetailModal — render", () => {
       screen.getByRole("heading", { name: "Test Wedding" })
     ).toBeInTheDocument();
   });
+
+  // Regression: an empty eventType/status resolves the i18n namespace root
+  // (an object) rather than a leaf message, which fired a MISSING_MESSAGE
+  // console error from next-intl's onError handler. safeT now short-circuits
+  // on an empty key so no error is logged.
+  it("does not log a MISSING_MESSAGE error when eventType and status are empty", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({
+        booking: { ...MOCK_BOOKING, eventType: "", status: "" },
+      })
+    );
+
+    renderModal();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Test Wedding" })
+      ).toBeInTheDocument();
+    });
+
+    const missingMessageCalls = errorSpy.mock.calls.filter((args) =>
+      args.some((a) => String(a).includes("MISSING_MESSAGE"))
+    );
+    expect(missingMessageCalls).toHaveLength(0);
+    errorSpy.mockRestore();
+  });
+
+  // Regression: a non-empty but UNKNOWN eventType/status (e.g. "custom-thing",
+  // "draft") must not produce a MISSING_MESSAGE console error either. safeT now
+  // uses t.has() to gate the lookup so the onError logger is never triggered.
+  it("does not log a MISSING_MESSAGE error when eventType and status are unknown values", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({
+        booking: { ...MOCK_BOOKING, eventType: "custom-thing", status: "draft" },
+      })
+    );
+
+    renderModal();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Test Wedding" })
+      ).toBeInTheDocument();
+    });
+
+    const missingMessageCalls = errorSpy.mock.calls.filter((args) =>
+      args.some((a) => String(a).includes("MISSING_MESSAGE"))
+    );
+    expect(missingMessageCalls).toHaveLength(0);
+    errorSpy.mockRestore();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1300,7 +1353,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     // The unconfirmed-drafts warning dialog should appear (its localized title)
     // and NO PATCH should have fired — the save is intercepted, not sent.
     expect(
-      await screen.findByText("Unconfirmed session drafts")
+      await screen.findByText("Unconfirmed changes")
     ).toBeInTheDocument();
     const patchCalls = (fetchMock as Mock).mock.calls.filter(
       (args: unknown[]) => {
@@ -1384,5 +1437,55 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       );
       expect(patchCalls).toHaveLength(1);
     });
+  });
+
+  it("clicking Save with an open (uncommitted) existing-session inline editor shows the warning dialog", async () => {
+    // This test verifies that an open inline editor on an EXISTING session
+    // (✓/✗ buttons visible, edit not yet confirmed) also counts as undrafted,
+    // so the warning dialog appears and no PATCH fires.
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    // First create a confirmed pending change to make hasPending=true (the Save
+    // button only appears when hasPending is true).  Editing a session date and
+    // clicking ✓ pushes it into pendingSessionEdits.
+    clickEditSession(1);
+    changeDateInput(FUTURE_SESSION.startAt.slice(0, 10), 5);
+    await clickConfirm();
+
+    await waitFor(() =>
+      expect(screen.getByText("Unsaved")).toBeInTheDocument()
+    );
+
+    // hasPending is now true (one pendingSessionEdit). Re-open the inline editor
+    // for Session 1 WITHOUT confirming — this creates an open editor entry in
+    // editingDraftDates keyed by "0" (existing session, no "draft:" prefix).
+    clickEditSession(1);
+
+    // The ✓ button for the inline editor should now be in the DOM (editor open).
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^confirm$/i })).toBeInTheDocument();
+    });
+
+    // Click Save — the warning dialog must appear because there is an open
+    // inline editor (undraftedCount > 0), and NO PATCH should fire yet.
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    fireEvent.click(saveBtn);
+
+    // Warning dialog appears with "Unconfirmed changes" title.
+    expect(
+      await screen.findByText("Unconfirmed changes")
+    ).toBeInTheDocument();
+
+    // No PATCH should have fired — save was intercepted.
+    const patchCalls = (fetchMock as Mock).mock.calls.filter(
+      (args: unknown[]) => {
+        const [url, init] = args as [string, RequestInit | undefined];
+        return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+      }
+    );
+    expect(patchCalls).toHaveLength(0);
   });
 });

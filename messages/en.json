@@ -307,9 +307,9 @@
         "editAll": "Edit all",
         "conflictBlocksSave": "These times overlap an existing shift. Adjust the time or date before saving.",
         "unconfirmedDrafts": {
-          "title": "Unconfirmed session drafts",
-          "description": "{count, plural, one {You have # session draft you haven't confirmed yet.} other {You have # session drafts you haven't confirmed yet.}} Go back and confirm them, or submit your other changes and discard the drafts.",
-          "submit": "Submit & discard drafts",
+          "title": "Unconfirmed changes",
+          "description": "{count, plural, one {You have # unconfirmed change.} other {You have # unconfirmed changes.}} Saving now will discard all undrafted edits — confirm them first, or submit your saved changes and discard the rest.",
+          "submit": "Submit & discard",
           "cancel": "Go back"
         }
       },
