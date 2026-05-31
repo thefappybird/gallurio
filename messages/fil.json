@@ -853,6 +853,40 @@
         },
         "history": { "title": "Kasaysayan", "submitted": "Isinumite ang katanungan", "converted": "Naaprubahan bilang booking" }
       }
+    },
+    "pageBuilder": {
+      "title": "Page builder",
+      "editorComingSoon": "Darating ang buong editor sa susunod na update. Naka-set up na at handa ang iyong portfolio.",
+      "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-edit ng portfolio.",
+      "openPublicPage": "Tingnan ang pampublikong pahina",
+      "editPlaceholderHint": "Maaari kang muling mag-run ng setup anumang oras para magsimula mula sa sariwang template.",
+      "rerunWizard": "Muling i-run ang setup",
+      "brandKit": {
+        "themePreset": "Tema",
+        "presets": { "minimal": "Minimal", "editorial": "Editorial", "luxury": "Luxury", "bold": "Bold", "romantic": "Romantic", "modern": "Modern" },
+        "fontPair": "Mga font",
+        "colors": "Mga kulay",
+        "useWorkspaceBranding": "Gamitin ang branding ng workspace",
+        "colorLabels": { "primaryColor": "Pangunahin", "secondaryColor": "Pangalawa", "accentColor": "Accent", "backgroundColor": "Background", "foregroundColor": "Teksto" }
+      },
+      "wizard": {
+        "title": "Buuin natin ang iyong portfolio",
+        "subtitle": "Ilang mabilis na hakbang at magkakaroon ka ng live na pahina.",
+        "skip": "Laktawan ang setup",
+        "back": "Bumalik",
+        "next": "Magpatuloy",
+        "launch": "Ilunsad ang editor",
+        "launching": "Sine-set up…",
+        "stepOf": "Hakbang {current} ng {total}",
+        "overwrite": { "title": "Mayroon ka nang portfolio", "body": "Ang muling pag-run ng setup ay papalitan ang iyong mga kasalukuyang pahina. Naka-archive ang iyong kasalukuyang nilalaman para maaari mo itong bawiin.", "continue": "Magpatuloy pa rin", "cancel": "Kanselahin" },
+        "steps": { "template": "Template", "branding": "Branding", "theme": "Tema", "images": "Mga larawan", "review": "Suriin" },
+        "template": { "title": "Pumili ng panimulang punto", "subtitle": "Maaari mong baguhin ang lahat mamaya." },
+        "branding": { "title": "Kumpirmahin ang iyong branding", "subtitle": "Kinuha mula sa iyong workspace — maaaring baguhin ang anuman.", "tagline": "Tagline", "taglinePlaceholder": "Isang maikling linya na nagpapaliwanag sa iyo" , "description": "Tungkol sa amin", "descriptionPlaceholder": "Isa o dalawang pangungusap tungkol sa iyong gawain" },
+        "theme": { "title": "Piliin ang iyong hitsura", "subtitle": "Tema, mga font, at mga kulay para sa iyong pampublikong pahina." },
+        "images": { "title": "Magdagdag ng ilang larawan", "subtitle": "Mag-upload ng kahit isa — limang larawan ang maganda. Idadagdag namin ang mga ito sa isang \"Featured work\" na gallery.", "upload": "Mag-upload ng mga larawan", "uploading": "Ina-upload…", "remove": "Alisin ang larawan", "empty": "Wala pang larawan.", "error": "Hindi na-upload ang ilang larawan. Pakisubukan muli.", "count": "{count} {count, plural, one {larawan} other {larawan}}" },
+        "review": { "title": "Suriin at ilunsad", "subtitle": "Narito ang ise-set up namin.", "template": "Template", "theme": "Tema", "images": "Mga larawan", "homeBlocks": "{count} seksyon sa home", "galleryBlocks": "{count} seksyon sa gallery" },
+        "toasts": { "saved": "Handa na ang iyong portfolio!", "error": "May nangyaring mali. Pakisubukan muli." }
+      }
     }
   },
   "common": {

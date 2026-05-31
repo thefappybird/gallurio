@@ -98,7 +98,7 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       description: "",
     },
     publicPage: {
-      templateId: "default",
+      templateId: "minimal",
       data: { home: null, gallery: null },
       brandKit: {
         themePreset: "minimal",
@@ -150,7 +150,7 @@ describe("generateMetadata", () => {
   it("uses seoTitle and seoDescription when set", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
-        templateId: "default",
+        templateId: "minimal",
         data: { home: null, gallery: null },
         brandKit: DEFAULT_BRAND_KIT,
         publishedAt: new Date(),

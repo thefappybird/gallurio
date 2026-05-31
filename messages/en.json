@@ -922,6 +922,97 @@
           "converted": "Approved to booking"
         }
       }
+    },
+    "pageBuilder": {
+      "title": "Page builder",
+      "editorComingSoon": "The full editor arrives in the next update. Your portfolio is set up and ready.",
+      "ownerOnly": "Only the workspace owner can edit the portfolio.",
+      "openPublicPage": "View public page",
+      "editPlaceholderHint": "You can re-run setup any time to start from a fresh template.",
+      "rerunWizard": "Re-run setup",
+      "brandKit": {
+        "themePreset": "Theme",
+        "presets": {
+          "minimal": "Minimal",
+          "editorial": "Editorial",
+          "luxury": "Luxury",
+          "bold": "Bold",
+          "romantic": "Romantic",
+          "modern": "Modern"
+        },
+        "fontPair": "Fonts",
+        "colors": "Colors",
+        "useWorkspaceBranding": "Use workspace branding",
+        "colorLabels": {
+          "primaryColor": "Primary",
+          "secondaryColor": "Secondary",
+          "accentColor": "Accent",
+          "backgroundColor": "Background",
+          "foregroundColor": "Text"
+        }
+      },
+      "wizard": {
+        "title": "Let's build your portfolio",
+        "subtitle": "A few quick steps and you'll have a live page.",
+        "skip": "Skip setup",
+        "back": "Back",
+        "next": "Continue",
+        "launch": "Launch editor",
+        "launching": "Setting up…",
+        "stepOf": "Step {current} of {total}",
+        "overwrite": {
+          "title": "You already have a portfolio",
+          "body": "Running setup again replaces your current pages. Your existing content is archived so you can recover it.",
+          "continue": "Continue anyway",
+          "cancel": "Cancel"
+        },
+        "steps": {
+          "template": "Template",
+          "branding": "Branding",
+          "theme": "Theme",
+          "images": "Images",
+          "review": "Review"
+        },
+        "template": {
+          "title": "Pick a starting point",
+          "subtitle": "You can change everything later."
+        },
+        "branding": {
+          "title": "Confirm your branding",
+          "subtitle": "Pulled from your workspace — edit anything.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "A short line that sums you up",
+          "description": "About",
+          "descriptionPlaceholder": "A sentence or two about your work"
+        },
+        "theme": {
+          "title": "Choose your look",
+          "subtitle": "Theme, fonts, and colors for your public page."
+        },
+        "images": {
+          "title": "Add a few photos",
+          "subtitle": "Upload at least one — five looks great. We'll add them to a \"Featured work\" gallery.",
+          "upload": "Upload images",
+          "uploading": "Uploading…",
+          "remove": "Remove image",
+          "empty": "No images yet.",
+          "error": "Some images failed to upload. Please try again.",
+          "count": "{count} {count, plural, one {image} other {images}}"
+        },
+        "review": {
+          "title": "Review & launch",
+          "subtitle": "Here's what we'll set up.",
+          "template": "Template",
+          "theme": "Theme",
+          "images": "Images",
+          "homeBlocks": "{count} home sections",
+          "galleryBlocks": "{count} gallery sections"
+        },
+        "toasts": {
+          "saved": "Your portfolio is ready!",
+          "error": "Something went wrong. Please try again."
+        }
+      }
     }
   },
   "common": {

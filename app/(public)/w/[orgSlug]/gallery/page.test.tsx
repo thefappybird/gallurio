@@ -64,7 +64,7 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       description: "",
     },
     publicPage: {
-      templateId: "default",
+      templateId: "minimal",
       data: { home: null, gallery: null },
       brandKit: DEFAULT_BRAND_KIT,
       publishedAt: new Date("2025-01-01T00:00:00Z"),
@@ -109,7 +109,7 @@ describe("gallery generateMetadata", () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
-          templateId: "default",
+          templateId: "minimal",
           data: { home: null, gallery: null },
           brandKit: DEFAULT_BRAND_KIT,
           publishedAt: new Date(),

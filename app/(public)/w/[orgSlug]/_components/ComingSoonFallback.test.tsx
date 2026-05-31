@@ -28,7 +28,7 @@ function makeWorkspace(overrides: Partial<WorkspaceDoc> = {}): WorkspaceDoc {
       description: "",
     },
     publicPage: {
-      templateId: "default",
+      templateId: "minimal",
       data: { home: null, gallery: null },
       brandKit: {
         themePreset: "minimal",

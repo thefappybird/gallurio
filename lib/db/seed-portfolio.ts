@@ -328,7 +328,7 @@ async function main() {
 
   console.log("→ Writing Puck data + brand kit + contact config, then publishing…");
   workspace.set("publicPage", {
-    templateId: "default",
+    templateId: "wedding-photographer",
     data: {
       home: buildHomeData({ weddingsCollectionId, heroImage }),
       gallery: buildGalleryData({ weddingsCollectionId, portraitsCollectionId, featuredItemIds }),

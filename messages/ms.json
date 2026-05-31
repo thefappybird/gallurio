@@ -853,6 +853,40 @@
         },
         "history": { "title": "Sejarah", "submitted": "Pertanyaan dihantar", "converted": "Diluluskan ke tempahan" }
       }
+    },
+    "pageBuilder": {
+      "title": "Pembina halaman",
+      "editorComingSoon": "Editor penuh akan hadir dalam kemaskini seterusnya. Portfolio anda telah disediakan dan bersedia.",
+      "ownerOnly": "Hanya pemilik ruang kerja yang boleh mengedit portfolio.",
+      "openPublicPage": "Lihat halaman awam",
+      "editPlaceholderHint": "Anda boleh menjalankan semula persediaan pada bila-bila masa untuk bermula dengan templat baharu.",
+      "rerunWizard": "Jalankan semula persediaan",
+      "brandKit": {
+        "themePreset": "Tema",
+        "presets": { "minimal": "Minima", "editorial": "Editorial", "luxury": "Mewah", "bold": "Berani", "romantic": "Romantik", "modern": "Moden" },
+        "fontPair": "Fon",
+        "colors": "Warna",
+        "useWorkspaceBranding": "Gunakan penjenamaan ruang kerja",
+        "colorLabels": { "primaryColor": "Utama", "secondaryColor": "Sekunder", "accentColor": "Aksen", "backgroundColor": "Latar belakang", "foregroundColor": "Teks" }
+      },
+      "wizard": {
+        "title": "Mari bina portfolio anda",
+        "subtitle": "Beberapa langkah mudah dan anda akan mempunyai halaman langsung.",
+        "skip": "Langkau persediaan",
+        "back": "Kembali",
+        "next": "Teruskan",
+        "launch": "Lancarkan editor",
+        "launching": "Menyediakan…",
+        "stepOf": "Langkah {current} daripada {total}",
+        "overwrite": { "title": "Anda sudah mempunyai portfolio", "body": "Menjalankan persediaan semula akan menggantikan halaman semasa anda. Kandungan sedia ada diarkibkan supaya anda boleh memulihkannya.", "continue": "Teruskan juga", "cancel": "Batal" },
+        "steps": { "template": "Templat", "branding": "Penjenamaan", "theme": "Tema", "images": "Imej", "review": "Semakan" },
+        "template": { "title": "Pilih titik permulaan", "subtitle": "Anda boleh mengubah semua perkara kemudian." },
+        "branding": { "title": "Sahkan penjenamaan anda", "subtitle": "Diambil daripada ruang kerja anda — edit mana-mana.", "tagline": "Tagline", "taglinePlaceholder": "Satu baris ringkas yang merangkumi anda", "description": "Tentang", "descriptionPlaceholder": "Satu atau dua ayat tentang kerja anda" },
+        "theme": { "title": "Pilih rupa anda", "subtitle": "Tema, fon, dan warna untuk halaman awam anda." },
+        "images": { "title": "Tambah beberapa foto", "subtitle": "Muat naik sekurang-kurangnya satu — lima kelihatan hebat. Kami akan menambahkannya ke galeri \"Featured work\".", "upload": "Muat naik imej", "uploading": "Memuat naik…", "remove": "Buang imej", "empty": "Tiada imej lagi.", "error": "Beberapa imej gagal dimuat naik. Sila cuba lagi.", "count": "{count} {count, plural, one {imej} other {imej}}" },
+        "review": { "title": "Semak & lancar", "subtitle": "Inilah yang akan kami sediakan.", "template": "Templat", "theme": "Tema", "images": "Imej", "homeBlocks": "{count} bahagian utama", "galleryBlocks": "{count} bahagian galeri" },
+        "toasts": { "saved": "Portfolio anda sudah bersedia!", "error": "Sesuatu telah berlaku. Sila cuba lagi." }
+      }
     }
   },
   "common": {

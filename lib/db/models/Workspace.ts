@@ -7,11 +7,14 @@ import {
   BRAND_KIT_BUTTON_STYLES,
   CONTACT_BUTTON_COLORS,
 } from "@/lib/page-builder/types";
+import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
 export const PLAN_TIERS = ["free", "starter", "pro"] as const;
 export type PlanTier = (typeof PLAN_TIERS)[number];
 
-export const PUBLIC_PAGE_TEMPLATES = ["default", "editorial", "studio"] as const;
+// The portfolio template the workspace was seeded from. Canonical ids live in
+// the template registry so adding a template there makes it persistable here.
+export const PUBLIC_PAGE_TEMPLATES = PORTFOLIO_TEMPLATE_IDS;
 export type PublicPageTemplate = (typeof PUBLIC_PAGE_TEMPLATES)[number];
 
 // HitPay recurring statuses we care about. HitPay's API documents:
@@ -65,8 +68,14 @@ const workspaceSchema = new Schema(
       },
     },
     publicPage: {
-      templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "default" },
+      templateId: { type: String, enum: PUBLIC_PAGE_TEMPLATES, default: "minimal" },
       data: {
+        home: { type: Schema.Types.Mixed, default: null },
+        gallery: { type: Schema.Types.Mixed, default: null },
+      },
+      // Soft-archive of the previous {home,gallery} data, written by the wizard
+      // reset flow before it overwrites — so an accidental reset is recoverable.
+      previousData: {
         home: { type: Schema.Types.Mixed, default: null },
         gallery: { type: Schema.Types.Mixed, default: null },
       },

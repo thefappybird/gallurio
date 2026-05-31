@@ -853,6 +853,40 @@
         },
         "history": { "title": "Riwayat", "submitted": "Pertanyaan dikirim", "converted": "Disetujui menjadi pemesanan" }
       }
+    },
+    "pageBuilder": {
+      "title": "Pembuat halaman",
+      "editorComingSoon": "Editor lengkap hadir di pembaruan berikutnya. Portofolio Anda sudah disiapkan dan siap digunakan.",
+      "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengedit portofolio.",
+      "openPublicPage": "Lihat halaman publik",
+      "editPlaceholderHint": "Anda dapat menjalankan ulang pengaturan kapan saja untuk memulai dari templat baru.",
+      "rerunWizard": "Jalankan ulang pengaturan",
+      "brandKit": {
+        "themePreset": "Tema",
+        "presets": { "minimal": "Minimal", "editorial": "Editorial", "luxury": "Mewah", "bold": "Berani", "romantic": "Romantis", "modern": "Modern" },
+        "fontPair": "Font",
+        "colors": "Warna",
+        "useWorkspaceBranding": "Gunakan branding ruang kerja",
+        "colorLabels": { "primaryColor": "Utama", "secondaryColor": "Sekunder", "accentColor": "Aksen", "backgroundColor": "Latar belakang", "foregroundColor": "Teks" }
+      },
+      "wizard": {
+        "title": "Mari buat portofolio Anda",
+        "subtitle": "Beberapa langkah cepat dan Anda akan memiliki halaman yang siap tayang.",
+        "skip": "Lewati pengaturan",
+        "back": "Kembali",
+        "next": "Lanjutkan",
+        "launch": "Buka editor",
+        "launching": "Menyiapkan…",
+        "stepOf": "Langkah {current} dari {total}",
+        "overwrite": { "title": "Anda sudah memiliki portofolio", "body": "Menjalankan pengaturan lagi akan mengganti halaman Anda saat ini. Konten Anda yang ada akan diarsipkan sehingga dapat dipulihkan.", "continue": "Lanjutkan saja", "cancel": "Batal" },
+        "steps": { "template": "Templat", "branding": "Branding", "theme": "Tema", "images": "Gambar", "review": "Tinjau" },
+        "template": { "title": "Pilih titik awal", "subtitle": "Anda dapat mengubah semuanya nanti." },
+        "branding": { "title": "Konfirmasi branding Anda", "subtitle": "Diambil dari ruang kerja Anda — edit sesuai kebutuhan.", "tagline": "Tagline", "taglinePlaceholder": "Kalimat singkat yang merangkum Anda", "description": "Tentang", "descriptionPlaceholder": "Satu atau dua kalimat tentang pekerjaan Anda" },
+        "theme": { "title": "Pilih tampilan Anda", "subtitle": "Tema, font, dan warna untuk halaman publik Anda." },
+        "images": { "title": "Tambahkan beberapa foto", "subtitle": "Unggah setidaknya satu — lima foto terlihat bagus. Kami akan menambahkannya ke galeri \"Karya unggulan\".", "upload": "Unggah gambar", "uploading": "Mengunggah…", "remove": "Hapus gambar", "empty": "Belum ada gambar.", "error": "Beberapa gambar gagal diunggah. Silakan coba lagi.", "count": "{count} {count, plural, one {gambar} other {gambar}}" },
+        "review": { "title": "Tinjau & luncurkan", "subtitle": "Inilah yang akan kami siapkan.", "template": "Templat", "theme": "Tema", "images": "Gambar", "homeBlocks": "{count} bagian beranda", "galleryBlocks": "{count} bagian galeri" },
+        "toasts": { "saved": "Portofolio Anda siap!", "error": "Ada yang tidak beres. Silakan coba lagi." }
+      }
     }
   },
   "common": {
