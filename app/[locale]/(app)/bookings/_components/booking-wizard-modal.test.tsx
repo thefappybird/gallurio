@@ -1159,6 +1159,8 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
           defaultDate="2026-09-01"
           defaultCurrency="PHP"
           locale="en"
+          // Phase 5: create requires a team; the page seeds the default team.
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );

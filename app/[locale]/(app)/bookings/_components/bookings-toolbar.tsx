@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
+import type { BookingTeamOption } from "../_data/team-options";
 
 const ALL = "__all__";
 
@@ -27,6 +29,9 @@ export function BookingsToolbar({
   onAddClick,
   view = "table",
   canCreate = true,
+  teams = [],
+  activeTeam = "all",
+  isOwner = false,
 }: {
   defaultCurrency: string;
   /** When provided, the "New Booking" button calls this directly instead of
@@ -40,6 +45,12 @@ export function BookingsToolbar({
    *  are view-only — only owners can create or bulk-import bookings. Export
    *  remains visible because it is team-scoped server-side. */
   canCreate?: boolean;
+  /** Available teams for the team filter picker. */
+  teams?: BookingTeamOption[];
+  /** Currently selected team id, or "all". */
+  activeTeam?: string;
+  /** Whether the current user is a workspace owner. */
+  isOwner?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -136,6 +147,15 @@ export function BookingsToolbar({
               ))}
             </SelectContent>
           </Select>
+        ) : null}
+
+        {teams.length > 0 ? (
+          <TeamPicker
+            teams={teams}
+            value={activeTeam}
+            isOwner={isOwner}
+            onChange={(v) => pushParams({ team: v === "all" ? null : v })}
+          />
         ) : null}
 
         <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">

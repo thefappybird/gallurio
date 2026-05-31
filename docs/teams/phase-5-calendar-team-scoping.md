@@ -1,58 +1,61 @@
 # Phase 5 — Calendar team scoping
 
-**Status:** planned (not started)
+**Status:** ✅ implemented (branch `feat/teams-bookings/phases-4-6`)
 **Depends on:** Phase 4 (`Booking.teamId`, `canWriteBookingForTeam`, `resolveBookingTeamScope`, member visibility)
 **Unlocks:** —
 
 > See [README.md](./README.md) and [phases-1-3-as-built-notes.md](./phases-1-3-as-built-notes.md).
-> Phase 4 already ships server-side team write-permission and read-scoping; Phase 5 is the
-> **UI layer** that surfaces team selection and lets leads/members create.
 
 ## Goal
 
-A team picker in the bookings UI. Members see only their teams. Booking creation auto-fills
-`teamId`. Calendar events are visually separable by team.
+A team picker in the bookings UI (filters both table and calendar). Members see only
+their teams. Calendar events are color-separable by team in the "All teams" overlay.
+Booking creation auto-fills `teamId` and is available to owners **and team leads** (lifting
+the Phase-4 owner-only stopgap).
 
-## Scope
+## What shipped
 
-- **Team picker** (`_components/team-picker.tsx`, new): owner → all teams + "All teams";
-  member → their teams + "All my teams". **Deactivated teams still appear as choices** (so the
-  owner can review past work), rendered as `[name] [inactive]`, active first then inactive.
-  Selecting an inactive team is **view-only** (no create — the server already rejects new work
-  on inactive teams).
-- **State persistence:** follow the existing **URL `searchParams`** convention (`?team=<id|all>`),
-  not localStorage. Validate `?team` against the caller's team list on the server; fall back to
-  `all`. The page already resolves the visibility scope via `resolveBookingTeamScope` — narrow
-  it further when a specific team is selected.
-- **Placement:** add `<TeamPicker>` to `bookings-toolbar.tsx` (and/or the in-calendar
-  `CalendarToolbar`). `page.tsx` reads `?team`, resolves allowed teams, passes `teamIds` to
-  `listBookings`.
-- **Event color (locked):** when "All teams" is active, color events by **team color**
-  (`Team.color`) so teams are visually separable; when a single team is selected, keep the
-  existing **status colors** (`STATUS_COLOR`). `booking-calendar.tsx` accepts a `teamColorMap`
-  + a `colorMode` flag; a small legend maps colors → team names in the "All teams" view.
-- **Inactive-team candles (locked):** any booking whose team resolves to a **deactivated** team
-  renders in a dedicated neutral/desaturated color (a semantic token, e.g. the `--muted` family)
-  in **both** color modes, so retired-team records read as archival. Legend label: "Inactive team".
-- **Create auto-fill:** the wizard (`booking-wizard-modal.tsx` + steps `types.ts`) gains a
-  first-class `teamId` in `WizardValues`, pre-filled from the active `?team`; if `all`, default
-  to the caller's first team membership (owner → Main). Owners get a small in-wizard team picker;
-  members with one team see it read-only. This **replaces the Phase-4 stopgap** (where create was
-  owner-only and `teamId` was hard-defaulted to Main) — leads/members can now create for their
-  active teams (the server already permits this via `canWriteBookingForTeam`).
+- **Team options helper** ([_data/team-options.ts](<../../app/[locale]/(app)/bookings/_data/team-options.ts>)):
+  `getBookingTeamOptions(ctx)` → the teams a caller can see (owner: all, active+default first;
+  non-owner: their own), each with `{ id, name, color, isActive, isLead }`. Inactive teams are
+  included as view-only choices.
+- **Team picker** ([_components/team-picker.tsx](<../../app/[locale]/(app)/bookings/_components/team-picker.tsx>)):
+  a `Select` with an "all" option (owner → "All teams"; member → "All my teams"), active teams
+  (color swatch + name), then inactive teams grouped below with an "Inactive" suffix. Lives in
+  `bookings-toolbar.tsx` so it filters **both** views.
+- **URL state:** `?team=<id|all>` (searchParams, not localStorage). `page.tsx` validates the
+  param against the caller's visible teams (falls back to `all`) and narrows `listBookings`'
+  `teamIds` within the caller's visibility scope.
+- **Calendar color (locked):** `booking-calendar.tsx` takes `colorMode` + `teamColorMap`. When
+  `?team=all` → events colored by **team color** (`Team.color`); a single team → existing
+  **status colors**. All four color sites route through one `eventColor()` helper.
+- **Inactive-team candles (locked):** any booking whose team isn't in the active color map renders
+  in `INACTIVE_TEAM_COLOR` (a desaturated neutral, [lib/teams/team-colors.ts](../../lib/teams/team-colors.ts))
+  in team mode. `calendar-view.tsx` shows a team legend (active teams + an "Inactive team" entry)
+  when in team mode, replacing the status legend.
+- **Wizard team selection:** `teamId` is now a first-class `WizardValues` field
+  ([booking-wizard-steps/types.ts](<../../app/[locale]/(app)/bookings/_components/booking-wizard-steps/types.ts>)),
+  prefilled from the active `?team`/default team. The event step shows a team `Select` when the
+  caller has >1 writable team, or a read-only label for exactly one. Create-mode submit is gated
+  on a chosen team. `buildCreatePayload` reads `values.teamId`.
+- **Create access generalized:** `page.tsx` now sets `canCreate` = owner **or** lead of ≥1 active
+  team, and passes `writableTeams` (owner: all active; lead: their active lead teams) to the
+  wizard — the Phase-4 owner-only stopgap is gone. The server already enforced this via
+  `canWriteBookingForTeam`.
 
 ## Tests
 
-- Team-picker smoke (owner vs member option sets; inactive grouped + view-only).
-- `?team` searchParam validation/fallback to `all`.
-- Wizard defaults `teamId` correctly; members with one team are read-only; inactive selection
-  blocks create.
-- Calendar color mode switch (team color on "All teams", status color on single team; inactive
-  neutral candle in both).
+- `team-options.test.ts` — owner sees all (incl. inactive, writable); non-owner sees only their
+  teams with `isLead` by role; deactivated membership still visible; empty for non-members;
+  tenant isolation.
+- `team-picker.test.tsx` — owner vs member "all" label; selected-team display; form-control mirror.
+- `booking-calendar.test.tsx` / calendar helpers — `CalendarEvent.teamId` fixtures; status-mode
+  unchanged.
+- `booking-wizard-modal.test.tsx` — create submit requires a team (seeded default).
 
 ## Verification
 
 ```bash
 pnpm typecheck && pnpm lint
-pnpm test --run team-picker calendar "app/[locale]/(app)/bookings"
+pnpm test --run "app/[locale]/(app)/bookings" "app/[locale]/(app)/teams"
 ```

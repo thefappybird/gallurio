@@ -1,7 +1,8 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
+import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
-import { Client, Team } from "@/lib/db/models";
+import { Client } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
@@ -41,6 +42,7 @@ export async function generateMetadata({
 
 type SearchParams = {
   view?: string;
+  team?: string;
   date?: string;
   time?: string;
   status?: string;
@@ -76,20 +78,33 @@ export default async function BookingsPage({
   // empty `teamIds` array → the query matches nothing (fail-closed).
   const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
 
-  // Phase 4: only owners get the create affordance; new bookings default to the
-  // Main team. The in-wizard team picker (and lead/member create) lands in
-  // Phase 5 — the server already permits leads via canWriteBookingForTeam.
-  const canCreate = role === "owner";
-  let defaultTeamId: string | null = null;
-  if (canCreate) {
-    const mainTeam = await Team.findOne({ workspaceId: workspace._id, isDefault: true })
-      .select({ _id: 1 })
-      .lean();
-    defaultTeamId = mainTeam ? String(mainTeam._id) : null;
-  }
-
   const sp = await searchParams;
   const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
+
+  // Phase 5 — team scoping. Owners see every team; non-owners see only their own
+  // (both include deactivated teams, shown as view-only choices).
+  const teamOptions = await getBookingTeamOptions({ role, userId, workspace });
+  // Writable = active teams the caller may create for (owner: any active team;
+  // others: active teams they lead). Members with no lead team cannot create.
+  const writableTeams = teamOptions.filter((o) => o.isActive && (role === "owner" || o.isLead));
+  const canCreate = writableTeams.length > 0;
+  // `?team` selects a single visible team, or "all".
+  const activeTeam =
+    sp.team && sp.team !== "all" && teamOptions.some((o) => o.id === sp.team) ? sp.team : "all";
+  // Color events by team only in the "all teams" overlay; a single team keeps
+  // the existing status colors. Map carries ACTIVE teams' colors; inactive teams
+  // fall through to the calendar's neutral "archival" color.
+  const colorMode: "team" | "status" = activeTeam === "all" ? "team" : "status";
+  const teamColorMap: Record<string, string> = Object.fromEntries(
+    teamOptions.filter((o) => o.isActive).map((o) => [o.id, o.color]),
+  );
+  // New bookings default to the selected team (if writable), else the caller's
+  // first writable team (owner → Main, which sorts first).
+  const writableIds = new Set(writableTeams.map((w) => w.id));
+  const defaultTeamId: string | null =
+    activeTeam !== "all" && writableIds.has(activeTeam)
+      ? activeTeam
+      : (writableTeams[0]?.id ?? null);
 
   // Parse pagination params (table view only).
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
@@ -103,7 +118,9 @@ export default async function BookingsPage({
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
-    teamIds: allowedTeamIds,
+    // A specific team selection narrows within the caller's visibility scope;
+    // "all" falls back to the full visibility scope (owner: undefined = all).
+    teamIds: activeTeam !== "all" ? [activeTeam] : allowedTeamIds,
   };
 
   // These two reads are independent — run them together to save a round-trip.
@@ -181,6 +198,7 @@ export default async function BookingsPage({
             return result.candles.map((candle) => ({
               id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
               bookingId,
+              teamId: b.teamId ? String(b.teamId) : null,
               title: b.title,
               start: candle.start,
               end: candle.end,
@@ -260,6 +278,10 @@ export default async function BookingsPage({
           clients={initialClients}
           canCreate={canCreate}
           defaultTeamId={defaultTeamId}
+          teams={teamOptions}
+          activeTeam={activeTeam}
+          writableTeams={writableTeams}
+          isOwner={role === "owner"}
         />
       ) : null}
 
@@ -273,6 +295,12 @@ export default async function BookingsPage({
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           canCreate={canCreate}
           defaultTeamId={defaultTeamId}
+          teams={teamOptions}
+          activeTeam={activeTeam}
+          writableTeams={writableTeams}
+          isOwner={role === "owner"}
+          colorMode={colorMode}
+          teamColorMap={teamColorMap}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),

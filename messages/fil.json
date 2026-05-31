@@ -81,6 +81,12 @@
         "export": "Mag-export ng CSV",
         "add": "Bagong booking"
       },
+      "teamPicker": {
+        "allTeams": "Lahat ng koponan",
+        "allMyTeams": "Lahat ng aking koponan",
+        "label": "I-filter ayon sa koponan",
+        "inactive": "Hindi aktibo"
+      },
       "import": {
         "title": "Mag-import ng mga booking",
         "dropzone": "Mag-drop ng CSV file dito, o mag-click para pumili",
@@ -355,7 +361,9 @@
         "showPast": "Ipakita ang nakaraan",
         "hidePast": "Itago ang nakaraan",
         "filterByStatus": "I-filter ayon sa status",
-        "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin"
+        "filterActive": "Nini-filter ayon sa {status} — pindutin muli para alisin",
+        "teamsLegend": "Mga Koponan",
+        "inactiveTeam": "Hindi aktibong koponan"
       },
       "sessions": {
         "label": "Sesyon {n}",
@@ -454,7 +462,9 @@
         },
         "review": {
           "intro": "Mabilis na pagsusuri — kumpirmahin na tama ang lahat bago ka mag-save."
-        }
+        },
+        "teamLabel": "Koponan",
+        "teamPlaceholder": "Pumili ng koponan"
       }
     },
     "sidebar": {

@@ -81,6 +81,12 @@
         "export": "Ekspor CSV",
         "add": "Pemesanan baru"
       },
+      "teamPicker": {
+        "allTeams": "Semua tim",
+        "allMyTeams": "Semua tim saya",
+        "label": "Filter berdasarkan tim",
+        "inactive": "Tidak aktif"
+      },
       "import": {
         "title": "Impor pemesanan",
         "dropzone": "Letakkan file CSV di sini, atau klik untuk memilih",
@@ -355,7 +361,9 @@
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
         "filterByStatus": "Filter berdasarkan status",
-        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus"
+        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
+        "teamsLegend": "Tim",
+        "inactiveTeam": "Tim tidak aktif"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -454,7 +462,9 @@
         },
         "review": {
           "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
-        }
+        },
+        "teamLabel": "Tim",
+        "teamPlaceholder": "Pilih tim"
       }
     },
     "sidebar": {

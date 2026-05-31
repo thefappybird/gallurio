@@ -47,6 +47,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
     id: "booking1_s0_2026-08-15",
     bookingId: "booking1",
+    teamId: null,
     title: "Carter Wedding",
     start,
     end,

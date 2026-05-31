@@ -1,6 +1,6 @@
 # Teams Management — Roadmap Index
 
-**Status:** Phases 1–4 shipped · Phases 5–6 planned
+**Status:** Phases 1–5 shipped · Phase 6 planned
 
 Each phase is a separately mergeable PR. Open the phase you're working on; the README only carries shared context (decisions, architecture).
 
@@ -17,7 +17,7 @@ Each phase is a separately mergeable PR. Open the phase you're working on; the R
 | 2 | [phase-2-team-model-and-settings.md](./phase-2-team-model-and-settings.md) | ✅ shipped (as dedicated `/teams` page, not a Settings panel) | `Team` + `TeamMembership` models, owner Teams page, Main-team bootstrap, `assertCanAddTeam` guard. |
 | 3 | [phase-3-member-invites-and-nav.md](./phase-3-member-invites-and-nav.md) | ✅ shipped | Clerk invites, team assignment UI, `assertCanAddTeamMember`, reduced member sidebar (`MEMBER_NAV = [Bookings]`) + `proxy.ts` guards. |
 | 4 | [phase-4-booking-team-linkage.md](./phase-4-booking-team-linkage.md) | ✅ shipped | Team **soft-delete** (deactivate/reactivate), `Booking.teamId` + backfill, member-visibility scoping across the booking API, `canEditBooking`. |
-| 5 | [phase-5-calendar-team-scoping.md](./phase-5-calendar-team-scoping.md) | planned | Team picker; team-color overlay on "All teams"; auto-fill `teamId`; lead/member create UX. |
+| 5 | [phase-5-calendar-team-scoping.md](./phase-5-calendar-team-scoping.md) | ✅ shipped | Team picker (`?team`); team-color overlay + legend on "All teams" (inactive = neutral); wizard team field; create generalized to owners + leads. |
 | 6 | [phase-6-transactions-team-attribution.md](./phase-6-transactions-team-attribution.md) | planned | Denormalize `teamId` onto Transaction; surface team in client-detail list + dashboard grouping. |
 | — | [phases-1-3-as-built-notes.md](./phases-1-3-as-built-notes.md) | reference | Divergence table: what actually shipped in 1–3. |
 

@@ -11,6 +11,8 @@ import {
   type AnyCalendarEvent,
 } from "./booking-calendar";
 import { BookingStatusLegend } from "./booking-status-legend";
+import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import type { BookingTeamOption } from "../_data/team-options";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
@@ -56,6 +58,18 @@ type Props = {
   /** The Main team id to attach new bookings to. Passed through to the create
    *  wizard as teamId. */
   defaultTeamId?: string | null;
+  /** "team" colors events by team; "status" (default) uses the status palette. */
+  colorMode?: "status" | "team";
+  /** Active-team id → hex color, passed through to BookingCalendar. */
+  teamColorMap?: Record<string, string>;
+  /** All teams visible to this user — used for the team legend. */
+  teams?: BookingTeamOption[];
+  /** Teams the user can write to — passed to the create wizard. */
+  writableTeams?: BookingTeamOption[];
+  /** Currently selected team id, or undefined when showing all teams. */
+  activeTeam?: string;
+  /** Whether the current user is a workspace owner. */
+  isOwner?: boolean;
 };
 
 /**
@@ -125,11 +139,16 @@ export function CalendarView({
   externalAddNonce,
   canCreate = true,
   defaultTeamId,
+  colorMode = "status",
+  teamColorMap,
+  teams,
+  writableTeams,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
+  const tCalendar = useTranslations("app.bookings.calendar");
 
   const [, startTransition] = useTransition();
 
@@ -633,13 +652,49 @@ export function CalendarView({
     [router, pathname, searchParams]
   );
 
+  // Derive inactive teams for legend: teams that exist but are not active.
+  const hasInactiveTeam = teams ? teams.some((team) => !team.isActive) : false;
+  const activeTeams = teams ? teams.filter((team) => team.isActive) : [];
+
   return (
     <>
-      <div className="mb-3">
-        <BookingStatusLegend
-          activeStatus={activeStatus}
-          onToggle={toggleStatusFilter}
-        />
+      <div className="mb-3 flex flex-wrap items-start gap-y-2">
+        {colorMode === "team" ? (
+          <div
+            role="group"
+            aria-label={tCalendar("teamsLegend")}
+            className="flex flex-wrap items-center gap-x-2 gap-y-1.5"
+          >
+            {activeTeams.map((team) => (
+              <span
+                key={team.id}
+                className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground"
+              >
+                <span
+                  aria-hidden
+                  className="size-2.5 shrink-0"
+                  style={{ backgroundColor: team.color }}
+                />
+                {team.name}
+              </span>
+            ))}
+            {hasInactiveTeam && (
+              <span className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground">
+                <span
+                  aria-hidden
+                  className="size-2.5 shrink-0"
+                  style={{ backgroundColor: INACTIVE_TEAM_COLOR }}
+                />
+                {tCalendar("inactiveTeam")}
+              </span>
+            )}
+          </div>
+        ) : (
+          <BookingStatusLegend
+            activeStatus={activeStatus}
+            onToggle={toggleStatusFilter}
+          />
+        )}
       </div>
       <BookingCalendar
         events={visibleEvents}
@@ -659,6 +714,8 @@ export function CalendarView({
         pendingIds={pendingIds}
         messages={messages}
         showPast={showPast}
+        colorMode={colorMode}
+        teamColorMap={teamColorMap}
       />
       {addState ? (
         <BookingWizardModal
@@ -671,6 +728,7 @@ export function CalendarView({
           workspaceTimezone={workspaceTimezone}
           clients={clients}
           teamId={defaultTeamId ?? undefined}
+          teams={writableTeams}
           onClientCreated={refetchClients}
           onClose={() => {
             setAddState(null);

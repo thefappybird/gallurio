@@ -81,6 +81,12 @@
         "export": "Eksport CSV",
         "add": "Tempahan baru"
       },
+      "teamPicker": {
+        "allTeams": "Semua pasukan",
+        "allMyTeams": "Semua pasukan saya",
+        "label": "Tapis mengikut pasukan",
+        "inactive": "Tidak aktif"
+      },
       "import": {
         "title": "Import tempahan",
         "dropzone": "Lepaskan fail CSV di sini, atau klik untuk memilih",
@@ -355,7 +361,9 @@
         "showPast": "Tunjukkan lepas",
         "hidePast": "Sembunyi lepas",
         "filterByStatus": "Tapis mengikut status",
-        "filterActive": "Menapis mengikut {status} — ketik sekali lagi untuk kosongkan"
+        "filterActive": "Menapis mengikut {status} — ketik sekali lagi untuk kosongkan",
+        "teamsLegend": "Pasukan",
+        "inactiveTeam": "Pasukan tidak aktif"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -454,7 +462,9 @@
         },
         "review": {
           "intro": "Semak cepat — sahkan semua nampak betul sebelum anda simpan."
-        }
+        },
+        "teamLabel": "Pasukan",
+        "teamPlaceholder": "Pilih pasukan"
       }
     },
     "sidebar": {

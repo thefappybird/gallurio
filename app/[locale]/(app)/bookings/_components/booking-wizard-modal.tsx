@@ -66,11 +66,13 @@ type Props = {
    *  When provided, the parent owns the "is open" gate — the modal still
    *  manages its own animation state via Dialog's open/onOpenChange. */
   onClose?: () => void;
-  /** Team this new booking belongs to (create mode only). Required for POST
-   *  /api/bookings. If missing in create mode the submit button is disabled
-   *  as a safety net — the add affordance should already be hidden for
-   *  non-owners who cannot supply a teamId. */
+  /** Default team id for the new booking (create mode only). When there is
+   *  exactly one writable team this is pre-selected; otherwise the user picks
+   *  from the `teams` list in the event step. */
   teamId?: string;
+  /** Writable teams the current user may assign new bookings to. Rendered as
+   *  a selector in the event step (create mode only). */
+  teams?: { id: string; name: string }[];
 };
 
 type StepDef = {
@@ -80,7 +82,7 @@ type StepDef = {
 
 const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
-  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
+  { id: "event", fields: ["title", "eventType", "sessions", "location", "teamId"] },
   { id: "pricing", fields: ["amount"] },
   { id: "review", fields: [] },
 ];
@@ -104,6 +106,7 @@ export function BookingWizardModal({
   onClientCreated,
   onClose,
   teamId,
+  teams,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -154,8 +157,8 @@ export function BookingWizardModal({
   const tz = workspaceTimezone || FALLBACK_TZ;
 
   const defaults = useMemo(
-    () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
-    [defaultDate, defaultTime, defaultCurrency, initialValues]
+    () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues, defaultTeamId: teamId }),
+    [defaultDate, defaultTime, defaultCurrency, initialValues, teamId]
   );
 
   /**
@@ -452,6 +455,8 @@ export function BookingWizardModal({
       if (!title?.trim()) return false;
       // Every session must have a start date.
       if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
+      // In create mode, a team must be selected.
+      if (mode === "create" && !watch("teamId")) return false;
       // Conflicts no longer block navigation — they are surfaced on final submit.
     }
     if (step.id === "pricing") {
@@ -527,7 +532,7 @@ export function BookingWizardModal({
         const res = await fetch("/api/bookings", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify(buildCreatePayload(values, tz, teamId)),
+          body: JSON.stringify(buildCreatePayload(values, tz)),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -799,6 +804,8 @@ export function BookingWizardModal({
                     conflictsBySession={conflictsBySession}
                     loadingDates={loadingDates}
                     conflictCheckError={conflictCheckError}
+                    teams={mode === "create" ? teams : undefined}
+                    mode={mode}
                   />
                 ) : null}
                 {current.id === "pricing" ? (
@@ -885,7 +892,7 @@ export function BookingWizardModal({
                       submitting ||
                       !!loadError ||
                       (mode === "edit" && !isDirty) ||
-                      (mode === "create" && !teamId)
+                      (mode === "create" && !values.teamId)
                     }
                   >
                     {submitting ? (
@@ -924,11 +931,13 @@ function makeDefaults({
   defaultTime,
   defaultCurrency,
   initialValues,
+  defaultTeamId,
 }: {
   defaultDate?: string;
   defaultTime?: string;
   defaultCurrency: SupportedCurrency;
   initialValues?: Partial<WizardValues>;
+  defaultTeamId?: string;
 }): WizardValues {
   const now = new Date();
   const today = todayIso(now);
@@ -978,6 +987,7 @@ function makeDefaults({
       currency: initialValues?.amount?.currency ?? defaultCurrency,
     },
     notes: initialValues?.notes ?? "",
+    teamId: initialValues?.teamId ?? defaultTeamId ?? "",
   };
 }
 
@@ -991,7 +1001,7 @@ function sessionsToPayload(
   }));
 }
 
-function buildCreatePayload(v: WizardValues, timeZone: string, teamId?: string) {
+function buildCreatePayload(v: WizardValues, timeZone: string) {
   // POST /api/bookings expects bookingCreateSchema — strip clientName from
   // existing-mode client (server looks it up by id) and pass everything else
   // through. Date + time combine into full ISO strings here.
@@ -1022,7 +1032,7 @@ function buildCreatePayload(v: WizardValues, timeZone: string, teamId?: string) 
       currency: v.amount.currency,
     },
     notes: v.notes,
-    teamId,
+    teamId: v.teamId || undefined,
   };
 }
 

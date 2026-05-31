@@ -81,6 +81,12 @@
         "export": "ส่งออก CSV",
         "add": "การจองใหม่"
       },
+      "teamPicker": {
+        "allTeams": "ทุกทีม",
+        "allMyTeams": "ทีมทั้งหมดของฉัน",
+        "label": "กรองตามทีม",
+        "inactive": "ไม่ใช้งาน"
+      },
       "import": {
         "title": "นำเข้าการจอง",
         "dropzone": "วางไฟล์ CSV ที่นี่ หรือคลิกเพื่อเลือก",
@@ -355,7 +361,9 @@
         "showPast": "แสดงที่ผ่านมา",
         "hidePast": "ซ่อนที่ผ่านมา",
         "filterByStatus": "กรองตามสถานะ",
-        "filterActive": "กรองตาม {status} — แตะอีกครั้งเพื่อล้าง"
+        "filterActive": "กรองตาม {status} — แตะอีกครั้งเพื่อล้าง",
+        "teamsLegend": "ทีม",
+        "inactiveTeam": "ทีมที่ไม่ได้ใช้งาน"
       },
       "sessions": {
         "label": "เซสชัน {n}",
@@ -454,7 +462,9 @@
         },
         "review": {
           "intro": "ตรวจสอบอย่างรวดเร็ว — ยืนยันว่าทุกอย่างถูกต้องก่อนบันทึก"
-        }
+        },
+        "teamLabel": "ทีม",
+        "teamPlaceholder": "เลือกทีม"
       }
     },
     "sidebar": {

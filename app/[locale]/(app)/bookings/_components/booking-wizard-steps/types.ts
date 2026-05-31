@@ -25,6 +25,7 @@ export type WizardValues = {
   location: { address: string; lat: number | null; lng: number | null };
   amount: { total: number; deposit: number; currency: SupportedCurrency };
   notes: string;
+  teamId?: string;
 };
 
 export type WizardMode = "create" | "edit";

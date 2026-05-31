@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import type { BookingTeamOption } from "../_data/team-options";
 
 type ClientHit = {
   id: string;
@@ -23,6 +24,14 @@ type Props = {
   canCreate: boolean;
   /** The Main team id to attach new bookings to (null when canCreate is false). */
   defaultTeamId: string | null;
+  /** All teams visible to the current user (for the team picker filter). */
+  teams: BookingTeamOption[];
+  /** Currently active team filter value — "all" or a team id. */
+  activeTeam: string;
+  /** Whether the current user is a workspace owner. */
+  isOwner: boolean;
+  /** Teams the current user may assign to new bookings (writable teams). */
+  writableTeams: BookingTeamOption[];
 };
 
 /**
@@ -40,6 +49,10 @@ export function TableBookingManager({
   clients,
   canCreate,
   defaultTeamId,
+  teams,
+  activeTeam,
+  isOwner,
+  writableTeams,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -94,6 +107,9 @@ export function TableBookingManager({
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
         canCreate={canCreate}
+        teams={teams}
+        activeTeam={activeTeam}
+        isOwner={isOwner}
       />
       {addOpen ? (
         <BookingWizardModal
@@ -104,6 +120,7 @@ export function TableBookingManager({
           workspaceTimezone={workspaceTimezone}
           clients={clients}
           teamId={defaultTeamId ?? undefined}
+          teams={writableTeams}
           onClose={handleClose}
         />
       ) : null}

@@ -81,6 +81,12 @@
         "export": "Export CSV",
         "add": "New booking"
       },
+      "teamPicker": {
+        "allTeams": "All teams",
+        "allMyTeams": "All my teams",
+        "label": "Filter by team",
+        "inactive": "Inactive"
+      },
       "import": {
         "title": "Import bookings",
         "dropzone": "Drop a CSV file here, or click to select",
@@ -355,7 +361,9 @@
         "showPast": "Show past",
         "hidePast": "Hide past",
         "filterByStatus": "Filter by status",
-        "filterActive": "Filtering by {status} — tap again to clear"
+        "filterActive": "Filtering by {status} — tap again to clear",
+        "teamsLegend": "Teams",
+        "inactiveTeam": "Inactive team"
       },
       "sessions": {
         "label": "Session {n}",
@@ -454,7 +462,9 @@
         },
         "review": {
           "intro": "Quick check — confirm everything looks right before you save."
-        }
+        },
+        "teamLabel": "Team",
+        "teamPlaceholder": "Select a team"
       }
     },
     "sidebar": {

@@ -51,6 +51,10 @@ type Props = {
   loadingDates: Set<string>;
   /** When true, the conflict-check fetch failed — show an inline warning. */
   conflictCheckError?: boolean;
+  /** Writable teams the user can assign this booking to (create mode only). */
+  teams?: { id: string; name: string }[];
+  /** Wizard mode — team selector only renders in create mode. */
+  mode?: "create" | "edit";
 };
 
 function todayIso() {
@@ -305,8 +309,11 @@ export function EventStep({
   conflictsBySession,
   loadingDates,
   conflictCheckError = false,
+  teams,
+  mode,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
+  const tWiz = useTranslations("app.bookings.wizard");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const tSessions = useTranslations("app.bookings.sessions");
 
@@ -372,6 +379,40 @@ export function EventStep({
           />
         </div>
       </div>
+
+      {/* Team selector — create mode only */}
+      {mode === "create" && teams && teams.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="wiz-teamId">{tWiz("teamLabel")}</Label>
+          {teams.length === 1 ? (
+            <p id="wiz-teamId" className="text-sm text-foreground">
+              {teams[0].name}
+            </p>
+          ) : (
+            <Controller
+              control={control}
+              name="teamId"
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => v && field.onChange(v)}
+                >
+                  <SelectTrigger id="wiz-teamId">
+                    <SelectValue placeholder={tWiz("teamPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          )}
+        </div>
+      ) : null}
 
       {/* Conflict-check error warning */}
       {conflictCheckError ? (
