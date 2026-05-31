@@ -56,6 +56,7 @@ vi.mock("next-intl/server", () => ({
 
 vi.mock("@/lib/i18n/localeForCountry", () => ({
   localeForCountry: vi.fn(() => "en"),
+  resolvePublicChromeLocale: vi.fn(() => "en"),
 }));
 
 // ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -26,11 +27,9 @@ export type HeroBlockProps = {
   backgroundImageUrl?: string;
   backgroundOverlayOpacity: number;
   primaryCtaLabel: string;
-  primaryCtaAction: "open-contact" | "scroll-to-section";
-  primaryCtaTarget?: string;
+  primaryCtaAction: "open-contact" | "go-to-gallery";
   secondaryCtaLabel?: string;
-  secondaryCtaAction?: "open-contact" | "scroll-to-section";
-  secondaryCtaTarget?: string;
+  secondaryCtaAction?: "open-contact" | "go-to-gallery";
   alignment: "left" | "center";
   height: "tall" | "medium" | "short";
 };
@@ -47,10 +46,8 @@ export const heroDefaultProps: HeroBlockProps = {
   backgroundOverlayOpacity: 50,
   primaryCtaLabel: "Get in Touch",
   primaryCtaAction: "open-contact",
-  primaryCtaTarget: "",
   secondaryCtaLabel: "View Work",
-  secondaryCtaAction: "scroll-to-section",
-  secondaryCtaTarget: "gallery",
+  secondaryCtaAction: "go-to-gallery",
   alignment: "center",
   height: "tall",
 };
@@ -77,13 +74,13 @@ export function HeroBlock({
   backgroundOverlayOpacity,
   primaryCtaLabel,
   primaryCtaAction,
-  primaryCtaTarget,
   secondaryCtaLabel,
   secondaryCtaAction,
-  secondaryCtaTarget,
   alignment,
   height,
-}: HeroBlockProps) {
+  puck,
+}: HeroBlockProps & { puck?: BlockPuck }) {
+  const gallerySlug = getRenderWorkspaceFrom(puck)?.slug;
   const minHeight = HEIGHT_MAP[height] ?? "80vh";
   const overlayAlpha = Math.min(100, Math.max(0, backgroundOverlayOpacity)) / 100;
 
@@ -152,7 +149,9 @@ export function HeroBlock({
           zIndex: 1,
           width: "100%",
           maxWidth: "72rem",
-          margin: "0 auto",
+          // Left alignment must NOT center the block: margin auto on a flex item
+          // overrides the wrapper's justify-content, so only center when asked.
+          margin: alignment === "center" ? "0 auto" : "0",
           padding: "4rem 1.5rem",
           textAlign: alignment,
           display: "flex",
@@ -200,14 +199,14 @@ export function HeroBlock({
           <CtaButton
             label={primaryCtaLabel}
             action={primaryCtaAction}
-            target={primaryCtaTarget}
+            gallerySlug={gallerySlug}
             variant="primary"
           />
           {secondaryCtaLabel && secondaryCtaAction && (
             <CtaButton
               label={secondaryCtaLabel}
               action={secondaryCtaAction}
-              target={secondaryCtaTarget}
+              gallerySlug={gallerySlug}
               variant="secondary"
             />
           )}
@@ -223,13 +222,13 @@ export function HeroBlock({
 
 type CtaButtonProps = {
   label: string;
-  action: "open-contact" | "scroll-to-section";
-  target?: string;
+  action: "open-contact" | "go-to-gallery";
+  gallerySlug?: string;
   variant: "primary" | "secondary";
 };
 
-function CtaButton({ label, action, target, variant }: CtaButtonProps) {
-  const href = action === "scroll-to-section" && target ? `#${target}` : "#";
+function CtaButton({ label, action, gallerySlug, variant }: CtaButtonProps) {
+  const href = action === "go-to-gallery" && gallerySlug ? `/w/${gallerySlug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
   const baseStyle: React.CSSProperties = {
@@ -304,12 +303,8 @@ export const heroBlockConfig: ComponentConfig<HeroBlockProps> = {
       label: "Primary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
-    },
-    primaryCtaTarget: {
-      type: "text",
-      label: "Primary CTA target section ID (for scroll)",
     },
     secondaryCtaLabel: { type: "text", label: "Secondary CTA label (optional)" },
     secondaryCtaAction: {
@@ -317,12 +312,8 @@ export const heroBlockConfig: ComponentConfig<HeroBlockProps> = {
       label: "Secondary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
-    },
-    secondaryCtaTarget: {
-      type: "text",
-      label: "Secondary CTA target section ID",
     },
     alignment: {
       type: "select",

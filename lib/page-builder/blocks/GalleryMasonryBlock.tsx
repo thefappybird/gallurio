@@ -13,7 +13,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 
 export type GalleryMasonryProps = {
@@ -50,12 +50,13 @@ export async function GalleryMasonryBlock({
   gap,
   showCaptions,
   maxItems,
-}: GalleryMasonryProps) {
+  puck,
+}: GalleryMasonryProps & { puck?: BlockPuck }) {
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
-  const labels = getGalleryChromeLabels();
+  const labels = getGalleryChromeLabelsFrom(puck);
 
-  const workspace = getRenderWorkspace();
+  const workspace = getRenderWorkspaceFrom(puck);
   if (!workspace || !String(workspace._id)) {
     return <MasonryEmptyState message={labels.unavailable} />;
   }
@@ -109,11 +110,12 @@ export async function GalleryMasonryBlock({
         }}
       >
         {items.map((item) => {
-          const src = cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-            width: thumbWidth,
-            height: thumbWidth * 2,
-            crop: "limit",
-          });
+          const src =
+            cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+              width: thumbWidth,
+              height: thumbWidth * 2,
+              crop: "limit",
+            }) || item.url;
           const alt = item.altText || item.caption || "";
           return (
             <figure

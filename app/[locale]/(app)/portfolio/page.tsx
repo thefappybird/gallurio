@@ -61,6 +61,7 @@ export default async function PageBuilderEntry({
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(pp?.brandKit, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(pp?.contact, {});
+  const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
   // Locale-aware path to the chrome-less preview route (loaded in an iframe).
   // English has no prefix under localePrefix: "as-needed".
@@ -74,6 +75,7 @@ export default async function PageBuilderEntry({
       initialData={initialData}
       initialBrandKit={initialBrandKit}
       initialContact={initialContact}
+      initialFormLocale={initialFormLocale}
       publicOrigin={publicOrigin}
       previewBasePath={previewBasePath}
     />

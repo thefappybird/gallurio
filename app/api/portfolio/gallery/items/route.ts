@@ -4,6 +4,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { validatePhotoMeta } from "@/lib/page-builder/photoSpec";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,17 @@ export async function POST(req: Request) {
   const prefixCheck = makeWorkspacePrefixCheck(workspaceId.toString());
   if (!prefixCheck(parsed.data.cloudinaryPublicId)) {
     return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
+  }
+
+  // Server-side photo validation — format, size, and dimensions.
+  const photoCheck = validatePhotoMeta({
+    format: parsed.data.format,
+    sizeBytes: parsed.data.sizeBytes,
+    width: parsed.data.width,
+    height: parsed.data.height,
+  });
+  if (!photoCheck.ok) {
+    return NextResponse.json({ error: photoCheck.reason }, { status: 400 });
   }
 
   await connectDB();

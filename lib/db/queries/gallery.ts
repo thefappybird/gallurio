@@ -129,6 +129,8 @@ export type PickerCollection = {
 
 export type PickerItem = {
   id: string;
+  /** Cloudinary public ID — used by single-image fields (Hero/CTA backgrounds). */
+  publicId: string;
   thumbUrl: string;
   caption: string | null;
 };
@@ -213,6 +215,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
 
   return items.map((it) => ({
     id: String(it._id),
+    publicId: it.cloudinaryPublicId as string,
     thumbUrl: cloudinaryThumbnailUrl(it.cloudinaryPublicId as string, {
       width: 200,
       height: 200,

@@ -15,6 +15,7 @@
 
 import type { ComponentConfig } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,8 +25,7 @@ export type CTABannerProps = {
   headline: string;
   subhead?: string;
   ctaLabel: string;
-  ctaAction: "open-contact" | "scroll-to-section";
-  ctaTarget?: string;
+  ctaAction: "open-contact" | "go-to-gallery";
   background: "accent" | "surface" | "image";
   backgroundImagePublicId?: string;
   backgroundImageUrl?: string;
@@ -40,7 +40,6 @@ export const ctaBannerDefaultProps: CTABannerProps = {
   subhead: "Let's create something beautiful together.",
   ctaLabel: "Get in Touch",
   ctaAction: "open-contact",
-  ctaTarget: "",
   background: "accent",
   backgroundImagePublicId: "",
   backgroundImageUrl: "",
@@ -55,16 +54,17 @@ export function CTABannerBlock({
   subhead,
   ctaLabel,
   ctaAction,
-  ctaTarget,
   background,
   backgroundImagePublicId,
   backgroundImageUrl,
-}: CTABannerProps) {
+  puck,
+}: CTABannerProps & { puck?: BlockPuck }) {
+  const gallerySlug = getRenderWorkspaceFrom(puck)?.slug;
   const bgImageSrc =
     background === "image"
-      ? backgroundImagePublicId
-        ? cloudinaryThumbnailUrl(backgroundImagePublicId, { width: 1600, crop: "fill" })
-        : backgroundImageUrl || null
+      ? (backgroundImagePublicId
+          ? cloudinaryThumbnailUrl(backgroundImagePublicId, { width: 1600, crop: "fill" })
+          : "") || backgroundImageUrl || null
       : null;
 
   // Determine text/button colors based on background type
@@ -163,7 +163,7 @@ export function CTABannerBlock({
         <BannerCta
           label={ctaLabel}
           action={ctaAction}
-          target={ctaTarget}
+          gallerySlug={gallerySlug}
           onDark={onDark}
         />
       </div>
@@ -177,13 +177,13 @@ export function CTABannerBlock({
 
 type BannerCtaProps = {
   label: string;
-  action: "open-contact" | "scroll-to-section";
-  target?: string;
+  action: "open-contact" | "go-to-gallery";
+  gallerySlug?: string;
   onDark: boolean;
 };
 
-function BannerCta({ label, action, target, onDark }: BannerCtaProps) {
-  const href = action === "scroll-to-section" && target ? `#${target}` : "#";
+function BannerCta({ label, action, gallerySlug, onDark }: BannerCtaProps) {
+  const href = action === "go-to-gallery" && gallerySlug ? `/w/${gallerySlug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
   return (
@@ -231,12 +231,8 @@ export const ctaBannerBlockConfig: ComponentConfig<CTABannerProps> = {
       label: "CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
-    },
-    ctaTarget: {
-      type: "text",
-      label: "CTA target section ID (for scroll)",
     },
     background: {
       type: "select",

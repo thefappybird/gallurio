@@ -9,7 +9,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { getItemsByIds } from "@/lib/db/queries/gallery";
 
 // Puck `array` fields persist an array of objects, so `itemIds` round-trips as
@@ -44,8 +44,9 @@ export async function FeaturedWorkBlock({
   subheading,
   itemIds,
   layout,
-}: FeaturedWorkProps) {
-  const workspace = getRenderWorkspace();
+  puck,
+}: FeaturedWorkProps & { puck?: BlockPuck }) {
+  const workspace = getRenderWorkspaceFrom(puck);
 
   let items: Awaited<ReturnType<typeof getItemsByIds>> = [];
   if (workspace && String(workspace._id)) {
@@ -64,7 +65,7 @@ export async function FeaturedWorkBlock({
     }
   }
 
-  const labels = getGalleryChromeLabels();
+  const labels = getGalleryChromeLabelsFrom(puck);
 
   return (
     <section
@@ -133,11 +134,12 @@ export async function FeaturedWorkBlock({
             }}
           >
             {items.map((item, i) => {
-              const src = cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-                width: 700,
-                height: 900,
-                crop: "fill",
-              });
+              const src =
+                cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+                  width: 700,
+                  height: 900,
+                  crop: "fill",
+                }) || item.url;
               const alt = item.altText || item.caption || "";
               const staggerOffset =
                 layout === "stagger" && i % 2 === 1 ? "2.5rem" : "0";

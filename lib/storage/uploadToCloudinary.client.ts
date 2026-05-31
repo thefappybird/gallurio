@@ -21,6 +21,7 @@ type SignResponse = {
   apiKey: string;
   cloudName: string;
   folder: string;
+  allowedFormats: string;
   uploadUrl: string;
 };
 
@@ -46,6 +47,9 @@ export async function uploadImageToCloudinary(
   form.append("timestamp", String(sign.timestamp));
   form.append("signature", sign.signature);
   form.append("folder", sign.folder);
+  // Forward allowed_formats so it matches what was signed; Cloudinary rejects
+  // uploads of any format not in this list and verifies it against the signature.
+  form.append("allowed_formats", sign.allowedFormats);
 
   const uploadRes = await fetch(sign.uploadUrl, { method: "POST", body: form });
   if (!uploadRes.ok) throw new Error("upload_failed");

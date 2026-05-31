@@ -20,7 +20,7 @@ import type { ComponentConfig, Field } from "@measured/puck";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
@@ -92,7 +92,8 @@ export async function GalleryGridBlock({
   gap,
   showCaptions,
   maxItems,
-}: GalleryGridProps) {
+  puck,
+}: GalleryGridProps & { puck?: BlockPuck }) {
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const cappedMax = Math.min(Math.max(1, maxItems), 100);
@@ -103,7 +104,7 @@ export async function GalleryGridBlock({
   }
 
   // Guard: no workspace context (preview / test without context)
-  const workspace = getRenderWorkspace();
+  const workspace = getRenderWorkspaceFrom(puck);
   if (!workspace) {
     return <GalleryEmptyState message="Gallery not available." />;
   }
@@ -164,11 +165,12 @@ export async function GalleryGridBlock({
           }}
         >
           {items.map((item) => {
-            const src = cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-              width: thumbWidth,
-              height: thumbWidth,
-              crop: "fill",
-            });
+            const src =
+              cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+                width: thumbWidth,
+                height: thumbWidth,
+                crop: "fill",
+              }) || item.url;
             const alt = item.altText || item.caption || "";
 
             return (

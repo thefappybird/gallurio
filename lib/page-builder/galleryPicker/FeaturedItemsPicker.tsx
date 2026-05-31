@@ -155,7 +155,12 @@ export function FeaturedItemsPicker({ value, onChange }: Props) {
         });
         if (!createRes.ok) throw new Error(`HTTP ${createRes.status}`);
         const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
-        uploadedItems.push({ id: created.id, thumbUrl: created.thumbUrl, caption: created.caption });
+        uploadedItems.push({
+          id: created.id,
+          publicId: r.value.cloudinaryPublicId,
+          thumbUrl: created.thumbUrl,
+          caption: created.caption,
+        });
         // Auto-select if below max.
         if (newSelectedIds.length < MAX_FEATURED) {
           newSelectedIds.push(created.id);

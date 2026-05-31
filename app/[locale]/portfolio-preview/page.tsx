@@ -6,7 +6,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
-import { localeForCountry } from "@/lib/i18n/localeForCountry";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { DEFAULT_BRAND_KIT, type PortfolioContactConfig } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import type { SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
@@ -58,7 +58,7 @@ export default async function PortfolioPreviewPage({
 
   // Chrome locale follows the workspace country (the public page does the same),
   // not the editor UI locale.
-  const chromeLocale = localeForCountry(workspace.country);
+  const chromeLocale = resolvePublicChromeLocale(workspace);
 
   let body: React.ReactNode;
 
@@ -118,8 +118,10 @@ export default async function PortfolioPreviewPage({
         },
       };
       body = runWithRenderWorkspace(renderWorkspace, () => (
+        // metadata threads workspace context to every block via props.puck.metadata —
+        // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        <Render data={zoneData} config={puckConfig as any} />
+        <Render data={zoneData} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
       ));
     }
   }

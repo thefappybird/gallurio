@@ -1004,7 +1004,17 @@
             "foreground": "Teksto"
           },
           "save": "I-save",
-          "saving": "Nagse-save…"
+          "saving": "Nagse-save…",
+          "languageLabel": "Wika ng pampublikong pahina",
+          "languageHelp": "Wika ng form ng pagtatanong, navigation, at footer sa iyong pampublikong pahina.",
+          "languages": {
+            "auto": "Awtomatiko (batay sa bansa mo)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "th": "ไทย"
+          }
         },
         "mobileBanner": {
           "title": "Mas maganda ang editor sa mas malaking screen",
@@ -1018,7 +1028,8 @@
           "edit": "I-edit",
           "title": "Live na preview",
           "empty": "Wala pang ipi-preview. Magdagdag ng ilang seksyon, pagkatapos ay bumalik."
-        }
+        },
+        "photos": "Mga Larawan"
       },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",

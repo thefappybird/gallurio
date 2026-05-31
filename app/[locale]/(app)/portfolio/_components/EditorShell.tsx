@@ -24,6 +24,7 @@ import { PublishDialog } from "./PublishDialog";
 import { ThemePanelDialog } from "./ThemePanelDialog";
 import { ContactPanelDialog } from "./ContactPanelDialog";
 import { MobileBanner } from "./MobileBanner";
+import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,8 @@ type Props = {
   initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
+  /** Per-page public chrome language ("" = auto from workspace country). */
+  initialFormLocale: string;
   publicOrigin: string;
   /** Locale-aware path to the chrome-less preview route (iframe src base). */
   previewBasePath: string;
@@ -72,6 +75,7 @@ export function EditorShell({
   initialData,
   initialBrandKit,
   initialContact,
+  initialFormLocale,
   publicOrigin,
   previewBasePath,
 }: Props) {
@@ -85,9 +89,11 @@ export function EditorShell({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [brandKit, setBrandKit] = useState(initialBrandKit);
   const [contact, setContact] = useState(initialContact);
+  const [formLocale, setFormLocale] = useState(initialFormLocale);
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
 
   const isContact = activeTab === "contact";
   const showPuck = !isContact && !previewMode;
@@ -107,6 +113,7 @@ export function EditorShell({
   // the live preview to the last-saved value (no "looks saved but isn't" trap).
   const themeSnapshot = useRef<PortfolioBrandKit | null>(null);
   const contactSnapshot = useRef<PortfolioContactConfig | null>(null);
+  const formLocaleSnapshot = useRef<string | null>(null);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -239,10 +246,14 @@ export function EditorShell({
   }
   function openContact() {
     contactSnapshot.current = contact;
+    formLocaleSnapshot.current = formLocale;
     setContactOpen(true);
   }
   function closeContact(saved: boolean) {
-    if (!saved && contactSnapshot.current) setContact(contactSnapshot.current);
+    if (!saved) {
+      if (contactSnapshot.current) setContact(contactSnapshot.current);
+      if (formLocaleSnapshot.current !== null) setFormLocale(formLocaleSnapshot.current);
+    }
     setContactOpen(false);
     if (saved && isContact) setPreviewNonce((n) => n + 1);
   }
@@ -283,6 +294,9 @@ export function EditorShell({
               {previewMode ? t("preview.edit") : t("preview.show")}
             </Button>
           )}
+          <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
+            {t("photos")}
+          </Button>
           <Button type="button" size="sm" variant="outline" onClick={openTheme}>
             {t("theme")}
           </Button>
@@ -371,9 +385,12 @@ export function EditorShell({
         open={contactOpen}
         contact={contact}
         onContactChange={setContact}
+        formLocale={formLocale}
+        onFormLocaleChange={setFormLocale}
         onSaved={() => closeContact(true)}
         onCancel={() => closeContact(false)}
       />
+      <CollectionsManagerDialog open={photosOpen} onOpenChange={setPhotosOpen} />
     </>
   );
 }

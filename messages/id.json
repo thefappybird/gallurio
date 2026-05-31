@@ -1004,7 +1004,17 @@
             "foreground": "Teks"
           },
           "save": "Simpan",
-          "saving": "Menyimpan…"
+          "saving": "Menyimpan…",
+          "languageLabel": "Bahasa halaman publik",
+          "languageHelp": "Bahasa formulir pertanyaan, navigasi, dan footer di halaman publik Anda.",
+          "languages": {
+            "auto": "Otomatis (berdasarkan negara Anda)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "th": "ไทย"
+          }
         },
         "mobileBanner": {
           "title": "Editor bekerja paling baik di layar yang lebih besar",
@@ -1018,7 +1028,8 @@
           "edit": "Edit",
           "title": "Pratinjau langsung",
           "empty": "Belum ada yang bisa dipratinjau. Tambahkan beberapa bagian, lalu kembali."
-        }
+        },
+        "photos": "Foto"
       },
       "wizard": {
         "title": "Mari buat portofolio Anda",

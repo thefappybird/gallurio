@@ -11,7 +11,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
 
@@ -40,9 +40,10 @@ export async function GalleryCarouselBlock({
   aspect,
   autoplay,
   maxItems,
-}: GalleryCarouselProps) {
-  const labels = getGalleryChromeLabels();
-  const workspace = getRenderWorkspace();
+  puck,
+}: GalleryCarouselProps & { puck?: BlockPuck }) {
+  const labels = getGalleryChromeLabelsFrom(puck);
+  const workspace = getRenderWorkspaceFrom(puck);
   if (!workspace || !String(workspace._id)) {
     return <CarouselEmptyState message={labels.unavailable} />;
   }
@@ -74,11 +75,12 @@ export async function GalleryCarouselBlock({
   const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
   const slides: CarouselSlide[] = items.map((item) => ({
     id: String(item._id),
-    src: cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-      width: size.width,
-      height: size.height,
-      crop: "fill",
-    }),
+    src:
+      cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+        width: size.width,
+        height: size.height,
+        crop: "fill",
+      }) || item.url,
     alt: item.altText || item.caption || "",
   }));
 

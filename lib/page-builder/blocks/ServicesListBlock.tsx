@@ -8,7 +8,7 @@
  */
 
 import type { ComponentConfig } from "@measured/puck";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,12 +58,12 @@ export const servicesListDefaultProps: ServicesListProps = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ServicesListBlock({ heading, items }: ServicesListProps) {
+export function ServicesListBlock({ heading, items, puck }: ServicesListProps & { puck?: BlockPuck }) {
   const cappedItems = items.slice(0, 8);
   // Read the resolved "Starting from {price}" template from the render context.
   // Falls back to English so the block still renders correctly in the Puck editor
   // (which does not wrap renders in runWithRenderWorkspace).
-  const startingFromTemplate = getRenderWorkspace()?.chrome?.startingFrom ?? "Starting from {price}";
+  const startingFromTemplate = getRenderWorkspaceFrom(puck)?.chrome?.startingFrom ?? "Starting from {price}";
 
   return (
     <section

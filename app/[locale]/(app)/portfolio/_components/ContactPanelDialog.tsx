@@ -19,12 +19,17 @@ import {
   CONTACT_BUTTON_COLORS,
   type PortfolioContactConfig,
 } from "@/lib/page-builder/types";
-import { updateContactConfigAction } from "../_actions";
+import { updateContactConfigAction, updateFormLocaleAction } from "../_actions";
+
+const FORM_LOCALES = ["", "en", "fil", "ms", "id", "th"] as const;
 
 type Props = {
   open: boolean;
   contact: PortfolioContactConfig;
   onContactChange: (next: PortfolioContactConfig) => void;
+  /** Per-page chrome language ("" = auto from country). */
+  formLocale: string;
+  onFormLocaleChange: (next: string) => void;
   /** Persisted successfully — parent closes and keeps the change. */
   onSaved: () => void;
   /** Closed without saving — parent reverts to the snapshot. */
@@ -34,7 +39,15 @@ type Props = {
 const selectClass =
   "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function ContactPanelDialog({ open, contact, onContactChange, onSaved, onCancel }: Props) {
+export function ContactPanelDialog({
+  open,
+  contact,
+  onContactChange,
+  formLocale,
+  onFormLocaleChange,
+  onSaved,
+  onCancel,
+}: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const te = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
@@ -46,8 +59,11 @@ export function ContactPanelDialog({ open, contact, onContactChange, onSaved, on
   async function save() {
     setSaving(true);
     try {
-      const res = await updateContactConfigAction(contact);
-      if ("error" in res) {
+      const [contactRes, localeRes] = await Promise.all([
+        updateContactConfigAction(contact),
+        updateFormLocaleAction(formLocale),
+      ]);
+      if ("error" in contactRes || "error" in localeRes) {
         toast.error(te("errorToast"));
         return;
       }
@@ -67,6 +83,23 @@ export function ContactPanelDialog({ open, contact, onContactChange, onSaved, on
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="contact-language">{t("languageLabel")}</Label>
+          <p className="text-xs text-muted-foreground">{t("languageHelp")}</p>
+          <select
+            id="contact-language"
+            className={selectClass}
+            value={formLocale}
+            onChange={(e) => onFormLocaleChange(e.target.value)}
+          >
+            {FORM_LOCALES.map((loc) => (
+              <option key={loc || "auto"} value={loc}>
+                {t(`languages.${loc || "auto"}`)}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">

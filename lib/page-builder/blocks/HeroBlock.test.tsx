@@ -103,24 +103,25 @@ describe("HeroBlock — CTA behavior", () => {
     expect(cta).not.toBeNull();
   });
 
-  it("scroll-to-section CTA has href='#<target>'", () => {
-    const { container } = renderHero({
-      primaryCtaAction: "scroll-to-section",
-      primaryCtaTarget: "gallery",
-    });
-    // No data-cta attribute on scroll CTAs
-    const links = container.querySelectorAll("a[role='button']");
-    const scrollLink = Array.from(links).find(
-      (el) => (el as HTMLAnchorElement).href.includes("#gallery")
+  it("go-to-gallery CTA links to /w/<slug>/gallery with no contact marker", () => {
+    const { container } = render(
+      <HeroBlock
+        {...heroDefaultProps}
+        primaryCtaAction="go-to-gallery"
+        puck={{ metadata: { workspace: { _id: "ws", name: "Studio", slug: "studio" } } }}
+      />
     );
-    expect(scrollLink).toBeDefined();
+    const galleryLink = Array.from(container.querySelectorAll("a[role='button']")).find(
+      (el) => el.getAttribute("href") === "/w/studio/gallery"
+    );
+    expect(galleryLink).toBeDefined();
+    expect((galleryLink as HTMLElement).getAttribute("data-cta")).toBeNull();
   });
 
   it("secondary CTA renders when secondaryCtaLabel is set", () => {
     renderHero({
       secondaryCtaLabel: "View Portfolio",
-      secondaryCtaAction: "scroll-to-section",
-      secondaryCtaTarget: "work",
+      secondaryCtaAction: "go-to-gallery",
     });
     expect(screen.getByText("View Portfolio")).toBeInTheDocument();
   });

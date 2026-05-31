@@ -1004,7 +1004,17 @@
             "foreground": "Text"
           },
           "save": "Save",
-          "saving": "Saving…"
+          "saving": "Saving…",
+          "languageLabel": "Public page language",
+          "languageHelp": "Language of the inquiry form, navigation, and footer on your public page.",
+          "languages": {
+            "auto": "Auto (based on your country)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "th": "ไทย"
+          }
         },
         "mobileBanner": {
           "title": "The editor works best on a larger screen",
@@ -1018,7 +1028,8 @@
           "edit": "Edit",
           "title": "Live preview",
           "empty": "Nothing to preview yet. Add some sections, then come back."
-        }
+        },
+        "photos": "Photos"
       },
       "wizard": {
         "title": "Let's build your portfolio",

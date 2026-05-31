@@ -97,6 +97,10 @@ const workspaceSchema = new Schema(
       seoTitle: { type: String, default: "" },
       seoDescription: { type: String, default: "" },
       inquiryRecipientEmail: { type: String, default: "" },
+      // Per-page language for the Gallurio chrome (inquiry form, nav, footer,
+      // gallery labels) on the public portfolio — isolated from the owner's own
+      // app locale. "" → fall back to the locale derived from workspace.country.
+      formLocale: { type: String, enum: ["en", "fil", "ms", "id", "th", ""], default: "" },
       // Customizable chrome for the prebuilt contact modal. The form fields are
       // fixed; only this copy + button presentation can be edited. Editing UI
       // lands with the page-builder editor (Phase 9); seeded defaults in Phase 8.

@@ -22,6 +22,7 @@
 import type { Config, ComponentConfig, Field } from "@measured/puck";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
+import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import type { HeroBlockProps } from "./blocks/HeroBlock";
 import type { AboutBlockProps, CredentialItem } from "./blocks/AboutBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -111,17 +112,21 @@ const hero: ComponentConfig<HeroBlockProps> = {
     backgroundOverlayOpacity: 50,
     primaryCtaLabel: "Get in Touch",
     primaryCtaAction: "open-contact",
-    primaryCtaTarget: "",
     secondaryCtaLabel: "View Work",
-    secondaryCtaAction: "scroll-to-section",
-    secondaryCtaTarget: "gallery",
+    secondaryCtaAction: "go-to-gallery",
     alignment: "center",
     height: "tall",
   },
   fields: {
     headline: { type: "text", label: "Headline" },
     subhead: { type: "text", label: "Sub-headline (optional)" },
-    backgroundImagePublicId: { type: "text", label: "Background image (Cloudinary public ID)" },
+    backgroundImagePublicId: {
+      type: "custom",
+      label: "Background image",
+      render: ({ value, onChange }) => (
+        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
+      ),
+    } as Field<string | undefined>,
     backgroundImageUrl: { type: "text", label: "Background image URL (fallback)" },
     backgroundOverlayOpacity: {
       type: "number",
@@ -135,20 +140,18 @@ const hero: ComponentConfig<HeroBlockProps> = {
       label: "Primary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
     },
-    primaryCtaTarget: { type: "text", label: "Primary CTA target section ID (for scroll)" },
     secondaryCtaLabel: { type: "text", label: "Secondary CTA label (optional)" },
     secondaryCtaAction: {
       type: "select",
       label: "Secondary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
     },
-    secondaryCtaTarget: { type: "text", label: "Secondary CTA target section ID" },
     alignment: {
       type: "select",
       label: "Content alignment",
@@ -166,6 +169,14 @@ const hero: ComponentConfig<HeroBlockProps> = {
         { label: "Short (40vh)", value: "short" },
       ],
     },
+  },
+  resolveFields: (data, { fields }) => {
+    const f: Record<string, unknown> = { ...fields };
+    // Owner picks a photo (no raw URL entry); url stays only as a render-time fallback.
+    delete f.backgroundImageUrl;
+    // Overlay opacity is only meaningful when a background image is set.
+    if (!data.props.backgroundImagePublicId) delete f.backgroundOverlayOpacity;
+    return f as unknown as typeof fields;
   },
   render: ({ headline, subhead, primaryCtaLabel, height }) => (
     <Preview label="Hero" lines={[headline, subhead, `${primaryCtaLabel} · ${height}`]} />
@@ -188,7 +199,13 @@ const about: ComponentConfig<AboutBlockProps> = {
   fields: {
     heading: { type: "text", label: "Heading" },
     body: { type: "textarea", label: "Body text (line breaks preserved)" },
-    imagePublicId: { type: "text", label: "Image (Cloudinary public ID)" },
+    imagePublicId: {
+      type: "custom",
+      label: "Photo",
+      render: ({ value, onChange }) => (
+        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
+      ),
+    } as Field<string | undefined>,
     imageUrl: { type: "text", label: "Image URL (fallback)" },
     imagePosition: {
       type: "select",
@@ -207,6 +224,11 @@ const about: ComponentConfig<AboutBlockProps> = {
       },
       getItemSummary: (item: CredentialItem) => item.label || "Credential",
     },
+  },
+  resolveFields: (_data, { fields }) => {
+    const f: Record<string, unknown> = { ...fields };
+    delete f.imageUrl; // owner picks a photo; url is a render-time fallback only
+    return f as unknown as typeof fields;
   },
   render: ({ heading, body, imagePosition }) => (
     <Preview label="About" lines={[heading, truncate(body), `image: ${imagePosition}`]} />
@@ -417,7 +439,6 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
     subhead: "Let's create something beautiful together.",
     ctaLabel: "Get in Touch",
     ctaAction: "open-contact",
-    ctaTarget: "",
     background: "accent",
     backgroundImagePublicId: "",
     backgroundImageUrl: "",
@@ -431,10 +452,9 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
       label: "CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
-        { label: "Scroll to section", value: "scroll-to-section" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
       ],
     },
-    ctaTarget: { type: "text", label: "CTA target section ID (for scroll)" },
     background: {
       type: "select",
       label: "Background style",
@@ -444,8 +464,21 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
         { label: "Image", value: "image" },
       ],
     },
-    backgroundImagePublicId: { type: "text", label: "Background image (Cloudinary public ID)" },
+    backgroundImagePublicId: {
+      type: "custom",
+      label: "Background image",
+      render: ({ value, onChange }) => (
+        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
+      ),
+    } as Field<string | undefined>,
     backgroundImageUrl: { type: "text", label: "Background image URL (fallback)" },
+  },
+  resolveFields: (data, { fields }) => {
+    const f: Record<string, unknown> = { ...fields };
+    delete f.backgroundImageUrl; // picker-driven; url is a render-time fallback only
+    // The background image picker is only relevant for the "Image" background style.
+    if (data.props.background !== "image") delete f.backgroundImagePublicId;
+    return f as unknown as typeof fields;
   },
   render: ({ headline, ctaLabel, background }) => (
     <Preview label="CTA Banner" lines={[headline, `${ctaLabel} · ${background}`]} />

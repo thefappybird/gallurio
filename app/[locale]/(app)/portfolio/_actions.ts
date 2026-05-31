@@ -127,3 +127,29 @@ export async function updateContactConfigAction(
   revalidatePath(`/w/${ctx.workspace.slug}`);
   return { ok: true };
 }
+
+// "" = auto (locale derived from the workspace country).
+const formLocaleSchema = z.enum(["", "en", "fil", "ms", "id", "th"]);
+
+/**
+ * Persist the per-page chrome language for the public portfolio (inquiry form,
+ * nav, footer, gallery labels). Owner-only. "" restores the country-derived
+ * default. Isolated from the owner's own app locale.
+ */
+export async function updateFormLocaleAction(input: unknown): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = formLocaleSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_locale" };
+
+  await connectDB();
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $set: { "publicPage.formLocale": parsed.data } }
+  );
+
+  revalidatePath(`/w/${ctx.workspace.slug}`);
+  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
+  return { ok: true };
+}

@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
+import { validatePhotoMeta } from "@/lib/page-builder/photoSpec";
 
 export const runtime = "nodejs";
 
@@ -71,6 +72,19 @@ export async function POST(req: Request) {
   const badItem = items.find((img) => !prefixCheck(img.cloudinaryPublicId));
   if (badItem) {
     return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
+  }
+
+  // Server-side photo validation — format, size, and dimensions for every starter item.
+  for (const img of items) {
+    const photoCheck = validatePhotoMeta({
+      format: img.format,
+      sizeBytes: img.sizeBytes,
+      width: img.width,
+      height: img.height,
+    });
+    if (!photoCheck.ok) {
+      return NextResponse.json({ error: photoCheck.reason }, { status: 400 });
+    }
   }
 
   await connectDB();

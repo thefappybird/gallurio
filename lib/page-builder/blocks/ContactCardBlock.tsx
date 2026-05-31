@@ -16,7 +16,7 @@
  */
 
 import type { ComponentConfig, Field } from "@measured/puck";
-import { getRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,8 +58,9 @@ export function ContactCardBlock({
   showAddress,
   showSocials,
   inlineCtaLabel,
-}: ContactCardProps) {
-  const workspace = getRenderWorkspace();
+  puck,
+}: ContactCardProps & { puck?: BlockPuck }) {
+  const workspace = getRenderWorkspaceFrom(puck);
   const contact = workspace?.contact ?? null;
   const branding = workspace?.branding ?? null;
 

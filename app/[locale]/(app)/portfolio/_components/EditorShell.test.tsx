@@ -32,11 +32,13 @@ const savePortfolioDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const publishPortfolioAction = vi.fn().mockResolvedValue({ ok: true });
 const updateBrandKitAction = vi.fn().mockResolvedValue({ ok: true });
 const updateContactConfigAction = vi.fn().mockResolvedValue({ ok: true });
+const updateFormLocaleAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
   updateBrandKitAction: (...a: unknown[]) => updateBrandKitAction(...a),
   updateContactConfigAction: (...a: unknown[]) => updateContactConfigAction(...a),
+  updateFormLocaleAction: (...a: unknown[]) => updateFormLocaleAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -53,6 +55,7 @@ const baseProps = {
   },
   initialBrandKit: DEFAULT_BRAND_KIT,
   initialContact: { title: "Hi" },
+  initialFormLocale: "",
   publicOrigin: "https://app.test",
   previewBasePath: "/portfolio-preview",
 };

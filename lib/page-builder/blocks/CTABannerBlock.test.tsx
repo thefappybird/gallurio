@@ -89,21 +89,17 @@ describe("CTABannerBlock — CTA behavior", () => {
     expect(container.querySelector("[data-cta='contact']")).toBeInTheDocument();
   });
 
-  it("scroll-to-section CTA has href='#<target>'", () => {
-    const { container } = renderBanner({
-      ctaAction: "scroll-to-section",
-      ctaTarget: "gallery",
-    });
+  it("go-to-gallery CTA links to /w/<slug>/gallery with no contact marker", () => {
+    const { container } = render(
+      <CTABannerBlock
+        {...ctaBannerDefaultProps}
+        ctaAction="go-to-gallery"
+        puck={{ metadata: { workspace: { _id: "ws", name: "Studio", slug: "studio" } } }}
+      />
+    );
     const link = container.querySelector("a[role='button']") as HTMLAnchorElement;
-    expect(link.href).toContain("#gallery");
-  });
-
-  it("scroll-to-section CTA has no data-cta attribute", () => {
-    const { container } = renderBanner({
-      ctaAction: "scroll-to-section",
-      ctaTarget: "services",
-    });
-    expect(container.querySelector("[data-cta='contact']")).toBeNull();
+    expect(link.getAttribute("href")).toBe("/w/studio/gallery");
+    expect(link.getAttribute("data-cta")).toBeNull();
   });
 });
 
@@ -176,9 +172,7 @@ describe("CTABannerBlock — missing optional props", () => {
     ).not.toThrow();
   });
 
-  it("renders without ctaTarget when action is open-contact (no crash)", () => {
-    expect(() =>
-      renderBanner({ ctaAction: "open-contact", ctaTarget: undefined })
-    ).not.toThrow();
+  it("renders an open-contact CTA (no crash)", () => {
+    expect(() => renderBanner({ ctaAction: "open-contact" })).not.toThrow();
   });
 });

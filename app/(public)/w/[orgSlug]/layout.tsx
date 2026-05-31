@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
-import { localeForCountry } from "@/lib/i18n/localeForCountry";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
@@ -40,7 +40,7 @@ export default async function PublicPortfolioLayout({
   const brandKit = workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT;
   const { cssVars, className } = resolveBrandKit(brandKit);
 
-  const locale = localeForCountry(workspace.country);
+  const locale = resolvePublicChromeLocale(workspace);
   const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tContact = await getTranslations({ locale, namespace: "publicPage.inquiryForm" });
 
