@@ -869,6 +869,47 @@
         "useWorkspaceBranding": "Gamitin ang branding ng workspace",
         "colorLabels": { "primaryColor": "Pangunahin", "secondaryColor": "Pangalawa", "accentColor": "Accent", "backgroundColor": "Background", "foregroundColor": "Teksto" }
       },
+      "editor": {
+        "zone": { "home": "Home", "gallery": "Gallery" },
+        "save": { "saving": "Nagse-save…", "saved": "Nai-save", "idle": "Nai-save na ang lahat ng pagbabago" },
+        "publish": "I-publish",
+        "publishing": "Inilalathala…",
+        "theme": "Tema",
+        "contact": "Makipag-ugnayan",
+        "publishedToast": "Nai-publish na! Live na ang iyong portfolio.",
+        "savedToast": "Nai-save.",
+        "errorToast": "Hindi ma-save. Subukan muli.",
+        "publishDialog": {
+          "title": "I-publish ang iyong portfolio?",
+          "body": "Makikita agad ng sinumang may link ang iyong mga pinakabagong pagbabago.",
+          "confirm": "I-publish ngayon",
+          "cancel": "Kanselahin",
+          "liveAt": "Live sa {url}",
+          "copyLink": "Kopyahin ang link",
+          "copied": "Nakopya"
+        },
+        "themeDialog": { "title": "Tema at brand" },
+        "contactDialog": {
+          "title": "Form ng pakikipag-ugnayan",
+          "formFixedNote": "Naayos na ang mga field ng form. Maaari kang mag-edit ng heading, mensahe, at button lamang.",
+          "titleLabel": "Pamagat",
+          "titlePlaceholder": "Magtulungan tayo",
+          "descriptionLabel": "Mensahe",
+          "descriptionPlaceholder": "Sabihin sa mga bisita kung ano ang dapat nilang asahan kapag nakipag-ugnayan sila.",
+          "buttonStyleLabel": "Estilo ng button",
+          "buttonColorLabel": "Kulay ng button",
+          "buttonStyles": { "solid": "Solid", "outline": "Outline", "soft": "Malambot" },
+          "buttonColors": { "primary": "Pangunahin", "secondary": "Pangalawa", "accent": "Accent", "foreground": "Teksto" },
+          "save": "I-save",
+          "saving": "Nagse-save…"
+        },
+        "mobileBanner": {
+          "title": "Mas maganda ang editor sa mas malaking screen",
+          "body": "Ang drag-and-drop na pag-edit ay dinisenyo para sa tablet at desktop.",
+          "openPreview": "Buksan ang preview",
+          "continue": "Magpatuloy naman"
+        }
+      },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",
         "subtitle": "Ilang mabilis na hakbang at magkakaroon ka ng live na pahina.",

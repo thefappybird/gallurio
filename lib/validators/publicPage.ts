@@ -58,7 +58,7 @@ export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigS
 // shape here so the Workspace model can do a surface-level check on save.
 // ---------------------------------------------------------------------------
 
-const puckDataSchema = z.object({
+export const puckDataSchema = z.object({
   root: z.object({ props: z.record(z.unknown()).optional() }).optional(),
   content: z.array(
     z.object({

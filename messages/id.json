@@ -869,6 +869,47 @@
         "useWorkspaceBranding": "Gunakan branding ruang kerja",
         "colorLabels": { "primaryColor": "Utama", "secondaryColor": "Sekunder", "accentColor": "Aksen", "backgroundColor": "Latar belakang", "foregroundColor": "Teks" }
       },
+      "editor": {
+        "zone": { "home": "Beranda", "gallery": "Galeri" },
+        "save": { "saving": "Menyimpan…", "saved": "Tersimpan", "idle": "Semua perubahan tersimpan" },
+        "publish": "Terbitkan",
+        "publishing": "Menerbitkan…",
+        "theme": "Tema",
+        "contact": "Kontak",
+        "publishedToast": "Diterbitkan! Portofolio Anda sudah tayang.",
+        "savedToast": "Tersimpan.",
+        "errorToast": "Tidak dapat menyimpan. Silakan coba lagi.",
+        "publishDialog": {
+          "title": "Terbitkan portofolio Anda?",
+          "body": "Siapa pun yang memiliki tautannya akan langsung melihat perubahan terbaru Anda.",
+          "confirm": "Terbitkan sekarang",
+          "cancel": "Batal",
+          "liveAt": "Tayang di {url}",
+          "copyLink": "Salin tautan",
+          "copied": "Disalin"
+        },
+        "themeDialog": { "title": "Tema & merek" },
+        "contactDialog": {
+          "title": "Formulir kontak",
+          "formFixedNote": "Kolom formulir bersifat tetap. Anda hanya dapat mengubah judul, pesan, dan tombol.",
+          "titleLabel": "Judul",
+          "titlePlaceholder": "Mari bekerja sama",
+          "descriptionLabel": "Pesan",
+          "descriptionPlaceholder": "Beri tahu pengunjung apa yang bisa mereka harapkan saat menghubungi Anda.",
+          "buttonStyleLabel": "Gaya tombol",
+          "buttonColorLabel": "Warna tombol",
+          "buttonStyles": { "solid": "Solid", "outline": "Garis tepi", "soft": "Lembut" },
+          "buttonColors": { "primary": "Utama", "secondary": "Sekunder", "accent": "Aksen", "foreground": "Teks" },
+          "save": "Simpan",
+          "saving": "Menyimpan…"
+        },
+        "mobileBanner": {
+          "title": "Editor bekerja paling baik di layar yang lebih besar",
+          "body": "Pengeditan seret dan lepas dirancang untuk tablet dan desktop.",
+          "openPreview": "Buka pratinjau",
+          "continue": "Lanjutkan saja"
+        }
+      },
       "wizard": {
         "title": "Mari buat portofolio Anda",
         "subtitle": "Beberapa langkah cepat dan Anda akan memiliki halaman yang siap tayang.",

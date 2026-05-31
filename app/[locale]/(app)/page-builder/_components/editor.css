@@ -1,0 +1,18 @@
+/* Scoped editor chrome.
+ *
+ * The wrapper carries the portfolio brand-kit CSS variables (--pf-*) so the
+ * in-place preview (iframe disabled) matches the live page. Puck's own UI uses
+ * its --puck-* variables, so the brand vars only affect the rendered blocks, not
+ * the editor chrome. The app shell (sidebar/topbar) sits outside this wrapper
+ * and is unaffected.
+ */
+.gallurio-editor {
+  /* Fill the app content area; Puck manages its internal scroll regions. */
+  height: calc(100dvh - 7rem);
+  min-height: 32rem;
+}
+
+/* Puck root should stretch to the wrapper. */
+.gallurio-editor > div {
+  height: 100%;
+}

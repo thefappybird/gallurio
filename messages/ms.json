@@ -869,6 +869,47 @@
         "useWorkspaceBranding": "Gunakan penjenamaan ruang kerja",
         "colorLabels": { "primaryColor": "Utama", "secondaryColor": "Sekunder", "accentColor": "Aksen", "backgroundColor": "Latar belakang", "foregroundColor": "Teks" }
       },
+      "editor": {
+        "zone": { "home": "Laman Utama", "gallery": "Galeri" },
+        "save": { "saving": "Menyimpan…", "saved": "Disimpan", "idle": "Semua perubahan disimpan" },
+        "publish": "Terbitkan",
+        "publishing": "Menerbitkan…",
+        "theme": "Tema",
+        "contact": "Hubungi",
+        "publishedToast": "Diterbitkan! Portfolio anda kini aktif.",
+        "savedToast": "Disimpan.",
+        "errorToast": "Tidak dapat disimpan. Sila cuba lagi.",
+        "publishDialog": {
+          "title": "Terbitkan portfolio anda?",
+          "body": "Sesiapa yang mempunyai pautan akan melihat perubahan terkini anda dengan segera.",
+          "confirm": "Terbitkan sekarang",
+          "cancel": "Batal",
+          "liveAt": "Aktif di {url}",
+          "copyLink": "Salin pautan",
+          "copied": "Disalin"
+        },
+        "themeDialog": { "title": "Tema & jenama" },
+        "contactDialog": {
+          "title": "Borang hubungi",
+          "formFixedNote": "Medan borang adalah tetap. Anda hanya boleh mengedit tajuk, mesej, dan butang sahaja.",
+          "titleLabel": "Tajuk",
+          "titlePlaceholder": "Mari bekerja bersama",
+          "descriptionLabel": "Mesej",
+          "descriptionPlaceholder": "Beritahu pengunjung apa yang boleh mereka jangkakan apabila menghubungi anda.",
+          "buttonStyleLabel": "Gaya butang",
+          "buttonColorLabel": "Warna butang",
+          "buttonStyles": { "solid": "Pepejal", "outline": "Garis luar", "soft": "Lembut" },
+          "buttonColors": { "primary": "Utama", "secondary": "Sekunder", "accent": "Aksen", "foreground": "Teks" },
+          "save": "Simpan",
+          "saving": "Menyimpan…"
+        },
+        "mobileBanner": {
+          "title": "Editor berfungsi dengan lebih baik pada skrin yang lebih besar",
+          "body": "Pengeditan seret dan lepas direka untuk tablet dan komputer meja.",
+          "openPreview": "Buka pratonton",
+          "continue": "Teruskan juga"
+        }
+      },
       "wizard": {
         "title": "Mari bina portfolio anda",
         "subtitle": "Beberapa langkah mudah dan anda akan mempunyai halaman langsung.",

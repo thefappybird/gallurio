@@ -1,9 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { redirect, Link } from "@/lib/i18n/navigation";
+import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PuckData } from "@/lib/page-builder/types";
+import { EditorShell } from "./_components/EditorShell";
 
 export async function generateMetadata({
   params,
@@ -14,6 +14,18 @@ export async function generateMetadata({
   setRequestLocale(locale);
   const t = await getTranslations("app.pageBuilder");
   return { title: t("title") };
+}
+
+const EMPTY_ZONE: PuckData = { content: [], root: {} };
+
+// Strip to plain, serializable JSON before crossing the server→client boundary.
+function toPlain<T>(value: unknown, fallback: T): T {
+  if (value === null || value === undefined) return fallback;
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 export default async function PageBuilderEntry({
@@ -27,7 +39,6 @@ export default async function PageBuilderEntry({
 
   const { workspace, role } = await requireOrg();
 
-  // Owner-only surface. Staff get a clear notice rather than a redirect loop.
   if (role !== "owner") {
     return (
       <div className="flex flex-col gap-4">
@@ -42,30 +53,23 @@ export default async function PageBuilderEntry({
     redirect({ href: "/page-builder/wizard", locale });
   }
 
-  // Editor placeholder until Phase 9. The portfolio exists and is editable via
-  // re-running setup; the full drag-and-drop editor lands next.
+  const pp = workspace.publicPage;
+  const initialData = {
+    home: toPlain<PuckData>(pp?.data?.home, EMPTY_ZONE),
+    gallery: toPlain<PuckData>(pp?.data?.gallery, EMPTY_ZONE),
+  };
+  const initialBrandKit = toPlain<PortfolioBrandKit>(pp?.brandKit, DEFAULT_BRAND_KIT);
+  const initialContact = toPlain<PortfolioContactConfig>(pp?.contact, {});
+  const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("editorComingSoon")}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="text-sm text-muted-foreground">{t("editPlaceholderHint")}</p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              render={<a href={`/w/${workspace.slug}`} target="_blank" rel="noreferrer" />}
-            >
-              {t("openPublicPage")}
-            </Button>
-            <Button variant="ghost" render={<Link href="/page-builder/wizard" />}>
-              {t("rerunWizard")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <EditorShell
+      slug={workspace.slug}
+      workspaceName={workspace.name}
+      initialData={initialData}
+      initialBrandKit={initialBrandKit}
+      initialContact={initialContact}
+      publicOrigin={publicOrigin}
+    />
   );
 }

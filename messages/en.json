@@ -951,6 +951,47 @@
           "foregroundColor": "Text"
         }
       },
+      "editor": {
+        "zone": { "home": "Home", "gallery": "Gallery" },
+        "save": { "saving": "Saving…", "saved": "Saved", "idle": "All changes saved" },
+        "publish": "Publish",
+        "publishing": "Publishing…",
+        "theme": "Theme",
+        "contact": "Contact",
+        "publishedToast": "Published! Your portfolio is live.",
+        "savedToast": "Saved.",
+        "errorToast": "Couldn't save. Please try again.",
+        "publishDialog": {
+          "title": "Publish your portfolio?",
+          "body": "Anyone with the link will see your latest changes immediately.",
+          "confirm": "Publish now",
+          "cancel": "Cancel",
+          "liveAt": "Live at {url}",
+          "copyLink": "Copy link",
+          "copied": "Copied"
+        },
+        "themeDialog": { "title": "Theme & brand" },
+        "contactDialog": {
+          "title": "Contact form",
+          "formFixedNote": "The form fields are fixed. You can edit the heading, message, and button only.",
+          "titleLabel": "Heading",
+          "titlePlaceholder": "Let's work together",
+          "descriptionLabel": "Message",
+          "descriptionPlaceholder": "Tell visitors what to expect when they reach out.",
+          "buttonStyleLabel": "Button style",
+          "buttonColorLabel": "Button color",
+          "buttonStyles": { "solid": "Solid", "outline": "Outline", "soft": "Soft" },
+          "buttonColors": { "primary": "Primary", "secondary": "Secondary", "accent": "Accent", "foreground": "Text" },
+          "save": "Save",
+          "saving": "Saving…"
+        },
+        "mobileBanner": {
+          "title": "The editor works best on a larger screen",
+          "body": "Drag-and-drop editing is designed for tablet and desktop.",
+          "openPreview": "Open preview",
+          "continue": "Continue anyway"
+        }
+      },
       "wizard": {
         "title": "Let's build your portfolio",
         "subtitle": "A few quick steps and you'll have a live page.",
