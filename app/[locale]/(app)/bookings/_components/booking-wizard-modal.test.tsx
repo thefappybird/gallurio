@@ -613,7 +613,7 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate to event step
@@ -909,7 +909,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
 
     // Wait for the modal to be visible (initialValues path — no async fetch).
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate to event step.
@@ -1001,7 +1001,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     const eventStepBtn = screen.getByRole("button", { name: /event/i });
@@ -1084,7 +1084,7 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate directly to the review step (last step).
@@ -1118,7 +1118,7 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate to event step and dirty the form.
@@ -1266,7 +1266,7 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
     renderEditWizardWithInitialValues();
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate to event step to trigger a date change that starts a fetch.
@@ -1329,7 +1329,7 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
     renderEditWizardWithInitialValues();
 
     await waitFor(() => {
-      expect(screen.getByText(/edit booking/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
     // Navigate to event step.

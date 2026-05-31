@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Client, Booking } from "@/lib/db/models";
-import { listClients, getWorkspaceTags, getClientBookings } from "./clients-queries";
+import { listClients, getWorkspaceTags, getClientBookings, getClientById } from "./clients-queries";
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
@@ -276,6 +276,68 @@ describe("getWorkspaceTags", () => {
 
     const weddingOccurrences = tags.filter((t) => t === "wedding").length;
     expect(weddingOccurrences).toBe(1);
+  });
+});
+
+// ─── getClientById ────────────────────────────────────────────────────────────
+
+describe("getClientById", () => {
+  it("returns the client with derived bookingsCount and lastBookingAt", async () => {
+    const client = await seedClient(workspaceId, { name: "Ana Reyes" });
+    const start = new Date("2025-03-10T09:00:00Z");
+    await seedBooking(workspaceId, client._id, { startAt: start });
+    await seedBooking(workspaceId, client._id, { startAt: new Date("2025-01-05T09:00:00Z") });
+
+    const result = await getClientById(workspaceId, client._id.toString());
+
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe("Ana Reyes");
+    expect(result!.bookingsCount).toBe(2);
+    // lastBookingAt should be the most recent firstSessionStart
+    expect(result!.lastBookingAt).toEqual(start);
+  });
+
+  it("returns bookingsCount=0 and lastBookingAt=null when client has no bookings", async () => {
+    const client = await seedClient(workspaceId, { name: "No Bookings" });
+
+    const result = await getClientById(workspaceId, client._id.toString());
+
+    expect(result).not.toBeNull();
+    expect(result!.bookingsCount).toBe(0);
+    expect(result!.lastBookingAt).toBeNull();
+  });
+
+  it("returns null for an unknown (non-existent) id", async () => {
+    const fakeId = new Types.ObjectId().toString();
+    const result = await getClientById(workspaceId, fakeId);
+    expect(result).toBeNull();
+  });
+
+  it("returns null for an invalid ObjectId string", async () => {
+    const result = await getClientById(workspaceId, "not-an-objectid");
+    expect(result).toBeNull();
+  });
+
+  it("tenant isolation: workspace A cannot fetch workspace B's client", async () => {
+    const client = await seedClient(otherWorkspaceId, { name: "Other Org Client" });
+
+    const result = await getClientById(workspaceId, client._id.toString());
+
+    expect(result).toBeNull();
+  });
+
+  it("returns correct client when multiple clients exist in the workspace", async () => {
+    const a = await seedClient(workspaceId, { name: "Client A" });
+    const b = await seedClient(workspaceId, { name: "Client B" });
+    await seedBooking(workspaceId, b._id);
+
+    const resultA = await getClientById(workspaceId, a._id.toString());
+    const resultB = await getClientById(workspaceId, b._id.toString());
+
+    expect(resultA!.name).toBe("Client A");
+    expect(resultA!.bookingsCount).toBe(0);
+    expect(resultB!.name).toBe("Client B");
+    expect(resultB!.bookingsCount).toBe(1);
   });
 });
 

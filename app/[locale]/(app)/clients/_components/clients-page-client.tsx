@@ -28,6 +28,7 @@ type Props = {
   locale: string;
   availableTags: string[];
   empty: string;
+  initialDetailClient?: ClientRow | null;
 };
 
 export function ClientsPageClient({
@@ -38,6 +39,7 @@ export function ClientsPageClient({
   locale,
   availableTags,
   empty,
+  initialDetailClient = null,
 }: Props) {
   const t = useTranslations("app.clients");
   const tc = useTranslations("common.pagination");
@@ -51,14 +53,42 @@ export function ClientsPageClient({
   const [editTarget, setEditTarget] = useState<ClientRow | null>(null);
   const [formDirty, setFormDirty] = useState(false);
   const [pendingFormAction, setPendingFormAction] = useState<(() => void) | null>(null);
-  const [detailClient, setDetailClient] = useState<ClientRow | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailClient, setDetailClient] = useState<ClientRow | null>(initialDetailClient);
+  const [detailOpen, setDetailOpen] = useState<boolean>(!!initialDetailClient);
   const [deactivateTarget, setDeactivateTarget] = useState<ClientRow | null>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+
+  // Open the detail modal whenever a ?client= deep-link arrives — including
+  // soft navigations AFTER mount (browser Back/Forward, or a push to a
+  // ?client= URL while /clients is already open), which don't re-run the
+  // useState initializers above. The server emits a fresh initialDetailClient
+  // object on every render that carries the param, so a reference change marks
+  // a new deep-link to honor. This render-phase sync is React's recommended
+  // alternative to a state-setting effect. When the param is stripped on close
+  // the prop becomes null, so the modal is never re-opened.
+  const [syncedDeepLink, setSyncedDeepLink] = useState(initialDetailClient);
+  if (initialDetailClient !== syncedDeepLink) {
+    setSyncedDeepLink(initialDetailClient);
+    if (initialDetailClient) {
+      setDetailClient(initialDetailClient);
+      setDetailOpen(true);
+    }
+  }
 
   function refreshPage() {
     startTransition(() => {
       router.refresh();
+    });
+  }
+
+  // Remove the ?client= param so closing the modal (or transitioning to
+  // edit/deactivate) doesn't reopen it on a hard refresh or back-navigation.
+  function stripClientParam() {
+    if (!searchParams.has("client")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("client");
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`);
     });
   }
 
@@ -85,6 +115,7 @@ export function ClientsPageClient({
       setEditTarget(client);
       setFormOpen(true);
       setDetailOpen(false);
+      stripClientParam();
     });
   }
 
@@ -97,6 +128,7 @@ export function ClientsPageClient({
     setDeactivateTarget(client);
     setDeactivateOpen(true);
     setDetailOpen(false);
+    stripClientParam();
   }
 
   // Track the specific client being reactivated so only that row shows a
@@ -115,6 +147,7 @@ export function ClientsPageClient({
         }
         toast.success(t("form.updateSuccess"), { id: toastId });
         setDetailOpen(false);
+        stripClientParam();
         refreshPage();
       } finally {
         setReactivatingId(null);
@@ -216,7 +249,10 @@ export function ClientsPageClient({
       <ClientDetailModal
         client={detailClient}
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={() => {
+          setDetailOpen(false);
+          stripClientParam();
+        }}
         onEdit={openEdit}
         onDeactivate={openDeactivate}
         onReactivate={handleReactivate}

@@ -13,12 +13,14 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
+  ArrowUpRightIcon,
   CheckIcon,
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
   PencilIcon,
   PlusIcon,
+  SearchIcon,
   Trash2Icon,
   XIcon,
 } from "lucide-react";
@@ -39,26 +41,40 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
-import { EditableField } from "./editable-field";
+import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
+import { EditableField, type FieldHandle } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
+import { ClientDetailModal } from "@/app/[locale]/(app)/clients/_components/client-detail-modal";
+import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients-table";
+import { getClientByIdAction } from "@/lib/actions/clients";
+import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
 import type { ShiftHit } from "./booking-wizard-steps/event-step";
 import {
   BOOKING_STATUSES,
   EVENT_TYPES,
+  type BookingStatus,
   type EditableKey,
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
   countPastDays,
@@ -75,6 +91,8 @@ type BookingDoc = {
   _id: string;
   title: string;
   clientName: string;
+  clientId: string;
+  client: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventType: string;
   status: string;
   sessions: SessionDoc[];
@@ -137,11 +155,33 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.detail");
   const tDnd = useTranslations("app.bookings.dnd");
+  const tEvent = useTranslations("app.bookings.eventTypes");
   const [, startTransition] = useTransition();
+
+  const eventTypeOptions = useMemo(
+    () => EVENT_TYPES.map((e) => ({ value: e, label: safeT(tEvent, e, e) })),
+    [tEvent]
+  );
 
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDoc | null>(null);
+  const [viewClient, setViewClient] = useState<ClientRow | null>(null);
+  const [viewClientOpen, setViewClientOpen] = useState(false);
+  const [viewClientLoading, setViewClientLoading] = useState(false);
+  /**
+   * Staged client for an in-progress reassignment. Holds the picked client's
+   * full contact info so the contact block shows fresh email/phone between
+   * "stage" and "save" — the pending `clientId`/`clientName` changes alone
+   * would leave the old `booking.client` object in place (H2 fix). Cleared on
+   * discardAll and on successful save.
+   */
+  const [reassignedClient, setReassignedClient] = useState<{
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [activityTotal, setActivityTotal] = useState(0);
   const [pending, setPending] = useState<PendingChanges>({});
@@ -165,6 +205,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
    * Confirm-discard dialog state — replaces window.confirm for close-with-unsaved.
    */
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
+
+  /**
+   * Incrementing nonce that forces SessionCard components to remount when
+   * bumped. This resets any open inline editor (internal `editing` state) on
+   * confirm-discard so uncommitted editors close without losing
+   * `pendingSessionEdits` (parent state, re-read on mount).
+   */
+  const [editorResetNonce, setEditorResetNonce] = useState(0);
 
   /**
    * Shifts keyed by YYYY-MM-DD date. Treated as a cache — entries are added on
@@ -236,6 +284,19 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setActivity(data.entries ?? []);
     setActivityTotal(data.total ?? 0);
   }, [bookingId]);
+
+  async function handleViewClient() {
+    if (!booking?.client) return;
+    setViewClientLoading(true);
+    const res = await getClientByIdAction(booking.client.id);
+    setViewClientLoading(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      return;
+    }
+    setViewClient(res);
+    setViewClientOpen(true);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -444,6 +505,65 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     lockedDraftCount;
   const hasPending = pendingCount > 0;
 
+  // Count open inline editors for EXISTING sessions (keys are numeric strings).
+  const openSessionEditorCount = Object.keys(editingDraftDates).filter(
+    (k) => !k.startsWith("draft:")
+  ).length;
+  const unconfirmedDraftCount = draftSessions.filter((d) => !d.locked).length;
+
+  /**
+   * Registry of FieldHandle objects for currently-mounted EditableField instances.
+   * Keyed by editKey (e.g. "amount.total"). The Map is stable across renders;
+   * only its contents change.
+   */
+  const fieldHandleRegistry = useRef<Map<string, FieldHandle>>(new Map());
+
+  /**
+   * Set of editKey strings whose editor is currently open (user is mid-edit).
+   * Updated via onFieldEditingChange which is wired to each EditableField's
+   * `onEditingChange` prop. Drives `openFieldCount`.
+   */
+  const [openFieldKeys, setOpenFieldKeys] = useState<Set<string>>(new Set());
+  const openFieldCount = openFieldKeys.size;
+
+  const registerFieldHandle = useCallback(
+    (editKey: string, handle: FieldHandle | null) => {
+      if (handle) {
+        fieldHandleRegistry.current.set(editKey, handle);
+      } else {
+        fieldHandleRegistry.current.delete(editKey);
+        // If the field unmounts while open, remove it from open set too.
+        setOpenFieldKeys((prev) => {
+          if (!prev.has(editKey)) return prev;
+          const next = new Set(prev);
+          next.delete(editKey);
+          return next;
+        });
+      }
+    },
+    []
+  );
+
+  const onFieldEditingChange = useCallback(
+    (editKey: string, isEditing: boolean) => {
+      setOpenFieldKeys((prev) => {
+        const has = prev.has(editKey);
+        if (isEditing === has) return prev; // no change
+        const next = new Set(prev);
+        if (isEditing) next.add(editKey);
+        else next.delete(editKey);
+        return next;
+      });
+    },
+    []
+  );
+
+  // Total undrafted work: open existing-session editors + unlocked draft editors
+  // + open EditableField editors.
+  const undraftedCount = openSessionEditorCount + unconfirmedDraftCount + openFieldCount;
+  const hasUndrafted = undraftedCount > 0;
+  const [unconfirmedDraftsOpen, setUnconfirmedDraftsOpen] = useState(false);
+
   function commitField(key: EditableKey, value: string | number | null) {
     setPending((prev) => {
       const next = { ...prev };
@@ -470,10 +590,97 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setPendingSessionEdits({});
     setDraftSessions([]);
     setSaveError(null);
+    setReassignedClient(null);
   }
 
-  async function save() {
+  function save() {
     if (!hasPending || !booking) return;
+    if (hasUndrafted) {
+      setUnconfirmedDraftsOpen(true);
+      return;
+    }
+    void runSave();
+  }
+
+  /**
+   * "Discard undrafted & save" — cancel every open EditableField editor, drop
+   * unlocked drafts, reset open session editors, then proceed with the save
+   * using only the already-drafted `pending` map.
+   */
+  function confirmDiscardUndraftedAndSave() {
+    setUnconfirmedDraftsOpen(false);
+    // Cancel every open EditableField editor (discard in-progress draft).
+    for (const handle of fieldHandleRegistry.current.values()) {
+      if (handle.isEditing()) handle.cancel();
+    }
+    // Drop unlocked drafts and reset open session-editor tracking.
+    setDraftSessions((prev) => prev.filter((d) => d.locked));
+    setEditingDraftDates({});
+    setEditorResetNonce((n) => n + 1);
+    void runSave();
+  }
+
+  /**
+   * "Submit all changes" — commit every valid open EditableField editor into a
+   * merged pending map, cancel all open editors, then save everything in one
+   * PATCH. If any open editor is invalid, show a toast and leave it open.
+   */
+  function confirmSubmitAll() {
+    if (!booking) return;
+
+    // Gather open dirty handles.
+    const openDirty: Array<{ key: string; handle: FieldHandle }> = [];
+    for (const [key, handle] of fieldHandleRegistry.current) {
+      if (handle.isEditing() && handle.isDirty()) {
+        openDirty.push({ key, handle });
+      }
+    }
+
+    // Block if any open editor has a validation error.
+    const hasInvalid = openDirty.some(({ handle }) => !handle.canCommit());
+    if (hasInvalid) {
+      setUnconfirmedDraftsOpen(false);
+      toast.error(t("unconfirmedDrafts.invalidError"));
+      return;
+    }
+
+    // Build the merged pending synchronously — capture normalized values before
+    // calling cancel() (which clears the editor state).
+    const merged: PendingChanges = { ...pending };
+    for (const { key, handle } of openDirty) {
+      const v = handle.getNormalizedValue();
+      const current = getCurrentValue(booking, key as EditableKey);
+      if (v === current || String(v) === String(current)) {
+        delete merged[key];
+      } else {
+        merged[key] = v;
+      }
+    }
+
+    // Cancel all open EditableField editors (values already captured above).
+    for (const { handle } of openDirty) {
+      handle.cancel();
+    }
+
+    // Also discard unlocked draft sessions and reset open session editors.
+    setDraftSessions((prev) => prev.filter((d) => d.locked));
+    setEditingDraftDates({});
+    setEditorResetNonce((n) => n + 1);
+
+    // Reflect the merged map in state so UI stays consistent.
+    setPending(merged);
+
+    setUnconfirmedDraftsOpen(false);
+    void runSave({ pendingOverride: merged });
+  }
+
+  async function runSave(opts?: { pendingOverride?: PendingChanges }) {
+    const effectivePending = opts?.pendingOverride ?? pending;
+    const hasSomethingToSave =
+      Object.keys(effectivePending).length > 0 ||
+      Object.keys(pendingSessionEdits).length > 0 ||
+      draftSessions.some((d) => d.locked);
+    if (!hasSomethingToSave || !booking) return;
     if (hasAnyConflict) {
       setSaveError(t("conflictBlocksSave"));
       toast.error(t("conflictBlocksSave"));
@@ -487,7 +694,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     const previousTotal = activityTotal;
     const previousDrafts = draftSessions;
     const previousSessionEdits = pendingSessionEdits;
-    const optimistic = applyChanges(booking, pending);
+    const optimistic = applyChanges(booking, effectivePending);
 
     // Build the final sessions array: overlay pendingSessionEdits onto existing,
     // then append locked draft sessions.
@@ -505,7 +712,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setBooking({ ...optimistic, sessions: mergedSessions });
 
     const changes: Record<string, { before: unknown; after: unknown }> = {};
-    for (const [key, value] of Object.entries(pending)) {
+    for (const [key, value] of Object.entries(effectivePending)) {
       // Raw pin coordinates persist but are never logged server-side — keep the
       // optimistic activity consistent so a coordinate-only save shows nothing.
       if (key === "location.lat" || key === "location.lng") continue;
@@ -520,13 +727,13 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     }
     if (Object.keys(changes).length > 0) {
       prependOptimisticActivity(
-        "status" in pending ? "status_changed" : "updated",
+        "status" in effectivePending ? "status_changed" : "updated",
         changes
       );
     }
 
     try {
-      const body: Record<string, unknown> = { ...pending };
+      const body: Record<string, unknown> = { ...effectivePending };
       if (
         Object.keys(pendingSessionEdits).length > 0 ||
         lockedDrafts.length > 0
@@ -543,10 +750,20 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         throw new Error(data.error ?? "Save failed");
       }
       const updated: BookingDoc = await res.json();
-      setBooking(updated);
+      // The PATCH response does not include the `client` block (the GET does).
+      // Preserve it from the previous state so email/phone don't collapse.
+      // If a clientId reassignment was just saved, use the staged reassigned
+      // client's data; otherwise keep the existing client block.
+      const clientAfterSave = "clientId" in effectivePending
+        ? (reassignedClient
+            ? { id: reassignedClient.id, name: reassignedClient.name, email: reassignedClient.email, phone: reassignedClient.phone }
+            : null)
+        : previous.client;
+      setBooking({ ...updated, client: clientAfterSave });
       setPending({});
       setPendingSessionEdits({});
       setDraftSessions([]);
+      setReassignedClient(null);
       toast.success(t("savedToast"));
       startTransition(() => router.refresh());
       await refetchInlineActivity();
@@ -919,13 +1136,17 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     <Dialog open={open} onOpenChange={attemptClose}>
       <DialogContent
         showCloseButton={false}
-        className="flex max-h-[calc(100vh-3rem)] w-full max-w-3xl flex-col gap-0 p-0 sm:max-w-3xl"
+        className="flex max-h-[calc(100dvh-3rem)] w-full max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
       >
         <DialogHeaderBar
           booking={booking}
           pending={pending}
           loading={loading}
           locale={locale}
+          disabled={saving}
+          eventTypeOptions={eventTypeOptions}
+          onCommit={commitField}
+          onDiscard={discardField}
           onEditAll={() => {
             const params = new URLSearchParams(searchParams.toString());
             params.delete("detail");
@@ -937,7 +1158,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           onClose={() => attemptClose(false)}
         />
 
-        <div className="flex-1 overflow-y-auto px-4 py-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
           {loading ? (
             <ModalSkeleton />
           ) : !booking ? (
@@ -954,10 +1175,24 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               draftSessions={draftSessions}
               pendingSessionEdits={pendingSessionEdits}
               editingDraftDates={editingDraftDates}
+              editorResetNonce={editorResetNonce}
               locale={locale}
+              reassignedClient={reassignedClient}
               onCommit={commitField}
               onDiscard={discardField}
+              onReassign={(c) => {
+                setReassignedClient(c);
+                commitField("clientId", c.id);
+                commitField("clientName", c.name);
+              }}
+              onClearReassign={() => {
+                setReassignedClient(null);
+                discardField("clientId");
+                discardField("clientName");
+              }}
               onViewAllHistory={() => setHistoryDialogOpen(true)}
+              onViewClient={handleViewClient}
+              viewClientLoading={viewClientLoading}
               disabled={saving}
               shiftsByDate={shiftsByDate}
               loadingDates={loadingDates}
@@ -970,6 +1205,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               onLockDraft={handleLockDraft}
               onUnlockDraft={handleUnlockDraft}
               onDraftDateChange={handleDraftDateChange}
+              registerFieldHandle={registerFieldHandle}
+              onFieldEditingChange={onFieldEditingChange}
             />
           )}
         </div>
@@ -1002,6 +1239,7 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         open={historyDialogOpen}
         onClose={() => setHistoryDialogOpen(false)}
         locale={locale}
+        currency={booking?.amount.currency}
       />
 
       <SessionEditConfirmDialog
@@ -1020,6 +1258,23 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         pendingCount={pendingCount}
         onKeepEditing={() => setConfirmDiscardOpen(false)}
         onDiscard={confirmDiscard}
+      />
+
+      {/* Unconfirmed-drafts warning — shown when Save is clicked with undrafted changes */}
+      <UnconfirmedDraftsDialog
+        open={unconfirmedDraftsOpen}
+        count={undraftedCount}
+        onCancel={() => setUnconfirmedDraftsOpen(false)}
+        onSubmitAll={confirmSubmitAll}
+        onDiscardUndrafted={confirmDiscardUndraftedAndSave}
+      />
+
+      {/* Stacked client detail modal — read-only reference view, no edit/lifecycle actions */}
+      <ClientDetailModal
+        client={viewClient}
+        open={viewClientOpen}
+        onClose={() => setViewClientOpen(false)}
+        locale={locale}
       />
     </Dialog>
   );
@@ -1061,6 +1316,49 @@ function DiscardChangesDialog({
   );
 }
 
+// ─── UnconfirmedDraftsDialog ──────────────────────────────────────────────────
+
+function UnconfirmedDraftsDialog({
+  open,
+  count,
+  onCancel,
+  onSubmitAll,
+  onDiscardUndrafted,
+}: {
+  open: boolean;
+  count: number;
+  onCancel: () => void;
+  onSubmitAll: () => void;
+  onDiscardUndrafted: () => void;
+}) {
+  const t = useTranslations("app.bookings.detail");
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !next && onCancel()}>
+      {/* Wider than the default alert dialog so the three footer actions sit on
+          one row at sm+ without overflowing (they stack on mobile). */}
+      <AlertDialogContent className="sm:max-w-xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("unconfirmedDrafts.title")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("unconfirmedDrafts.description", { count })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel}>
+            {t("unconfirmedDrafts.cancel")}
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={onDiscardUndrafted}>
+            {t("unconfirmedDrafts.discard")}
+          </AlertDialogAction>
+          <AlertDialogAction onClick={onSubmitAll} autoFocus>
+            {t("unconfirmedDrafts.submitAll")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 // ─── DialogHeaderBar ────────────────────────────────────────────────────────
 
 function DialogHeaderBar({
@@ -1068,6 +1366,10 @@ function DialogHeaderBar({
   pending,
   loading,
   locale,
+  disabled,
+  eventTypeOptions,
+  onCommit,
+  onDiscard,
   onEditAll,
   onClose,
 }: {
@@ -1075,11 +1377,21 @@ function DialogHeaderBar({
   pending: PendingChanges;
   loading: boolean;
   locale: string;
+  disabled: boolean;
+  eventTypeOptions: { value: string; label: string }[];
+  onCommit: (key: EditableKey, value: string | number | null) => void;
+  onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
   onClose: () => void;
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
+  const tEvent = useTranslations("app.bookings.eventTypes");
+  const tStatus = useTranslations("app.bookings.statusValues");
+
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   let outstanding = 0;
   let currency = "PHP";
@@ -1092,20 +1404,212 @@ function DialogHeaderBar({
   }
   const isOverdue = booking ? outstanding > 0 : false;
 
+  const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
+  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking?.eventType ?? "";
+  const effectiveStatus =
+    (pending["status"] as string | undefined) ?? booking?.status ?? "";
+  const hasTitlePending = "title" in pending;
+  const hasEventTypePending = "eventType" in pending;
+  const hasStatusPending = "status" in pending;
+  const isCancelled = booking?.status === "cancelled";
+
+  const statusOptions = useMemo(
+    () =>
+      BOOKING_STATUSES.map((s) => ({ value: s, label: safeT(tStatus, s, s) })),
+    [tStatus]
+  );
+  const statusLabel = safeT(tStatus, effectiveStatus, effectiveStatus);
+  const statusColor = STATUS_COLOR_VAR[effectiveStatus as BookingStatus];
+
+  function startTitleEdit() {
+    if (disabled || isCancelled || !booking) return;
+    setTitleDraft(effectiveTitle);
+    setEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }
+
+  function commitTitle() {
+    const val = titleDraft.trim();
+    if (!val) {
+      cancelTitleEdit();
+      return;
+    }
+    onCommit("title", val);
+    setEditingTitle(false);
+  }
+
+  function cancelTitleEdit() {
+    setEditingTitle(false);
+    setTitleDraft("");
+    if (hasTitlePending) onDiscard("title");
+  }
+
+  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
+
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
+    <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         {loading ? (
           <Skeleton className="h-5 w-48" />
         ) : (
-          <DialogTitle className="truncate">{booking?.title ?? "—"}</DialogTitle>
+          <DialogTitle>
+            <div className="flex min-w-0 items-center gap-2">
+              {editingTitle ? (
+                <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <Input
+                    ref={titleInputRef}
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitTitle();
+                      if (e.key === "Escape") cancelTitleEdit();
+                    }}
+                    className="h-7 min-w-0 flex-1 text-sm font-semibold"
+                    aria-label={t("title")}
+                    disabled={disabled}
+                  />
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={commitTitle}
+                    disabled={disabled || !titleDraft.trim()}
+                    aria-label={t("confirmTitle")}
+                    className="shrink-0"
+                  >
+                    <CheckIcon className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={cancelTitleEdit}
+                    aria-label={t("cancelTitleEdit")}
+                    className="shrink-0"
+                  >
+                    <XIcon className="size-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={startTitleEdit}
+                    disabled={disabled || isCancelled}
+                    className={cn(
+                      "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
+                      "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
+                      "disabled:pointer-events-none disabled:opacity-60",
+                      hasTitlePending && "text-brand"
+                    )}
+                    aria-label={t("editTitle")}
+                  >
+                    <span className="truncate">{effectiveTitle}</span>
+                    <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
+                    {hasTitlePending ? (
+                      <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                    ) : null}
+                  </button>
+
+                  {/* Event-type pill */}
+                  {booking ? (
+                    <div className="relative shrink-0">
+                      <Select
+                        value={effectiveEventType}
+                        onValueChange={(v) => {
+                          onCommit("eventType", v);
+                          if (hasEventTypePending && v === booking.eventType)
+                            onDiscard("eventType");
+                        }}
+                        disabled={disabled || isCancelled}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                            hasEventTypePending
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                          )}
+                          aria-label={t("editEventType")}
+                        >
+                          <SelectValue>{eventTypeLabel}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {eventTypeOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {hasEventTypePending ? (
+                        <span
+                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {/* Status pill — editable dropdown, mirrors the event-type
+                      pill but keeps the status color dot. */}
+                  {booking ? (
+                    <div className="relative shrink-0">
+                      <Select
+                        value={effectiveStatus}
+                        onValueChange={(v) => {
+                          onCommit("status", v);
+                          if (hasStatusPending && v === booking.status)
+                            onDiscard("status");
+                        }}
+                        disabled={disabled || isCancelled}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                            hasStatusPending
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                          )}
+                          aria-label={t("status")}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              aria-hidden
+                              className="size-2 shrink-0"
+                              style={
+                                statusColor
+                                  ? { backgroundColor: statusColor }
+                                  : undefined
+                              }
+                            />
+                            <SelectValue>{statusLabel}</SelectValue>
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {hasStatusPending ? (
+                        <span
+                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </DialogTitle>
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline" className="capitalize">
-              {booking.status}
-            </Badge>
-            <span className="ml-1">{booking.clientName}</span>
+            <span>{booking.clientName}</span>
             <span>·</span>
             <span>
               {booking.sessions?.[0]?.startAt
@@ -1171,10 +1675,16 @@ function BookingTabs({
   draftSessions,
   pendingSessionEdits,
   editingDraftDates,
+  editorResetNonce,
   locale,
+  reassignedClient,
   onCommit,
   onDiscard,
+  onReassign,
+  onClearReassign,
   onViewAllHistory,
+  onViewClient,
+  viewClientLoading,
   disabled,
   shiftsByDate,
   loadingDates,
@@ -1187,6 +1697,8 @@ function BookingTabs({
   onLockDraft,
   onUnlockDraft,
   onDraftDateChange,
+  registerFieldHandle,
+  onFieldEditingChange,
 }: {
   booking: BookingDoc;
   bookingId: string;
@@ -1196,10 +1708,16 @@ function BookingTabs({
   draftSessions: DraftSession[];
   pendingSessionEdits: Record<number, PendingSessionEdit>;
   editingDraftDates: Record<string, string>;
+  editorResetNonce: number;
   locale: string;
+  reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
+  onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
+  onClearReassign: () => void;
   onViewAllHistory: () => void;
+  onViewClient: () => void;
+  viewClientLoading: boolean;
   disabled: boolean;
   shiftsByDate: Map<string, ShiftHit[]>;
   loadingDates: Set<string>;
@@ -1216,30 +1734,12 @@ function BookingTabs({
   onLockDraft: (draftId: string) => void;
   onUnlockDraft: (draftId: string) => void;
   onDraftDateChange: (key: string, date: string | null) => void;
+  registerFieldHandle: (editKey: string, handle: FieldHandle | null) => void;
+  onFieldEditingChange: (editKey: string, editing: boolean) => void;
 }) {
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
-  const tStatus = useTranslations("app.bookings.statusValues");
-  const tEvent = useTranslations("app.bookings.eventTypes");
   const tSessions = useTranslations("app.bookings.sessions");
-
-  const statusOptions = useMemo(
-    () =>
-      BOOKING_STATUSES.map((s) => ({
-        value: s,
-        label: safeT(tStatus, s, s),
-      })),
-    [tStatus]
-  );
-
-  const eventTypeOptions = useMemo(
-    () =>
-      EVENT_TYPES.map((e) => ({
-        value: e,
-        label: safeT(tEvent, e, e),
-      })),
-    [tEvent]
-  );
 
   const currencyOptions = useMemo(
     () => SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
@@ -1283,78 +1783,129 @@ function BookingTabs({
     ? [...upcomingSessions, ...pastSessions]
     : upcomingSessions;
 
+  const [reassignOpen, setReassignOpen] = useState(false);
+
+  // H2: The contact block shows the staged reassigned client when a clientId
+  // change is pending, otherwise falls back to booking.client.
+  const clientIdPending = "clientId" in pending;
+  const displayClient = clientIdPending && reassignedClient
+    ? reassignedClient
+    : booking.client;
+
+  // H3: Reassignment is blocked server-side for multi-session bookings.
+  // Hide the "Change client" trigger up front to avoid a foreseeable 422.
+  const isMultiSession = booking.sessions.length > 1;
+
   return (
     <Tabs defaultValue="client">
-      <TabsList className="overflow-x-auto">
-        <TabsTab
-          value="client"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
-        >
+      {/* Same subtle base treatment as the client detail modal's tabs (bare
+          TabsTab → active tab gets the foreground underline) for cross-modal
+          consistency. min-h-11 keeps the touch target ≥44px and overflow-x-auto
+          lets the four tabs scroll at 375px. */}
+      <TabsList className="h-auto overflow-x-auto">
+        <TabsTab value="client" className="min-h-11">
           {t("client")}
         </TabsTab>
-        <TabsTab
-          value="event"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
-        >
+        <TabsTab value="event" className="min-h-11">
           {t("event")}
         </TabsTab>
-        <TabsTab
-          value="pricing"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
-        >
+        <TabsTab value="pricing" className="min-h-11">
           {t("pricing")}
         </TabsTab>
-        <TabsTab
-          value="activity"
-          className="data-[selected]:border-brand data-[selected]:text-brand"
-        >
+        <TabsTab value="activity" className="min-h-11">
           {t("activity")}
         </TabsTab>
       </TabsList>
 
       <TabsPanel value="client">
-        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-          <EditableField
-            label={tFields("clientName")}
-            type="text"
-            {...get("clientName")}
-            onCommit={(v) => onCommit("clientName", v)}
-            onDiscardPending={() => onDiscard("clientName")}
-            disabled={disabled}
-          />
-          <EditableField
-            label={tFields("status")}
-            type="select"
-            options={statusOptions}
-            {...get("status")}
-            onCommit={(v) => onCommit("status", v)}
-            onDiscardPending={() => onDiscard("status")}
-            disabled={disabled}
-          />
+        {/* Client contact block — read-only snapshot.
+            H2: uses displayClient (staging-aware) instead of booking.client directly.
+            L2: Open client links to /clients — the clients page uses a state-based
+                modal (no /clients/[id] route and no ?client= deep-link param exists). */}
+        <div className="mb-3 flex flex-col gap-2 border border-border bg-card p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tFields("clientName")}
+              </span>
+              <span className="truncate text-sm font-medium text-foreground">
+                {displayClient?.name ?? booking.clientName}
+              </span>
+              {displayClient?.email ? (
+                <a
+                  href={`mailto:${displayClient.email}`}
+                  className="truncate text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                  aria-label={tFields("sendEmail")}
+                >
+                  {displayClient.email}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">{tFields("noEmail")}</span>
+              )}
+              {displayClient?.phone ? (
+                <a
+                  href={`tel:${displayClient.phone}`}
+                  className="text-xs text-brand underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none"
+                  aria-label={tFields("callClient")}
+                >
+                  {displayClient.phone}
+                </a>
+              ) : (
+                <span className="text-xs text-muted-foreground">{tFields("noPhone")}</span>
+              )}
+            </div>
+            <div className="flex shrink-0 flex-col gap-1.5">
+              {booking.client ? (
+                <button
+                  type="button"
+                  onClick={onViewClient}
+                  disabled={viewClientLoading}
+                  aria-disabled={viewClientLoading}
+                  aria-label={tFields("viewClient")}
+                  className="flex min-h-11 items-center justify-center gap-1.5 border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {viewClientLoading ? (
+                    <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
+                  ) : (
+                    <ArrowUpRightIcon className="size-3.5" aria-hidden />
+                  )}
+                  {tFields("viewClient")}
+                </button>
+              ) : null}
+              {!isMultiSession && !reassignOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setReassignOpen(true)}
+                  disabled={disabled}
+                  className="flex min-h-11 items-center justify-center gap-1.5 border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {tFields("changeClient")}
+                </button>
+              ) : null}
+            </div>
+          </div>
+          {/* Reassign client — H3: hidden for multi-session bookings (server rejects it). */}
+          {isMultiSession ? (
+            <p className="text-xs text-muted-foreground">
+              {tFields("changeClientMultiSession")}
+            </p>
+          ) : reassignOpen ? (
+            <ClientReassignPicker
+              onSelect={(c) => {
+                onReassign(c);
+                setReassignOpen(false);
+              }}
+              onCancel={() => {
+                onClearReassign();
+                setReassignOpen(false);
+              }}
+              disabled={disabled}
+            />
+          ) : null}
         </div>
       </TabsPanel>
 
       <TabsPanel value="event">
-        <EditableField
-          label={tFields("title")}
-          type="text"
-          {...get("title")}
-          onCommit={(v) => onCommit("title", v)}
-          onDiscardPending={() => onDiscard("title")}
-          disabled={disabled}
-          validate={(v) =>
-            !v || String(v).trim() === "" ? tFields("titleRequired") : null
-          }
-        />
-        <EditableField
-          label={tFields("eventType")}
-          type="select"
-          options={eventTypeOptions}
-          {...get("eventType")}
-          onCommit={(v) => onCommit("eventType", v)}
-          onDiscardPending={() => onDiscard("eventType")}
-          disabled={disabled}
-        />
         <div className="flex flex-col gap-1 py-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {tFields("location")}
@@ -1453,7 +2004,7 @@ function BookingTabs({
             const isLoadingConflict = loadingDates.has(effectiveDateForConflict);
             return (
               <SessionCard
-                key={`${s.startAt}-${s.endAt}`}
+                key={`${s.startAt}-${s.endAt}-${editorResetNonce}`}
                 session={s}
                 sessionIndex={resolvedIdx}
                 total={(booking?.sessions ?? []).length}
@@ -1567,6 +2118,9 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
             disabled={disabled}
+            editKey="amount.total"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
           <EditableField
             label={tFields("deposit")}
@@ -1584,6 +2138,9 @@ function BookingTabs({
               }
               return null;
             }}
+            editKey="amount.deposit"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
           <EditableField
             label={tFields("currency")}
@@ -1593,6 +2150,9 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
             disabled={disabled}
+            editKey="amount.currency"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
         </div>
       </TabsPanel>
@@ -1605,57 +2165,26 @@ function BookingTabs({
           onCommit={(v) => onCommit("notes", v)}
           onDiscardPending={() => onDiscard("notes")}
           disabled={disabled}
+          editKey="notes"
+          registerHandle={registerFieldHandle}
+          onEditingChange={onFieldEditingChange}
         />
 
         <SectionHeader label={tSections("history")} />
-        {activity.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            {tFields("activityEmpty")}
-          </p>
-        ) : (
-          <>
-            <ul className="flex flex-col divide-y divide-border">
-              {activity.slice(0, 5).map((entry) => (
-                <li
-                  key={entry._id}
-                  className="flex items-start justify-between gap-3 py-2.5"
-                >
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-sm capitalize">
-                      {entry.action.replace("_", " ")}
-                    </span>
-                    {entry.diff?.changes ? (
-                      <ul className="mt-1 flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        {Object.entries(entry.diff.changes).map(([k]) => (
-                          <li key={k} className="capitalize">
-                            · {k.replace(".", " · ")}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </div>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {new Date(entry.createdAt).toLocaleString(locale, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {activityTotal > 5 ? (
-              <button
-                type="button"
-                onClick={onViewAllHistory}
-                className="mt-2 self-start text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
-              >
-                {tFields("viewAllHistory", { count: activityTotal })}
-              </button>
-            ) : null}
-          </>
-        )}
+        <ActivityTimeline
+          entries={activity.slice(0, 5)}
+          locale={locale}
+          currency={currency}
+        />
+        {activityTotal > 5 && activity.length > 0 ? (
+          <button
+            type="button"
+            onClick={onViewAllHistory}
+            className="mt-2 self-start text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:outline-none"
+          >
+            {tFields("viewAllHistory", { count: activityTotal })}
+          </button>
+        ) : null}
       </TabsPanel>
     </Tabs>
   );
@@ -1764,6 +2293,7 @@ function SessionCard({
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
+  const timeMode = useTimeFormat();
 
   // Display values — prefer pendingEdit (the optimistic draft) over the committed session.
   const displayStart = pendingEdit
@@ -2057,7 +2587,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
-                lang={DEFAULT_TIME_INPUT_LANG}
+                lang={TIME_INPUT_LANG[timeMode]}
                 value={draftStartTime}
                 onChange={(e) => setDraftStartTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -2072,7 +2602,7 @@ function SessionCard({
               </span>
               <Input
                 type="time"
-                lang={DEFAULT_TIME_INPUT_LANG}
+                lang={TIME_INPUT_LANG[timeMode]}
                 value={draftEndTime}
                 onChange={(e) => setDraftEndTime(e.target.value)}
                 onKeyDown={(e) => {
@@ -2243,6 +2773,7 @@ function DraftSessionCard({
   onDraftDateChange: (date: string | null) => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
+  const timeMode = useTimeFormat();
 
   // Suppress unused-variable lint — draftIndex is bound by the caller's closure.
   void draftIndex;
@@ -2373,7 +2904,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
-              lang={DEFAULT_TIME_INPUT_LANG}
+              lang={TIME_INPUT_LANG[timeMode]}
               value={draftStartTime}
               onChange={(e) => {
                 setDraftStartTime(e.target.value);
@@ -2392,7 +2923,7 @@ function DraftSessionCard({
             </span>
             <Input
               type="time"
-              lang={DEFAULT_TIME_INPUT_LANG}
+              lang={TIME_INPUT_LANG[timeMode]}
               value={draftEndTime}
               onChange={(e) => {
                 setDraftEndTime(e.target.value);
@@ -2413,6 +2944,141 @@ function DraftSessionCard({
           conflicts={conflicts}
           loading={isCheckingConflicts}
         />
+      </div>
+    </div>
+  );
+}
+
+// ─── ClientReassignPicker ─────────────────────────────────────────────────────
+
+type ClientSearchHit = { id: string; name: string; email: string | null; phone: string | null };
+
+function ClientReassignPicker({
+  onSelect,
+  onCancel,
+  disabled,
+}: {
+  onSelect: (client: ClientSearchHit) => void;
+  onCancel: () => void;
+  disabled: boolean;
+}) {
+  const tFields = useTranslations("app.bookings.detail.fields");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ClientSearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const q = query.trim();
+
+    // Show initial list when empty, debounce on non-empty.
+    // All state updates happen inside the setTimeout callback to avoid
+    // synchronous setState calls in the effect body (React Compiler rule).
+    let cancelled = false;
+    debounceRef.current = setTimeout(
+      async () => {
+        if (cancelled) return;
+        setSearchError(null);
+        setSearching(true);
+        try {
+          const params = new URLSearchParams({ limit: "20" });
+          if (q) params.set("q", q);
+          const res = await fetch(`/api/clients?${params.toString()}`);
+          if (cancelled) return;
+          if (!res.ok) throw new Error("Search failed");
+          const data = await res.json() as ClientSearchHit[];
+          if (!cancelled) setResults(data);
+        } catch {
+          if (!cancelled) {
+            setSearchError(tFields("searchFailed"));
+            setResults([]);
+          }
+        } finally {
+          if (!cancelled) setSearching(false);
+        }
+      },
+      q ? 250 : 0
+    );
+
+    return () => {
+      cancelled = true;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
+
+  return (
+    <div className="mt-1 flex flex-col gap-2 border border-border bg-background p-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-foreground">{tFields("changeClient")}</span>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className={cn(
+            "text-xs text-muted-foreground transition-colors",
+            "hover:text-foreground focus-visible:text-foreground focus-visible:outline-none",
+            "disabled:pointer-events-none disabled:opacity-50"
+          )}
+        >
+          {tFields("changeClientCancel")}
+        </button>
+      </div>
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={tFields("changeClientSearch")}
+          className="h-8 pl-8 text-sm"
+          disabled={disabled}
+          aria-label={tFields("changeClientSearch")}
+        />
+      </div>
+      <div className="max-h-48 overflow-y-auto border border-border bg-background">
+        {searching ? (
+          <div className="flex items-center justify-center gap-2 px-3 py-4 text-xs text-muted-foreground">
+            <Loader2Icon className="size-3.5 animate-spin" />
+          </div>
+        ) : searchError ? (
+          <p className="px-3 py-4 text-center text-xs text-destructive">{searchError}</p>
+        ) : results.length === 0 ? (
+          <p className="px-3 py-4 text-center text-xs text-muted-foreground">
+            {tFields("noClientResults")}
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {results.map((c) => (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(c.id);
+                    onSelect(c);
+                  }}
+                  disabled={disabled}
+                  className={cn(
+                    "flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition-colors last:border-b-0",
+                    "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
+                    "active:bg-accent/60",
+                    "disabled:pointer-events-none disabled:opacity-50",
+                    selectedId === c.id && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate font-medium">{c.name}</span>
+                    {c.email ? (
+                      <span className="truncate text-xs text-muted-foreground">{c.email}</span>
+                    ) : null}
+                  </span>
+                  {selectedId === c.id ? <CheckIcon className="size-4 shrink-0" /> : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -2456,7 +3122,7 @@ function DialogFooterBar({
 }) {
   const t = useTranslations("app.bookings.detail");
   return (
-    <div className="flex flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
+    <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-muted/30 px-4 py-3">
       {saveError ? (
         <p className="text-xs text-destructive">{saveError}</p>
       ) : null}
@@ -2608,11 +3274,15 @@ function applyChanges(booking: BookingDoc, changes: PendingChanges): BookingDoc 
 }
 
 function safeT(
-  t: (key: string) => string,
+  t: { (key: string): string; has?: (key: string) => boolean },
   key: string,
   fallback: string
 ): string {
+  if (!key) return fallback;
   try {
+    // next-intl's t.has() checks existence without firing the onError logger,
+    // so an unknown/empty key never produces a MISSING_MESSAGE console error.
+    if (typeof t.has === "function" && !t.has(key)) return fallback;
     const v = t(key);
     return v && v !== key ? v : fallback;
   } catch {

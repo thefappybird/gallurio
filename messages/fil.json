@@ -246,7 +246,25 @@
           "viewAllHistory": "Tingnan ang lahat ng {count} entry",
           "endBeforeStart": "Hindi maaaring mas maaga ang katapusan kaysa sa simula.",
           "conflictsLabel": "Mga shift na nasa {date} na:",
-          "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito."
+          "draftHint": "Ayusin ang mga oras sa ibaba, pagkatapos ay i-click ang I-save ang mga pagbabago para idagdag ang sesyong ito.",
+          "email": "Email",
+          "phone": "Telepono",
+          "openClient": "Buksan ang kliyente",
+          "viewClient": "Tingnan ang kliyente",
+          "changeClient": "Palitan ang kliyente",
+          "changeClientCancel": "Panatilihin ang kasalukuyan",
+          "changeClientSearch": "Maghanap ng mga kliyente…",
+          "noEmail": "Walang email",
+          "noPhone": "Walang telepono",
+          "noClientResults": "Walang nahanap na kliyente",
+          "changeClientMultiSession": "Hindi available ang paglipat ng kliyente para sa multi-session na booking",
+          "searchFailed": "Nabigo ang paghahanap. Subukan muli.",
+          "editTitle": "I-edit ang pamagat",
+          "confirmTitle": "Kumpirmahin",
+          "cancelTitleEdit": "Ikansela",
+          "editEventType": "Baguhin ang uri ng event",
+          "sendEmail": "Magpadala ng email",
+          "callClient": "Tumawag"
         },
         "cancelConfirm": {
           "title": "Kanselahin ang booking na ito?",
@@ -259,7 +277,17 @@
           "totalCount": "{count} entry",
           "pageOf": "Pahina {page} ng {total}",
           "previous": "Nakaraang pahina",
-          "next": "Susunod na pahina"
+          "next": "Susunod na pahina",
+          "actions": {
+            "created": "Nilikha",
+            "updated": "Na-update",
+            "status_changed": "Nabago ang status",
+            "client_changed": "Nabago ang kliyente",
+            "deleted": "Natanggal"
+          },
+          "today": "Ngayon",
+          "yesterday": "Kahapon",
+          "timelineLabel": "Timeline ng aktibidad"
         },
         "cancel": "Kanselahin ang booking",
         "restore": "I-restore ang booking",
@@ -277,7 +305,15 @@
         "actionFailed": "May naganap na mali. Subukan muli.",
         "notFound": "Hindi natagpuan ang booking.",
         "editAll": "I-edit lahat",
-        "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save."
+        "conflictBlocksSave": "Ang mga oras na ito ay may overlap sa kasalukuyang shift. Ayusin ang oras o petsa bago mag-save.",
+        "unconfirmedDrafts": {
+          "title": "Mga hindi pa nakumpirmang pagbabago",
+          "description": "{count, plural, one {Mayroon kang # hindi pa nakumpirmang pagbabago.} other {Mayroon kang # mga hindi pa nakumpirmang pagbabago.}} Isumite ang mga ito kasama ang iyong mga na-save na pagbabago, o itapon ang mga hindi pa nakumpirma at i-save lamang ang mga nakumpirma mo.",
+          "submitAll": "Isumite ang lahat ng pagbabago",
+          "discard": "Itapon ang hindi pa nakumpirma at i-save",
+          "cancel": "Bumalik",
+          "invalidError": "May mga pagbabago na may error — ayusin muna bago isumite."
+        }
       },
       "confirm": {
         "title": "Ilapat ang mga pagbabago",
@@ -335,6 +371,7 @@
       "wizard": {
         "createTitle": "Bagong booking",
         "editTitle": "I-edit ang booking",
+        "editTitleNamed": "I-edit ang {title}",
         "loading": "Nilo-load ang booking…",
         "previous": "Nakaraan",
         "next": "Susunod",
@@ -486,7 +523,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "Format ng Oras",
+        "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "Visibility",
@@ -1312,5 +1353,10 @@
       "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
       "requiredHint": "Kinakailangan"
     }
+  },
+  "notFound": {
+    "title": "Hindi nahanap ang pahina",
+    "description": "Ang pahinang hinahanap mo ay hindi umiiral o inilipat na.",
+    "backToDashboard": "Bumalik sa dashboard"
   }
 }

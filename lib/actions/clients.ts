@@ -6,7 +6,12 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
-import { getClientBookings, type ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import {
+  getClientBookings,
+  getClientById,
+  type ClientBookingRow,
+} from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients-table";
 
 type MutationResult = { ok: true } | { error: string };
 
@@ -113,5 +118,34 @@ export async function getClientBookingsAction(
     );
   } catch {
     return { error: "Failed to load bookings" };
+  }
+}
+
+export async function getClientByIdAction(
+  clientId: string
+): Promise<ClientRow | { error: string }> {
+  try {
+    const ctx = await requireOrg();
+    await connectDB();
+
+    const c = await getClientById(ctx.workspace._id, clientId);
+    if (!c) return { error: "Client not found" };
+
+    return {
+      id: String(c._id),
+      name: c.name,
+      email: c.email ?? null,
+      phone: c.phone ?? null,
+      source: c.source ?? "manual",
+      tags: (c.tags as string[]) ?? [],
+      notes: (c.notes as string) ?? "",
+      totalSpent: c.totalSpent ?? 0,
+      bookingsCount: c.bookingsCount,
+      lastBookingAt: c.lastBookingAt,
+      isActive: c.isActive ?? true,
+      currency: ctx.workspace.currency ?? "PHP",
+    };
+  } catch {
+    return { error: "Failed to load client" };
   }
 }

@@ -7,6 +7,7 @@ import type {
 } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
+import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import {
   getKpiSnapshot,
   getTodaysEvents,
@@ -67,6 +68,8 @@ export default async function DashboardPage({
   const wid = workspace._id;
 
   await connectDB();
+
+  const timeMode = await getUserTimeFormat();
 
   const [
     snapshot,
@@ -193,6 +196,7 @@ export default async function DashboardPage({
             locale={locale}
             title={t("sections.todaysEvents")}
             empty={t("empty")}
+            timeMode={timeMode}
           />
         </div>
         <RecentInquiriesList

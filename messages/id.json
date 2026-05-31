@@ -246,7 +246,25 @@
           "viewAllHistory": "Lihat semua {count} entri",
           "endBeforeStart": "Selesai tidak boleh sebelum mulai.",
           "conflictsLabel": "Shift yang sudah ada pada {date}:",
-          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini."
+          "draftHint": "Sesuaikan waktu di bawah, lalu klik Simpan perubahan untuk menambahkan sesi ini.",
+          "email": "Email",
+          "phone": "Telepon",
+          "openClient": "Buka klien",
+          "viewClient": "Lihat klien",
+          "changeClient": "Ganti klien",
+          "changeClientCancel": "Pertahankan saat ini",
+          "changeClientSearch": "Cari klien…",
+          "noEmail": "Tidak ada email",
+          "noPhone": "Tidak ada telepon",
+          "noClientResults": "Tidak ada klien ditemukan",
+          "changeClientMultiSession": "Penugasan ulang tidak tersedia untuk pemesanan multi-sesi",
+          "searchFailed": "Pencarian gagal. Coba lagi.",
+          "editTitle": "Edit judul",
+          "confirmTitle": "Konfirmasi",
+          "cancelTitleEdit": "Batal",
+          "editEventType": "Ubah jenis acara",
+          "sendEmail": "Kirim email",
+          "callClient": "Hubungi"
         },
         "cancelConfirm": {
           "title": "Batalkan pemesanan ini?",
@@ -259,7 +277,17 @@
           "totalCount": "{count} entri",
           "pageOf": "Halaman {page} dari {total}",
           "previous": "Halaman sebelumnya",
-          "next": "Halaman berikutnya"
+          "next": "Halaman berikutnya",
+          "actions": {
+            "created": "Dibuat",
+            "updated": "Diperbarui",
+            "status_changed": "Status diubah",
+            "client_changed": "Klien diubah",
+            "deleted": "Dihapus"
+          },
+          "today": "Hari ini",
+          "yesterday": "Kemarin",
+          "timelineLabel": "Linimasa aktivitas"
         },
         "cancel": "Batalkan pemesanan",
         "restore": "Pulihkan pemesanan",
@@ -277,7 +305,15 @@
         "actionFailed": "Ada yang tidak beres. Coba lagi.",
         "notFound": "Pemesanan tidak ditemukan.",
         "editAll": "Edit semua",
-        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan."
+        "conflictBlocksSave": "Waktu-waktu ini tumpang tindih dengan shift yang ada. Sesuaikan waktu atau tanggal sebelum menyimpan.",
+        "unconfirmedDrafts": {
+          "title": "Perubahan yang belum dikonfirmasi",
+          "description": "{count, plural, one {Anda memiliki # perubahan yang belum dikonfirmasi.} other {Anda memiliki # perubahan yang belum dikonfirmasi.}} Kirimkan bersama perubahan yang tersimpan, atau buang yang belum dikonfirmasi dan simpan hanya yang telah dikonfirmasi.",
+          "submitAll": "Kirim semua perubahan",
+          "discard": "Buang yang belum dikonfirmasi & simpan",
+          "cancel": "Kembali",
+          "invalidError": "Beberapa perubahan memiliki kesalahan — perbaiki sebelum mengirim."
+        }
       },
       "confirm": {
         "title": "Terapkan perubahan",
@@ -335,6 +371,7 @@
       "wizard": {
         "createTitle": "Pemesanan baru",
         "editTitle": "Edit pemesanan",
+        "editTitleNamed": "Edit {title}",
         "loading": "Memuat pemesanan…",
         "previous": "Sebelumnya",
         "next": "Berikutnya",
@@ -486,7 +523,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "Format Waktu",
+        "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "Visibilitas",
@@ -1312,5 +1353,10 @@
       "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
       "requiredHint": "Wajib"
     }
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
+    "backToDashboard": "Kembali ke dasbor"
   }
 }

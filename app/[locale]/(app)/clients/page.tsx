@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { listClients, getWorkspaceTags } from "./_data/clients-queries";
+import { listClients, getWorkspaceTags, getClientById } from "./_data/clients-queries";
 import { ClientsPageClient } from "./_components/clients-page-client";
 import type { ClientRow } from "./_components/clients-table";
 import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
@@ -26,6 +26,7 @@ type SearchParams = {
   page?: string;
   limit?: string;
   includeInactive?: string;
+  client?: string;
 };
 
 export default async function ClientsPage({
@@ -87,20 +88,68 @@ export default async function ClientsPage({
     }
   }
 
-  const rows: ClientRow[] = items.map((c) => ({
-    id: c._id.toString(),
-    name: c.name,
-    email: c.email ?? null,
-    phone: c.phone ?? null,
-    source: c.source ?? "manual",
-    tags: (c.tags as string[]) ?? [],
-    notes: (c.notes as string) ?? "",
-    totalSpent: c.totalSpent ?? 0,
-    bookingsCount: c.bookingsCount,
-    lastBookingAt: c.lastBookingAt,
-    isActive: c.isActive ?? true,
-    currency: workspace.currency ?? "PHP",
-  }));
+  function toClientRow(c: {
+    _id: { toString(): string };
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    source?: string | null;
+    tags?: unknown;
+    notes?: unknown;
+    totalSpent?: number | null;
+    bookingsCount: number;
+    lastBookingAt: Date | null;
+    isActive?: boolean | null;
+  }): ClientRow {
+    return {
+      id: c._id.toString(),
+      name: c.name,
+      email: c.email ?? null,
+      phone: c.phone ?? null,
+      source: c.source ?? "manual",
+      tags: (c.tags as string[]) ?? [],
+      notes: (c.notes as string) ?? "",
+      totalSpent: c.totalSpent ?? 0,
+      bookingsCount: c.bookingsCount,
+      lastBookingAt: c.lastBookingAt,
+      isActive: c.isActive ?? true,
+      currency: workspace.currency ?? "PHP",
+    };
+  }
+
+  const rows: ClientRow[] = items.map(toClientRow);
+
+  // Deep-link: if ?client=<id> is present, fetch that client and auto-open its
+  // detail modal. If the id is invalid or belongs to another workspace, strip
+  // the param and redirect so the URL stays clean.
+  let detailClient: ClientRow | null = null;
+  if (sp.client) {
+    const cleanParams = new URLSearchParams(
+      (Object.entries(sp).filter(([k, v]) => k !== "client" && v !== undefined) as [string, string][])
+    );
+    const cleanQuery = Object.fromEntries(cleanParams.entries());
+
+    let found: Awaited<ReturnType<typeof getClientById>> = null;
+    try {
+      found = await getClientById(workspace._id, sp.client);
+    } catch (err) {
+      // Unexpected error (e.g. transient DB failure) — log with context, then
+      // treat as not-found and strip the stale param rather than crashing the
+      // page. (redirect() below is outside this try, so NEXT_REDIRECT is never
+      // swallowed here.)
+      console.error("[clients] getClientById failed", {
+        clientId: sp.client,
+        workspaceId: String(workspace._id),
+        err,
+      });
+      found = null;
+    }
+    if (found === null) {
+      redirect({ href: { pathname: "/clients", query: cleanQuery }, locale });
+    } else {
+      detailClient = toClientRow(found);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -113,6 +162,7 @@ export default async function ClientsPage({
         locale={locale}
         availableTags={availableTags}
         empty={t("table.empty")}
+        initialDetailClient={detailClient}
       />
     </div>
   );

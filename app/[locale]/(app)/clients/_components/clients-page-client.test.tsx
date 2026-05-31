@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useState, type ReactNode, type ReactElement, createElement } from "react";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ClientsPageClient } from "./clients-page-client";
 import type { ClientRow } from "./clients-table";
@@ -33,11 +33,12 @@ vi.mock("@/components/ui/dropdown-menu", () => {
   return { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem };
 });
 
-// Capture the router so individual tests can assert on push/refresh.
+// Capture the router so individual tests can assert on push/refresh/replace.
 const routerPush = vi.fn();
 const routerRefresh = vi.fn();
+const routerReplace = vi.fn();
 vi.mock("@/lib/i18n/navigation", () => ({
-  useRouter: () => ({ push: routerPush, refresh: routerRefresh }),
+  useRouter: () => ({ push: routerPush, refresh: routerRefresh, replace: routerReplace }),
   usePathname: () => "/clients",
 }));
 vi.mock("next/navigation", () => ({
@@ -55,6 +56,26 @@ vi.mock("@/lib/actions/clients", () => ({
 import { toast } from "sonner";
 vi.mock("sonner", () => ({
   toast: { loading: vi.fn(() => "toast-id"), success: vi.fn(), error: vi.fn(), dismiss: vi.fn() },
+}));
+
+// Stub ClientDetailModal so the page-client test can assert open/closed state
+// without rendering the full modal tree (tabs, bookings action, etc.).
+vi.mock("./client-detail-modal", () => ({
+  ClientDetailModal: ({
+    open,
+    client,
+    onClose,
+  }: {
+    open: boolean;
+    client: { name: string } | null;
+    onClose: () => void;
+  }) =>
+    open && client
+      ? createElement("div", { "data-testid": "client-detail-modal" }, [
+          createElement("span", { key: "name" }, client.name),
+          createElement("button", { key: "close", onClick: onClose }, "Close"),
+        ])
+      : null,
 }));
 
 const sampleRows: ClientRow[] = [
@@ -105,6 +126,7 @@ describe("ClientsPageClient", () => {
   beforeEach(() => {
     routerPush.mockClear();
     routerRefresh.mockClear();
+    routerReplace.mockClear();
     reactivateMock.mockReset();
     vi.mocked(toast.error).mockClear();
   });
@@ -170,5 +192,23 @@ describe("ClientsPageClient", () => {
       expect(vi.mocked(toast.error)).toHaveBeenCalledWith("boom", { id: "toast-id" })
     );
     expect(routerRefresh).not.toHaveBeenCalled();
+  });
+
+  it("opens the detail modal on mount when initialDetailClient is provided", () => {
+    const deepLinked = sampleRows[0]; // Maria Santos (active)
+    renderWithProviders(
+      <ClientsPageClient {...build({ initialDetailClient: deepLinked })} />
+    );
+
+    const modal = screen.getByTestId("client-detail-modal");
+    expect(modal).toBeInTheDocument();
+    // Scope to the modal — "Maria Santos" also appears in the table row, so a
+    // bare getByText would match multiple elements.
+    expect(within(modal).getByText("Maria Santos")).toBeInTheDocument();
+  });
+
+  it("does not open the detail modal when initialDetailClient is null", () => {
+    renderWithProviders(<ClientsPageClient {...build({ initialDetailClient: null })} />);
+    expect(screen.queryByTestId("client-detail-modal")).not.toBeInTheDocument();
   });
 });

@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, formatTime } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 
 export type EditableFieldType =
   | "text"
@@ -24,6 +25,22 @@ export type EditableFieldType =
   | "money";
 
 type SelectOption = { value: string; label: string };
+
+/**
+ * A stable handle that the parent can use to observe and control an open editor
+ * without re-implementing validation. Register via the `registerHandle` prop.
+ * All methods read live values via a ref so they are never stale.
+ */
+export type FieldHandle = {
+  isEditing: () => boolean;
+  isDirty: () => boolean;
+  /** True iff the field is dirty AND passes validate(). */
+  canCommit: () => boolean;
+  /** The normalized value the user has typed in the open editor. */
+  getNormalizedValue: () => string | number | null;
+  /** Close the editor and discard the in-progress draft (equivalent to ✗). */
+  cancel: () => void;
+};
 
 type Props = {
   label: string;
@@ -55,6 +72,25 @@ type Props = {
    */
   onDiscardPending?: () => void;
   disabled?: boolean;
+
+  // ── Parent-observation API (optional) ────────────────────────────────────
+  /**
+   * Stable identifier for this field (e.g. the EditableKey string). Required
+   * for the observation callbacks to fire. If absent, all three callbacks are
+   * silently skipped so existing call sites need no changes.
+   */
+  editKey?: string;
+  /**
+   * Called whenever the editor opens (`editing=true`) or closes (`editing=false`).
+   * The parent uses this to track how many fields are currently open.
+   */
+  onEditingChange?: (editKey: string, editing: boolean) => void;
+  /**
+   * Called on mount with a stable `FieldHandle` (and on unmount with `null`).
+   * The parent stores the handle in a Map and uses it to programmatically
+   * commit or cancel the in-progress edit.
+   */
+  registerHandle?: (editKey: string, handle: FieldHandle | null) => void;
 };
 
 export function EditableField({
@@ -71,13 +107,27 @@ export function EditableField({
   onCommit,
   onDiscardPending,
   disabled,
+  editKey,
+  onEditingChange,
+  registerHandle,
 }: Props) {
+  const timeMode = useTimeFormat();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string | number | null>(
     hasPending ? (pendingValue ?? null) : (value ?? null)
   );
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  // Keep a ref to the latest live values so the FieldHandle never captures
+  // stale closures (the handle object itself is stable — created once).
+  const liveRef = useRef({
+    editing,
+    draft,
+    isDirty: false,
+    canCommit: false,
+    cancelEdit: () => {},
+  });
 
   // When the parent's server-truth value or pending value changes (e.g. after
   // a save settles or a discard fires), pull the draft back in sync.
@@ -95,12 +145,14 @@ export function EditableField({
     setDraft(hasPending ? (pendingValue ?? null) : (value ?? null));
     setError(null);
     setEditing(true);
+    if (editKey) onEditingChange?.(editKey, true);
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   function cancelEdit() {
     setError(null);
     setEditing(false);
+    if (editKey) onEditingChange?.(editKey, false);
   }
 
   function commit() {
@@ -113,6 +165,7 @@ export function EditableField({
     onCommit(v);
     setEditing(false);
     setError(null);
+    if (editKey) onEditingChange?.(editKey, false);
   }
 
   /** The value that was active when the user opened the editor. */
@@ -122,6 +175,36 @@ export function EditableField({
   const isDirty = String(normalizedDraft) !== String(normalizedOriginal);
   const validationError = validate?.(normalizedDraft) ?? null;
   const canCommit = isDirty && !validationError;
+
+  // Keep the live ref current after each commit. Writing a ref during render is
+  // disallowed; an effect with no dependency array runs on every render, and
+  // handle methods (read only post-mount via user interaction) see fresh values.
+  useEffect(() => {
+    liveRef.current = { editing, draft, isDirty, canCommit, cancelEdit };
+  });
+
+  // Register / unregister the stable FieldHandle on mount / unmount.
+  // The handle itself is created once (stable object identity) and always reads
+  // from liveRef so it is never stale.
+  useEffect(() => {
+    if (!editKey || !registerHandle) return;
+
+    const handle: FieldHandle = {
+      isEditing: () => liveRef.current.editing,
+      isDirty: () => liveRef.current.isDirty,
+      canCommit: () => liveRef.current.canCommit,
+      getNormalizedValue: () => normalize(liveRef.current.draft, type),
+      cancel: () => liveRef.current.cancelEdit(),
+    };
+
+    registerHandle(editKey, handle);
+    return () => {
+      registerHandle(editKey, null);
+    };
+    // editKey and type are intentionally omitted from deps: handle identity is
+    // stable and liveRef always contains the latest values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const currentDisplay = (() => {
     const v = hasPending ? (pendingValue ?? null) : (value ?? null);
@@ -144,7 +227,7 @@ export function EditableField({
         month: "short",
         day: "numeric",
       });
-      const timePart = formatTime(d);
+      const timePart = formatTime(d, timeMode);
       return `${datePart} · ${timePart}`;
     }
     return String(v);
@@ -224,7 +307,7 @@ export function EditableField({
                   />
                   <Input
                     type="time"
-                    lang={DEFAULT_TIME_INPUT_LANG}
+                    lang={TIME_INPUT_LANG[timeMode]}
                     className="w-32"
                     value={datetimeParts(draft).time}
                     onChange={(e) =>

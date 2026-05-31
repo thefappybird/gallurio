@@ -31,7 +31,7 @@ function makeBooking(overrides: Partial<BookingDoc> = {}): BookingDoc {
 describe("TodaysEventsList", () => {
   it("renders empty state when no bookings", () => {
     renderWithProviders(
-      <TodaysEventsList bookings={[]} locale="en" title="Today" empty="Nothing here." />
+      <TodaysEventsList bookings={[]} locale="en" title="Today" empty="Nothing here." timeMode="12h" />
     );
     expect(screen.getByText("Nothing here.")).toBeInTheDocument();
   });
@@ -46,6 +46,7 @@ describe("TodaysEventsList", () => {
         locale="en"
         title="Today"
         empty="Nothing here."
+        timeMode="12h"
       />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
@@ -60,6 +61,7 @@ describe("TodaysEventsList", () => {
         locale="en"
         title="Today"
         empty="Nothing here."
+        timeMode="12h"
       />
     );
     expect(screen.getByText("quoted")).toBeInTheDocument();
