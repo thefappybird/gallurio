@@ -127,11 +127,14 @@ export function ContactForm({
   labels,
   onSuccess,
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
+  preview = false,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
   onSuccess: () => void;
   submitAppearance?: SubmitAppearance;
+  /** Editor preview — never POST a real inquiry; submitting is a no-op. */
+  preview?: boolean;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -178,6 +181,9 @@ export function ContactForm({
   }, [form]);
 
   async function onSubmit(data: InquirySubmissionInput) {
+    // In the owner's editor preview the form is fully interactive but inert —
+    // submitting must not create a real inquiry/booking against the workspace.
+    if (preview) return;
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",

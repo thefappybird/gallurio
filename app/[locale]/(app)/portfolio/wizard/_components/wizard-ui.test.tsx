@@ -6,7 +6,7 @@ import { renderWithProviders } from "@/test-utils/render";
 const push = vi.fn();
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ push, back: vi.fn() }),
-  usePathname: () => "/page-builder/wizard",
+  usePathname: () => "/portfolio/wizard",
   Link: ({ children, href }: { children: ReactNode; href: string }) => createElement("a", { href }, children),
 }));
 

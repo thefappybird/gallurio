@@ -60,11 +60,12 @@ export function ContactPanelDialog({ open, contact, onContactChange, onSaved, on
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
 
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
         <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
 
         <div className="flex flex-col gap-4">
@@ -128,6 +129,7 @@ export function ContactPanelDialog({ open, contact, onContactChange, onSaved, on
               </select>
             </div>
           </div>
+        </div>
         </div>
 
         <DialogFooter>

@@ -219,7 +219,7 @@ export async function saveWizardOutputAction(
     await session.endSession();
   }
 
-  revalidatePath("/page-builder");
+  revalidatePath("/portfolio");
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
   return { ok: true };
@@ -247,6 +247,6 @@ export async function resetPortfolioAction(): Promise<WizardActionResult> {
 
   await Workspace.updateOne({ _id: workspaceId }, { $set: set });
 
-  revalidatePath("/page-builder");
+  revalidatePath("/portfolio");
   return { ok: true };
 }

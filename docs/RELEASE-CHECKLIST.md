@@ -81,6 +81,13 @@ The first-visit wizard uploads starter images straight to Cloudinary, then persi
 - [ ] **Block image-URL fields bypass Cloudinary** — `HeroBlock.backgroundImageUrl` and `CTABannerBlock.backgroundImageUrl` accept any URL (designed fallback for non-Cloudinary images). No script execution risk (`<img src>`), but a public visitor's browser will fetch the third-party origin (IP/UA leak). Before prod, decide whether to drop the raw-URL fallback once Cloudinary upload is the standard path, or constrain to `https://res.cloudinary.com` / Next `images.remotePatterns`.
 - [ ] **Puck zone payload cap** — `savePortfolioDraftAction` rejects a single-zone Puck payload over 512 KB to keep the embedded Workspace doc well under MongoDB's 16 MB limit. Confirm the cap is comfortable for the largest real portfolios before launch.
 
+## 4f. Page-builder editor follow-ups (Portfolio maker phases 6–9 review round)
+
+- [ ] **In-editor gallery picker strings are English** — `lib/page-builder/galleryPicker/*` (CollectionPicker, FeaturedItemsPicker) use inline English labels, matching Puck's own (un-localized) editor chrome rather than `useTranslations`. The owner-facing app shell is otherwise fully localized. If we localize the Puck editor chrome before launch, localize these panels in the same pass.
+- [ ] **`/portfolio-preview` is an authenticated draft preview** — owner-only (`requireOrg` + `role === "owner"`, `notFound` otherwise), `robots: noindex`, `dynamic = "force-dynamic"`. It renders the unpublished draft. Confirm it stays out of sitemaps/indexing and is never linked publicly.
+- [ ] **FeaturedItemsPicker uploads create uncollected `GalleryItem`s** (`collectionId: null`). If the owner later deletes such an item from the Gallery module, FeaturedWork Puck props referencing it are silently dropped by `getItemsByIds` (expected). Revisit if a "manage uncollected photos" surface is added.
+- [ ] **Photo spec** — uploads enforce JPEG/PNG/WebP/AVIF · ≤10 MB · ≥600 px shorter side (`lib/page-builder/photoSpec.ts`). Confirm these limits suit launch (esp. the 10 MB cap vs. Cloudinary plan limits).
+
 ## 5. Multi-tenant isolation spot-checks
 
 Confirm before shipping that no recently-added query/mutation forgets the `workspaceId` filter. Common landmines:

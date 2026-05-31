@@ -16,13 +16,15 @@ export const THEME_PRESET_SWATCHES: Record<
 };
 
 // Heading/body font-family CSS for each pairing's sample text in the picker.
+// Uses the self-hosted font CSS variables (lib/fonts/portfolio.ts) so the
+// preview renders in the actual pairing, not a system fallback.
 export const FONT_PAIR_SAMPLES: Record<
   BrandKitFontPair,
   { label: string; heading: string; body: string }
 > = {
-  "merriweather-only": { label: "Merriweather", heading: "Merriweather, serif", body: "Merriweather, serif" },
-  "playfair-inter": { label: "Playfair + Inter", heading: "'Playfair Display', serif", body: "Inter, sans-serif" },
-  "dm-serif-dm-sans": { label: "DM Serif + DM Sans", heading: "'DM Serif Display', serif", body: "'DM Sans', sans-serif" },
-  "cormorant-montserrat": { label: "Cormorant + Montserrat", heading: "Cormorant, serif", body: "Montserrat, sans-serif" },
-  "fraunces-inter": { label: "Fraunces + Inter", heading: "Fraunces, serif", body: "Inter, sans-serif" },
+  "merriweather-only": { label: "Merriweather", heading: "var(--font-merriweather), serif", body: "var(--font-merriweather), serif" },
+  "playfair-inter": { label: "Playfair + Inter", heading: "var(--font-playfair), serif", body: "var(--font-inter), sans-serif" },
+  "dm-serif-dm-sans": { label: "DM Serif + DM Sans", heading: "var(--font-dm-serif), serif", body: "var(--font-dm-sans), sans-serif" },
+  "cormorant-montserrat": { label: "Cormorant + Montserrat", heading: "var(--font-cormorant), serif", body: "var(--font-montserrat), sans-serif" },
+  "fraunces-inter": { label: "Fraunces + Inter", heading: "var(--font-fraunces), serif", body: "var(--font-inter), sans-serif" },
 };

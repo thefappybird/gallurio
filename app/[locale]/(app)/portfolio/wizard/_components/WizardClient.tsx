@@ -165,7 +165,7 @@ export function WizardClient({
         /* ignore */
       }
       toast.success(t("toasts.saved"));
-      router.push("/page-builder");
+      router.push("/portfolio");
     } finally {
       setSaving(false);
     }
@@ -195,7 +195,7 @@ export function WizardClient({
             <AlertDialogDescription>{t("overwrite.body")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => router.push("/page-builder")}>
+            <Button variant="outline" onClick={() => router.push("/portfolio")}>
               {t("overwrite.cancel")}
             </Button>
             <Button onClick={() => setConfirmed(true)}>{t("overwrite.continue")}</Button>

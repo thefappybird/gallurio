@@ -52,9 +52,9 @@ export function PublishDialog({ open, onOpenChange, onConfirm, publicUrl }: Prop
           <DialogDescription>{t("body")}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 border border-border bg-muted/30 p-2 text-sm">
-          <span className="flex-1 truncate text-muted-foreground">{publicUrl}</span>
-          <Button type="button" size="sm" variant="ghost" onClick={copyLink} aria-label={t("copyLink")}>
+        <div className="flex min-w-0 items-center gap-2 border border-border bg-muted/30 p-2 text-sm">
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{publicUrl}</span>
+          <Button type="button" size="sm" variant="ghost" className="shrink-0" onClick={copyLink} aria-label={t("copyLink")}>
             {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
             <span className="ml-1">{copied ? t("copied") : t("copyLink")}</span>
           </Button>

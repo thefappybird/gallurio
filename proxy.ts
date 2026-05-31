@@ -28,7 +28,7 @@ const MEMBER_BLOCKED_PREFIXES = [
   "/dashboard",
   "/clients",
   "/inquiries",
-  "/gallery",
+  "/portfolio",
   "/teams",
   "/settings",
 ];
@@ -74,6 +74,16 @@ export default clerkMiddleware(async (auth, req) => {
     if (!isPublicRoute(req)) {
       await auth.protect();
     }
+    return;
+  }
+
+  // The public portfolio at /w/[orgSlug] lives OUTSIDE the [locale] segment
+  // (app/(public)/w/...). It must NOT run the intl middleware: with
+  // localePrefix "as-needed", next-intl rewrites the unprefixed path toward
+  // /[locale]/w/... — a route that does not exist — which 404s the live page.
+  // The route is already public (no auth.protect) and picks its locale from the
+  // workspace country, not the URL, so skipping intl here is correct.
+  if (req.nextUrl.pathname === "/w" || req.nextUrl.pathname.startsWith("/w/")) {
     return;
   }
 

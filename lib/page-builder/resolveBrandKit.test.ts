@@ -110,32 +110,32 @@ describe("resolveBrandKit — radius", () => {
 describe("resolveBrandKit — font pairs", () => {
   it("merriweather-only → both heading and body are Merriweather", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "merriweather-only" }));
-    expect(cssVars["--pf-font-heading"]).toBe("'Merriweather', serif");
-    expect(cssVars["--pf-font-body"]).toBe("'Merriweather', serif");
+    expect(cssVars["--pf-font-heading"]).toBe("var(--font-merriweather), Georgia, serif");
+    expect(cssVars["--pf-font-body"]).toBe("var(--font-merriweather), Georgia, serif");
   });
 
   it("playfair-inter → Playfair Display heading, Inter body", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "playfair-inter" }));
-    expect(cssVars["--pf-font-heading"]).toBe("'Playfair Display', serif");
-    expect(cssVars["--pf-font-body"]).toBe("'Inter', sans-serif");
+    expect(cssVars["--pf-font-heading"]).toBe("var(--font-playfair), Georgia, serif");
+    expect(cssVars["--pf-font-body"]).toBe("var(--font-inter), system-ui, sans-serif");
   });
 
   it("dm-serif-dm-sans → DM Serif Display heading, DM Sans body", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "dm-serif-dm-sans" }));
-    expect(cssVars["--pf-font-heading"]).toBe("'DM Serif Display', serif");
-    expect(cssVars["--pf-font-body"]).toBe("'DM Sans', sans-serif");
+    expect(cssVars["--pf-font-heading"]).toBe("var(--font-dm-serif), Georgia, serif");
+    expect(cssVars["--pf-font-body"]).toBe("var(--font-dm-sans), system-ui, sans-serif");
   });
 
   it("cormorant-montserrat → Cormorant Garamond heading, Montserrat body", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "cormorant-montserrat" }));
-    expect(cssVars["--pf-font-heading"]).toBe("'Cormorant Garamond', serif");
-    expect(cssVars["--pf-font-body"]).toBe("'Montserrat', sans-serif");
+    expect(cssVars["--pf-font-heading"]).toBe("var(--font-cormorant), Georgia, serif");
+    expect(cssVars["--pf-font-body"]).toBe("var(--font-montserrat), system-ui, sans-serif");
   });
 
   it("fraunces-inter → Fraunces heading, Inter body", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "fraunces-inter" }));
-    expect(cssVars["--pf-font-heading"]).toBe("'Fraunces', serif");
-    expect(cssVars["--pf-font-body"]).toBe("'Inter', sans-serif");
+    expect(cssVars["--pf-font-heading"]).toBe("var(--font-fraunces), Georgia, serif");
+    expect(cssVars["--pf-font-body"]).toBe("var(--font-inter), system-ui, sans-serif");
   });
 });
 
@@ -155,28 +155,28 @@ describe("resolveBrandKit — permutation table", () => {
       label: "sharp + merriweather-only + solid",
       overrides: { radius: "sharp", fontPair: "merriweather-only", buttonStyle: "solid", themePreset: "minimal" },
       expectedRadius: "0",
-      expectedHeading: "'Merriweather', serif",
+      expectedHeading: "var(--font-merriweather), Georgia, serif",
       expectedClassName: "pf-theme-minimal pf-button-solid",
     },
     {
       label: "subtle + playfair-inter + outline",
       overrides: { radius: "subtle", fontPair: "playfair-inter", buttonStyle: "outline", themePreset: "editorial" },
       expectedRadius: "0.25rem",
-      expectedHeading: "'Playfair Display', serif",
+      expectedHeading: "var(--font-playfair), Georgia, serif",
       expectedClassName: "pf-theme-editorial pf-button-outline",
     },
     {
       label: "rounded + dm-serif-dm-sans + soft",
       overrides: { radius: "rounded", fontPair: "dm-serif-dm-sans", buttonStyle: "soft", themePreset: "luxury" },
       expectedRadius: "0.5rem",
-      expectedHeading: "'DM Serif Display', serif",
+      expectedHeading: "var(--font-dm-serif), Georgia, serif",
       expectedClassName: "pf-theme-luxury pf-button-soft",
     },
     {
       label: "sharp + fraunces-inter + outline",
       overrides: { radius: "sharp", fontPair: "fraunces-inter", buttonStyle: "outline", themePreset: "bold" },
       expectedRadius: "0",
-      expectedHeading: "'Fraunces', serif",
+      expectedHeading: "var(--font-fraunces), Georgia, serif",
       expectedClassName: "pf-theme-bold pf-button-outline",
     },
   ];

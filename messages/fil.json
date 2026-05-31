@@ -430,7 +430,8 @@
       "teams": "Mga Koponan",
       "settings": "Mga setting",
       "account": "Account",
-      "logOut": "Mag-log out"
+      "logOut": "Mag-log out",
+      "portfolio": "Portfolio"
     },
     "theme": {
       "label": "Tema",
@@ -819,11 +820,37 @@
     "inquiries": {
       "title": "Mga Katanungan",
       "subtitle": "Mga kahilingang booking mula sa iyong pampublikong portfolio.",
-      "toolbar": { "from": "Mula", "to": "Hanggang", "clear": "I-clear ang mga petsa" },
-      "tabs": { "all": "Lahat", "new": "Bago", "contacted": "Nakausap na", "converted": "Na-convert", "archived": "Naka-archive" },
-      "statusValues": { "new": "Bago", "contacted": "Nakausap na", "converted": "Na-convert", "archived": "Naka-archive" },
-      "eventTypes": { "wedding": "Kasal", "corporate": "Korporasyon", "portrait": "Portrait", "engagement": "Engagement", "anniversary": "Anibersaryo", "other": "Iba pa" },
-      "preferred": { "email": "Email", "phone": "Telepono", "either": "Alinman" },
+      "toolbar": {
+        "from": "Mula",
+        "to": "Hanggang",
+        "clear": "I-clear ang mga petsa"
+      },
+      "tabs": {
+        "all": "Lahat",
+        "new": "Bago",
+        "contacted": "Nakausap na",
+        "converted": "Na-convert",
+        "archived": "Naka-archive"
+      },
+      "statusValues": {
+        "new": "Bago",
+        "contacted": "Nakausap na",
+        "converted": "Na-convert",
+        "archived": "Naka-archive"
+      },
+      "eventTypes": {
+        "wedding": "Kasal",
+        "corporate": "Korporasyon",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anibersaryo",
+        "other": "Iba pa"
+      },
+      "preferred": {
+        "email": "Email",
+        "phone": "Telepono",
+        "either": "Alinman"
+      },
       "table": {
         "empty": "Wala pang mga katanungan.",
         "emptyHint": "Kapag may nag-submit ng iyong portfolio contact form, lalabas dito ang kanilang kahilingan.",
@@ -831,27 +858,70 @@
         "open": "Buksan ang katanungan mula kay {name}",
         "noDate": "Walang petsa",
         "directSource": "Direkta",
-        "col": { "status": "Katayuan", "client": "Kliyente", "eventDate": "Petsa ng kaganapan", "eventType": "Uri", "submitted": "Isinumite", "source": "Pinagmulan" }
+        "col": {
+          "status": "Katayuan",
+          "client": "Kliyente",
+          "eventDate": "Petsa ng kaganapan",
+          "eventType": "Uri",
+          "submitted": "Isinumite",
+          "source": "Pinagmulan"
+        }
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
         "submittedOn": "Isinumite noong {date}",
         "notFound": "Hindi natagpuan ang katanungan.",
-        "clientInfo": { "title": "Impormasyon ng kliyente", "name": "Pangalan", "email": "Email", "phone": "Telepono", "preferredContact": "Piniling paraan ng pakikipag-ugnayan", "none": "—" },
-        "eventRequest": { "title": "Kahilingang kaganapan", "eventType": "Uri ng kaganapan", "guestCount": "Mga bisita", "location": "Lokasyon", "sessions": "Mga hiniling na petsa", "message": "Mensahe", "none": "—" },
+        "clientInfo": {
+          "title": "Impormasyon ng kliyente",
+          "name": "Pangalan",
+          "email": "Email",
+          "phone": "Telepono",
+          "preferredContact": "Piniling paraan ng pakikipag-ugnayan",
+          "none": "—"
+        },
+        "eventRequest": {
+          "title": "Kahilingang kaganapan",
+          "eventType": "Uri ng kaganapan",
+          "guestCount": "Mga bisita",
+          "location": "Lokasyon",
+          "sessions": "Mga hiniling na petsa",
+          "message": "Mensahe",
+          "none": "—"
+        },
         "bookingDraft": {
           "title": "Draft na booking",
           "description": "Kapag na-aprubahan ito, malilikha ang isang booking sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
-          "total": "Kabuuan", "deposit": "Deposito", "notes": "Mga panloob na tala", "notesPlaceholder": "Mga tala na ikaw lang ang makakakita…",
-          "save": "I-save ang mga pagbabago", "saving": "Sino-save…", "approve": "Aprubahan ang booking", "approving": "Inaprubahan…", "approved": "Naaprubahan na",
-          "missing": "Walang naka-link na draft na booking para sa katanungang ito.", "alreadyConverted": "Ang katanungang ito ay naaprubahan na.", "viewBooking": "Tingnan ang booking",
-          "approveError": "Hindi ma-aprubahan. Pakisubukang muli.", "saveError": "Hindi ma-save. Pakisubukang muli.", "savedToast": "Na-save ang draft.", "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-apruba ng mga booking."
+          "total": "Kabuuan",
+          "deposit": "Deposito",
+          "notes": "Mga panloob na tala",
+          "notesPlaceholder": "Mga tala na ikaw lang ang makakakita…",
+          "save": "I-save ang mga pagbabago",
+          "saving": "Sino-save…",
+          "approve": "Aprubahan ang booking",
+          "approving": "Inaprubahan…",
+          "approved": "Naaprubahan na",
+          "missing": "Walang naka-link na draft na booking para sa katanungang ito.",
+          "alreadyConverted": "Ang katanungang ito ay naaprubahan na.",
+          "viewBooking": "Tingnan ang booking",
+          "approveError": "Hindi ma-aprubahan. Pakisubukang muli.",
+          "saveError": "Hindi ma-save. Pakisubukang muli.",
+          "savedToast": "Na-save ang draft.",
+          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-apruba ng mga booking."
         },
         "actions": {
-          "markContacted": "Markahan bilang nakausap na", "archive": "I-archive", "working": "Sino-save…",
-          "contactedToast": "Minarkahan bilang nakausap na.", "archivedToast": "Naka-archive na ang katanungan.", "approvedToast": "Naaprubahan ang booking.", "errorToast": "May nangyaring mali. Pakisubukang muli."
+          "markContacted": "Markahan bilang nakausap na",
+          "archive": "I-archive",
+          "working": "Sino-save…",
+          "contactedToast": "Minarkahan bilang nakausap na.",
+          "archivedToast": "Naka-archive na ang katanungan.",
+          "approvedToast": "Naaprubahan ang booking.",
+          "errorToast": "May nangyaring mali. Pakisubukang muli."
         },
-        "history": { "title": "Kasaysayan", "submitted": "Isinumite ang katanungan", "converted": "Naaprubahan bilang booking" }
+        "history": {
+          "title": "Kasaysayan",
+          "submitted": "Isinumite ang katanungan",
+          "converted": "Naaprubahan bilang booking"
+        }
       }
     },
     "pageBuilder": {
@@ -863,15 +933,37 @@
       "rerunWizard": "Muling i-run ang setup",
       "brandKit": {
         "themePreset": "Tema",
-        "presets": { "minimal": "Minimal", "editorial": "Editorial", "luxury": "Luxury", "bold": "Bold", "romantic": "Romantic", "modern": "Modern" },
+        "presets": {
+          "minimal": "Minimal",
+          "editorial": "Editorial",
+          "luxury": "Luxury",
+          "bold": "Bold",
+          "romantic": "Romantic",
+          "modern": "Modern"
+        },
         "fontPair": "Mga font",
         "colors": "Mga kulay",
         "useWorkspaceBranding": "Gamitin ang branding ng workspace",
-        "colorLabels": { "primaryColor": "Pangunahin", "secondaryColor": "Pangalawa", "accentColor": "Accent", "backgroundColor": "Background", "foregroundColor": "Teksto" }
+        "colorLabels": {
+          "primaryColor": "Pangunahin",
+          "secondaryColor": "Pangalawa",
+          "accentColor": "Accent",
+          "backgroundColor": "Background",
+          "foregroundColor": "Teksto"
+        }
       },
       "editor": {
-        "zone": { "home": "Home", "gallery": "Gallery" },
-        "save": { "saving": "Nagse-save…", "saved": "Nai-save", "idle": "Nai-save na ang lahat ng pagbabago" },
+        "zone": {
+          "home": "Home",
+          "gallery": "Gallery",
+          "contact": "Form ng kontak",
+          "groupLabel": "Seksyon ng pahina"
+        },
+        "save": {
+          "saving": "Nagse-save…",
+          "saved": "Nai-save",
+          "idle": "Nai-save na ang lahat ng pagbabago"
+        },
         "publish": "I-publish",
         "publishing": "Inilalathala…",
         "theme": "Tema",
@@ -888,7 +980,9 @@
           "copyLink": "Kopyahin ang link",
           "copied": "Nakopya"
         },
-        "themeDialog": { "title": "Tema at brand" },
+        "themeDialog": {
+          "title": "Tema at brand"
+        },
         "contactDialog": {
           "title": "Form ng pakikipag-ugnayan",
           "formFixedNote": "Naayos na ang mga field ng form. Maaari kang mag-edit ng heading, mensahe, at button lamang.",
@@ -898,8 +992,17 @@
           "descriptionPlaceholder": "Sabihin sa mga bisita kung ano ang dapat nilang asahan kapag nakipag-ugnayan sila.",
           "buttonStyleLabel": "Estilo ng button",
           "buttonColorLabel": "Kulay ng button",
-          "buttonStyles": { "solid": "Solid", "outline": "Outline", "soft": "Malambot" },
-          "buttonColors": { "primary": "Pangunahin", "secondary": "Pangalawa", "accent": "Accent", "foreground": "Teksto" },
+          "buttonStyles": {
+            "solid": "Solid",
+            "outline": "Outline",
+            "soft": "Malambot"
+          },
+          "buttonColors": {
+            "primary": "Pangunahin",
+            "secondary": "Pangalawa",
+            "accent": "Accent",
+            "foreground": "Teksto"
+          },
           "save": "I-save",
           "saving": "Nagse-save…"
         },
@@ -908,6 +1011,13 @@
           "body": "Ang drag-and-drop na pag-edit ay dinisenyo para sa tablet at desktop.",
           "openPreview": "Buksan ang preview",
           "continue": "Magpatuloy naman"
+        },
+        "contactSettings": "I-edit ang setting ng kontak",
+        "preview": {
+          "show": "Preview",
+          "edit": "I-edit",
+          "title": "Live na preview",
+          "empty": "Wala pang ipi-preview. Magdagdag ng ilang seksyon, pagkatapos ay bumalik."
         }
       },
       "wizard": {
@@ -919,14 +1029,65 @@
         "launch": "Ilunsad ang editor",
         "launching": "Sine-set up…",
         "stepOf": "Hakbang {current} ng {total}",
-        "overwrite": { "title": "Mayroon ka nang portfolio", "body": "Ang muling pag-run ng setup ay papalitan ang iyong mga kasalukuyang pahina. Naka-archive ang iyong kasalukuyang nilalaman para maaari mo itong bawiin.", "continue": "Magpatuloy pa rin", "cancel": "Kanselahin" },
-        "steps": { "template": "Template", "branding": "Branding", "theme": "Tema", "images": "Mga larawan", "review": "Suriin" },
-        "template": { "title": "Pumili ng panimulang punto", "subtitle": "Maaari mong baguhin ang lahat mamaya." },
-        "branding": { "title": "Kumpirmahin ang iyong branding", "subtitle": "Kinuha mula sa iyong workspace — maaaring baguhin ang anuman.", "tagline": "Tagline", "taglinePlaceholder": "Isang maikling linya na nagpapaliwanag sa iyo" , "description": "Tungkol sa amin", "descriptionPlaceholder": "Isa o dalawang pangungusap tungkol sa iyong gawain" },
-        "theme": { "title": "Piliin ang iyong hitsura", "subtitle": "Tema, mga font, at mga kulay para sa iyong pampublikong pahina." },
-        "images": { "title": "Magdagdag ng ilang larawan", "subtitle": "Mag-upload ng kahit isa — limang larawan ang maganda. Idadagdag namin ang mga ito sa isang \"Featured work\" na gallery.", "upload": "Mag-upload ng mga larawan", "uploading": "Ina-upload…", "remove": "Alisin ang larawan", "empty": "Wala pang larawan.", "error": "Hindi na-upload ang ilang larawan. Pakisubukan muli.", "count": "{count} {count, plural, one {larawan} other {larawan}}" },
-        "review": { "title": "Suriin at ilunsad", "subtitle": "Narito ang ise-set up namin.", "template": "Template", "theme": "Tema", "images": "Mga larawan", "homeBlocks": "{count} seksyon sa home", "galleryBlocks": "{count} seksyon sa gallery" },
-        "toasts": { "saved": "Handa na ang iyong portfolio!", "error": "May nangyaring mali. Pakisubukan muli." }
+        "overwrite": {
+          "title": "Mayroon ka nang portfolio",
+          "body": "Ang muling pag-run ng setup ay papalitan ang iyong mga kasalukuyang pahina. Naka-archive ang iyong kasalukuyang nilalaman para maaari mo itong bawiin.",
+          "continue": "Magpatuloy pa rin",
+          "cancel": "Kanselahin"
+        },
+        "steps": {
+          "template": "Template",
+          "branding": "Branding",
+          "theme": "Tema",
+          "images": "Mga larawan",
+          "review": "Suriin"
+        },
+        "template": {
+          "title": "Pumili ng panimulang punto",
+          "subtitle": "Maaari mong baguhin ang lahat mamaya."
+        },
+        "branding": {
+          "title": "Kumpirmahin ang iyong branding",
+          "subtitle": "Kinuha mula sa iyong workspace — maaaring baguhin ang anuman.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "Isang maikling linya na nagpapaliwanag sa iyo",
+          "description": "Tungkol sa amin",
+          "descriptionPlaceholder": "Isa o dalawang pangungusap tungkol sa iyong gawain"
+        },
+        "theme": {
+          "title": "Piliin ang iyong hitsura",
+          "subtitle": "Tema, mga font, at mga kulay para sa iyong pampublikong pahina."
+        },
+        "images": {
+          "title": "Magdagdag ng ilang larawan",
+          "subtitle": "Mag-drag ng ilang larawan para sa iyong gallery — o laktawan at idagdag ang mga ito anumang oras.",
+          "upload": "Mag-upload ng mga larawan",
+          "uploading": "Ina-upload…",
+          "remove": "Alisin ang larawan",
+          "empty": "Wala pang larawan.",
+          "error": "Hindi na-upload ang ilang larawan. Pakisubukan muli.",
+          "count": "{count} {count, plural, one {larawan} other {larawan}}",
+          "dropZone": "I-drag ang mga larawan dito o i-click para pumili",
+          "dropZoneActive": "I-drop para i-upload",
+          "spec": "JPEG, PNG, WebP o AVIF · max 10 MB · min 600 px",
+          "optional": "Maaari mong laktawan ang hakbang na ito at mag-upload ng mga larawan mamaya.",
+          "errorType": "Tanging mga larawang JPEG, PNG, WebP, at AVIF lang ang tinatanggap.",
+          "errorSize": "Ang bawat larawan ay dapat wala pang 10 MB.",
+          "errorDim": "Ang mga larawan ay dapat hindi bababa sa 600 px sa mas maikling bahagi."
+        },
+        "review": {
+          "title": "Suriin at ilunsad",
+          "subtitle": "Narito ang ise-set up namin.",
+          "template": "Template",
+          "theme": "Tema",
+          "images": "Mga larawan",
+          "homeBlocks": "{count} seksyon sa home",
+          "galleryBlocks": "{count} seksyon sa gallery"
+        },
+        "toasts": {
+          "saved": "Handa na ang iyong portfolio!",
+          "error": "May nangyaring mali. Pakisubukan muli."
+        }
       }
     }
   },

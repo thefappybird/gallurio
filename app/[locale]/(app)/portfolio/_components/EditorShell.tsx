@@ -27,7 +27,10 @@ import { MobileBanner } from "./MobileBanner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+// Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
+// too, but it's the fixed prebuilt form — previewed, never Puck-edited.
 type Zone = "home" | "gallery";
+type Tab = Zone | "contact";
 type SaveStatus = "idle" | "saving" | "saved";
 
 type Props = {
@@ -37,10 +40,13 @@ type Props = {
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
   publicOrigin: string;
+  /** Locale-aware path to the chrome-less preview route (iframe src base). */
+  previewBasePath: string;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const AUTOSAVE_MS = 1500;
+const TABS: readonly Tab[] = ["home", "gallery", "contact"] as const;
 
 // The editor is uncontrolled per zone — Puck owns the live edit state and emits
 // it via onChange. Each content item needs a stable props.id; seeded template
@@ -67,16 +73,24 @@ export function EditorShell({
   initialBrandKit,
   initialContact,
   publicOrigin,
+  previewBasePath,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
+  const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [previewMode, setPreviewMode] = useState(false);
+  // Bumped to force the preview iframe to reload with the freshest draft.
+  const [previewNonce, setPreviewNonce] = useState(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [brandKit, setBrandKit] = useState(initialBrandKit);
   const [contact, setContact] = useState(initialContact);
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+
+  const isContact = activeTab === "contact";
+  const showPuck = !isContact && !previewMode;
 
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
@@ -114,6 +128,14 @@ export function EditorShell({
     return true;
   }, [t]);
 
+  // Persist a debounced edit immediately if one is pending; no-op otherwise.
+  const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
+    if (!saveTimer.current) return true;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    return saveZone(zone, zoneDataRef.current[zone]);
+  }, [saveZone]);
+
   // Flush a pending autosave when leaving the active zone (effect cleanup runs on
   // zone change) and on unmount — so a final edit made within the debounce window
   // isn't lost, and the debounced timer never fires after the component is gone.
@@ -147,14 +169,41 @@ export function EditorShell({
     [activeZone, saveZone]
   );
 
-  function switchZone(zone: Zone) {
-    if (zone === activeZone) return;
-    // The leaving zone's pending autosave is flushed by the effect cleanup that
-    // runs when activeZone changes. The new zone remounts <Puck> (key change)
-    // and will echo onChange — ignore that first emission.
+  async function selectTab(tab: Tab) {
+    if (tab === activeTab) return;
+
+    if (tab === "contact") {
+      // Persist any in-flight edit of the editable zone we're leaving so the
+      // preview (and a later publish) reflect it, then show the contact preview.
+      if (!isContact) await flushPendingSave(activeZone);
+      setActiveTab("contact");
+      setPreviewNonce((n) => n + 1);
+      return;
+    }
+
+    // Entering an editable zone (home/gallery).
+    if (!isContact) await flushPendingSave(activeZone);
+    // The new zone remounts <Puck> (key change) and echoes onChange — ignore it.
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[zone]));
-    setActiveZone(zone);
+    setPuckSeed(ensureIds(zoneDataRef.current[tab]));
+    setActiveZone(tab);
+    setActiveTab(tab);
+    // Carry the preview/edit preference across zones; reload the iframe if shown.
+    if (previewMode) setPreviewNonce((n) => n + 1);
+  }
+
+  async function togglePreview() {
+    if (previewMode) {
+      // Back to editing — remount Puck from the freshest data; ignore its echo.
+      ignoreNextChange.current = true;
+      setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+      setPreviewMode(false);
+      return;
+    }
+    // Entering preview — guarantee the iframe shows the latest edits.
+    await flushPendingSave(activeZone);
+    setPreviewNonce((n) => n + 1);
+    setPreviewMode(true);
   }
 
   async function handlePublish() {
@@ -172,8 +221,11 @@ export function EditorShell({
       toast.error(t("errorToast"));
       return;
     }
+    // Leave the indicator on "saved" — never a lingering "Saving…" after publish.
+    setSaveStatus("saved");
     setPublishOpen(false);
     toast.success(t("publishedToast"));
+    if (!showPuck) setPreviewNonce((n) => n + 1);
   }
 
   function openTheme() {
@@ -183,6 +235,7 @@ export function EditorShell({
   function closeTheme(saved: boolean) {
     if (!saved && themeSnapshot.current) setBrandKit(themeSnapshot.current);
     setThemeOpen(false);
+    if (saved && !showPuck) setPreviewNonce((n) => n + 1);
   }
   function openContact() {
     contactSnapshot.current = contact;
@@ -191,9 +244,65 @@ export function EditorShell({
   function closeContact(saved: boolean) {
     if (!saved && contactSnapshot.current) setContact(contactSnapshot.current);
     setContactOpen(false);
+    if (saved && isContact) setPreviewNonce((n) => n + 1);
   }
 
   const { cssVars, className } = resolveBrandKit(brandKit);
+  const headerTitle = `${workspaceName} · ${t(`zone.${activeTab}`)}`;
+  const previewSrc = `${previewBasePath}?zone=${isContact ? "contact" : activeZone}&v=${previewNonce}`;
+
+  // Shared toolbar contents. `publishSlot` is Puck's own Publish button in edit
+  // mode, or our equivalent in preview mode. The save-status sits BELOW the
+  // button row, right-aligned under the controls.
+  function renderControls(publishSlot: React.ReactNode) {
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-1" role="group" aria-label={t("zone.groupLabel")}>
+            {TABS.map((tab) => (
+              <Button
+                key={tab}
+                type="button"
+                size="sm"
+                variant={activeTab === tab ? "default" : "outline"}
+                aria-pressed={activeTab === tab}
+                onClick={() => void selectTab(tab)}
+              >
+                {t(`zone.${tab}`)}
+              </Button>
+            ))}
+          </div>
+          {!isContact && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-pressed={previewMode}
+              onClick={() => void togglePreview()}
+            >
+              {previewMode ? t("preview.edit") : t("preview.show")}
+            </Button>
+          )}
+          <Button type="button" size="sm" variant="outline" onClick={openTheme}>
+            {t("theme")}
+          </Button>
+          {isContact && (
+            <Button type="button" size="sm" variant="outline" onClick={openContact}>
+              {t("contactSettings")}
+            </Button>
+          )}
+          {publishSlot}
+        </div>
+        <span className="text-xs text-muted-foreground" aria-live="polite">
+          {saveStatus === "saving"
+            ? t("save.saving")
+            : saveStatus === "saved"
+              ? t("save.saved")
+              : t("save.idle")}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -203,53 +312,46 @@ export function EditorShell({
         className={cn("gallurio-editor", className)}
         style={cssVars as React.CSSProperties}
       >
-        <Puck
-          key={activeZone}
-          // Cast to the base Config so Puck's deep generic inference doesn't blow
-          // tsc's stack; editorPuckConfig is typed at the component level already.
-          config={editorPuckConfig as unknown as Config}
-          data={puckSeed}
-          onChange={handleChange}
-          onPublish={() => setPublishOpen(true)}
-          iframe={{ enabled: false }}
-          headerTitle={`${workspaceName} · ${t(`zone.${activeZone}`)}`}
-          viewports={[
-            { width: 1280, label: "Desktop", icon: "Monitor" },
-            { width: 768, label: "Tablet", icon: "Tablet" },
-            { width: 390, label: "Mobile", icon: "Smartphone" },
-          ]}
-          overrides={{
-            headerActions: ({ children }) => (
-              <div className="flex items-center gap-2">
-                {/* Zone switcher */}
-                <div className="flex items-center gap-1" role="group" aria-label={t("zone.home")}>
-                  {(["home", "gallery"] as const).map((zone) => (
-                    <Button
-                      key={zone}
-                      type="button"
-                      size="sm"
-                      variant={activeZone === zone ? "default" : "outline"}
-                      onClick={() => switchZone(zone)}
-                    >
-                      {t(`zone.${zone}`)}
-                    </Button>
-                  ))}
-                </div>
-                <span className="text-xs text-muted-foreground" aria-live="polite">
-                  {saveStatus === "saving" ? t("save.saving") : saveStatus === "saved" ? t("save.saved") : t("save.idle")}
-                </span>
-                <Button type="button" size="sm" variant="outline" onClick={openTheme}>
-                  {t("theme")}
+        {showPuck ? (
+          <Puck
+            key={activeZone}
+            // Cast to the base Config so Puck's deep generic inference doesn't blow
+            // tsc's stack; editorPuckConfig is typed at the component level already.
+            config={editorPuckConfig as unknown as Config}
+            data={puckSeed}
+            onChange={handleChange}
+            onPublish={() => setPublishOpen(true)}
+            iframe={{ enabled: false }}
+            headerTitle={headerTitle}
+            viewports={[
+              { width: 1280, label: "Desktop", icon: "Monitor" },
+              { width: 768, label: "Tablet", icon: "Tablet" },
+              { width: 390, label: "Mobile", icon: "Smartphone" },
+            ]}
+            overrides={{
+              headerActions: ({ children }) => renderControls(children),
+            }}
+          />
+        ) : (
+          <div className="flex h-full flex-col">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
+              <span className="min-w-0 truncate text-sm font-medium">{headerTitle}</span>
+              {renderControls(
+                <Button type="button" size="sm" onClick={() => setPublishOpen(true)}>
+                  {t("publish")}
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={openContact}>
-                  {t("contact")}
-                </Button>
-                {/* Puck's default Publish button (wired to onPublish → dialog). */}
-                {children}
-              </div>
-            ),
-          }}
-        />
+              )}
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-muted/40">
+              <iframe
+                key={previewNonce}
+                src={previewSrc}
+                title={t("preview.title")}
+                className="h-full w-full border-0 bg-white"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <PublishDialog

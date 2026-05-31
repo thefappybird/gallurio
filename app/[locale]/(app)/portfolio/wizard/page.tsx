@@ -29,7 +29,7 @@ export default async function WizardPage({
 
   const { workspace, role } = await requireOrg();
   if (role !== "owner") {
-    redirect({ href: "/page-builder", locale });
+    redirect({ href: "/portfolio", locale });
   }
 
   const templates: WizardTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({

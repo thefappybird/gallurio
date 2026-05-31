@@ -47,11 +47,13 @@ export function ThemePanelDialog({ open, brandKit, onBrandKitChange, onSaved, on
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t("themeDialog.title")}</DialogTitle>
         </DialogHeader>
-        <BrandKitPicker value={brandKit} onChange={onBrandKitChange} />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <BrandKitPicker value={brandKit} onChange={onBrandKitChange} />
+        </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
             {t("publishDialog.cancel")}

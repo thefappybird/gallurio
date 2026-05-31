@@ -35,7 +35,7 @@ const OWNER_NAV = [
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
   { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
-  { href: "/gallery" as const, labelKey: "gallery", icon: CameraIcon },
+  { href: "/portfolio" as const, labelKey: "portfolio", icon: CameraIcon },
   { href: "/teams" as const, labelKey: "teams", icon: UsersRound },
 ];
 

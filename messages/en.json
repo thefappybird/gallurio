@@ -430,7 +430,8 @@
       "teams": "Teams",
       "settings": "Settings",
       "account": "Account",
-      "logOut": "Log out"
+      "logOut": "Log out",
+      "portfolio": "Portfolio"
     },
     "theme": {
       "label": "Theme",
@@ -952,8 +953,17 @@
         }
       },
       "editor": {
-        "zone": { "home": "Home", "gallery": "Gallery" },
-        "save": { "saving": "Saving…", "saved": "Saved", "idle": "All changes saved" },
+        "zone": {
+          "home": "Home",
+          "gallery": "Gallery",
+          "contact": "Contact form",
+          "groupLabel": "Page section"
+        },
+        "save": {
+          "saving": "Saving…",
+          "saved": "Saved",
+          "idle": "All changes saved"
+        },
         "publish": "Publish",
         "publishing": "Publishing…",
         "theme": "Theme",
@@ -970,7 +980,9 @@
           "copyLink": "Copy link",
           "copied": "Copied"
         },
-        "themeDialog": { "title": "Theme & brand" },
+        "themeDialog": {
+          "title": "Theme & brand"
+        },
         "contactDialog": {
           "title": "Contact form",
           "formFixedNote": "The form fields are fixed. You can edit the heading, message, and button only.",
@@ -980,8 +992,17 @@
           "descriptionPlaceholder": "Tell visitors what to expect when they reach out.",
           "buttonStyleLabel": "Button style",
           "buttonColorLabel": "Button color",
-          "buttonStyles": { "solid": "Solid", "outline": "Outline", "soft": "Soft" },
-          "buttonColors": { "primary": "Primary", "secondary": "Secondary", "accent": "Accent", "foreground": "Text" },
+          "buttonStyles": {
+            "solid": "Solid",
+            "outline": "Outline",
+            "soft": "Soft"
+          },
+          "buttonColors": {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "accent": "Accent",
+            "foreground": "Text"
+          },
           "save": "Save",
           "saving": "Saving…"
         },
@@ -990,6 +1011,13 @@
           "body": "Drag-and-drop editing is designed for tablet and desktop.",
           "openPreview": "Open preview",
           "continue": "Continue anyway"
+        },
+        "contactSettings": "Edit contact settings",
+        "preview": {
+          "show": "Preview",
+          "edit": "Edit",
+          "title": "Live preview",
+          "empty": "Nothing to preview yet. Add some sections, then come back."
         }
       },
       "wizard": {
@@ -1032,13 +1060,20 @@
         },
         "images": {
           "title": "Add a few photos",
-          "subtitle": "Upload at least one — five looks great. We'll add them to a \"Featured work\" gallery.",
+          "subtitle": "Drag in a few photos for your gallery — or skip and add them anytime.",
           "upload": "Upload images",
           "uploading": "Uploading…",
           "remove": "Remove image",
           "empty": "No images yet.",
           "error": "Some images failed to upload. Please try again.",
-          "count": "{count} {count, plural, one {image} other {images}}"
+          "count": "{count} {count, plural, one {image} other {images}}",
+          "dropZone": "Drag photos here or click to select",
+          "dropZoneActive": "Drop to upload",
+          "spec": "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px",
+          "optional": "You can skip this step and upload photos later.",
+          "errorType": "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
+          "errorSize": "Each photo must be under 10 MB.",
+          "errorDim": "Photos must be at least 600 px on the shorter side."
         },
         "review": {
           "title": "Review & launch",

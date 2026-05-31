@@ -54,6 +54,7 @@ const baseProps = {
   initialBrandKit: DEFAULT_BRAND_KIT,
   initialContact: { title: "Hi" },
   publicOrigin: "https://app.test",
+  previewBasePath: "/portfolio-preview",
 };
 
 beforeEach(() => {
@@ -66,11 +67,10 @@ describe("EditorShell", () => {
     expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
   });
 
-  it("renders the zone switcher and switches the active zone", () => {
+  it("renders the zone switcher and switches the active zone", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
-    const galleryBtn = screen.getByRole("button", { name: "Gallery" });
-    fireEvent.click(galleryBtn);
-    expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Gallery");
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
   it("opens the publish dialog when Puck's publish fires", () => {
@@ -86,10 +86,44 @@ describe("EditorShell", () => {
     expect(screen.getByText("Theme & brand")).toBeInTheDocument();
   });
 
-  it("opens the contact panel", () => {
+  it("toggles into live preview (Puck unmounts, iframe shown) and back", async () => {
+    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    expect(screen.getByTestId("puck")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    // Puck gone, preview iframe mounted pointing at the home zone.
+    expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    const iframe = container.querySelector("iframe");
+    expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
+    // Back to editing.
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(await screen.findByTestId("puck")).toBeInTheDocument();
+  });
+
+  it("treats Contact as a tab — shows its preview and opens settings from there", async () => {
+    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
+    // Contact preview iframe, no Puck.
+    expect(await screen.findByText("Studio Aurora · Contact form")).toBeInTheDocument();
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    expect(container.querySelector("iframe")?.getAttribute("src")).toContain("zone=contact");
+    // Settings open from the contact tab, not a side button.
+    fireEvent.click(screen.getByRole("button", { name: "Edit contact settings" }));
+    expect(
+      await screen.findByText(
+        "The form fields are fixed. You can edit the heading, message, and button only."
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("publishes from the contact tab without a lingering 'Saving…' status", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Contact" }));
-    expect(screen.getByText("Contact form")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
+    expect(await screen.findByText("Saved")).toBeInTheDocument();
+    expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
+    expect(publishPortfolioAction).toHaveBeenCalled();
   });
 
   it("shows the mobile banner notice", () => {

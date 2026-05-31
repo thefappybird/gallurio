@@ -13,9 +13,15 @@
  *
  * Prop types are imported type-only (erased at build) so no server module is
  * pulled into the client bundle.
+ *
+ * Gallery fields (collectionId / itemIds) use custom `type:"custom"` fields
+ * with visual pickers. The stored prop SHAPE is unchanged — only the editor
+ * input changes. The parity test checks field KEYS (not types), so it stays green.
  */
 
 import type { Config, ComponentConfig, Field } from "@measured/puck";
+import { CollectionPicker } from "./galleryPicker/CollectionPicker";
+import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import type { HeroBlockProps } from "./blocks/HeroBlock";
 import type { AboutBlockProps, CredentialItem } from "./blocks/AboutBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -211,7 +217,13 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
   defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 12 },
   fields: {
-    collectionId: { type: "text", label: "Collection ID" },
+    collectionId: {
+      type: "custom",
+      label: "Collection",
+      render: ({ value, onChange }) => (
+        <CollectionPicker value={value as string} onChange={onChange} />
+      ),
+    } as Field<string>,
     columns: {
       type: "select",
       label: "Columns",
@@ -252,7 +264,13 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
   defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 18 },
   fields: {
-    collectionId: { type: "text", label: "Collection ID" },
+    collectionId: {
+      type: "custom",
+      label: "Collection",
+      render: ({ value, onChange }) => (
+        <CollectionPicker value={value as string} onChange={onChange} />
+      ),
+    } as Field<string>,
     columns: {
       type: "select",
       label: "Columns",
@@ -293,7 +311,13 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
   defaultProps: { collectionId: "", aspect: "landscape", autoplay: false, maxItems: 12 },
   fields: {
-    collectionId: { type: "text", label: "Collection ID" },
+    collectionId: {
+      type: "custom",
+      label: "Collection",
+      render: ({ value, onChange }) => (
+        <CollectionPicker value={value as string} onChange={onChange} />
+      ),
+    } as Field<string>,
     aspect: {
       type: "select",
       label: "Image shape",
@@ -328,11 +352,14 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
     heading: { type: "text", label: "Heading" },
     subheading: { type: "text", label: "Subheading" },
     itemIds: {
-      type: "array",
-      label: "Gallery item IDs (max 3)",
-      arrayFields: {
-        id: { type: "text", label: "Item ID" },
-      },
+      type: "custom",
+      label: "Featured photos (max 3)",
+      render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+        <FeaturedItemsPicker
+          value={value as FeaturedWorkItemId[]}
+          onChange={onChange as (v: Array<{ id: string }>) => void}
+        />
+      ),
     } as unknown as Field<FeaturedWorkItemId[]>,
     layout: {
       type: "select",

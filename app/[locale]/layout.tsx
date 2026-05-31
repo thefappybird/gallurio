@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { routing } from "@/lib/i18n/routing";
+import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import "../globals.css";
 
 // Self-hosted Merriweather (app-shell font). Bundled locally so builds never
@@ -55,7 +56,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${merriweather.variable} h-full antialiased`}
+      className={`${merriweather.variable} ${portfolioFontVariables} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

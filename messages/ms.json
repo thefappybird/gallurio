@@ -430,7 +430,8 @@
       "teams": "Pasukan",
       "settings": "Tetapan",
       "account": "Akaun",
-      "logOut": "Log keluar"
+      "logOut": "Log keluar",
+      "portfolio": "Portfolio"
     },
     "theme": {
       "label": "Tema",
@@ -819,11 +820,37 @@
     "inquiries": {
       "title": "Pertanyaan",
       "subtitle": "Permintaan tempahan daripada portfolio awam anda.",
-      "toolbar": { "from": "Dari", "to": "Hingga", "clear": "Padam tarikh" },
-      "tabs": { "all": "Semua", "new": "Baru", "contacted": "Dihubungi", "converted": "Ditukar", "archived": "Diarkib" },
-      "statusValues": { "new": "Baru", "contacted": "Dihubungi", "converted": "Ditukar", "archived": "Diarkib" },
-      "eventTypes": { "wedding": "Perkahwinan", "corporate": "Korporat", "portrait": "Potret", "engagement": "Pertunangan", "anniversary": "Ulang tahun", "other": "Lain-lain" },
-      "preferred": { "email": "E-mel", "phone": "Telefon", "either": "Mana-mana" },
+      "toolbar": {
+        "from": "Dari",
+        "to": "Hingga",
+        "clear": "Padam tarikh"
+      },
+      "tabs": {
+        "all": "Semua",
+        "new": "Baru",
+        "contacted": "Dihubungi",
+        "converted": "Ditukar",
+        "archived": "Diarkib"
+      },
+      "statusValues": {
+        "new": "Baru",
+        "contacted": "Dihubungi",
+        "converted": "Ditukar",
+        "archived": "Diarkib"
+      },
+      "eventTypes": {
+        "wedding": "Perkahwinan",
+        "corporate": "Korporat",
+        "portrait": "Potret",
+        "engagement": "Pertunangan",
+        "anniversary": "Ulang tahun",
+        "other": "Lain-lain"
+      },
+      "preferred": {
+        "email": "E-mel",
+        "phone": "Telefon",
+        "either": "Mana-mana"
+      },
       "table": {
         "empty": "Belum ada pertanyaan.",
         "emptyHint": "Apabila seseorang menghantar borang hubungan portfolio anda, permintaan mereka akan muncul di sini.",
@@ -831,27 +858,70 @@
         "open": "Buka pertanyaan daripada {name}",
         "noDate": "Tiada tarikh",
         "directSource": "Terus",
-        "col": { "status": "Status", "client": "Pelanggan", "eventDate": "Tarikh acara", "eventType": "Jenis", "submitted": "Dihantar", "source": "Sumber" }
+        "col": {
+          "status": "Status",
+          "client": "Pelanggan",
+          "eventDate": "Tarikh acara",
+          "eventType": "Jenis",
+          "submitted": "Dihantar",
+          "source": "Sumber"
+        }
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
         "submittedOn": "Dihantar {date}",
         "notFound": "Pertanyaan tidak dijumpai.",
-        "clientInfo": { "title": "Maklumat pelanggan", "name": "Nama", "email": "E-mel", "phone": "Telefon", "preferredContact": "Kaedah hubungan pilihan", "none": "—" },
-        "eventRequest": { "title": "Permintaan acara", "eventType": "Jenis acara", "guestCount": "Tetamu", "location": "Lokasi", "sessions": "Tarikh yang diminta", "message": "Mesej", "none": "—" },
+        "clientInfo": {
+          "title": "Maklumat pelanggan",
+          "name": "Nama",
+          "email": "E-mel",
+          "phone": "Telefon",
+          "preferredContact": "Kaedah hubungan pilihan",
+          "none": "—"
+        },
+        "eventRequest": {
+          "title": "Permintaan acara",
+          "eventType": "Jenis acara",
+          "guestCount": "Tetamu",
+          "location": "Lokasi",
+          "sessions": "Tarikh yang diminta",
+          "message": "Mesej",
+          "none": "—"
+        },
         "bookingDraft": {
           "title": "Draf tempahan",
           "description": "Meluluskan ini akan mencipta tempahan dalam kalendar anda. Tetapkan harga sekarang atau kemudian.",
-          "total": "Jumlah", "deposit": "Deposit", "notes": "Nota dalaman", "notesPlaceholder": "Nota yang hanya anda boleh lihat…",
-          "save": "Simpan perubahan", "saving": "Menyimpan…", "approve": "Luluskan tempahan", "approving": "Meluluskan…", "approved": "Diluluskan",
-          "missing": "Tiada draf tempahan yang dikaitkan dengan pertanyaan ini.", "alreadyConverted": "Pertanyaan ini telah diluluskan.", "viewBooking": "Lihat tempahan",
-          "approveError": "Tidak dapat meluluskan. Sila cuba lagi.", "saveError": "Tidak dapat menyimpan. Sila cuba lagi.", "savedToast": "Draf disimpan.", "ownerOnly": "Hanya pemilik ruang kerja boleh meluluskan tempahan."
+          "total": "Jumlah",
+          "deposit": "Deposit",
+          "notes": "Nota dalaman",
+          "notesPlaceholder": "Nota yang hanya anda boleh lihat…",
+          "save": "Simpan perubahan",
+          "saving": "Menyimpan…",
+          "approve": "Luluskan tempahan",
+          "approving": "Meluluskan…",
+          "approved": "Diluluskan",
+          "missing": "Tiada draf tempahan yang dikaitkan dengan pertanyaan ini.",
+          "alreadyConverted": "Pertanyaan ini telah diluluskan.",
+          "viewBooking": "Lihat tempahan",
+          "approveError": "Tidak dapat meluluskan. Sila cuba lagi.",
+          "saveError": "Tidak dapat menyimpan. Sila cuba lagi.",
+          "savedToast": "Draf disimpan.",
+          "ownerOnly": "Hanya pemilik ruang kerja boleh meluluskan tempahan."
         },
         "actions": {
-          "markContacted": "Tandai sebagai dihubungi", "archive": "Arkib", "working": "Menyimpan…",
-          "contactedToast": "Ditandai sebagai dihubungi.", "archivedToast": "Pertanyaan diarkib.", "approvedToast": "Tempahan diluluskan.", "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
+          "markContacted": "Tandai sebagai dihubungi",
+          "archive": "Arkib",
+          "working": "Menyimpan…",
+          "contactedToast": "Ditandai sebagai dihubungi.",
+          "archivedToast": "Pertanyaan diarkib.",
+          "approvedToast": "Tempahan diluluskan.",
+          "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
         },
-        "history": { "title": "Sejarah", "submitted": "Pertanyaan dihantar", "converted": "Diluluskan ke tempahan" }
+        "history": {
+          "title": "Sejarah",
+          "submitted": "Pertanyaan dihantar",
+          "converted": "Diluluskan ke tempahan"
+        }
       }
     },
     "pageBuilder": {
@@ -863,15 +933,37 @@
       "rerunWizard": "Jalankan semula persediaan",
       "brandKit": {
         "themePreset": "Tema",
-        "presets": { "minimal": "Minima", "editorial": "Editorial", "luxury": "Mewah", "bold": "Berani", "romantic": "Romantik", "modern": "Moden" },
+        "presets": {
+          "minimal": "Minima",
+          "editorial": "Editorial",
+          "luxury": "Mewah",
+          "bold": "Berani",
+          "romantic": "Romantik",
+          "modern": "Moden"
+        },
         "fontPair": "Fon",
         "colors": "Warna",
         "useWorkspaceBranding": "Gunakan penjenamaan ruang kerja",
-        "colorLabels": { "primaryColor": "Utama", "secondaryColor": "Sekunder", "accentColor": "Aksen", "backgroundColor": "Latar belakang", "foregroundColor": "Teks" }
+        "colorLabels": {
+          "primaryColor": "Utama",
+          "secondaryColor": "Sekunder",
+          "accentColor": "Aksen",
+          "backgroundColor": "Latar belakang",
+          "foregroundColor": "Teks"
+        }
       },
       "editor": {
-        "zone": { "home": "Laman Utama", "gallery": "Galeri" },
-        "save": { "saving": "Menyimpan…", "saved": "Disimpan", "idle": "Semua perubahan disimpan" },
+        "zone": {
+          "home": "Laman Utama",
+          "gallery": "Galeri",
+          "contact": "Borang hubungi",
+          "groupLabel": "Bahagian halaman"
+        },
+        "save": {
+          "saving": "Menyimpan…",
+          "saved": "Disimpan",
+          "idle": "Semua perubahan disimpan"
+        },
         "publish": "Terbitkan",
         "publishing": "Menerbitkan…",
         "theme": "Tema",
@@ -888,7 +980,9 @@
           "copyLink": "Salin pautan",
           "copied": "Disalin"
         },
-        "themeDialog": { "title": "Tema & jenama" },
+        "themeDialog": {
+          "title": "Tema & jenama"
+        },
         "contactDialog": {
           "title": "Borang hubungi",
           "formFixedNote": "Medan borang adalah tetap. Anda hanya boleh mengedit tajuk, mesej, dan butang sahaja.",
@@ -898,8 +992,17 @@
           "descriptionPlaceholder": "Beritahu pengunjung apa yang boleh mereka jangkakan apabila menghubungi anda.",
           "buttonStyleLabel": "Gaya butang",
           "buttonColorLabel": "Warna butang",
-          "buttonStyles": { "solid": "Pepejal", "outline": "Garis luar", "soft": "Lembut" },
-          "buttonColors": { "primary": "Utama", "secondary": "Sekunder", "accent": "Aksen", "foreground": "Teks" },
+          "buttonStyles": {
+            "solid": "Pepejal",
+            "outline": "Garis luar",
+            "soft": "Lembut"
+          },
+          "buttonColors": {
+            "primary": "Utama",
+            "secondary": "Sekunder",
+            "accent": "Aksen",
+            "foreground": "Teks"
+          },
           "save": "Simpan",
           "saving": "Menyimpan…"
         },
@@ -908,6 +1011,13 @@
           "body": "Pengeditan seret dan lepas direka untuk tablet dan komputer meja.",
           "openPreview": "Buka pratonton",
           "continue": "Teruskan juga"
+        },
+        "contactSettings": "Edit tetapan hubungi",
+        "preview": {
+          "show": "Pratonton",
+          "edit": "Edit",
+          "title": "Pratonton langsung",
+          "empty": "Tiada apa-apa untuk dipratonton lagi. Tambah beberapa bahagian, kemudian kembali."
         }
       },
       "wizard": {
@@ -919,14 +1029,65 @@
         "launch": "Lancarkan editor",
         "launching": "Menyediakan…",
         "stepOf": "Langkah {current} daripada {total}",
-        "overwrite": { "title": "Anda sudah mempunyai portfolio", "body": "Menjalankan persediaan semula akan menggantikan halaman semasa anda. Kandungan sedia ada diarkibkan supaya anda boleh memulihkannya.", "continue": "Teruskan juga", "cancel": "Batal" },
-        "steps": { "template": "Templat", "branding": "Penjenamaan", "theme": "Tema", "images": "Imej", "review": "Semakan" },
-        "template": { "title": "Pilih titik permulaan", "subtitle": "Anda boleh mengubah semua perkara kemudian." },
-        "branding": { "title": "Sahkan penjenamaan anda", "subtitle": "Diambil daripada ruang kerja anda — edit mana-mana.", "tagline": "Tagline", "taglinePlaceholder": "Satu baris ringkas yang merangkumi anda", "description": "Tentang", "descriptionPlaceholder": "Satu atau dua ayat tentang kerja anda" },
-        "theme": { "title": "Pilih rupa anda", "subtitle": "Tema, fon, dan warna untuk halaman awam anda." },
-        "images": { "title": "Tambah beberapa foto", "subtitle": "Muat naik sekurang-kurangnya satu — lima kelihatan hebat. Kami akan menambahkannya ke galeri \"Featured work\".", "upload": "Muat naik imej", "uploading": "Memuat naik…", "remove": "Buang imej", "empty": "Tiada imej lagi.", "error": "Beberapa imej gagal dimuat naik. Sila cuba lagi.", "count": "{count} {count, plural, one {imej} other {imej}}" },
-        "review": { "title": "Semak & lancar", "subtitle": "Inilah yang akan kami sediakan.", "template": "Templat", "theme": "Tema", "images": "Imej", "homeBlocks": "{count} bahagian utama", "galleryBlocks": "{count} bahagian galeri" },
-        "toasts": { "saved": "Portfolio anda sudah bersedia!", "error": "Sesuatu telah berlaku. Sila cuba lagi." }
+        "overwrite": {
+          "title": "Anda sudah mempunyai portfolio",
+          "body": "Menjalankan persediaan semula akan menggantikan halaman semasa anda. Kandungan sedia ada diarkibkan supaya anda boleh memulihkannya.",
+          "continue": "Teruskan juga",
+          "cancel": "Batal"
+        },
+        "steps": {
+          "template": "Templat",
+          "branding": "Penjenamaan",
+          "theme": "Tema",
+          "images": "Imej",
+          "review": "Semakan"
+        },
+        "template": {
+          "title": "Pilih titik permulaan",
+          "subtitle": "Anda boleh mengubah semua perkara kemudian."
+        },
+        "branding": {
+          "title": "Sahkan penjenamaan anda",
+          "subtitle": "Diambil daripada ruang kerja anda — edit mana-mana.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "Satu baris ringkas yang merangkumi anda",
+          "description": "Tentang",
+          "descriptionPlaceholder": "Satu atau dua ayat tentang kerja anda"
+        },
+        "theme": {
+          "title": "Pilih rupa anda",
+          "subtitle": "Tema, fon, dan warna untuk halaman awam anda."
+        },
+        "images": {
+          "title": "Tambah beberapa foto",
+          "subtitle": "Seret beberapa foto untuk galeri anda — atau langkau dan tambah bila-bila masa.",
+          "upload": "Muat naik imej",
+          "uploading": "Memuat naik…",
+          "remove": "Buang imej",
+          "empty": "Tiada imej lagi.",
+          "error": "Beberapa imej gagal dimuat naik. Sila cuba lagi.",
+          "count": "{count} {count, plural, one {imej} other {imej}}",
+          "dropZone": "Seret foto ke sini atau klik untuk pilih",
+          "dropZoneActive": "Lepaskan untuk muat naik",
+          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px",
+          "optional": "Anda boleh langkau langkah ini dan muat naik foto kemudian.",
+          "errorType": "Hanya foto JPEG, PNG, WebP dan AVIF diterima.",
+          "errorSize": "Setiap foto mestilah di bawah 10 MB.",
+          "errorDim": "Foto mestilah sekurang-kurangnya 600 px pada sisi yang lebih pendek."
+        },
+        "review": {
+          "title": "Semak & lancar",
+          "subtitle": "Inilah yang akan kami sediakan.",
+          "template": "Templat",
+          "theme": "Tema",
+          "images": "Imej",
+          "homeBlocks": "{count} bahagian utama",
+          "galleryBlocks": "{count} bahagian galeri"
+        },
+        "toasts": {
+          "saved": "Portfolio anda sudah bersedia!",
+          "error": "Sesuatu telah berlaku. Sila cuba lagi."
+        }
       }
     }
   },

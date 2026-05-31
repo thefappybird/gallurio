@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { routing } from "@/lib/i18n/routing";
 import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PuckData } from "@/lib/page-builder/types";
 import { EditorShell } from "./_components/EditorShell";
 
@@ -50,7 +51,7 @@ export default async function PageBuilderEntry({
 
   // First visit (no seeded home) → guided wizard.
   if (!workspace.publicPage?.data?.home) {
-    redirect({ href: "/page-builder/wizard", locale });
+    redirect({ href: "/portfolio/wizard", locale });
   }
 
   const pp = workspace.publicPage;
@@ -61,6 +62,10 @@ export default async function PageBuilderEntry({
   const initialBrandKit = toPlain<PortfolioBrandKit>(pp?.brandKit, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(pp?.contact, {});
   const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+  // Locale-aware path to the chrome-less preview route (loaded in an iframe).
+  // English has no prefix under localePrefix: "as-needed".
+  const previewBasePath =
+    locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
 
   return (
     <EditorShell
@@ -70,6 +75,7 @@ export default async function PageBuilderEntry({
       initialBrandKit={initialBrandKit}
       initialContact={initialContact}
       publicOrigin={publicOrigin}
+      previewBasePath={previewBasePath}
     />
   );
 }

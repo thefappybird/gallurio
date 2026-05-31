@@ -4,6 +4,8 @@
 // we ask /api/uploads/sign for a signature, then POST the file straight to
 // Cloudinary. Returns the fields our gallery models store.
 
+import { validatePhotoFile, validatePhotoDimensions } from "@/lib/page-builder/photoSpec";
+
 export type UploadedImage = {
   cloudinaryPublicId: string;
   url: string;
@@ -26,6 +28,10 @@ export async function uploadImageToCloudinary(
   file: File,
   opts: { subfolder?: string } = {}
 ): Promise<UploadedImage> {
+  // Pre-upload: validate file type and size.
+  const fileCheck = validatePhotoFile(file);
+  if (!fileCheck.ok) throw new Error(fileCheck.reason);
+
   const signRes = await fetch("/api/uploads/sign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -51,6 +57,10 @@ export async function uploadImageToCloudinary(
     format?: string;
     bytes?: number;
   };
+
+  // Post-upload: validate dimensions from Cloudinary response.
+  const dimCheck = validatePhotoDimensions(json.width ?? null, json.height ?? null);
+  if (!dimCheck.ok) throw new Error(dimCheck.reason);
 
   return {
     cloudinaryPublicId: json.public_id,
