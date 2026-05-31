@@ -174,14 +174,12 @@ export function EditableField({
   const validationError = validate?.(normalizedDraft) ?? null;
   const canCommit = isDirty && !validationError;
 
-  // Keep the live ref up to date on every render.
-  liveRef.current = {
-    editing,
-    draft,
-    isDirty,
-    canCommit,
-    cancelEdit,
-  };
+  // Keep the live ref current after each commit. Writing a ref during render is
+  // disallowed; an effect with no dependency array runs on every render, and
+  // handle methods (read only post-mount via user interaction) see fresh values.
+  useEffect(() => {
+    liveRef.current = { editing, draft, isDirty, canCommit, cancelEdit };
+  });
 
   // Register / unregister the stable FieldHandle on mount / unmount.
   // The handle itself is created once (stable object identity) and always reads

@@ -18,9 +18,9 @@ type Props = {
   client: ClientRow | null;
   open: boolean;
   onClose: () => void;
-  onEdit: (client: ClientRow) => void;
-  onDeactivate: (client: ClientRow) => void;
-  onReactivate: (client: ClientRow) => void;
+  onEdit?: (client: ClientRow) => void;
+  onDeactivate?: (client: ClientRow) => void;
+  onReactivate?: (client: ClientRow) => void;
   locale: string;
 };
 
@@ -254,30 +254,45 @@ function ClientDetailModalInner({
           </TabsPanel>
         </Tabs>
 
-        {/* Footer */}
-        <div className="flex shrink-0 items-center justify-between border-t border-border px-4 py-3">
-          <Button
-            type="button"
-            variant={client.isActive ? "outline" : "default"}
-            size="sm"
-            className={cn(
-              "min-h-11 sm:min-h-0",
-              client.isActive && "border-destructive text-destructive hover:bg-destructive/10"
+        {/* Footer — hidden entirely when no action handlers are provided (read-only embedded view) */}
+        {(onEdit || (client.isActive ? onDeactivate : onReactivate)) ? (
+          <div className="flex shrink-0 items-center justify-between border-t border-border px-4 py-3">
+            {client.isActive && onDeactivate ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="min-h-11 border-destructive text-destructive hover:bg-destructive/10 sm:min-h-0"
+                onClick={() => onDeactivate(client)}
+              >
+                {t("detail.deactivate")}
+              </Button>
+            ) : !client.isActive && onReactivate ? (
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className="min-h-11 sm:min-h-0"
+                onClick={() => onReactivate(client)}
+              >
+                {t("detail.reactivate")}
+              </Button>
+            ) : (
+              <span />
             )}
-            onClick={() => (client.isActive ? onDeactivate(client) : onReactivate(client))}
-          >
-            {client.isActive ? t("detail.deactivate") : t("detail.reactivate")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(client)}
-            className="min-h-11 sm:min-h-0"
-          >
-            {t("detail.edit")}
-          </Button>
-        </div>
+            {onEdit ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(client)}
+                className="min-h-11 sm:min-h-0"
+              >
+                {t("detail.edit")}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

@@ -41,6 +41,27 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+// ── Client actions stub ───────────────────────────────────────────────────────
+// NOTE: vi.mock factories are hoisted — use literals, not constants defined
+// later in the file.
+vi.mock("@/lib/actions/clients", () => ({
+  getClientByIdAction: vi.fn().mockResolvedValue({
+    id: "client-abc-456",
+    name: "Alice Smith",
+    email: "alice@example.com",
+    phone: "+63 917 555 0100",
+    source: "manual",
+    tags: [],
+    notes: "",
+    totalSpent: 50000,
+    bookingsCount: 1,
+    lastBookingAt: null,
+    isActive: true,
+    currency: "PHP",
+  }),
+  getClientBookingsAction: vi.fn().mockResolvedValue([]),
+}));
+
 vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({
     push: vi.fn(),
@@ -1066,15 +1087,31 @@ describe("Client tab — contact block + reassign picker", () => {
     expect(screen.getByText("+63 917 555 0100")).toBeInTheDocument();
   });
 
-  it("shows the View client button that navigates to /clients with client deep-link", async () => {
+  it("clicking View client opens the client detail modal stacked on top", async () => {
     renderModal();
     await waitForLoad();
     await switchToClientTab();
 
-    // "View client" is now a <button> (not a Link) that calls navRouter.push
-    // with the client deep-link query param.
     const viewBtn = screen.getByRole("button", { name: /view client/i });
     expect(viewBtn).toBeInTheDocument();
+
+    fireEvent.click(viewBtn);
+
+    // The client detail modal should appear with the client's name and email.
+    await waitFor(() => {
+      // The client's name should appear in the stacked dialog.
+      expect(screen.getAllByText("Alice Smith").length).toBeGreaterThan(0);
+    });
+
+    // The Edit button must NOT be present in the stacked modal (read-only view).
+    // We find all dialog elements and check none has an "Edit" button.
+    const dialogs = screen.getAllByRole("dialog");
+    // The stacked client modal is the last dialog opened.
+    const clientDialog = dialogs[dialogs.length - 1];
+    const editBtnsInClientModal = within(clientDialog).queryAllByRole("button", {
+      name: /^edit$/i,
+    });
+    expect(editBtnsInClientModal).toHaveLength(0);
   });
 
   it("shows 'No email' when client has no email", async () => {

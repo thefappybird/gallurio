@@ -59,6 +59,9 @@ import { EditableField, type FieldHandle } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
 import { SessionEditConfirmDialog } from "./session-edit-confirm-dialog";
+import { ClientDetailModal } from "@/app/[locale]/(app)/clients/_components/client-detail-modal";
+import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients-table";
+import { getClientByIdAction } from "@/lib/actions/clients";
 import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
 import type { ShiftHit } from "./booking-wizard-steps/event-step";
@@ -162,6 +165,9 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState<BookingDoc | null>(null);
+  const [viewClient, setViewClient] = useState<ClientRow | null>(null);
+  const [viewClientOpen, setViewClientOpen] = useState(false);
+  const [viewClientLoading, setViewClientLoading] = useState(false);
   /**
    * Staged client for an in-progress reassignment. Holds the picked client's
    * full contact info so the contact block shows fresh email/phone between
@@ -277,6 +283,19 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
     setActivity(data.entries ?? []);
     setActivityTotal(data.total ?? 0);
   }, [bookingId]);
+
+  async function handleViewClient() {
+    if (!booking?.client) return;
+    setViewClientLoading(true);
+    const res = await getClientByIdAction(booking.client.id);
+    setViewClientLoading(false);
+    if ("error" in res) {
+      toast.error(res.error);
+      return;
+    }
+    setViewClient(res);
+    setViewClientOpen(true);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -1171,6 +1190,8 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
                 discardField("clientName");
               }}
               onViewAllHistory={() => setHistoryDialogOpen(true)}
+              onViewClient={handleViewClient}
+              viewClientLoading={viewClientLoading}
               disabled={saving}
               shiftsByDate={shiftsByDate}
               loadingDates={loadingDates}
@@ -1245,6 +1266,14 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
         onCancel={() => setUnconfirmedDraftsOpen(false)}
         onSubmitAll={confirmSubmitAll}
         onDiscardUndrafted={confirmDiscardUndraftedAndSave}
+      />
+
+      {/* Stacked client detail modal — read-only reference view, no edit/lifecycle actions */}
+      <ClientDetailModal
+        client={viewClient}
+        open={viewClientOpen}
+        onClose={() => setViewClientOpen(false)}
+        locale={locale}
       />
     </Dialog>
   );
@@ -1653,6 +1682,8 @@ function BookingTabs({
   onReassign,
   onClearReassign,
   onViewAllHistory,
+  onViewClient,
+  viewClientLoading,
   disabled,
   shiftsByDate,
   loadingDates,
@@ -1684,6 +1715,8 @@ function BookingTabs({
   onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
   onClearReassign: () => void;
   onViewAllHistory: () => void;
+  onViewClient: () => void;
+  viewClientLoading: boolean;
   disabled: boolean;
   shiftsByDate: Map<string, ShiftHit[]>;
   loadingDates: Set<string>;
@@ -1706,9 +1739,6 @@ function BookingTabs({
   const t = useTranslations("app.bookings.detail.tabs");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
-
-  const navRouter = useRouter();
-  const [isNavigating, startNav] = useTransition();
 
   const currencyOptions = useMemo(
     () => SUPPORTED_CURRENCIES.map((c) => ({ value: c, label: c })),
@@ -1827,17 +1857,13 @@ function BookingTabs({
               {booking.client ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    startNav(() =>
-                      navRouter.push(`/clients?client=${booking.client!.id}`)
-                    )
-                  }
-                  disabled={isNavigating}
-                  aria-disabled={isNavigating}
+                  onClick={onViewClient}
+                  disabled={viewClientLoading}
+                  aria-disabled={viewClientLoading}
                   aria-label={tFields("viewClient")}
                   className="flex min-h-11 items-center justify-center gap-1.5 border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-brand hover:text-brand focus-visible:border-brand focus-visible:text-brand focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
                 >
-                  {isNavigating ? (
+                  {viewClientLoading ? (
                     <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
                   ) : (
                     <ArrowUpRightIcon className="size-3.5" aria-hidden />
