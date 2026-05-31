@@ -815,6 +815,44 @@
         "reactivating": "Mengaktifkan semula pelanggan…",
         "deactivating": "Menyahaktifkan pelanggan…"
       }
+    },
+    "inquiries": {
+      "title": "Pertanyaan",
+      "subtitle": "Permintaan tempahan daripada portfolio awam anda.",
+      "toolbar": { "from": "Dari", "to": "Hingga", "clear": "Padam tarikh" },
+      "tabs": { "all": "Semua", "new": "Baru", "contacted": "Dihubungi", "converted": "Ditukar", "archived": "Diarkib" },
+      "statusValues": { "new": "Baru", "contacted": "Dihubungi", "converted": "Ditukar", "archived": "Diarkib" },
+      "eventTypes": { "wedding": "Perkahwinan", "corporate": "Korporat", "portrait": "Potret", "engagement": "Pertunangan", "anniversary": "Ulang tahun", "other": "Lain-lain" },
+      "preferred": { "email": "E-mel", "phone": "Telefon", "either": "Mana-mana" },
+      "table": {
+        "empty": "Belum ada pertanyaan.",
+        "emptyHint": "Apabila seseorang menghantar borang hubungan portfolio anda, permintaan mereka akan muncul di sini.",
+        "viewPublicPage": "Lihat halaman awam anda",
+        "open": "Buka pertanyaan daripada {name}",
+        "noDate": "Tiada tarikh",
+        "directSource": "Terus",
+        "col": { "status": "Status", "client": "Pelanggan", "eventDate": "Tarikh acara", "eventType": "Jenis", "submitted": "Dihantar", "source": "Sumber" }
+      },
+      "detail": {
+        "back": "Kembali ke pertanyaan",
+        "submittedOn": "Dihantar {date}",
+        "notFound": "Pertanyaan tidak dijumpai.",
+        "clientInfo": { "title": "Maklumat pelanggan", "name": "Nama", "email": "E-mel", "phone": "Telefon", "preferredContact": "Kaedah hubungan pilihan", "none": "—" },
+        "eventRequest": { "title": "Permintaan acara", "eventType": "Jenis acara", "guestCount": "Tetamu", "location": "Lokasi", "sessions": "Tarikh yang diminta", "message": "Mesej", "none": "—" },
+        "bookingDraft": {
+          "title": "Draf tempahan",
+          "description": "Meluluskan ini akan mencipta tempahan dalam kalendar anda. Tetapkan harga sekarang atau kemudian.",
+          "total": "Jumlah", "deposit": "Deposit", "notes": "Nota dalaman", "notesPlaceholder": "Nota yang hanya anda boleh lihat…",
+          "save": "Simpan perubahan", "saving": "Menyimpan…", "approve": "Luluskan tempahan", "approving": "Meluluskan…", "approved": "Diluluskan",
+          "missing": "Tiada draf tempahan yang dikaitkan dengan pertanyaan ini.", "alreadyConverted": "Pertanyaan ini telah diluluskan.", "viewBooking": "Lihat tempahan",
+          "approveError": "Tidak dapat meluluskan. Sila cuba lagi.", "saveError": "Tidak dapat menyimpan. Sila cuba lagi.", "savedToast": "Draf disimpan.", "ownerOnly": "Hanya pemilik ruang kerja boleh meluluskan tempahan."
+        },
+        "actions": {
+          "markContacted": "Tandai sebagai dihubungi", "archive": "Arkib", "working": "Menyimpan…",
+          "contactedToast": "Ditandai sebagai dihubungi.", "archivedToast": "Pertanyaan diarkib.", "approvedToast": "Tempahan diluluskan.", "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
+        },
+        "history": { "title": "Sejarah", "submitted": "Pertanyaan dihantar", "converted": "Diluluskan ke tempahan" }
+      }
     }
   },
   "common": {

@@ -1,0 +1,86 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { createElement, type ReactNode } from "react";
+import { screen, waitFor, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+
+const approveInquiryBookingAction = vi.fn();
+const saveDraftBookingFieldsAction = vi.fn();
+vi.mock("../../_actions", () => ({
+  approveInquiryBookingAction: (...a: unknown[]) => approveInquiryBookingAction(...a),
+  saveDraftBookingFieldsAction: (...a: unknown[]) => saveDraftBookingFieldsAction(...a),
+}));
+
+const refresh = vi.fn();
+vi.mock("@/lib/i18n/navigation", () => ({
+  useRouter: () => ({ refresh }),
+  Link: ({ children, href }: { children: ReactNode; href: string }) =>
+    createElement("a", { href }, children),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+import { BookingDraftCard } from "./booking-draft-card";
+
+const baseProps = {
+  inquiryId: "abc",
+  isOwner: true,
+  isConverted: false,
+  bookingMissing: false,
+  bookingId: "bk_1",
+  currency: "PHP",
+  initialTotal: 0,
+  initialDeposit: 0,
+  initialNotes: "",
+};
+
+beforeEach(() => {
+  approveInquiryBookingAction.mockReset();
+  approveInquiryBookingAction.mockResolvedValue({ ok: true, bookingId: "bk_1" });
+  saveDraftBookingFieldsAction.mockReset();
+  saveDraftBookingFieldsAction.mockResolvedValue({ ok: true });
+  refresh.mockReset();
+});
+
+describe("BookingDraftCard", () => {
+  it("renders editable fields and approves with current edits", async () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={1000} />);
+
+    const approve = screen.getByRole("button", { name: /Approve booking/i });
+    fireEvent.click(approve);
+
+    await waitFor(() => expect(approveInquiryBookingAction).toHaveBeenCalledOnce());
+    expect(approveInquiryBookingAction).toHaveBeenCalledWith("abc", {
+      total: 5000,
+      deposit: 1000,
+      notes: "",
+    });
+    // Optimistic success banner.
+    expect(await screen.findByText("This inquiry has been approved.")).toBeInTheDocument();
+  });
+
+  it("shows the missing-draft notice", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} bookingMissing />);
+    expect(screen.getByText("No linked draft booking for this inquiry.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+  });
+
+  it("shows a read-only banner + view link when already converted", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} isConverted />);
+    expect(screen.getByText("This inquiry has been approved.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View booking/i })).toHaveAttribute(
+      "href",
+      "/bookings?detail=bk_1"
+    );
+    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+  });
+
+  it("hides approve and shows owner-only note for staff", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} isOwner={false} />);
+    expect(
+      screen.getByText("Only the workspace owner can approve bookings.")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+  });
+});

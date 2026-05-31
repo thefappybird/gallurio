@@ -815,6 +815,113 @@
         "reactivating": "Reactivating client…",
         "deactivating": "Deactivating client…"
       }
+    },
+    "inquiries": {
+      "title": "Inquiries",
+      "subtitle": "Booking requests from your public portfolio.",
+      "toolbar": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear dates"
+      },
+      "tabs": {
+        "all": "All",
+        "new": "New",
+        "contacted": "Contacted",
+        "converted": "Converted",
+        "archived": "Archived"
+      },
+      "statusValues": {
+        "new": "New",
+        "contacted": "Contacted",
+        "converted": "Converted",
+        "archived": "Archived"
+      },
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "preferred": {
+        "email": "Email",
+        "phone": "Phone",
+        "either": "Either"
+      },
+      "table": {
+        "empty": "No inquiries yet.",
+        "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
+        "viewPublicPage": "View your public page",
+        "open": "Open inquiry from {name}",
+        "noDate": "No date",
+        "directSource": "Direct",
+        "col": {
+          "status": "Status",
+          "client": "Client",
+          "eventDate": "Event date",
+          "eventType": "Type",
+          "submitted": "Submitted",
+          "source": "Source"
+        }
+      },
+      "detail": {
+        "back": "Back to inquiries",
+        "submittedOn": "Submitted {date}",
+        "notFound": "Inquiry not found.",
+        "clientInfo": {
+          "title": "Client info",
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "preferredContact": "Preferred contact",
+          "none": "—"
+        },
+        "eventRequest": {
+          "title": "Event request",
+          "eventType": "Event type",
+          "guestCount": "Guests",
+          "location": "Location",
+          "sessions": "Requested dates",
+          "message": "Message",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "Booking draft",
+          "description": "Approving this creates a booking on your calendar. Set your price now or later.",
+          "total": "Total",
+          "deposit": "Deposit",
+          "notes": "Internal notes",
+          "notesPlaceholder": "Notes only you can see…",
+          "save": "Save edits",
+          "saving": "Saving…",
+          "approve": "Approve booking",
+          "approving": "Approving…",
+          "approved": "Approved",
+          "missing": "No linked draft booking for this inquiry.",
+          "alreadyConverted": "This inquiry has been approved.",
+          "viewBooking": "View booking",
+          "approveError": "Could not approve. Please try again.",
+          "saveError": "Could not save. Please try again.",
+          "savedToast": "Draft saved.",
+          "ownerOnly": "Only the workspace owner can approve bookings."
+        },
+        "actions": {
+          "markContacted": "Mark contacted",
+          "archive": "Archive",
+          "working": "Saving…",
+          "contactedToast": "Marked as contacted.",
+          "archivedToast": "Inquiry archived.",
+          "approvedToast": "Booking approved.",
+          "errorToast": "Something went wrong. Please try again."
+        },
+        "history": {
+          "title": "History",
+          "submitted": "Inquiry submitted",
+          "converted": "Approved to booking"
+        }
+      }
     }
   },
   "common": {

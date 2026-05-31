@@ -815,6 +815,44 @@
         "reactivating": "กำลังเปิดใช้งานลูกค้าอีกครั้ง…",
         "deactivating": "กำลังปิดใช้งานลูกค้า…"
       }
+    },
+    "inquiries": {
+      "title": "คำถาม",
+      "subtitle": "คำขอจองจากพอร์ตโฟลิโอสาธารณะของคุณ",
+      "toolbar": { "from": "ตั้งแต่", "to": "ถึง", "clear": "ล้างวันที่" },
+      "tabs": { "all": "ทั้งหมด", "new": "ใหม่", "contacted": "ติดต่อแล้ว", "converted": "แปลงแล้ว", "archived": "เก็บถาวร" },
+      "statusValues": { "new": "ใหม่", "contacted": "ติดต่อแล้ว", "converted": "แปลงแล้ว", "archived": "เก็บถาวร" },
+      "eventTypes": { "wedding": "งานแต่งงาน", "corporate": "องค์กร", "portrait": "ภาพบุคคล", "engagement": "หมั้น", "anniversary": "วันครบรอบ", "other": "อื่นๆ" },
+      "preferred": { "email": "อีเมล", "phone": "โทรศัพท์", "either": "อย่างใดอย่างหนึ่ง" },
+      "table": {
+        "empty": "ยังไม่มีคำถาม",
+        "emptyHint": "เมื่อมีคนส่งแบบฟอร์มติดต่อในพอร์ตโฟลิโอของคุณ คำขอจะปรากฏที่นี่",
+        "viewPublicPage": "ดูหน้าสาธารณะของคุณ",
+        "open": "เปิดคำถามจาก {name}",
+        "noDate": "ไม่มีวันที่",
+        "directSource": "โดยตรง",
+        "col": { "status": "สถานะ", "client": "ลูกค้า", "eventDate": "วันที่จัดงาน", "eventType": "ประเภท", "submitted": "ส่งเมื่อ", "source": "แหล่งที่มา" }
+      },
+      "detail": {
+        "back": "กลับไปที่คำถาม",
+        "submittedOn": "ส่งเมื่อ {date}",
+        "notFound": "ไม่พบคำถาม",
+        "clientInfo": { "title": "ข้อมูลลูกค้า", "name": "ชื่อ", "email": "อีเมล", "phone": "โทรศัพท์", "preferredContact": "ช่องทางติดต่อที่ต้องการ", "none": "—" },
+        "eventRequest": { "title": "คำของาน", "eventType": "ประเภทงาน", "guestCount": "จำนวนแขก", "location": "สถานที่", "sessions": "วันที่ขอจอง", "message": "ข้อความ", "none": "—" },
+        "bookingDraft": {
+          "title": "ร่างการจอง",
+          "description": "การอนุมัตินี้จะสร้างการจองในปฏิทินของคุณ ตั้งราคาตอนนี้หรือในภายหลังก็ได้",
+          "total": "รวม", "deposit": "มัดจำ", "notes": "บันทึกภายใน", "notesPlaceholder": "บันทึกที่คุณเห็นคนเดียว…",
+          "save": "บันทึกการแก้ไข", "saving": "กำลังบันทึก…", "approve": "อนุมัติการจอง", "approving": "กำลังอนุมัติ…", "approved": "อนุมัติแล้ว",
+          "missing": "ไม่มีร่างการจองที่เชื่อมโยงกับคำถามนี้", "alreadyConverted": "คำถามนี้ได้รับการอนุมัติแล้ว", "viewBooking": "ดูการจอง",
+          "approveError": "ไม่สามารถอนุมัติได้ กรุณาลองอีกครั้ง", "saveError": "ไม่สามารถบันทึกได้ กรุณาลองอีกครั้ง", "savedToast": "บันทึกร่างแล้ว", "ownerOnly": "เฉพาะเจ้าของพื้นที่ทำงานเท่านั้นที่อนุมัติการจองได้"
+        },
+        "actions": {
+          "markContacted": "ทำเครื่องหมายว่าติดต่อแล้ว", "archive": "เก็บถาวร", "working": "กำลังบันทึก…",
+          "contactedToast": "ทำเครื่องหมายว่าติดต่อแล้ว", "archivedToast": "เก็บถาวรคำถามแล้ว", "approvedToast": "อนุมัติการจองแล้ว", "errorToast": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"
+        },
+        "history": { "title": "ประวัติ", "submitted": "ส่งคำถามแล้ว", "converted": "อนุมัติเป็นการจองแล้ว" }
+      }
     }
   },
   "common": {

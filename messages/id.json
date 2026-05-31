@@ -815,6 +815,44 @@
         "reactivating": "Mengaktifkan kembali klien…",
         "deactivating": "Menonaktifkan klien…"
       }
+    },
+    "inquiries": {
+      "title": "Pertanyaan",
+      "subtitle": "Permintaan pemesanan dari portofolio publik Anda.",
+      "toolbar": { "from": "Dari", "to": "Sampai", "clear": "Hapus tanggal" },
+      "tabs": { "all": "Semua", "new": "Baru", "contacted": "Dihubungi", "converted": "Dikonversi", "archived": "Diarsipkan" },
+      "statusValues": { "new": "Baru", "contacted": "Dihubungi", "converted": "Dikonversi", "archived": "Diarsipkan" },
+      "eventTypes": { "wedding": "Pernikahan", "corporate": "Korporat", "portrait": "Potret", "engagement": "Pertunangan", "anniversary": "Ulang tahun", "other": "Lainnya" },
+      "preferred": { "email": "Email", "phone": "Telepon", "either": "Salah satu" },
+      "table": {
+        "empty": "Belum ada pertanyaan.",
+        "emptyHint": "Ketika seseorang mengisi formulir kontak portofolio Anda, permintaan mereka akan muncul di sini.",
+        "viewPublicPage": "Lihat halaman publik Anda",
+        "open": "Buka pertanyaan dari {name}",
+        "noDate": "Tidak ada tanggal",
+        "directSource": "Langsung",
+        "col": { "status": "Status", "client": "Klien", "eventDate": "Tanggal acara", "eventType": "Jenis", "submitted": "Dikirim", "source": "Sumber" }
+      },
+      "detail": {
+        "back": "Kembali ke pertanyaan",
+        "submittedOn": "Dikirim {date}",
+        "notFound": "Pertanyaan tidak ditemukan.",
+        "clientInfo": { "title": "Info klien", "name": "Nama", "email": "Email", "phone": "Telepon", "preferredContact": "Kontak pilihan", "none": "—" },
+        "eventRequest": { "title": "Permintaan acara", "eventType": "Jenis acara", "guestCount": "Tamu", "location": "Lokasi", "sessions": "Tanggal yang diminta", "message": "Pesan", "none": "—" },
+        "bookingDraft": {
+          "title": "Draf pemesanan",
+          "description": "Menyetujui ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
+          "total": "Total", "deposit": "Deposit", "notes": "Catatan internal", "notesPlaceholder": "Catatan yang hanya dapat Anda lihat…",
+          "save": "Simpan perubahan", "saving": "Menyimpan…", "approve": "Setujui pemesanan", "approving": "Menyetujui…", "approved": "Disetujui",
+          "missing": "Tidak ada draf pemesanan yang terhubung untuk pertanyaan ini.", "alreadyConverted": "Pertanyaan ini telah disetujui.", "viewBooking": "Lihat pemesanan",
+          "approveError": "Tidak dapat menyetujui. Silakan coba lagi.", "saveError": "Tidak dapat menyimpan. Silakan coba lagi.", "savedToast": "Draf disimpan.", "ownerOnly": "Hanya pemilik ruang kerja yang dapat menyetujui pemesanan."
+        },
+        "actions": {
+          "markContacted": "Tandai sudah dihubungi", "archive": "Arsipkan", "working": "Menyimpan…",
+          "contactedToast": "Ditandai sebagai sudah dihubungi.", "archivedToast": "Pertanyaan diarsipkan.", "approvedToast": "Pemesanan disetujui.", "errorToast": "Ada yang tidak beres. Silakan coba lagi."
+        },
+        "history": { "title": "Riwayat", "submitted": "Pertanyaan dikirim", "converted": "Disetujui menjadi pemesanan" }
+      }
     }
   },
   "common": {

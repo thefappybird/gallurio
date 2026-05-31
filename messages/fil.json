@@ -815,6 +815,44 @@
         "reactivating": "Binubuhay muli ang kliyente…",
         "deactivating": "Dini-deaktibo ang kliyente…"
       }
+    },
+    "inquiries": {
+      "title": "Mga Katanungan",
+      "subtitle": "Mga kahilingang booking mula sa iyong pampublikong portfolio.",
+      "toolbar": { "from": "Mula", "to": "Hanggang", "clear": "I-clear ang mga petsa" },
+      "tabs": { "all": "Lahat", "new": "Bago", "contacted": "Nakausap na", "converted": "Na-convert", "archived": "Naka-archive" },
+      "statusValues": { "new": "Bago", "contacted": "Nakausap na", "converted": "Na-convert", "archived": "Naka-archive" },
+      "eventTypes": { "wedding": "Kasal", "corporate": "Korporasyon", "portrait": "Portrait", "engagement": "Engagement", "anniversary": "Anibersaryo", "other": "Iba pa" },
+      "preferred": { "email": "Email", "phone": "Telepono", "either": "Alinman" },
+      "table": {
+        "empty": "Wala pang mga katanungan.",
+        "emptyHint": "Kapag may nag-submit ng iyong portfolio contact form, lalabas dito ang kanilang kahilingan.",
+        "viewPublicPage": "Tingnan ang iyong pampublikong pahina",
+        "open": "Buksan ang katanungan mula kay {name}",
+        "noDate": "Walang petsa",
+        "directSource": "Direkta",
+        "col": { "status": "Katayuan", "client": "Kliyente", "eventDate": "Petsa ng kaganapan", "eventType": "Uri", "submitted": "Isinumite", "source": "Pinagmulan" }
+      },
+      "detail": {
+        "back": "Bumalik sa mga katanungan",
+        "submittedOn": "Isinumite noong {date}",
+        "notFound": "Hindi natagpuan ang katanungan.",
+        "clientInfo": { "title": "Impormasyon ng kliyente", "name": "Pangalan", "email": "Email", "phone": "Telepono", "preferredContact": "Piniling paraan ng pakikipag-ugnayan", "none": "—" },
+        "eventRequest": { "title": "Kahilingang kaganapan", "eventType": "Uri ng kaganapan", "guestCount": "Mga bisita", "location": "Lokasyon", "sessions": "Mga hiniling na petsa", "message": "Mensahe", "none": "—" },
+        "bookingDraft": {
+          "title": "Draft na booking",
+          "description": "Kapag na-aprubahan ito, malilikha ang isang booking sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
+          "total": "Kabuuan", "deposit": "Deposito", "notes": "Mga panloob na tala", "notesPlaceholder": "Mga tala na ikaw lang ang makakakita…",
+          "save": "I-save ang mga pagbabago", "saving": "Sino-save…", "approve": "Aprubahan ang booking", "approving": "Inaprubahan…", "approved": "Naaprubahan na",
+          "missing": "Walang naka-link na draft na booking para sa katanungang ito.", "alreadyConverted": "Ang katanungang ito ay naaprubahan na.", "viewBooking": "Tingnan ang booking",
+          "approveError": "Hindi ma-aprubahan. Pakisubukang muli.", "saveError": "Hindi ma-save. Pakisubukang muli.", "savedToast": "Na-save ang draft.", "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-apruba ng mga booking."
+        },
+        "actions": {
+          "markContacted": "Markahan bilang nakausap na", "archive": "I-archive", "working": "Sino-save…",
+          "contactedToast": "Minarkahan bilang nakausap na.", "archivedToast": "Naka-archive na ang katanungan.", "approvedToast": "Naaprubahan ang booking.", "errorToast": "May nangyaring mali. Pakisubukang muli."
+        },
+        "history": { "title": "Kasaysayan", "submitted": "Isinumite ang katanungan", "converted": "Naaprubahan bilang booking" }
+      }
     }
   },
   "common": {

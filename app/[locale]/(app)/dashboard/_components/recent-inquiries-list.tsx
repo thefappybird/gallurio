@@ -29,21 +29,26 @@ export function RecentInquiriesList({ inquiries, locale, title, empty, viewAll }
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {inquiries.map((q) => (
-              <li key={String(q._id)} className="flex items-start justify-between gap-2 py-2.5">
-                <div className="flex flex-1 flex-col min-w-0">
-                  <span className="truncate text-sm font-medium">{q.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    {new Date(q.createdAt as unknown as Date).toLocaleDateString(locale, {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                    {" · "}
-                    {q.eventType}
-                  </span>
-                </div>
-                <Badge variant="outline" className="font-normal shrink-0">
-                  {q.status}
-                </Badge>
+              <li key={String(q._id)}>
+                <Link
+                  href={`/inquiries/${String(q._id)}`}
+                  className="flex items-start justify-between gap-2 py-2.5 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mx-2 px-2"
+                >
+                  <div className="flex flex-1 flex-col min-w-0">
+                    <span className="truncate text-sm font-medium">{q.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {new Date(q.createdAt as unknown as Date).toLocaleDateString(locale, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {" · "}
+                      {q.eventType}
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="font-normal shrink-0">
+                    {q.status}
+                  </Badge>
+                </Link>
               </li>
             ))}
           </ul>
