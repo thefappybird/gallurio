@@ -223,6 +223,7 @@ function OverflowPopoverRow({
   onClose: () => void;
 }) {
   const ctx = useContext(CalendarToolbarCtx);
+  const tStatus = useTranslations("app.bookings.statusValues");
   const bg = ctx ? ctx.eventColor(e) : STATUS_COLOR[e.status];
   const clientDisplay = e.clientName || "—";
   const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt);
@@ -269,6 +270,14 @@ function OverflowPopoverRow({
       <span className="whitespace-nowrap text-[10px] text-muted-foreground">
         {timeRange}
       </span>
+      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0"
+          style={{ backgroundColor: STATUS_COLOR[e.status] }}
+        />
+        {tStatus(e.status)}
+      </span>
     </button>
   );
 }
@@ -281,6 +290,22 @@ function PastPill({ label }: { label: string }) {
       className="absolute right-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
     >
       {label}
+    </span>
+  );
+}
+
+/** Status pill shown on each candle. Candles are colored by TEAM, so status is
+ *  carried here: a light chip with a status-color dot + the localized status
+ *  name, pinned bottom-right (clear of the top-right Past badge). */
+function StatusPill({ status, label }: { status: BookingStatus; label: string }) {
+  return (
+    <span className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 inline-flex max-w-[85%] items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground">
+      <span
+        aria-hidden
+        className="size-1.5 shrink-0"
+        style={{ backgroundColor: STATUS_COLOR[status] }}
+      />
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -300,6 +325,7 @@ export function MonthBookingEvent({
   const [open, setOpen] = useState(false);
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const tStatus = useTranslations("app.bookings.statusValues");
 
   if ("type" in ev && ev.type === "overflow") {
     return (
@@ -369,6 +395,7 @@ export function MonthBookingEvent({
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
       {showPastVisual && <PastPill label={t("past")} />}
+      <StatusPill status={booking.status} label={tStatus(booking.status)} />
     </span>
   );
 }
@@ -378,6 +405,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const tStatus = useTranslations("app.bookings.statusValues");
   // Overflow events never appear in week/day view (only month view produces them).
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
@@ -430,6 +458,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </>
       )}
       {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
+      {!isContinuation && <StatusPill status={ev.status} label={tStatus(ev.status)} />}
     </div>
   );
 }

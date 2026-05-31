@@ -10,11 +10,9 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
-import { BookingStatusLegend } from "./booking-status-legend";
-import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import { TeamLegend } from "./team-legend";
 import type { BookingTeamOption } from "../_data/team-options";
 import { BookingWizardModal } from "./booking-wizard-modal";
-import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { Views, type View } from "react-big-calendar";
 import {
@@ -143,12 +141,13 @@ export function CalendarView({
   teamColorMap,
   teams,
   writableTeams,
+  activeTeam = "all",
+  isOwner = true,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.dnd");
-  const tCalendar = useTranslations("app.bookings.calendar");
 
   const [, startTransition] = useTransition();
 
@@ -632,18 +631,14 @@ export function CalendarView({
     return optimisticEvents.filter((e) => e.end.getTime() >= startOfTodayMs);
   }, [optimisticEvents, showPast, startOfTodayMs]);
 
-  const activeStatus = useMemo<BookingStatus | null>(() => {
-    const s = searchParams.get("status");
-    return s && (BOOKING_STATUSES as readonly string[]).includes(s)
-      ? (s as BookingStatus)
-      : null;
-  }, [searchParams]);
-
-  const toggleStatusFilter = useCallback(
-    (status: BookingStatus) => {
+  // Team filter (calendar's clickable legend, counterpart to the table's team
+  // dropdown). Pushes ?team; "all" clears it. Status filtering now lives in the
+  // toolbar status dropdown (?status) for both views — the status legend retired.
+  const setTeamFilter = useCallback(
+    (team: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (params.get("status") === status) params.delete("status");
-      else params.set("status", status);
+      if (team === "all") params.delete("team");
+      else params.set("team", team);
       const qs = params.toString();
       startTransition(() => {
         router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -652,53 +647,16 @@ export function CalendarView({
     [router, pathname, searchParams]
   );
 
-  // Derive inactive teams for legend: teams that exist but are not active.
-  const hasInactiveTeam = teams ? teams.some((team) => !team.isActive) : false;
-  const activeTeams = teams ? teams.filter((team) => team.isActive) : [];
-
   return (
     <>
-      {/* The status legend is the calendar's status FILTER — always shown.
-          In the "All teams" overlay we ALSO show a team color key (read-only)
-          so the team-colored candles are legible; team FILTERING lives in the
-          toolbar's team picker, so this stays a key, not a second filter. */}
-      <div className="mb-3 flex flex-col gap-2">
-        <BookingStatusLegend
-          activeStatus={activeStatus}
-          onToggle={toggleStatusFilter}
-        />
-        {colorMode === "team" && (activeTeams.length > 0 || hasInactiveTeam) ? (
-          <div
-            role="group"
-            aria-label={tCalendar("teamsLegend")}
-            className="flex flex-wrap items-center gap-x-2 gap-y-1.5"
-          >
-            {activeTeams.map((team) => (
-              <span
-                key={team.id}
-                className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground"
-              >
-                <span
-                  aria-hidden
-                  className="size-2.5 shrink-0"
-                  style={{ backgroundColor: team.color }}
-                />
-                {team.name}
-              </span>
-            ))}
-            {hasInactiveTeam && (
-              <span className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground">
-                <span
-                  aria-hidden
-                  className="size-2.5 shrink-0"
-                  style={{ backgroundColor: INACTIVE_TEAM_COLOR }}
-                />
-                {tCalendar("inactiveTeam")}
-              </span>
-            )}
-          </div>
-        ) : null}
-      </div>
+      {/* Calendar team filter — the clickable color legend (counterpart to the
+          table view's team dropdown). Status is filtered via the toolbar
+          dropdown and shown per-candle as a status pill. */}
+      {teams && teams.length > 0 ? (
+        <div className="mb-3 flex flex-wrap items-start gap-y-2">
+          <TeamLegend teams={teams} value={activeTeam} isOwner={isOwner} onSelect={setTeamFilter} />
+        </div>
+      ) : null}
       <BookingCalendar
         events={visibleEvents}
         defaultDate={defaultDate}

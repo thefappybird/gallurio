@@ -125,9 +125,9 @@ describe("BookingsToolbar — status dropdown visibility by view", () => {
     expect(screen.getByText(/all statuses/i)).toBeInTheDocument();
   });
 
-  it("hides the status dropdown in calendar view (legend owns filtering)", () => {
+  it("also renders the status dropdown in calendar view (status is a dropdown in both views now)", () => {
     render(<BookingsToolbar defaultCurrency="PHP" view="calendar" />, { wrapper });
-    expect(screen.queryByText(/all statuses/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/all statuses/i)).toBeInTheDocument();
   });
 });
 

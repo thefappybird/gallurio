@@ -91,10 +91,11 @@ export default async function BookingsPage({
   // `?team` selects a single visible team, or "all".
   const activeTeam =
     sp.team && sp.team !== "all" && teamOptions.some((o) => o.id === sp.team) ? sp.team : "all";
-  // Color events by team only in the "all teams" overlay; a single team keeps
-  // the existing status colors. Map carries ACTIVE teams' colors; inactive teams
-  // fall through to the calendar's neutral "archival" color.
-  const colorMode: "team" | "status" = activeTeam === "all" ? "team" : "status";
+  // Calendar candles are always colored by team (the team legend is the calendar
+  // filter + color key); status is shown per-candle via a status pill. The map
+  // carries ACTIVE teams' colors; inactive teams fall through to the calendar's
+  // neutral "archival" color.
+  const colorMode: "team" | "status" = "team";
   const teamColorMap: Record<string, string> = Object.fromEntries(
     teamOptions.filter((o) => o.isActive).map((o) => [o.id, o.color]),
   );

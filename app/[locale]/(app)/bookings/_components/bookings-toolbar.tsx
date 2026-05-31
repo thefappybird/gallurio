@@ -120,36 +120,36 @@ export function BookingsToolbar({
           />
         </div>
 
-        {view !== "calendar" ? (
-          <Select<string>
-            value={status}
-            onValueChange={(v) =>
-              pushParams({ status: !v || v === ALL ? null : v })
-            }
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue>
-                {(value: string) =>
-                  !value || value === ALL ? (
-                    <span>{t("statusAll")}</span>
-                  ) : (
-                    <span className="capitalize">{value}</span>
-                  )
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
-              {BOOKING_STATUSES.map((s: BookingStatus) => (
-                <SelectItem key={s} value={s} className="capitalize">
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : null}
+        {/* Status filter — a plain dropdown in BOTH views (the calendar status
+            legend was retired; status now shows per-candle as a pill). */}
+        <Select<string>
+          value={status}
+          onValueChange={(v) => pushParams({ status: !v || v === ALL ? null : v })}
+        >
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue>
+              {(value: string) =>
+                !value || value === ALL ? (
+                  <span>{t("statusAll")}</span>
+                ) : (
+                  <span className="capitalize">{value}</span>
+                )
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
+            {BOOKING_STATUSES.map((s: BookingStatus) => (
+              <SelectItem key={s} value={s} className="capitalize">
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        {teams.length > 0 ? (
+        {/* Team filter — dropdown in TABLE view only; calendar uses the
+            clickable team legend (color key + filter) inside the calendar. */}
+        {view !== "calendar" && teams.length > 0 ? (
           <TeamPicker
             teams={teams}
             value={activeTeam}

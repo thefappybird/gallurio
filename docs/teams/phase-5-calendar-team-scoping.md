@@ -19,22 +19,24 @@ the Phase-4 owner-only stopgap).
   `getBookingTeamOptions(ctx)` → the teams a caller can see (owner: all, active+default first;
   non-owner: their own), each with `{ id, name, color, isActive, isLead }`. Inactive teams are
   included as view-only choices.
-- **Team picker** ([_components/team-picker.tsx](<../../app/[locale]/(app)/bookings/_components/team-picker.tsx>)):
-  a `Select` with an "all" option (owner → "All teams"; member → "All my teams"), active teams
-  (color swatch + name), then inactive teams grouped below with an "Inactive" suffix. Lives in
-  `bookings-toolbar.tsx` so it filters **both** views.
+- **Team filter — two presentations (mirrors the old status legend/dropdown split):**
+  - **Table view:** a `Select` dropdown ([team-picker.tsx](<../../app/[locale]/(app)/bookings/_components/team-picker.tsx>))
+    in `bookings-toolbar.tsx` (owner → "All teams"; member → "All my teams"; active then inactive).
+  - **Calendar view:** a clickable color **legend** ([team-legend.tsx](<../../app/[locale]/(app)/bookings/_components/team-legend.tsx>))
+    rendered in the calendar — each team chip (swatch + name) filters to that team; clicking the
+    active chip clears to "all". This is the calendar's team filter AND its color key.
 - **URL state:** `?team=<id|all>` (searchParams, not localStorage). `page.tsx` validates the
   param against the caller's visible teams (falls back to `all`) and narrows `listBookings`'
   `teamIds` within the caller's visibility scope.
-- **Calendar color (locked):** `booking-calendar.tsx` takes `colorMode` + `teamColorMap`. When
-  `?team=all` → events colored by **team color** (`Team.color`); a single team → existing
-  **status colors**. All four color sites route through one `eventColor()` helper.
-- **Inactive-team candles (locked):** any booking whose team isn't in the active color map renders
-  in `INACTIVE_TEAM_COLOR` (a desaturated neutral, [lib/teams/team-colors.ts](../../lib/teams/team-colors.ts))
-  in team mode.
-- **Legends:** the status legend (which is also the clickable status **filter**) is **always**
-  shown. In team mode, a read-only team color legend (active teams + an "Inactive team" entry) is
-  shown *in addition* — it's a color key, not a filter (team filtering lives in the toolbar picker).
+- **Calendar candle color:** candles are always **team-colored** (`Team.color`) so the clickable
+  team legend's swatches map to candles. A booking whose team isn't in the active color map (a
+  deactivated team) renders in `INACTIVE_TEAM_COLOR` (a desaturated neutral,
+  [lib/teams/team-colors.ts](../../lib/teams/team-colors.ts)). All color sites route through one
+  `eventColor()` helper.
+- **Status moved off the legend:** the clickable status legend was **retired**. Status is now (a)
+  a plain dropdown in the toolbar in **both** views, and (b) shown per-candle as a **status pill**
+  (a light chip + status-color dot + status name, pinned bottom-right) on every calendar candle and
+  overflow-popover row. This frees the calendar's legend slot for the team filter.
 - **Wizard team selection:** `teamId` is now a first-class `WizardValues` field
   ([booking-wizard-steps/types.ts](<../../app/[locale]/(app)/bookings/_components/booking-wizard-steps/types.ts>)),
   prefilled from the active `?team`/default team. The event step shows a team `Select` when the
