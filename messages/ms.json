@@ -85,7 +85,8 @@
         "allTeams": "Semua pasukan",
         "allMyTeams": "Semua pasukan saya",
         "label": "Tapis mengikut pasukan",
-        "inactive": "Tidak aktif"
+        "inactive": "Tidak aktif",
+        "countLabel": "{count, plural, other {# pasukan}}"
       },
       "import": {
         "title": "Import tempahan",

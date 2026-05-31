@@ -85,7 +85,8 @@
         "allTeams": "All teams",
         "allMyTeams": "All my teams",
         "label": "Filter by team",
-        "inactive": "Inactive"
+        "inactive": "Inactive",
+        "countLabel": "{count, plural, one {# team} other {# teams}}"
       },
       "import": {
         "title": "Import bookings",

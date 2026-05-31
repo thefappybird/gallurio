@@ -30,7 +30,7 @@ export function BookingsToolbar({
   view = "table",
   canCreate = true,
   teams = [],
-  activeTeam = "all",
+  selectedTeams = [],
   isOwner = false,
 }: {
   defaultCurrency: string;
@@ -47,8 +47,8 @@ export function BookingsToolbar({
   canCreate?: boolean;
   /** Available teams for the team filter picker. */
   teams?: BookingTeamOption[];
-  /** Currently selected team id, or "all". */
-  activeTeam?: string;
+  /** Currently selected team ids. Empty = all teams. */
+  selectedTeams?: string[];
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
 }) {
@@ -152,9 +152,9 @@ export function BookingsToolbar({
         {view !== "calendar" && teams.length > 0 ? (
           <TeamPicker
             teams={teams}
-            value={activeTeam}
+            selected={selectedTeams}
             isOwner={isOwner}
-            onChange={(v) => pushParams({ team: v === "all" ? null : v })}
+            onChange={(next) => pushParams({ team: next.length ? next.join(",") : null })}
           />
         ) : null}
 

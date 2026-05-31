@@ -16,6 +16,7 @@ const messages = {
         allMyTeams: "All my teams",
         label: "Filter by team",
         inactive: "Inactive",
+        countLabel: "{count, plural, one {# team} other {# teams}}",
       },
     },
   },
@@ -30,43 +31,66 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 const alpha: BookingTeamOption = { id: "team-1", name: "Alpha", color: "#3b82f6", isActive: true, isLead: true };
-const retired: BookingTeamOption = { id: "team-2", name: "Beta", color: "#ef4444", isActive: false, isLead: false };
+const beta: BookingTeamOption = { id: "team-2", name: "Beta", color: "#10b981", isActive: true, isLead: false };
+const retired: BookingTeamOption = { id: "team-3", name: "Gamma", color: "#ef4444", isActive: false, isLead: false };
 
-describe("TeamLegend", () => {
-  it("shows 'All teams' for an owner and 'All my teams' for a member", () => {
+describe("TeamLegend (multi-select)", () => {
+  it("shows 'All teams' (owner) / 'All my teams' (member)", () => {
     const { rerender } = render(
-      <TeamLegend teams={[alpha]} value="all" isOwner onSelect={() => {}} />,
+      <TeamLegend teams={[alpha]} selected={[]} isOwner onChange={() => {}} />,
       { wrapper },
     );
     expect(screen.getByRole("button", { name: "All teams" })).toBeInTheDocument();
-
-    rerender(<TeamLegend teams={[alpha]} value="all" isOwner={false} onSelect={() => {}} />);
+    rerender(<TeamLegend teams={[alpha]} selected={[]} isOwner={false} onChange={() => {}} />);
     expect(screen.getByRole("button", { name: "All my teams" })).toBeInTheDocument();
   });
 
-  it("renders active and inactive teams as clickable chips", () => {
-    render(<TeamLegend teams={[alpha, retired]} value="all" isOwner onSelect={() => {}} />, { wrapper });
+  it("renders active and inactive teams", () => {
+    render(<TeamLegend teams={[alpha, retired]} selected={[]} isOwner onChange={() => {}} />, { wrapper });
     expect(screen.getByRole("button", { name: /Alpha/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Beta/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Gamma/ })).toBeInTheDocument();
   });
 
-  it("selects a team by id when its chip is clicked", () => {
-    const onSelect = vi.fn();
-    render(<TeamLegend teams={[alpha]} value="all" isOwner onSelect={onSelect} />, { wrapper });
+  it("adds a team to an empty selection", () => {
+    const onChange = vi.fn();
+    render(<TeamLegend teams={[alpha, beta]} selected={[]} isOwner onChange={onChange} />, { wrapper });
     fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
-    expect(onSelect).toHaveBeenCalledWith("team-1");
+    expect(onChange).toHaveBeenCalledWith(["team-1"]);
   });
 
-  it("clicking the already-active team clears back to 'all'", () => {
-    const onSelect = vi.fn();
-    render(<TeamLegend teams={[alpha]} value="team-1" isOwner onSelect={onSelect} />, { wrapper });
+  it("ADDS a second team to an existing selection (multi-select)", () => {
+    const onChange = vi.fn();
+    render(<TeamLegend teams={[alpha, beta]} selected={["team-1"]} isOwner onChange={onChange} />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: /Beta/ }));
+    expect(onChange).toHaveBeenCalledWith(["team-1", "team-2"]);
+  });
+
+  it("removes a team that is already selected", () => {
+    const onChange = vi.fn();
+    render(<TeamLegend teams={[alpha, beta]} selected={["team-1", "team-2"]} isOwner onChange={onChange} />, {
+      wrapper,
+    });
     fireEvent.click(screen.getByRole("button", { name: /Alpha/ }));
-    expect(onSelect).toHaveBeenCalledWith("all");
+    expect(onChange).toHaveBeenCalledWith(["team-2"]);
   });
 
-  it("marks the active chip with aria-pressed", () => {
-    render(<TeamLegend teams={[alpha]} value="team-1" isOwner onSelect={() => {}} />, { wrapper });
+  it("clicking 'All teams' clears the selection", () => {
+    const onChange = vi.fn();
+    render(<TeamLegend teams={[alpha]} selected={["team-1"]} isOwner onChange={onChange} />, { wrapper });
+    fireEvent.click(screen.getByRole("button", { name: "All teams" }));
+    expect(onChange).toHaveBeenCalledWith([]);
+  });
+
+  it("marks selected chips (and 'All' when empty) via aria-pressed", () => {
+    const { rerender } = render(
+      <TeamLegend teams={[alpha, beta]} selected={[]} isOwner onChange={() => {}} />,
+      { wrapper },
+    );
+    expect(screen.getByRole("button", { name: "All teams" })).toHaveAttribute("aria-pressed", "true");
+
+    rerender(<TeamLegend teams={[alpha, beta]} selected={["team-1"]} isOwner onChange={() => {}} />);
     expect(screen.getByRole("button", { name: /Alpha/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Beta/ })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "All teams" })).toHaveAttribute("aria-pressed", "false");
   });
 });

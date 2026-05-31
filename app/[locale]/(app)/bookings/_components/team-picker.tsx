@@ -1,87 +1,56 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ChevronDownIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TeamLegend } from "./team-legend";
 import type { BookingTeamOption } from "../_data/team-options";
 
-const ALL = "all";
-
+/**
+ * Table-view team filter: a dropdown (popover) whose panel is the multi-select
+ * team legend. Trigger shows the active selection summary. Empty selection means
+ * "all teams". The calendar view renders <TeamLegend> inline instead.
+ */
 export function TeamPicker({
   teams,
-  value,
+  selected,
   isOwner,
   onChange,
 }: {
   teams: BookingTeamOption[];
-  value: string;
+  selected: string[];
   isOwner: boolean;
-  onChange: (value: string) => void;
+  onChange: (next: string[]) => void;
 }) {
   const t = useTranslations("app.bookings.teamPicker");
 
-  const activeTeams = teams.filter((team) => team.isActive);
-  const inactiveTeams = teams.filter((team) => !team.isActive);
-
-  const selectedTeam = value !== ALL ? teams.find((team) => team.id === value) : null;
+  const label =
+    selected.length === 0
+      ? isOwner
+        ? t("allTeams")
+        : t("allMyTeams")
+      : selected.length === 1
+        ? (teams.find((team) => team.id === selected[0])?.name ?? t("countLabel", { count: 1 }))
+        : t("countLabel", { count: selected.length });
 
   return (
-    <Select<string> value={value} onValueChange={(v) => v && onChange(v)}>
-      <SelectTrigger
-        className="w-full sm:w-48"
-        aria-label={t("label")}
-      >
-        <SelectValue>
-          {() =>
-            selectedTeam ? (
-              <span className="flex items-center gap-1.5">
-                <span
-                  className="inline-block size-2.5 shrink-0"
-                  style={{ backgroundColor: selectedTeam.color }}
-                />
-                <span>{selectedTeam.name}</span>
-              </span>
-            ) : (
-              <span>{isOwner ? t("allTeams") : t("allMyTeams")}</span>
-            )
-          }
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={ALL}>
-          {isOwner ? t("allTeams") : t("allMyTeams")}
-        </SelectItem>
-
-        {activeTeams.map((team) => (
-          <SelectItem key={team.id} value={team.id}>
-            <span className="flex items-center gap-1.5">
-              <span
-                className="inline-block size-2.5 shrink-0"
-                style={{ backgroundColor: team.color }}
-              />
-              <span>{team.name}</span>
-            </span>
-          </SelectItem>
-        ))}
-
-        {inactiveTeams.map((team) => (
-          <SelectItem key={team.id} value={team.id}>
-            <span className="flex items-center gap-1.5">
-              <span
-                className="inline-block size-2.5 shrink-0"
-                style={{ backgroundColor: team.color }}
-              />
-              <span>{team.name}</span>
-              <span className="text-muted-foreground">{t("inactive")}</span>
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover>
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            className="w-full justify-between font-normal sm:w-48"
+            aria-label={t("label")}
+          >
+            <span className="truncate">{label}</span>
+            <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+          </Button>
+        }
+      />
+      <PopoverContent align="start" className="w-64">
+        <TeamLegend teams={teams} selected={selected} isOwner={isOwner} onChange={onChange} />
+      </PopoverContent>
+    </Popover>
   );
 }

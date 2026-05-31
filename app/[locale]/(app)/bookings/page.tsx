@@ -88,9 +88,13 @@ export default async function BookingsPage({
   // others: active teams they lead). Members with no lead team cannot create.
   const writableTeams = teamOptions.filter((o) => o.isActive && (role === "owner" || o.isLead));
   const canCreate = writableTeams.length > 0;
-  // `?team` selects a single visible team, or "all".
-  const activeTeam =
-    sp.team && sp.team !== "all" && teamOptions.some((o) => o.id === sp.team) ? sp.team : "all";
+  // `?team` is a comma-separated list of team ids to show; empty/absent/"all"
+  // means all visible teams. Each id must be in the caller's visible set.
+  const requestedTeamIds =
+    sp.team && sp.team !== "all"
+      ? sp.team.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+  const selectedTeamIds = requestedTeamIds.filter((id) => teamOptions.some((o) => o.id === id));
   // Calendar candles are always colored by team (the team legend is the calendar
   // filter + color key); status is shown per-candle via a status pill. The map
   // carries ACTIVE teams' colors; inactive teams fall through to the calendar's
@@ -99,12 +103,12 @@ export default async function BookingsPage({
   const teamColorMap: Record<string, string> = Object.fromEntries(
     teamOptions.filter((o) => o.isActive).map((o) => [o.id, o.color]),
   );
-  // New bookings default to the selected team (if writable), else the caller's
-  // first writable team (owner → Main, which sorts first).
+  // New bookings default to the selected team when exactly one is selected (and
+  // writable), else the caller's first writable team (owner → Main, sorts first).
   const writableIds = new Set(writableTeams.map((w) => w.id));
   const defaultTeamId: string | null =
-    activeTeam !== "all" && writableIds.has(activeTeam)
-      ? activeTeam
+    selectedTeamIds.length === 1 && writableIds.has(selectedTeamIds[0])
+      ? selectedTeamIds[0]
       : (writableTeams[0]?.id ?? null);
 
   // Parse pagination params (table view only).
@@ -119,9 +123,9 @@ export default async function BookingsPage({
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
-    // A specific team selection narrows within the caller's visibility scope;
-    // "all" falls back to the full visibility scope (owner: undefined = all).
-    teamIds: activeTeam !== "all" ? [activeTeam] : allowedTeamIds,
+    // A team selection narrows within the caller's visibility scope; an empty
+    // selection falls back to the full visibility scope (owner: undefined = all).
+    teamIds: selectedTeamIds.length > 0 ? selectedTeamIds : allowedTeamIds,
   };
 
   // These two reads are independent — run them together to save a round-trip.
@@ -280,7 +284,7 @@ export default async function BookingsPage({
           canCreate={canCreate}
           defaultTeamId={defaultTeamId}
           teams={teamOptions}
-          activeTeam={activeTeam}
+          selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
         />
@@ -297,7 +301,7 @@ export default async function BookingsPage({
           canCreate={canCreate}
           defaultTeamId={defaultTeamId}
           teams={teamOptions}
-          activeTeam={activeTeam}
+          selectedTeams={selectedTeamIds}
           writableTeams={writableTeams}
           isOwner={role === "owner"}
           colorMode={colorMode}

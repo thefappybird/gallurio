@@ -85,7 +85,8 @@
         "allTeams": "ทุกทีม",
         "allMyTeams": "ทีมทั้งหมดของฉัน",
         "label": "กรองตามทีม",
-        "inactive": "ไม่ใช้งาน"
+        "inactive": "ไม่ใช้งาน",
+        "countLabel": "{count, plural, other {# ทีม}}"
       },
       "import": {
         "title": "นำเข้าการจอง",

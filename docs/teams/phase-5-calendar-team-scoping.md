@@ -19,12 +19,14 @@ the Phase-4 owner-only stopgap).
   `getBookingTeamOptions(ctx)` → the teams a caller can see (owner: all, active+default first;
   non-owner: their own), each with `{ id, name, color, isActive, isLead }`. Inactive teams are
   included as view-only choices.
-- **Team filter — two presentations (mirrors the old status legend/dropdown split):**
-  - **Table view:** a `Select` dropdown ([team-picker.tsx](<../../app/[locale]/(app)/bookings/_components/team-picker.tsx>))
-    in `bookings-toolbar.tsx` (owner → "All teams"; member → "All my teams"; active then inactive).
-  - **Calendar view:** a clickable color **legend** ([team-legend.tsx](<../../app/[locale]/(app)/bookings/_components/team-legend.tsx>))
-    rendered in the calendar — each team chip (swatch + name) filters to that team; clicking the
-    active chip clears to "all". This is the calendar's team filter AND its color key.
+- **Team filter — MULTI-select, two presentations** (mirrors the old status legend/dropdown split).
+  `?team` is a comma-separated list of team ids; empty = all. The shared multi-toggle UI is
+  [team-legend.tsx](<../../app/[locale]/(app)/bookings/_components/team-legend.tsx>): an "All teams"
+  chip (clears) + one toggle chip per team (swatch + name); multiple teams can be active at once.
+  - **Table view:** a dropdown ([team-picker.tsx](<../../app/[locale]/(app)/bookings/_components/team-picker.tsx>))
+    — a Popover whose panel is the team legend; the trigger summarizes the selection ("All teams" /
+    a single team name / "N teams").
+  - **Calendar view:** the same team legend rendered inline — the calendar's filter AND color key.
 - **URL state:** `?team=<id|all>` (searchParams, not localStorage). `page.tsx` validates the
   param against the caller's visible teams (falls back to `all`) and narrows `listBookings`'
   `teamIds` within the caller's visibility scope.

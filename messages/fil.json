@@ -85,7 +85,8 @@
         "allTeams": "Lahat ng koponan",
         "allMyTeams": "Lahat ng aking koponan",
         "label": "I-filter ayon sa koponan",
-        "inactive": "Hindi aktibo"
+        "inactive": "Hindi aktibo",
+        "countLabel": "{count, plural, other {# koponan}}"
       },
       "import": {
         "title": "Mag-import ng mga booking",

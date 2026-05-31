@@ -27,7 +27,7 @@ type Props = {
   /** All teams visible to the current user (for the team picker filter). */
   teams: BookingTeamOption[];
   /** Currently active team filter value — "all" or a team id. */
-  activeTeam: string;
+  selectedTeams: string[];
   /** Whether the current user is a workspace owner. */
   isOwner: boolean;
   /** Teams the current user may assign to new bookings (writable teams). */
@@ -50,7 +50,7 @@ export function TableBookingManager({
   canCreate,
   defaultTeamId,
   teams,
-  activeTeam,
+  selectedTeams,
   isOwner,
   writableTeams,
 }: Props) {
@@ -108,7 +108,7 @@ export function TableBookingManager({
         onAddClick={handleAddClick}
         canCreate={canCreate}
         teams={teams}
-        activeTeam={activeTeam}
+        selectedTeams={selectedTeams}
         isOwner={isOwner}
       />
       {addOpen ? (

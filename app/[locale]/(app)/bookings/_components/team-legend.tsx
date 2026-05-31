@@ -5,36 +5,39 @@ import { cn } from "@/lib/utils";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import type { BookingTeamOption } from "../_data/team-options";
 
-const ALL = "all";
-
 type Props = {
   teams: BookingTeamOption[];
-  /** Active selection: "all" or a team id. */
-  value: string;
+  /** Selected team ids. EMPTY = all teams (no filter). */
+  selected: string[];
   isOwner: boolean;
-  /** Select "all" or a team id. Selecting the active team again clears to "all". */
-  onSelect: (value: string) => void;
+  /** Receives the next selection array (empty = all). */
+  onChange: (next: string[]) => void;
 };
 
 /**
- * Calendar team legend that doubles as a single-select team filter — the
- * calendar counterpart of the toolbar team dropdown (which is used in table
- * view). Each chip's swatch matches the team-colored candle; clicking filters
- * to that team, clicking the active chip again clears back to "all". Deactivated
- * teams remain selectable (view-only) and render with an "inactive" hint +
- * the neutral archival swatch is shown once via the trailing chip.
+ * Team legend that doubles as a MULTI-select team filter — the calendar
+ * counterpart of the table view's team dropdown. Each chip's swatch matches the
+ * team-colored candle. Clicking a team chip toggles it in/out of the selection;
+ * clicking "All teams" clears the selection (= show all). Multiple teams can be
+ * active at once. Deactivated teams remain selectable (view-only) and show the
+ * neutral archival swatch + strikethrough name.
  */
-export function TeamLegend({ teams, value, isOwner, onSelect }: Props) {
+export function TeamLegend({ teams, selected, isOwner, onChange }: Props) {
   const t = useTranslations("app.bookings.teamPicker");
   const activeTeams = teams.filter((team) => team.isActive);
   const inactiveTeams = teams.filter((team) => !team.isActive);
+  const allActive = selected.length === 0;
+
+  function toggle(id: string) {
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  }
 
   function chipClass(isActive: boolean) {
     return cn(
       "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors",
       "hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       isActive ? "border-foreground text-foreground" : "border-border text-muted-foreground",
-      value !== ALL && !isActive && "opacity-60",
+      !allActive && !isActive && "opacity-60",
     );
   }
 
@@ -46,20 +49,20 @@ export function TeamLegend({ teams, value, isOwner, onSelect }: Props) {
     >
       <button
         type="button"
-        onClick={() => onSelect(ALL)}
-        aria-pressed={value === ALL}
-        className={chipClass(value === ALL)}
+        onClick={() => onChange([])}
+        aria-pressed={allActive}
+        className={chipClass(allActive)}
       >
         {isOwner ? t("allTeams") : t("allMyTeams")}
       </button>
 
       {activeTeams.map((team) => {
-        const isActive = value === team.id;
+        const isActive = selected.includes(team.id);
         return (
           <button
             key={team.id}
             type="button"
-            onClick={() => onSelect(isActive ? ALL : team.id)}
+            onClick={() => toggle(team.id)}
             aria-pressed={isActive}
             className={chipClass(isActive)}
           >
@@ -74,12 +77,12 @@ export function TeamLegend({ teams, value, isOwner, onSelect }: Props) {
       })}
 
       {inactiveTeams.map((team) => {
-        const isActive = value === team.id;
+        const isActive = selected.includes(team.id);
         return (
           <button
             key={team.id}
             type="button"
-            onClick={() => onSelect(isActive ? ALL : team.id)}
+            onClick={() => toggle(team.id)}
             aria-pressed={isActive}
             className={chipClass(isActive)}
             title={t("inactive")}

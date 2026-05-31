@@ -64,8 +64,8 @@ type Props = {
   teams?: BookingTeamOption[];
   /** Teams the user can write to — passed to the create wizard. */
   writableTeams?: BookingTeamOption[];
-  /** Currently selected team id, or undefined when showing all teams. */
-  activeTeam?: string;
+  /** Currently selected team ids. Empty = all teams. */
+  selectedTeams?: string[];
   /** Whether the current user is a workspace owner. */
   isOwner?: boolean;
 };
@@ -141,7 +141,7 @@ export function CalendarView({
   teamColorMap,
   teams,
   writableTeams,
-  activeTeam = "all",
+  selectedTeams = [],
   isOwner = true,
 }: Props) {
   const router = useRouter();
@@ -635,10 +635,10 @@ export function CalendarView({
   // dropdown). Pushes ?team; "all" clears it. Status filtering now lives in the
   // toolbar status dropdown (?status) for both views — the status legend retired.
   const setTeamFilter = useCallback(
-    (team: string) => {
+    (next: string[]) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (team === "all") params.delete("team");
-      else params.set("team", team);
+      if (next.length === 0) params.delete("team");
+      else params.set("team", next.join(","));
       const qs = params.toString();
       startTransition(() => {
         router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -654,7 +654,7 @@ export function CalendarView({
           dropdown and shown per-candle as a status pill. */}
       {teams && teams.length > 0 ? (
         <div className="mb-3 flex flex-wrap items-start gap-y-2">
-          <TeamLegend teams={teams} value={activeTeam} isOwner={isOwner} onSelect={setTeamFilter} />
+          <TeamLegend teams={teams} selected={selectedTeams} isOwner={isOwner} onChange={setTeamFilter} />
         </div>
       ) : null}
       <BookingCalendar
