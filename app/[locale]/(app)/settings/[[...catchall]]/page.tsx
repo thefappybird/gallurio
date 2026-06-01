@@ -10,6 +10,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { routing } from "@/lib/i18n/routing";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { SettingsOrgSwitcher } from "../_components/settings-org-switcher";
@@ -54,7 +55,10 @@ export default async function SettingsCatchallPage({
   const { locale, catchall } = await params;
   setRequestLocale(locale);
 
-  const { role, workspace } = await requireOrg();
+  const [{ role, workspace }, initialTimeFormat] = await Promise.all([
+    requireOrg(),
+    getUserTimeFormat(),
+  ]);
 
   const slug = catchall?.[0];
   if (slug && OWNER_ONLY_SLUGS.has(slug) && role !== "owner") {
@@ -99,7 +103,7 @@ export default async function SettingsCatchallPage({
           slug: "customize",
           label: t("customize"),
           icon: <Palette className="size-4" />,
-          body: <CustomizePanel />,
+          body: <CustomizePanel initialTimeFormat={initialTimeFormat} />,
         },
         {
           slug: "switch-workspace",

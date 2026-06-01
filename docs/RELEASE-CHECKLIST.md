@@ -77,6 +77,14 @@ Run: `rg "Team(Membership|)\.(find|update|delete)" app lib --type ts` and audit 
 - [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, `/teams`, and `/settings` (except `/settings/account` for the Clerk profile area). Verify manually by signing in as a member.
 - [ ] AppSidebar shows `[Bookings]` only for members and hides the footer Settings link. The `/teams` link only appears for owners.
 
+## 8b. Data export — move to background job at scale
+
+`requestDataExportAction` currently runs synchronously inside a Server Action: queries all workspace documents, serialises to CSV, and sends via Resend in the same request. Fine for early workspaces; will timeout for large datasets.
+
+- [ ] Move the export pipeline to a background job (Vercel Queues) before any workspace exceeds ~10k bookings.
+- [ ] Confirm `RESEND_API_KEY` and `RESEND_FROM_EMAIL` are set as Vercel production env vars.
+- [ ] Verify a test export email arrives with all three CSV attachments in the production environment.
+
 ## 8a. Invitation email delivery (NO email service wired yet)
 
 The invite flow (`inviteMemberAction`) creates the `PendingTeamAssignment` row and calls Clerk's `createOrganizationInvitation`, but **no invitation email is delivered in the current dev setup** — Clerk's org-invitation email is not configured. The owner sees the pending invite in the team's Details drawer, but the invitee receives nothing. Before production:

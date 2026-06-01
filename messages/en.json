@@ -540,7 +540,11 @@
           "ms": "Bahasa Melayu",
           "id": "Bahasa Indonesia",
           "th": "ภาษาไทย"
-        }
+        },
+        "timeFormatSection": "Time Format",
+        "timeFormatHint": "Choose how times are displayed across the app.",
+        "time24h": "24h",
+        "time12h": "12h"
       },
       "publicPage": {
         "visibilitySection": "Visibility",
@@ -1094,5 +1098,10 @@
       "errorGeneric": "Could not submit — please try again later.",
       "requiredHint": "Required"
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "backToDashboard": "Back to dashboard"
   }
 }

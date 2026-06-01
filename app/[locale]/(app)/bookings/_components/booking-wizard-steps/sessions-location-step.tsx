@@ -13,7 +13,8 @@ import {
 import { useTranslations } from "next-intl";
 import { AlertTriangleIcon, Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DEFAULT_TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { useTimeFormat } from "@/lib/time-format/context";
 import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,6 +87,7 @@ function SessionCard({
 }) {
   const t = useTranslations("app.bookings.wizard.event");
   const tSessions = useTranslations("app.bookings.sessions");
+  const timeMode = useTimeFormat();
 
   const startDate = watch(`sessions.${index}.startDate`);
   const allowPastDate = watch(`sessions.${index}.allowPastDate`);
@@ -204,7 +206,7 @@ function SessionCard({
           <Input
             id={`wiz-startTime-${index}`}
             type="time"
-            lang={DEFAULT_TIME_INPUT_LANG}
+            lang={TIME_INPUT_LANG[timeMode]}
             min={startTimeMin}
             {...register(`sessions.${index}.startTime`, {
               required: true,
@@ -221,7 +223,7 @@ function SessionCard({
           <Input
             id={`wiz-endTime-${index}`}
             type="time"
-            lang={DEFAULT_TIME_INPUT_LANG}
+            lang={TIME_INPUT_LANG[timeMode]}
             {...register(`sessions.${index}.endTime`, {
               required: true,
               pattern: /^\d{2}:\d{2}$/,

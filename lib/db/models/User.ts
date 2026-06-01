@@ -29,6 +29,7 @@ const userSchema = new Schema(
     memberships: { type: [membershipSchema], default: [] },
     onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: "business" },
     onboardingCompletedAt: { type: Date, default: null },
+    timeFormat: { type: String, enum: ["24h", "12h"], default: "24h" },
   },
   { timestamps: true }
 );
