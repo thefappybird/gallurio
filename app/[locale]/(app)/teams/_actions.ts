@@ -8,16 +8,18 @@ import {
   TeamCapExceededError,
 } from "@/lib/auth/assertCanAddTeam";
 import { Team } from "@/lib/db/models/team";
-import { TeamMembership } from "@/lib/db/models/teamMembership";
+import { planEntitlements } from "@/lib/plans/entitlements";
 import {
   createTeamSchema,
   renameTeamSchema,
   setTeamColorSchema,
-  deleteTeamSchema,
+  deactivateTeamSchema,
+  reactivateTeamSchema,
   type CreateTeamInput,
   type RenameTeamInput,
   type SetTeamColorInput,
-  type DeleteTeamInput,
+  type DeactivateTeamInput,
+  type ReactivateTeamInput,
 } from "@/lib/validators/team";
 
 type TeamPayload = {
@@ -25,6 +27,7 @@ type TeamPayload = {
   name: string;
   color: string;
   isDefault: boolean;
+  isActive: boolean;
   memberCount: number;
 };
 
@@ -78,6 +81,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
         name: team.name,
         color: team.color,
         isDefault: team.isDefault,
+        isActive: team.isActive,
         memberCount: team.memberCount,
       },
     };
@@ -137,11 +141,15 @@ export async function setTeamColorAction(input: SetTeamColorInput): Promise<Acti
   return { ok: true };
 }
 
-export async function deleteTeamAction(input: DeleteTeamInput): Promise<ActionResult> {
+// Teams are never hard-deleted — once bookings/transactions reference a team,
+// removing the row would break historical record-keeping. Deactivation hides the
+// team from default lists and the active-team cap and blocks new assignments,
+// while keeping the row, its memberships, and all referencing bookings intact.
+export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<ActionResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };
 
-  const parsed = deleteTeamSchema.safeParse(input);
+  const parsed = deactivateTeamSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
   const { teamId } = parsed.data;
@@ -150,12 +158,54 @@ export async function deleteTeamAction(input: DeleteTeamInput): Promise<ActionRe
 
   const team = await Team.findOne({ _id: objectId, workspaceId: ctx.workspace._id });
   if (!team) return { error: "Team not found" };
-  if (team.isDefault) return { error: "CANNOT_DELETE_DEFAULT" };
+  // The Main/default team is the assignment fallback and can never be retired.
+  if (team.isDefault) return { error: "CANNOT_DEACTIVATE_DEFAULT" };
 
-  // TODO(phase-4): reject deletion if bookings reference this team
+  // Idempotent: deactivating an already-inactive team is a no-op success. We do
+  // NOT touch memberships or bookings — deactivation always succeeds regardless
+  // of how much history references the team (that's the whole point).
+  if (team.isActive) {
+    await Team.updateOne(
+      { _id: objectId, workspaceId: ctx.workspace._id },
+      { $set: { isActive: false, deactivatedAt: new Date() } },
+    );
+  }
 
-  await TeamMembership.deleteMany({ teamId: objectId, workspaceId: ctx.workspace._id });
-  await Team.deleteOne({ _id: objectId, workspaceId: ctx.workspace._id });
+  revalidatePath("/[locale]/teams", "page");
+  return { ok: true };
+}
+
+// Reactivation restores a deactivated team to full working order — but only if
+// the workspace still has room under its active-team plan cap.
+export async function reactivateTeamAction(input: ReactivateTeamInput): Promise<ActionResult> {
+  const ctx = await ownerContext();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const parsed = reactivateTeamSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+
+  const { teamId } = parsed.data;
+  const objectId = parseObjectId(teamId);
+  if (!objectId) return { error: "Invalid team id" };
+
+  const team = await Team.findOne({ _id: objectId, workspaceId: ctx.workspace._id });
+  if (!team) return { error: "Team not found" };
+
+  // Idempotent: already-active is a no-op success — and crucially must NOT be
+  // blocked by the cap check below (it isn't adding to the active count).
+  if (!team.isActive) {
+    const { maxTeams } = planEntitlements(ctx.workspace.plan);
+    const activeCount = await Team.countDocuments({
+      workspaceId: ctx.workspace._id,
+      isActive: { $ne: false },
+    });
+    if (activeCount >= maxTeams) return { error: "REACTIVATE_CAP_EXCEEDED" };
+
+    await Team.updateOne(
+      { _id: objectId, workspaceId: ctx.workspace._id },
+      { $set: { isActive: true, deactivatedAt: null } },
+    );
+  }
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };

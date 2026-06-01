@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { BookingsToolbar } from "./bookings-toolbar";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import type { BookingTeamOption } from "../_data/team-options";
 
 type ClientHit = {
   id: string;
@@ -19,6 +20,18 @@ type Props = {
   locale: string;
   workspaceTimezone?: string;
   clients: ClientHit[];
+  /** Whether the current user may create bookings (owner-only in Phase 4). */
+  canCreate: boolean;
+  /** The Main team id to attach new bookings to (null when canCreate is false). */
+  defaultTeamId: string | null;
+  /** All teams visible to the current user (for the team picker filter). */
+  teams: BookingTeamOption[];
+  /** Currently active team filter value — "all" or a team id. */
+  selectedTeams: string[];
+  /** Whether the current user is a workspace owner. */
+  isOwner: boolean;
+  /** Teams the current user may assign to new bookings (writable teams). */
+  writableTeams: BookingTeamOption[];
 };
 
 /**
@@ -34,6 +47,12 @@ export function TableBookingManager({
   locale,
   workspaceTimezone,
   clients,
+  canCreate,
+  defaultTeamId,
+  teams,
+  selectedTeams,
+  isOwner,
+  writableTeams,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,6 +84,7 @@ export function TableBookingManager({
   );
 
   const handleAddClick = useCallback(() => {
+    if (!canCreate) return;
     // Bump nonce so the modal remounts fresh even if it was already open.
     nonceRef.current += 1;
     setNonce(nonceRef.current);
@@ -74,7 +94,7 @@ export function TableBookingManager({
     sp.set("add", "1");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+  }, [canCreate, router, pathname, searchParams]);
 
   const handleClose = useCallback(() => {
     setAddOpen(false);
@@ -86,6 +106,10 @@ export function TableBookingManager({
       <BookingsToolbar
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
+        canCreate={canCreate}
+        teams={teams}
+        selectedTeams={selectedTeams}
+        isOwner={isOwner}
       />
       {addOpen ? (
         <BookingWizardModal
@@ -95,6 +119,8 @@ export function TableBookingManager({
           locale={locale}
           workspaceTimezone={workspaceTimezone}
           clients={clients}
+          teamId={defaultTeamId ?? undefined}
+          teams={writableTeams}
           onClose={handleClose}
         />
       ) : null}

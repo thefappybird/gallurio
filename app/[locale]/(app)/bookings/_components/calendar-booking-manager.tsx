@@ -7,6 +7,7 @@ import { BookingsToolbar } from "./bookings-toolbar";
 import { CalendarView, type ClientHit } from "./calendar-view";
 import type { CalendarEvent } from "./booking-calendar";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import type { BookingTeamOption } from "../_data/team-options";
 
 type Props = {
   events: CalendarEvent[];
@@ -16,6 +17,22 @@ type Props = {
   workspaceTimezone?: string;
   initialClients?: ClientHit[];
   messages: React.ComponentProps<typeof CalendarView>["messages"];
+  /** Whether the current user may create bookings (owner-only in Phase 4). */
+  canCreate: boolean;
+  /** The Main team id to attach new bookings to (null when canCreate is false). */
+  defaultTeamId: string | null;
+  /** All teams visible to the current user (for the team picker filter). */
+  teams: BookingTeamOption[];
+  /** Currently active team filter value — "all" or a team id. */
+  selectedTeams: string[];
+  /** Whether the current user is a workspace owner. */
+  isOwner: boolean;
+  /** Teams the current user may assign to new bookings (writable teams). */
+  writableTeams: BookingTeamOption[];
+  /** Controls how calendar candles are colored — by team or by booking status. */
+  colorMode: "team" | "status";
+  /** Map of team id → hex color for candle coloring. */
+  teamColorMap: Record<string, string>;
 };
 
 /**
@@ -31,6 +48,14 @@ export function CalendarBookingManager({
   workspaceTimezone,
   initialClients,
   messages,
+  canCreate,
+  defaultTeamId,
+  teams,
+  selectedTeams,
+  isOwner,
+  writableTeams,
+  colorMode,
+  teamColorMap,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +66,7 @@ export function CalendarBookingManager({
   const [addNonce, setAddNonce] = useState(0);
 
   const handleAddClick = useCallback(() => {
+    if (!canCreate) return;
     nonceRef.current += 1;
     setAddNonce(nonceRef.current);
     // Side-effect: set ?add=1 for shareability.
@@ -50,7 +76,7 @@ export function CalendarBookingManager({
     sp.delete("time");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [router, pathname, searchParams]);
+  }, [canCreate, router, pathname, searchParams]);
 
   return (
     <>
@@ -58,6 +84,10 @@ export function CalendarBookingManager({
         defaultCurrency={defaultCurrency}
         onAddClick={handleAddClick}
         view="calendar"
+        canCreate={canCreate}
+        teams={teams}
+        selectedTeams={selectedTeams}
+        isOwner={isOwner}
       />
       <CalendarView
         events={events}
@@ -68,6 +98,14 @@ export function CalendarBookingManager({
         initialClients={initialClients}
         messages={messages}
         externalAddNonce={addNonce}
+        canCreate={canCreate}
+        defaultTeamId={defaultTeamId}
+        writableTeams={writableTeams}
+        colorMode={colorMode}
+        teamColorMap={teamColorMap}
+        teams={teams}
+        selectedTeams={selectedTeams}
+        isOwner={isOwner}
       />
     </>
   );

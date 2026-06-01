@@ -43,13 +43,14 @@ function makeHandlers() {
     onDetails: vi.fn(),
     onEdit: vi.fn(),
     onInvite: vi.fn(),
-    onDelete: vi.fn(),
+    onDeactivate: vi.fn(),
+    onReactivate: vi.fn(),
   };
 }
 
 const ROWS: TeamRow[] = [
-  { id: "t1", name: "Main", color: "#0d7377", isDefault: true, memberCount: 1 },
-  { id: "t2", name: "Wedding crew", color: "#7c5cff", isDefault: false, memberCount: 3 },
+  { id: "t1", name: "Main", color: "#0d7377", isDefault: true, isActive: true, memberCount: 1 },
+  { id: "t2", name: "Wedding crew", color: "#7c5cff", isDefault: false, isActive: true, memberCount: 3 },
 ];
 
 describe("TeamsTable", () => {
@@ -79,13 +80,13 @@ describe("TeamsTable", () => {
     expect(screen.getByText("No teams match your search.")).toBeInTheDocument();
   });
 
-  it("only offers Delete for non-default teams", () => {
+  it("only offers Deactivate for non-default active teams", () => {
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...makeHandlers()} />);
-    // Main is the default team → no Delete item; Wedding crew → one Delete item.
-    expect(screen.getAllByText("Delete")).toHaveLength(1);
+    // Main is the default team → no Deactivate item; Wedding crew → one Deactivate item.
+    expect(screen.getAllByText("Deactivate")).toHaveLength(1);
   });
 
-  it("fires edit / invite / delete handlers from the menu", () => {
+  it("fires edit / invite / deactivate handlers from the menu", () => {
     const handlers = makeHandlers();
     renderWithProviders(<TeamsTable rows={ROWS} empty="none" {...handlers} />);
 
@@ -96,9 +97,9 @@ describe("TeamsTable", () => {
     fireEvent.click(screen.getAllByText("Invite teammate")[0]);
     expect(handlers.onInvite).toHaveBeenCalledWith(ROWS[0]);
 
-    // Delete exists only for the non-default Wedding crew row.
-    fireEvent.click(screen.getByText("Delete"));
-    expect(handlers.onDelete).toHaveBeenCalledWith(ROWS[1]);
+    // Deactivate exists only for the non-default Wedding crew row.
+    fireEvent.click(screen.getByText("Deactivate"));
+    expect(handlers.onDeactivate).toHaveBeenCalledWith(ROWS[1]);
   });
 
   it("opens details from the menu item AND from a row click", () => {

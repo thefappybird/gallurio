@@ -1,4 +1,6 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
+import { getBookingTeamOptions } from "./_data/team-options";
 import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -40,6 +42,7 @@ export async function generateMetadata({
 
 type SearchParams = {
   view?: string;
+  team?: string;
   date?: string;
   time?: string;
   status?: string;
@@ -67,11 +70,57 @@ export default async function BookingsPage({
   const t = await getTranslations("app.bookings");
   const tCal = await getTranslations("app.calendar");
 
-  const { workspace } = await requireOrg();
+  const { workspace, role, userId } = await requireOrg();
   await connectDB();
+
+  // Team visibility: owners see the whole workspace; non-owners (staff) see only
+  // bookings owned by teams they belong to. An empty membership list yields an
+  // empty `teamIds` array → the query matches nothing (fail-closed).
+  const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
 
   const sp = await searchParams;
   const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
+
+  // Phase 5 — team scoping. Owners see every team; non-owners see only their own
+  // (both include deactivated teams, shown as view-only choices).
+  const teamOptions = await getBookingTeamOptions({ role, userId, workspace });
+  // Writable = active teams the caller may create for (owner: any active team;
+  // others: active teams they lead). Members with no lead team cannot create.
+  const writableTeams = teamOptions.filter((o) => o.isActive && (role === "owner" || o.isLead));
+  const canCreate = writableTeams.length > 0;
+  // `?team` is a comma-separated list of team ids to show; empty/absent/"all"
+  // means all visible teams. Each id must be in the caller's visible set.
+  const requestedTeamIds =
+    sp.team && sp.team !== "all"
+      ? sp.team.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+  const selectedTeamIds = requestedTeamIds.filter((id) => teamOptions.some((o) => o.id === id));
+  // Calendar candles are always colored by team (the team legend is the calendar
+  // filter + color key); status is shown per-candle via a status pill. The map
+  // carries ACTIVE teams' colors; inactive teams fall through to the calendar's
+  // neutral "archival" color.
+  const colorMode: "team" | "status" = "team";
+  const teamColorMap: Record<string, string> = Object.fromEntries(
+    teamOptions.filter((o) => o.isActive).map((o) => [o.id, o.color]),
+  );
+  // New bookings default to the selected team when exactly one is selected (and
+  // writable), else the caller's first writable team (owner → Main, sorts first).
+  const writableIds = new Set(writableTeams.map((w) => w.id));
+  const defaultTeamId: string | null =
+    selectedTeamIds.length === 1 && writableIds.has(selectedTeamIds[0])
+      ? selectedTeamIds[0]
+      : (writableTeams[0]?.id ?? null);
+
+  // When exactly one team is in the effective scope — a single-team member/lead,
+  // or anyone filtered down to one team — title the page "{team}'s Bookings".
+  // Otherwise the plain "Bookings". (Single-team non-owners also lose the filter,
+  // gated in the toolbar/calendar via isOwner + team count.)
+  const effectiveTeamIds = selectedTeamIds.length > 0 ? selectedTeamIds : teamOptions.map((o) => o.id);
+  const scopedTeamName =
+    effectiveTeamIds.length === 1
+      ? (teamOptions.find((o) => o.id === effectiveTeamIds[0])?.name ?? null)
+      : null;
+  const pageTitle = scopedTeamName ? t("titleForTeam", { team: scopedTeamName }) : t("title");
 
   // Parse pagination params (table view only).
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
@@ -85,6 +134,9 @@ export default async function BookingsPage({
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
+    // A team selection narrows within the caller's visibility scope; an empty
+    // selection falls back to the full visibility scope (owner: undefined = all).
+    teamIds: selectedTeamIds.length > 0 ? selectedTeamIds : allowedTeamIds,
   };
 
   // These two reads are independent — run them together to save a round-trip.
@@ -162,6 +214,7 @@ export default async function BookingsPage({
             return result.candles.map((candle) => ({
               id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
               bookingId,
+              teamId: b.teamId ? String(b.teamId) : null,
               title: b.title,
               start: candle.start,
               end: candle.end,
@@ -209,7 +262,7 @@ export default async function BookingsPage({
   if (sp.detail) {
     let detailExists = false;
     try {
-      const found = await getBookingById(workspace._id, sp.detail);
+      const found = await getBookingById(workspace._id, sp.detail, allowedTeamIds);
       detailExists = found !== null;
     } catch {
       // Invalid ObjectId format — treat as not found.
@@ -227,7 +280,7 @@ export default async function BookingsPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
         <ViewToggle view={view} />
       </div>
 
@@ -239,6 +292,12 @@ export default async function BookingsPage({
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           clients={initialClients}
+          canCreate={canCreate}
+          defaultTeamId={defaultTeamId}
+          teams={teamOptions}
+          selectedTeams={selectedTeamIds}
+          writableTeams={writableTeams}
+          isOwner={role === "owner"}
         />
       ) : null}
 
@@ -250,6 +309,14 @@ export default async function BookingsPage({
           defaultCurrency={workspace.currency as SupportedCurrency}
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
+          canCreate={canCreate}
+          defaultTeamId={defaultTeamId}
+          teams={teamOptions}
+          selectedTeams={selectedTeamIds}
+          writableTeams={writableTeams}
+          isOwner={role === "owner"}
+          colorMode={colorMode}
+          teamColorMap={teamColorMap}
           messages={{
             today: tCal("today"),
             previous: tCal("previous"),
@@ -280,7 +347,12 @@ export default async function BookingsPage({
       )}
 
       {sp.detail ? (
-        <BookingDetailModal bookingId={sp.detail} locale={locale} />
+        <BookingDetailModal
+          bookingId={sp.detail}
+          locale={locale}
+          teams={teamOptions}
+          writableTeams={writableTeams}
+        />
       ) : null}
 
       {/* Table-view edit modal: URL-driven (row click sets ?edit=<id>). */}
@@ -292,6 +364,7 @@ export default async function BookingsPage({
           locale={locale}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
           clients={initialClients}
+          teams={writableTeams}
         />
       ) : null}
     </div>

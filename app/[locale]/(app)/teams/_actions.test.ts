@@ -42,12 +42,23 @@ beforeEach(async () => {
   await clearCollections();
 });
 
-function makeTeam(overrides: Partial<{ workspaceId: Types.ObjectId; name: string; isDefault: boolean; color: string }> = {}) {
+function makeTeam(
+  overrides: Partial<{
+    workspaceId: Types.ObjectId;
+    name: string;
+    isDefault: boolean;
+    color: string;
+    isActive: boolean;
+    deactivatedAt: Date | null;
+  }> = {},
+) {
   return Team.create({
     workspaceId: overrides.workspaceId ?? WORKSPACE_ID,
     name: overrides.name ?? "Crew",
     color: overrides.color ?? TEAM_COLOR_PALETTE[0],
     isDefault: overrides.isDefault ?? false,
+    isActive: overrides.isActive ?? true,
+    deactivatedAt: overrides.deactivatedAt ?? null,
     memberCount: 0,
     createdByClerkUserId: OWNER_USER_ID,
   });
@@ -93,48 +104,85 @@ describe("setTeamColorAction", () => {
   });
 });
 
-describe("deleteTeamAction", () => {
-  it("removes the team AND its membership rows", async () => {
+describe("deactivateTeamAction", () => {
+  it("soft-deletes: sets isActive false + deactivatedAt, KEEPING the row and memberships", async () => {
     const team = await makeTeam();
     await TeamMembership.create([
       { workspaceId: WORKSPACE_ID, teamId: team._id, clerkUserId: "u1", role: "member" },
       { workspaceId: WORKSPACE_ID, teamId: team._id, clerkUserId: "u2", role: "lead" },
     ]);
 
-    const { deleteTeamAction } = await import("./_actions");
-    const result = await deleteTeamAction({ teamId: String(team._id) });
+    const { deactivateTeamAction } = await import("./_actions");
+    const result = await deactivateTeamAction({ teamId: String(team._id) });
 
     expect(result.ok).toBe(true);
-    expect(await Team.findById(team._id).lean()).toBeNull();
+    const after = await Team.findById(team._id).lean();
+    expect(after).not.toBeNull();
+    expect(after?.isActive).toBe(false);
+    expect(after?.deactivatedAt).toBeInstanceOf(Date);
+    // History is preserved — memberships survive deactivation.
     expect(
       await TeamMembership.countDocuments({ teamId: team._id, workspaceId: WORKSPACE_ID }),
-    ).toBe(0);
+    ).toBe(2);
   });
 
-  it("refuses to delete the default team and leaves it intact", async () => {
+  it("refuses to deactivate the default team and leaves it active", async () => {
     const team = await makeTeam({ isDefault: true, name: "Main" });
-    const { deleteTeamAction } = await import("./_actions");
-    const result = await deleteTeamAction({ teamId: String(team._id) });
-    expect(result.error).toBe("CANNOT_DELETE_DEFAULT");
-    expect(await Team.findById(team._id).lean()).not.toBeNull();
+    const { deactivateTeamAction } = await import("./_actions");
+    const result = await deactivateTeamAction({ teamId: String(team._id) });
+    expect(result.error).toBe("CANNOT_DEACTIVATE_DEFAULT");
+    const after = await Team.findById(team._id).lean();
+    expect(after?.isActive).toBe(true);
   });
 
-  it("does not delete a team belonging to another workspace", async () => {
+  it("does not deactivate a team belonging to another workspace (tenant isolation)", async () => {
     const foreign = await makeTeam({ workspaceId: OTHER_WORKSPACE_ID });
-    await TeamMembership.create({
-      workspaceId: OTHER_WORKSPACE_ID,
-      teamId: foreign._id,
-      clerkUserId: "uX",
-      role: "member",
-    });
-
-    const { deleteTeamAction } = await import("./_actions");
-    const result = await deleteTeamAction({ teamId: String(foreign._id) });
-
+    const { deactivateTeamAction } = await import("./_actions");
+    const result = await deactivateTeamAction({ teamId: String(foreign._id) });
     expect(result.error).toBe("Team not found");
-    expect(await Team.findById(foreign._id).lean()).not.toBeNull();
-    expect(
-      await TeamMembership.countDocuments({ teamId: foreign._id }),
-    ).toBe(1);
+    const after = await Team.findById(foreign._id).lean();
+    expect(after?.isActive).toBe(true);
+  });
+});
+
+describe("reactivateTeamAction", () => {
+  it("restores a deactivated team: isActive true + deactivatedAt null", async () => {
+    const team = await makeTeam({ isActive: false, deactivatedAt: new Date() });
+    const { reactivateTeamAction } = await import("./_actions");
+    const result = await reactivateTeamAction({ teamId: String(team._id) });
+
+    expect(result.ok).toBe(true);
+    const after = await Team.findById(team._id).lean();
+    expect(after?.isActive).toBe(true);
+    expect(after?.deactivatedAt).toBeNull();
+  });
+
+  it("refuses reactivation that would exceed the active-team plan cap", async () => {
+    // Mocked workspace plan is "starter" → cap 3. Fill the 3 active slots, then
+    // try to reactivate a 4th (currently inactive) team.
+    await makeTeam({ name: "A" });
+    await makeTeam({ name: "B" });
+    await makeTeam({ name: "C" });
+    const dead = await makeTeam({ name: "D", isActive: false, deactivatedAt: new Date() });
+
+    const { reactivateTeamAction } = await import("./_actions");
+    const result = await reactivateTeamAction({ teamId: String(dead._id) });
+
+    expect(result.error).toBe("REACTIVATE_CAP_EXCEEDED");
+    const after = await Team.findById(dead._id).lean();
+    expect(after?.isActive).toBe(false);
+  });
+
+  it("cannot reactivate a team belonging to another workspace (tenant isolation)", async () => {
+    const foreign = await makeTeam({
+      workspaceId: OTHER_WORKSPACE_ID,
+      isActive: false,
+      deactivatedAt: new Date(),
+    });
+    const { reactivateTeamAction } = await import("./_actions");
+    const result = await reactivateTeamAction({ teamId: String(foreign._id) });
+    expect(result.error).toBe("Team not found");
+    const after = await Team.findById(foreign._id).lean();
+    expect(after?.isActive).toBe(false);
   });
 });

@@ -189,6 +189,7 @@ function makeEvent(
   return {
     id: `${bookingId}_s${sessionIndex}_2026-05-25${idSuffix}`,
     bookingId,
+    teamId: null,
     title: "Test Shoot",
     start: startAt,
     end: endAt,

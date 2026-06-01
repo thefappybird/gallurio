@@ -10,9 +10,9 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
-import { BookingStatusLegend } from "./booking-status-legend";
+import { TeamLegend } from "./team-legend";
+import type { BookingTeamOption } from "../_data/team-options";
 import { BookingWizardModal } from "./booking-wizard-modal";
-import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
 import { Views, type View } from "react-big-calendar";
 import {
@@ -50,6 +50,24 @@ type Props = {
    * button always fires even when ?add=1 is already set.
    */
   externalAddNonce?: number;
+  /** When false, slot clicks and toolbar nonce changes do NOT open the create
+   *  wizard. Editing / viewing existing bookings is still available. */
+  canCreate?: boolean;
+  /** The Main team id to attach new bookings to. Passed through to the create
+   *  wizard as teamId. */
+  defaultTeamId?: string | null;
+  /** "team" colors events by team; "status" (default) uses the status palette. */
+  colorMode?: "status" | "team";
+  /** Active-team id → hex color, passed through to BookingCalendar. */
+  teamColorMap?: Record<string, string>;
+  /** All teams visible to this user — used for the team legend. */
+  teams?: BookingTeamOption[];
+  /** Teams the user can write to — passed to the create wizard. */
+  writableTeams?: BookingTeamOption[];
+  /** Currently selected team ids. Empty = all teams. */
+  selectedTeams?: string[];
+  /** Whether the current user is a workspace owner. */
+  isOwner?: boolean;
 };
 
 /**
@@ -117,6 +135,14 @@ export function CalendarView({
   locale = "en",
   workspaceTimezone,
   externalAddNonce,
+  canCreate = true,
+  defaultTeamId,
+  colorMode = "status",
+  teamColorMap,
+  teams,
+  writableTeams,
+  selectedTeams = [],
+  isOwner = true,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -143,7 +169,8 @@ export function CalendarView({
     const spEdit = searchParams.get("edit");
     const spDate = searchParams.get("date") ?? "";
     const spTime = searchParams.get("time") ?? undefined;
-    if (spAdd === "1") {
+    // Non-owners cannot create bookings — skip seeding the add modal from URL.
+    if (spAdd === "1" && canCreate) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: seeds local modal state from URL on mount (external → React sync)
       setAddState({ date: spDate, time: spTime, nonce: 0 });
     } else if (spEdit) {
@@ -154,8 +181,10 @@ export function CalendarView({
 
   // Respond to the toolbar's "New Booking" button via an incrementing nonce.
   // Skip nonce=0 (initial mount value — the URL-seed effect above handles that).
+  // Non-owners cannot create bookings — ignore the nonce entirely.
   const prevExternalNonceRef = useRef(0);
   useEffect(() => {
+    if (!canCreate) return;
     if (!externalAddNonce || externalAddNonce === prevExternalNonceRef.current) return;
     prevExternalNonceRef.current = externalAddNonce;
     setAddState((prev) => ({
@@ -163,7 +192,7 @@ export function CalendarView({
       time: undefined,
       nonce: (prev?.nonce ?? 0) + 1,
     }));
-  }, [externalAddNonce]);
+  }, [canCreate, externalAddNonce]);
 
   // Respond to URL-driven edit requests set by the BookingDetailModal's
   // "Edit all" button. The detail modal sets ?edit=<id> to hand off to the
@@ -272,6 +301,8 @@ export function CalendarView({
 
   const openAddForDate = useCallback(
     (date: Date, time?: string) => {
+      // Non-owners cannot create bookings — slot clicks are view-only for them.
+      if (!canCreate) return;
       // Always open the modal directly (no URL round-trip that may no-op).
       setAddState((prev) => ({
         date: isoDate(date),
@@ -288,7 +319,7 @@ export function CalendarView({
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     },
-    [router, pathname, searchParams]
+    [canCreate, router, pathname, searchParams]
   );
 
   // ─── Core session apply ───────────────────────────────────────────────────
@@ -600,18 +631,14 @@ export function CalendarView({
     return optimisticEvents.filter((e) => e.end.getTime() >= startOfTodayMs);
   }, [optimisticEvents, showPast, startOfTodayMs]);
 
-  const activeStatus = useMemo<BookingStatus | null>(() => {
-    const s = searchParams.get("status");
-    return s && (BOOKING_STATUSES as readonly string[]).includes(s)
-      ? (s as BookingStatus)
-      : null;
-  }, [searchParams]);
-
-  const toggleStatusFilter = useCallback(
-    (status: BookingStatus) => {
+  // Team filter (calendar's clickable legend, counterpart to the table's team
+  // dropdown). Pushes ?team; "all" clears it. Status filtering now lives in the
+  // toolbar status dropdown (?status) for both views — the status legend retired.
+  const setTeamFilter = useCallback(
+    (next: string[]) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (params.get("status") === status) params.delete("status");
-      else params.set("status", status);
+      if (next.length === 0) params.delete("team");
+      else params.set("team", next.join(","));
       const qs = params.toString();
       startTransition(() => {
         router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -622,12 +649,14 @@ export function CalendarView({
 
   return (
     <>
-      <div className="mb-3">
-        <BookingStatusLegend
-          activeStatus={activeStatus}
-          onToggle={toggleStatusFilter}
-        />
-      </div>
+      {/* Calendar team filter — the clickable color legend (counterpart to the
+          table view's team dropdown). Status is filtered via the toolbar
+          dropdown and shown per-candle as a status pill. */}
+      {teams && (isOwner || teams.length > 1) ? (
+        <div className="mb-3 flex flex-wrap items-start gap-y-2">
+          <TeamLegend teams={teams} selected={selectedTeams} isOwner={isOwner} onChange={setTeamFilter} />
+        </div>
+      ) : null}
       <BookingCalendar
         events={visibleEvents}
         defaultDate={defaultDate}
@@ -646,6 +675,8 @@ export function CalendarView({
         pendingIds={pendingIds}
         messages={messages}
         showPast={showPast}
+        colorMode={colorMode}
+        teamColorMap={teamColorMap}
       />
       {addState ? (
         <BookingWizardModal
@@ -657,6 +688,8 @@ export function CalendarView({
           locale={locale}
           workspaceTimezone={workspaceTimezone}
           clients={clients}
+          teamId={defaultTeamId ?? undefined}
+          teams={writableTeams}
           onClientCreated={refetchClients}
           onClose={() => {
             setAddState(null);

@@ -18,7 +18,8 @@ import {
   MailPlus,
   MoreHorizontal,
   Pencil,
-  Trash2,
+  PowerOff,
+  RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,8 @@ type Props = {
   onDetails: (team: TeamRow) => void;
   onEdit: (team: TeamRow) => void;
   onInvite: (team: TeamRow) => void;
-  onDelete: (team: TeamRow) => void;
+  onDeactivate: (team: TeamRow) => void;
+  onReactivate: (team: TeamRow) => void;
 };
 
 export function TeamsTable({
@@ -47,7 +49,8 @@ export function TeamsTable({
   onDetails,
   onEdit,
   onInvite,
-  onDelete,
+  onDeactivate,
+  onReactivate,
 }: Props) {
   const t = useTranslations("app.teams");
   const [sorting, setSorting] = useState<SortingState>([{ id: "name", desc: false }]);
@@ -69,16 +72,26 @@ export function TeamsTable({
       {
         accessorKey: "name",
         header: () => t("table.col.name"),
-        cell: (info) => (
-          <span className="flex items-center gap-2">
-            <span className="font-medium">{info.getValue<string>()}</span>
-            {info.row.original.isDefault && (
-              <Badge variant="secondary" className="text-xs">
-                {t("team.defaultBadge")}
-              </Badge>
-            )}
-          </span>
-        ),
+        cell: (info) => {
+          const row = info.row.original;
+          return (
+            <span className="flex items-center gap-2">
+              <span className={cn("font-medium", !row.isActive && "text-muted-foreground")}>
+                {info.getValue<string>()}
+              </span>
+              {row.isDefault && (
+                <Badge variant="secondary" className="text-xs">
+                  {t("team.defaultBadge")}
+                </Badge>
+              )}
+              {!row.isActive && (
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  {t("team.inactiveBadge")}
+                </Badge>
+              )}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "memberCount",
@@ -113,20 +126,36 @@ export function TeamsTable({
                     <Eye className="size-4" />
                     {t("table.details")}
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onEdit(team)}>
-                    <Pencil className="size-4" />
-                    {t("team.edit")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onInvite(team)}>
-                    <MailPlus className="size-4" />
-                    {t("team.invite")}
-                  </DropdownMenuItem>
-                  {!team.isDefault && (
+                  {team.isActive && (
+                    <>
+                      <DropdownMenuItem onClick={() => onEdit(team)}>
+                        <Pencil className="size-4" />
+                        {t("team.edit")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onInvite(team)}>
+                        <MailPlus className="size-4" />
+                        {t("team.invite")}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {team.isActive && !team.isDefault && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" onClick={() => onDelete(team)}>
-                        <Trash2 className="size-4" />
-                        {t("team.delete")}
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => onDeactivate(team)}
+                      >
+                        <PowerOff className="size-4" />
+                        {t("team.deactivate")}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {!team.isActive && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => onReactivate(team)}>
+                        <RotateCcw className="size-4" />
+                        {t("team.reactivate")}
                       </DropdownMenuItem>
                     </>
                   )}
@@ -138,7 +167,7 @@ export function TeamsTable({
         enableSorting: false,
       },
     ],
-    [t, onDetails, onEdit, onInvite, onDelete],
+    [t, onDetails, onEdit, onInvite, onDeactivate, onReactivate],
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns non-memoizable functions; React Compiler skips this component intentionally

@@ -5,7 +5,8 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Client, Transaction } from "@/lib/db/models";
+import { Booking, Client, Transaction, Team } from "@/lib/db/models";
+import { TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import * as clientTransactions from "@/lib/db/clientTransactions";
 
 const WS_ID = new Types.ObjectId();
@@ -42,6 +43,14 @@ beforeEach(async () => {
   await clearCollections();
   // Default: WS_ID context (mirrors the original static mock for all existing tests).
   mockRequireOrg.mockResolvedValue(makeOrgCtx(WS_ID));
+  // Seed default teams for all test workspaces so the route's
+  // Team.findOne({ workspaceId, isDefault: true }) succeeds.
+  const ownerUserId = "user_test";
+  await Team.create([
+    { workspaceId: WS_ID, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
+    { workspaceId: WS_A, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
+    { workspaceId: WS_B, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
+  ]);
 });
 
 async function callImport(rows: unknown[]) {
@@ -68,6 +77,7 @@ const VALID_ROW = {
 
 describe("POST /api/bookings/import", () => {
   it("creates a booking and client for a valid row", async () => {
+    const mainTeam = await Team.findOne({ workspaceId: WS_ID, isDefault: true }).lean();
     const res = await callImport([VALID_ROW]);
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -77,6 +87,7 @@ describe("POST /api/bookings/import", () => {
     const booking = await Booking.findOne({ workspaceId: WS_ID }).lean();
     expect(booking?.title).toBe("Smith Wedding");
     expect(booking?.status).toBe("booked");
+    expect(booking?.teamId?.toString()).toBe(mainTeam!._id.toString());
 
     const client = await Client.findOne({ workspaceId: WS_ID }).lean();
     expect(client?.email).toBe("jane@example.com");

@@ -27,6 +27,7 @@ import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR } from "@/lib/bookings/status-style";
+import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 
 export type OverflowEvent = {
   type: "overflow";
@@ -75,6 +76,8 @@ export type CalendarEvent = {
   /** Set by the midnight-split pass for week/day views. The morning half of an
    *  overnight candle (00:00 → original end). */
   isMorningContinuation?: boolean;
+  /** The team this booking belongs to, if any. Used for team-color mode. */
+  teamId: string | null;
 };
 
 /** Union of a real booking event and the synthetic overflow placeholder. */
@@ -126,6 +129,10 @@ type Props = {
   /** Set of bookingIds that have an in-flight PATCH. Matching events are dimmed
    *  and made non-interactive so the user cannot drag the same event twice. */
   pendingIds?: Set<string>;
+  /** "team" colors events by team; "status" (default) uses the status palette. */
+  colorMode?: "status" | "team";
+  /** Active-team id → hex color. Only consulted when colorMode is "team". */
+  teamColorMap?: Record<string, string>;
 };
 
 /**
@@ -205,8 +212,10 @@ function OverflowPopoverRow({
   onExternalDragEnd?: () => void;
   onClose: () => void;
 }) {
+  const ctx = useContext(CalendarToolbarCtx);
+  const tStatus = useTranslations("app.bookings.statusValues");
   const timeMode = useTimeFormat();
-  const bg = STATUS_COLOR[e.status];
+  const bg = ctx ? ctx.eventColor(e) : STATUS_COLOR[e.status];
   const clientDisplay = e.clientName || "—";
   const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt, timeMode);
   return (
@@ -252,6 +261,14 @@ function OverflowPopoverRow({
       <span className="whitespace-nowrap text-[10px] text-muted-foreground">
         {timeRange}
       </span>
+      <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0"
+          style={{ backgroundColor: STATUS_COLOR[e.status] }}
+        />
+        {tStatus(e.status)}
+      </span>
     </button>
   );
 }
@@ -264,6 +281,22 @@ function PastPill({ label }: { label: string }) {
       className="absolute right-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
     >
       {label}
+    </span>
+  );
+}
+
+/** Status pill shown on each candle. Candles are colored by TEAM, so status is
+ *  carried here: a light chip with a status-color dot + the localized status
+ *  name, pinned bottom-right (clear of the top-right Past badge). */
+function StatusPill({ status, label }: { status: BookingStatus; label: string }) {
+  return (
+    <span className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 inline-flex max-w-[85%] items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground">
+      <span
+        aria-hidden
+        className="size-1.5 shrink-0"
+        style={{ backgroundColor: STATUS_COLOR[status] }}
+      />
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -283,6 +316,7 @@ export function MonthBookingEvent({
   const [open, setOpen] = useState(false);
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const tStatus = useTranslations("app.bookings.statusValues");
   const timeMode = useTimeFormat();
 
   if ("type" in ev && ev.type === "overflow") {
@@ -320,7 +354,7 @@ export function MonthBookingEvent({
   }
 
   const booking = ev as CalendarEvent;
-  const bg = STATUS_COLOR[booking.status];
+  const bg = ctx ? ctx.eventColor(booking) : STATUS_COLOR[booking.status];
   const clientDisplay = booking.clientName || "—";
   const timeRange = formatTimeRange(booking.start, booking.end, timeMode);
   const isPast = booking.end < new Date();
@@ -353,6 +387,7 @@ export function MonthBookingEvent({
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
       {showPastVisual && <PastPill label={t("past")} />}
+      <StatusPill status={booking.status} label={tStatus(booking.status)} />
     </span>
   );
 }
@@ -362,12 +397,13 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Hooks must be called unconditionally before any early return.
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
+  const tStatus = useTranslations("app.bookings.statusValues");
   const timeMode = useTimeFormat();
   // Overflow events never appear in week/day view (only month view produces them).
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
   const ev = event as CalendarEvent;
-  const bg = STATUS_COLOR[ev.status];
+  const bg = ctx ? ctx.eventColor(ev) : STATUS_COLOR[ev.status];
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
@@ -415,6 +451,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </>
       )}
       {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
+      {!isContinuation && <StatusPill status={ev.status} label={tStatus(ev.status)} />}
     </div>
   );
 }
@@ -498,6 +535,7 @@ type CalendarToolbarCtxValue = {
   messages: Props["messages"];
   onScrollToHour: (h: number) => void;
   showPast: boolean;
+  eventColor: (ev: { status: BookingStatus; teamId: string | null }) => string;
 };
 
 /**
@@ -764,7 +802,15 @@ export function BookingCalendar({
   messages,
   showPast = false,
   pendingIds,
+  colorMode = "status",
+  teamColorMap,
 }: Props) {
+  function eventColor(ev: { status: BookingStatus; teamId: string | null }): string {
+    if (colorMode === "team") {
+      return (ev.teamId && teamColorMap?.[ev.teamId]) || INACTIVE_TEAM_COLOR;
+    }
+    return STATUS_COLOR[ev.status];
+  }
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).
   const [internalView, setInternalView] = useState<View>(viewProp ?? defaultView);
@@ -823,8 +869,11 @@ export function BookingCalendar({
       messages,
       onScrollToHour,
       showPast,
+      eventColor,
     }),
-    [messages, onScrollToHour, showPast]
+    // eventColor is recreated only when colorMode/teamColorMap change (inline fn inside render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [messages, onScrollToHour, showPast, colorMode, teamColorMap]
   );
 
   const calendarMessages = useMemo(
@@ -913,7 +962,7 @@ export function BookingCalendar({
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };
             }
             const calEvent = event as CalendarEvent;
-            const bg = STATUS_COLOR[calEvent.status];
+            const bg = eventColor(calEvent);
             const isPending = pendingIds?.has(calEvent.bookingId) ?? false;
             return {
               className: isPending

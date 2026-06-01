@@ -212,8 +212,11 @@ export function ActivityTimeline({
     <ol className={cn("flex flex-col", className)} aria-label={tHistory("timelineLabel")}>
       {groups.map((group) => (
         <li key={group.dayKey}>
-          {/* Day header */}
-          <div className="sticky top-0 z-10 flex items-center gap-2 bg-background py-1.5">
+          {/* Day header — sticky within the dialog scroll area. Uses bg-popover
+              to match the dialog surface (both consumers render inside a
+              DialogContent, which is bg-popover); bg-background would paint a
+              darker bar that stands out against the modal. */}
+          <div className="sticky top-0 z-10 flex items-center gap-2 bg-popover py-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               {group.dayLabel}
             </span>

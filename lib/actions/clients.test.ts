@@ -230,6 +230,7 @@ describe("getClientBookingsAction", () => {
     const end = new Date("2024-03-15T12:00:00Z");
     return Booking.create({
       workspaceId: wid,
+      teamId: new Types.ObjectId(),
       clientId: cid,
       clientName: "Test Client",
       title,

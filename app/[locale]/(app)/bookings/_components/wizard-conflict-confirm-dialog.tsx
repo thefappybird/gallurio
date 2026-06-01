@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { ShiftHit } from "./booking-wizard-steps/event-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 
 type SessionSummary = {
   startDate: string;

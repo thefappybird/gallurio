@@ -1,6 +1,7 @@
 import "server-only";
-import type { Types } from "mongoose";
-import { Booking, Client, Inquiry, Transaction, ActivityLog } from "@/lib/db/models";
+import { Types } from "mongoose";
+import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
+import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -197,18 +198,29 @@ export type CalendarDayCount = { date: string; count: number };
 
 export async function getBookingsByDay(
   workspaceId: WorkspaceId,
-  month: Date
+  month: Date,
+  teamIds?: readonly string[]
 ): Promise<CalendarDayCount[]> {
   const start = startOfMonth(month);
   const end = endOfMonth(month);
+  const matchStage: Record<string, unknown> = {
+    workspaceId,
+    firstSessionStart: { $lte: end },
+    lastSessionEnd: { $gte: start },
+  };
+  if (teamIds !== undefined) {
+    // Aggregation $match does NOT auto-cast like find() does — cast the string
+    // team ids to ObjectId or the $in matches zero ObjectId-typed documents.
+    matchStage.teamId = {
+      $in: teamIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id)),
+    };
+  }
   // Unwind sessions so each session contributes its own days to the count.
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
     {
-      $match: {
-        workspaceId,
-        firstSessionStart: { $lte: end },
-        lastSessionEnd: { $gte: start },
-      },
+      $match: matchStage,
     },
     { $unwind: "$sessions" },
     {
@@ -267,6 +279,59 @@ export async function getTransactionsByMethod(
     { $sort: { total: -1 } },
   ]);
   return rows.map((r) => ({ method: r._id ?? "other", total: r.total }));
+}
+
+export type TransactionsByTeam = {
+  teamId: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  total: number;
+};
+
+export async function getTransactionsByTeam(
+  workspaceId: WorkspaceId,
+  days = 90
+): Promise<TransactionsByTeam[]> {
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  const rows = await Transaction.aggregate<{ _id: Types.ObjectId | null; total: number }>([
+    {
+      $match: {
+        workspaceId,
+        paidAt: { $gte: start },
+        type: { $in: ["deposit", "balance"] },
+      },
+    },
+    { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
+    { $sort: { total: -1 } },
+  ]);
+
+  // Drop the null-teamId bucket — only show real teams.
+  const withTeam = rows.filter((r) => r._id != null) as { _id: Types.ObjectId; total: number }[];
+  if (withTeam.length === 0) return [];
+
+  const teamIds = withTeam.map((r) => r._id);
+  const teams = await Team.find({ workspaceId, _id: { $in: teamIds } })
+    .select({ _id: 1, name: 1, color: 1, isActive: 1 })
+    .lean();
+
+  const teamMap = new Map(teams.map((t) => [t._id.toString(), t]));
+
+  return withTeam.flatMap((r) => {
+    const team = teamMap.get(r._id.toString());
+    if (!team) return [];
+    return [
+      {
+        teamId: r._id.toString(),
+        name: team.name,
+        color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
+        isActive: team.isActive,
+        total: r.total,
+      },
+    ];
+  });
 }
 
 export type RevenueComparison = {

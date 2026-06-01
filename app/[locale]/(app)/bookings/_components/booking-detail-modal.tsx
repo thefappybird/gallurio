@@ -55,6 +55,7 @@ import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
+import type { BookingTeamOption } from "../_data/team-options";
 import { EditableField, type FieldHandle } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
 import { BookingHistoryDialog } from "./booking-history-dialog";
@@ -64,7 +65,7 @@ import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients
 import { getClientByIdAction } from "@/lib/actions/clients";
 import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
-import type { ShiftHit } from "./booking-wizard-steps/event-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 import {
   BOOKING_STATUSES,
   EVENT_TYPES,
@@ -95,6 +96,7 @@ type BookingDoc = {
   client: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventType: string;
   status: string;
+  teamId: string | null;
   sessions: SessionDoc[];
   firstSessionStart: string;
   lastSessionEnd: string;
@@ -106,6 +108,8 @@ type BookingDoc = {
 type Props = {
   bookingId: string;
   locale: string;
+  teams?: BookingTeamOption[];
+  writableTeams?: BookingTeamOption[];
 };
 
 type PendingChanges = Record<string, string | number | null>;
@@ -149,7 +153,7 @@ const NESTED_TO_DOTTED: Record<string, EditableKey> = {
   "amount.currency": "amount.currency",
 };
 
-export function BookingDetailModal({ bookingId, locale }: Props) {
+export function BookingDetailModal({ bookingId, locale, teams = [], writableTeams = [] }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1144,7 +1148,6 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
           loading={loading}
           locale={locale}
           disabled={saving}
-          eventTypeOptions={eventTypeOptions}
           onCommit={commitField}
           onDiscard={discardField}
           onEditAll={() => {
@@ -1178,6 +1181,9 @@ export function BookingDetailModal({ bookingId, locale }: Props) {
               editorResetNonce={editorResetNonce}
               locale={locale}
               reassignedClient={reassignedClient}
+              eventTypeOptions={eventTypeOptions}
+              teams={teams}
+              writableTeams={writableTeams}
               onCommit={commitField}
               onDiscard={discardField}
               onReassign={(c) => {
@@ -1367,7 +1373,6 @@ function DialogHeaderBar({
   loading,
   locale,
   disabled,
-  eventTypeOptions,
   onCommit,
   onDiscard,
   onEditAll,
@@ -1378,7 +1383,6 @@ function DialogHeaderBar({
   loading: boolean;
   locale: string;
   disabled: boolean;
-  eventTypeOptions: { value: string; label: string }[];
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
@@ -1386,12 +1390,14 @@ function DialogHeaderBar({
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
-  const tEvent = useTranslations("app.bookings.eventTypes");
   const tStatus = useTranslations("app.bookings.statusValues");
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  // Status is a read-only pill by default; the dropdown is only mounted after
+  // the user clicks the pencil (mirrors the EditableField reveal pattern).
+  const [editingStatus, setEditingStatus] = useState(false);
 
   let outstanding = 0;
   let currency = "PHP";
@@ -1405,11 +1411,9 @@ function DialogHeaderBar({
   const isOverdue = booking ? outstanding > 0 : false;
 
   const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
-  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking?.eventType ?? "";
   const effectiveStatus =
     (pending["status"] as string | undefined) ?? booking?.status ?? "";
   const hasTitlePending = "title" in pending;
-  const hasEventTypePending = "eventType" in pending;
   const hasStatusPending = "status" in pending;
   const isCancelled = booking?.status === "cancelled";
 
@@ -1444,16 +1448,14 @@ function DialogHeaderBar({
     if (hasTitlePending) onDiscard("title");
   }
 
-  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
-
   return (
     <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         {loading ? (
           <Skeleton className="h-5 w-48" />
         ) : (
-          <DialogTitle>
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <DialogTitle className="min-w-0 text-base font-semibold">
               {editingTitle ? (
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <Input
@@ -1491,121 +1493,115 @@ function DialogHeaderBar({
                   </Button>
                 </div>
               ) : (
-                <>
+                <button
+                  type="button"
+                  onClick={startTitleEdit}
+                  disabled={disabled || isCancelled}
+                  className={cn(
+                    "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
+                    "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
+                    "disabled:pointer-events-none disabled:opacity-60",
+                    hasTitlePending && "text-brand"
+                  )}
+                  aria-label={t("editTitle")}
+                >
+                  <span className="truncate">{effectiveTitle}</span>
+                  <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
+                  {hasTitlePending ? (
+                    <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                  ) : null}
+                </button>
+              )}
+            </DialogTitle>
+
+            {/* Status pill — read-only by default; the dropdown is only mounted
+                after the pencil is clicked (reveal pattern). Rendered as a
+                sibling of the heading so its label never pollutes the heading's
+                accessible name. */}
+            {booking ? (
+              <div className="relative shrink-0">
+                {editingStatus && !isCancelled ? (
+                  <Select
+                    value={effectiveStatus}
+                    defaultOpen
+                    onValueChange={(v) => {
+                      onCommit("status", v);
+                      if (hasStatusPending && v === booking.status)
+                        onDiscard("status");
+                      setEditingStatus(false);
+                    }}
+                    onOpenChange={(o) => {
+                      if (!o) setEditingStatus(false);
+                    }}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                        hasStatusPending
+                          ? "border-brand bg-brand/10 text-brand"
+                          : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                      )}
+                      aria-label={t("status")}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          className="size-2 shrink-0"
+                          style={
+                            statusColor
+                              ? { backgroundColor: statusColor }
+                              : undefined
+                          }
+                        />
+                        <SelectValue>{statusLabel}</SelectValue>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
                   <button
                     type="button"
-                    onClick={startTitleEdit}
+                    onClick={() => !isCancelled && setEditingStatus(true)}
                     disabled={disabled || isCancelled}
                     className={cn(
-                      "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
-                      "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
-                      "disabled:pointer-events-none disabled:opacity-60",
-                      hasTitlePending && "text-brand"
+                      "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
+                      hasStatusPending
+                        ? "border-brand bg-brand/10 text-brand"
+                        : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
                     )}
-                    aria-label={t("editTitle")}
+                    aria-label={t("editStatus")}
                   >
-                    <span className="truncate">{effectiveTitle}</span>
-                    <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
-                    {hasTitlePending ? (
-                      <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0"
+                      style={
+                        statusColor
+                          ? { backgroundColor: statusColor }
+                          : undefined
+                      }
+                    />
+                    <span>{statusLabel}</span>
+                    {!isCancelled ? (
+                      <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
                     ) : null}
                   </button>
-
-                  {/* Event-type pill */}
-                  {booking ? (
-                    <div className="relative shrink-0">
-                      <Select
-                        value={effectiveEventType}
-                        onValueChange={(v) => {
-                          onCommit("eventType", v);
-                          if (hasEventTypePending && v === booking.eventType)
-                            onDiscard("eventType");
-                        }}
-                        disabled={disabled || isCancelled}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                            hasEventTypePending
-                              ? "border-brand bg-brand/10 text-brand"
-                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                          )}
-                          aria-label={t("editEventType")}
-                        >
-                          <SelectValue>{eventTypeLabel}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {eventTypeOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {hasEventTypePending ? (
-                        <span
-                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {/* Status pill — editable dropdown, mirrors the event-type
-                      pill but keeps the status color dot. */}
-                  {booking ? (
-                    <div className="relative shrink-0">
-                      <Select
-                        value={effectiveStatus}
-                        onValueChange={(v) => {
-                          onCommit("status", v);
-                          if (hasStatusPending && v === booking.status)
-                            onDiscard("status");
-                        }}
-                        disabled={disabled || isCancelled}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                            hasStatusPending
-                              ? "border-brand bg-brand/10 text-brand"
-                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                          )}
-                          aria-label={t("status")}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <span
-                              aria-hidden
-                              className="size-2 shrink-0"
-                              style={
-                                statusColor
-                                  ? { backgroundColor: statusColor }
-                                  : undefined
-                              }
-                            />
-                            <SelectValue>{statusLabel}</SelectValue>
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {hasStatusPending ? (
-                        <span
-                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </DialogTitle>
+                )}
+                {hasStatusPending ? (
+                  <span
+                    className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                    aria-hidden
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1678,6 +1674,9 @@ function BookingTabs({
   editorResetNonce,
   locale,
   reassignedClient,
+  eventTypeOptions,
+  teams,
+  writableTeams,
   onCommit,
   onDiscard,
   onReassign,
@@ -1711,6 +1710,9 @@ function BookingTabs({
   editorResetNonce: number;
   locale: string;
   reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
+  eventTypeOptions: { value: string; label: string }[];
+  teams: BookingTeamOption[];
+  writableTeams: BookingTeamOption[];
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
@@ -1796,6 +1798,26 @@ function BookingTabs({
   // Hide the "Change client" trigger up front to avoid a foreseeable 422.
   const isMultiSession = booking.sessions.length > 1;
 
+  const tWiz = useTranslations("app.bookings.wizard");
+  const tTeam = useTranslations("app.bookings.teamPicker");
+  const isCancelled = booking.status === "cancelled";
+
+  // Team is editable only when the caller can choose among >1 writable teams.
+  // Options are the writable (active, owned/led) teams; the saved display name
+  // is resolved from the full `teams` list so a booking assigned to a team the
+  // user can't write to (or an inactive one) still shows its real name.
+  const showTeamField = writableTeams.length > 1;
+  const teamOptions = useMemo(
+    () => writableTeams.map((tm) => ({ value: tm.id, label: tm.name })),
+    [writableTeams]
+  );
+  const teamDisplay = (v: string | number | null | undefined) => {
+    if (!v) return "—";
+    const tm = teams.find((t) => t.id === String(v));
+    if (!tm) return "—";
+    return tm.isActive ? tm.name : `${tm.name} (${tTeam("inactive")})`;
+  };
+
   return (
     <Tabs defaultValue="client">
       {/* Same subtle base treatment as the client detail modal's tabs (bare
@@ -1806,11 +1828,11 @@ function BookingTabs({
         <TabsTab value="client" className="min-h-11">
           {t("client")}
         </TabsTab>
-        <TabsTab value="event" className="min-h-11">
-          {t("event")}
+        <TabsTab value="eventPricing" className="min-h-11">
+          {t("eventPricing")}
         </TabsTab>
-        <TabsTab value="pricing" className="min-h-11">
-          {t("pricing")}
+        <TabsTab value="sessionsLocation" className="min-h-11">
+          {t("sessionsLocation")}
         </TabsTab>
         <TabsTab value="activity" className="min-h-11">
           {t("activity")}
@@ -1905,35 +1927,93 @@ function BookingTabs({
         </div>
       </TabsPanel>
 
-      <TabsPanel value="event">
-        <div className="flex flex-col gap-1 py-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {tFields("location")}
-          </span>
-          <LocationPicker
-            value={{
-              address:
-                "location.address" in pending
-                  ? ((pending["location.address"] as string) ?? "")
-                  : (booking.location?.address ?? ""),
-              lat:
-                "location.lat" in pending
-                  ? (pending["location.lat"] as number | null)
-                  : (booking.location?.lat ?? null),
-              lng:
-                "location.lng" in pending
-                  ? (pending["location.lng"] as number | null)
-                  : (booking.location?.lng ?? null),
-            }}
-            onChange={(v) => {
-              onCommit("location.address", v.address);
-              onCommit("location.lat", v.lat);
-              onCommit("location.lng", v.lng);
-            }}
-            disabled={disabled}
+      {/* eventPricing: event type + team (side by side) then pricing fields.
+          Both event type and team use the pill + pencil reveal pattern — the
+          dropdown only mounts once the user clicks the pencil. */}
+      <TabsPanel value="eventPricing">
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          <EditableField
+            label={tFields("eventType")}
+            type="select"
+            options={eventTypeOptions}
+            {...get("eventType")}
+            onCommit={(v) => onCommit("eventType", v)}
+            onDiscardPending={() => onDiscard("eventType")}
+            disabled={disabled || isCancelled}
+            editKey="eventType"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
           />
+          {showTeamField ? (
+            <EditableField
+              label={tWiz("teamLabel")}
+              type="select"
+              options={teamOptions}
+              formatDisplay={teamDisplay}
+              {...get("teamId")}
+              onCommit={(v) => onCommit("teamId", v || null)}
+              onDiscardPending={() => onDiscard("teamId")}
+              disabled={disabled || isCancelled}
+              editKey="teamId"
+              registerHandle={registerFieldHandle}
+              onEditingChange={onFieldEditingChange}
+            />
+          ) : null}
         </div>
 
+        <SectionHeader label={tSections("pricing")} />
+
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+          <EditableField
+            label={tFields("total")}
+            type="money"
+            currency={currency}
+            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
+            {...get("amount.total")}
+            onCommit={(v) => onCommit("amount.total", v)}
+            onDiscardPending={() => onDiscard("amount.total")}
+            disabled={disabled}
+            editKey="amount.total"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+          <EditableField
+            label={tFields("deposit")}
+            type="money"
+            currency={currency}
+            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
+            {...get("amount.deposit")}
+            onCommit={(v) => onCommit("amount.deposit", v)}
+            onDiscardPending={() => onDiscard("amount.deposit")}
+            disabled={disabled}
+            validate={(v) => {
+              const n = Number(v);
+              if (Number.isFinite(n) && n > total) {
+                return tFields("depositExceedsTotal");
+              }
+              return null;
+            }}
+            editKey="amount.deposit"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+          <EditableField
+            label={tFields("currency")}
+            type="select"
+            options={currencyOptions}
+            {...get("amount.currency")}
+            onCommit={(v) => onCommit("amount.currency", v)}
+            onDiscardPending={() => onDiscard("amount.currency")}
+            disabled={disabled}
+            editKey="amount.currency"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+        </div>
+      </TabsPanel>
+
+      {/* sessionsLocation: sessions editor first, then location */}
+      <TabsPanel value="sessionsLocation">
         <SectionHeader label={tSections("schedule")} />
 
         {/* Sessions list — inline-editable cards */}
@@ -1961,7 +2041,8 @@ function BookingTabs({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2">
+        {/* Sessions list — only this region scrolls (mirrors the wizard). */}
+        <div className="flex max-h-100 flex-col gap-2 overflow-y-auto pr-1">
           {visibleSessions.map((s, idx) => {
             const originalIdx = (booking?.sessions ?? []).findIndex(
               (orig) =>
@@ -2105,54 +2186,31 @@ function BookingTabs({
           <PlusIcon className="size-4" />
           {tSessions("add")}
         </button>
-      </TabsPanel>
 
-      <TabsPanel value="pricing">
-        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-          <EditableField
-            label={tFields("total")}
-            type="money"
-            currency={currency}
-            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
-            {...get("amount.total")}
-            onCommit={(v) => onCommit("amount.total", v)}
-            onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled}
-            editKey="amount.total"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
-          />
-          <EditableField
-            label={tFields("deposit")}
-            type="money"
-            currency={currency}
-            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
-            {...get("amount.deposit")}
-            onCommit={(v) => onCommit("amount.deposit", v)}
-            onDiscardPending={() => onDiscard("amount.deposit")}
-            disabled={disabled}
-            validate={(v) => {
-              const n = Number(v);
-              if (Number.isFinite(n) && n > total) {
-                return tFields("depositExceedsTotal");
-              }
-              return null;
+        {/* Location — below sessions */}
+        <SectionHeader label={tFields("location")} />
+        <div className="flex flex-col gap-1 py-1.5">
+          <LocationPicker
+            value={{
+              address:
+                "location.address" in pending
+                  ? ((pending["location.address"] as string) ?? "")
+                  : (booking.location?.address ?? ""),
+              lat:
+                "location.lat" in pending
+                  ? (pending["location.lat"] as number | null)
+                  : (booking.location?.lat ?? null),
+              lng:
+                "location.lng" in pending
+                  ? (pending["location.lng"] as number | null)
+                  : (booking.location?.lng ?? null),
             }}
-            editKey="amount.deposit"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
-          />
-          <EditableField
-            label={tFields("currency")}
-            type="select"
-            options={currencyOptions}
-            {...get("amount.currency")}
-            onCommit={(v) => onCommit("amount.currency", v)}
-            onDiscardPending={() => onDiscard("amount.currency")}
+            onChange={(v) => {
+              onCommit("location.address", v.address);
+              onCommit("location.lat", v.lat);
+              onCommit("location.lng", v.lng);
+            }}
             disabled={disabled}
-            editKey="amount.currency"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
           />
         </div>
       </TabsPanel>
