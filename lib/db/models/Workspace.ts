@@ -20,20 +20,14 @@ export type PlanTier = (typeof PLAN_TIERS)[number];
 export const PUBLIC_PAGE_TEMPLATES = PORTFOLIO_TEMPLATE_IDS;
 export type PublicPageTemplate = (typeof PUBLIC_PAGE_TEMPLATES)[number];
 
-// HitPay recurring statuses we care about. HitPay's API documents:
-// scheduled / active / cancelled / completed / closed / failed.
-// We map them to a compact internal set; `pending` covers the "redirected
-// but not yet captured" window where the user has opened the HitPay page
-// but not finished authorization.
-export const HITPAY_RECURRING_STATUSES = [
-  "pending",
+export const PADDLE_SUBSCRIPTION_STATUSES = [
   "active",
-  "cancelled",
-  "completed",
-  "closed",
-  "failed",
+  "canceled",
+  "past_due",
+  "paused",
+  "trialing",
 ] as const;
-export type HitpayRecurringStatus = (typeof HITPAY_RECURRING_STATUSES)[number];
+export type PaddleSubscriptionStatus = (typeof PADDLE_SUBSCRIPTION_STATUSES)[number];
 
 // Brand-kit field definition, reused for `publicPage.brandKit` and each entry
 // in `publicPage.savedThemes`. `fontPair` stays for back-compat; `headingFont`
@@ -185,18 +179,17 @@ const workspaceSchema = new Schema(
     customDomain: { type: String, default: null },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 
-    // --- HitPay subscription (Gallurio billing the tenant) -------------------
-    // HitPay does not maintain a separate "customer" object the way Stripe or
-    // Xendit do — recurring-billing rows carry the customer email directly.
-    // So we store only the recurring-billing id and our own reference.
-    hitpayRecurringBillingId: { type: String, default: null, index: true, sparse: true },
-    hitpayRecurringReference: { type: String, default: null },
-    hitpayRecurringStatus: {
+    // Paddle subscription — Gallurio billing the tenant (Merchant of Record).
+    paddleSubscriptionId: { type: String, default: null, index: true, sparse: true },
+    paddleCustomerId: { type: String, default: null, index: true, sparse: true },
+    paddleSubscriptionStatus: {
       type: String,
-      enum: [...HITPAY_RECURRING_STATUSES, null],
+      enum: [...PADDLE_SUBSCRIPTION_STATUSES, null],
       default: null,
     },
-    hitpayCurrentPeriodEnd: { type: Date, default: null },
+    paddleCurrentPeriodEnd: { type: Date, default: null },
+    // In-flight durable checkout workflow run id; cleared on activation.
+    paddleCheckoutWorkflowRunId: { type: String, default: null },
 
     trialEndsAt: { type: Date, default: null },
     onboardingCompletedAt: { type: Date, default: null },
