@@ -112,7 +112,8 @@ export async function PATCH(req: Request, { params }: Params) {
       })
         .select({ _id: 1, isActive: 1 })
         .lean();
-      if (t) team = { id: String(t._id), isActive: t.isActive };
+      // Missing isActive (legacy team) counts as active — .lean() skips defaults.
+      if (t) team = { id: String(t._id), isActive: t.isActive ?? true };
     }
     const allowed = canEditBooking(
       { role: ctx.role, memberships },
@@ -138,7 +139,7 @@ export async function PATCH(req: Request, { params }: Params) {
     if (!target) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
-    if (!target.isActive) {
+    if (target.isActive === false) {
       return NextResponse.json(
         { error: "Cannot assign a booking to a deactivated team" },
         { status: 400 }

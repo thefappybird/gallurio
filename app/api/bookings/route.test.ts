@@ -133,6 +133,16 @@ describe("POST /api/bookings", () => {
     expect(await Booking.countDocuments({ workspaceId })).toBe(0);
   });
 
+  it("treats a legacy team with a MISSING isActive field as active (not deactivated)", async () => {
+    // Teams created before Phase 4 have no isActive field; a .lean() read returns
+    // undefined, which must NOT be treated as deactivated.
+    await Team.updateOne({ _id: teamId }, { $unset: { isActive: "" } });
+    const { POST } = await load();
+    const res = await POST(makeReq(makeBody()));
+    expect(res.status).toBe(201);
+    expect(String((await Booking.findOne({ workspaceId }).lean())?.teamId)).toBe(String(teamId));
+  });
+
   it("forbids a non-owner who is only a member of the team (view-only)", async () => {
     auth.role = "staff";
     auth.memberships = [{ teamId: String(teamId), role: "member" }];

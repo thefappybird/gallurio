@@ -819,7 +819,7 @@ export function BookingWizardModal({
                   />
                 ) : null}
                 {current.id === "review" ? (
-                  <ReviewStep values={values} locale={locale} />
+                  <ReviewStep values={values} locale={locale} teams={teams} />
                 ) : null}
               </div>
             ) : null}

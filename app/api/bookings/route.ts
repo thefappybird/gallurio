@@ -37,7 +37,10 @@ export async function POST(req: Request) {
   if (!team) {
     return NextResponse.json({ error: "Team not found" }, { status: 404 });
   }
-  if (!team.isActive) {
+  // Treat a missing isActive (legacy teams created before the field existed) as
+  // active — only an EXPLICIT false counts as deactivated. (.lean() doesn't apply
+  // the schema default.)
+  if (team.isActive === false) {
     return NextResponse.json(
       { error: "Cannot assign a new booking to a deactivated team" },
       { status: 400 }
