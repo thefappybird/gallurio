@@ -262,10 +262,27 @@ All documents include `orgId` (indexed) + `createdAt` + `updatedAt`. All non-sha
   clientId,                        // ref clients
   title,                           // "Sarah & Mark Wedding"
   eventType,                       // "wedding" | "corporate" | ...
-  status: "inquiry"|"quoted"|"booked"|"completed"|"cancelled",
+  status: "draft"|"quoted"|"booked"|"completed"|"cancelled",
+  // draft    = created from inquiry, invisible to calendar until owner quotes
+  // quoted   = owner sent quote; active negotiation (may be multiple rounds)
+  // booked   = client confirmed; appears in calendar
+  // completed / cancelled = terminal states
   startAt, endAt,
   location: { address, lat, lng },
   amount: { total, deposit, currency },
+  quotes: [{                       // one entry per negotiation round
+    round: Number,                 // 1-indexed
+    ownerAmount: Number,
+    ownerNotes: String,
+    sentAt: Date,
+    clientResponse: "confirmed"|"countered"|null,
+    clientCounterAmount: Number|null,
+    clientCounterNotes: String|null,
+    clientResponseAt: Date|null
+  }],
+  currentQuoteRound: Number,       // 0 = no quote sent yet
+  activeQuoteHookToken: String|null, // Vercel Workflow hook token for current wait
+  createdFromInquiryId: ObjectId|null,
   staffIds: [ObjectId],            // v1.1
   notes,
   customFields: { ... },           // org-defined
@@ -511,16 +528,54 @@ Two tabs:
 
 Honeypot + per-IP rate limit (5 submissions per 10 minutes). UTM/referrer captured silently from the URL and `document.referrer`. Validated by `lib/validators/inquiry.ts` on both client and server.
 
-### Inquiry → draft Booking conversion model
+### Booking Inquiry Lifecycle (3-Stage Negotiation)
 
-Every form submission, inside a single Mongo transaction:
+Every inquiry follows a structured 3-stage lifecycle. Stages 2–3 are powered by the **Vercel Workflow DevKit** for durable, resumable state. Full spec: [`docs/booking-inquiry-lifecycle.md`](docs/booking-inquiry-lifecycle.md).
+
+---
+
+**Stage 1 — Inquiry Submission** (Client → System)
+
+Public form on `/w/[orgSlug]` posts to `POST /api/inquiries`. Inside a single Mongo transaction:
 
 1. Match-or-create `Client` by `{ workspaceId, email }`.
-2. Create `Inquiry` (status `new`, source UTM/referrer captured, linked to client).
-3. Create `Booking` with `status: "draft"`, `createdFromInquiryId`, and all event details pre-filled.
+2. Create `Inquiry` (status `new`, UTM/referrer captured, linked to client).
+3. Create `Booking` with `status: "draft"`, `createdFromInquiryId`, event details pre-filled, `currentQuoteRound: 0`.
 4. Link `inquiry.draftBookingId = booking._id`.
 
-Default bookings queries filter `status: { $ne: "draft" }` so drafts don't pollute the calendar/list until the owner approves. The lead inbox at `/inquiries/[id]` exposes a one-click **Approve booking** action that promotes the draft to `pending`, sets `inquiry.status = "converted"`, and revalidates the calendar.
+Default bookings queries filter `status: { $ne: "draft" }`. Owner receives notification email.
+
+---
+
+**Stage 2 — Owner Sends Quote** (Lead Inbox → Client email)
+
+Owner opens `/inquiries`, reviews the lead, clicks **"Send Quote"**. Modal collects: package description, total amount (PHP), deposit required, personal note. On submit:
+
+- `Booking.status` → `"quoted"`, `Inquiry.status` → `"contacted"`
+- New entry appended to `Booking.quotes[]`
+- Vercel Workflow starts (or resumes for re-quote rounds): generates deterministic hook token `booking-client-{bookingId}-r{n}`, then suspends
+- Email sent to client: quote summary + **[Confirm Booking]** + **[Counter Offer]** linking to `/w/[orgSlug]/quote/{bookingId}?token={hookToken}`
+
+---
+
+**Stage 3 — Client Response** (Branded portal → Loop)
+
+Client opens `/w/[orgSlug]/quote/{bookingId}?token={hookToken}`. No account required — the token is the auth. Client sees full quote details.
+
+**Path A — Confirm:** hook fires → `Booking.status` = `"booked"`, `Inquiry.status` = `"converted"`, owner notified. Workflow ends.
+
+**Path B — Counter Offer:** client submits (proposed budget, notes, optional date change) → owner notified in Lead Inbox. Owner chooses:
+- **Accept counter** → `"booked"` ✓
+- **Re-quote** → new email to client, round increments, loop back to Stage 2
+- **Decline** → `"cancelled"`, polite decline email
+
+No timeout at any stage. The workflow waits indefinitely for each party.
+
+---
+
+**Hook token scheme** (deterministic — survives deploys):
+- Client response: `booking-client-{bookingId}-r{n}`
+- Owner decision: `booking-owner-{bookingId}-r{n}`
 
 ### SEO
 
