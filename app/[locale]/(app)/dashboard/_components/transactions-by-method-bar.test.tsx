@@ -21,7 +21,7 @@ describe("TransactionsByMethodBar", () => {
     renderWithProviders(
       <TransactionsByMethodBar
         data={[
-          { method: "hitpay", total: 20_000 },
+          { method: "paddle", total: 20_000 },
           { method: "cash", total: 5_000 },
         ]}
         currency="PHP"

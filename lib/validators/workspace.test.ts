@@ -4,7 +4,7 @@ import {
   brandingStepSchema,
   slugSchema,
   SUPPORTED_CURRENCIES,
-  HITPAY_COUNTRY_VALUES,
+  BILLING_COUNTRY_VALUES,
   COUNTRY_TO_CURRENCY,
 } from "./workspace";
 
@@ -77,8 +77,8 @@ describe("businessStepSchema", () => {
 });
 
 describe("currency / country tables stay in sync", () => {
-  it("every HitPay country maps to a supported currency", () => {
-    for (const country of HITPAY_COUNTRY_VALUES) {
+  it("every billing country maps to a supported currency", () => {
+    for (const country of BILLING_COUNTRY_VALUES) {
       const currency = COUNTRY_TO_CURRENCY[country];
       expect(SUPPORTED_CURRENCIES).toContain(currency);
     }
@@ -89,6 +89,47 @@ describe("currency / country tables stay in sync", () => {
     for (const currency of SUPPORTED_CURRENCIES) {
       expect(reachable.has(currency)).toBe(true);
     }
+  });
+
+  it("Gulf countries each map to their correct currency", () => {
+    expect(COUNTRY_TO_CURRENCY["AE"]).toBe("AED");
+    expect(COUNTRY_TO_CURRENCY["SA"]).toBe("SAR");
+    expect(COUNTRY_TO_CURRENCY["QA"]).toBe("QAR");
+    expect(COUNTRY_TO_CURRENCY["KW"]).toBe("KWD");
+    expect(COUNTRY_TO_CURRENCY["OM"]).toBe("OMR");
+    expect(COUNTRY_TO_CURRENCY["BH"]).toBe("BHD");
+  });
+
+  it("Gulf currencies are accepted by the currency zod enum", () => {
+    const { currency } = businessStepSchema.shape;
+    expect(currency.safeParse("AED").success).toBe(true);
+    expect(currency.safeParse("SAR").success).toBe(true);
+    expect(currency.safeParse("QAR").success).toBe(true);
+    expect(currency.safeParse("KWD").success).toBe(true);
+    expect(currency.safeParse("OMR").success).toBe(true);
+    expect(currency.safeParse("BHD").success).toBe(true);
+  });
+
+  it("Gulf countries are accepted by the country zod enum", () => {
+    const { country } = businessStepSchema.shape;
+    expect(country.safeParse("AE").success).toBe(true);
+    expect(country.safeParse("SA").success).toBe(true);
+    expect(country.safeParse("QA").success).toBe(true);
+    expect(country.safeParse("KW").success).toBe(true);
+    expect(country.safeParse("OM").success).toBe(true);
+    expect(country.safeParse("BH").success).toBe(true);
+  });
+
+  it("rejects unsupported country codes", () => {
+    const { country } = businessStepSchema.shape;
+    expect(country.safeParse("ZZ").success).toBe(false);
+    expect(country.safeParse("JP").success).toBe(false);
+  });
+
+  it("rejects unsupported currency codes", () => {
+    const { currency } = businessStepSchema.shape;
+    expect(currency.safeParse("XYZ").success).toBe(false);
+    expect(currency.safeParse("JPY").success).toBe(false);
   });
 });
 

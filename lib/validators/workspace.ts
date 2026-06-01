@@ -16,12 +16,12 @@ export const BUSINESS_TYPE_VALUES = [
   "other",
 ] as const;
 
-// HitPay's supported merchant markets (sandbox + live).
-// Source: https://hitpay.zendesk.com/hc/en-us/articles/18100524521241
-// PH leads because that's Gallurio's MVP launch market. en-only markets
-// (AU/CA/NZ/UK/US) get the English locale; SEA markets get their primary
-// language — see lib/i18n/localeForCountry.ts.
-export const HITPAY_COUNTRY_VALUES = [
+// Paddle-supported merchant markets. PH leads because that's Gallurio's MVP
+// launch market. SEA markets map to their primary language; en-only markets
+// (AU/CA/NZ/UK/US/SG) stay on English; Gulf markets fall back to English
+// until the Arabic locale ships — see lib/i18n/localeForCountry.ts.
+// Gulf currencies KWD/BHD/OMR are 3-decimal currencies.
+export const BILLING_COUNTRY_VALUES = [
   "PH",
   "SG",
   "MY",
@@ -32,8 +32,14 @@ export const HITPAY_COUNTRY_VALUES = [
   "NZ",
   "GB",
   "US",
+  "AE",
+  "SA",
+  "QA",
+  "KW",
+  "OM",
+  "BH",
 ] as const;
-export type HitpayCountry = (typeof HITPAY_COUNTRY_VALUES)[number];
+export type SupportedCountry = (typeof BILLING_COUNTRY_VALUES)[number];
 
 export const SUPPORTED_CURRENCIES = [
   "PHP",
@@ -46,10 +52,16 @@ export const SUPPORTED_CURRENCIES = [
   "NZD",
   "GBP",
   "USD",
+  "AED",
+  "SAR",
+  "QAR",
+  "KWD",
+  "OMR",
+  "BHD",
 ] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 
-export const COUNTRY_TO_CURRENCY: Record<HitpayCountry, SupportedCurrency> = {
+export const COUNTRY_TO_CURRENCY: Record<SupportedCountry, SupportedCurrency> = {
   PH: "PHP",
   SG: "SGD",
   MY: "MYR",
@@ -60,6 +72,12 @@ export const COUNTRY_TO_CURRENCY: Record<HitpayCountry, SupportedCurrency> = {
   NZ: "NZD",
   GB: "GBP",
   US: "USD",
+  AE: "AED",
+  SA: "SAR",
+  QA: "QAR",
+  KW: "KWD",
+  OM: "OMR",
+  BH: "BHD",
 };
 
 const hexColor = z
@@ -72,8 +90,8 @@ export const businessStepSchema = z.object({
   name: z.string().min(2, "At least 2 characters").max(80, "At most 80 characters").trim(),
   slug: slugSchema,
   businessType: z.enum(BUSINESS_TYPE_VALUES),
-  country: z.enum(HITPAY_COUNTRY_VALUES, {
-    errorMap: () => ({ message: "Pick a country where HitPay operates" }),
+  country: z.enum(BILLING_COUNTRY_VALUES, {
+    errorMap: () => ({ message: "Pick a supported country" }),
   }),
   currency: z.enum(SUPPORTED_CURRENCIES, {
     errorMap: () => ({ message: "Pick a supported currency" }),

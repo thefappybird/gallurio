@@ -84,7 +84,7 @@ async function seedTransaction(
     amount,
     currency: "PHP",
     type,
-    method: "hitpay",
+    method: "paddle",
     paidAt,
   });
 }
@@ -120,7 +120,7 @@ describe("getKpiSnapshot", () => {
       amount: 99_000,
       currency: "PHP",
       type: "subscription",
-      method: "hitpay",
+      method: "paddle",
       paidAt: now,
     });
     const snap = await getKpiSnapshot(workspaceId);
@@ -351,7 +351,7 @@ describe("getEventTypeBreakdown", () => {
 describe("getTransactionsByMethod", () => {
   it("sums by method for transactions within the window", async () => {
     await seedTransaction(workspaceId, 10_000, daysFromNow(-5), "deposit");
-    await Transaction.updateMany({ workspaceId }, { method: "hitpay" });
+    await Transaction.updateMany({ workspaceId }, { method: "paddle" });
     await seedTransaction(workspaceId, 5_000, daysFromNow(-10), "balance");
     await seedTransaction(workspaceId, 2_000, daysFromNow(-95), "deposit");
     await Transaction.updateMany({ method: { $exists: false } }, { method: "cash" });
@@ -369,7 +369,7 @@ describe("getTransactionsByMethod", () => {
       amount: 9_999,
       currency: "PHP",
       type: "subscription",
-      method: "hitpay",
+      method: "paddle",
       paidAt: daysFromNow(-3),
     });
 
