@@ -20,9 +20,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ClientStep } from "./booking-wizard-steps/client-step";
-import { EventStep, type ShiftHit } from "./booking-wizard-steps/event-step";
-import { PricingStep } from "./booking-wizard-steps/pricing-step";
+import { EventPricingStep } from "./booking-wizard-steps/event-pricing-step";
+import { SessionsLocationStep } from "./booking-wizard-steps/sessions-location-step";
 import { ReviewStep } from "./booking-wizard-steps/review-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import type {
   WizardMode,
@@ -76,20 +77,20 @@ type Props = {
 };
 
 type StepDef = {
-  id: "client" | "event" | "pricing" | "review";
+  id: "client" | "eventPricing" | "sessionsLocation" | "review";
   fields: (keyof WizardValues | "amount.total" | "amount.deposit")[];
 };
 
 const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
-  { id: "event", fields: ["title", "eventType", "sessions", "location", "teamId"] },
-  { id: "pricing", fields: ["amount"] },
+  { id: "eventPricing", fields: ["title", "eventType", "teamId", "amount"] },
+  { id: "sessionsLocation", fields: ["sessions", "location"] },
   { id: "review", fields: [] },
 ];
 
 const MULTI_SESSION_STEPS: StepDef[] = [
-  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
-  { id: "pricing", fields: ["amount"] },
+  { id: "eventPricing", fields: ["title", "eventType", "amount"] },
+  { id: "sessionsLocation", fields: ["sessions", "location"] },
   { id: "review", fields: [] },
 ];
 
@@ -450,21 +451,20 @@ export function BookingWizardModal({
         return false;
       }
     }
-    if (step.id === "event") {
+    if (step.id === "eventPricing") {
       const title = watch("title");
-      const sessions = watch("sessions") ?? [];
       if (!title?.trim()) return false;
-      // Every session must have a start date.
-      if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
       // In create mode, a team must be selected.
       if (mode === "create" && !watch("teamId")) return false;
-      // Conflicts no longer block navigation — they are surfaced on final submit.
-    }
-    if (step.id === "pricing") {
       const { total, deposit } = watch("amount");
       if (typeof total !== "number" || total < 0) return false;
       if (typeof deposit !== "number" || deposit < 0) return false;
       if (deposit > total) return false;
+    }
+    if (step.id === "sessionsLocation") {
+      const sessions = watch("sessions") ?? [];
+      // Sessions must be non-empty and every session must have a start date.
+      if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
     }
     return rhfOk;
   }
@@ -486,8 +486,8 @@ export function BookingWizardModal({
     const ok = await validateStep(stepIndex);
     if (!ok) {
       markStepInvalid(stepIndex);
-      // Pricing's specific "deposit > total" surfaces as a top-of-footer error.
-      if (STEPS[stepIndex].id === "pricing") {
+      // Event & Pricing's specific "deposit > total" surfaces as a top-of-footer error.
+      if (STEPS[stepIndex].id === "eventPricing") {
         const { total, deposit } = watch("amount");
         if (deposit > total) setSubmitError(t("depositExceedsTotal"));
       }
@@ -591,7 +591,7 @@ export function BookingWizardModal({
     }
   }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz]);
 
-  const eventStepIndex = STEPS.findIndex((s) => s.id === "event");
+  const eventStepIndex = STEPS.findIndex((s) => s.id === "sessionsLocation");
 
   /**
    * Single source of truth for submit readiness.
@@ -795,8 +795,19 @@ export function BookingWizardModal({
                     clients={clients}
                   />
                 ) : null}
-                {current.id === "event" ? (
-                  <EventStep
+                {current.id === "eventPricing" ? (
+                  <EventPricingStep
+                    control={control}
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    errors={errors}
+                    teams={teams}
+                    mode={mode}
+                  />
+                ) : null}
+                {current.id === "sessionsLocation" ? (
+                  <SessionsLocationStep
                     control={control}
                     register={register}
                     watch={watch}
@@ -805,15 +816,6 @@ export function BookingWizardModal({
                     conflictsBySession={conflictsBySession}
                     loadingDates={loadingDates}
                     conflictCheckError={conflictCheckError}
-                    teams={teams}
-                    mode={mode}
-                  />
-                ) : null}
-                {current.id === "pricing" ? (
-                  <PricingStep
-                    control={control}
-                    register={register}
-                    errors={errors}
                   />
                 ) : null}
                 {current.id === "review" ? (
@@ -872,7 +874,7 @@ export function BookingWizardModal({
                     disabled={
                       submitting ||
                       !!loadError ||
-                      (STEPS[stepIndex].id === "event" &&
+                      (STEPS[stepIndex].id === "sessionsLocation" &&
                         (loadingDates.size > 0 ||
                           conflictCheckError ||
                           conflictsBySession.some((c) => c.length > 0)))

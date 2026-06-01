@@ -1,6 +1,15 @@
 import type { BookingStatus, EventType } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
+export type ShiftHit = {
+  id: string;
+  bookingId?: string;
+  sessionIndex?: number;
+  title: string;
+  shiftStart: string;
+  shiftEnd: string;
+};
+
 export type WizardClient =
   | { mode: "existing"; clientId: string; clientName: string }
   | { mode: "new"; name: string; email?: string | null; phone?: string | null };

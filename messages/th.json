@@ -411,6 +411,8 @@
           "client": "ลูกค้า",
           "event": "งาน",
           "pricing": "ราคา",
+          "eventPricing": "งาน & ราคา",
+          "sessionsLocation": "เซสชัน & สถานที่",
           "review": "ตรวจสอบ"
         },
         "client": {

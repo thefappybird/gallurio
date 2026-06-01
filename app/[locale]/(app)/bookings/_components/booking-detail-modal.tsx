@@ -66,7 +66,7 @@ import type { ClientRow } from "@/app/[locale]/(app)/clients/_components/clients
 import { getClientByIdAction } from "@/lib/actions/clients";
 import { ActivityTimeline } from "./activity-timeline";
 import type { ActivityEntry } from "./activity-types";
-import type { ShiftHit } from "./booking-wizard-steps/event-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 import {
   BOOKING_STATUSES,
   EVENT_TYPES,

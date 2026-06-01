@@ -64,12 +64,15 @@ function renderWizard() {
         defaultDate={TARGET_DATE}
         defaultCurrency="PHP"
         locale="en"
+        // A single-team id is pre-seeded so the Event & Pricing step passes
+        // teamId validation in create mode, allowing navigation to Sessions & Location.
+        teamId="507f1f77bcf86cd799439011"
       />
     </NextIntlClientProvider>
   );
 }
 
-/** Navigate from the client step to the event step by filling a new client name. */
+/** Navigate from the client step to the Event & Pricing step. */
 async function advanceToEventStep() {
   // The wizard opens on the client step. Switch to "Create new" tab.
   const createNewTab = screen.getByRole("button", { name: /create new/i });
@@ -84,9 +87,31 @@ async function advanceToEventStep() {
     fireEvent.click(nextBtn);
   });
 
-  // Confirm we're on the event step.
+  // Confirm we're on the Event & Pricing step.
   await waitFor(() => {
     expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+  });
+}
+
+/** Navigate from the client step all the way to the Sessions & Location step.
+ *  Fills the title field so the Event & Pricing step passes validation. */
+async function advanceToSessionsStep() {
+  await advanceToEventStep();
+
+  // Fill title so Event & Pricing step passes validation.
+  fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+    target: { value: "Test Booking" },
+  });
+
+  // Click Next — move to Sessions & Location step.
+  const nextBtn = screen.getByRole("button", { name: /next/i });
+  await act(async () => {
+    fireEvent.click(nextBtn);
+  });
+
+  // Confirm we're on the Sessions & Location step (sessions list visible).
+  await waitFor(() => {
+    expect(document.getElementById("wiz-startDate-0")).toBeInTheDocument();
   });
 }
 
@@ -95,14 +120,9 @@ describe("BookingWizardModal — conflict detection", () => {
     mockFetchWithConflict();
   });
 
-  it("shows conflict warning after fetch resolves on event step", async () => {
+  it("shows conflict warning after fetch resolves on sessions step", async () => {
     renderWizard();
-    await advanceToEventStep();
-
-    // Fill title so the step has valid required fields
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Repro Test" },
-    });
+    await advanceToSessionsStep();
 
     // defaultDate is already set to TARGET_DATE on mount, so the fetch for
     // shifts-on-date fires in the useEffect. Wait for the conflict banner.
@@ -120,11 +140,7 @@ describe("BookingWizardModal — conflict detection", () => {
 
   it("Next button IS disabled when conflicts exist (hard-block)", async () => {
     renderWizard();
-    await advanceToEventStep();
-
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Repro Test" },
-    });
+    await advanceToSessionsStep();
 
     // Wait for conflict detection
     await waitFor(
@@ -141,11 +157,7 @@ describe("BookingWizardModal — conflict detection", () => {
 
   it("clicking Next with a conflict does NOT advance — hard block", async () => {
     renderWizard();
-    await advanceToEventStep();
-
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Repro Test" },
-    });
+    await advanceToSessionsStep();
 
     await waitFor(
       () => {
@@ -158,8 +170,9 @@ describe("BookingWizardModal — conflict detection", () => {
     const nextBtn = screen.getByRole("button", { name: /next/i });
     expect(nextBtn).toBeDisabled();
 
-    // The event step content must still be visible (not advanced to pricing).
-    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    // The sessions step content must still be visible (not advanced to review).
+    expect(document.getElementById("wiz-startDate-0")).toBeInTheDocument();
+    // Total field lives on the previous Event & Pricing step — not in the DOM.
     expect(screen.queryByLabelText(/^total$/i)).not.toBeInTheDocument();
   });
 });
@@ -196,22 +209,13 @@ describe("BookingWizardModal — Issue 3: startDate watch is reactive on change"
           defaultDate={TARGET_DATE}
           defaultCurrency="PHP"
           locale="en"
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );
 
-    // Advance to event step.
-    const createNewTab = screen.getByRole("button", { name: /create new/i });
-    fireEvent.click(createNewTab);
-    fireEvent.change(screen.getByPlaceholderText(/emma carter/i), {
-      target: { value: "Test Client" },
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /next/i }));
-    });
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
-    });
+    // Advance to Sessions & Location step (sessions date input is there).
+    await advanceToSessionsStep();
 
     // Wait for the initial fetch for TARGET_DATE to complete.
     await waitFor(() => {
@@ -392,15 +396,13 @@ describe("BookingWizardModal — Issue 1A: conflict fires immediately on date ch
           mode="create"
           defaultCurrency="PHP"
           locale="en"
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );
 
-    await advanceToEventStep();
-
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Test Booking" },
-    });
+    // Navigate to Sessions & Location step (where conflict UI is rendered).
+    await advanceToSessionsStep();
 
     // Change start date — conflict fetch fires immediately via useWatch
     const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
@@ -454,15 +456,13 @@ describe("BookingWizardModal — Issue 1B: warning clears when date has no confl
           defaultDate={TARGET_DATE}
           defaultCurrency="PHP"
           locale="en"
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );
 
-    await advanceToEventStep();
-
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Test Booking" },
-    });
+    // Navigate to Sessions & Location step where conflict UI is rendered.
+    await advanceToSessionsStep();
 
     // Wait for conflict on TARGET_DATE
     await waitFor(
@@ -519,15 +519,13 @@ describe("BookingWizardModal — Issue 1C: loading state during fetch", () => {
           mode="create"
           defaultCurrency="PHP"
           locale="en"
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );
 
-    await advanceToEventStep();
-
-    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
-      target: { value: "Test Booking" },
-    });
+    // Navigate to Sessions & Location step where the loading indicator is shown.
+    await advanceToSessionsStep();
 
     // Change date to trigger a fetch
     const dateInput = document.getElementById("wiz-startDate-0") as HTMLInputElement;
@@ -616,7 +614,7 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
       expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
-    // Navigate to event step
+    // Navigate to Event & Pricing step first (matches /event/i).
     const eventStepBtn = screen.getByRole("button", { name: /event/i });
     await act(async () => {
       fireEvent.click(eventStepBtn);
@@ -624,6 +622,16 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+    });
+
+    // Navigate to Sessions & Location step (where startTime input lives).
+    const sessionsStepBtn = screen.getByRole("button", { name: /sessions/i });
+    await act(async () => {
+      fireEvent.click(sessionsStepBtn);
+    });
+
+    await waitFor(() => {
+      expect(document.getElementById("wiz-startTime-0")).not.toBeNull();
     });
 
     // Change startTime from 10:00 to 11:00
@@ -682,11 +690,13 @@ describe("BookingWizardModal — Item 5: add-session prefills next day", () => {
           defaultDate="2026-06-01"
           defaultCurrency="PHP"
           locale="en"
+          teamId="507f1f77bcf86cd799439011"
         />
       </NextIntlClientProvider>
     );
 
-    await advanceToEventStep();
+    // Navigate to Sessions & Location step where the sessions list lives.
+    await advanceToSessionsStep();
 
     // Session 0 startDate is pre-filled via defaultDate prop = "2026-06-01".
     // Verify it's present in DOM (reactive state from defaultValues).
@@ -912,13 +922,13 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
     });
 
-    // Navigate to event step.
-    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    // Navigate to Sessions & Location step (sessions date input is there).
+    const sessionsStepBtn = screen.getByRole("button", { name: /sessions/i });
     await act(async () => {
-      fireEvent.click(eventStepBtn);
+      fireEvent.click(sessionsStepBtn);
     });
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+      expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
 
     // Wait for the initial conflict-check fetch (for "2026-09-01").
@@ -1001,15 +1011,16 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /sessions/i })).toBeInTheDocument();
     });
 
-    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    // Navigate to Sessions & Location step.
+    const sessionsStepBtn2 = screen.getByRole("button", { name: /sessions/i });
     await act(async () => {
-      fireEvent.click(eventStepBtn);
+      fireEvent.click(sessionsStepBtn2);
     });
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+      expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
 
     // Initial date (2026-09-01) has no conflict — no warning should appear.
@@ -1175,24 +1186,24 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
-    // Event step: fill title and wait for conflict check to complete.
+    // Event & Pricing step: fill title and advance.
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
     });
     fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
       target: { value: "Test Shoot" },
     });
-    await waitFor(() => {
-      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
-    }, { timeout: 3000 });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
-    // Pricing step: advance.
+    // Sessions & Location step: wait for conflict check then advance.
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /next/i })).not.toBeDisabled();
+      expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
+    await waitFor(() => {
+      expect(screen.queryByText(/checking for conflicts/i)).not.toBeInTheDocument();
+    }, { timeout: 3000 });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
@@ -1268,16 +1279,16 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
     renderEditWizardWithInitialValues();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /sessions/i })).toBeInTheDocument();
     });
 
-    // Navigate to event step to trigger a date change that starts a fetch.
-    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    // Navigate to Sessions & Location step to trigger a date change that starts a fetch.
+    const sessionsStepBtnA = screen.getByRole("button", { name: /sessions/i });
     await act(async () => {
-      fireEvent.click(eventStepBtn);
+      fireEvent.click(sessionsStepBtnA);
     });
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+      expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
 
     // Change the date to a new value — this triggers a fetch that never resolves.
@@ -1331,16 +1342,16 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
     renderEditWizardWithInitialValues();
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /event/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /sessions/i })).toBeInTheDocument();
     });
 
-    // Navigate to event step.
-    const eventStepBtn = screen.getByRole("button", { name: /event/i });
+    // Navigate to Sessions & Location step.
+    const sessionsStepBtnB = screen.getByRole("button", { name: /sessions/i });
     await act(async () => {
-      fireEvent.click(eventStepBtn);
+      fireEvent.click(sessionsStepBtnB);
     });
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+      expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
 
     // Change date — triggers a fetch that returns a non-ok response, setting conflictCheckError.

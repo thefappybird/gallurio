@@ -411,6 +411,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
+          "eventPricing": "Event & Pricing",
+          "sessionsLocation": "Sessions & Location",
           "review": "Review"
         },
         "client": {

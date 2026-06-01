@@ -1,7 +1,7 @@
 import type { CalendarEvent } from "../booking-calendar";
 import type { Session } from "@/lib/bookings/session-edits";
-import type { ShiftHit } from "../booking-wizard-steps/event-step";
-export type { ShiftHit } from "../booking-wizard-steps/event-step";
+import type { ShiftHit } from "../booking-wizard-steps/types";
+export type { ShiftHit } from "../booking-wizard-steps/types";
 
 /**
  * Convert "HH:MM" string to minutes since midnight.

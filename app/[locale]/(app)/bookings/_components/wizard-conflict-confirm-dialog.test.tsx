@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
 import { WizardConflictConfirmDialog } from "./wizard-conflict-confirm-dialog";
-import type { ShiftHit } from "./booking-wizard-steps/event-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 
 const CONFLICT_SHIFT: ShiftHit = {
   id: "existing-1",

@@ -411,6 +411,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "review": "Semak"
         },
         "client": {

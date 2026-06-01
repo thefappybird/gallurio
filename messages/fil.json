@@ -411,6 +411,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
+          "eventPricing": "Event at Presyo",
+          "sessionsLocation": "Mga Sesyon at Lokasyon",
           "review": "Suriin"
         },
         "client": {
