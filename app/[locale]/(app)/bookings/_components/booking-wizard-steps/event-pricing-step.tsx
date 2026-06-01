@@ -23,6 +23,7 @@ import {
   SUPPORTED_CURRENCIES,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
+import { cn } from "@/lib/utils";
 import type { WizardValues } from "./types";
 
 type Props = {
@@ -59,11 +60,17 @@ export function EventPricingStep({
   const tEvent = useTranslations("app.bookings.eventTypes");
   const tPricing = useTranslations("app.bookings.wizard.pricing");
 
+  // A team picker only appears when the caller can choose among >1 writable
+  // teams; a single team is auto-applied (seeded into teamId), so no field is
+  // needed. When it's present, title · event type · team share one row; when
+  // absent, event type sits beside the title (title spans two columns).
+  const showTeamPicker = !!(teams && teams.length > 1);
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Title + Event type on one row */}
+      {/* Title · Event type (· Team) on one row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="flex flex-col gap-1 sm:col-span-2">
+        <div className={cn("flex flex-col gap-1", !showTeamPicker && "sm:col-span-2")}>
           <Label htmlFor="wiz-title">
             {t("title")}
             <Asterisk />
@@ -105,41 +112,39 @@ export function EventPricingStep({
             )}
           />
         </div>
-      </div>
 
-      {/* Team selector — only shown when the caller can choose among >1 writable teams;
-          a single team is auto-applied (seeded into teamId), so no field is needed. */}
-      {teams && teams.length > 1 ? (
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="wiz-teamId">{tWiz("teamLabel")}</Label>
-          <Controller
-            control={control}
-            name="teamId"
-            render={({ field }) => (
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) => v && field.onChange(v)}
-              >
-                <SelectTrigger id="wiz-teamId">
-                  <SelectValue placeholder={tWiz("teamPlaceholder")}>
-                    {(value: string) =>
-                      teams.find((team) => team.id === value)?.name ??
-                      tWiz("teamPlaceholder")
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
-                      {team.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-      ) : null}
+        {showTeamPicker ? (
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="wiz-teamId">{tWiz("teamLabel")}</Label>
+            <Controller
+              control={control}
+              name="teamId"
+              render={({ field }) => (
+                <Select
+                  value={field.value ?? ""}
+                  onValueChange={(v) => v && field.onChange(v)}
+                >
+                  <SelectTrigger id="wiz-teamId">
+                    <SelectValue placeholder={tWiz("teamPlaceholder")}>
+                      {(value: string) =>
+                        teams!.find((team) => team.id === value)?.name ??
+                        tWiz("teamPlaceholder")
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams!.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+        ) : null}
+      </div>
 
       {/* Pricing fields */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

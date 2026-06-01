@@ -274,6 +274,7 @@
           "confirmTitle": "Konfirmasi",
           "cancelTitleEdit": "Batal",
           "editEventType": "Ubah jenis acara",
+          "editStatus": "Ubah status",
           "sendEmail": "Kirim email",
           "callClient": "Hubungi"
         },

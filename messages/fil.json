@@ -274,6 +274,7 @@
           "confirmTitle": "Kumpirmahin",
           "cancelTitleEdit": "Ikansela",
           "editEventType": "Baguhin ang uri ng event",
+          "editStatus": "Baguhin ang status",
           "sendEmail": "Magpadala ng email",
           "callClient": "Tumawag"
         },

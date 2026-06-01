@@ -274,6 +274,7 @@
           "confirmTitle": "ยืนยัน",
           "cancelTitleEdit": "ยกเลิก",
           "editEventType": "เปลี่ยนประเภทอีเวนต์",
+          "editStatus": "เปลี่ยนสถานะ",
           "sendEmail": "ส่งอีเมล",
           "callClient": "โทรหา"
         },

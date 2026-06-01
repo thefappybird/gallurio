@@ -55,7 +55,6 @@ import { Input } from "@/components/ui/input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
-import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import type { BookingTeamOption } from "../_data/team-options";
 import { EditableField, type FieldHandle } from "./editable-field";
 import { CancelConfirmDialog } from "./cancel-confirm-dialog";
@@ -1148,9 +1147,6 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
           loading={loading}
           locale={locale}
           disabled={saving}
-          eventTypeOptions={eventTypeOptions}
-          teams={teams}
-          writableTeams={writableTeams}
           onCommit={commitField}
           onDiscard={discardField}
           onEditAll={() => {
@@ -1185,6 +1181,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               locale={locale}
               reassignedClient={reassignedClient}
               eventTypeOptions={eventTypeOptions}
+              teams={teams}
+              writableTeams={writableTeams}
               onCommit={commitField}
               onDiscard={discardField}
               onReassign={(c) => {
@@ -1374,9 +1372,6 @@ function DialogHeaderBar({
   loading,
   locale,
   disabled,
-  eventTypeOptions,
-  teams,
-  writableTeams,
   onCommit,
   onDiscard,
   onEditAll,
@@ -1387,9 +1382,6 @@ function DialogHeaderBar({
   loading: boolean;
   locale: string;
   disabled: boolean;
-  eventTypeOptions: { value: string; label: string }[];
-  teams: BookingTeamOption[];
-  writableTeams: BookingTeamOption[];
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
@@ -1398,11 +1390,13 @@ function DialogHeaderBar({
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
   const tStatus = useTranslations("app.bookings.statusValues");
-  const tTeam = useTranslations("app.bookings.teamPicker");
 
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  // Status is a read-only pill by default; the dropdown is only mounted after
+  // the user clicks the pencil (mirrors the EditableField reveal pattern).
+  const [editingStatus, setEditingStatus] = useState(false);
 
   let outstanding = 0;
   let currency = "PHP";
@@ -1418,22 +1412,9 @@ function DialogHeaderBar({
   const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
   const effectiveStatus =
     (pending["status"] as string | undefined) ?? booking?.status ?? "";
-  const effectiveTeamId =
-    ("teamId" in pending ? (pending["teamId"] as string | null) : undefined) ??
-    booking?.teamId ??
-    null;
   const hasTitlePending = "title" in pending;
   const hasStatusPending = "status" in pending;
-  const hasTeamIdPending = "teamId" in pending;
   const isCancelled = booking?.status === "cancelled";
-
-  const resolvedTeam = effectiveTeamId
-    ? (teams.find((tm) => tm.id === effectiveTeamId) ?? null)
-    : null;
-  const teamSwatchColor = resolvedTeam
-    ? (resolvedTeam.isActive ? resolvedTeam.color : INACTIVE_TEAM_COLOR)
-    : INACTIVE_TEAM_COLOR;
-  const teamIsInactive = resolvedTeam ? !resolvedTeam.isActive : false;
 
   const statusOptions = useMemo(
     () =>
@@ -1472,8 +1453,8 @@ function DialogHeaderBar({
         {loading ? (
           <Skeleton className="h-5 w-48" />
         ) : (
-          <DialogTitle>
-            <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <DialogTitle className="min-w-0 text-base font-semibold">
               {editingTitle ? (
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
                   <Input
@@ -1511,82 +1492,115 @@ function DialogHeaderBar({
                   </Button>
                 </div>
               ) : (
-                <>
+                <button
+                  type="button"
+                  onClick={startTitleEdit}
+                  disabled={disabled || isCancelled}
+                  className={cn(
+                    "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
+                    "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
+                    "disabled:pointer-events-none disabled:opacity-60",
+                    hasTitlePending && "text-brand"
+                  )}
+                  aria-label={t("editTitle")}
+                >
+                  <span className="truncate">{effectiveTitle}</span>
+                  <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
+                  {hasTitlePending ? (
+                    <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                  ) : null}
+                </button>
+              )}
+            </DialogTitle>
+
+            {/* Status pill — read-only by default; the dropdown is only mounted
+                after the pencil is clicked (reveal pattern). Rendered as a
+                sibling of the heading so its label never pollutes the heading's
+                accessible name. */}
+            {booking ? (
+              <div className="relative shrink-0">
+                {editingStatus && !isCancelled ? (
+                  <Select
+                    value={effectiveStatus}
+                    defaultOpen
+                    onValueChange={(v) => {
+                      onCommit("status", v);
+                      if (hasStatusPending && v === booking.status)
+                        onDiscard("status");
+                      setEditingStatus(false);
+                    }}
+                    onOpenChange={(o) => {
+                      if (!o) setEditingStatus(false);
+                    }}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                        hasStatusPending
+                          ? "border-brand bg-brand/10 text-brand"
+                          : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                      )}
+                      aria-label={t("status")}
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          className="size-2 shrink-0"
+                          style={
+                            statusColor
+                              ? { backgroundColor: statusColor }
+                              : undefined
+                          }
+                        />
+                        <SelectValue>{statusLabel}</SelectValue>
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
                   <button
                     type="button"
-                    onClick={startTitleEdit}
+                    onClick={() => !isCancelled && setEditingStatus(true)}
                     disabled={disabled || isCancelled}
                     className={cn(
-                      "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
-                      "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
-                      "disabled:pointer-events-none disabled:opacity-60",
-                      hasTitlePending && "text-brand"
+                      "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
+                      hasStatusPending
+                        ? "border-brand bg-brand/10 text-brand"
+                        : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
                     )}
-                    aria-label={t("editTitle")}
+                    aria-label={t("editStatus")}
                   >
-                    <span className="truncate">{effectiveTitle}</span>
-                    <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
-                    {hasTitlePending ? (
-                      <span className="size-1.5 shrink-0 bg-brand" aria-hidden />
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0"
+                      style={
+                        statusColor
+                          ? { backgroundColor: statusColor }
+                          : undefined
+                      }
+                    />
+                    <span>{statusLabel}</span>
+                    {!isCancelled ? (
+                      <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
                     ) : null}
                   </button>
-
-                  {/* Status pill — editable dropdown, mirrors the event-type
-                      pill but keeps the status color dot. */}
-                  {booking ? (
-                    <div className="relative shrink-0">
-                      <Select
-                        value={effectiveStatus}
-                        onValueChange={(v) => {
-                          onCommit("status", v);
-                          if (hasStatusPending && v === booking.status)
-                            onDiscard("status");
-                        }}
-                        disabled={disabled || isCancelled}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                            hasStatusPending
-                              ? "border-brand bg-brand/10 text-brand"
-                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                          )}
-                          aria-label={t("status")}
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <span
-                              aria-hidden
-                              className="size-2 shrink-0"
-                              style={
-                                statusColor
-                                  ? { backgroundColor: statusColor }
-                                  : undefined
-                              }
-                            />
-                            <SelectValue>{statusLabel}</SelectValue>
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {hasStatusPending ? (
-                        <span
-                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                </>
-              )}
-            </div>
-          </DialogTitle>
+                )}
+                {hasStatusPending ? (
+                  <span
+                    className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                    aria-hidden
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         )}
         {booking ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1610,100 +1624,6 @@ function DialogHeaderBar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {/* Team pill — shown only when the caller can choose among >1
-            writable teams. Sits in the far-right cluster near the badge. */}
-        {booking && writableTeams.length > 1 ? (
-          <div className="relative shrink-0">
-            {!isCancelled ? (
-              <Select
-                value={effectiveTeamId ?? ""}
-                onValueChange={(v) => {
-                  onCommit("teamId", v || null);
-                  if (hasTeamIdPending && v === (booking.teamId ?? ""))
-                    onDiscard("teamId");
-                }}
-                disabled={disabled}
-              >
-                <SelectTrigger
-                  className={cn(
-                    "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                    hasTeamIdPending
-                      ? "border-brand bg-brand/10 text-brand"
-                      : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                  )}
-                  aria-label={tTeam("label")}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {resolvedTeam ? (
-                      <span
-                        aria-hidden
-                        className="size-2 shrink-0"
-                        style={{ backgroundColor: teamSwatchColor }}
-                      />
-                    ) : null}
-                    <SelectValue>
-                      {resolvedTeam ? (
-                        <>
-                          {resolvedTeam.name}
-                          {teamIsInactive ? (
-                            <span className="ml-1 text-muted-foreground">
-                              ({tTeam("inactive")})
-                            </span>
-                          ) : null}
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </SelectValue>
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  {writableTeams.map((tm) => (
-                    <SelectItem key={tm.id} value={tm.id}>
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          aria-hidden
-                          className="size-2 shrink-0"
-                          style={{ backgroundColor: tm.isActive ? tm.color : INACTIVE_TEAM_COLOR }}
-                        />
-                        {tm.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <span
-                className="flex items-center gap-1.5 border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                aria-label={tTeam("label")}
-              >
-                {resolvedTeam ? (
-                  <>
-                    <span
-                      aria-hidden
-                      className="size-2 shrink-0"
-                      style={{ backgroundColor: teamSwatchColor }}
-                    />
-                    {resolvedTeam.name}
-                    {teamIsInactive ? (
-                      <span className="text-muted-foreground">
-                        ({tTeam("inactive")})
-                      </span>
-                    ) : null}
-                  </>
-                ) : (
-                  <span>—</span>
-                )}
-              </span>
-            )}
-            {hasTeamIdPending ? (
-              <span
-                className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                aria-hidden
-              />
-            ) : null}
-          </div>
-        ) : null}
         {booking ? (
           <Badge
             variant={isOverdue ? "default" : "outline"}
@@ -1754,6 +1674,8 @@ function BookingTabs({
   locale,
   reassignedClient,
   eventTypeOptions,
+  teams,
+  writableTeams,
   onCommit,
   onDiscard,
   onReassign,
@@ -1788,6 +1710,8 @@ function BookingTabs({
   locale: string;
   reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
   eventTypeOptions: { value: string; label: string }[];
+  teams: BookingTeamOption[];
+  writableTeams: BookingTeamOption[];
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
@@ -1873,10 +1797,25 @@ function BookingTabs({
   // Hide the "Change client" trigger up front to avoid a foreseeable 422.
   const isMultiSession = booking.sessions.length > 1;
 
-  const tEvent = useTranslations("app.bookings.eventTypes");
-  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking.eventType ?? "";
-  const hasEventTypePending = "eventType" in pending;
-  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
+  const tWiz = useTranslations("app.bookings.wizard");
+  const tTeam = useTranslations("app.bookings.teamPicker");
+  const isCancelled = booking.status === "cancelled";
+
+  // Team is editable only when the caller can choose among >1 writable teams.
+  // Options are the writable (active, owned/led) teams; the saved display name
+  // is resolved from the full `teams` list so a booking assigned to a team the
+  // user can't write to (or an inactive one) still shows its real name.
+  const showTeamField = writableTeams.length > 1;
+  const teamOptions = useMemo(
+    () => writableTeams.map((tm) => ({ value: tm.id, label: tm.name })),
+    [writableTeams]
+  );
+  const teamDisplay = (v: string | number | null | undefined) => {
+    if (!v) return "—";
+    const tm = teams.find((t) => t.id === String(v));
+    if (!tm) return "—";
+    return tm.isActive ? tm.name : `${tm.name} (${tTeam("inactive")})`;
+  };
 
   return (
     <Tabs defaultValue="client">
@@ -1987,49 +1926,38 @@ function BookingTabs({
         </div>
       </TabsPanel>
 
-      {/* eventPricing: event-type selector + pricing fields */}
+      {/* eventPricing: event type + team (side by side) then pricing fields.
+          Both event type and team use the pill + pencil reveal pattern — the
+          dropdown only mounts once the user clicks the pencil. */}
       <TabsPanel value="eventPricing">
-        {/* Event-type labeled select — moved from header pill */}
-        <div className="mb-3 flex flex-col gap-1 py-1.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {tFields("eventType")}
-          </span>
-          <div className="relative inline-block">
-            <Select
-              value={effectiveEventType}
-              onValueChange={(v) => {
-                onCommit("eventType", v);
-                if (hasEventTypePending && v === booking.eventType)
-                  onDiscard("eventType");
-              }}
-              disabled={disabled || booking.status === "cancelled"}
-            >
-              <SelectTrigger
-                className={cn(
-                  "h-auto border px-2 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                  hasEventTypePending
-                    ? "border-brand bg-brand/10 text-brand"
-                    : "border-border bg-background text-foreground hover:border-brand/60"
-                )}
-                aria-label={tFields("editEventType")}
-              >
-                <SelectValue>{eventTypeLabel}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {eventTypeOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {hasEventTypePending ? (
-              <span
-                className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                aria-hidden
-              />
-            ) : null}
-          </div>
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          <EditableField
+            label={tFields("eventType")}
+            type="select"
+            options={eventTypeOptions}
+            {...get("eventType")}
+            onCommit={(v) => onCommit("eventType", v)}
+            onDiscardPending={() => onDiscard("eventType")}
+            disabled={disabled || isCancelled}
+            editKey="eventType"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+          {showTeamField ? (
+            <EditableField
+              label={tWiz("teamLabel")}
+              type="select"
+              options={teamOptions}
+              formatDisplay={teamDisplay}
+              {...get("teamId")}
+              onCommit={(v) => onCommit("teamId", v || null)}
+              onDiscardPending={() => onDiscard("teamId")}
+              disabled={disabled || isCancelled}
+              editKey="teamId"
+              registerHandle={registerFieldHandle}
+              onEditingChange={onFieldEditingChange}
+            />
+          ) : null}
         </div>
 
         <SectionHeader label={tSections("pricing")} />
@@ -2112,7 +2040,8 @@ function BookingTabs({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2">
+        {/* Sessions list — only this region scrolls (mirrors the wizard). */}
+        <div className="flex max-h-100 flex-col gap-2 overflow-y-auto pr-1">
           {visibleSessions.map((s, idx) => {
             const originalIdx = (booking?.sessions ?? []).findIndex(
               (orig) =>

@@ -233,10 +233,12 @@ async function clickConfirm() {
   fireEvent.click(btn);
 }
 
-/** Get the X (close) button from the modal header bar. */
+/** Get the X (close) button from the modal header bar. The heading sits inside
+ *  a title+status flex row, which is itself inside the header's left column, so
+ *  walk up two ancestors to reach the full header bar. */
 function getHeaderCloseButton() {
   const header = screen.getByRole("heading", { name: "Test Wedding" })
-    .closest("div")!.parentElement!;
+    .closest("div")!.parentElement!.parentElement!;
   const buttons = within(header).getAllByRole("button");
   return buttons[buttons.length - 1];
 }
@@ -988,69 +990,88 @@ describe("Header inline title editing", () => {
 // Issue new-2b — event-type control in Event & Pricing tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Event & Pricing tab — event-type select", () => {
-  it("renders the event-type combobox in the Event & Pricing tab", async () => {
+describe("Event & Pricing tab — event-type field", () => {
+  it("renders the event-type value as a pill with an edit button (no dropdown until clicked)", async () => {
     renderModal();
     await waitForLoad();
 
     // Switch to Event & Pricing tab
     fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
 
-    // The event type select trigger appears in this tab
+    // The event type shows as a read-only value + pencil edit button — the
+    // dropdown is only mounted after the pencil is clicked (reveal pattern).
     await waitFor(() => {
-      expect(screen.getByRole("combobox", { name: /event type/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /edit event type/i })
+      ).toBeInTheDocument();
     });
+    expect(screen.getByText("Wedding")).toBeInTheDocument();
+    // No combobox should exist before the pencil is clicked.
+    expect(
+      screen.queryByRole("combobox", { name: /event type/i })
+    ).not.toBeInTheDocument();
   });
 
-  it("does NOT render an event-type combobox in the header", async () => {
-    renderModal();
-    await waitForLoad();
-
-    // The event type control is now in the tab, not the header.
-    // The header only contains: title button, status combobox, team pill (if >1 team),
-    // outstanding badge, Edit All, close. Do NOT switch to Event & Pricing tab here —
-    // check the header context specifically.
-    const header = screen.getByRole("heading", { name: "Test Wedding" })
-      .closest("div")!.parentElement!;
-    const combosInHeader = within(header).queryAllByRole("combobox");
-    // Header should have at most one combobox: the status selector.
-    // There must NOT be an "event type" combobox in the header.
-    const eventTypeCombosInHeader = combosInHeader.filter((el) =>
-      el.getAttribute("aria-label")?.toLowerCase().includes("event type")
-    );
-    expect(eventTypeCombosInHeader).toHaveLength(0);
-  });
-
-  it("event-type select in Event & Pricing tab stages a pending change when changed", async () => {
-    const fetchMock = makeFetch();
-    vi.stubGlobal("fetch", fetchMock);
+  it("clicking the event-type pencil reveals the dropdown", async () => {
     renderModal();
     await waitForLoad();
 
     fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("combobox", { name: /event type/i })).toBeInTheDocument();
+    const editBtn = await screen.findByRole("button", {
+      name: /edit event type/i,
     });
+    fireEvent.click(editBtn);
 
-    // The pending dot should not be visible yet
-    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
+    // After clicking the pencil, the select control mounts.
+    await waitFor(() => {
+      expect(screen.getByRole("combobox")).toBeInTheDocument();
+    });
+  });
+
+  it("does NOT render an event-type control in the header", async () => {
+    renderModal();
+    await waitForLoad();
+
+    // The event type control is in the tab, not the header. The header only
+    // contains: title button, status pill, outstanding badge, Edit All, close.
+    const header = screen.getByRole("heading", { name: "Test Wedding" })
+      .closest("div")!.parentElement!.parentElement!;
+    const combosInHeader = within(header).queryAllByRole("combobox");
+    const eventTypeCombosInHeader = combosInHeader.filter((el) =>
+      el.getAttribute("aria-label")?.toLowerCase().includes("event type")
+    );
+    expect(eventTypeCombosInHeader).toHaveLength(0);
   });
 });
 
 describe("Header status pill", () => {
-  it("renders status as an editable dropdown in the header with the current label", async () => {
+  it("renders status as a read-only pill in the header with the current label", async () => {
     renderModal();
     await waitForLoad();
+
+    // Status is a button (pill) by default — not a combobox. MOCK_BOOKING.status
+    // === "booked" → label "Booked" shows on the pill.
+    const pill = await screen.findByRole("button", { name: /change status/i });
+    expect(within(pill).getByText("Booked")).toBeInTheDocument();
+    // No status combobox until the pencil is clicked.
+    expect(
+      screen.queryByRole("combobox", { name: /status/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("clicking the status pill reveals the status dropdown", async () => {
+    renderModal();
+    await waitForLoad();
+
+    const pill = await screen.findByRole("button", { name: /change status/i });
+    fireEvent.click(pill);
 
     await waitFor(() => {
       expect(
         screen.getByRole("combobox", { name: /status/i })
       ).toBeInTheDocument();
     });
-    // MOCK_BOOKING.status === "booked" → label "Booked" shows in the trigger.
-    const trigger = screen.getByRole("combobox", { name: /status/i });
-    expect(within(trigger).getByText("Booked")).toBeInTheDocument();
   });
 
   it("removes the editable Client name and Status fields from the Client tab", async () => {

@@ -274,6 +274,7 @@
           "confirmTitle": "Confirm",
           "cancelTitleEdit": "Cancel",
           "editEventType": "Change event type",
+          "editStatus": "Change status",
           "sendEmail": "Send email",
           "callClient": "Call"
         },
