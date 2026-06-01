@@ -1184,6 +1184,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               editorResetNonce={editorResetNonce}
               locale={locale}
               reassignedClient={reassignedClient}
+              eventTypeOptions={eventTypeOptions}
               onCommit={commitField}
               onDiscard={discardField}
               onReassign={(c) => {
@@ -1396,7 +1397,6 @@ function DialogHeaderBar({
 }) {
   const t = useTranslations("app.bookings.detail.fields");
   const tDetail = useTranslations("app.bookings.detail");
-  const tEvent = useTranslations("app.bookings.eventTypes");
   const tStatus = useTranslations("app.bookings.statusValues");
   const tTeam = useTranslations("app.bookings.teamPicker");
 
@@ -1416,7 +1416,6 @@ function DialogHeaderBar({
   const isOverdue = booking ? outstanding > 0 : false;
 
   const effectiveTitle = (pending["title"] as string | undefined) ?? booking?.title ?? "—";
-  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking?.eventType ?? "";
   const effectiveStatus =
     (pending["status"] as string | undefined) ?? booking?.status ?? "";
   const effectiveTeamId =
@@ -1424,7 +1423,6 @@ function DialogHeaderBar({
     booking?.teamId ??
     null;
   const hasTitlePending = "title" in pending;
-  const hasEventTypePending = "eventType" in pending;
   const hasStatusPending = "status" in pending;
   const hasTeamIdPending = "teamId" in pending;
   const isCancelled = booking?.status === "cancelled";
@@ -1467,8 +1465,6 @@ function DialogHeaderBar({
     setTitleDraft("");
     if (hasTitlePending) onDiscard("title");
   }
-
-  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
 
   return (
     <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
@@ -1535,46 +1531,6 @@ function DialogHeaderBar({
                     ) : null}
                   </button>
 
-                  {/* Event-type pill */}
-                  {booking ? (
-                    <div className="relative shrink-0">
-                      <Select
-                        value={effectiveEventType}
-                        onValueChange={(v) => {
-                          onCommit("eventType", v);
-                          if (hasEventTypePending && v === booking.eventType)
-                            onDiscard("eventType");
-                        }}
-                        disabled={disabled || isCancelled}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                            hasEventTypePending
-                              ? "border-brand bg-brand/10 text-brand"
-                              : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                          )}
-                          aria-label={t("editEventType")}
-                        >
-                          <SelectValue>{eventTypeLabel}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {eventTypeOptions.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {hasEventTypePending ? (
-                        <span
-                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-
                   {/* Status pill — editable dropdown, mirrors the event-type
                       pill but keeps the status color dot. */}
                   {booking ? (
@@ -1627,101 +1583,6 @@ function DialogHeaderBar({
                     </div>
                   ) : null}
 
-                  {/* Team pill — shown only when the caller can choose among >1
-                      writable teams. With a single team it's auto-applied (the
-                      booking already carries it), so no selector is needed. */}
-                  {booking && writableTeams.length > 1 ? (
-                    <div className="relative shrink-0">
-                      {!isCancelled ? (
-                        <Select
-                          value={effectiveTeamId ?? ""}
-                          onValueChange={(v) => {
-                            onCommit("teamId", v || null);
-                            if (hasTeamIdPending && v === (booking.teamId ?? ""))
-                              onDiscard("teamId");
-                          }}
-                          disabled={disabled}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                              hasTeamIdPending
-                                ? "border-brand bg-brand/10 text-brand"
-                                : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
-                            )}
-                            aria-label={tTeam("label")}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              {resolvedTeam ? (
-                                <span
-                                  aria-hidden
-                                  className="size-2 shrink-0"
-                                  style={{ backgroundColor: teamSwatchColor }}
-                                />
-                              ) : null}
-                              <SelectValue>
-                                {resolvedTeam ? (
-                                  <>
-                                    {resolvedTeam.name}
-                                    {teamIsInactive ? (
-                                      <span className="ml-1 text-muted-foreground">
-                                        ({tTeam("inactive")})
-                                      </span>
-                                    ) : null}
-                                  </>
-                                ) : (
-                                  <span className="text-muted-foreground">—</span>
-                                )}
-                              </SelectValue>
-                            </span>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {writableTeams.map((tm) => (
-                              <SelectItem key={tm.id} value={tm.id}>
-                                <span className="flex items-center gap-1.5">
-                                  <span
-                                    aria-hidden
-                                    className="size-2 shrink-0"
-                                    style={{ backgroundColor: tm.isActive ? tm.color : INACTIVE_TEAM_COLOR }}
-                                  />
-                                  {tm.name}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span
-                          className="flex items-center gap-1.5 border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground"
-                          aria-label={tTeam("label")}
-                        >
-                          {resolvedTeam ? (
-                            <>
-                              <span
-                                aria-hidden
-                                className="size-2 shrink-0"
-                                style={{ backgroundColor: teamSwatchColor }}
-                              />
-                              {resolvedTeam.name}
-                              {teamIsInactive ? (
-                                <span className="text-muted-foreground">
-                                  ({tTeam("inactive")})
-                                </span>
-                              ) : null}
-                            </>
-                          ) : (
-                            <span>—</span>
-                          )}
-                        </span>
-                      )}
-                      {hasTeamIdPending ? (
-                        <span
-                          className="absolute -right-1 -top-1 size-1.5 bg-brand"
-                          aria-hidden
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
                 </>
               )}
             </div>
@@ -1749,6 +1610,100 @@ function DialogHeaderBar({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        {/* Team pill — shown only when the caller can choose among >1
+            writable teams. Sits in the far-right cluster near the badge. */}
+        {booking && writableTeams.length > 1 ? (
+          <div className="relative shrink-0">
+            {!isCancelled ? (
+              <Select
+                value={effectiveTeamId ?? ""}
+                onValueChange={(v) => {
+                  onCommit("teamId", v || null);
+                  if (hasTeamIdPending && v === (booking.teamId ?? ""))
+                    onDiscard("teamId");
+                }}
+                disabled={disabled}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "h-auto border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                    hasTeamIdPending
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
+                  )}
+                  aria-label={tTeam("label")}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {resolvedTeam ? (
+                      <span
+                        aria-hidden
+                        className="size-2 shrink-0"
+                        style={{ backgroundColor: teamSwatchColor }}
+                      />
+                    ) : null}
+                    <SelectValue>
+                      {resolvedTeam ? (
+                        <>
+                          {resolvedTeam.name}
+                          {teamIsInactive ? (
+                            <span className="ml-1 text-muted-foreground">
+                              ({tTeam("inactive")})
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </SelectValue>
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  {writableTeams.map((tm) => (
+                    <SelectItem key={tm.id} value={tm.id}>
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          aria-hidden
+                          className="size-2 shrink-0"
+                          style={{ backgroundColor: tm.isActive ? tm.color : INACTIVE_TEAM_COLOR }}
+                        />
+                        {tm.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span
+                className="flex items-center gap-1.5 border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                aria-label={tTeam("label")}
+              >
+                {resolvedTeam ? (
+                  <>
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0"
+                      style={{ backgroundColor: teamSwatchColor }}
+                    />
+                    {resolvedTeam.name}
+                    {teamIsInactive ? (
+                      <span className="text-muted-foreground">
+                        ({tTeam("inactive")})
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span>—</span>
+                )}
+              </span>
+            )}
+            {hasTeamIdPending ? (
+              <span
+                className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                aria-hidden
+              />
+            ) : null}
+          </div>
+        ) : null}
         {booking ? (
           <Badge
             variant={isOverdue ? "default" : "outline"}
@@ -1798,6 +1753,7 @@ function BookingTabs({
   editorResetNonce,
   locale,
   reassignedClient,
+  eventTypeOptions,
   onCommit,
   onDiscard,
   onReassign,
@@ -1831,6 +1787,7 @@ function BookingTabs({
   editorResetNonce: number;
   locale: string;
   reassignedClient: { id: string; name: string; email: string | null; phone: string | null } | null;
+  eventTypeOptions: { value: string; label: string }[];
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
@@ -1916,6 +1873,11 @@ function BookingTabs({
   // Hide the "Change client" trigger up front to avoid a foreseeable 422.
   const isMultiSession = booking.sessions.length > 1;
 
+  const tEvent = useTranslations("app.bookings.eventTypes");
+  const effectiveEventType = (pending["eventType"] as string | undefined) ?? booking.eventType ?? "";
+  const hasEventTypePending = "eventType" in pending;
+  const eventTypeLabel = safeT(tEvent, effectiveEventType, effectiveEventType);
+
   return (
     <Tabs defaultValue="client">
       {/* Same subtle base treatment as the client detail modal's tabs (bare
@@ -1926,11 +1888,11 @@ function BookingTabs({
         <TabsTab value="client" className="min-h-11">
           {t("client")}
         </TabsTab>
-        <TabsTab value="event" className="min-h-11">
-          {t("event")}
+        <TabsTab value="eventPricing" className="min-h-11">
+          {t("eventPricing")}
         </TabsTab>
-        <TabsTab value="pricing" className="min-h-11">
-          {t("pricing")}
+        <TabsTab value="sessionsLocation" className="min-h-11">
+          {t("sessionsLocation")}
         </TabsTab>
         <TabsTab value="activity" className="min-h-11">
           {t("activity")}
@@ -2025,35 +1987,104 @@ function BookingTabs({
         </div>
       </TabsPanel>
 
-      <TabsPanel value="event">
-        <div className="flex flex-col gap-1 py-1.5">
+      {/* eventPricing: event-type selector + pricing fields */}
+      <TabsPanel value="eventPricing">
+        {/* Event-type labeled select — moved from header pill */}
+        <div className="mb-3 flex flex-col gap-1 py-1.5">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {tFields("location")}
+            {tFields("eventType")}
           </span>
-          <LocationPicker
-            value={{
-              address:
-                "location.address" in pending
-                  ? ((pending["location.address"] as string) ?? "")
-                  : (booking.location?.address ?? ""),
-              lat:
-                "location.lat" in pending
-                  ? (pending["location.lat"] as number | null)
-                  : (booking.location?.lat ?? null),
-              lng:
-                "location.lng" in pending
-                  ? (pending["location.lng"] as number | null)
-                  : (booking.location?.lng ?? null),
-            }}
-            onChange={(v) => {
-              onCommit("location.address", v.address);
-              onCommit("location.lat", v.lat);
-              onCommit("location.lng", v.lng);
-            }}
-            disabled={disabled}
-          />
+          <div className="relative inline-block">
+            <Select
+              value={effectiveEventType}
+              onValueChange={(v) => {
+                onCommit("eventType", v);
+                if (hasEventTypePending && v === booking.eventType)
+                  onDiscard("eventType");
+              }}
+              disabled={disabled || booking.status === "cancelled"}
+            >
+              <SelectTrigger
+                className={cn(
+                  "h-auto border px-2 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                  hasEventTypePending
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-border bg-background text-foreground hover:border-brand/60"
+                )}
+                aria-label={tFields("editEventType")}
+              >
+                <SelectValue>{eventTypeLabel}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {eventTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasEventTypePending ? (
+              <span
+                className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                aria-hidden
+              />
+            ) : null}
+          </div>
         </div>
 
+        <SectionHeader label={tSections("pricing")} />
+
+        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
+          <EditableField
+            label={tFields("total")}
+            type="money"
+            currency={currency}
+            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
+            {...get("amount.total")}
+            onCommit={(v) => onCommit("amount.total", v)}
+            onDiscardPending={() => onDiscard("amount.total")}
+            disabled={disabled}
+            editKey="amount.total"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+          <EditableField
+            label={tFields("deposit")}
+            type="money"
+            currency={currency}
+            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
+            {...get("amount.deposit")}
+            onCommit={(v) => onCommit("amount.deposit", v)}
+            onDiscardPending={() => onDiscard("amount.deposit")}
+            disabled={disabled}
+            validate={(v) => {
+              const n = Number(v);
+              if (Number.isFinite(n) && n > total) {
+                return tFields("depositExceedsTotal");
+              }
+              return null;
+            }}
+            editKey="amount.deposit"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+          <EditableField
+            label={tFields("currency")}
+            type="select"
+            options={currencyOptions}
+            {...get("amount.currency")}
+            onCommit={(v) => onCommit("amount.currency", v)}
+            onDiscardPending={() => onDiscard("amount.currency")}
+            disabled={disabled}
+            editKey="amount.currency"
+            registerHandle={registerFieldHandle}
+            onEditingChange={onFieldEditingChange}
+          />
+        </div>
+      </TabsPanel>
+
+      {/* sessionsLocation: sessions editor first, then location */}
+      <TabsPanel value="sessionsLocation">
         <SectionHeader label={tSections("schedule")} />
 
         {/* Sessions list — inline-editable cards */}
@@ -2225,54 +2256,31 @@ function BookingTabs({
           <PlusIcon className="size-4" />
           {tSessions("add")}
         </button>
-      </TabsPanel>
 
-      <TabsPanel value="pricing">
-        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-3">
-          <EditableField
-            label={tFields("total")}
-            type="money"
-            currency={currency}
-            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
-            {...get("amount.total")}
-            onCommit={(v) => onCommit("amount.total", v)}
-            onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled}
-            editKey="amount.total"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
-          />
-          <EditableField
-            label={tFields("deposit")}
-            type="money"
-            currency={currency}
-            formatDisplay={(v) => formatMoney(Number(v) || 0, currency, locale)}
-            {...get("amount.deposit")}
-            onCommit={(v) => onCommit("amount.deposit", v)}
-            onDiscardPending={() => onDiscard("amount.deposit")}
-            disabled={disabled}
-            validate={(v) => {
-              const n = Number(v);
-              if (Number.isFinite(n) && n > total) {
-                return tFields("depositExceedsTotal");
-              }
-              return null;
+        {/* Location — below sessions */}
+        <SectionHeader label={tFields("location")} />
+        <div className="flex flex-col gap-1 py-1.5">
+          <LocationPicker
+            value={{
+              address:
+                "location.address" in pending
+                  ? ((pending["location.address"] as string) ?? "")
+                  : (booking.location?.address ?? ""),
+              lat:
+                "location.lat" in pending
+                  ? (pending["location.lat"] as number | null)
+                  : (booking.location?.lat ?? null),
+              lng:
+                "location.lng" in pending
+                  ? (pending["location.lng"] as number | null)
+                  : (booking.location?.lng ?? null),
             }}
-            editKey="amount.deposit"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
-          />
-          <EditableField
-            label={tFields("currency")}
-            type="select"
-            options={currencyOptions}
-            {...get("amount.currency")}
-            onCommit={(v) => onCommit("amount.currency", v)}
-            onDiscardPending={() => onDiscard("amount.currency")}
+            onChange={(v) => {
+              onCommit("location.address", v.address);
+              onCommit("location.lat", v.lat);
+              onCommit("location.lng", v.lng);
+            }}
             disabled={disabled}
-            editKey="amount.currency"
-            registerHandle={registerFieldHandle}
-            onEditingChange={onFieldEditingChange}
           />
         </div>
       </TabsPanel>

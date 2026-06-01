@@ -226,6 +226,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
+          "eventPricing": "Event at Presyo",
+          "sessionsLocation": "Mga Sesyon at Lokasyon",
           "activity": "Mga tala at aktibidad"
         },
         "sections": {

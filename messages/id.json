@@ -226,6 +226,8 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "activity": "Catatan & aktivitas"
         },
         "sections": {

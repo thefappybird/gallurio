@@ -199,9 +199,9 @@ async function waitForLoad() {
     // The title appears as a DialogTitle (<h2>). Use heading role to be precise.
     expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
   });
-  // Sessions, pricing, and location live under the Event tab after the
-  // tab-grouping rework — activate it so that content is in the DOM.
-  fireEvent.click(screen.getByRole("tab", { name: "Event" }));
+  // Sessions live under the "Sessions & Location" tab — activate it so that
+  // session card content is in the DOM for tests that need it.
+  fireEvent.click(screen.getByRole("tab", { name: "Sessions & Location" }));
 }
 
 /** Click the inline-edit pencil for Session N (1-indexed). */
@@ -722,8 +722,8 @@ describe("False-conflict regression — time-overlap filtering", () => {
         screen.getByRole("heading", { name: "Multi-Session Booking" })
       ).toBeInTheDocument();
     });
-    // Session cards live under the Event tab after the tab-grouping rework.
-    fireEvent.click(screen.getByRole("tab", { name: "Event" }));
+    // Session cards live under the "Sessions & Location" tab.
+    fireEvent.click(screen.getByRole("tab", { name: "Sessions & Location" }));
   }
 
   it("does NOT show a conflict when the only shift on the date belongs to the same booking", async () => {
@@ -880,30 +880,29 @@ describe("pendingCount — includes all pending types", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Pill tabs — four tabs render and switch panels", () => {
-  it("renders four tab triggers (Client, Event, Pricing, Notes & activity)", async () => {
+  it("renders four tab triggers (Client, Event & Pricing, Sessions & Location, Notes & activity)", async () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Client tab first (default is client)
     const clientTab = screen.getByRole("tab", { name: /client/i });
-    const eventTab = screen.getByRole("tab", { name: /event/i });
-    const pricingTab = screen.getByRole("tab", { name: /pricing/i });
+    const eventPricingTab = screen.getByRole("tab", { name: /event & pricing/i });
+    const sessionsLocationTab = screen.getByRole("tab", { name: /sessions & location/i });
     const activityTab = screen.getByRole("tab", { name: /notes/i });
 
     expect(clientTab).toBeInTheDocument();
-    expect(eventTab).toBeInTheDocument();
-    expect(pricingTab).toBeInTheDocument();
+    expect(eventPricingTab).toBeInTheDocument();
+    expect(sessionsLocationTab).toBeInTheDocument();
     expect(activityTab).toBeInTheDocument();
   });
 
-  it("switching to the Pricing tab shows the currency field", async () => {
+  it("switching to the Event & Pricing tab shows the currency field", async () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
 
     await waitFor(() => {
-      // Currency field label renders in the pricing tab panel
+      // Currency field label renders in the eventPricing tab panel
       expect(screen.getByText("Currency")).toBeInTheDocument();
     });
   });
@@ -922,21 +921,15 @@ describe("Header inline title editing", () => {
     ).toBeInTheDocument();
   });
 
-  it("does NOT render a standalone Title EditableField inside the Event tab", async () => {
+  it("does NOT render a standalone Title EditableField inside the Sessions & Location tab", async () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event/i }));
-
-    // The only 'Title' label should be a button for inline editing in the header,
-    // not a separate editable field in the event tab.
-    // Verify there is no input labelled "Title" that belongs to an EditableField
-    // (EditableField renders an input when in edit mode — we won't open it, but
-    // we can assert the event tab's content does not have a dedicated title section
-    // by checking there's no aria-label="Title" static display row).
+    // waitForLoad already switches to Sessions & Location tab — verify
+    // Sessions & Location tab shows schedule/location sections, not a title row.
     await waitFor(() => {
-      // The event tab should show location, not a title row.
-      expect(screen.getByText("Location")).toBeInTheDocument();
+      // The SectionHeader "Schedule" should be present in this tab.
+      expect(screen.getByText("Schedule")).toBeInTheDocument();
     });
   });
 
@@ -992,35 +985,56 @@ describe("Header inline title editing", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Issue new-2b — event-type pill in header
+// Issue new-2b — event-type control in Event & Pricing tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Header event-type pill", () => {
-  it("renders the current event type label in the header", async () => {
+describe("Event & Pricing tab — event-type select", () => {
+  it("renders the event-type combobox in the Event & Pricing tab", async () => {
     renderModal();
     await waitForLoad();
 
-    // The event type select trigger shows "Wedding"
+    // Switch to Event & Pricing tab
+    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
+
+    // The event type select trigger appears in this tab
     await waitFor(() => {
       expect(screen.getByRole("combobox", { name: /event type/i })).toBeInTheDocument();
     });
   });
 
-  it("does NOT render a standalone Event Type EditableField in the Event tab", async () => {
+  it("does NOT render an event-type combobox in the header", async () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event/i }));
+    // The event type control is now in the tab, not the header.
+    // The header only contains: title button, status combobox, team pill (if >1 team),
+    // outstanding badge, Edit All, close. Do NOT switch to Event & Pricing tab here —
+    // check the header context specifically.
+    const header = screen.getByRole("heading", { name: "Test Wedding" })
+      .closest("div")!.parentElement!;
+    const combosInHeader = within(header).queryAllByRole("combobox");
+    // Header should have at most one combobox: the status selector.
+    // There must NOT be an "event type" combobox in the header.
+    const eventTypeCombosInHeader = combosInHeader.filter((el) =>
+      el.getAttribute("aria-label")?.toLowerCase().includes("event type")
+    );
+    expect(eventTypeCombosInHeader).toHaveLength(0);
+  });
+
+  it("event-type select in Event & Pricing tab stages a pending change when changed", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    renderModal();
+    await waitForLoad();
+
+    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
 
     await waitFor(() => {
-      // Event tab shows location — the Event Type row was moved to the header
-      expect(screen.getByText("Location")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: /event type/i })).toBeInTheDocument();
     });
-    // There should be no second "Event type" label in the tab content
-    // (it exists in the header pill, but not as an EditableField in the tab)
-    const eventTypeLabels = screen.queryAllByText("Event type");
-    // The header trigger has aria-label, not a visible "Event type" text label
-    expect(eventTypeLabels.length).toBe(0);
+
+    // The pending dot should not be visible yet
+    expect(screen.queryByRole("button", { name: /save changes/i })).not.toBeInTheDocument();
   });
 });
 
@@ -1479,11 +1493,11 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
   // ── EditableField undrafted tests ──────────────────────────────────────────
 
   /**
-   * Switch to the Pricing tab and open the Deposit field's inline editor
+   * Switch to the Event & Pricing tab and open the Deposit field's inline editor
    * WITHOUT clicking ✓ (leaving an undrafted change).
    */
   async function openDepositEditorWithoutConfirm(depositValue = "5000") {
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
     await waitFor(() =>
       expect(screen.getByText("Deposit")).toBeInTheDocument()
     );
@@ -1505,7 +1519,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Pricing tab and draft the Total via ✓
+    // Switch to Event & Pricing tab and draft the Total via ✓
     fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
@@ -1548,7 +1562,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓
+    // Draft the Total via ✓ (Event & Pricing tab)
     fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
@@ -1605,7 +1619,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓
+    // Draft the Total via ✓ (Event & Pricing tab)
     fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
