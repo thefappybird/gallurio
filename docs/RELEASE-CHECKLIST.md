@@ -20,6 +20,12 @@ These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "prod
 
 Search to confirm everything dev-only is gated: `rg "NODE_ENV !== \"production\"" -t ts -t tsx`.
 
+## 1b. Clerk Dashboard — disable API Keys feature
+
+`<UserProfile apiKeysProps={{ hide: true }} />` is already set in code, which hides the tab from the rendered component. For belt-and-suspenders: disable the API Keys feature at the Clerk Dashboard level so it cannot be surfaced via the Frontend API either.
+
+- [ ] In Clerk Dashboard → **User & Authentication → Advanced** (or **API Keys**), ensure the **API Keys** feature is disabled for the production instance. This prevents the tab from reappearing if the prop is ever inadvertently removed, and also prevents users from creating API keys through the Frontend API directly.
+
 ## 2. HitPay subscription wiring
 
 The Phase 3 branch added one piece of real billing behavior (cancellation always drops to free; see `app/api/webhooks/hitpay/route.ts:127-160`) and one dev shim. Before ship:

@@ -26,6 +26,7 @@ import {
 import { cancelRecurringBilling } from "@/lib/hitpay/client";
 import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
+import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
 
@@ -304,8 +305,10 @@ const timeModeSchema = z.enum(["24h", "12h"]);
 export async function updateTimeFormatAction(
   format: string
 ): Promise<ActionResult> {
-  const ctx = await ownerContext();
-  if ("error" in ctx) return { error: ctx.error };
+  // Time format is a per-user preference — any authenticated org member can
+  // update their own. Use requireOrg() (redirects on failure) instead of
+  // ownerContext() (owner-only).
+  const ctx = await requireOrg();
 
   const parsed = timeModeSchema.safeParse(format);
   if (!parsed.success) return { error: "Invalid time format" };
