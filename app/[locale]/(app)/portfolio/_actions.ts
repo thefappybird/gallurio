@@ -9,6 +9,8 @@ import {
   brandKitSchema,
   portfolioContactConfigSchema,
 } from "@/lib/validators/publicPage";
+import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
+import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { z } from "zod";
 
 export type EditorActionResult =
@@ -125,6 +127,48 @@ export async function updateContactConfigAction(
   );
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
+  return { ok: true };
+}
+
+const switchTemplateSchema = z.object({ templateId: z.enum(PORTFOLIO_TEMPLATE_IDS) });
+
+export type SwitchTemplateResult = { ok: true; seed: PortfolioSeed } | { error: string };
+
+/**
+ * Re-seed both portfolio zones from another starter template. Owner-only.
+ * Archives the current data to previousData (handled in reseedPortfolioFromTemplate)
+ * and resets brand kit + contact to the template defaults. Returns the new seed
+ * so the editor can reload its zones without a full navigation.
+ */
+export async function switchTemplateAction(input: unknown): Promise<SwitchTemplateResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = switchTemplateSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_template" };
+
+  const seed = await reseedPortfolioFromTemplate(ctx.workspace._id, parsed.data.templateId);
+  if (!seed) return { error: "unknown_template" };
+
+  revalidatePath("/portfolio");
+  revalidatePath(`/w/${ctx.workspace.slug}`);
+  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
+  return { ok: true, seed };
+}
+
+/**
+ * Persist the owner's "don't show the guide again" choice. Owner-only.
+ * Idempotent — re-dismissing just rewrites the timestamp.
+ */
+export async function dismissPortfolioGuideAction(): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  await connectDB();
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $set: { "publicPage.guideDismissedAt": new Date() } }
+  );
   return { ok: true };
 }
 

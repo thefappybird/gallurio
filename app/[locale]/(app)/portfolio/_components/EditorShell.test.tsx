@@ -33,12 +33,16 @@ const publishPortfolioAction = vi.fn().mockResolvedValue({ ok: true });
 const updateBrandKitAction = vi.fn().mockResolvedValue({ ok: true });
 const updateContactConfigAction = vi.fn().mockResolvedValue({ ok: true });
 const updateFormLocaleAction = vi.fn().mockResolvedValue({ ok: true });
+const switchTemplateAction = vi.fn().mockResolvedValue({ ok: true });
+const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
   updateBrandKitAction: (...a: unknown[]) => updateBrandKitAction(...a),
   updateContactConfigAction: (...a: unknown[]) => updateContactConfigAction(...a),
   updateFormLocaleAction: (...a: unknown[]) => updateFormLocaleAction(...a),
+  switchTemplateAction: (...a: unknown[]) => switchTemplateAction(...a),
+  dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -58,6 +62,13 @@ const baseProps = {
   initialFormLocale: "",
   publicOrigin: "https://app.test",
   previewBasePath: "/portfolio-preview",
+  templates: [
+    { id: "minimal", label: "Minimal", description: "Clean", defaultBrandKit: DEFAULT_BRAND_KIT },
+  ],
+  currentTemplateId: "minimal",
+  // Keep the first-run guide closed during these tests so its overlay doesn't
+  // sit over the editor controls.
+  guideDismissed: true,
 };
 
 beforeEach(() => {

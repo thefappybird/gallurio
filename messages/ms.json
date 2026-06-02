@@ -1070,7 +1070,10 @@
           "title": "Pratonton langsung",
           "empty": "Tiada apa-apa untuk dipratonton lagi. Tambah beberapa bahagian, kemudian kembali."
         },
-        "photos": "Foto"
+        "photos": "Foto",
+        "templates": "Templat",
+        "guide": "Panduan",
+        "templateSwitchedToast": "Templat digunakan."
       },
       "wizard": {
         "title": "Mari bina portfolio anda",

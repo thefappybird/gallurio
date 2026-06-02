@@ -9,6 +9,7 @@
 
 import type { ComponentConfig } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,6 +23,7 @@ export type ServiceItem = {
 };
 
 export type ServicesListProps = {
+  _style?: BlockStyle;
   heading: string;
   items: ServiceItem[];
 };
@@ -58,7 +60,7 @@ export const servicesListDefaultProps: ServicesListProps = {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ServicesListBlock({ heading, items, puck }: ServicesListProps & { puck?: BlockPuck }) {
+export function ServicesListBlock({ _style, heading, items, puck }: ServicesListProps & { puck?: BlockPuck }) {
   const cappedItems = items.slice(0, 8);
   // Read the resolved "Starting from {price}" template from the render context.
   // Falls back to English so the block still renders correctly in the Puck editor
@@ -73,6 +75,7 @@ export function ServicesListBlock({ heading, items, puck }: ServicesListProps & 
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
         padding: "4rem 1.5rem",
+        ...resolveBlockStyle(_style),
       }}
     >
       <div
@@ -206,6 +209,7 @@ export const servicesListBlockConfig: ComponentConfig<ServicesListProps> = {
   label: "Services",
   defaultProps: servicesListDefaultProps,
   fields: {
+    _style: productionStyleField,
     heading: { type: "text", label: "Section heading" },
     items: {
       type: "array",

@@ -16,12 +16,14 @@
 import type { ComponentConfig } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type CTABannerProps = {
+  _style?: BlockStyle;
   headline: string;
   subhead?: string;
   ctaLabel: string;
@@ -50,6 +52,7 @@ export const ctaBannerDefaultProps: CTABannerProps = {
 // ---------------------------------------------------------------------------
 
 export function CTABannerBlock({
+  _style,
   headline,
   subhead,
   ctaLabel,
@@ -81,6 +84,7 @@ export function CTABannerBlock({
           ? "var(--pf-color-secondary)"
           : "var(--pf-color-fg)", // dark fallback while image loads
     overflow: "hidden",
+    ...resolveBlockStyle(_style),
   };
 
   return (
@@ -223,6 +227,7 @@ export const ctaBannerBlockConfig: ComponentConfig<CTABannerProps> = {
   label: "CTA Banner",
   defaultProps: ctaBannerDefaultProps,
   fields: {
+    _style: productionStyleField,
     headline: { type: "text", label: "Headline" },
     subhead: { type: "text", label: "Sub-headline (optional)" },
     ctaLabel: { type: "text", label: "CTA button label" },

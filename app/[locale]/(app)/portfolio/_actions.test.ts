@@ -23,6 +23,8 @@ import {
   publishPortfolioAction,
   updateBrandKitAction,
   updateContactConfigAction,
+  switchTemplateAction,
+  dismissPortfolioGuideAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -175,5 +177,56 @@ describe("updateContactConfigAction", () => {
     mockCtx.role = "staff";
     const res = await updateContactConfigAction({ title: "x" });
     expect(res).toEqual({ error: "owner_only" });
+  });
+});
+
+describe("switchTemplateAction", () => {
+  it("re-seeds both zones from the template and archives the previous data", async () => {
+    // Give the workspace some existing home content so it gets archived.
+    await savePortfolioDraftAction({ zone: "home", data: samplePuck });
+
+    const res = await switchTemplateAction({ templateId: "minimal" });
+    expect(res).toMatchObject({ ok: true });
+    if (!("ok" in res)) throw new Error("expected ok");
+    expect(res.seed.templateId).toBe("minimal");
+    expect(res.seed.data.home).toBeTruthy();
+    expect(res.seed.data.gallery).toBeTruthy();
+
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.templateId).toBe("minimal");
+    // Seeded home has real blocks now.
+    const home = ws!.publicPage!.data!.home as { content: unknown[] };
+    expect(home.content.length).toBeGreaterThan(0);
+    // The pre-switch home was archived.
+    const prev = ws!.publicPage!.previousData!.home as { content: unknown[] };
+    expect(prev.content).toHaveLength(1);
+  });
+
+  it("rejects an unknown template id", async () => {
+    const res = await switchTemplateAction({ templateId: "not-real" });
+    expect("error" in res).toBe(true);
+  });
+
+  it("is owner-only", async () => {
+    mockCtx.role = "staff";
+    const res = await switchTemplateAction({ templateId: "minimal" });
+    expect(res).toEqual({ error: "owner_only" });
+  });
+});
+
+describe("dismissPortfolioGuideAction", () => {
+  it("persists guideDismissedAt", async () => {
+    const res = await dismissPortfolioGuideAction();
+    expect(res).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.guideDismissedAt).toBeTruthy();
+  });
+
+  it("is owner-only", async () => {
+    mockCtx.role = "staff";
+    const res = await dismissPortfolioGuideAction();
+    expect(res).toEqual({ error: "owner_only" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.guideDismissedAt ?? null).toBeNull();
   });
 });

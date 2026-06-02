@@ -23,6 +23,8 @@ import type { Config, ComponentConfig, Field } from "@measured/puck";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
+import { StyleToolkitField } from "./StyleToolkitField";
+import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
 import type { HeroBlockProps } from "./blocks/HeroBlock";
 import type { AboutBlockProps, CredentialItem } from "./blocks/AboutBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -50,7 +52,15 @@ type EditorComponents = {
 // wrapper, so previews echo the portfolio's colors/fonts).
 // ---------------------------------------------------------------------------
 
-function Preview({ label, lines }: { label: string; lines: Array<string | null | undefined> }) {
+function Preview({
+  label,
+  lines,
+  blockStyle,
+}: {
+  label: string;
+  lines: Array<string | null | undefined>;
+  blockStyle?: BlockStyle;
+}) {
   const shown = lines.filter((l): l is string => Boolean(l && l.trim()));
   return (
     <section
@@ -61,6 +71,8 @@ function Preview({ label, lines }: { label: string; lines: Array<string | null |
         fontFamily: "var(--pf-font-body)",
         padding: "1.5rem",
         margin: 0,
+        // Echo the per-block style toolkit so the canvas matches the live page.
+        ...resolveBlockStyle(blockStyle),
       }}
     >
       <span
@@ -99,6 +111,22 @@ function truncate(value: string | undefined, max = 120): string {
 }
 
 // ---------------------------------------------------------------------------
+// Shared style toolkit field — the Canva-style icon toolbar, registered as the
+// FIRST field of every block so it renders as the first ("toolkit") section.
+// ---------------------------------------------------------------------------
+
+const styleField = {
+  type: "custom",
+  label: "Style",
+  render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+    <StyleToolkitField
+      value={value as BlockStyle | undefined}
+      onChange={onChange as (v: BlockStyle) => void}
+    />
+  ),
+} as unknown as Field<BlockStyle | undefined>;
+
+// ---------------------------------------------------------------------------
 // Per-block editor configs (fields copied verbatim from the production blocks)
 // ---------------------------------------------------------------------------
 
@@ -118,6 +146,7 @@ const hero: ComponentConfig<HeroBlockProps> = {
     height: "tall",
   },
   fields: {
+    _style: styleField,
     headline: { type: "text", label: "Headline" },
     subhead: { type: "text", label: "Sub-headline (optional)" },
     backgroundImagePublicId: {
@@ -178,8 +207,8 @@ const hero: ComponentConfig<HeroBlockProps> = {
     if (!data.props.backgroundImagePublicId) delete f.backgroundOverlayOpacity;
     return f as unknown as typeof fields;
   },
-  render: ({ headline, subhead, primaryCtaLabel, height }) => (
-    <Preview label="Hero" lines={[headline, subhead, `${primaryCtaLabel} · ${height}`]} />
+  render: ({ _style, headline, subhead, primaryCtaLabel, height }) => (
+    <Preview label="Hero" lines={[headline, subhead, `${primaryCtaLabel} · ${height}`]} blockStyle={_style} />
   ),
 };
 
@@ -197,6 +226,7 @@ const about: ComponentConfig<AboutBlockProps> = {
     ],
   },
   fields: {
+    _style: styleField,
     heading: { type: "text", label: "Heading" },
     body: { type: "textarea", label: "Body text (line breaks preserved)" },
     imagePublicId: {
@@ -230,8 +260,8 @@ const about: ComponentConfig<AboutBlockProps> = {
     delete f.imageUrl; // owner picks a photo; url is a render-time fallback only
     return f as unknown as typeof fields;
   },
-  render: ({ heading, body, imagePosition }) => (
-    <Preview label="About" lines={[heading, truncate(body), `image: ${imagePosition}`]} />
+  render: ({ _style, heading, body, imagePosition }) => (
+    <Preview label="About" lines={[heading, truncate(body), `image: ${imagePosition}`]} blockStyle={_style} />
   ),
 };
 
@@ -239,6 +269,7 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
   defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 12 },
   fields: {
+    _style: styleField,
     collectionId: {
       type: "custom",
       label: "Collection",
@@ -274,10 +305,11 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
     } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ collectionId, columns, maxItems }) => (
+  render: ({ _style, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Grid"
       lines={[`Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
+      blockStyle={_style}
     />
   ),
 };
@@ -286,6 +318,7 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
   defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 18 },
   fields: {
+    _style: styleField,
     collectionId: {
       type: "custom",
       label: "Collection",
@@ -321,10 +354,11 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
     } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ collectionId, columns, maxItems }) => (
+  render: ({ _style, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Masonry"
       lines={[`Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
+      blockStyle={_style}
     />
   ),
 };
@@ -333,6 +367,7 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
   defaultProps: { collectionId: "", aspect: "landscape", autoplay: false, maxItems: 12 },
   fields: {
+    _style: styleField,
     collectionId: {
       type: "custom",
       label: "Collection",
@@ -359,10 +394,11 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
     } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ collectionId, aspect, maxItems }) => (
+  render: ({ _style, collectionId, aspect, maxItems }) => (
     <Preview
       label="Gallery Carousel"
       lines={[`Collection: ${collectionId || "— select —"}`, `${aspect} · up to ${maxItems}`]}
+      blockStyle={_style}
     />
   ),
 };
@@ -371,6 +407,7 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   label: "Featured Work",
   defaultProps: { heading: "Featured work", subheading: "", itemIds: [], layout: "row" },
   fields: {
+    _style: styleField,
     heading: { type: "text", label: "Heading" },
     subheading: { type: "text", label: "Subheading" },
     itemIds: {
@@ -392,10 +429,11 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
       ],
     },
   },
-  render: ({ heading, subheading, itemIds, layout }) => (
+  render: ({ _style, heading, subheading, itemIds, layout }) => (
     <Preview
       label="Featured Work"
       lines={[heading, subheading, `${itemIds?.length ?? 0} items · ${layout}`]}
+      blockStyle={_style}
     />
   ),
 };
@@ -411,6 +449,7 @@ const servicesList: ComponentConfig<ServicesListProps> = {
     ],
   },
   fields: {
+    _style: styleField,
     heading: { type: "text", label: "Section heading" },
     items: {
       type: "array",
@@ -424,10 +463,11 @@ const servicesList: ComponentConfig<ServicesListProps> = {
       getItemSummary: (item: ServiceItem) => item.title || "Service",
     },
   },
-  render: ({ heading, items }) => (
+  render: ({ _style, heading, items }) => (
     <Preview
       label="Services"
       lines={[heading, (items ?? []).map((i) => i.title).filter(Boolean).join(" · ")]}
+      blockStyle={_style}
     />
   ),
 };
@@ -444,6 +484,7 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
     backgroundImageUrl: "",
   },
   fields: {
+    _style: styleField,
     headline: { type: "text", label: "Headline" },
     subhead: { type: "text", label: "Sub-headline (optional)" },
     ctaLabel: { type: "text", label: "CTA button label" },
@@ -480,8 +521,8 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
     if (data.props.background !== "image") delete f.backgroundImagePublicId;
     return f as unknown as typeof fields;
   },
-  render: ({ headline, ctaLabel, background }) => (
-    <Preview label="CTA Banner" lines={[headline, `${ctaLabel} · ${background}`]} />
+  render: ({ _style, headline, ctaLabel, background }) => (
+    <Preview label="CTA Banner" lines={[headline, `${ctaLabel} · ${background}`]} blockStyle={_style} />
   ),
 };
 
@@ -497,6 +538,7 @@ const contactCard: ComponentConfig<ContactCardProps> = {
     inlineCtaLabel: "Send a Message",
   },
   fields: {
+    _style: styleField,
     heading: { type: "text", label: "Heading" },
     description: { type: "textarea", label: "Description (optional)" },
     showEmail: {
@@ -533,8 +575,8 @@ const contactCard: ComponentConfig<ContactCardProps> = {
     } as Field<boolean>,
     inlineCtaLabel: { type: "text", label: "CTA button label (optional — leave empty to hide)" },
   },
-  render: ({ heading, description }) => (
-    <Preview label="Contact Card" lines={[heading, truncate(description)]} />
+  render: ({ _style, heading, description }) => (
+    <Preview label="Contact Card" lines={[heading, truncate(description)]} blockStyle={_style} />
   ),
 };
 

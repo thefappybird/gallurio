@@ -21,6 +21,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ import { Types } from "mongoose";
 // ---------------------------------------------------------------------------
 
 export type GalleryGridProps = {
+  _style?: BlockStyle;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
@@ -87,6 +89,7 @@ type LeanGalleryItem = {
 // ---------------------------------------------------------------------------
 
 export async function GalleryGridBlock({
+  _style,
   collectionId,
   columns,
   gap,
@@ -149,6 +152,7 @@ export async function GalleryGridBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
     >
       <div
@@ -252,6 +256,7 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
   defaultProps: galleryGridDefaultProps,
   fields: {
+    _style: productionStyleField,
     collectionId: {
       type: "text",
       label: "Collection ID",

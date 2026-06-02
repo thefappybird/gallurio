@@ -94,6 +94,10 @@ const workspaceSchema = new Schema(
       // Publish bookkeeping — written by the publish action.
       lastPublishedAt: { type: Date, default: null },
       latestVersion: { type: Number, default: 0 },
+      // When the owner dismissed the editor's first-run guide overlay ("don't
+      // show again"). Null → the guide auto-opens on load. Stored per workspace
+      // (one owner per workspace in MVP) so the choice survives across devices.
+      guideDismissedAt: { type: Date, default: null },
       seoTitle: { type: String, default: "" },
       seoDescription: { type: String, default: "" },
       inquiryRecipientEmail: { type: String, default: "" },

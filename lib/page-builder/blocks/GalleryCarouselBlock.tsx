@@ -14,8 +14,10 @@ import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 export type GalleryCarouselProps = {
+  _style?: BlockStyle;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
   autoplay: boolean;
@@ -36,6 +38,7 @@ const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height
 };
 
 export async function GalleryCarouselBlock({
+  _style,
   collectionId,
   aspect,
   autoplay,
@@ -91,6 +94,7 @@ export async function GalleryCarouselBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 0.75rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
     >
       <GalleryCarouselClient
@@ -135,6 +139,7 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
   label: "Gallery Carousel",
   defaultProps: galleryCarouselDefaultProps,
   fields: {
+    _style: productionStyleField,
     collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",

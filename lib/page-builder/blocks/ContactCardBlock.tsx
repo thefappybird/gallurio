@@ -17,12 +17,14 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export type ContactCardProps = {
+  _style?: BlockStyle;
   heading: string;
   description?: string;
   showEmail: boolean;
@@ -51,6 +53,7 @@ export const contactCardDefaultProps: ContactCardProps = {
 // ---------------------------------------------------------------------------
 
 export function ContactCardBlock({
+  _style,
   heading,
   description,
   showEmail,
@@ -72,6 +75,7 @@ export function ContactCardBlock({
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
         padding: "4rem 1.5rem",
+        ...resolveBlockStyle(_style),
       }}
     >
       <div
@@ -346,6 +350,7 @@ export const contactCardBlockConfig: ComponentConfig<ContactCardProps> = {
   label: "Contact Card",
   defaultProps: contactCardDefaultProps,
   fields: {
+    _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
     description: { type: "textarea", label: "Description (optional)" },
     showEmail: {

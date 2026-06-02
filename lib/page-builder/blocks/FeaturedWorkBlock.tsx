@@ -11,6 +11,7 @@ import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { getItemsByIds } from "@/lib/db/queries/gallery";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // Puck `array` fields persist an array of objects, so `itemIds` round-trips as
 // `Array<{ id }>` from the editor. Tests/fixtures may pass a plain `string[]`.
@@ -18,6 +19,7 @@ import { getItemsByIds } from "@/lib/db/queries/gallery";
 export type FeaturedWorkItemId = string | { id?: string | null };
 
 export type FeaturedWorkProps = {
+  _style?: BlockStyle;
   heading: string;
   subheading: string;
   itemIds: FeaturedWorkItemId[];
@@ -40,6 +42,7 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
 const MAX_FEATURED = 3;
 
 export async function FeaturedWorkBlock({
+  _style,
   heading,
   subheading,
   itemIds,
@@ -75,6 +78,7 @@ export async function FeaturedWorkBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
     >
       {/* Mobile-first: stack to a single column below 640px. */}
@@ -187,6 +191,7 @@ export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
   label: "Featured Work",
   defaultProps: featuredWorkDefaultProps,
   fields: {
+    _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
     subheading: { type: "text", label: "Subheading" },
     itemIds: {

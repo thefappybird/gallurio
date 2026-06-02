@@ -29,18 +29,23 @@ describe("BrandKitPicker", () => {
     );
   });
 
-  it("propagates a valid hex color", () => {
+  it("propagates a color picked from the accent spectrum popover", () => {
     const { onChange } = setup();
-    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "#abcdef" } });
+    // Open the Accent color popover, then pick a preset swatch.
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.click(screen.getByRole("button", { name: "#7c5cff" }));
     expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ accentColor: "#abcdef" })
+      expect.objectContaining({ accentColor: "#7c5cff" })
     );
   });
 
-  it("does NOT propagate an invalid hex color", () => {
+  it("propagates a typed valid hex from the accent popover", () => {
     const { onChange } = setup();
-    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "nope" } });
-    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcdef" } });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ accentColor: "#abcdef" })
+    );
   });
 
   it("'use workspace branding' pulls primary/secondary from the prop", () => {

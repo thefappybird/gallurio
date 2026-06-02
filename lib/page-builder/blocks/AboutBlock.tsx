@@ -15,6 +15,7 @@
 
 import type { ComponentConfig } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,6 +27,7 @@ export type CredentialItem = {
 };
 
 export type AboutBlockProps = {
+  _style?: BlockStyle;
   heading: string;
   body: string;
   imagePublicId?: string;
@@ -55,6 +57,7 @@ export const aboutDefaultProps: AboutBlockProps = {
 // ---------------------------------------------------------------------------
 
 export function AboutBlock({
+  _style,
   heading,
   body,
   imagePublicId,
@@ -77,6 +80,7 @@ export function AboutBlock({
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
         padding: "4rem 1.5rem",
+        ...resolveBlockStyle(_style),
       }}
     >
       <div
@@ -218,6 +222,7 @@ export const aboutBlockConfig: ComponentConfig<AboutBlockProps> = {
   label: "About",
   defaultProps: aboutDefaultProps,
   fields: {
+    _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
     body: { type: "textarea", label: "Body text (line breaks preserved)" },
     imagePublicId: {

@@ -19,11 +19,15 @@ import type {
 import {
   savePortfolioDraftAction,
   publishPortfolioAction,
+  switchTemplateAction,
+  dismissPortfolioGuideAction,
 } from "../_actions";
 import { PublishDialog } from "./PublishDialog";
 import { ThemePanelDialog } from "./ThemePanelDialog";
 import { ContactPanelDialog } from "./ContactPanelDialog";
 import { MobileBanner } from "./MobileBanner";
+import { TemplatePickerDialog } from "./TemplatePickerDialog";
+import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,14 @@ import { cn } from "@/lib/utils";
 type Zone = "home" | "gallery";
 type Tab = Zone | "contact";
 type SaveStatus = "idle" | "saving" | "saved";
+
+/** Serializable starter-template summary for the in-editor switcher. */
+export type EditorTemplateSummary = {
+  id: string;
+  label: string;
+  description: string;
+  defaultBrandKit: PortfolioBrandKit;
+};
 
 type Props = {
   slug: string;
@@ -45,6 +57,12 @@ type Props = {
   publicOrigin: string;
   /** Locale-aware path to the chrome-less preview route (iframe src base). */
   previewBasePath: string;
+  /** Starter templates for the switcher. */
+  templates: EditorTemplateSummary[];
+  /** Id of the template the page is currently seeded from. */
+  currentTemplateId: string;
+  /** Whether the owner already dismissed the first-run guide overlay. */
+  guideDismissed: boolean;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
@@ -78,6 +96,9 @@ export function EditorShell({
   initialFormLocale,
   publicOrigin,
   previewBasePath,
+  templates,
+  currentTemplateId,
+  guideDismissed,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
 
@@ -94,6 +115,13 @@ export function EditorShell({
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templateId, setTemplateId] = useState(currentTemplateId);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  // The guide auto-opens on first run (until the owner persisted a dismissal),
+  // and can be reopened on demand via the Guide button for the session.
+  const [guideOpen, setGuideOpen] = useState(!guideDismissed);
 
   const isContact = activeTab === "contact";
   const showPuck = !isContact && !previewMode;
@@ -258,6 +286,41 @@ export function EditorShell({
     if (saved && isContact) setPreviewNonce((n) => n + 1);
   }
 
+  async function handleSwitchTemplate(nextTemplateId: string) {
+    setSwitching(true);
+    setSwitchError(null);
+    const res = await switchTemplateAction({ templateId: nextTemplateId });
+    if ("error" in res) {
+      setSwitching(false);
+      setSwitchError(t("errorToast"));
+      return;
+    }
+    const { seed } = res;
+    // Replace both zones with the freshly seeded data; the active zone remounts.
+    zoneDataRef.current = {
+      home: (seed.data.home as PuckData) ?? EMPTY_ZONE,
+      gallery: (seed.data.gallery as PuckData) ?? EMPTY_ZONE,
+    };
+    setBrandKit(seed.brandKit);
+    setContact(seed.contact);
+    setTemplateId(seed.templateId);
+    ignoreNextChange.current = true;
+    setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+    setSwitching(false);
+    setTemplatesOpen(false);
+    setSaveStatus("saved");
+    if (!showPuck) setPreviewNonce((n) => n + 1);
+    toast.success(t("templateSwitchedToast"));
+  }
+
+  // The guide's "Don't show again" persists the dismissal; closing/skipping is
+  // session-only so it can be reopened from the Guide button without re-showing
+  // on the next load.
+  function dismissGuideForever() {
+    setGuideOpen(false);
+    void dismissPortfolioGuideAction();
+  }
+
   const { cssVars, className } = resolveBrandKit(brandKit);
   const headerTitle = `${workspaceName} · ${t(`zone.${activeTab}`)}`;
   const previewSrc = `${previewBasePath}?zone=${isContact ? "contact" : activeZone}&v=${previewNonce}`;
@@ -299,6 +362,12 @@ export function EditorShell({
           </Button>
           <Button type="button" size="sm" variant="outline" onClick={openTheme}>
             {t("theme")}
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setTemplatesOpen(true)}>
+            {t("templates")}
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
+            {t("guide")}
           </Button>
           {isContact && (
             <Button type="button" size="sm" variant="outline" onClick={openContact}>
@@ -391,6 +460,23 @@ export function EditorShell({
         onCancel={() => closeContact(false)}
       />
       <CollectionsManagerDialog open={photosOpen} onOpenChange={setPhotosOpen} />
+      <TemplatePickerDialog
+        open={templatesOpen}
+        onOpenChange={(next) => {
+          setTemplatesOpen(next);
+          if (!next) setSwitchError(null);
+        }}
+        templates={templates}
+        currentTemplateId={templateId}
+        switching={switching}
+        error={switchError}
+        onConfirm={(id) => void handleSwitchTemplate(id)}
+      />
+      <PortfolioGuideOverlay
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        onDontShowAgain={dismissGuideForever}
+      />
     </>
   );
 }

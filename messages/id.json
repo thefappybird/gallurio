@@ -1070,7 +1070,10 @@
           "title": "Pratinjau langsung",
           "empty": "Belum ada yang bisa dipratinjau. Tambahkan beberapa bagian, lalu kembali."
         },
-        "photos": "Foto"
+        "photos": "Foto",
+        "templates": "Template",
+        "guide": "Panduan",
+        "templateSwitchedToast": "Template diterapkan."
       },
       "wizard": {
         "title": "Mari buat portofolio Anda",

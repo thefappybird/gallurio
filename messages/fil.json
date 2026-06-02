@@ -1070,7 +1070,10 @@
           "title": "Live na preview",
           "empty": "Wala pang ipi-preview. Magdagdag ng ilang seksyon, pagkatapos ay bumalik."
         },
-        "photos": "Mga Larawan"
+        "photos": "Mga Larawan",
+        "templates": "Mga Template",
+        "guide": "Gabay",
+        "templateSwitchedToast": "Na-apply ang template."
       },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",

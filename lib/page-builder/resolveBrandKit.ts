@@ -16,7 +16,7 @@ import type { PortfolioBrandKit, BrandKitFontPair, BrandKitRadius } from "./type
 // Each pairing resolves to the self-hosted font's CSS variable (set on the
 // public/app root by lib/fonts/portfolio.ts) with a generic-family fallback so
 // text is never invisible if the woff2 hasn't loaded yet.
-const FONT_PAIR_MAP: Record<BrandKitFontPair, { heading: string; body: string }> = {
+export const FONT_PAIR_MAP: Record<BrandKitFontPair, { heading: string; body: string }> = {
   "merriweather-only": {
     heading: "var(--font-merriweather), Georgia, serif",
     body: "var(--font-merriweather), Georgia, serif",

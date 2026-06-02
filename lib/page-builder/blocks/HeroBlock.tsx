@@ -15,12 +15,14 @@
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
 export type HeroBlockProps = {
+  _style?: BlockStyle;
   headline: string;
   subhead?: string;
   backgroundImagePublicId?: string;
@@ -67,6 +69,7 @@ const HEIGHT_MAP: Record<HeroBlockProps["height"], string> = {
 // ---------------------------------------------------------------------------
 
 export function HeroBlock({
+  _style,
   headline,
   subhead,
   backgroundImagePublicId,
@@ -111,7 +114,7 @@ export function HeroBlock({
   return (
     <section
       data-block="hero"
-      style={wrapperStyle}
+      style={{ ...wrapperStyle, ...resolveBlockStyle(_style) }}
       aria-label="Hero section"
     >
       {/* Background image */}
@@ -281,6 +284,7 @@ export const heroBlockConfig: ComponentConfig<HeroBlockProps> = {
   label: "Hero",
   defaultProps: heroDefaultProps,
   fields: {
+    _style: productionStyleField,
     headline: { type: "text", label: "Headline" },
     subhead: { type: "text", label: "Sub-headline (optional)" },
     backgroundImagePublicId: {

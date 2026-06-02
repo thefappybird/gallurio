@@ -1,10 +1,11 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
-import { redirect } from "@/lib/i18n/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
 import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PuckData } from "@/lib/page-builder/types";
-import { EditorShell } from "./_components/EditorShell";
+import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
+import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
 
 export async function generateMetadata({
   params,
@@ -49,19 +50,43 @@ export default async function PageBuilderEntry({
     );
   }
 
-  // First visit (no seeded home) → guided wizard.
-  if (!workspace.publicPage?.data?.home) {
-    redirect({ href: "/portfolio/wizard", locale });
+  const pp = workspace.publicPage;
+
+  // First visit (no seeded home) → seed the closest starter template inline so
+  // the editor opens on a real page (the wizard is gone; the guide overlay and
+  // template switcher take its place). Idempotent + race-safe.
+  let homeData: unknown = pp?.data?.home ?? null;
+  let galleryData: unknown = pp?.data?.gallery ?? null;
+  let brandKitData: unknown = pp?.brandKit ?? null;
+  let contactData: unknown = pp?.contact ?? null;
+  let templateId: string = pp?.templateId ?? "minimal";
+  if (!homeData) {
+    const seed = await seedDefaultPortfolio(workspace._id);
+    if (seed) {
+      homeData = seed.data.home;
+      galleryData = seed.data.gallery;
+      brandKitData = seed.brandKit;
+      contactData = seed.contact;
+      templateId = seed.templateId;
+    }
   }
 
-  const pp = workspace.publicPage;
   const initialData = {
-    home: toPlain<PuckData>(pp?.data?.home, EMPTY_ZONE),
-    gallery: toPlain<PuckData>(pp?.data?.gallery, EMPTY_ZONE),
+    home: toPlain<PuckData>(homeData, EMPTY_ZONE),
+    gallery: toPlain<PuckData>(galleryData, EMPTY_ZONE),
   };
-  const initialBrandKit = toPlain<PortfolioBrandKit>(pp?.brandKit, DEFAULT_BRAND_KIT);
-  const initialContact = toPlain<PortfolioContactConfig>(pp?.contact, {});
+  const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
+  const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
+  const guideDismissed = Boolean(pp?.guideDismissedAt);
+
+  // Serializable starter-template summaries for the in-editor switcher.
+  const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
+    id: tpl.id,
+    label: tpl.label,
+    description: tpl.description,
+    defaultBrandKit: toPlain(tpl.defaultBrandKit, DEFAULT_BRAND_KIT),
+  }));
   const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
   // Locale-aware path to the chrome-less preview route (loaded in an iframe).
   // English has no prefix under localePrefix: "as-needed".
@@ -78,6 +103,9 @@ export default async function PageBuilderEntry({
       initialFormLocale={initialFormLocale}
       publicOrigin={publicOrigin}
       previewBasePath={previewBasePath}
+      templates={templates}
+      currentTemplateId={templateId}
+      guideDismissed={guideDismissed}
     />
   );
 }

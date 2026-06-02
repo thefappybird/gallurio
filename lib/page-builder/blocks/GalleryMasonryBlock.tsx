@@ -15,8 +15,10 @@ import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
+import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 export type GalleryMasonryProps = {
+  _style?: BlockStyle;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
@@ -45,6 +47,7 @@ const THUMB_WIDTH_MAP: Record<GalleryMasonryProps["columns"], number> = {
 };
 
 export async function GalleryMasonryBlock({
+  _style,
   collectionId,
   columns,
   gap,
@@ -92,6 +95,7 @@ export async function GalleryMasonryBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
     >
       {/* Mobile-first: cap columns on small viewports (inline columnCount is the
@@ -187,6 +191,7 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
   defaultProps: galleryMasonryDefaultProps,
   fields: {
+    _style: productionStyleField,
     collectionId: { type: "text", label: "Collection ID" },
     columns: {
       type: "select",
