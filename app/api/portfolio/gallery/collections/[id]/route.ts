@@ -79,7 +79,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   );
 
   return NextResponse.json(
-    { deleted: true, itemsDeleted: publicIds.length, assetsFailed },
+    { deleted: true, itemsDeleted: items.length, assetsDestroyed: publicIds.length - assetsFailed, assetsFailed },
     { status: 200 }
   );
 }

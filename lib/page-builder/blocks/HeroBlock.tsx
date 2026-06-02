@@ -93,6 +93,11 @@ export function HeroBlock({
       ? cloudinaryThumbnailUrl(backgroundImagePublicId, { width: 2000, crop: "fill" })
       : backgroundImageUrl || null;
 
+  // A toolkit background (color or image) replaces the default accent gradient
+  // entirely — otherwise the `background` shorthand would paint over it.
+  const toolkitStyle = resolveBlockStyle(_style);
+  const hasToolkitBg = Boolean(_style?.bgColorToken || _style?.bgImagePublicId);
+
   // Wrapper inline styles — brand-kit colors via CSS vars
   const wrapperStyle: React.CSSProperties = {
     position: "relative",
@@ -104,17 +109,18 @@ export function HeroBlock({
     backgroundColor: bgImageSrc
       ? "var(--pf-color-fg)" // dark fallback while image loads
       : undefined,
-    // Accent gradient fallback when no image
-    background: bgImageSrc
-      ? undefined
-      : "linear-gradient(135deg, var(--pf-color-accent) 0%, var(--pf-color-primary) 100%)",
+    // Accent gradient fallback when no image and no toolkit background
+    background:
+      bgImageSrc || hasToolkitBg
+        ? undefined
+        : "linear-gradient(135deg, var(--pf-color-accent) 0%, var(--pf-color-primary) 100%)",
     overflow: "hidden",
   };
 
   return (
     <section
       data-block="hero"
-      style={{ ...wrapperStyle, ...resolveBlockStyle(_style) }}
+      style={{ ...wrapperStyle, ...toolkitStyle }}
       aria-label="Hero section"
     >
       {/* Background image */}

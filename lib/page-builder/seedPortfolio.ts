@@ -104,7 +104,7 @@ export async function seedDefaultPortfolio(workspaceId: Types.ObjectId): Promise
 
   // Idempotent guard: the filter only matches while home is still empty, so a
   // racing first-load that already seeded leaves this a no-op.
-  await Workspace.updateOne(
+  const res = await Workspace.updateOne(
     { _id: workspaceId, "publicPage.data.home": null },
     {
       $set: {
@@ -115,6 +115,22 @@ export async function seedDefaultPortfolio(workspaceId: Types.ObjectId): Promise
       },
     }
   );
+
+  // We lost the race — another first-load already seeded. Return what was
+  // actually persisted so the caller renders the live data, not our throwaway.
+  if (res.matchedCount === 0) {
+    const fresh = await Workspace.findById(workspaceId)
+      .select({ "publicPage.templateId": 1, "publicPage.data": 1, "publicPage.brandKit": 1, "publicPage.contact": 1 })
+      .lean();
+    if (fresh?.publicPage?.data?.home) {
+      return {
+        templateId: fresh.publicPage.templateId ?? seed.templateId,
+        data: fresh.publicPage.data as PortfolioPuckData,
+        brandKit: (fresh.publicPage.brandKit as PortfolioSeed["brandKit"]) ?? seed.brandKit,
+        contact: (fresh.publicPage.contact as PortfolioSeed["contact"]) ?? seed.contact,
+      };
+    }
+  }
 
   return seed;
 }

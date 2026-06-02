@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutPanelLeftIcon,
   PaintbrushIcon,
@@ -10,6 +10,13 @@ import {
   RocketIcon,
   type LucideIcon,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -81,31 +88,28 @@ export function PortfolioGuideOverlay({
   onDontShowAgain: () => void;
 }) {
   const [step, setStep] = useState(0);
-  if (!open) return null;
+
+  // Always start at the beginning when the guide (re)opens.
+  useEffect(() => {
+    if (open) setStep(0);
+  }, [open]);
 
   const current = STEPS[step];
   const Icon = current.icon;
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="portfolio-guide-title"
-      className="fixed inset-0 z-60 flex items-center justify-center bg-black/40 p-4 supports-backdrop-filter:backdrop-blur-sm"
-    >
-      <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden border border-border bg-popover text-popover-foreground shadow-lg">
-        <div className="flex items-start gap-3 border-b border-border px-4 py-3">
+    <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+        <DialogHeader className="flex-row items-start gap-3 border-b border-border px-4 py-3">
           <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center border border-border bg-muted text-foreground">
             <Icon className="size-5" aria-hidden />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="text-xs text-muted-foreground">{L.stepOf(step + 1, STEPS.length)}</span>
-            <h2 id="portfolio-guide-title" className="font-heading text-base font-medium leading-tight">
-              {current.title}
-            </h2>
+            <DialogTitle className="leading-tight">{current.title}</DialogTitle>
           </div>
-        </div>
+        </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <p className="text-sm leading-relaxed text-muted-foreground">{current.body}</p>
@@ -126,34 +130,32 @@ export function PortfolioGuideOverlay({
           {isLast && <p className="mt-3 text-xs text-muted-foreground">{L.reopenHint}</p>}
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-border bg-muted/40 px-4 py-3">
-          <div className="flex items-center justify-between gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onDontShowAgain}>
-              {L.dontShow}
-            </Button>
-            <div className="flex items-center gap-2">
-              {step > 0 ? (
-                <Button type="button" variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}>
-                  {L.back}
-                </Button>
-              ) : (
-                <Button type="button" variant="outline" size="sm" onClick={onClose}>
-                  {L.skip}
-                </Button>
-              )}
-              {isLast ? (
-                <Button type="button" size="sm" onClick={onClose}>
-                  {L.finish}
-                </Button>
-              ) : (
-                <Button type="button" size="sm" onClick={() => setStep((s) => s + 1)}>
-                  {L.next}
-                </Button>
-              )}
-            </div>
+        <DialogFooter className="flex-row items-center justify-between gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={onDontShowAgain}>
+            {L.dontShow}
+          </Button>
+          <div className="flex items-center gap-2">
+            {step > 0 ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}>
+                {L.back}
+              </Button>
+            ) : (
+              <Button type="button" variant="outline" size="sm" onClick={onClose}>
+                {L.skip}
+              </Button>
+            )}
+            {isLast ? (
+              <Button type="button" size="sm" onClick={onClose}>
+                {L.finish}
+              </Button>
+            ) : (
+              <Button type="button" size="sm" onClick={() => setStep((s) => s + 1)}>
+                {L.next}
+              </Button>
+            )}
           </div>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
