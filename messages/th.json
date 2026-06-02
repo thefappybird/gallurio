@@ -504,12 +504,37 @@
         "teams": "ทีม",
         "publicPage": "หน้าสาธารณะ",
         "danger": "โซนอันตราย",
+        "billing": "การเรียกเก็บเงิน",
         "devPlan": "Dev · plan",
         "switchWorkspace": "สลับพื้นที่ทำงาน"
       },
+      "billing": {
+        "currentPlanLabel": "แผนปัจจุบัน",
+        "renewsOn": "ต่ออายุในวันที่ {date}",
+        "availablePlans": "แผนที่ใช้ได้",
+        "perMonth": "/ เดือน",
+        "upgradeTo": "อัปเกรดเป็น {plan}",
+        "upgradeToAriaLabel": "อัปเกรดเป็นแผน {plan}",
+        "opening": "กำลังเปิด…",
+        "upgradeSuccess": "เปิดใช้งานการสมัครแล้ว! แผนของคุณได้รับการอัปเดต",
+        "checkoutFailed": "การชำระเงินล้มเหลว กรุณาลองอีกครั้ง",
+        "paddleNotReady": "ระบบชำระเงินยังไม่พร้อม กรุณารีเฟรชและลองอีกครั้ง",
+        "paddleTokenMissingDev": "ไม่ได้ตั้งค่า NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — ไม่สามารถใช้ overlay ในสภาพแวดล้อม dev นี้ได้",
+        "subscriptionIssue": "มีปัญหากับการสมัครของคุณ กรุณาตรวจสอบวิธีการชำระเงินหรือติดต่อฝ่ายสนับสนุน",
+        "subscriptionStatus": {
+          "active": "ใช้งานอยู่",
+          "canceled": "ยกเลิกแล้ว",
+          "past_due": "เกินกำหนด",
+          "paused": "หยุดชั่วคราว",
+          "trialing": "ช่วงทดลอง"
+        },
+        "manageSection": "จัดการการสมัคร",
+        "manageDescription": "การสมัครของคุณจัดการผ่าน Paddle ติดต่อฝ่ายสนับสนุนเพื่ออัปเดตวิธีการชำระเงินหรือดูใบแจ้งหนี้",
+        "cancelNote": "หากต้องการยกเลิกการสมัคร ติดต่อฝ่ายสนับสนุนหรือลบพื้นที่ทำงานของคุณ"
+      },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
+        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -969,14 +994,17 @@
         "forever": "ตลอดกาล",
         "monthly": "/ เดือน"
       },
-      "checkoutNote": "คุณจะถูกนำไปยัง HitPay เพื่อกรอกรายละเอียดบัตรของคุณ (Visa หรือ Mastercard) รอบแรกจะถูกเรียกเก็บเงินทันทีและจะต่ออายุทุกเดือนจนกว่าคุณจะยกเลิก",
+      "checkoutNote": "Overlay ชำระเงิน Paddle ที่ปลอดภัยจะเปิดขึ้น กรอกรายละเอียดบัตรของคุณ (Visa หรือ Mastercard) รอบแรกจะถูกเรียกเก็บเงินทันทีและจะต่ออายุทุกเดือนจนกว่าคุณจะยกเลิก",
       "ctaFree": "ดำเนินการต่อด้วย Free",
       "ctaPaid": "สมัคร — {price} / เดือน",
       "settingUp": "กำลังตั้งค่า…",
-      "opening": "กำลังเปิด HitPay…",
+      "opening": "กำลังเปิดการชำระเงิน…",
+      "checkoutFailed": "การชำระเงินล้มเหลว กรุณาลองอีกครั้ง",
+      "paddleNotReady": "ระบบชำระเงินยังไม่พร้อม กรุณารีเฟรชและลองอีกครั้ง",
+      "paddleTokenMissingDev": "ไม่ได้ตั้งค่า NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — ไม่สามารถใช้ overlay ในสภาพแวดล้อม dev นี้ได้ ใช้ทางลัด dev ด้านล่าง",
       "dev": {
         "label": "ทางลัด dev",
-        "description": "ข้าม HitPay และทำเครื่องหมาย {planName} เป็นใช้งานอยู่ Dev เท่านั้น",
+        "description": "ข้าม Paddle และทำเครื่องหมาย {planName} เป็นใช้งานอยู่ Dev เท่านั้น",
         "activate": "เปิดใช้งาน {planName} (dev)"
       }
     },
