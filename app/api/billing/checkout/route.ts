@@ -7,9 +7,26 @@ import { Workspace } from "@/lib/db/models";
 import { ensurePaddleCustomer } from "@/lib/paddle/client";
 import { getPlanCatalog, isPaidPlan } from "@/lib/paddle/plans";
 import { subscriptionCheckoutWorkflow } from "@/lib/workflows/subscriptionCheckout";
-import { start } from "workflow/api";
+import { start, getHookByToken, getRun } from "workflow/api";
 
 export const runtime = "nodejs";
+
+// A checkout the user abandons (overlay closed before paying) leaves a workflow
+// run blocked on its hook token indefinitely. Starting a new run with the same
+// token then throws HookConflictError. Cancel any in-flight run first — looking
+// it up by the deterministic token (not the stored run id) also reclaims runs
+// that an earlier start overwrote in the DB. Best-effort: a cancel failure must
+// not block a fresh checkout.
+async function cancelInFlightCheckout(token: string): Promise<void> {
+  try {
+    const hook = await getHookByToken(token);
+    if (hook?.runId) {
+      await getRun(hook.runId).cancel();
+    }
+  } catch {
+    // No hook in flight (the common path), or it already settled — nothing to do.
+  }
+}
 
 const bodySchema = z.object({
   plan: z.enum(["starter", "pro"]),
@@ -66,6 +83,7 @@ export async function POST(req: Request) {
       name,
       existingCustomerId: ctx.workspace.paddleCustomerId ?? undefined,
     });
+    await cancelInFlightCheckout(`paddle-checkout-${ctx.workspace._id.toString()}`);
     run = await start(subscriptionCheckoutWorkflow, [ctx.workspace._id.toString(), plan]);
   } catch (err) {
     console.error("[billing.checkout] paddle/workflow init failed", err);

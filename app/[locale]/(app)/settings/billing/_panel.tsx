@@ -63,6 +63,10 @@ export function BillingPanel({
           toast.success(t("upgradeSuccess"));
           // Reload page to reflect new plan from server.
           window.location.reload();
+        } else if (e.name === "checkout.closed" || e.name === "checkout.error") {
+          // Overlay dismissed or failed to render — release the button so the
+          // user can retry instead of staring at a permanent spinner.
+          setLoadingPlan(null);
         }
       },
     })
