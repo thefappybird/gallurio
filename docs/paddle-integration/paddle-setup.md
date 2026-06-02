@@ -67,8 +67,16 @@ No new env vars — the same `pri_…` ID handles all markets.
 ## Step 3 — Copy authentication keys
 
 1. **Developer tools → Authentication**
-2. Copy the **Server-side API key** → `PADDLE_API_KEY` (starts `pdl_sdbx_` in sandbox).
+2. **API keys → New API key.** Paddle keys are scoped, and permissions **cannot be edited after creation** — so grant the right permissions now (or create a new key). The subscription-checkout flow needs **write** access to customers, subscriptions, and transactions:
+   - `customer.write` ← without this you get `403 forbidden: not authorized to create customer`
+   - `subscription.read` + `subscription.write`
+   - `transaction.read` + `transaction.write`
+   - `price.read`, `product.read`
+   - For sandbox/dev, granting **full access** is fine.
+   Copy the **Server-side API key** → `PADDLE_API_KEY` (starts `pdl_sdbx_` in sandbox). It's shown only once.
 3. Copy the **Client-side token** → `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` (starts `test_` in sandbox).
+
+> After changing `PADDLE_API_KEY`, **restart the dev server** — env vars don't hot-reload.
 
 ---
 
