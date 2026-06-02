@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import type {
@@ -66,7 +67,10 @@ export default async function DashboardPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.dashboard");
 
-  const { workspace } = await requireOrg();
+  const { role, workspace } = await requireOrg();
+  // Dashboard is owner-only; members never see the nav link, and a direct URL
+  // hit must 404 rather than leak workspace metrics.
+  if (role !== "owner") notFound();
   const wid = workspace._id;
 
   await connectDB();

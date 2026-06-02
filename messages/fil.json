@@ -505,7 +505,7 @@
         "publicPage": "Pampublikong pahina",
         "danger": "Danger zone",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Palitan ang Workspace"
+        "currentWorkspace": "Kasalukuyang workspace"
       },
       "devPlan": {
         "title": "Dev plan switcher",

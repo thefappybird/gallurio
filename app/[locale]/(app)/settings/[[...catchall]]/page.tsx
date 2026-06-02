@@ -6,14 +6,12 @@ import {
   Palette,
   Globe,
   AlertTriangle,
-  ArrowLeftRight,
   Wrench,
 } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { routing } from "@/lib/i18n/routing";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
-import { SettingsOrgSwitcher } from "../_components/settings-org-switcher";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { WorkspaceBrandingForm } from "../workspace/_branding-form";
 import { CustomizePanel } from "../customize/_panel";
@@ -104,12 +102,6 @@ export default async function SettingsCatchallPage({
           label: t("customize"),
           icon: <Palette className="size-4" />,
           body: <CustomizePanel initialTimeFormat={initialTimeFormat} />,
-        },
-        {
-          slug: "switch-workspace",
-          label: t("switchWorkspace"),
-          icon: <ArrowLeftRight className="size-4" />,
-          body: <SettingsOrgSwitcher />,
         },
         {
           slug: "workspace",

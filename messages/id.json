@@ -505,7 +505,7 @@
         "publicPage": "Halaman publik",
         "danger": "Zona berbahaya",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Ganti Workspace"
+        "currentWorkspace": "Ruang kerja saat ini"
       },
       "devPlan": {
         "title": "Dev plan switcher",

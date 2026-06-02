@@ -505,7 +505,7 @@
         "publicPage": "Public page",
         "danger": "Danger zone",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Switch Workspace"
+        "currentWorkspace": "Current workspace"
       },
       "devPlan": {
         "title": "Dev plan switcher",
