@@ -294,11 +294,11 @@ async function seedWorkspace(
     amount: number;
     currency: string;
     type: "balance" | "refund";
-    method: "paddle" | "cash" | "transfer";
+    method: "hitpay" | "cash" | "transfer";
     paidAt: Date;
   }> = [];
 
-  const methods = ["paddle", "cash", "transfer"] as const;
+  const methods = ["hitpay", "cash", "transfer"] as const;
 
   // Balance payments for completed bookings.
   for (const b of completedBookings) {

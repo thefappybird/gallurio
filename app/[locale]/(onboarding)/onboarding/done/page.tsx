@@ -5,16 +5,51 @@ import {
 } from "@/lib/auth/onboardingStep";
 import { connectDB } from "@/lib/db/mongoose";
 import { ONBOARDING_STEPS, User, Workspace, type PlanTier } from "@/lib/db/models";
-import { reconcilePaddleSubscription } from "@/lib/actions/onboarding";
+import { getRecurringBilling } from "@/lib/hitpay/client";
+import { planForAmount } from "@/lib/hitpay/plans";
 import { DoneStepForm } from "./done-form";
 
-// When the user lands on the done page we eagerly reconcile the Paddle
-// subscription onto the workspace. The webhook + workflow are the primary path;
-// this is the safety net for the race between the user completing checkout and
-// the webhook firing. Paddle checkout completes via an overlay event rather than
-// a redirect, so we reconcile unconditionally on load rather than gating on a
-// query param.
-export default async function DoneStepPage() {
+// When the user comes back from HitPay's hosted authorization, we eagerly
+// reconcile the recurring billing onto the workspace. The webhook handler
+// does the same thing, but the user has typically beaten the webhook to
+// this page.
+async function reconcileHitpayRecurring(reference: string, workspaceId: string) {
+  try {
+    await connectDB();
+    const workspace = await Workspace.findOne({
+      _id: workspaceId,
+      hitpayRecurringReference: reference,
+    });
+    if (!workspace?.hitpayRecurringBillingId) return;
+
+    const billing = await getRecurringBilling(workspace.hitpayRecurringBillingId);
+    // HitPay returns amount as a numeric string in some payloads. Coerce.
+    const amount =
+      typeof billing.amount === "number" ? billing.amount : Number(billing.amount);
+    if (!Number.isFinite(amount)) return;
+    const tier = planForAmount(amount);
+    if (tier === "free") return;
+
+    const isLive = billing.status === "active";
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      {
+        $set: {
+          plan: tier,
+          hitpayRecurringStatus: isLive ? "active" : "pending",
+        },
+      }
+    );
+  } catch (err) {
+    console.error("[onboarding/done] hitpay reconcile failed", err);
+  }
+}
+
+export default async function DoneStepPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ref?: string }>;
+}) {
   const ctx = await loadOnboardingContext();
 
   if (ctx.user?.onboardingCompletedAt) redirect("/dashboard");
@@ -23,15 +58,12 @@ export default async function DoneStepPage() {
     redirect(`/onboarding/${ctx.currentStep}`);
   }
 
-  if (ctx.workspace) {
-    await reconcilePaddleSubscription(ctx.workspace._id.toString());
-  }
-
+  const { ref } = await searchParams;
   let workspaceName = ctx.workspace?.name ?? "your workspace";
   let plan: PlanTier = ctx.workspace?.plan ?? "free";
 
-  if (ctx.workspace) {
-    await connectDB();
+  if (ref && ctx.workspace) {
+    await reconcileHitpayRecurring(ref, ctx.workspace._id.toString());
     const refreshed = await Workspace.findOne({ _id: ctx.workspace._id })
       .select({ name: 1, plan: 1 })
       .lean<{ name: string; plan: PlanTier }>();

@@ -164,10 +164,10 @@ describe("findPublishedWorkspaceBySlug", () => {
         clerkOrgId: "org_sensitive_abc123",
         plan: "starter",
         currency: "PHP",
-        paddleSubscriptionId: "sub_secret_001",
-        paddleCustomerId: "ctm_secret_001",
-        paddleSubscriptionStatus: "active",
-        paddleCurrentPeriodEnd: new Date("2026-12-31"),
+        hitpayRecurringBillingId: "hpb_secret_001",
+        hitpayRecurringReference: "hpr_secret_ref",
+        hitpayRecurringStatus: "active",
+        hitpayCurrentPeriodEnd: new Date("2026-12-31"),
       })
     );
 
@@ -176,11 +176,10 @@ describe("findPublishedWorkspaceBySlug", () => {
 
     // Sensitive fields must be absent (projected out)
     const doc = result as Record<string, unknown>;
-    expect(doc.paddleSubscriptionId).toBeUndefined();
-    expect(doc.paddleCustomerId).toBeUndefined();
-    expect(doc.paddleSubscriptionStatus).toBeUndefined();
-    expect(doc.paddleCurrentPeriodEnd).toBeUndefined();
-    expect(doc.paddleCheckoutWorkflowRunId).toBeUndefined();
+    expect(doc.hitpayRecurringBillingId).toBeUndefined();
+    expect(doc.hitpayRecurringReference).toBeUndefined();
+    expect(doc.hitpayRecurringStatus).toBeUndefined();
+    expect(doc.hitpayCurrentPeriodEnd).toBeUndefined();
     expect(doc.clerkOrgId).toBeUndefined();
     expect(doc.ownerUserId).toBeUndefined();
     expect(doc.plan).toBeUndefined();

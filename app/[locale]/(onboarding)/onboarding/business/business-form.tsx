@@ -11,11 +11,11 @@ import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import {
   businessStepSchema,
-  BILLING_COUNTRY_VALUES,
+  HITPAY_COUNTRY_VALUES,
   SUPPORTED_CURRENCIES,
   COUNTRY_TO_CURRENCY,
   type BusinessStepInput,
-  type SupportedCountry,
+  type HitpayCountry,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { businessStepAction } from "@/lib/actions/onboarding";
@@ -26,7 +26,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 
-const COUNTRY_LABELS: Record<SupportedCountry, string> = {
+// HitPay's supported merchant markets. Expanding later is just adding entries
+// here AND to HITPAY_COUNTRY_VALUES in lib/validators/workspace.ts.
+const COUNTRY_LABELS: Record<HitpayCountry, string> = {
   PH: "Philippines",
   SG: "Singapore",
   MY: "Malaysia",
@@ -37,14 +39,8 @@ const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   NZ: "New Zealand",
   GB: "United Kingdom",
   US: "United States",
-  AE: "United Arab Emirates",
-  SA: "Saudi Arabia",
-  QA: "Qatar",
-  KW: "Kuwait",
-  OM: "Oman",
-  BH: "Bahrain",
 };
-const COUNTRIES = BILLING_COUNTRY_VALUES.map((value) => ({
+const COUNTRIES = HITPAY_COUNTRY_VALUES.map((value) => ({
   value,
   label: COUNTRY_LABELS[value],
 }));
@@ -60,12 +56,6 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   NZD: "New Zealand Dollar (NZ$)",
   GBP: "British Pound (£)",
   USD: "US Dollar ($)",
-  AED: "UAE Dirham (د.إ)",
-  SAR: "Saudi Riyal (﷼)",
-  QAR: "Qatari Riyal (﷼)",
-  KWD: "Kuwaiti Dinar (د.ك)",
-  OMR: "Omani Rial (﷼)",
-  BHD: "Bahraini Dinar (.د.ب)",
 };
 const CURRENCIES = SUPPORTED_CURRENCIES.map((value) => ({
   value,
@@ -214,7 +204,7 @@ export function BusinessStepForm({
               className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               {...register("country", {
                 onChange: (e) => {
-                  const next = e.target.value as SupportedCountry;
+                  const next = e.target.value as HitpayCountry;
                   setValue("currency", COUNTRY_TO_CURRENCY[next], {
                     shouldValidate: true,
                     shouldDirty: true,

@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef } from "react";
-import { useRouter } from "@/lib/i18n/navigation";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
-import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import { PLAN_CATALOG } from "@/lib/hitpay/plans";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { PlanIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
@@ -35,40 +34,9 @@ export function PlanStepForm({
     currentPlan === "pro" ? "pro" : currentPlan === "starter" ? "starter" : "free"
   );
   const [loading, setLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const paddleRef = useRef<Paddle | null>(null);
-  const paddleInitAttempted = useRef(false);
-  const paddleTokenMissing =
-    !process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ||
-    process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN === "";
-
-  useEffect(() => {
-    if (paddleInitAttempted.current || paddleTokenMissing) return;
-    paddleInitAttempted.current = true;
-
-    initializePaddle({
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as
-        | "sandbox"
-        | "production",
-      eventCallback(e) {
-        if (e.name === "checkout.completed") {
-          router.push("/onboarding/done");
-        }
-      },
-    })
-      .then((p) => {
-        paddleRef.current = p ?? null;
-      })
-      .catch((err) => {
-        console.warn("[plan-form] Paddle init failed:", err);
-      });
-  }, [paddleTokenMissing, router]);
 
   async function submit() {
-    setCheckoutError(null);
-
     if (selected === "free") {
       startTransition(async () => {
         const result = await selectFreePlanAction();
@@ -88,40 +56,19 @@ export function PlanStepForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan: selected, onboarding: true }),
       });
-      const data = (await res.json().catch(() => ({}))) as {
-        priceId?: string;
-        customerEmail?: string;
-        workspaceId?: string;
-        error?: string;
-      };
       if (!res.ok) {
-        throw new Error(data.error ?? `Checkout request failed (${res.status})`);
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Failed (${res.status})`);
       }
-      if (!data.priceId) {
-        throw new Error("Missing priceId in checkout response");
-      }
-
-      if (!paddleRef.current) {
-        // Paddle failed to init (no token or load error) — surface clearly.
-        throw new Error(t("paddleNotReady"));
-      }
-
-      paddleRef.current.Checkout.open({
-        items: [{ priceId: data.priceId, quantity: 1 }],
-        customer: data.customerEmail ? { email: data.customerEmail } : undefined,
-        customData: { workspaceId: data.workspaceId },
-      });
+      const data = (await res.json()) as { url: string };
+      window.location.href = data.url;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t("checkoutFailed");
-      setCheckoutError(msg);
-      toast.error(msg);
-    } finally {
+      toast.error(err instanceof Error ? err.message : "Checkout failed");
       setLoading(false);
     }
   }
 
   function devActivate() {
-    setCheckoutError(null);
     startTransition(async () => {
       const result = await devActivatePlanAction(selected);
       if (result?.error) {
@@ -163,13 +110,10 @@ export function PlanStepForm({
                 type="button"
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.985 }}
-                onClick={() => {
-                  setSelected(p.id);
-                  setCheckoutError(null);
-                }}
+                onClick={() => setSelected(p.id)}
                 className={cn(
                   "relative flex flex-col gap-3 border bg-background p-4 text-left transition-colors",
-                  active ? "border-primary" : "border-border hover:border-foreground/40 focus-visible:border-foreground/40"
+                  active ? "border-primary" : "border-border hover:border-foreground/40"
                 )}
               >
                 {p.highlight && (
@@ -205,18 +149,6 @@ export function PlanStepForm({
 
         {selected !== "free" && (
           <p className="text-xs text-muted-foreground">{t("checkoutNote")}</p>
-        )}
-
-        {selected !== "free" && paddleTokenMissing && isDev && (
-          <p className="text-xs text-amber-700 dark:text-amber-400">
-            {t("paddleTokenMissingDev")}
-          </p>
-        )}
-
-        {checkoutError && (
-          <p role="alert" className="text-xs text-destructive">
-            {checkoutError}
-          </p>
         )}
 
         <div className="mt-1 flex items-center justify-between gap-2">

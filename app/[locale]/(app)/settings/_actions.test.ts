@@ -2,7 +2,7 @@
  * Tests for settings server actions.
  *
  * Mongo: uses in-memory server — never mock Mongoose.
- * Clerk + Paddle + Cloudinary + next/cache: mocked.
+ * Clerk + HitPay + Cloudinary + next/cache: mocked.
  */
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import {
@@ -24,12 +24,8 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/paddle/client", () => ({
-  cancelSubscription: vi.fn().mockResolvedValue(undefined),
-  getPaddle: vi.fn(),
-  ensurePaddleCustomer: vi.fn(),
-  getSubscription: vi.fn(),
-  listActiveSubscriptionsForCustomer: vi.fn().mockResolvedValue([]),
+vi.mock("@/lib/hitpay/client", () => ({
+  cancelRecurringBilling: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/storage/cloudinary", () => ({
@@ -76,7 +72,6 @@ import {
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { resend } from "@/lib/email/resend";
-import { cancelSubscription } from "@/lib/paddle/client";
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -370,80 +365,6 @@ describe("deleteWorkspaceAction", () => {
 
     const bookings = await Booking.find({ workspaceId: ws._id }).lean();
     expect(bookings).toHaveLength(0);
-  });
-
-  it("active Paddle subscription — cancelSubscription is called with the subscription id", async () => {
-    await Workspace.create({
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "starter",
-      paddleSubscriptionId: "sub_test_123",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    expect(cancelSubscription).toHaveBeenCalledWith("sub_test_123");
-  });
-
-  it("Paddle cancel throws — delete still succeeds (best-effort cancellation)", async () => {
-    vi.mocked(cancelSubscription).mockRejectedValueOnce(new Error("Paddle API error"));
-
-    await Workspace.create({
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "pro",
-      paddleSubscriptionId: "sub_test_456",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    // Workspace should still be deleted even though cancel threw
-    const wsAfter = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
-    expect(wsAfter).toBeNull();
-  });
-
-  it("no active Paddle subscription — cancelSubscription is NOT called", async () => {
-    await seedWorkspaceA(); // no paddleSubscriptionId / paddleSubscriptionStatus
-
-    await deleteWorkspaceAction("sarah-photo");
-
-    expect(cancelSubscription).not.toHaveBeenCalled();
-  });
-
-  it("Paddle subscription present but not active — cancelSubscription is NOT called", async () => {
-    await Workspace.create({
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "starter",
-      paddleSubscriptionId: "sub_test_789",
-      paddleSubscriptionStatus: "canceled",
-    });
-
-    await deleteWorkspaceAction("sarah-photo");
-
-    expect(cancelSubscription).not.toHaveBeenCalled();
   });
 });
 

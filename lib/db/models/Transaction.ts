@@ -19,13 +19,13 @@ const transactionSchema = new Schema(
     },
     method: {
       type: String,
-      enum: ["paddle", "cash", "transfer", "other"],
-      default: "paddle",
+      enum: ["hitpay", "cash", "transfer", "other"],
+      default: "hitpay",
     },
-    // Paddle identifiers. paymentId covers one-off charges; subscriptionId
+    // HitPay identifiers. paymentId covers one-off charges; recurringBillingId
     // covers subscription cycles.
-    paddlePaymentId: { type: String, default: null, index: true, sparse: true },
-    paddleSubscriptionId: { type: String, default: null },
+    hitpayPaymentId: { type: String, default: null, index: true, sparse: true },
+    hitpayRecurringBillingId: { type: String, default: null },
     notes: { type: String, default: "" },
     paidAt: { type: Date, default: null },
   },

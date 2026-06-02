@@ -504,37 +504,12 @@
         "teams": "Tim",
         "publicPage": "Halaman publik",
         "danger": "Zona berbahaya",
-        "billing": "Tagihan",
         "devPlan": "Dev · plan",
         "switchWorkspace": "Ganti Workspace"
       },
-      "billing": {
-        "currentPlanLabel": "Paket saat ini",
-        "renewsOn": "Diperbarui pada {date}",
-        "availablePlans": "Paket tersedia",
-        "perMonth": "/ bulan",
-        "upgradeTo": "Upgrade ke {plan}",
-        "upgradeToAriaLabel": "Upgrade ke paket {plan}",
-        "opening": "Membuka…",
-        "upgradeSuccess": "Langganan diaktifkan! Paket Anda telah diperbarui.",
-        "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
-        "paddleNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
-        "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN tidak diatur — overlay tidak tersedia di lingkungan dev ini.",
-        "subscriptionIssue": "Ada masalah dengan langganan Anda. Periksa metode pembayaran Anda atau hubungi dukungan.",
-        "subscriptionStatus": {
-          "active": "Aktif",
-          "canceled": "Dibatalkan",
-          "past_due": "Jatuh tempo",
-          "paused": "Dijeda",
-          "trialing": "Masa percobaan"
-        },
-        "manageSection": "Kelola langganan",
-        "manageDescription": "Langganan Anda dikelola melalui Paddle. Hubungi dukungan untuk memperbarui metode pembayaran atau melihat faktur.",
-        "cancelNote": "Untuk membatalkan langganan, hubungi dukungan atau hapus workspace Anda."
-      },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -994,17 +969,14 @@
         "forever": "selamanya",
         "monthly": "/ bulan"
       },
-      "checkoutNote": "Overlay pembayaran Paddle yang aman akan terbuka. Masukkan detail kartu Anda (Visa atau Mastercard). Siklus pertama akan ditagih segera dan diperbarui setiap bulan sampai Anda membatalkan.",
+      "checkoutNote": "Anda akan diarahkan ke HitPay untuk memasukkan detail kartu Anda (Visa atau Mastercard). Siklus pertama akan ditagih segera dan diperbarui setiap bulan sampai Anda membatalkan.",
       "ctaFree": "Lanjutkan dengan Free",
       "ctaPaid": "Berlangganan — {price} / bulan",
       "settingUp": "Menyiapkan…",
-      "opening": "Membuka pembayaran…",
-      "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",
-      "paddleNotReady": "Sistem pembayaran belum siap. Silakan refresh dan coba lagi.",
-      "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN tidak diatur — overlay tidak tersedia di lingkungan dev ini. Gunakan pintasan dev di bawah.",
+      "opening": "Membuka HitPay…",
       "dev": {
         "label": "Pintasan dev",
-        "description": "Lewati Paddle dan tandai {planName} sebagai aktif. Hanya dev.",
+        "description": "Lewati HitPay dan tandai {planName} sebagai aktif. Hanya dev.",
         "activate": "Aktifkan {planName} (dev)"
       }
     },

@@ -14,11 +14,11 @@ export type PlanCatalogEntry = {
   featureKeys: string[];
   highlight?: boolean;
   entitlements: PlanEntitlements;
-  priceId?: string;
 };
 
-// Pricing is in PHP (display only — Paddle billing uses priceId, not amount).
-// Strings here are i18n keys so the catalog stays language-neutral.
+// Pricing is in PHP. HitPay's recurring API accepts the major-unit amount as a
+// number — no minor-unit conversion needed. Strings here are i18n keys so the
+// catalog stays language-neutral; the plan-step form resolves them via t().
 export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
   {
     id: "free",
@@ -38,7 +38,7 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
   {
     id: "starter",
     nameKey: "plans.starter.name",
-    amount: 250,
+    amount: 499,
     currency: "PHP",
     descriptionKey: "plans.starter.description",
     taglineKey: "plans.starter.tagline",
@@ -49,12 +49,11 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
       "plans.starter.features.acceptPayments",
     ],
     entitlements: PLAN_ENTITLEMENTS.starter,
-    priceId: process.env.PADDLE_PRICE_STARTER_ID ?? "",
   },
   {
     id: "pro",
     nameKey: "plans.pro.name",
-    amount: 500,
+    amount: 1199,
     currency: "PHP",
     descriptionKey: "plans.pro.description",
     taglineKey: "plans.pro.tagline",
@@ -67,7 +66,6 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     ],
     highlight: true,
     entitlements: PLAN_ENTITLEMENTS.pro,
-    priceId: process.env.PADDLE_PRICE_PRO_ID ?? "",
   },
 ];
 
@@ -86,12 +84,10 @@ export function getPlanCatalog(id: PlanTier): PlanCatalogEntry {
   return entry;
 }
 
-// Maps a Paddle priceId back to our internal tier. Empty-string priceIds
-// (unset env vars) never match so they can't accidentally upgrade a workspace.
-export function planForPriceId(priceId: string): PlanTier {
-  if (!priceId) return "free";
-  const match = PLAN_CATALOG.find(
-    (p) => p.priceId && p.priceId !== "" && p.priceId === priceId
-  );
+// Used by the webhook handler to map a HitPay recurring-billing amount back
+// to our internal tier. Default to "free" so stale data can't accidentally
+// upgrade a workspace.
+export function planForAmount(amount: number): PlanTier {
+  const match = PLAN_CATALOG.find((p) => p.amount === amount && p.id !== "free");
   return match?.id ?? "free";
 }

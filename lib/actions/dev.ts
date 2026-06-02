@@ -20,15 +20,15 @@ export type DevPlanActionResult = {
 
 type ActionResult = { error?: string; ok?: boolean };
 
-// Dev-only escape hatch: flip a workspace's plan without touching Paddle.
+// Dev-only escape hatch: flip a workspace's plan without touching HitPay.
 // Useful when iterating on plan-gated UI (custom-domain unlocks, branding
-// removal, invoice PDFs, etc.) without round-tripping Paddle's hosted
-// checkout overlay. Hard-blocked in production by the NODE_ENV gate.
+// removal, invoice PDFs, etc.) without round-tripping HitPay's hosted
+// authorization page. Hard-blocked in production by the NODE_ENV gate.
 //
-// The team-cap downgrade guard here mirrors the Paddle webhook's: if the
+// The team-cap downgrade guard here mirrors the HitPay webhook's: if the
 // workspace currently has more teams than the target plan's cap allows,
 // refuse the plan change and surface the list of teams to delete. This
-// keeps the dev path forward-compatible with the eventual real Paddle
+// keeps the dev path forward-compatible with the eventual real HitPay
 // downgrade UX.
 export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActionResult> {
   if (process.env.NODE_ENV === "production") {
@@ -73,8 +73,8 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
     {
       $set: {
         plan,
-        paddleSubscriptionStatus: plan === "free" ? null : "active",
-        paddleCurrentPeriodEnd:
+        hitpayRecurringStatus: plan === "free" ? null : "active",
+        hitpayCurrentPeriodEnd:
           plan === "free" ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     }

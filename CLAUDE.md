@@ -18,7 +18,7 @@ This file is loaded into Claude Code's context whenever a session opens in this 
 - **Zod** for validation; **react-hook-form** + `@hookform/resolvers/zod` for forms.
 - **Puck** (`@measured/puck`) for the drag-and-drop page builder. Powers both the workspace public-page editor and (later) gallery layout editing.
 - **Cloudinary** for all image storage. Browser uploads go direct via a signed upload endpoint; the server never receives the file bytes.
-- **Paddle** (sandbox in dev) for subscription billing (Gallurio → tenants). Paddle is a **Merchant of Record** — it handles tax remittance in 80+ jurisdictions (PH RA 12023 VAT, UAE VAT, etc.), eliminating Gallurio's per-country tax exposure. Plan catalog at `lib/paddle/plans.ts` with display amounts (PHP) plus pre-created `pri_…` Price IDs. Currency is **PHP** base with per-country price overrides in the dashboard (single price ID per tier serves all markets). Marketplace (tenants accepting end-client payments) is **NOT in MVP**.
+- **HitPay** (sandbox in dev) for subscription billing (Gallurio → tenants). Prices live in code (`lib/hitpay/plans.ts`) — HitPay's create-recurring-billing endpoint accepts inline pricing per call, so there are no plan IDs to maintain in the dashboard. Currency is **PHP** — the MVP launch market is the Philippines. Marketplace (tenants accepting end-client payments) is **NOT in MVP**.
 - **next-intl** for i18n. Five locales: `en` (default), `fil`, `ms`, `id`, `th`. Routes live under `app/[locale]/...`; API routes stay at the top level.
 - **pnpm** as package manager.
 
@@ -199,10 +199,10 @@ app/
     w/[orgSlug]/         # public workspace landing pages
   [locale]/              # locale segment (en/fil/ms/id/th) for all UI routes
   api/
-    webhooks/{paddle,clerk}/
+    webhooks/{hitpay,clerk}/
     inquiries/           # public form submissions
     uploads/sign/        # Cloudinary signed-upload params (auth required)
-    billing/checkout/    # Paddle checkout init (subscription)
+    billing/checkout/    # HitPay recurring-billing create (subscription)
   admin/                 # super-admin (gated)
 lib/
   db/
@@ -213,13 +213,10 @@ lib/
     requireOrg.ts        # resolve { userId, clerkOrgId, role, workspace }
   storage/
     cloudinary.ts        # server-side Cloudinary SDK + thumbnail URL helper
-  paddle/
-    client.ts            # Paddle Node SDK singleton + customer/subscription helpers
-    plans.ts             # plan tier ↔ PHP display amount + price ID catalog
-    webhook.ts           # paddle.webhooks.unmarshal wrapper + dev bypass
-  workflows/
-    subscriptionCheckout.ts  # durable checkout workflow (Vercel Workflow DevKit)
-    steps/billing.ts         # step functions for workspace plan writes
+  hitpay/
+    client.ts            # fetch-based HitPay REST wrapper (form + JSON bodies)
+    plans.ts             # plan tier ↔ PHP amount catalog
+    webhook.ts           # HMAC-SHA256 signature verification
   i18n/
     routing.ts           # next-intl locale routing config
     request.ts           # message catalog loader
@@ -273,18 +270,17 @@ Full phase-by-phase implementation plan lives in [`docs/portfolio-maker/`](docs/
 - **Thumbnails are URL-derived**, not stored. Use `cloudinaryThumbnailUrl(publicId, { width, height })` from `lib/storage/cloudinary.ts` — it injects `c_fill,w_X,h_Y,q_auto,f_auto` transforms.
 - Delete flow: when a Mongo doc with `cloudinaryPublicId` is removed, also call `cloudinary.uploader.destroy(publicId)` server-side.
 
-## Billing (Paddle)
+## Billing (HitPay)
 
-- Paddle is the **Merchant of Record** for Gallurio→tenant subscriptions. It collects and remits tax in 80+ jurisdictions, so Gallurio's tax exposure is bounded by the PHP tier it sets. Sandbox dashboard: `https://sandbox-vendors.paddle.com`.
-- **Pricing**: two pre-created Price IDs in the dashboard — `PADDLE_PRICE_STARTER_ID` (₱250/mo) and `PADDLE_PRICE_PRO_ID` (₱500/mo). No inline pricing at runtime. Currency is PHP base; per-country price overrides (e.g. AED for UAE) are set in the dashboard on those same price IDs — no extra env vars. Catalog with display amounts and plan metadata at `lib/paddle/plans.ts`.
-- **Plan field** on `Workspace`: `plan: "free" | "starter" | "pro"`. Updated by the `/api/webhooks/paddle` handler on `subscription.activated`, `subscription.updated`, `subscription.canceled` events, and eagerly reconciled by the `/onboarding/done` page.
-- **Subscription checkout** (Gallurio → tenants): `POST /api/billing/checkout` with `{ plan: "starter" | "pro", onboarding?: boolean }` starts the durable `subscriptionCheckoutWorkflow` (Vercel Workflow DevKit), resolves or creates a Paddle customer, and returns `{ priceId, customerEmail }`. The client calls `paddle.Checkout.open({ items:[{priceId,quantity:1}], customer:{email}, customData:{workspaceId} })` to show the Paddle.js **overlay** — no redirect. Free plan is selected via `selectFreePlanAction` — no Paddle call.
-- **Durable checkout**: the gap between browser checkout and webhook activation is bridged by `subscriptionCheckoutWorkflow` in `lib/workflows/subscriptionCheckout.ts`. It uses the Workflow DevKit (`createHook`/`resumeHook`) with token `paddle-checkout-{workspaceId}`. The webhook calls `resumeHook` on `subscription.activated`; the workflow step writes the plan + clears the run ID.
-- **Marketplace** (tenants → end-clients): **Not in MVP.** Paddle Connect is not needed — see `docs/paddle-integration/deferred-scope/marketplace-paddle-connect.md`.
-- **Webhook auth**: `paddle.webhooks.unmarshal(rawBody, PADDLE_WEBHOOK_SECRET, paddleSignatureHeader)` — the SDK verifies HMAC-SHA256 of `"${ts}:${rawBody}"` and checks 5-second replay tolerance. Read `req.text()` before calling unmarshal. Header: `Paddle-Signature: ts=…;h1=…`. Route is Node runtime (`runtime = "nodejs"`), never Edge.
-- **Workspace fields**: `paddleSubscriptionId`, `paddleCustomerId`, `paddleSubscriptionStatus` (`active | canceled | past_due | paused | trialing`), `paddleCurrentPeriodEnd`, `paddleCheckoutWorkflowRunId`.
-- **Env vars** (6 total): `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV` (`sandbox`/`production`), `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID`. No `PADDLE_API_BASE` — the SDK switches environment via `NEXT_PUBLIC_PADDLE_ENV`.
-- **Dev tooling**: use cloudflared to expose localhost, register the tunnel URL in the Paddle sandbox Notifications destination, and use `pnpm paddle:sim <kind> <workspaceId>` to fire signed events at the local handler. The sim script reads `PADDLE_WEBHOOK_SECRET` from `.env.local` and sets the correct `Paddle-Signature` header. See `docs/paddle-integration/paddle-setup.md` for full setup steps.
+- HitPay runs in **sandbox locally** at `https://dashboard.sandbox.hit-pay.com`. The only things that change for production are three env vars: `HITPAY_API_KEY`, `HITPAY_WEBHOOK_SALT`, `HITPAY_API_BASE` (sandbox → `https://api.hit-pay.com`).
+- **Pricing is defined in code** at `lib/hitpay/plans.ts` — HitPay's create-recurring-billing endpoint accepts inline `name`/`cycle`/`amount`, so there are no plan IDs to maintain in the dashboard. Currency is **PHP**.
+- **GCash limitation (important):** HitPay does NOT support GCash for recurring billing — only ShopeePay among PH e-wallets is available for auto-recharge. We use **card-only (Visa/Mastercard)** for Gallurio→tenant subscription billing. GCash is still a payment method tenants can accept from end-clients via their own HitPay account, but the in-product marketplace flow was dropped from MVP.
+- **Plan field** on `Workspace`: `plan: "free" | "starter" | "pro"`. Updated by the `/api/webhooks/hitpay` handler (on `recurring_billing.subscription_updated` and `charge.created`) and eagerly reconciled by the `/onboarding/done` page from `GET /v1/recurring-billing/:id`.
+- **Subscription checkout** (Gallurio → tenants): `POST /api/billing/checkout` with `{ plan: "starter" | "pro", onboarding?: boolean }` calls HitPay's `POST /v1/recurring-billing` with `plan_id=null` and inline pricing, then returns the response `url` for the tenant to authorize. HitPay requires `Content-Type: application/x-www-form-urlencoded` for this endpoint; the client wrapper handles that per call. Free plan is selected via the `selectFreePlanAction` server action — no HitPay call.
+- **Marketplace** (tenants → end-clients): **Not in MVP.** Dropped during the HitPay swap.
+- **Webhook auth** is HMAC-SHA256 of the **raw body** with the dashboard "salt" as the key, compared against the `Hitpay-Signature` header. Constant-time compare. Never JSON.parse before verifying or the signature will mismatch. The route is **not** Edge-runtime.
+- **Workspace fields**: `hitpayRecurringBillingId`, `hitpayRecurringReference`, `hitpayRecurringStatus` (`pending | active | cancelled | completed | closed | failed`), `hitpayCurrentPeriodEnd`.
+- **Dev tooling**: HitPay has no Stripe-CLI-style replayer. Use cloudflared (already in `next.config.ts`'s `allowedDevOrigins`) to expose localhost, register the public URL in the sandbox dashboard, and use `pnpm hitpay:sim <kind> <recurring_billing_id>` to fire signed events at the local handler without round-tripping sandbox.
 
 ## Internationalization (next-intl)
 
@@ -320,7 +316,7 @@ Full phase-by-phase implementation plan lives in [`docs/portfolio-maker/`](docs/
   - **Every webhook/route handler** — signature verification + happy path + one rejection.
   - **Every tenant-scoped query** — the tenant isolation test (org A cannot see org B's data) is mandatory, not optional.
 - **Run `pnpm test` before reporting any task complete.** If tests fail, fix the source — never weaken the test to make it pass.
-- **Mocking rule**: mock external services (Paddle, Cloudinary, openexchangerates). **Never mock Mongoose** — use an in-memory MongoDB (`mongodb-memory-server`) so query semantics stay real. Mocked DB tests have repeatedly missed real bugs across this team's history.
+- **Mocking rule**: mock external services (HitPay, Cloudinary, openexchangerates). **Never mock Mongoose** — use an in-memory MongoDB (`mongodb-memory-server`) so query semantics stay real. Mocked DB tests have repeatedly missed real bugs across this team's history.
 
 ## Pull Request Summary
 
@@ -334,16 +330,14 @@ Full phase-by-phase implementation plan lives in [`docs/portfolio-maker/`](docs/
 ## Commands
 
 ```bash
-pnpm dev              # next dev (Turbopack)
-pnpm build            # next build
-pnpm start            # next start
-pnpm lint             # eslint
-pnpm typecheck        # tsc --noEmit
-pnpm test             # vitest run (unit tests)
-pnpm test:watch       # vitest watch (use during active development)
-pnpm test:integration # vitest run --config vitest.integration.config.ts (workflow tests)
-pnpm seed             # tsx lib/db/seed.ts — wipe + seed two demo workspaces
-pnpm paddle:sim       # tsx scripts/paddle-sim.ts — fire signed Paddle events at local webhook
+pnpm dev          # next dev (Turbopack)
+pnpm build        # next build
+pnpm start        # next start
+pnpm lint         # eslint
+pnpm typecheck    # tsc --noEmit
+pnpm test         # vitest run
+pnpm test:watch   # vitest watch (use during active development)
+pnpm seed         # tsx lib/db/seed.ts — wipe + seed two demo workspaces
 ```
 
 The dev server will fail to start without `.env.local`. Copy `.env.example` and fill in at minimum:
@@ -351,7 +345,7 @@ The dev server will fail to start without `.env.local`. Copy `.env.example` and 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (for image uploads)
-- `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV=sandbox`, `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID` (for subscription billing — see `docs/paddle-integration/paddle-setup.md`)
+- `HITPAY_API_KEY`, `HITPAY_WEBHOOK_SALT`, `HITPAY_API_BASE` (for subscription billing)
 
 ## Conventions
 

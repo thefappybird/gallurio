@@ -146,7 +146,7 @@ export async function brandingStepAction(input: BrandingStepInput): Promise<Acti
 }
 
 export async function selectFreePlanAction(): Promise<ActionResult> {
-  // Free plan path: no Paddle checkout, just record the choice and advance.
+  // Free plan path: no HitPay checkout, just record the choice and advance.
   const session = await auth();
   if (!session.userId) return { error: "Not authenticated" };
   if (!session.orgId) return { error: "No active workspace — restart onboarding." };
@@ -154,72 +154,10 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
   await connectDB();
   await Workspace.updateOne(
     { clerkOrgId: session.orgId },
-    {
-      $set: {
-        plan: "free",
-        paddleSubscriptionStatus: null,
-        paddleCurrentPeriodEnd: null,
-        // paddleCustomerId is intentionally preserved — a customer can
-        // downgrade to free and re-upgrade without creating a new Paddle customer.
-      },
-    }
+    { $set: { plan: "free", hitpayRecurringStatus: null, hitpayCurrentPeriodEnd: null } }
   );
   await setUserStep(session.userId, "done");
   return { ok: true };
-}
-
-// Eagerly reconcile the workspace's Paddle subscription state on the done page.
-// The webhook + workflow are the authoritative path; this is the safety net for
-// cases where the user reaches the done page before the webhook fires.
-// Never throws — logs errors and returns silently so the done page always loads.
-export async function reconcilePaddleSubscription(workspaceId: string): Promise<void> {
-  try {
-    await connectDB();
-    const workspace = await Workspace.findOne({ _id: workspaceId }).select({
-      paddleCustomerId: 1,
-      paddleSubscriptionId: 1,
-    });
-    if (!workspace?.paddleCustomerId) return;
-
-    const { listActiveSubscriptionsForCustomer } = await import("@/lib/paddle/client");
-    const { planForPriceId } = await import("@/lib/paddle/plans");
-    const { mapPaddleSubscriptionStatus } = await import("@/lib/paddle/status");
-
-    const subs = await listActiveSubscriptionsForCustomer(workspace.paddleCustomerId);
-    if (subs.length === 0) return;
-
-    // Pick the most recently created active/trialing subscription.
-    const sub = subs.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )[0];
-
-    const priceId = sub.items[0]?.price?.id ?? "";
-    const plan = planForPriceId(priceId);
-    if (plan === "free") return;
-
-    // Map raw Paddle status through the shared normaliser — never write an
-    // unmapped string to the DB enum field.
-    const paddleSubscriptionStatus = mapPaddleSubscriptionStatus(sub.status);
-
-    // currentBillingPeriod.endsAt is an ISO string; coerce to Date.
-    const periodEnd = sub.currentBillingPeriod?.endsAt
-      ? new Date(sub.currentBillingPeriod.endsAt)
-      : null;
-
-    const $set: Record<string, unknown> = {
-      plan,
-      paddleSubscriptionId: sub.id,
-      paddleCurrentPeriodEnd: periodEnd,
-    };
-    // Only write status when the mapper recognised the value.
-    if (paddleSubscriptionStatus !== null) {
-      $set.paddleSubscriptionStatus = paddleSubscriptionStatus;
-    }
-
-    await Workspace.updateOne({ _id: workspaceId }, { $set });
-  } catch (err) {
-    console.error("[onboarding/done] paddle reconcile failed", err);
-  }
 }
 
 export async function completeOnboardingAction(opts: {

@@ -21,7 +21,7 @@ const PALETTE = [
 ];
 
 function labelForMethod(m: string) {
-  if (m === "paddle") return "Paddle";
+  if (m === "hitpay") return "HitPay";
   return m.charAt(0).toUpperCase() + m.slice(1);
 }
 

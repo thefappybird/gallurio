@@ -46,12 +46,7 @@ next-env.d.ts
 !/.claude/agents/
 skills-lock.json
 
-# paddle cli
+#hitpay
 /cli
-
-# vercel workflow devkit — local durable-run + test artifacts
-/.workflow-data/
-/.workflow-vitest/
-
 # clerk configuration (can include secrets)
 /.clerk/

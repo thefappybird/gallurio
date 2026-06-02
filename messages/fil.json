@@ -504,37 +504,12 @@
         "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
         "danger": "Danger zone",
-        "billing": "Bayad",
         "devPlan": "Dev · plan",
         "switchWorkspace": "Palitan ang Workspace"
       },
-      "billing": {
-        "currentPlanLabel": "Kasalukuyang plano",
-        "renewsOn": "Magre-renew sa {date}",
-        "availablePlans": "Mga available na plano",
-        "perMonth": "/ buwan",
-        "upgradeTo": "I-upgrade sa {plan}",
-        "upgradeToAriaLabel": "I-upgrade sa planong {plan}",
-        "opening": "Binubuksan…",
-        "upgradeSuccess": "Na-activate ang subscription! Na-update ang iyong plano.",
-        "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-        "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. Pakisubukan muli.",
-        "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito.",
-        "subscriptionIssue": "May isyu sa iyong subscription. Pakitingnan ang iyong paraan ng pagbabayad o makipag-ugnayan sa suporta.",
-        "subscriptionStatus": {
-          "active": "Aktibo",
-          "canceled": "Kinansela",
-          "past_due": "Overdue",
-          "paused": "Naka-pause",
-          "trialing": "Trial"
-        },
-        "manageSection": "Pamahalaan ang subscription",
-        "manageDescription": "Ang iyong subscription ay pinamamahalaan sa pamamagitan ng Paddle. Makipag-ugnayan sa suporta para i-update ang iyong paraan ng pagbabayad o tingnan ang mga invoice.",
-        "cancelNote": "Para kanselahin ang iyong subscription, makipag-ugnayan sa suporta o burahin ang iyong workspace."
-      },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
+        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -994,17 +969,14 @@
         "forever": "habambuhay",
         "monthly": "/ buwan"
       },
-      "checkoutNote": "Magbubukas ang secure na Paddle checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
+      "checkoutNote": "Ire-redirect ka sa HitPay upang ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
       "ctaFree": "Magpatuloy sa Free",
       "ctaPaid": "Mag-subscribe — {price} / buwan",
       "settingUp": "Sine-set up…",
-      "opening": "Binubuksan ang checkout…",
-      "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",
-      "paddleNotReady": "Hindi handa ang sistema ng pagbabayad. I-refresh ang pahina at subukan muli.",
-      "paddleTokenMissingDev": "Hindi nakatakda ang NEXT_PUBLIC_PADDLE_CLIENT_TOKEN — hindi available ang overlay sa dev environment na ito. Gamitin ang dev shortcut sa ibaba.",
+      "opening": "Binubuksan ang HitPay…",
       "dev": {
         "label": "Dev shortcut",
-        "description": "Laktawan ang Paddle at markahan ang {planName} bilang aktibo. Dev-only.",
+        "description": "Laktawan ang HitPay at markahan ang {planName} bilang aktibo. Dev-only.",
         "activate": "I-activate ang {planName} (dev)"
       }
     },

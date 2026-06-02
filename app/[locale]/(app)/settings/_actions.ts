@@ -23,7 +23,7 @@ import {
   type UpdateWorkspaceBrandingInput,
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
-import { cancelSubscription } from "@/lib/paddle/client";
+import { cancelRecurringBilling } from "@/lib/hitpay/client";
 import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { connectDB } from "@/lib/db/mongoose";
@@ -153,13 +153,13 @@ export async function deleteWorkspaceAction(
 
   // Best-effort subscription cancellation — never block the delete on this.
   if (
-    ctx.workspace.paddleSubscriptionId &&
-    ctx.workspace.paddleSubscriptionStatus === "active"
+    ctx.workspace.hitpayRecurringBillingId &&
+    ctx.workspace.hitpayRecurringStatus === "active"
   ) {
     try {
-      await cancelSubscription(ctx.workspace.paddleSubscriptionId);
+      await cancelRecurringBilling(ctx.workspace.hitpayRecurringBillingId);
     } catch (err) {
-      console.warn("[settings] failed to cancel Paddle subscription", err);
+      console.warn("[settings] failed to cancel HitPay subscription", err);
     }
   }
 

@@ -4,10 +4,8 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace } from "@/lib/db/models";
-import { ensurePaddleCustomer } from "@/lib/paddle/client";
-import { getPlanCatalog, isPaidPlan } from "@/lib/paddle/plans";
-import { subscriptionCheckoutWorkflow } from "@/lib/workflows/subscriptionCheckout";
-import { start } from "workflow/api";
+import { createRecurringBilling } from "@/lib/hitpay/client";
+import { getPlanCatalog, isPaidPlan } from "@/lib/hitpay/plans";
 
 export const runtime = "nodejs";
 
@@ -15,6 +13,40 @@ const bodySchema = z.object({
   plan: z.enum(["starter", "pro"]),
   onboarding: z.boolean().optional(),
 });
+
+function appUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
+
+function todayISO(): string {
+  // HitPay validates start_date against their server clock, which is Singapore
+  // time (UTC+8). Using `toISOString()` would produce the UTC date — which is
+  // the previous calendar day while SGT is already on the next day — and the
+  // API rejects with "The start date must be a date after or equal to today."
+  // en-CA's date format is YYYY-MM-DD, so we get the right shape directly.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Singapore",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+// Plan names for HitPay's "name" field. These are merchant-facing identifiers
+// in HitPay's dashboard, not user-visible — kept in English deliberately so
+// support staff don't have to read translated subscription names.
+const PLAN_NAME: Record<"starter" | "pro", string> = {
+  starter: "Gallurio Starter — monthly",
+  pro: "Gallurio Pro — monthly",
+};
+
+// Sandbox enables ShopeePay only (cards in sandbox need a Stripe test-account
+// hookup we skip); live uses cards. HITPAY_API_BASE is the env switch.
+function recurringPaymentMethods(): Array<"card" | "shopee_pay"> {
+  const base = process.env.HITPAY_API_BASE ?? "";
+  const isSandbox = base.includes("sandbox");
+  return isSandbox ? ["shopee_pay"] : ["card"];
+}
 
 export async function POST(req: Request) {
   const ctx = await requireOrg({ allowDuringOnboarding: true });
@@ -27,65 +59,73 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  const { plan } = parsed.data;
-
+  const { plan, onboarding } = parsed.data;
   if (!isPaidPlan(plan)) {
     return NextResponse.json({ error: "Free plan does not require checkout" }, { status: 400 });
   }
-
   const catalog = getPlanCatalog(plan);
-  if (!catalog.priceId) {
-    return NextResponse.json(
-      { error: "Paddle price not configured for this plan" },
-      { status: 500 }
-    );
-  }
 
   await connectDB();
 
-  // Resolve email and name from Clerk for the Paddle customer record.
   const session = await auth();
   const clerk = await clerkClient();
   const user = await clerk.users.getUser(session.userId!);
-  const email = user.emailAddresses[0]?.emailAddress;
-  if (!email) {
+  const customerEmail = user.emailAddresses[0]?.emailAddress;
+  if (!customerEmail) {
     return NextResponse.json(
       { error: "No verified email on file — add one in your account before continuing." },
       { status: 400 }
     );
   }
-  const name =
-    [user.firstName, user.lastName].filter(Boolean).join(" ").trim() ||
-    ctx.workspace.name;
+  const customerName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || ctx.workspace.name;
 
-  let customerId: string;
-  let run: { runId: string };
+  const successPath = onboarding
+    ? `/onboarding/done?ref={REFERENCE}`
+    : `/settings/billing?checkout=success&ref={REFERENCE}`;
+
+  const reference = `sub_${ctx.workspace._id.toString()}_${Date.now()}`;
+  const redirectUrl = `${appUrl()}${successPath.replace("{REFERENCE}", reference)}`;
+
+  let billing: Awaited<ReturnType<typeof createRecurringBilling>>;
   try {
-    customerId = await ensurePaddleCustomer({
-      email,
-      name,
-      existingCustomerId: ctx.workspace.paddleCustomerId ?? undefined,
+    billing = await createRecurringBilling({
+      name: PLAN_NAME[plan],
+      cycle: "monthly",
+      amount: catalog.amount,
+      currency: "PHP",
+      customer_email: customerEmail,
+      customer_name: customerName,
+      start_date: todayISO(),
+      reference,
+      redirect_url: redirectUrl,
+      payment_methods: recurringPaymentMethods(),
     });
-    run = await start(subscriptionCheckoutWorkflow, [ctx.workspace._id.toString(), plan]);
   } catch (err) {
-    console.error("[billing.checkout] paddle/workflow init failed", err);
+    console.error("[billing.checkout] createRecurringBilling failed", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: `Failed to initialise checkout: ${msg}` }, { status: 502 });
+    return NextResponse.json(
+      { error: `Failed to create billing: ${msg}` },
+      { status: 502 }
+    );
   }
 
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: {
-        paddleCustomerId: customerId,
-        paddleCheckoutWorkflowRunId: run.runId,
+        hitpayRecurringBillingId: billing.id,
+        hitpayRecurringReference: reference,
+        hitpayRecurringStatus: "pending",
       },
     }
   );
 
-  return NextResponse.json({
-    priceId: catalog.priceId,
-    customerEmail: email,
-    workspaceId: ctx.workspace._id.toString(),
-  });
+  if (!billing.url) {
+    return NextResponse.json(
+      { error: "HitPay did not return a payment URL" },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({ url: billing.url, billingId: billing.id, reference });
 }

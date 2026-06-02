@@ -7,11 +7,11 @@ import { Loader2 } from "lucide-react";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   updateWorkspaceBusinessSchema,
-  BILLING_COUNTRY_VALUES,
+  HITPAY_COUNTRY_VALUES,
   SUPPORTED_CURRENCIES,
   COUNTRY_TO_CURRENCY,
   type UpdateWorkspaceBusinessInput,
-  type SupportedCountry,
+  type HitpayCountry,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { updateWorkspaceBusinessAction } from "../_actions";
@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const COUNTRY_LABELS: Record<SupportedCountry, string> = {
+const COUNTRY_LABELS: Record<HitpayCountry, string> = {
   PH: "Philippines",
   SG: "Singapore",
   MY: "Malaysia",
@@ -31,12 +31,6 @@ const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   NZ: "New Zealand",
   GB: "United Kingdom",
   US: "United States",
-  AE: "United Arab Emirates",
-  SA: "Saudi Arabia",
-  QA: "Qatar",
-  KW: "Kuwait",
-  OM: "Oman",
-  BH: "Bahrain",
 };
 
 const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
@@ -50,12 +44,6 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   NZD: "New Zealand Dollar (NZ$)",
   GBP: "British Pound (£)",
   USD: "US Dollar ($)",
-  AED: "UAE Dirham (د.إ)",
-  SAR: "Saudi Riyal (﷼)",
-  QAR: "Qatari Riyal (﷼)",
-  KWD: "Kuwaiti Dinar (د.ك)",
-  OMR: "Omani Rial (﷼)",
-  BHD: "Bahraini Dinar (.د.ب)",
 };
 
 export function WorkspaceBusinessForm({
@@ -139,7 +127,7 @@ export function WorkspaceBusinessForm({
               className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               {...register("country", {
                 onChange: (e) => {
-                  const next = e.target.value as SupportedCountry;
+                  const next = e.target.value as HitpayCountry;
                   setValue("currency", COUNTRY_TO_CURRENCY[next], {
                     shouldValidate: true,
                     shouldDirty: true,
@@ -147,7 +135,7 @@ export function WorkspaceBusinessForm({
                 },
               })}
             >
-              {BILLING_COUNTRY_VALUES.map((c) => (
+              {HITPAY_COUNTRY_VALUES.map((c) => (
                 <option key={c} value={c}>
                   {COUNTRY_LABELS[c]}
                 </option>

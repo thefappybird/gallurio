@@ -6,7 +6,7 @@ import { Loader2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { devActivatePlanAction, type DevPlanActionResult } from "@/lib/actions/dev";
-import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import { PLAN_CATALOG } from "@/lib/hitpay/plans";
 import type { PlanTier } from "@/lib/db/models";
 import { DowngradeBlockModal } from "../../teams/_components/downgrade-block-modal";
 

@@ -13,7 +13,6 @@ export type SettingsPage = {
     | "customize"
     | "workspace"
     | "public-page"
-    | "billing"
     | "danger"
     | "switch-workspace"
     | "teams"
@@ -41,7 +40,6 @@ export function SettingsUserProfile({
   const workspace = pages.find((p) => p.slug === "workspace");
   const teams = pages.find((p) => p.slug === "teams");
   const publicPage = pages.find((p) => p.slug === "public-page");
-  const billing = pages.find((p) => p.slug === "billing");
   const devPlan = pages.find((p) => p.slug === "dev-plan");
   const danger = pages.find((p) => p.slug === "danger");
 
@@ -90,15 +88,6 @@ export function SettingsUserProfile({
           labelIcon={publicPage.icon}
         >
           {publicPage.body}
-        </UserProfile.Page>
-      )}
-      {billing && (role === "owner" || !billing.ownerOnly) && (
-        <UserProfile.Page
-          label={billing.label}
-          url={billing.slug}
-          labelIcon={billing.icon}
-        >
-          {billing.body}
         </UserProfile.Page>
       )}
       {devPlan && (role === "owner" || !devPlan.ownerOnly) && (
