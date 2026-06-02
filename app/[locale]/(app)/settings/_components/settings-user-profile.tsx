@@ -48,9 +48,6 @@ export function SettingsUserProfile({
     <div className="flex w-full flex-col gap-0">
       {/* Persistent workspace switcher bar — always visible above the Clerk card */}
       <div className="flex w-full items-center justify-between border border-b-0 border-border bg-card px-4 py-3">
-        <span className="text-sm font-medium text-card-foreground">
-          {t("currentWorkspace")}
-        </span>
         <SettingsOrgSwitcher />
       </div>
 
