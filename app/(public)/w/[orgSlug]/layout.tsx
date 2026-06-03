@@ -7,6 +7,7 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
+import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
@@ -66,6 +67,7 @@ export default async function PublicPortfolioLayout({
         }}
       />
       {children}
+      <MotionObserver />
       <ContactTriggerDelegate />
       <ContactModal workspaceSlug={workspace.slug} contact={contactConfig} labels={contactLabels} />
     </div>

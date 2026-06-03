@@ -38,16 +38,36 @@ export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
 export type TextAlign = "left" | "center" | "right";
 
+// A CSS length with a unit picker in the UI (px or %). Stored as the raw CSS
+// string, e.g. "320px" or "50%". `undefined` → not set (browser default / auto).
+export type CssLength = string;
+
+export type SelfAlign = "left" | "center" | "right";
+
 export type BlockStyle = {
   // Border + frame
   borderWidth?: number; // px
   borderColorToken?: StyleColorToken;
   radius?: number; // px
   shadow?: ShadowSize;
-  // Spacing
-  paddingY?: number; // px
-  paddingX?: number; // px
-  marginY?: number; // px
+  // Spacing — legacy px numbers (kept for back-compat reads of old drafts)
+  paddingY?: number;
+  paddingX?: number;
+  marginY?: number;
+  // Spacing — unit-aware (px/%). Horizontal margin is driven by `selfAlign`.
+  marginTop?: CssLength;
+  marginBottom?: CssLength;
+  paddingTop?: CssLength;
+  paddingRight?: CssLength;
+  paddingBottom?: CssLength;
+  paddingLeft?: CssLength;
+  // Position + size of the block itself
+  selfAlign?: SelfAlign; // horizontal placement via margin-auto (needs width < 100%)
+  width?: CssLength;
+  height?: CssLength;
+  // Grid placement when the block is a child of a Columns/grid container
+  colSpan?: number;
+  rowSpan?: number;
   // Background
   bgColorToken?: StyleColorToken;
   bgImagePublicId?: string;
@@ -61,7 +81,17 @@ export type BlockStyle = {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
+  // Motion
+  animation?: AnimationType; // entrance (plays when scrolled into view)
+  animationDuration?: number; // ms
+  hover?: HoverEffect;
 };
+
+export const ANIMATION_TYPES = ["none", "fade", "slide-up", "slide-down", "slide-left", "slide-right", "zoom"] as const;
+export type AnimationType = (typeof ANIMATION_TYPES)[number];
+
+export const HOVER_EFFECTS = ["none", "scale", "lift", "dim", "brighten"] as const;
+export type HoverEffect = (typeof HOVER_EFFECTS)[number];
 
 export const DEFAULT_BLOCK_STYLE: BlockStyle = {};
 
@@ -182,6 +212,39 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     css.marginBottom = `${m}px`;
   }
 
+  // Unit-aware (px/%) per-side spacing + size — these win over the legacy values.
+  if (style.paddingTop) css.paddingTop = style.paddingTop;
+  if (style.paddingRight) css.paddingRight = style.paddingRight;
+  if (style.paddingBottom) css.paddingBottom = style.paddingBottom;
+  if (style.paddingLeft) css.paddingLeft = style.paddingLeft;
+  if (style.marginTop) css.marginTop = style.marginTop;
+  if (style.marginBottom) css.marginBottom = style.marginBottom;
+  if (style.width) css.width = style.width;
+  if (style.height) css.height = style.height;
+
+  // Horizontal self-placement via margin-auto (parent-agnostic; visible when
+  // width < 100%). Applied after margins so it controls the left/right margins.
+  if (style.selfAlign === "center") {
+    css.marginLeft = "auto";
+    css.marginRight = "auto";
+  } else if (style.selfAlign === "right") {
+    css.marginLeft = "auto";
+    css.marginRight = "0";
+  } else if (style.selfAlign === "left") {
+    css.marginLeft = "0";
+    css.marginRight = "auto";
+  }
+
+  // Grid placement when this block is a child of a Columns/grid container.
+  if (style.colSpan && style.colSpan > 1) css.gridColumn = `span ${Math.min(12, Math.floor(style.colSpan))}`;
+  if (style.rowSpan && style.rowSpan > 1) css.gridRow = `span ${Math.min(12, Math.floor(style.rowSpan))}`;
+
+  // Entrance-animation duration is exposed as a CSS var consumed by the global
+  // motion stylesheet (the data-attrs from resolveBlockAttrs drive the rest).
+  if (style.animation && style.animation !== "none" && style.animationDuration) {
+    css["--pf-anim-duration"] = `${Math.min(5000, Math.max(50, style.animationDuration))}ms`;
+  }
+
   // Background — solid color and/or image (image layers on top).
   if (style.bgColorToken) {
     css.backgroundColor = TOKEN_VAR[style.bgColorToken];
@@ -227,4 +290,18 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.align) css.textAlign = style.align;
 
   return css as React.CSSProperties;
+}
+
+/**
+ * Data attributes driving the entrance + hover animations. Spread onto a block's
+ * root element alongside `resolveBlockStyle`. The actual keyframes/transitions
+ * live in the global motion stylesheet; an IntersectionObserver adds the
+ * `pf-in-view` class to `[data-anim]` elements when they scroll into view.
+ */
+export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: AnimationType; "data-hover"?: HoverEffect } {
+  if (!style) return {};
+  const attrs: { "data-anim"?: AnimationType; "data-hover"?: HoverEffect } = {};
+  if (style.animation && style.animation !== "none") attrs["data-anim"] = style.animation;
+  if (style.hover && style.hover !== "none") attrs["data-hover"] = style.hover;
+  return attrs;
 }

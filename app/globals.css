@@ -583,3 +583,37 @@
   button:not(:disabled) { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
 }
+
+/* ---------------------------------------------------------------------------
+ * Portfolio block motion — entrance animations (scroll-triggered: a block gets
+ * `.pf-in-view` from the MotionObserver when it enters the viewport) + hover
+ * effects. Driven by the `data-anim` / `data-hover` attrs from resolveBlockAttrs;
+ * `--pf-anim-duration` is set per-block by resolveBlockStyle. NOT layered so the
+ * public page (which imports this file) always gets it.
+ * ------------------------------------------------------------------------- */
+[data-anim] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity var(--pf-anim-duration, 600ms) ease, transform var(--pf-anim-duration, 600ms) ease;
+}
+[data-anim="slide-up"] { transform: translateY(28px); }
+[data-anim="slide-down"] { transform: translateY(-28px); }
+[data-anim="slide-left"] { transform: translateX(28px); }
+[data-anim="slide-right"] { transform: translateX(-28px); }
+[data-anim="zoom"] { transform: scale(0.92); }
+[data-anim].pf-in-view { opacity: 1; transform: none; }
+
+[data-hover] { transition: transform 200ms ease, filter 200ms ease, opacity 200ms ease; }
+[data-hover="scale"]:hover { transform: scale(1.03); }
+[data-hover="lift"]:hover { transform: translateY(-4px); }
+[data-hover="dim"]:hover { opacity: 0.85; }
+[data-hover="brighten"]:hover { filter: brightness(1.08); }
+
+/* In the editor canvas, show blocks at their final state — entrance is a
+ * live-page effect; hover still previews. */
+.gallurio-editor [data-anim] { opacity: 1 !important; transform: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-anim] { opacity: 1 !important; transform: none !important; transition: none !important; }
+  [data-hover] { transition: none !important; }
+}

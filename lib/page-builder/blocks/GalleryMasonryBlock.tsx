@@ -17,6 +17,7 @@ import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } fr
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
@@ -108,6 +109,7 @@ export async function GalleryMasonryBlock({
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       {/* Mobile-first: cap columns on small viewports (inline columnCount is the
           desktop value; the stylesheet overrides it with !important below 640px). */}

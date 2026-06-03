@@ -16,6 +16,7 @@ import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   asText,
   productionStyleField,
   type BlockStyle,
@@ -63,6 +64,7 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
         color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       <Tag
         style={{
@@ -120,6 +122,7 @@ export function TextBlock({ _style, text }: TextBlockProps) {
         color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       <p style={{ fontSize: "inherit", lineHeight: 1.7, color: "inherit", margin: 0, whiteSpace: "pre-line" }}>
         {textContent}
@@ -155,7 +158,7 @@ export const imageDefaultProps: ImageBlockProps = { imagePublicId: "", imageUrl:
 export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit }: ImageBlockProps) {
   const src = (imagePublicId ? cloudinaryUrl(imagePublicId) : null) || imageUrl || null;
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}>
+    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -230,7 +233,7 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   const justify = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
 
   return (
-    <div style={{ padding: "1rem 1.5rem", display: "flex", justifyContent: justify, ...resolveBlockStyle(_style) }}>
+    <div style={{ padding: "1rem 1.5rem", display: "flex", justifyContent: justify, ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       <a
         href={href}
         role="button"
@@ -320,7 +323,7 @@ export const dividerDefaultProps: DividerBlockProps = { thickness: 1 };
 export function DividerBlock({ _style, thickness }: DividerBlockProps) {
   const t = Math.min(12, Math.max(1, Number.isFinite(thickness) ? thickness : 1));
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}>
+    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       <hr
         style={{
           border: 0,
@@ -367,7 +370,7 @@ export function ColumnsBlock({
 }) {
   const cols = columns === 3 ? 3 : 2;
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}>
+    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       {/* Responsive: 1 column on phones, 2 on tablets, the chosen count on
           desktop. Inline styles can't hold media queries, so scoped classes +
           a <style> drive the breakpoints. */}
@@ -474,6 +477,7 @@ export function ContainerBlock({
         backgroundColor: bgSrc ? "var(--pf-color-fg)" : undefined,
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       {bgSrc && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -545,4 +549,130 @@ export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   defaultProps: containerDefaultProps,
   fields: containerFields,
   render: ContainerBlock,
+};
+
+// ---------------------------------------------------------------------------
+// Flex — a styleable flexbox drop-zone. Lets owners compose row/column
+// layouts with controllable alignment, wrapping, and gap.
+// ---------------------------------------------------------------------------
+
+export type FlexBlockProps = {
+  _style?: BlockStyle;
+  direction: "row" | "column";
+  justify: "start" | "center" | "end" | "between" | "around";
+  align: "start" | "center" | "end" | "stretch";
+  wrap: boolean;
+  gap: number;
+  content: Slot;
+};
+
+export const flexDefaultProps: FlexBlockProps = {
+  direction: "row",
+  justify: "start",
+  align: "stretch",
+  wrap: true,
+  gap: 16,
+  content: [],
+};
+
+const JUSTIFY_MAP: Record<FlexBlockProps["justify"], string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  between: "space-between",
+  around: "space-around",
+};
+
+const ALIGN_MAP: Record<FlexBlockProps["align"], string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  stretch: "stretch",
+};
+
+export function FlexBlock({
+  _style,
+  direction,
+  justify,
+  align,
+  wrap,
+  gap,
+  content: Content,
+}: {
+  _style?: BlockStyle;
+  direction: "row" | "column";
+  justify: "start" | "center" | "end" | "between" | "around";
+  align: "start" | "center" | "end" | "stretch";
+  wrap: boolean;
+  gap: number;
+  content: SlotComponent;
+}) {
+  const clampedGap = Math.min(96, Math.max(0, Number.isFinite(gap) ? gap : 16));
+  return (
+    <div
+      style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}
+      {...resolveBlockAttrs(_style)}
+    >
+      {Content({
+        style: {
+          display: "flex",
+          flexDirection: direction,
+          justifyContent: JUSTIFY_MAP[justify],
+          alignItems: ALIGN_MAP[align],
+          flexWrap: wrap ? "wrap" : "nowrap",
+          gap: `${clampedGap}px`,
+          maxWidth: "80rem",
+          margin: "0 auto",
+        },
+      })}
+    </div>
+  );
+}
+
+export const flexBlockConfig: ComponentConfig<FlexBlockProps> = {
+  label: "Flex",
+  defaultProps: flexDefaultProps,
+  fields: {
+    _style: productionStyleField,
+    direction: {
+      type: "select",
+      label: "Direction",
+      options: [
+        { label: "Row", value: "row" },
+        { label: "Column", value: "column" },
+      ],
+    },
+    justify: {
+      type: "select",
+      label: "Justify content",
+      options: [
+        { label: "Start", value: "start" },
+        { label: "Center", value: "center" },
+        { label: "End", value: "end" },
+        { label: "Space between", value: "between" },
+        { label: "Space around", value: "around" },
+      ],
+    },
+    align: {
+      type: "select",
+      label: "Align items",
+      options: [
+        { label: "Start", value: "start" },
+        { label: "Center", value: "center" },
+        { label: "End", value: "end" },
+        { label: "Stretch", value: "stretch" },
+      ],
+    },
+    wrap: {
+      type: "select",
+      label: "Wrap",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    } as Field<boolean>,
+    gap: { type: "number", label: "Gap (px)", min: 0, max: 96 } as Field<number>,
+    content: { type: "slot" },
+  },
+  render: FlexBlock,
 };

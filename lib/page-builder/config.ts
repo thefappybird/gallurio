@@ -33,7 +33,9 @@ import {
   dividerBlockConfig,
   columnsBlockConfig,
   containerBlockConfig,
+  flexBlockConfig,
   type ContainerBlockProps,
+  type FlexBlockProps,
 } from "./blocks/manualBlocks";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -78,6 +80,7 @@ type Components = {
   Spacer: SpacerBlockProps;
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
+  Flex: FlexBlockProps;
   Container: ContainerBlockProps;
 };
 
@@ -111,6 +114,7 @@ export const puckConfig: Config<Components> = {
     Spacer: spacerBlockConfig,
     Divider: dividerBlockConfig,
     Columns: columnsBlockConfig,
+    Flex: flexBlockConfig,
     Container: containerBlockConfig,
   },
   root: {

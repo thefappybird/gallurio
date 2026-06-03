@@ -16,6 +16,7 @@ import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
@@ -110,6 +111,7 @@ export async function GalleryCarouselBlock({
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
         <GalleryHeader heading={heading} description={description} />

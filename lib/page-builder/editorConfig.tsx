@@ -63,6 +63,7 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  FlexBlock,
   headingDefaultProps,
   textDefaultProps,
   imageDefaultProps,
@@ -71,6 +72,7 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
+  flexDefaultProps,
   type HeadingBlockProps,
   type TextBlockProps,
   type ImageBlockProps,
@@ -79,6 +81,7 @@ import {
   type DividerBlockProps,
   type ColumnsBlockProps,
   type ContainerBlockProps,
+  type FlexBlockProps,
   type ContainerHeight,
   type ContainerAlignX,
   type ContainerAlignY,
@@ -106,6 +109,7 @@ type EditorComponents = {
   Spacer: SpacerBlockProps;
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
+  Flex: FlexBlockProps;
   Container: ContainerBlockProps;
 };
 
@@ -642,6 +646,54 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   render: ColumnsBlock,
 };
 
+const flex: ComponentConfig<FlexBlockProps> = {
+  label: "Flex",
+  defaultProps: flexDefaultProps,
+  fields: {
+    _style: styleField,
+    direction: {
+      type: "select",
+      label: "Direction",
+      options: [
+        { label: "Row", value: "row" },
+        { label: "Column", value: "column" },
+      ],
+    },
+    justify: {
+      type: "select",
+      label: "Justify content",
+      options: [
+        { label: "Start", value: "start" },
+        { label: "Center", value: "center" },
+        { label: "End", value: "end" },
+        { label: "Space between", value: "between" },
+        { label: "Space around", value: "around" },
+      ],
+    },
+    align: {
+      type: "select",
+      label: "Align items",
+      options: [
+        { label: "Start", value: "start" },
+        { label: "Center", value: "center" },
+        { label: "End", value: "end" },
+        { label: "Stretch", value: "stretch" },
+      ],
+    },
+    wrap: {
+      type: "select",
+      label: "Wrap",
+      options: [
+        { label: "Yes", value: true },
+        { label: "No", value: false },
+      ],
+    } as Field<boolean>,
+    gap: { type: "number", label: "Gap (px)", min: 0, max: 96 } as Field<number>,
+    content: { type: "slot" },
+  },
+  render: FlexBlock,
+};
+
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   defaultProps: containerDefaultProps,
@@ -673,6 +725,7 @@ export const editorPuckConfig: Config<EditorComponents> = {
     Spacer: spacer,
     Divider: divider,
     Columns: columns,
+    Flex: flex,
     Container: container,
   },
   root: { fields: {} },

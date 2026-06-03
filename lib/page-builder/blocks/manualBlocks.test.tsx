@@ -10,6 +10,7 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  FlexBlock,
 } from "./manualBlocks";
 import type { SlotComponent } from "@measured/puck";
 
@@ -343,6 +344,30 @@ describe("ColumnsBlock", () => {
     render(<ColumnsBlock columns={5 as 2 | 3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
     expect(slot.className).toContain("pf-cols-2");
+  });
+});
+
+describe("FlexBlock", () => {
+  it("renders its slot with flex layout from the props", () => {
+    render(
+      <FlexBlock direction="column" justify="center" align="center" wrap={false} gap={24} content={stubSlot} />
+    );
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.display).toBe("flex");
+    expect(slot.style.flexDirection).toBe("column");
+    expect(slot.style.justifyContent).toBe("center");
+    expect(slot.style.alignItems).toBe("center");
+    expect(slot.style.flexWrap).toBe("nowrap");
+    expect(slot.style.gap).toBe("24px");
+  });
+
+  it("maps 'between' justify to space-between and wrap=true to wrap", () => {
+    render(
+      <FlexBlock direction="row" justify="between" align="stretch" wrap content={stubSlot} gap={8} />
+    );
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.justifyContent).toBe("space-between");
+    expect(slot.style.flexWrap).toBe("wrap");
   });
 });
 

@@ -9,7 +9,7 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import { resolveBlockStyle, resolveBlockAttrs, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 export type ContactDetailsProps = {
   _style?: BlockStyle;
@@ -49,6 +49,7 @@ export function ContactDetailsBlock({
         color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       {showEmail && contact?.email && (
         <ContactRow

@@ -11,6 +11,7 @@
 import type { ComponentConfig } from "@measured/puck";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   asText,
   productionStyleField,
   type BlockStyle,
@@ -86,6 +87,7 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
         padding: "4rem 1.5rem",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       <div style={{ maxWidth: "56rem", margin: "0 auto" }}>
         {(headingText || descriptionText) && (

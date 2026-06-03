@@ -23,6 +23,7 @@ import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
@@ -165,6 +166,7 @@ export async function GalleryGridBlock({
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       <div
         style={{

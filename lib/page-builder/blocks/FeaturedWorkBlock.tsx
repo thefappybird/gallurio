@@ -13,6 +13,7 @@ import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } fr
 import { getItemsByIds } from "@/lib/db/queries/gallery";
 import {
   resolveBlockStyle,
+  resolveBlockAttrs,
   asText,
   productionStyleField,
   type BlockStyle,
@@ -87,6 +88,7 @@ export async function FeaturedWorkBlock({
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       {/* Mobile-first: stack to a single column below 640px. */}
       <style>{`
