@@ -44,7 +44,7 @@ describe("injectGalleryRefs", () => {
       home: {
         content: [
           { type: "FeaturedWork", props: { id: "f1", itemIds: [] } },
-          { type: "Hero", props: { id: "h1" } },
+          { type: "HeroPreset", props: { id: "h1" } },
         ],
         root: {},
       },
@@ -85,7 +85,7 @@ describe("seedDefaultPortfolio", () => {
 
   it("is idempotent — returns null and does not overwrite once home exists", async () => {
     await makeWorkspace({
-      publicPage: { data: { home: { content: [{ type: "Hero", props: {} }], root: {} }, gallery: null } },
+      publicPage: { data: { home: { content: [{ type: "HeroPreset", props: {} }], root: {} }, gallery: null } },
     });
     const seed = await seedDefaultPortfolio(workspaceId);
     expect(seed).toBeNull();
@@ -125,7 +125,7 @@ describe("reseedPortfolioFromTemplate", () => {
 
   it("archives current data to previousData on switch", async () => {
     await makeWorkspace({
-      publicPage: { data: { home: { content: [{ type: "Hero", props: {} }], root: {} }, gallery: { content: [], root: {} } } },
+      publicPage: { data: { home: { content: [{ type: "HeroPreset", props: {} }], root: {} }, gallery: { content: [], root: {} } } },
     });
     const seed = await reseedPortfolioFromTemplate(workspaceId, "minimal");
     expect(seed!.templateId).toBe("minimal");

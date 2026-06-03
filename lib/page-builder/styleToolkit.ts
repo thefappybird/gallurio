@@ -51,10 +51,12 @@ export type BlockStyle = {
   // Background
   bgColorToken?: StyleColorToken;
   bgImagePublicId?: string;
-  // Typography
-  fontPair?: BrandKitFontPair;
+  // Typography (applied SECTION-WIDE — to the whole block via resolveBlockStyle)
+  fontPair?: BrandKitFontPair; // legacy; kept for back-compat reads
+  fontFamily?: PortfolioFontKey;
   fontSize?: number; // px
   textColorToken?: StyleColorToken;
+  highlightColorToken?: StyleColorToken;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -63,102 +65,18 @@ export type BlockStyle = {
 
 export const DEFAULT_BLOCK_STYLE: BlockStyle = {};
 
-// ---------------------------------------------------------------------------
-// Per-text styling (RichText)
-//
-// Each text field in a block carries its OWN inline style — moved off the
-// block-level toolbar so owners style every headline/paragraph independently.
-// A field's stored value is a `RichText` ({ text, style }); legacy plain
-// strings coerce to `{ text }`. `resolveTextStyle` is the single source of
-// truth for both the editor preview and the production render.
-// ---------------------------------------------------------------------------
-
-export type TextStyle = {
-  bold?: boolean;
-  italic?: boolean;
-  underline?: boolean;
-  align?: TextAlign;
-  fontFamily?: PortfolioFontKey;
-  fontSize?: number; // px
-  textColorToken?: StyleColorToken;
-  highlightColorToken?: StyleColorToken;
-};
-
-export type RichText = {
-  text: string;
-  style?: TextStyle;
-};
-
 /**
- * The stored shape of a styleable text PROP on a block. New saves write a
- * `RichText` object; portfolios saved before per-text styling hold a plain
- * string. Blocks accept both and normalize with `coerceRichText`.
+ * Read the plain text out of a stored text prop. Block text props are plain
+ * strings; this also tolerates a legacy `{ text, ... }` object (from the
+ * short-lived per-text-styling experiment) so old drafts don't crash the render.
  */
-export type RichTextProp = RichText | string;
-
-/**
- * Normalize a stored text-field value into a RichText. Accepts a legacy plain
- * string (older portfolios), an already-shaped object, or undefined — so blocks
- * and the editor never crash on mixed data and no DB migration is needed.
- */
-export function coerceRichText(value: unknown): RichText {
-  if (typeof value === "string") return { text: value };
+export function asText(value: unknown): string {
+  if (typeof value === "string") return value;
   if (value && typeof value === "object" && "text" in value) {
-    const v = value as { text?: unknown; style?: unknown };
-    return {
-      text: typeof v.text === "string" ? v.text : "",
-      style: (v.style ?? undefined) as TextStyle | undefined,
-    };
+    const t = (value as { text?: unknown }).text;
+    return typeof t === "string" ? t : "";
   }
-  return { text: "" };
-}
-
-/**
- * Block-render convenience: normalize a stored text value and resolve its inline
- * CSS in one call. `css` is meant to spread OVER the element's base styles so
- * the per-text choices win. Used by every block that renders a rich text field.
- */
-export function renderRichText(value: unknown): { text: string; css: React.CSSProperties } {
-  const rt = coerceRichText(value);
-  return { text: rt.text, css: resolveTextStyle(rt.style) };
-}
-
-/**
- * Production placeholder field for a RichText prop — mirrors
- * `productionStyleField`. The server `<Render>` never renders fields, so this
- * just keeps the key present for editor/prod parity; the real editor UI is the
- * `RichTextField` wired in editorConfig.tsx.
- */
-export const productionRichTextField = {
-  type: "custom",
-  label: "Text",
-  render: () => null,
-} as unknown as Field<unknown>;
-
-/** Resolve a TextStyle into inline CSS for the text element it decorates. */
-export function resolveTextStyle(style?: TextStyle | null): React.CSSProperties {
-  if (!style) return {};
-  const css: Record<string, string | number> = {};
-
-  const family = fontFamilyValue(style.fontFamily);
-  if (family) css.fontFamily = family;
-  if (style.fontSize !== undefined) {
-    css.fontSize = `${clamp(style.fontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
-  }
-  if (style.textColorToken) css.color = TOKEN_VAR[style.textColorToken];
-  if (style.highlightColorToken) {
-    css.backgroundColor = TOKEN_VAR[style.highlightColorToken];
-    // Tight inline highlight that wraps cleanly across lines.
-    css.padding = "0.05em 0.18em";
-    css.boxDecorationBreak = "clone";
-    css.WebkitBoxDecorationBreak = "clone";
-  }
-  if (style.bold) css.fontWeight = 700;
-  if (style.italic) css.fontStyle = "italic";
-  if (style.underline) css.textDecoration = "underline";
-  if (style.align) css.textAlign = style.align;
-
-  return css as React.CSSProperties;
+  return "";
 }
 
 /**
@@ -277,8 +195,14 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     }
   }
 
-  // Typography
-  if (style.fontPair) {
+  // Typography — applied section-wide; cascades to all text inside the block.
+  // Prefer the single-family `fontFamily`; fall back to the legacy `fontPair`.
+  const family = fontFamilyValue(style.fontFamily);
+  if (family) {
+    css["--pf-font-heading"] = family;
+    css["--pf-font-body"] = family;
+    css.fontFamily = family;
+  } else if (style.fontPair) {
     const fonts = FONT_PAIR_MAP[style.fontPair];
     if (fonts) {
       css["--pf-font-heading"] = fonts.heading;
@@ -291,6 +215,11 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   }
   if (style.textColorToken) {
     css.color = TOKEN_VAR[style.textColorToken];
+  }
+  // Highlight fills the block surface with the chosen token — applied after the
+  // background so an explicit highlight wins when both are set.
+  if (style.highlightColorToken) {
+    css.backgroundColor = TOKEN_VAR[style.highlightColorToken];
   }
   if (style.bold) css.fontWeight = 700;
   if (style.italic) css.fontStyle = "italic";

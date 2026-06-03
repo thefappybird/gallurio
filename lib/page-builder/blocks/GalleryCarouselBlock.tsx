@@ -17,17 +17,15 @@ import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClie
 import {
   resolveBlockStyle,
   productionStyleField,
-  productionRichTextField,
   type BlockStyle,
-  type RichTextProp,
 } from "@/lib/page-builder/styleToolkit";
 import { GalleryHeader, GalleryFooter } from "./GalleryText";
 
 export type GalleryCarouselProps = {
   _style?: BlockStyle;
-  heading: RichTextProp;
-  description: RichTextProp;
-  footer: RichTextProp;
+  heading: string;
+  description: string;
+  footer: string;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
   autoplay: boolean;
@@ -35,9 +33,9 @@ export type GalleryCarouselProps = {
 };
 
 export const galleryCarouselDefaultProps: GalleryCarouselProps = {
-  heading: { text: "" },
-  description: { text: "" },
-  footer: { text: "" },
+  heading: "",
+  description: "",
+  footer: "",
   collectionId: "",
   aspect: "landscape",
   autoplay: false,
@@ -162,9 +160,9 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
   defaultProps: galleryCarouselDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: productionRichTextField as Field<RichTextProp>,
-    description: productionRichTextField as Field<RichTextProp>,
-    footer: productionRichTextField as Field<RichTextProp>,
+    heading: { type: "text", label: "Heading" },
+    description: { type: "textarea", label: "Description" },
+    footer: { type: "textarea", label: "Footer" },
     collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",

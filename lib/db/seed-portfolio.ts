@@ -26,13 +26,11 @@ import mongoose from "mongoose";
 import { connectDB } from "./mongoose";
 import { Workspace, GalleryCollection, GalleryItem } from "./models";
 import { cloudinary } from "@/lib/storage/cloudinary";
-import { heroDefaultProps } from "@/lib/page-builder/blocks/HeroBlock";
-import { aboutDefaultProps } from "@/lib/page-builder/blocks/AboutBlock";
+import { HERO_PRESET, CTA_PRESET } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
 import { galleryCarouselDefaultProps } from "@/lib/page-builder/blocks/GalleryCarouselBlock";
 import { featuredWorkDefaultProps } from "@/lib/page-builder/blocks/FeaturedWorkBlock";
-import { ctaBannerDefaultProps } from "@/lib/page-builder/blocks/CTABannerBlock";
 
 const SLUG = process.env.SEED_PORTFOLIO_SLUG || "portfolio-demo";
 const ORG_ID = "org_demo_portfolio";
@@ -156,32 +154,20 @@ async function seedCollection(
 
 function buildHomeData(opts: {
   weddingsCollectionId: string;
-  heroImage: { publicId: string; url: string };
+  heroBackgroundPublicId: string;
 }) {
+  // Merge the hero preset with a real background image for the demo.
+  const heroProps = {
+    ...HERO_PRESET,
+    backgroundImagePublicId: opts.heroBackgroundPublicId,
+  };
+
   return {
     root: { props: {} },
     content: [
       {
-        type: "Hero",
-        props: {
-          id: "seed-hero",
-          ...heroDefaultProps,
-          headline: "Stories worth keeping",
-          subhead: "Fine-art wedding & portrait photography in Metro Manila.",
-          backgroundImagePublicId: opts.heroImage.publicId,
-          backgroundImageUrl: opts.heroImage.url,
-          primaryCtaLabel: "Get in touch",
-          primaryCtaAction: "open-contact",
-        },
-      },
-      {
-        type: "About",
-        props: {
-          id: "seed-about",
-          ...aboutDefaultProps,
-          heading: "Hi, I'm your photographer",
-          body: "I shoot warm, candid, story-driven images. Based in Manila, available worldwide.",
-        },
+        type: "HeroPreset",
+        props: { id: "seed-hero", ...heroProps },
       },
       {
         type: "GalleryGrid",
@@ -190,20 +176,12 @@ function buildHomeData(opts: {
           ...galleryGridDefaultProps,
           collectionId: opts.weddingsCollectionId,
           columns: 3,
-          showCaptions: false,
           maxItems: 6,
         },
       },
       {
-        type: "CTABanner",
-        props: {
-          id: "seed-cta",
-          ...ctaBannerDefaultProps,
-          headline: "Let's tell your story",
-          ctaLabel: "Start an inquiry",
-          ctaAction: "open-contact",
-          background: "accent",
-        },
+        type: "CtaPreset",
+        props: { id: "seed-cta", ...CTA_PRESET },
       },
     ],
     zones: {},
@@ -238,7 +216,6 @@ function buildGalleryData(opts: {
           collectionId: opts.weddingsCollectionId,
           columns: 3,
           gap: "normal",
-          showCaptions: true,
           maxItems: 18,
         },
       },
@@ -324,13 +301,13 @@ async function main() {
   );
 
   const featuredItemIds = weddings.slice(0, 3).map((i) => String(i._id));
-  const heroImage = { publicId: weddings[0].cloudinaryPublicId, url: weddings[0].url };
+  const heroBackgroundPublicId = weddings[0].cloudinaryPublicId;
 
   console.log("→ Writing Puck data + brand kit + contact config, then publishing…");
   workspace.set("publicPage", {
     templateId: "wedding-photographer",
     data: {
-      home: buildHomeData({ weddingsCollectionId, heroImage }),
+      home: buildHomeData({ weddingsCollectionId, heroBackgroundPublicId }),
       gallery: buildGalleryData({ weddingsCollectionId, portraitsCollectionId, featuredItemIds }),
     },
     brandKit: {
@@ -366,7 +343,7 @@ async function main() {
   console.log("\n✓ Seed complete. Test the published portfolio at:");
   console.log(`    Home    → ${base}/w/${workspace.slug}`);
   console.log(`    Gallery → ${base}/w/${workspace.slug}/gallery`);
-  console.log(`    Contact → click any “Get in touch” CTA or the header Contact button`);
+  console.log(`    Contact → click any "Get in touch" CTA or the header Contact button`);
 
   await mongoose.disconnect();
   process.exit(0);

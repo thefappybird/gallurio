@@ -143,38 +143,46 @@ export function NumberInputRow({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="flex items-center justify-between">
-        <span>{label}</span>
-        {suffix && <span className="text-xs text-muted-foreground">{suffix}</span>}
+      <span>{label}</span>
+      {/* The unit (e.g. "px") sits in a dedicated cell on the input's right edge. */}
+      <span className="relative block">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          step={step}
+          value={value ?? ""}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === "") {
+              onChange(undefined);
+              return;
+            }
+            const n = Number(raw);
+            if (Number.isFinite(n)) onChange(n);
+          }}
+          onBlur={(e) => {
+            const raw = e.target.value;
+            if (raw === "") return;
+            const n = Number(raw);
+            if (!Number.isFinite(n)) {
+              onChange(undefined);
+              return;
+            }
+            onChange(Math.min(max, Math.max(min, n)));
+          }}
+          className={cn(
+            "h-9 w-full border border-border bg-background pl-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            suffix ? "pr-10" : "pr-2"
+          )}
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center border-l border-border px-2 text-xs text-muted-foreground">
+            {suffix}
+          </span>
+        )}
       </span>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        step={step}
-        value={value ?? ""}
-        onChange={(e) => {
-          const raw = e.target.value;
-          if (raw === "") {
-            onChange(undefined);
-            return;
-          }
-          const n = Number(raw);
-          if (Number.isFinite(n)) onChange(n);
-        }}
-        onBlur={(e) => {
-          const raw = e.target.value;
-          if (raw === "") return;
-          const n = Number(raw);
-          if (!Number.isFinite(n)) {
-            onChange(undefined);
-            return;
-          }
-          onChange(Math.min(max, Math.max(min, n)));
-        }}
-        className="h-9 w-full border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      />
     </label>
   );
 }

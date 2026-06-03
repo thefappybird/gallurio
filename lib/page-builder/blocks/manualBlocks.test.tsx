@@ -19,37 +19,37 @@ import type { SlotComponent } from "@measured/puck";
 
 describe("HeadingBlock", () => {
   it("renders without crashing with default props", () => {
-    const { container } = render(<HeadingBlock text={{ text: "Hello" }} level="h2" />);
+    const { container } = render(<HeadingBlock text="Hello" level="h2" />);
     expect(container).toBeTruthy();
   });
 
   it("renders the text content", () => {
-    render(<HeadingBlock text={{ text: "My Heading" }} level="h2" />);
+    render(<HeadingBlock text="My Heading" level="h2" />);
     expect(screen.getByText("My Heading")).toBeTruthy();
   });
 
   it("renders as h1 when level='h1'", () => {
-    render(<HeadingBlock text={{ text: "H1 Title" }} level="h1" />);
+    render(<HeadingBlock text="H1 Title" level="h1" />);
     expect(document.querySelector("h1")).not.toBeNull();
   });
 
   it("renders as h2 when level='h2'", () => {
-    render(<HeadingBlock text={{ text: "H2 Title" }} level="h2" />);
+    render(<HeadingBlock text="H2 Title" level="h2" />);
     expect(document.querySelector("h2")).not.toBeNull();
   });
 
   it("renders as h3 when level='h3'", () => {
-    render(<HeadingBlock text={{ text: "H3 Title" }} level="h3" />);
+    render(<HeadingBlock text="H3 Title" level="h3" />);
     expect(document.querySelector("h3")).not.toBeNull();
   });
 
-  it("accepts a legacy plain string as text (back-compat)", () => {
+  it("tolerates a legacy {text} object via asText back-compat", () => {
     render(<HeadingBlock text={"Legacy heading"} level="h2" />);
     expect(screen.getByText("Legacy heading")).toBeTruthy();
   });
 
   it("renders with an empty text prop without crashing", () => {
-    const { container } = render(<HeadingBlock text={{ text: "" }} level="h2" />);
+    const { container } = render(<HeadingBlock text="" level="h2" />);
     expect(container).toBeTruthy();
   });
 });
@@ -60,23 +60,23 @@ describe("HeadingBlock", () => {
 
 describe("TextBlock", () => {
   it("renders without crashing", () => {
-    const { container } = render(<TextBlock text={{ text: "Some paragraph." }} />);
+    const { container } = render(<TextBlock text="Some paragraph." />);
     expect(container).toBeTruthy();
   });
 
   it("renders the text content inside a <p>", () => {
-    render(<TextBlock text={{ text: "A paragraph block" }} />);
+    render(<TextBlock text="A paragraph block" />);
     expect(screen.getByText("A paragraph block")).toBeTruthy();
     expect(document.querySelector("p")).not.toBeNull();
   });
 
-  it("accepts legacy plain string input", () => {
+  it("accepts plain string input", () => {
     render(<TextBlock text={"Old plain string"} />);
     expect(screen.getByText("Old plain string")).toBeTruthy();
   });
 
   it("renders empty text without crashing", () => {
-    const { container } = render(<TextBlock text={{ text: "" }} />);
+    const { container } = render(<TextBlock text="" />);
     expect(container).toBeTruthy();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { StyleToolkitField } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 
@@ -26,12 +26,22 @@ describe("StyleToolkitField", () => {
     expect(screen.getByRole("button", { name: "Margin" })).toBeTruthy();
   });
 
-  it("no longer renders text-formatting controls (moved to per-text RichTextField)", () => {
+  it("renders text-formatting controls (section-wide) alongside section controls", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
-    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Italic" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Underline" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Text color" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Underline" })).toBeTruthy();
+    // The "Text" popover trigger bundles font/size/color/highlight/alignment
+    expect(screen.getByRole("button", { name: "Text" })).toBeTruthy();
+  });
+
+  it("clicking Bold calls onChange with bold: true when bold is not yet set", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Bold" }));
+    expect(onChange).toHaveBeenCalledOnce();
+    const arg = onChange.mock.calls[0][0] as BlockStyle;
+    expect(arg.bold).toBe(true);
   });
 
   it("marks the Border trigger active when a border width is set", () => {

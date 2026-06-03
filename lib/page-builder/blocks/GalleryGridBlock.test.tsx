@@ -280,9 +280,9 @@ describe("GalleryGridBlock — block text", () => {
         GalleryGridBlock({
           ...defaultProps,
           collectionId: col.toString(),
-          heading: { text: "Our Work" },
-          description: { text: "A selection of recent shoots" },
-          footer: { text: "More on request" },
+          heading: "Our Work",
+          description: "A selection of recent shoots",
+          footer: "More on request",
         })
     );
     render(element);

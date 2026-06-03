@@ -122,9 +122,9 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     expect(screen.getByText(/Paste a YouTube or Vimeo link/i)).toBeTruthy();
@@ -135,9 +135,9 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl="https://example.com"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     expect(document.querySelector("iframe")).toBeNull();
@@ -149,9 +149,9 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -163,9 +163,9 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://vimeo.com/123456789"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -177,9 +177,9 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     expect(screen.queryByText(/Paste a YouTube or Vimeo link/i)).toBeNull();
@@ -191,9 +191,9 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading={{ text: "My Video Heading" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading="My Video Heading"
+        description=""
+        footer=""
       />
     );
     expect(screen.getByText("My Video Heading")).toBeTruthy();
@@ -203,9 +203,9 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading={{ text: "" }}
-        description={{ text: "Watch this beautiful clip" }}
-        footer={{ text: "" }}
+        heading=""
+        description="Watch this beautiful clip"
+        footer=""
       />
     );
     expect(screen.getByText("Watch this beautiful clip")).toBeTruthy();
@@ -215,15 +215,15 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "Footer caption here" }}
+        heading=""
+        description=""
+        footer="Footer caption here"
       />
     );
     expect(screen.getByText("Footer caption here")).toBeTruthy();
   });
 
-  it("accepts legacy string props (RichTextProp back-compat)", () => {
+  it("tolerates legacy {text} object props via asText back-compat", () => {
     render(
       <VideoBlock
         videoUrl=""
@@ -241,9 +241,9 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading={{ text: "My Video" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading="My Video"
+        description=""
+        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -254,9 +254,9 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -269,9 +269,9 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl=""
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     const section = container.querySelector("[data-block='video']");
@@ -282,9 +282,9 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        heading={{ text: "" }}
-        description={{ text: "" }}
-        footer={{ text: "" }}
+        heading=""
+        description=""
+        footer=""
       />
     );
     const section = container.querySelector("[data-block='video']");

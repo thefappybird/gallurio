@@ -16,11 +16,9 @@ import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import {
   resolveBlockStyle,
-  renderRichText,
+  asText,
   productionStyleField,
-  productionRichTextField,
   type BlockStyle,
-  type RichTextProp,
 } from "@/lib/page-builder/styleToolkit";
 
 // Client-safe Cloudinary delivery URL (PUBLIC cloud name only — no server SDK).
@@ -40,11 +38,11 @@ function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {
 
 export type HeadingBlockProps = {
   _style?: BlockStyle;
-  text: RichTextProp;
+  text: string;
   level: "h1" | "h2" | "h3";
 };
 
-export const headingDefaultProps: HeadingBlockProps = { text: { text: "Heading" }, level: "h2" };
+export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
   h1: "clamp(2rem, 5vw, 3.5rem)",
@@ -53,7 +51,7 @@ const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
 };
 
 export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
-  const t = renderRichText(text);
+  const textContent = asText(text);
   const Tag = level;
   return (
     <div style={{ padding: "1rem 1.5rem", fontFamily: "var(--pf-font-body)", ...resolveBlockStyle(_style) }}>
@@ -65,10 +63,9 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
           lineHeight: 1.2,
           color: "var(--pf-color-fg)",
           margin: 0,
-          ...t.css,
         }}
       >
-        {t.text}
+        {textContent}
       </Tag>
     </div>
   );
@@ -79,7 +76,7 @@ export const headingBlockConfig: ComponentConfig<HeadingBlockProps> = {
   defaultProps: headingDefaultProps,
   fields: {
     _style: productionStyleField,
-    text: productionRichTextField as Field<RichTextProp>,
+    text: { type: "text", label: "Heading text" },
     level: {
       type: "select",
       label: "Level",
@@ -97,14 +94,14 @@ export const headingBlockConfig: ComponentConfig<HeadingBlockProps> = {
 // Text / paragraph
 // ---------------------------------------------------------------------------
 
-export type TextBlockProps = { _style?: BlockStyle; text: RichTextProp };
+export type TextBlockProps = { _style?: BlockStyle; text: string };
 
 export const textDefaultProps: TextBlockProps = {
-  text: { text: "Write anything here. Line breaks are preserved." },
+  text: "Write anything here. Line breaks are preserved.",
 };
 
 export function TextBlock({ _style, text }: TextBlockProps) {
-  const t = renderRichText(text);
+  const textContent = asText(text);
   return (
     <div style={{ padding: "1rem 1.5rem", fontFamily: "var(--pf-font-body)", ...resolveBlockStyle(_style) }}>
       <p
@@ -114,10 +111,9 @@ export function TextBlock({ _style, text }: TextBlockProps) {
           color: "var(--pf-color-fg)",
           margin: 0,
           whiteSpace: "pre-line",
-          ...t.css,
         }}
       >
-        {t.text}
+        {textContent}
       </p>
     </div>
   );
@@ -128,7 +124,7 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
   defaultProps: textDefaultProps,
   fields: {
     _style: productionStyleField,
-    text: productionRichTextField as Field<RichTextProp>,
+    text: { type: "textarea", label: "Text" },
   },
   render: TextBlock,
 };
@@ -395,33 +391,149 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
 };
 
 // ---------------------------------------------------------------------------
-// Container (single styleable drop-zone)
+// Container — a styleable SECTION drop-zone. Doubles as the wrapper for composed
+// "preset" sections (Hero/About/CTA/…): full-bleed background image + overlay,
+// min-height, and content alignment, with a slot that nests any other blocks.
 // ---------------------------------------------------------------------------
 
-export type ContainerBlockProps = { _style?: BlockStyle; content: Slot };
+export type ContainerHeight = "auto" | "short" | "medium" | "tall";
+export type ContainerAlignX = "left" | "center" | "right";
+export type ContainerAlignY = "top" | "center" | "bottom";
 
-export const containerDefaultProps: ContainerBlockProps = { content: [] };
+export type ContainerBlockProps = {
+  _style?: BlockStyle;
+  backgroundImagePublicId?: string;
+  /** Dark scrim over the background image, 0–100. Only meaningful with an image. */
+  overlayOpacity?: number;
+  minHeight?: ContainerHeight;
+  alignX?: ContainerAlignX;
+  alignY?: ContainerAlignY;
+  content: Slot;
+};
+
+export const containerDefaultProps: ContainerBlockProps = {
+  backgroundImagePublicId: "",
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: [],
+};
+
+const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
+  auto: undefined,
+  short: "40vh",
+  medium: "60vh",
+  tall: "80vh",
+};
+const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
+const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
 
 export function ContainerBlock({
   _style,
+  backgroundImagePublicId,
+  overlayOpacity,
+  minHeight,
+  alignX,
+  alignY,
   content: Content,
 }: {
   _style?: BlockStyle;
+  backgroundImagePublicId?: string;
+  overlayOpacity?: number;
+  minHeight?: ContainerHeight;
+  alignX?: ContainerAlignX;
+  alignY?: ContainerAlignY;
   content: SlotComponent;
 }) {
+  const ax = alignX ?? "left";
+  const ay = alignY ?? "top";
+  const bgSrc = backgroundImagePublicId ? cloudinaryUrl(backgroundImagePublicId, 2000) : null;
+  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+
   return (
-    <div style={{ padding: "1.5rem", ...resolveBlockStyle(_style) }}>
-      {Content({ style: { maxWidth: "80rem", margin: "0 auto" } })}
-    </div>
+    <section
+      data-block="container"
+      style={{
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: ALIGN_Y_MAP[ay],
+        minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
+        padding: "1.5rem",
+        overflow: "hidden",
+        backgroundColor: bgSrc ? "var(--pf-color-fg)" : undefined,
+        ...resolveBlockStyle(_style),
+      }}
+    >
+      {bgSrc && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={bgSrc}
+          alt=""
+          aria-hidden="true"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      )}
+      {bgSrc && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
+      )}
+      {Content({
+        style: {
+          position: "relative",
+          zIndex: 1,
+          width: "100%",
+          maxWidth: "80rem",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: ALIGN_X_ITEMS[ax],
+          textAlign: ax,
+          gap: "1rem",
+        },
+      })}
+    </section>
   );
 }
+
+export const containerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
+  _style: productionStyleField,
+  backgroundImagePublicId: { type: "text", label: "Background image (Cloudinary public ID)" },
+  overlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100 } as Field<number | undefined>,
+  minHeight: {
+    type: "select",
+    label: "Min height",
+    options: [
+      { label: "Auto", value: "auto" },
+      { label: "Short (40vh)", value: "short" },
+      { label: "Medium (60vh)", value: "medium" },
+      { label: "Tall (80vh)", value: "tall" },
+    ],
+  } as Field<ContainerHeight | undefined>,
+  alignX: {
+    type: "select",
+    label: "Horizontal align",
+    options: [
+      { label: "Left", value: "left" },
+      { label: "Center", value: "center" },
+      { label: "Right", value: "right" },
+    ],
+  } as Field<ContainerAlignX | undefined>,
+  alignY: {
+    type: "select",
+    label: "Vertical align",
+    options: [
+      { label: "Top", value: "top" },
+      { label: "Center", value: "center" },
+      { label: "Bottom", value: "bottom" },
+    ],
+  } as Field<ContainerAlignY | undefined>,
+  content: { type: "slot" },
+};
 
 export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   defaultProps: containerDefaultProps,
-  fields: {
-    _style: productionStyleField,
-    content: { type: "slot" },
-  },
+  fields: containerFields,
   render: ContainerBlock,
 };

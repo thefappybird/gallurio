@@ -1,6 +1,6 @@
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import type { PortfolioTemplate } from "./types";
-import { hero, about, ctaBanner, contactCard, galleryGrid, zone } from "./_blocks";
+import { heroPreset, aboutPreset, ctaPreset, galleryGrid, zone } from "./_blocks";
 
 export const minimalTemplate: PortfolioTemplate = {
   id: "minimal",
@@ -19,22 +19,12 @@ export const minimalTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "foreground",
   },
-  seedData: ({ workspace }) => ({
+  seedData: () => ({
     home: zone([
-      hero({
-        headline: workspace.name,
-        subhead: workspace.branding?.tagline || "",
-        primaryCtaLabel: "Get in touch",
-        secondaryCtaLabel: "View work",
-        height: "medium",
-      }),
-      about({
-        heading: "About",
-        body: workspace.branding?.description || "Tell your story here.",
-      }),
-      ctaBanner({ headline: "Ready to work together?", ctaLabel: "Get in touch" }),
-      contactCard({ heading: "Get in touch" }),
+      heroPreset("min-home-hero"),
+      aboutPreset("min-home-about"),
+      ctaPreset("min-home-cta"),
     ]),
-    gallery: zone([galleryGrid({ columns: 3, maxItems: 12 })]),
+    gallery: zone([galleryGrid("min-gallery-grid", { columns: 3, maxItems: 12 })]),
   }),
 };

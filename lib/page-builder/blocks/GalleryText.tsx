@@ -1,25 +1,26 @@
 /**
  * Shared heading/description/footer text for the gallery blocks (Grid, Masonry,
- * Carousel). Server-safe (no "use client"). Each text is a styleable RichText
- * value; an empty value renders nothing so the block stays clean by default.
+ * Carousel). Server-safe (no "use client"). Text is styled section-wide by the
+ * block's `_style` toolkit; an empty value renders nothing so the block stays
+ * clean by default.
  */
 
-import { renderRichText, type RichTextProp } from "@/lib/page-builder/styleToolkit";
+import { asText } from "@/lib/page-builder/styleToolkit";
 
 export function GalleryHeader({
   heading,
   description,
 }: {
-  heading?: RichTextProp;
-  description?: RichTextProp;
+  heading?: string;
+  description?: string;
 }) {
-  const h = renderRichText(heading);
-  const d = renderRichText(description);
-  if (!h.text && !d.text) return null;
+  const h = asText(heading);
+  const d = asText(description);
+  if (!h && !d) return null;
 
   return (
     <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-      {h.text && (
+      {h && (
         <h2
           style={{
             fontFamily: "var(--pf-font-heading)",
@@ -27,13 +28,12 @@ export function GalleryHeader({
             lineHeight: 1.2,
             color: "var(--pf-color-fg)",
             margin: 0,
-            ...h.css,
           }}
         >
-          {h.text}
+          {h}
         </h2>
       )}
-      {d.text && (
+      {d && (
         <p
           style={{
             fontFamily: "var(--pf-font-body)",
@@ -44,19 +44,18 @@ export function GalleryHeader({
             maxWidth: "40rem",
             margin: "0.5rem auto 0",
             whiteSpace: "pre-line",
-            ...d.css,
           }}
         >
-          {d.text}
+          {d}
         </p>
       )}
     </div>
   );
 }
 
-export function GalleryFooter({ footer }: { footer?: RichTextProp }) {
-  const f = renderRichText(footer);
-  if (!f.text) return null;
+export function GalleryFooter({ footer }: { footer?: string }) {
+  const f = asText(footer);
+  if (!f) return null;
 
   return (
     <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
@@ -70,10 +69,9 @@ export function GalleryFooter({ footer }: { footer?: RichTextProp }) {
           maxWidth: "40rem",
           margin: "0 auto",
           whiteSpace: "pre-line",
-          ...f.css,
         }}
       >
-        {f.text}
+        {f}
       </p>
     </div>
   );

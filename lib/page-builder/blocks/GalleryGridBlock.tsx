@@ -24,9 +24,7 @@ import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serve
 import {
   resolveBlockStyle,
   productionStyleField,
-  productionRichTextField,
   type BlockStyle,
-  type RichTextProp,
 } from "@/lib/page-builder/styleToolkit";
 import { GalleryHeader, GalleryFooter } from "./GalleryText";
 import { Types } from "mongoose";
@@ -37,9 +35,9 @@ import { Types } from "mongoose";
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
-  heading: RichTextProp;
-  description: RichTextProp;
-  footer: RichTextProp;
+  heading: string;
+  description: string;
+  footer: string;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
@@ -51,9 +49,9 @@ export type GalleryGridProps = {
 // ---------------------------------------------------------------------------
 
 export const galleryGridDefaultProps: GalleryGridProps = {
-  heading: { text: "" },
-  description: { text: "" },
-  footer: { text: "" },
+  heading: "",
+  description: "",
+  footer: "",
   collectionId: "",
   columns: 3,
   gap: "normal",
@@ -259,9 +257,9 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   defaultProps: galleryGridDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: productionRichTextField as Field<RichTextProp>,
-    description: productionRichTextField as Field<RichTextProp>,
-    footer: productionRichTextField as Field<RichTextProp>,
+    heading: { type: "text", label: "Heading" },
+    description: { type: "textarea", label: "Description" },
+    footer: { type: "textarea", label: "Footer" },
     collectionId: {
       type: "text",
       label: "Collection ID",

@@ -1,16 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { editorPuckConfig } from "./editorConfig";
 import { puckConfig } from "./config";
-import { heroDefaultProps } from "./blocks/HeroBlock";
-import { aboutDefaultProps } from "./blocks/AboutBlock";
+import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import { galleryCarouselDefaultProps } from "./blocks/GalleryCarouselBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
-import { servicesListDefaultProps } from "./blocks/ServicesListBlock";
-import { ctaBannerDefaultProps } from "./blocks/CTABannerBlock";
-import { contactCardDefaultProps } from "./blocks/ContactCardBlock";
 import { videoDefaultProps } from "./blocks/VideoBlock";
+import { contactDetailsDefaultProps } from "./blocks/ContactDetailsBlock";
 import {
   headingDefaultProps,
   textDefaultProps,
@@ -34,16 +31,17 @@ describe("editorPuckConfig parity with production puckConfig", () => {
   });
 
   const defaults: Record<string, unknown> = {
-    Hero: heroDefaultProps,
-    About: aboutDefaultProps,
+    HeroPreset: SECTION_PRESETS.HeroPreset.defaultProps,
+    AboutPreset: SECTION_PRESETS.AboutPreset.defaultProps,
+    ServicesPreset: SECTION_PRESETS.ServicesPreset.defaultProps,
+    CtaPreset: SECTION_PRESETS.CtaPreset.defaultProps,
+    ContactPreset: SECTION_PRESETS.ContactPreset.defaultProps,
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
     GalleryCarousel: galleryCarouselDefaultProps,
     FeaturedWork: featuredWorkDefaultProps,
-    ServicesList: servicesListDefaultProps,
-    CTABanner: ctaBannerDefaultProps,
-    ContactCard: contactCardDefaultProps,
     Video: videoDefaultProps,
+    ContactDetails: contactDetailsDefaultProps,
     Heading: headingDefaultProps,
     Text: textDefaultProps,
     Image: imageDefaultProps,

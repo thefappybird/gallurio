@@ -535,7 +535,17 @@ export function EditorShell({
               // Full custom header: nav left · canvas controls center · tools +
               // Puck's Publish action (`actions`) right. The center cluster also
               // carries the sidebar-panel toggles the default header would own.
-              header: ({ actions }) => topBar(<EditCanvasControls />, actions),
+              // `gridArea: header` + the chrome styling replace what the default
+              // `._PuckHeader_` wrapper provided — without it the bar collapses
+              // into the narrow left grid column.
+              header: ({ actions }) => (
+                <header
+                  className="border-b border-border bg-card px-3 py-2"
+                  style={{ gridArea: "header" }}
+                >
+                  {topBar(<EditCanvasControls />, actions)}
+                </header>
+              ),
             }}
           />
         ) : (

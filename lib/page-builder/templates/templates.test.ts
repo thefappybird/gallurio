@@ -50,7 +50,7 @@ describe("portfolio template registry", () => {
           ...(data.gallery?.content ?? []),
         ];
         for (const block of allBlocks) {
-          expect(REGISTERED_BLOCKS.has(block.type)).toBe(true);
+          expect(REGISTERED_BLOCKS.has(block.type), `Template '${template.id}' references unregistered block '${block.type}'`).toBe(true);
         }
       });
 
@@ -70,20 +70,32 @@ describe("portfolio template registry", () => {
         expect(portfolioContactConfigSchema.safeParse(template.defaultContact).success).toBe(true);
       });
 
-      it("personalizes the hero headline with the workspace name", () => {
-        const hero = data.home?.content.find((b) => b.type === "Hero");
-        expect(hero?.props.headline).toBe("Studio Aurora");
+      it("starts the home zone with a HeroPreset block", () => {
+        // Templates use the new preset block model. The first home block is a
+        // HeroPreset (a composed Container) — no longer a monolithic 'Hero' block.
+        const firstBlock = data.home?.content[0];
+        expect(firstBlock?.type).toBe("HeroPreset");
+      });
+
+      it("every top-level home and gallery block has a stable id", () => {
+        const allBlocks = [
+          ...(data.home?.content ?? []),
+          ...(data.gallery?.content ?? []),
+        ];
+        for (const block of allBlocks) {
+          expect(block.props?.id, `Block of type '${block.type}' must have a stable id`).toBeTruthy();
+        }
       });
     });
   }
 
-  it("falls back to workspace name + sensible copy when branding is missing", () => {
+  it("produces valid Puck data when context branding is missing", () => {
     const bare = { workspace: { name: "Bare Co" } };
     for (const template of PORTFOLIO_TEMPLATES) {
       const data = template.seedData(bare);
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
-      const hero = data.home?.content.find((b) => b.type === "Hero");
-      expect(hero?.props.headline).toBe("Bare Co");
+      // The first home block must still be a HeroPreset in all templates.
+      expect(data.home?.content[0]?.type).toBe("HeroPreset");
     }
   });
 });

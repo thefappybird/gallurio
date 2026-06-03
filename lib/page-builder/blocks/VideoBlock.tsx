@@ -8,29 +8,27 @@
  * block's empty state. All branding via `--pf-*` CSS variables.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
+import type { ComponentConfig } from "@measured/puck";
 import {
   resolveBlockStyle,
-  renderRichText,
+  asText,
   productionStyleField,
-  productionRichTextField,
   type BlockStyle,
-  type RichTextProp,
 } from "@/lib/page-builder/styleToolkit";
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
-  heading: RichTextProp;
-  description: RichTextProp;
+  heading: string;
+  description: string;
   videoUrl: string;
-  footer: RichTextProp;
+  footer: string;
 };
 
 export const videoDefaultProps: VideoBlockProps = {
-  heading: { text: "" },
-  description: { text: "" },
+  heading: "",
+  description: "",
   videoUrl: "",
-  footer: { text: "" },
+  footer: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -72,9 +70,9 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // ---------------------------------------------------------------------------
 
 export function VideoBlock({ _style, heading, description, videoUrl, footer }: VideoBlockProps) {
-  const hd = renderRichText(heading);
-  const dd = renderRichText(description);
-  const ft = renderRichText(footer);
+  const headingText = asText(heading);
+  const descriptionText = asText(description);
+  const footerText = asText(footer);
   const embed = parseVideoEmbed(videoUrl);
 
   return (
@@ -90,9 +88,9 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
       }}
     >
       <div style={{ maxWidth: "56rem", margin: "0 auto" }}>
-        {(hd.text || dd.text) && (
+        {(headingText || descriptionText) && (
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            {hd.text && (
+            {headingText && (
               <h2
                 style={{
                   fontFamily: "var(--pf-font-heading)",
@@ -100,13 +98,12 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
                   lineHeight: 1.2,
                   margin: 0,
                   color: "var(--pf-color-fg)",
-                  ...hd.css,
                 }}
               >
-                {hd.text}
+                {headingText}
               </h2>
             )}
-            {dd.text && (
+            {descriptionText && (
               <p
                 style={{
                   fontSize: "1rem",
@@ -116,10 +113,9 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
                   color: "var(--pf-color-fg)",
                   opacity: 0.75,
                   whiteSpace: "pre-line",
-                  ...dd.css,
                 }}
               >
-                {dd.text}
+                {descriptionText}
               </p>
             )}
           </div>
@@ -138,7 +134,7 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
           >
             <iframe
               src={embed.src}
-              title={hd.text || "Embedded video"}
+              title={headingText || "Embedded video"}
               loading="lazy"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -162,7 +158,7 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
           </div>
         )}
 
-        {ft.text && (
+        {footerText && (
           <p
             style={{
               textAlign: "center",
@@ -173,10 +169,9 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
               color: "var(--pf-color-fg)",
               opacity: 0.75,
               whiteSpace: "pre-line",
-              ...ft.css,
             }}
           >
-            {ft.text}
+            {footerText}
           </p>
         )}
       </div>
@@ -193,10 +188,10 @@ export const videoBlockConfig: ComponentConfig<VideoBlockProps> = {
   defaultProps: videoDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: productionRichTextField as Field<RichTextProp>,
-    description: productionRichTextField as Field<RichTextProp>,
+    heading: { type: "text", label: "Heading" },
+    description: { type: "textarea", label: "Description" },
     videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
-    footer: productionRichTextField as Field<RichTextProp>,
+    footer: { type: "textarea", label: "Footer" },
   },
   render: VideoBlock,
 };

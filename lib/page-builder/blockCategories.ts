@@ -8,26 +8,31 @@
  * into the client bundle and break the build.
  */
 
+// Preset blocks: composed sections (Container with a pre-filled slot) + the
+// data-driven gallery/featured blocks.
 export const PRESET_BLOCK_KEYS = [
-  "Hero",
-  "About",
-  "ServicesList",
+  "HeroPreset",
+  "AboutPreset",
+  "ServicesPreset",
+  "CtaPreset",
+  "ContactPreset",
   "GalleryGrid",
   "GalleryMasonry",
   "GalleryCarousel",
   "FeaturedWork",
-  "Video",
-  "CTABanner",
-  "ContactCard",
 ] as const;
 
+// Manual blocks: barebones primitives + the styleable Container/Columns
+// drop-zones + the Video and Contact-details building blocks.
 export const MANUAL_BLOCK_KEYS = [
   "Heading",
   "Text",
   "Image",
   "Button",
+  "Video",
   "Columns",
   "Container",
+  "ContactDetails",
   "Spacer",
   "Divider",
 ] as const;

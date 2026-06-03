@@ -1,12 +1,10 @@
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import type { PortfolioTemplate } from "./types";
 import {
-  hero,
-  about,
-  servicesList,
-  featuredWork,
-  ctaBanner,
-  contactCard,
+  heroPreset,
+  aboutPreset,
+  servicesPreset,
+  ctaPreset,
   galleryMasonry,
   zone,
 } from "./_blocks";
@@ -29,35 +27,13 @@ export const plannerTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "accent",
   },
-  seedData: ({ workspace }) => ({
+  seedData: () => ({
     home: zone([
-      hero({
-        headline: workspace.name,
-        subhead: workspace.branding?.tagline || "Thoughtfully planned events, beautifully run.",
-        primaryCtaLabel: "Plan your event",
-        secondaryCtaLabel: "Our work",
-        alignment: "left",
-        height: "medium",
-      }),
-      servicesList({
-        heading: "How we help",
-        items: [
-          { title: "Full planning", description: "End-to-end coordination from concept to send-off." },
-          { title: "Partial planning", description: "We step in to refine and run the day." },
-          { title: "Day-of coordination", description: "You plan, we execute flawlessly." },
-        ],
-      }),
-      featuredWork({ heading: "Selected events", layout: "stagger" }),
-      about({
-        heading: "Our approach",
-        body:
-          workspace.branding?.description ||
-          "We sweat the logistics so you can be present. Calm, organized, detail-obsessed.",
-        imagePosition: "left",
-      }),
-      ctaBanner({ headline: "Let's plan something memorable.", ctaLabel: "Start planning" }),
-      contactCard({ heading: "Get in touch" }),
+      heroPreset("pl-home-hero"),
+      servicesPreset("pl-home-services"),
+      aboutPreset("pl-home-about"),
+      ctaPreset("pl-home-cta"),
     ]),
-    gallery: zone([galleryMasonry({ columns: 3, maxItems: 24 })]),
+    gallery: zone([galleryMasonry("pl-gallery-masonry", { columns: 3, maxItems: 24 })]),
   }),
 };

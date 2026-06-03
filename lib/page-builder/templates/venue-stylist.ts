@@ -1,12 +1,10 @@
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import type { PortfolioTemplate } from "./types";
 import {
-  hero,
-  about,
-  featuredWork,
-  servicesList,
-  ctaBanner,
-  contactCard,
+  heroPreset,
+  aboutPreset,
+  servicesPreset,
+  ctaPreset,
   galleryCarousel,
   zone,
 } from "./_blocks";
@@ -29,35 +27,13 @@ export const venueStylistTemplate: PortfolioTemplate = {
     buttonStyle: "soft",
     buttonColor: "accent",
   },
-  seedData: ({ workspace }) => ({
+  seedData: () => ({
     home: zone([
-      hero({
-        headline: workspace.name,
-        subhead: workspace.branding?.tagline || "Spaces styled to take your breath away.",
-        primaryCtaLabel: "Enquire",
-        secondaryCtaLabel: "View spaces",
-        alignment: "center",
-        height: "tall",
-      }),
-      featuredWork({ heading: "Signature spaces", layout: "row" }),
-      about({
-        heading: "The studio",
-        body:
-          workspace.branding?.description ||
-          "We style venues with texture, light, and restraint — settings that feel effortless and unforgettable.",
-        imagePosition: "right",
-      }),
-      servicesList({
-        heading: "Styling services",
-        items: [
-          { title: "Full styling", description: "Concept, sourcing, and on-site styling." },
-          { title: "Floral & tablescapes", description: "Seasonal arrangements and table design." },
-          { title: "Venue dressing", description: "Transform your chosen space end to end." },
-        ],
-      }),
-      ctaBanner({ headline: "Let's style your space.", ctaLabel: "Start an enquiry", background: "surface" }),
-      contactCard({ heading: "Get in touch", showAddress: true }),
+      heroPreset("vs-home-hero"),
+      aboutPreset("vs-home-about"),
+      servicesPreset("vs-home-services"),
+      ctaPreset("vs-home-cta"),
     ]),
-    gallery: zone([galleryCarousel({ aspect: "landscape", maxItems: 16 })]),
+    gallery: zone([galleryCarousel("vs-gallery-carousel", { aspect: "landscape", maxItems: 16 })]),
   }),
 };
