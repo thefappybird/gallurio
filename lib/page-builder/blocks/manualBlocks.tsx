@@ -54,14 +54,23 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
   const textContent = asText(text);
   const Tag = level;
   return (
-    <div style={{ padding: "1rem 1.5rem", fontFamily: "var(--pf-font-body)", ...resolveBlockStyle(_style) }}>
+    // Base color/font on the wrapper so the `_style` toolkit (textColorToken,
+    // fontFamily, fontSize…) can override it; the inner tag inherits.
+    <div
+      style={{
+        padding: "1rem 1.5rem",
+        fontFamily: "var(--pf-font-body)",
+        color: "var(--pf-color-fg)",
+        ...resolveBlockStyle(_style),
+      }}
+    >
       <Tag
         style={{
           fontFamily: "var(--pf-font-heading)",
           fontSize: HEADING_SIZE[level],
           fontWeight: 700,
           lineHeight: 1.2,
-          color: "var(--pf-color-fg)",
+          color: "inherit",
           margin: 0,
         }}
       >
@@ -103,16 +112,16 @@ export const textDefaultProps: TextBlockProps = {
 export function TextBlock({ _style, text }: TextBlockProps) {
   const textContent = asText(text);
   return (
-    <div style={{ padding: "1rem 1.5rem", fontFamily: "var(--pf-font-body)", ...resolveBlockStyle(_style) }}>
-      <p
-        style={{
-          fontSize: "1rem",
-          lineHeight: 1.7,
-          color: "var(--pf-color-fg)",
-          margin: 0,
-          whiteSpace: "pre-line",
-        }}
-      >
+    <div
+      style={{
+        padding: "1rem 1.5rem",
+        fontFamily: "var(--pf-font-body)",
+        fontSize: "1rem",
+        color: "var(--pf-color-fg)",
+        ...resolveBlockStyle(_style),
+      }}
+    >
+      <p style={{ fontSize: "inherit", lineHeight: 1.7, color: "inherit", margin: 0, whiteSpace: "pre-line" }}>
         {textContent}
       </p>
     </div>
@@ -359,15 +368,15 @@ export function ColumnsBlock({
   const cols = columns === 3 ? 3 : 2;
   return (
     <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}>
-      {Content({
-        style: {
-          display: "grid",
-          gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-          gap: "1rem",
-          maxWidth: "80rem",
-          margin: "0 auto",
-        },
-      })}
+      {/* Responsive: 1 column on phones, 2 on tablets, the chosen count on
+          desktop. Inline styles can't hold media queries, so scoped classes +
+          a <style> drive the breakpoints. */}
+      <style>{`
+        .pf-cols{display:grid;gap:1rem;max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        @media (min-width:640px){.pf-cols-2,.pf-cols-3{grid-template-columns:repeat(2,minmax(0,1fr));}}
+        @media (min-width:1024px){.pf-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}}
+      `}</style>
+      {Content({ className: `pf-cols pf-cols-${cols}`, style: {} })}
     </div>
   );
 }

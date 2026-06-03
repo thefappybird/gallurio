@@ -12,6 +12,7 @@ import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight } from "lucide-react
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 import type {
   PortfolioBrandKit,
   PortfolioContactConfig,
@@ -427,6 +428,15 @@ export function EditorShell({
   }
 
   const { cssVars, className } = resolveBrandKit(brandKit);
+  // Resolved palette for the toolkit swatches (portaled popovers can't read the
+  // `--pf-color-*` vars, so we thread the hex values through React context).
+  const brandColors = {
+    primary: brandKit.primaryColor,
+    secondary: brandKit.secondaryColor,
+    accent: brandKit.accentColor,
+    background: brandKit.backgroundColor,
+    foreground: brandKit.foregroundColor,
+  };
   const headerTitle = `${workspaceName} · ${t(`zone.${activeTab}`)}`;
   const previewSrc = `${previewBasePath}?zone=${isContact ? "contact" : activeZone}&v=${previewNonce}`;
 
@@ -511,6 +521,7 @@ export function EditorShell({
     <>
       <MobileBanner publicUrl={`${publicOrigin}/w/${slug}`} />
 
+      <BrandColorsContext.Provider value={brandColors}>
       <div
         className={cn("gallurio-editor", className)}
         style={cssVars as React.CSSProperties}
@@ -577,6 +588,7 @@ export function EditorShell({
           </div>
         )}
       </div>
+      </BrandColorsContext.Provider>
 
       <PublishDialog
         open={publishOpen}

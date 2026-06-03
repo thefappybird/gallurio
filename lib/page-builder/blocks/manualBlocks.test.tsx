@@ -325,23 +325,24 @@ describe("ColumnsBlock", () => {
     expect(screen.getByTestId("slot")).toBeTruthy();
   });
 
-  it("renders a 2-column grid for columns=2", () => {
+  it("applies the responsive 2-column class for columns=2", () => {
     render(<ColumnsBlock columns={2} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.style.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+    expect(slot.className).toContain("pf-cols");
+    expect(slot.className).toContain("pf-cols-2");
   });
 
-  it("renders a 3-column grid for columns=3", () => {
+  it("applies the responsive 3-column class for columns=3", () => {
     render(<ColumnsBlock columns={3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.style.gridTemplateColumns).toBe("repeat(3, minmax(0, 1fr))");
+    expect(slot.className).toContain("pf-cols-3");
   });
 
   it("defaults to 2 columns for unexpected column value", () => {
     // Cast to test defensive clamping behavior
     render(<ColumnsBlock columns={5 as 2 | 3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.style.gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+    expect(slot.className).toContain("pf-cols-2");
   });
 });
 

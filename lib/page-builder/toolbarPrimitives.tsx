@@ -11,7 +11,8 @@
 import type { LucideIcon } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { STYLE_COLOR_TOKENS, colorTokenToVar, type StyleColorToken } from "./styleToolkit";
+import { STYLE_COLOR_TOKENS, type StyleColorToken } from "./styleToolkit";
+import { useBrandColors } from "./brandColors";
 
 export const COLOR_LABEL: Record<StyleColorToken, string> = {
   primary: "Primary",
@@ -89,6 +90,9 @@ export function ColorSwatchRow({
   onChange: (next: StyleColorToken | undefined) => void;
   allowNone?: boolean;
 }) {
+  // Resolved hex (via context) so swatches show the real color even when the
+  // popover is portaled outside the `--pf-color-*` scope.
+  const colors = useBrandColors();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {STYLE_COLOR_TOKENS.map((token) => (
@@ -103,7 +107,7 @@ export function ColorSwatchRow({
             "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
           )}
-          style={{ background: colorTokenToVar(token) }}
+          style={{ background: colors[token] }}
         />
       ))}
       {allowNone && (
