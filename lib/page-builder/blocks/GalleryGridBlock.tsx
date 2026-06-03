@@ -21,7 +21,14 @@ import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
+import { GalleryHeader, GalleryFooter } from "./GalleryText";
 import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
@@ -30,10 +37,12 @@ import { Types } from "mongoose";
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
+  heading: RichTextProp;
+  description: RichTextProp;
+  footer: RichTextProp;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
-  showCaptions: boolean;
   maxItems: number;
 };
 
@@ -42,10 +51,12 @@ export type GalleryGridProps = {
 // ---------------------------------------------------------------------------
 
 export const galleryGridDefaultProps: GalleryGridProps = {
+  heading: { text: "" },
+  description: { text: "" },
+  footer: { text: "" },
   collectionId: "",
   columns: 3,
   gap: "normal",
-  showCaptions: false,
   maxItems: 12,
 };
 
@@ -90,10 +101,12 @@ type LeanGalleryItem = {
 
 export async function GalleryGridBlock({
   _style,
+  heading,
+  description,
+  footer,
   collectionId,
   columns,
   gap,
-  showCaptions,
   maxItems,
   puck,
 }: GalleryGridProps & { puck?: BlockPuck }) {
@@ -161,6 +174,7 @@ export async function GalleryGridBlock({
           margin: "0 auto",
         }}
       >
+        <GalleryHeader heading={heading} description={description} />
         <div
           style={{
             display: "grid",
@@ -194,23 +208,11 @@ export async function GalleryGridBlock({
                     display: "block",
                   }}
                 />
-                {showCaptions && item.caption && (
-                  <figcaption
-                    style={{
-                      fontSize: "0.8125rem",
-                      color: "var(--pf-color-fg)",
-                      opacity: 0.65,
-                      padding: "0.5rem 0",
-                      textAlign: "center",
-                    }}
-                  >
-                    {item.caption}
-                  </figcaption>
-                )}
               </figure>
             );
           })}
         </div>
+        <GalleryFooter footer={footer} />
       </div>
     </section>
   );
@@ -257,6 +259,9 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   defaultProps: galleryGridDefaultProps,
   fields: {
     _style: productionStyleField,
+    heading: productionRichTextField as Field<RichTextProp>,
+    description: productionRichTextField as Field<RichTextProp>,
+    footer: productionRichTextField as Field<RichTextProp>,
     collectionId: {
       type: "text",
       label: "Collection ID",
@@ -279,14 +284,6 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
         { label: "Loose (16px)", value: "loose" },
       ],
     },
-    showCaptions: {
-      type: "select",
-      label: "Show captions",
-      options: [
-        { label: "No", value: false },
-        { label: "Yes", value: true },
-      ],
-    } as Field<boolean>,
     maxItems: {
       type: "number",
       label: "Max items (1–100)",

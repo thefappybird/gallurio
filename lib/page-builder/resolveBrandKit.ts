@@ -8,6 +8,7 @@
  */
 
 import type { PortfolioBrandKit, BrandKitFontPair, BrandKitRadius } from "./types";
+import { PORTFOLIO_FONTS, legacyFontPairToFonts, isPortfolioFontKey } from "./fonts";
 
 // ---------------------------------------------------------------------------
 // Font-pair → CSS family string mapping
@@ -70,7 +71,12 @@ export type ResolvedBrandKit = {
  * Safe to call on the server — no React deps.
  */
 export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
-  const fonts = FONT_PAIR_MAP[brandKit.fontPair];
+  // Prefer the independent heading/body families; fall back to the legacy
+  // `fontPair` mapping for portfolios saved before independent fonts (no
+  // migration needed). Guard against stale/unknown keys defensively.
+  const legacy = legacyFontPairToFonts(brandKit.fontPair);
+  const headingKey = isPortfolioFontKey(brandKit.headingFont) ? brandKit.headingFont : legacy.headingFont;
+  const bodyKey = isPortfolioFontKey(brandKit.bodyFont) ? brandKit.bodyFont : legacy.bodyFont;
 
   const cssVars: Record<string, string> = {
     "--pf-color-primary": brandKit.primaryColor,
@@ -79,8 +85,8 @@ export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
     "--pf-color-bg": brandKit.backgroundColor,
     "--pf-color-fg": brandKit.foregroundColor,
     "--pf-radius": RADIUS_MAP[brandKit.radius],
-    "--pf-font-heading": fonts.heading,
-    "--pf-font-body": fonts.body,
+    "--pf-font-heading": PORTFOLIO_FONTS[headingKey].family,
+    "--pf-font-body": PORTFOLIO_FONTS[bodyKey].family,
   };
 
   const className = `pf-theme-${brandKit.themePreset} pf-button-${brandKit.buttonStyle}`;

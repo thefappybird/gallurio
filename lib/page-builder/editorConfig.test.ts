@@ -10,6 +10,17 @@ import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { servicesListDefaultProps } from "./blocks/ServicesListBlock";
 import { ctaBannerDefaultProps } from "./blocks/CTABannerBlock";
 import { contactCardDefaultProps } from "./blocks/ContactCardBlock";
+import { videoDefaultProps } from "./blocks/VideoBlock";
+import {
+  headingDefaultProps,
+  textDefaultProps,
+  imageDefaultProps,
+  buttonDefaultProps,
+  spacerDefaultProps,
+  dividerDefaultProps,
+  columnsDefaultProps,
+  containerDefaultProps,
+} from "./blocks/manualBlocks";
 
 // The editor config mirrors the production blocks for client-safe previews. If a
 // block's component keys or defaultProps drift from the editor's, saved data
@@ -32,6 +43,15 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     ServicesList: servicesListDefaultProps,
     CTABanner: ctaBannerDefaultProps,
     ContactCard: contactCardDefaultProps,
+    Video: videoDefaultProps,
+    Heading: headingDefaultProps,
+    Text: textDefaultProps,
+    Image: imageDefaultProps,
+    Button: buttonDefaultProps,
+    Spacer: spacerDefaultProps,
+    Divider: dividerDefaultProps,
+    Columns: columnsDefaultProps,
+    Container: containerDefaultProps,
   };
 
   for (const [type, blockDefaults] of Object.entries(defaults)) {

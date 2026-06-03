@@ -1124,11 +1124,11 @@
           "count": "{count} {count, plural, one {gambar} other {gambar}}",
           "dropZone": "Seret foto ke sini atau klik untuk memilih",
           "dropZoneActive": "Lepaskan untuk mengunggah",
-          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px",
+          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px pada sisi yang lebih pendek",
           "optional": "Anda dapat melewati langkah ini dan mengunggah foto nanti.",
           "errorType": "Hanya foto JPEG, PNG, WebP, dan AVIF yang diterima.",
           "errorSize": "Setiap foto harus di bawah 10 MB.",
-          "errorDim": "Foto harus minimal 600 px pada sisi yang lebih pendek."
+          "errorDim": "Setiap foto harus minimal 600 px pada sisi yang lebih pendek (mis. 600×800 atau 800×600)."
         },
         "review": {
           "title": "Tinjau & luncurkan",

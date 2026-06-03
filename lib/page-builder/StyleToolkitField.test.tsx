@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { StyleToolkitField } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 
@@ -15,24 +15,28 @@ beforeEach(() => {
 });
 
 describe("StyleToolkitField", () => {
-  it("renders the toolbar with the Style label and the formatting toggles", () => {
+  it("renders the block-level (section) style controls", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
-    expect(screen.getByText("Style")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Underline" })).toBeTruthy();
+    expect(screen.getByText("Section style")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Background" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Border" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Corner radius" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Shadow" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Padding" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Margin" })).toBeTruthy();
   });
 
-  it("toggles bold and emits the updated style", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={undefined} onChange={onChange} />);
-    fireEvent.click(screen.getByRole("button", { name: "Bold" }));
-    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ bold: true }));
+  it("no longer renders text-formatting controls (moved to per-text RichTextField)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Italic" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Underline" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Text color" })).toBeNull();
   });
 
-  it("reflects active state from the incoming value", () => {
-    const value: BlockStyle = { italic: true };
+  it("marks the Border trigger active when a border width is set", () => {
+    const value: BlockStyle = { borderWidth: 4 };
     render(<StyleToolkitField value={value} onChange={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "Italic" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Border" }).className).toContain("ring-ring");
   });
 });

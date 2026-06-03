@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
-import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PuckData } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
@@ -79,6 +79,7 @@ export default async function PageBuilderEntry({
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
+  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
 
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
@@ -106,6 +107,7 @@ export default async function PageBuilderEntry({
       templates={templates}
       currentTemplateId={templateId}
       guideDismissed={guideDismissed}
+      initialSavedThemes={initialSavedThemes}
     />
   );
 }

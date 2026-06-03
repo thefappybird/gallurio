@@ -155,4 +155,10 @@ The booking location picker (`components/ui/location-picker.tsx`) geocodes via O
 - [ ] If staying on Nominatim, verify the production domain sends an identifiable `Referer` (browsers do this automatically) and consider proxying through a server route to attach a descriptive `User-Agent`.
 - [ ] Map tiles load from `tile.openstreetmap.org` — same fair-use considerations apply; budget a tile provider if traffic grows.
 
+## 12. Portfolio brand-kit fonts — expand the curated set (optional)
+
+The portfolio brand kit supports **independent heading + body font selection** from the curated, self-hosted family list in `lib/page-builder/fonts.ts` (the 8 families already bundled as woff2: Merriweather, Playfair Display, Fraunces, Cormorant Garamond, DM Serif Display, Inter, Montserrat, DM Sans). Self-hosting keeps builds offline/reproducible and the public page fast (no runtime Google Fonts fetch).
+
+- [ ] If owners want more variety, source a few more latin **variable** woff2 files (e.g. fontsource) into `app/fonts/`, register each with `localFont` in `lib/fonts/portfolio.ts` (append its var to `portfolioFontVariables`), and add an entry to `PORTFOLIO_FONTS` in `lib/page-builder/fonts.ts`. The brand-kit picker and per-text font selector pick up new families automatically. Do NOT switch to a runtime Google Fonts `<link>` — it breaks the offline/reproducible-build invariant and adds a third-party request on every public page.
+
 When everything in this file is checked, ship it.

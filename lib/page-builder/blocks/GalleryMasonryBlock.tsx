@@ -15,22 +15,33 @@ import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
+import { GalleryHeader, GalleryFooter } from "./GalleryText";
 
 export type GalleryMasonryProps = {
   _style?: BlockStyle;
+  heading: RichTextProp;
+  description: RichTextProp;
+  footer: RichTextProp;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
-  showCaptions: boolean;
   maxItems: number;
 };
 
 export const galleryMasonryDefaultProps: GalleryMasonryProps = {
+  heading: { text: "" },
+  description: { text: "" },
+  footer: { text: "" },
   collectionId: "",
   columns: 3,
   gap: "normal",
-  showCaptions: false,
   maxItems: 18,
 };
 
@@ -48,10 +59,12 @@ const THUMB_WIDTH_MAP: Record<GalleryMasonryProps["columns"], number> = {
 
 export async function GalleryMasonryBlock({
   _style,
+  heading,
+  description,
+  footer,
   collectionId,
   columns,
   gap,
-  showCaptions,
   maxItems,
   puck,
 }: GalleryMasonryProps & { puck?: BlockPuck }) {
@@ -104,16 +117,16 @@ export async function GalleryMasonryBlock({
         @media (max-width: 639px) { .pf-masonry { column-count: 2 !important; } }
         @media (max-width: 399px) { .pf-masonry { column-count: 1 !important; } }
       `}</style>
-      <div
-        className="pf-masonry"
-        style={{
-          maxWidth: "80rem",
-          margin: "0 auto",
-          columnCount: columns,
-          columnGap: gapValue,
-        }}
-      >
-        {items.map((item) => {
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryHeader heading={heading} description={description} />
+        <div
+          className="pf-masonry"
+          style={{
+            columnCount: columns,
+            columnGap: gapValue,
+          }}
+        >
+          {items.map((item) => {
           const src =
             cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
               width: thumbWidth,
@@ -139,21 +152,11 @@ export async function GalleryMasonryBlock({
                 decoding="async"
                 style={{ width: "100%", height: "auto", display: "block" }}
               />
-              {showCaptions && item.caption && (
-                <figcaption
-                  style={{
-                    fontSize: "0.8125rem",
-                    color: "var(--pf-color-fg)",
-                    opacity: 0.65,
-                    padding: "0.5rem 0",
-                  }}
-                >
-                  {item.caption}
-                </figcaption>
-              )}
             </figure>
           );
-        })}
+          })}
+        </div>
+        <GalleryFooter footer={footer} />
       </div>
     </section>
   );
@@ -192,6 +195,9 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   defaultProps: galleryMasonryDefaultProps,
   fields: {
     _style: productionStyleField,
+    heading: productionRichTextField as Field<RichTextProp>,
+    description: productionRichTextField as Field<RichTextProp>,
+    footer: productionRichTextField as Field<RichTextProp>,
     collectionId: { type: "text", label: "Collection ID" },
     columns: {
       type: "select",
@@ -211,14 +217,6 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
         { label: "Loose", value: "loose" },
       ],
     },
-    showCaptions: {
-      type: "select",
-      label: "Show captions",
-      options: [
-        { label: "No", value: false },
-        { label: "Yes", value: true },
-      ],
-    } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
   // Async server component — Puck's PuckComponent type expects sync JSX.

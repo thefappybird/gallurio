@@ -3,9 +3,10 @@
 import "@measured/puck/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Puck, type Config, type Data } from "@measured/puck";
+import { Puck, usePuck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -14,6 +15,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import type {
   PortfolioBrandKit,
   PortfolioContactConfig,
+  PortfolioSavedTheme,
   PuckData,
 } from "@/lib/page-builder/types";
 import {
@@ -63,11 +65,109 @@ type Props = {
   currentTemplateId: string;
   /** Whether the owner already dismissed the first-run guide overlay. */
   guideDismissed: boolean;
+  /** Owner's saved named themes (server-loaded). */
+  initialSavedThemes: PortfolioSavedTheme[];
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const AUTOSAVE_MS = 1500;
 const TABS: readonly Tab[] = ["home", "gallery", "contact"] as const;
+
+// Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
+// standalone iframe preview. Mirrors the <Puck viewports> prop.
+type PreviewDevice = "mobile" | "tablet" | "desktop";
+const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon: typeof Monitor }[] = [
+  { key: "mobile", label: "Mobile", width: 390, Icon: Smartphone },
+  { key: "tablet", label: "Tablet", width: 768, Icon: Tablet },
+  { key: "desktop", label: "Desktop", width: 1280, Icon: Monitor },
+] as const;
+
+/**
+ * In-canvas edit controls: the Components/Properties sidebar toggles (which the
+ * default Puck header would otherwise provide via `children` — lost when we use
+ * the `overrides.header` slot) plus the device viewport toggle that clamps the
+ * edit canvas. Lives inside Puck so `usePuck` has context.
+ */
+function EditCanvasControls() {
+  const { appState, dispatch } = usePuck();
+  const current = appState.ui.viewports.current.width;
+  const { leftSideBarVisible, rightSideBarVisible } = appState.ui;
+  return (
+    <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
+      <Button
+        type="button"
+        size="icon-sm"
+        variant={leftSideBarVisible ? "default" : "outline"}
+        aria-pressed={leftSideBarVisible}
+        aria-label="Toggle blocks panel"
+        title="Toggle blocks panel"
+        onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
+      >
+        <PanelLeft className="size-4" aria-hidden />
+      </Button>
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      {DEVICES.map(({ key, label, width, Icon }) => (
+        <Button
+          key={key}
+          type="button"
+          size="icon-sm"
+          variant={current === width ? "default" : "outline"}
+          aria-pressed={current === width}
+          aria-label={label}
+          title={label}
+          onClick={() =>
+            dispatch({
+              type: "setUi",
+              ui: (prev) => ({ viewports: { ...prev.viewports, current: { width, height: "auto" } } }),
+            })
+          }
+        >
+          <Icon className="size-4" aria-hidden />
+        </Button>
+      ))}
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <Button
+        type="button"
+        size="icon-sm"
+        variant={rightSideBarVisible ? "default" : "outline"}
+        aria-pressed={rightSideBarVisible}
+        aria-label="Toggle properties panel"
+        title="Toggle properties panel"
+        onClick={() => dispatch({ type: "setUi", ui: (p) => ({ rightSideBarVisible: !p.rightSideBarVisible }) })}
+      >
+        <PanelRight className="size-4" aria-hidden />
+      </Button>
+    </div>
+  );
+}
+
+/** Iframe-preview device toggle — clamps the standalone preview iframe width. */
+function DeviceTogglePreview({
+  value,
+  onChange,
+}: {
+  value: PreviewDevice;
+  onChange: (next: PreviewDevice) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1" role="group" aria-label="Preview device">
+      {DEVICES.map(({ key, label, Icon }) => (
+        <Button
+          key={key}
+          type="button"
+          size="icon-sm"
+          variant={value === key ? "default" : "outline"}
+          aria-pressed={value === key}
+          aria-label={label}
+          title={label}
+          onClick={() => onChange(key)}
+        >
+          <Icon className="size-4" aria-hidden />
+        </Button>
+      ))}
+    </div>
+  );
+}
 
 // The editor is uncontrolled per zone — Puck owns the live edit state and emits
 // it via onChange. Each content item needs a stable props.id; seeded template
@@ -99,16 +199,21 @@ export function EditorShell({
   templates,
   currentTemplateId,
   guideDismissed,
+  initialSavedThemes,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [previewMode, setPreviewMode] = useState(false);
+  // Device width for the standalone iframe preview (the in-canvas Puck toggle
+  // drives Puck's own viewport state instead).
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("desktop");
   // Bumped to force the preview iframe to reload with the freshest draft.
   const [previewNonce, setPreviewNonce] = useState(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [brandKit, setBrandKit] = useState(initialBrandKit);
+  const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -325,57 +430,43 @@ export function EditorShell({
   const headerTitle = `${workspaceName} · ${t(`zone.${activeTab}`)}`;
   const previewSrc = `${previewBasePath}?zone=${isContact ? "contact" : activeZone}&v=${previewNonce}`;
 
-  // Shared toolbar contents. `publishSlot` is Puck's own Publish button in edit
-  // mode, or our equivalent in preview mode. The save-status sits BELOW the
-  // button row, right-aligned under the controls.
-  function renderControls(publishSlot: React.ReactNode) {
+  // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
+  function navCluster() {
     return (
-      <div className="flex flex-col items-end gap-1">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex items-center gap-1" role="group" aria-label={t("zone.groupLabel")}>
-            {TABS.map((tab) => (
-              <Button
-                key={tab}
-                type="button"
-                size="sm"
-                variant={activeTab === tab ? "default" : "outline"}
-                aria-pressed={activeTab === tab}
-                onClick={() => void selectTab(tab)}
-              >
-                {t(`zone.${tab}`)}
-              </Button>
-            ))}
-          </div>
-          {!isContact && (
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1" role="group" aria-label={t("zone.groupLabel")}>
+          {TABS.map((tab) => (
             <Button
+              key={tab}
               type="button"
               size="sm"
-              variant="outline"
-              aria-pressed={previewMode}
-              onClick={() => void togglePreview()}
+              variant={activeTab === tab ? "default" : "outline"}
+              aria-pressed={activeTab === tab}
+              onClick={() => void selectTab(tab)}
             >
-              {previewMode ? t("preview.edit") : t("preview.show")}
+              {t(`zone.${tab}`)}
             </Button>
-          )}
-          <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
-            {t("photos")}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={openTheme}>
-            {t("theme")}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setTemplatesOpen(true)}>
-            {t("templates")}
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
-            {t("guide")}
-          </Button>
-          {isContact && (
-            <Button type="button" size="sm" variant="outline" onClick={openContact}>
-              {t("contactSettings")}
-            </Button>
-          )}
-          {publishSlot}
+          ))}
         </div>
+        {!isContact && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-pressed={previewMode}
+            onClick={() => void togglePreview()}
+          >
+            {previewMode ? t("preview.edit") : t("preview.show")}
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Right cluster: tools + the save indicator + the Publish slot.
+  function toolsCluster(publishSlot: React.ReactNode) {
+    return (
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <span className="text-xs text-muted-foreground" aria-live="polite">
           {saveStatus === "saving"
             ? t("save.saving")
@@ -383,6 +474,35 @@ export function EditorShell({
               ? t("save.saved")
               : t("save.idle")}
         </span>
+        <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
+          {t("photos")}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={openTheme}>
+          {t("theme")}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => setTemplatesOpen(true)}>
+          {t("templates")}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
+          {t("guide")}
+        </Button>
+        {isContact && (
+          <Button type="button" size="sm" variant="outline" onClick={openContact}>
+            {t("contactSettings")}
+          </Button>
+        )}
+        {publishSlot}
+      </div>
+    );
+  }
+
+  // Three-section top bar: nav (left) · device toggle (center) · tools (right).
+  function topBar(center: React.ReactNode, publishSlot: React.ReactNode) {
+    return (
+      <div className="flex w-full flex-wrap items-center gap-2">
+        <div className="flex min-w-0 flex-1 justify-start">{navCluster()}</div>
+        {center && <div className="flex shrink-0 items-center justify-center">{center}</div>}
+        <div className="flex min-w-0 flex-1 justify-end">{toolsCluster(publishSlot)}</div>
       </div>
     );
   }
@@ -412,26 +532,37 @@ export function EditorShell({
               { width: 390, label: "Mobile", icon: "Smartphone" },
             ]}
             overrides={{
-              headerActions: ({ children }) => renderControls(children),
+              // Full custom header: nav left · canvas controls center · tools +
+              // Puck's Publish action (`actions`) right. The center cluster also
+              // carries the sidebar-panel toggles the default header would own.
+              header: ({ actions }) => topBar(<EditCanvasControls />, actions),
             }}
           />
         ) : (
           <div className="flex h-full flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-3 py-2">
-              <span className="min-w-0 truncate text-sm font-medium">{headerTitle}</span>
-              {renderControls(
+            <div className="border-b border-border bg-card px-3 py-2">
+              {topBar(
+                <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />,
                 <Button type="button" size="sm" onClick={() => setPublishOpen(true)}>
                   {t("publish")}
                 </Button>
               )}
             </div>
-            <div className="min-h-0 flex-1 overflow-auto bg-muted/40">
-              <iframe
-                key={previewNonce}
-                src={previewSrc}
-                title={t("preview.title")}
-                className="h-full w-full border-0 bg-white"
-              />
+            <div className="min-h-0 flex-1 overflow-auto bg-muted/40 p-2">
+              <div
+                className="mx-auto h-full transition-[max-width]"
+                style={{
+                  maxWidth:
+                    previewDevice === "desktop" ? "100%" : `${DEVICES.find((d) => d.key === previewDevice)!.width}px`,
+                }}
+              >
+                <iframe
+                  key={previewNonce}
+                  src={previewSrc}
+                  title={t("preview.title")}
+                  className="h-full w-full border-0 bg-background"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -449,6 +580,8 @@ export function EditorShell({
         onBrandKitChange={setBrandKit}
         onSaved={() => closeTheme(true)}
         onCancel={() => closeTheme(false)}
+        savedThemes={savedThemes}
+        onSavedThemesChange={setSavedThemes}
       />
       <ContactPanelDialog
         open={contactOpen}

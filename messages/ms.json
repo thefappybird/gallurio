@@ -1124,11 +1124,11 @@
           "count": "{count} {count, plural, one {imej} other {imej}}",
           "dropZone": "Seret foto ke sini atau klik untuk pilih",
           "dropZoneActive": "Lepaskan untuk muat naik",
-          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px",
+          "spec": "JPEG, PNG, WebP atau AVIF · maks 10 MB · min 600 px pada sisi yang lebih pendek",
           "optional": "Anda boleh langkau langkah ini dan muat naik foto kemudian.",
           "errorType": "Hanya foto JPEG, PNG, WebP dan AVIF diterima.",
           "errorSize": "Setiap foto mestilah di bawah 10 MB.",
-          "errorDim": "Foto mestilah sekurang-kurangnya 600 px pada sisi yang lebih pendek."
+          "errorDim": "Setiap foto mestilah sekurang-kurangnya 600 px pada sisi yang lebih pendek (cth. 600×800 atau 800×600)."
         },
         "review": {
           "title": "Semak & lancar",

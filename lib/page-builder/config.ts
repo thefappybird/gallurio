@@ -7,6 +7,7 @@
  */
 
 import type { Config } from "@measured/puck";
+import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { heroBlockConfig } from "./blocks/HeroBlock";
 import { aboutBlockConfig } from "./blocks/AboutBlock";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
@@ -16,6 +17,17 @@ import { featuredWorkBlockConfig } from "./blocks/FeaturedWorkBlock";
 import { servicesListBlockConfig } from "./blocks/ServicesListBlock";
 import { ctaBannerBlockConfig } from "./blocks/CTABannerBlock";
 import { contactCardBlockConfig } from "./blocks/ContactCardBlock";
+import { videoBlockConfig } from "./blocks/VideoBlock";
+import {
+  headingBlockConfig,
+  textBlockConfig,
+  imageBlockConfig,
+  buttonBlockConfig,
+  spacerBlockConfig,
+  dividerBlockConfig,
+  columnsBlockConfig,
+  containerBlockConfig,
+} from "./blocks/manualBlocks";
 import type { HeroBlockProps } from "./blocks/HeroBlock";
 import type { AboutBlockProps } from "./blocks/AboutBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -25,6 +37,17 @@ import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 import type { ServicesListProps } from "./blocks/ServicesListBlock";
 import type { CTABannerProps } from "./blocks/CTABannerBlock";
 import type { ContactCardProps } from "./blocks/ContactCardBlock";
+import type { VideoBlockProps } from "./blocks/VideoBlock";
+import type {
+  HeadingBlockProps,
+  TextBlockProps,
+  ImageBlockProps,
+  ButtonBlockProps,
+  SpacerBlockProps,
+  DividerBlockProps,
+  ColumnsBlockProps,
+  ContainerBlockProps,
+} from "./blocks/manualBlocks";
 
 // ---------------------------------------------------------------------------
 // Components union
@@ -40,6 +63,15 @@ type Components = {
   ServicesList: ServicesListProps;
   CTABanner: CTABannerProps;
   ContactCard: ContactCardProps;
+  Video: VideoBlockProps;
+  Heading: HeadingBlockProps;
+  Text: TextBlockProps;
+  Image: ImageBlockProps;
+  Button: ButtonBlockProps;
+  Spacer: SpacerBlockProps;
+  Divider: DividerBlockProps;
+  Columns: ColumnsBlockProps;
+  Container: ContainerBlockProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -47,6 +79,10 @@ type Components = {
 // ---------------------------------------------------------------------------
 
 export const puckConfig: Config<Components> = {
+  categories: {
+    presets: { title: "Preset blocks", components: [...PRESET_BLOCK_KEYS] },
+    manual: { title: "Manual blocks", components: [...MANUAL_BLOCK_KEYS] },
+  },
   components: {
     Hero: heroBlockConfig,
     About: aboutBlockConfig,
@@ -57,6 +93,15 @@ export const puckConfig: Config<Components> = {
     ServicesList: servicesListBlockConfig,
     CTABanner: ctaBannerBlockConfig,
     ContactCard: contactCardBlockConfig,
+    Video: videoBlockConfig,
+    Heading: headingBlockConfig,
+    Text: textBlockConfig,
+    Image: imageBlockConfig,
+    Button: buttonBlockConfig,
+    Spacer: spacerBlockConfig,
+    Divider: dividerBlockConfig,
+    Columns: columnsBlockConfig,
+    Container: containerBlockConfig,
   },
   root: {
     fields: {},

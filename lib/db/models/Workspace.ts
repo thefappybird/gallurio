@@ -6,7 +6,9 @@ import {
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
   CONTACT_BUTTON_COLORS,
+  SAVED_THEMES_MAX,
 } from "@/lib/page-builder/types";
+import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
 export const PLAN_TIERS = ["free", "starter", "pro"] as const;
@@ -32,6 +34,23 @@ export const HITPAY_RECURRING_STATUSES = [
 ] as const;
 export type HitpayRecurringStatus = (typeof HITPAY_RECURRING_STATUSES)[number];
 
+// Brand-kit field definition, reused for `publicPage.brandKit` and each entry
+// in `publicPage.savedThemes`. `fontPair` stays for back-compat; `headingFont`
+// / `bodyFont` are the new independent-family selectors.
+const brandKitFields = {
+  themePreset: { type: String, enum: BRAND_KIT_THEME_PRESETS, default: "minimal" },
+  fontPair: { type: String, enum: BRAND_KIT_FONT_PAIRS, default: "merriweather-only" },
+  headingFont: { type: String, enum: PORTFOLIO_FONT_KEYS, default: "merriweather" },
+  bodyFont: { type: String, enum: PORTFOLIO_FONT_KEYS, default: "merriweather" },
+  primaryColor: { type: String, default: "#111111" },
+  secondaryColor: { type: String, default: "#f5f5f5" },
+  accentColor: { type: String, default: "#2f5d56" },
+  backgroundColor: { type: String, default: "#ffffff" },
+  foregroundColor: { type: String, default: "#111111" },
+  radius: { type: String, enum: BRAND_KIT_RADII, default: "sharp" },
+  buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
+} as const;
+
 const workspaceSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
@@ -43,8 +62,9 @@ const workspaceSchema = new Schema(
       enum: ["photographer", "venue", "planner", "stylist", "catering", "entertainer", "other"],
       default: "other",
     },
-    // ISO 3166-1 alpha-2. Drives the locale of the public workspace page —
-    // see lib/i18n/localeForCountry.ts.
+    // ISO 3166-1 alpha-2. Used for billing/market defaults. NOTE: it no longer
+    // drives the public page language — that is owner-chosen via
+    // publicPage.formLocale (default English). See resolvePublicChromeLocale.
     country: { type: String, default: null },
     currency: { type: String, enum: SUPPORTED_CURRENCIES, default: "PHP", required: true },
     timezone: { type: String, default: null },
@@ -79,16 +99,26 @@ const workspaceSchema = new Schema(
         home: { type: Schema.Types.Mixed, default: null },
         gallery: { type: Schema.Types.Mixed, default: null },
       },
-      brandKit: {
-        themePreset: { type: String, enum: BRAND_KIT_THEME_PRESETS, default: "minimal" },
-        fontPair: { type: String, enum: BRAND_KIT_FONT_PAIRS, default: "merriweather-only" },
-        primaryColor: { type: String, default: "#111111" },
-        secondaryColor: { type: String, default: "#f5f5f5" },
-        accentColor: { type: String, default: "#2f5d56" },
-        backgroundColor: { type: String, default: "#ffffff" },
-        foregroundColor: { type: String, default: "#111111" },
-        radius: { type: String, enum: BRAND_KIT_RADII, default: "sharp" },
-        buttonStyle: { type: String, enum: BRAND_KIT_BUTTON_STYLES, default: "solid" },
+      brandKit: brandKitFields,
+      // Owner's named, reusable brand kits (apply/save/delete in the Theme
+      // panel). Embedded — NOT a separate collection — per the portfolio-maker
+      // "no new collections" rule. `_id: false` keeps our own `id` authoritative.
+      savedThemes: {
+        type: [
+          new Schema(
+            {
+              id: { type: String, required: true },
+              name: { type: String, required: true, trim: true },
+              brandKit: brandKitFields,
+            },
+            { _id: false }
+          ),
+        ],
+        default: [],
+        validate: {
+          validator: (v: unknown[]) => !Array.isArray(v) || v.length <= SAVED_THEMES_MAX,
+          message: `A workspace can store at most ${SAVED_THEMES_MAX} saved themes.`,
+        },
       },
       publishedAt: { type: Date, default: null },
       // Publish bookkeeping — written by the publish action.

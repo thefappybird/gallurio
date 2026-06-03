@@ -8,6 +8,8 @@
  * - All block components (Phases 3–4)
  */
 
+import type { PortfolioFontKey } from "./fonts";
+
 // ---------------------------------------------------------------------------
 // Theme preset
 // ---------------------------------------------------------------------------
@@ -68,7 +70,16 @@ export type PortfolioContactConfig = {
 
 export type PortfolioBrandKit = {
   themePreset: BrandKitThemePreset;
+  /**
+   * @deprecated Superseded by independent `headingFont` / `bodyFont`. Kept for
+   * back-compat: pre-existing portfolios resolve through `legacyFontPairToFonts`
+   * when `headingFont`/`bodyFont` are absent. New saves always set both fonts.
+   */
   fontPair: BrandKitFontPair;
+  /** Curated family key (lib/page-builder/fonts.ts) for headings. */
+  headingFont?: PortfolioFontKey;
+  /** Curated family key (lib/page-builder/fonts.ts) for body text. */
+  bodyFont?: PortfolioFontKey;
   /** 6-digit hex, e.g. "#111111" */
   primaryColor: string;
   /** 6-digit hex */
@@ -86,6 +97,8 @@ export type PortfolioBrandKit = {
 export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   themePreset: "minimal",
   fontPair: "merriweather-only",
+  headingFont: "merriweather",
+  bodyFont: "merriweather",
   primaryColor: "#111111",
   secondaryColor: "#f5f5f5",
   accentColor: "#2f5d56", // Gallurio brand teal
@@ -93,6 +106,20 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   foregroundColor: "#111111",
   radius: "sharp",
   buttonStyle: "solid",
+};
+
+// ---------------------------------------------------------------------------
+// Saved themes — an owner's named, reusable brand kits (embedded on the
+// workspace's publicPage, NOT a separate collection). Apply/save/delete in the
+// Theme panel, mirroring the collections manager.
+// ---------------------------------------------------------------------------
+
+export const SAVED_THEMES_MAX = 24;
+
+export type PortfolioSavedTheme = {
+  id: string;
+  name: string;
+  brandKit: PortfolioBrandKit;
 };
 
 // ---------------------------------------------------------------------------

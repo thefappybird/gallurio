@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import localFont from "next/font/local";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,21 +8,6 @@ import { ThemeProvider } from "@/components/app/theme-provider";
 import { routing } from "@/lib/i18n/routing";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import "../globals.css";
-
-// Self-hosted Merriweather (app-shell font). Bundled locally so builds never
-// depend on a Google Fonts fetch and stay reproducible offline.
-const merriweather = localFont({
-  variable: "--font-merriweather",
-  display: "swap",
-  src: [
-    { path: "../fonts/merriweather-latin-300-normal.woff2", weight: "300", style: "normal" },
-    { path: "../fonts/merriweather-latin-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "../fonts/merriweather-latin-700-normal.woff2", weight: "700", style: "normal" },
-    { path: "../fonts/merriweather-latin-900-normal.woff2", weight: "900", style: "normal" },
-    { path: "../fonts/merriweather-latin-400-italic.woff2", weight: "400", style: "italic" },
-    { path: "../fonts/merriweather-latin-700-italic.woff2", weight: "700", style: "italic" },
-  ],
-});
 
 export const metadata: Metadata = {
   title: {
@@ -56,7 +40,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${merriweather.variable} ${portfolioFontVariables} h-full antialiased`}
+      className={`${portfolioFontVariables} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

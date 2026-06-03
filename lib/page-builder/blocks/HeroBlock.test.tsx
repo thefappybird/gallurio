@@ -118,19 +118,8 @@ describe("HeroBlock — CTA behavior", () => {
     expect((galleryLink as HTMLElement).getAttribute("data-cta")).toBeNull();
   });
 
-  it("secondary CTA renders when secondaryCtaLabel is set", () => {
-    renderHero({
-      secondaryCtaLabel: "View Portfolio",
-      secondaryCtaAction: "go-to-gallery",
-    });
-    expect(screen.getByText("View Portfolio")).toBeInTheDocument();
-  });
-
-  it("secondary CTA does not render when secondaryCtaLabel is empty", () => {
-    const { container } = renderHero({
-      secondaryCtaLabel: "",
-      secondaryCtaAction: undefined,
-    });
+  it("renders only the primary CTA (no secondary CTA)", () => {
+    const { container } = renderHero({});
     const buttons = container.querySelectorAll("a[role='button']");
     expect(buttons).toHaveLength(1);
   });
@@ -208,13 +197,7 @@ describe("HeroBlock — alignment", () => {
 
 describe("HeroBlock — missing optional props", () => {
   it("renders without subhead (no crash)", () => {
-    expect(() => renderHero({ subhead: undefined })).not.toThrow();
-  });
-
-  it("renders without secondary CTA (no crash)", () => {
-    expect(() =>
-      renderHero({ secondaryCtaLabel: undefined, secondaryCtaAction: undefined })
-    ).not.toThrow();
+    expect(() => renderHero({ subhead: { text: "" } })).not.toThrow();
   });
 
   it("renders with zero overlay opacity without crashing", () => {

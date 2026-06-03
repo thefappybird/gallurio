@@ -13,10 +13,17 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  renderRichText,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,8 +31,8 @@ import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/
 
 export type CTABannerProps = {
   _style?: BlockStyle;
-  headline: string;
-  subhead?: string;
+  headline: RichTextProp;
+  subhead: RichTextProp;
   ctaLabel: string;
   ctaAction: "open-contact" | "go-to-gallery";
   background: "accent" | "surface" | "image";
@@ -38,8 +45,8 @@ export type CTABannerProps = {
 // ---------------------------------------------------------------------------
 
 export const ctaBannerDefaultProps: CTABannerProps = {
-  headline: "Ready to book your session?",
-  subhead: "Let's create something beautiful together.",
+  headline: { text: "Ready to book your session?" },
+  subhead: { text: "Let's create something beautiful together." },
   ctaLabel: "Get in Touch",
   ctaAction: "open-contact",
   background: "accent",
@@ -72,6 +79,8 @@ export function CTABannerBlock({
 
   // Determine text/button colors based on background type
   const onDark = background === "accent" || Boolean(bgImageSrc);
+  const hl = renderRichText(headline);
+  const sub = renderRichText(subhead);
 
   const sectionStyle: React.CSSProperties = {
     position: "relative",
@@ -144,12 +153,13 @@ export function CTABannerBlock({
             lineHeight: 1.2,
             margin: 0,
             color: onDark ? "#ffffff" : "var(--pf-color-fg)",
+            ...hl.css,
           }}
         >
-          {headline}
+          {hl.text}
         </h2>
 
-        {subhead && (
+        {sub.text && (
           <p
             style={{
               fontSize: "1.0625rem",
@@ -158,9 +168,10 @@ export function CTABannerBlock({
               maxWidth: "36rem",
               color: onDark ? "rgba(255,255,255,0.9)" : "var(--pf-color-fg)",
               opacity: onDark ? undefined : 0.8,
+              ...sub.css,
             }}
           >
-            {subhead}
+            {sub.text}
           </p>
         )}
 
@@ -228,8 +239,8 @@ export const ctaBannerBlockConfig: ComponentConfig<CTABannerProps> = {
   defaultProps: ctaBannerDefaultProps,
   fields: {
     _style: productionStyleField,
-    headline: { type: "text", label: "Headline" },
-    subhead: { type: "text", label: "Sub-headline (optional)" },
+    headline: productionRichTextField as Field<RichTextProp>,
+    subhead: productionRichTextField as Field<RichTextProp>,
     ctaLabel: { type: "text", label: "CTA button label" },
     ctaAction: {
       type: "select",

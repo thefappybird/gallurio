@@ -1124,11 +1124,11 @@
           "count": "{count} {count, plural, one {larawan} other {larawan}}",
           "dropZone": "I-drag ang mga larawan dito o i-click para pumili",
           "dropZoneActive": "I-drop para i-upload",
-          "spec": "JPEG, PNG, WebP o AVIF · max 10 MB · min 600 px",
+          "spec": "JPEG, PNG, WebP o AVIF · max 10 MB · min 600 px sa mas maikling bahagi",
           "optional": "Maaari mong laktawan ang hakbang na ito at mag-upload ng mga larawan mamaya.",
           "errorType": "Tanging mga larawang JPEG, PNG, WebP, at AVIF lang ang tinatanggap.",
           "errorSize": "Ang bawat larawan ay dapat wala pang 10 MB.",
-          "errorDim": "Ang mga larawan ay dapat hindi bababa sa 600 px sa mas maikling bahagi."
+          "errorDim": "Ang bawat larawan ay dapat hindi bababa sa 600 px sa mas maikling bahagi (hal. 600×800 o 800×600)."
         },
         "review": {
           "title": "Suriin at ilunsad",

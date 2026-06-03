@@ -1,22 +1,20 @@
 /**
  * Client-safe Puck config for the EDITOR canvas.
  *
- * The production blocks (lib/page-builder/blocks/*) are async server components
- * that hit Mongo + AsyncLocalStorage, so the shared `puckConfig` cannot be
- * imported into the client `<Puck>` editor. This config mirrors every block's
- * `fields` + `defaultProps` (so prop editing is identical) but renders a
- * lightweight, client-only PREVIEW instead of the real block. The real render
- * happens server-side via `<Render config={puckConfig}>` on the public page.
+ * The production blocks (lib/page-builder/blocks/*) for the 9 composed presets
+ * are async server components (Mongo + AsyncLocalStorage), so they cannot be
+ * imported into the client `<Puck>` editor. For those, this config mirrors each
+ * block's `fields` + `defaultProps` and renders a lightweight client PREVIEW.
  *
- * Component `type` keys MUST match `puckConfig` exactly so data round-trips
- * between editor and renderer. A test (editorConfig.test.ts) guards parity.
+ * The Video block and the manual primitives are ISOMORPHIC (client-safe), so the
+ * editor renders the REAL component and only swaps in editor-friendly fields
+ * (RichTextField / StyleToolkit / pickers). Their defaultProps are imported
+ * directly to guarantee parity.
  *
- * Prop types are imported type-only (erased at build) so no server module is
- * pulled into the client bundle.
+ * Component `type` keys + field keys MUST match `puckConfig` exactly so data
+ * round-trips. A test (editorConfig.test.ts) guards parity.
  *
- * Gallery fields (collectionId / itemIds) use custom `type:"custom"` fields
- * with visual pickers. The stored prop SHAPE is unchanged — only the editor
- * input changes. The parity test checks field KEYS (not types), so it stays green.
+ * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
 import type { Config, ComponentConfig, Field } from "@measured/puck";
@@ -24,7 +22,9 @@ import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { StyleToolkitField } from "./StyleToolkitField";
-import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
+import { RichTextField } from "./RichTextField";
+import { resolveBlockStyle, coerceRichText, type BlockStyle, type RichText, type RichTextProp } from "./styleToolkit";
+import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import type { HeroBlockProps } from "./blocks/HeroBlock";
 import type { AboutBlockProps, CredentialItem } from "./blocks/AboutBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -34,6 +34,38 @@ import type { FeaturedWorkProps, FeaturedWorkItemId } from "./blocks/FeaturedWor
 import type { ServicesListProps, ServiceItem } from "./blocks/ServicesListBlock";
 import type { CTABannerProps } from "./blocks/CTABannerBlock";
 import type { ContactCardProps } from "./blocks/ContactCardBlock";
+// Isomorphic blocks — safe to import the real component + defaults into the client.
+import {
+  VideoBlock,
+  videoDefaultProps,
+  type VideoBlockProps,
+} from "./blocks/VideoBlock";
+import {
+  HeadingBlock,
+  TextBlock,
+  ImageBlock,
+  ButtonBlock,
+  SpacerBlock,
+  DividerBlock,
+  ColumnsBlock,
+  ContainerBlock,
+  headingDefaultProps,
+  textDefaultProps,
+  imageDefaultProps,
+  buttonDefaultProps,
+  spacerDefaultProps,
+  dividerDefaultProps,
+  columnsDefaultProps,
+  containerDefaultProps,
+  type HeadingBlockProps,
+  type TextBlockProps,
+  type ImageBlockProps,
+  type ButtonBlockProps,
+  type SpacerBlockProps,
+  type DividerBlockProps,
+  type ColumnsBlockProps,
+  type ContainerBlockProps,
+} from "./blocks/manualBlocks";
 
 type EditorComponents = {
   Hero: HeroBlockProps;
@@ -45,6 +77,15 @@ type EditorComponents = {
   ServicesList: ServicesListProps;
   CTABanner: CTABannerProps;
   ContactCard: ContactCardProps;
+  Video: VideoBlockProps;
+  Heading: HeadingBlockProps;
+  Text: TextBlockProps;
+  Image: ImageBlockProps;
+  Button: ButtonBlockProps;
+  Spacer: SpacerBlockProps;
+  Divider: DividerBlockProps;
+  Columns: ColumnsBlockProps;
+  Container: ContainerBlockProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -71,7 +112,6 @@ function Preview({
         fontFamily: "var(--pf-font-body)",
         padding: "1.5rem",
         margin: 0,
-        // Echo the per-block style toolkit so the canvas matches the live page.
         ...resolveBlockStyle(blockStyle),
       }}
     >
@@ -110,72 +150,81 @@ function truncate(value: string | undefined, max = 120): string {
   return value.length > max ? `${value.slice(0, max)}…` : value;
 }
 
+/** RichText preview helper — pulls the plain text out of a stored RichText/string. */
+function rt(value: unknown): string {
+  return coerceRichText(value).text;
+}
+
 // ---------------------------------------------------------------------------
-// Shared style toolkit field — the Canva-style icon toolbar, registered as the
-// FIRST field of every block so it renders as the first ("toolkit") section.
+// Shared editor fields
 // ---------------------------------------------------------------------------
 
 const styleField = {
   type: "custom",
   label: "Style",
   render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-    <StyleToolkitField
-      value={value as BlockStyle | undefined}
-      onChange={onChange as (v: BlockStyle) => void}
-    />
+    <StyleToolkitField value={value as BlockStyle | undefined} onChange={onChange as (v: BlockStyle) => void} />
   ),
 } as unknown as Field<BlockStyle | undefined>;
 
+function richTextField(label: string, multiline = false): Field<RichTextProp> {
+  return {
+    type: "custom",
+    label,
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <RichTextField value={value} onChange={onChange as (v: RichText) => void} multiline={multiline} />
+    ),
+  } as unknown as Field<RichTextProp>;
+}
+
+function imagePickerField(label: string): Field<string | undefined> {
+  return {
+    type: "custom",
+    label,
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
+    ),
+  } as unknown as Field<string | undefined>;
+}
+
+function collectionField(): Field<string> {
+  return {
+    type: "custom",
+    label: "Collection",
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <CollectionPicker value={value as string} onChange={onChange as (v: string) => void} />
+    ),
+  } as unknown as Field<string>;
+}
+
 // ---------------------------------------------------------------------------
-// Per-block editor configs (fields copied verbatim from the production blocks)
+// Preset block editor configs (mirror the production blocks; preview render)
 // ---------------------------------------------------------------------------
 
 const hero: ComponentConfig<HeroBlockProps> = {
   label: "Hero",
   defaultProps: {
-    headline: "Capturing moments that last forever",
-    subhead: "Fine art photography for weddings, portraits, and events.",
+    headline: { text: "Capturing moments that last forever" },
+    subhead: { text: "Fine art photography for weddings, portraits, and events." },
     backgroundImagePublicId: "",
     backgroundImageUrl: "",
     backgroundOverlayOpacity: 50,
     primaryCtaLabel: "Get in Touch",
     primaryCtaAction: "open-contact",
-    secondaryCtaLabel: "View Work",
-    secondaryCtaAction: "go-to-gallery",
     alignment: "center",
     height: "tall",
   },
   fields: {
     _style: styleField,
-    headline: { type: "text", label: "Headline" },
-    subhead: { type: "text", label: "Sub-headline (optional)" },
-    backgroundImagePublicId: {
-      type: "custom",
-      label: "Background image",
-      render: ({ value, onChange }) => (
-        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
-      ),
-    } as Field<string | undefined>,
+    headline: richTextField("Headline"),
+    subhead: richTextField("Sub-headline"),
+    backgroundImagePublicId: imagePickerField("Background image"),
     backgroundImageUrl: { type: "text", label: "Background image URL (fallback)" },
-    backgroundOverlayOpacity: {
-      type: "number",
-      label: "Overlay opacity (0–100)",
-      min: 0,
-      max: 100,
-    } as Field<number>,
+    backgroundOverlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100 } as Field<number>,
     primaryCtaLabel: { type: "text", label: "Primary CTA label" },
     primaryCtaAction: {
       type: "select",
       label: "Primary CTA action",
-      options: [
-        { label: "Open contact form", value: "open-contact" },
-        { label: "Go to Gallery page", value: "go-to-gallery" },
-      ],
-    },
-    secondaryCtaLabel: { type: "text", label: "Secondary CTA label (optional)" },
-    secondaryCtaAction: {
-      type: "select",
-      label: "Secondary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
         { label: "Go to Gallery page", value: "go-to-gallery" },
@@ -201,22 +250,22 @@ const hero: ComponentConfig<HeroBlockProps> = {
   },
   resolveFields: (data, { fields }) => {
     const f: Record<string, unknown> = { ...fields };
-    // Owner picks a photo (no raw URL entry); url stays only as a render-time fallback.
     delete f.backgroundImageUrl;
-    // Overlay opacity is only meaningful when a background image is set.
     if (!data.props.backgroundImagePublicId) delete f.backgroundOverlayOpacity;
     return f as unknown as typeof fields;
   },
   render: ({ _style, headline, subhead, primaryCtaLabel, height }) => (
-    <Preview label="Hero" lines={[headline, subhead, `${primaryCtaLabel} · ${height}`]} blockStyle={_style} />
+    <Preview label="Hero" lines={[rt(headline), rt(subhead), `${primaryCtaLabel} · ${height}`]} blockStyle={_style} />
   ),
 };
 
 const about: ComponentConfig<AboutBlockProps> = {
   label: "About",
   defaultProps: {
-    heading: "About Me",
-    body: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
+    heading: { text: "About Me" },
+    body: {
+      text: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
+    },
     imagePublicId: "",
     imageUrl: "",
     imagePosition: "right",
@@ -227,15 +276,9 @@ const about: ComponentConfig<AboutBlockProps> = {
   },
   fields: {
     _style: styleField,
-    heading: { type: "text", label: "Heading" },
-    body: { type: "textarea", label: "Body text (line breaks preserved)" },
-    imagePublicId: {
-      type: "custom",
-      label: "Photo",
-      render: ({ value, onChange }) => (
-        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
-      ),
-    } as Field<string | undefined>,
+    heading: richTextField("Heading"),
+    body: richTextField("Body text", true),
+    imagePublicId: imagePickerField("Photo"),
     imageUrl: { type: "text", label: "Image URL (fallback)" },
     imagePosition: {
       type: "select",
@@ -257,26 +300,35 @@ const about: ComponentConfig<AboutBlockProps> = {
   },
   resolveFields: (_data, { fields }) => {
     const f: Record<string, unknown> = { ...fields };
-    delete f.imageUrl; // owner picks a photo; url is a render-time fallback only
+    delete f.imageUrl;
     return f as unknown as typeof fields;
   },
   render: ({ _style, heading, body, imagePosition }) => (
-    <Preview label="About" lines={[heading, truncate(body), `image: ${imagePosition}`]} blockStyle={_style} />
+    <Preview label="About" lines={[rt(heading), truncate(rt(body)), `image: ${imagePosition}`]} blockStyle={_style} />
   ),
+};
+
+const galleryTextFields = {
+  heading: richTextField("Heading (optional)"),
+  description: richTextField("Description (optional)", true),
+  footer: richTextField("Footer (optional)", true),
 };
 
 const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
-  defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 12 },
+  defaultProps: {
+    heading: { text: "" },
+    description: { text: "" },
+    footer: { text: "" },
+    collectionId: "",
+    columns: 3,
+    gap: "normal",
+    maxItems: 12,
+  },
   fields: {
     _style: styleField,
-    collectionId: {
-      type: "custom",
-      label: "Collection",
-      render: ({ value, onChange }) => (
-        <CollectionPicker value={value as string} onChange={onChange} />
-      ),
-    } as Field<string>,
+    ...galleryTextFields,
+    collectionId: collectionField(),
     columns: {
       type: "select",
       label: "Columns",
@@ -295,20 +347,12 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
         { label: "Loose (16px)", value: "loose" },
       ],
     },
-    showCaptions: {
-      type: "select",
-      label: "Show captions",
-      options: [
-        { label: "No", value: false },
-        { label: "Yes", value: true },
-      ],
-    } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ _style, collectionId, columns, maxItems }) => (
+  render: ({ _style, heading, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Grid"
-      lines={[`Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
+      lines={[rt(heading) || `Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
       blockStyle={_style}
     />
   ),
@@ -316,16 +360,19 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
 
 const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
-  defaultProps: { collectionId: "", columns: 3, gap: "normal", showCaptions: false, maxItems: 18 },
+  defaultProps: {
+    heading: { text: "" },
+    description: { text: "" },
+    footer: { text: "" },
+    collectionId: "",
+    columns: 3,
+    gap: "normal",
+    maxItems: 18,
+  },
   fields: {
     _style: styleField,
-    collectionId: {
-      type: "custom",
-      label: "Collection",
-      render: ({ value, onChange }) => (
-        <CollectionPicker value={value as string} onChange={onChange} />
-      ),
-    } as Field<string>,
+    ...galleryTextFields,
+    collectionId: collectionField(),
     columns: {
       type: "select",
       label: "Columns",
@@ -344,20 +391,12 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
         { label: "Loose", value: "loose" },
       ],
     },
-    showCaptions: {
-      type: "select",
-      label: "Show captions",
-      options: [
-        { label: "No", value: false },
-        { label: "Yes", value: true },
-      ],
-    } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ _style, collectionId, columns, maxItems }) => (
+  render: ({ _style, heading, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Masonry"
-      lines={[`Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
+      lines={[rt(heading) || `Collection: ${collectionId || "— select —"}`, `${columns} columns · up to ${maxItems}`]}
       blockStyle={_style}
     />
   ),
@@ -365,16 +404,19 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
 
 const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
-  defaultProps: { collectionId: "", aspect: "landscape", autoplay: false, maxItems: 12 },
+  defaultProps: {
+    heading: { text: "" },
+    description: { text: "" },
+    footer: { text: "" },
+    collectionId: "",
+    aspect: "landscape",
+    autoplay: false,
+    maxItems: 12,
+  },
   fields: {
     _style: styleField,
-    collectionId: {
-      type: "custom",
-      label: "Collection",
-      render: ({ value, onChange }) => (
-        <CollectionPicker value={value as string} onChange={onChange} />
-      ),
-    } as Field<string>,
+    ...galleryTextFields,
+    collectionId: collectionField(),
     aspect: {
       type: "select",
       label: "Image shape",
@@ -394,10 +436,10 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
     } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
-  render: ({ _style, collectionId, aspect, maxItems }) => (
+  render: ({ _style, heading, collectionId, aspect, maxItems }) => (
     <Preview
       label="Gallery Carousel"
-      lines={[`Collection: ${collectionId || "— select —"}`, `${aspect} · up to ${maxItems}`]}
+      lines={[rt(heading) || `Collection: ${collectionId || "— select —"}`, `${aspect} · up to ${maxItems}`]}
       blockStyle={_style}
     />
   ),
@@ -405,11 +447,11 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   label: "Featured Work",
-  defaultProps: { heading: "Featured work", subheading: "", itemIds: [], layout: "row" },
+  defaultProps: { heading: { text: "Featured work" }, subheading: { text: "" }, itemIds: [], layout: "row" },
   fields: {
     _style: styleField,
-    heading: { type: "text", label: "Heading" },
-    subheading: { type: "text", label: "Subheading" },
+    heading: richTextField("Heading"),
+    subheading: richTextField("Subheading"),
     itemIds: {
       type: "custom",
       label: "Featured photos (max 3)",
@@ -432,7 +474,7 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   render: ({ _style, heading, subheading, itemIds, layout }) => (
     <Preview
       label="Featured Work"
-      lines={[heading, subheading, `${itemIds?.length ?? 0} items · ${layout}`]}
+      lines={[rt(heading), rt(subheading), `${itemIds?.length ?? 0} items · ${layout}`]}
       blockStyle={_style}
     />
   ),
@@ -441,7 +483,7 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
 const servicesList: ComponentConfig<ServicesListProps> = {
   label: "Services",
   defaultProps: {
-    heading: "Services",
+    heading: { text: "Services" },
     items: [
       { title: "Wedding Photography", description: "Full-day coverage of your most important day.", priceFrom: "₱30,000", icon: "📷" },
       { title: "Portrait Sessions", description: "Individual or family portraits in natural light.", priceFrom: "₱8,000", icon: "🎞️" },
@@ -450,7 +492,7 @@ const servicesList: ComponentConfig<ServicesListProps> = {
   },
   fields: {
     _style: styleField,
-    heading: { type: "text", label: "Section heading" },
+    heading: richTextField("Section heading"),
     items: {
       type: "array",
       label: "Services (max 8)",
@@ -466,7 +508,7 @@ const servicesList: ComponentConfig<ServicesListProps> = {
   render: ({ _style, heading, items }) => (
     <Preview
       label="Services"
-      lines={[heading, (items ?? []).map((i) => i.title).filter(Boolean).join(" · ")]}
+      lines={[rt(heading), (items ?? []).map((i) => i.title).filter(Boolean).join(" · ")]}
       blockStyle={_style}
     />
   ),
@@ -475,8 +517,8 @@ const servicesList: ComponentConfig<ServicesListProps> = {
 const ctaBanner: ComponentConfig<CTABannerProps> = {
   label: "CTA Banner",
   defaultProps: {
-    headline: "Ready to book your session?",
-    subhead: "Let's create something beautiful together.",
+    headline: { text: "Ready to book your session?" },
+    subhead: { text: "Let's create something beautiful together." },
     ctaLabel: "Get in Touch",
     ctaAction: "open-contact",
     background: "accent",
@@ -485,8 +527,8 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
   },
   fields: {
     _style: styleField,
-    headline: { type: "text", label: "Headline" },
-    subhead: { type: "text", label: "Sub-headline (optional)" },
+    headline: richTextField("Headline"),
+    subhead: richTextField("Sub-headline"),
     ctaLabel: { type: "text", label: "CTA button label" },
     ctaAction: {
       type: "select",
@@ -505,32 +547,25 @@ const ctaBanner: ComponentConfig<CTABannerProps> = {
         { label: "Image", value: "image" },
       ],
     },
-    backgroundImagePublicId: {
-      type: "custom",
-      label: "Background image",
-      render: ({ value, onChange }) => (
-        <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
-      ),
-    } as Field<string | undefined>,
+    backgroundImagePublicId: imagePickerField("Background image"),
     backgroundImageUrl: { type: "text", label: "Background image URL (fallback)" },
   },
   resolveFields: (data, { fields }) => {
     const f: Record<string, unknown> = { ...fields };
-    delete f.backgroundImageUrl; // picker-driven; url is a render-time fallback only
-    // The background image picker is only relevant for the "Image" background style.
+    delete f.backgroundImageUrl;
     if (data.props.background !== "image") delete f.backgroundImagePublicId;
     return f as unknown as typeof fields;
   },
   render: ({ _style, headline, ctaLabel, background }) => (
-    <Preview label="CTA Banner" lines={[headline, `${ctaLabel} · ${background}`]} blockStyle={_style} />
+    <Preview label="CTA Banner" lines={[rt(headline), `${ctaLabel} · ${background}`]} blockStyle={_style} />
   ),
 };
 
 const contactCard: ComponentConfig<ContactCardProps> = {
   label: "Contact Card",
   defaultProps: {
-    heading: "Get in Touch",
-    description: "I'd love to hear about your vision. Reach out and let's talk.",
+    heading: { text: "Get in Touch" },
+    description: { text: "I'd love to hear about your vision. Reach out and let's talk." },
     showEmail: true,
     showPhone: true,
     showAddress: true,
@@ -539,8 +574,8 @@ const contactCard: ComponentConfig<ContactCardProps> = {
   },
   fields: {
     _style: styleField,
-    heading: { type: "text", label: "Heading" },
-    description: { type: "textarea", label: "Description (optional)" },
+    heading: richTextField("Heading"),
+    description: richTextField("Description", true),
     showEmail: {
       type: "select",
       label: "Show email",
@@ -576,11 +611,164 @@ const contactCard: ComponentConfig<ContactCardProps> = {
     inlineCtaLabel: { type: "text", label: "CTA button label (optional — leave empty to hide)" },
   },
   render: ({ _style, heading, description }) => (
-    <Preview label="Contact Card" lines={[heading, truncate(description)]} blockStyle={_style} />
+    <Preview label="Contact Card" lines={[rt(heading), truncate(rt(description))]} blockStyle={_style} />
   ),
 };
 
+// ---------------------------------------------------------------------------
+// Video — isomorphic; editor renders the real component with editor fields.
+// ---------------------------------------------------------------------------
+
+const video: ComponentConfig<VideoBlockProps> = {
+  label: "Video",
+  defaultProps: videoDefaultProps,
+  fields: {
+    _style: styleField,
+    heading: richTextField("Heading (optional)"),
+    description: richTextField("Description (optional)", true),
+    videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
+    footer: richTextField("Footer (optional)", true),
+  },
+  render: VideoBlock,
+};
+
+// ---------------------------------------------------------------------------
+// Manual primitives — isomorphic; editor renders the real component.
+// ---------------------------------------------------------------------------
+
+const heading: ComponentConfig<HeadingBlockProps> = {
+  label: "Heading",
+  defaultProps: headingDefaultProps,
+  fields: {
+    _style: styleField,
+    text: richTextField("Heading text"),
+    level: {
+      type: "select",
+      label: "Level",
+      options: [
+        { label: "H1", value: "h1" },
+        { label: "H2", value: "h2" },
+        { label: "H3", value: "h3" },
+      ],
+    },
+  },
+  render: HeadingBlock,
+};
+
+const text: ComponentConfig<TextBlockProps> = {
+  label: "Text",
+  defaultProps: textDefaultProps,
+  fields: {
+    _style: styleField,
+    text: richTextField("Text", true),
+  },
+  render: TextBlock,
+};
+
+const image: ComponentConfig<ImageBlockProps> = {
+  label: "Image",
+  defaultProps: imageDefaultProps,
+  fields: {
+    _style: styleField,
+    imagePublicId: imagePickerField("Image"),
+    imageUrl: { type: "text", label: "Image URL (fallback)" },
+    alt: { type: "text", label: "Alt text" },
+    fit: {
+      type: "select",
+      label: "Fit",
+      options: [
+        { label: "Cover", value: "cover" },
+        { label: "Contain", value: "contain" },
+      ],
+    },
+  },
+  resolveFields: (_data, { fields }) => {
+    const f: Record<string, unknown> = { ...fields };
+    delete f.imageUrl;
+    return f as unknown as typeof fields;
+  },
+  render: ImageBlock,
+};
+
+const button: ComponentConfig<ButtonBlockProps> = {
+  label: "Button",
+  defaultProps: buttonDefaultProps,
+  fields: {
+    _style: styleField,
+    label: { type: "text", label: "Button label" },
+    action: {
+      type: "select",
+      label: "Action",
+      options: [
+        { label: "Open contact form", value: "open-contact" },
+        { label: "Go to Gallery page", value: "go-to-gallery" },
+      ],
+    },
+    align: {
+      type: "select",
+      label: "Alignment",
+      options: [
+        { label: "Left", value: "left" },
+        { label: "Center", value: "center" },
+        { label: "Right", value: "right" },
+      ],
+    },
+  },
+  render: ButtonBlock,
+};
+
+const spacer: ComponentConfig<SpacerBlockProps> = {
+  label: "Spacer",
+  defaultProps: spacerDefaultProps,
+  fields: {
+    height: { type: "number", label: "Height (px)", min: 4, max: 400 } as Field<number>,
+  },
+  render: SpacerBlock,
+};
+
+const divider: ComponentConfig<DividerBlockProps> = {
+  label: "Divider",
+  defaultProps: dividerDefaultProps,
+  fields: {
+    _style: styleField,
+    thickness: { type: "number", label: "Thickness (px)", min: 1, max: 12 } as Field<number>,
+  },
+  render: DividerBlock,
+};
+
+const columns: ComponentConfig<ColumnsBlockProps> = {
+  label: "Columns",
+  defaultProps: columnsDefaultProps,
+  fields: {
+    _style: styleField,
+    columns: {
+      type: "select",
+      label: "Columns",
+      options: [
+        { label: "2 columns", value: 2 },
+        { label: "3 columns", value: 3 },
+      ],
+    } as Field<2 | 3>,
+    content: { type: "slot" },
+  },
+  render: ColumnsBlock,
+};
+
+const container: ComponentConfig<ContainerBlockProps> = {
+  label: "Container",
+  defaultProps: containerDefaultProps,
+  fields: {
+    _style: styleField,
+    content: { type: "slot" },
+  },
+  render: ContainerBlock,
+};
+
 export const editorPuckConfig: Config<EditorComponents> = {
+  categories: {
+    presets: { title: "Preset blocks", components: [...PRESET_BLOCK_KEYS] },
+    manual: { title: "Manual blocks", components: [...MANUAL_BLOCK_KEYS] },
+  },
   components: {
     Hero: hero,
     About: about,
@@ -591,6 +779,15 @@ export const editorPuckConfig: Config<EditorComponents> = {
     ServicesList: servicesList,
     CTABanner: ctaBanner,
     ContactCard: contactCard,
+    Video: video,
+    Heading: heading,
+    Text: text,
+    Image: image,
+    Button: button,
+    Spacer: spacer,
+    Divider: divider,
+    Columns: columns,
+    Container: container,
   },
   root: { fields: {} },
 };

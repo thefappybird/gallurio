@@ -22,10 +22,11 @@ export function localeForCountry(country: string | null | undefined): Locale {
   }
 }
 
-// Resolves the public-page chrome locale, preferring the owner's explicit
-// per-page `publicPage.formLocale` choice and falling back to the
-// country-derived locale when it's unset/invalid. Keeps the inquiry form, nav,
-// footer, and gallery labels in ONE language, isolated from the owner's app UI.
+// Resolves the public-page chrome locale. The form language is owner-controlled
+// via `publicPage.formLocale`; when set to a valid locale that value is used,
+// otherwise it defaults to English. The workspace country has no bearing on
+// this — the contact form must never auto-inherit a language the owner did not
+// explicitly choose.
 export function resolvePublicChromeLocale(workspace: {
   country?: string | null;
   publicPage?: { formLocale?: string | null } | null;
@@ -34,5 +35,5 @@ export function resolvePublicChromeLocale(workspace: {
   if (chosen && (routing.locales as readonly string[]).includes(chosen)) {
     return chosen as Locale;
   }
-  return localeForCountry(workspace.country);
+  return "en";
 }

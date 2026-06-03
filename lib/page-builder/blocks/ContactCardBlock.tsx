@@ -17,7 +17,14 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  renderRichText,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,8 +32,8 @@ import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/
 
 export type ContactCardProps = {
   _style?: BlockStyle;
-  heading: string;
-  description?: string;
+  heading: RichTextProp;
+  description: RichTextProp;
   showEmail: boolean;
   showPhone: boolean;
   showAddress: boolean;
@@ -39,8 +46,8 @@ export type ContactCardProps = {
 // ---------------------------------------------------------------------------
 
 export const contactCardDefaultProps: ContactCardProps = {
-  heading: "Get in Touch",
-  description: "I'd love to hear about your vision. Reach out and let's talk.",
+  heading: { text: "Get in Touch" },
+  description: { text: "I'd love to hear about your vision. Reach out and let's talk." },
   showEmail: true,
   showPhone: true,
   showAddress: true,
@@ -66,6 +73,8 @@ export function ContactCardBlock({
   const workspace = getRenderWorkspaceFrom(puck);
   const contact = workspace?.contact ?? null;
   const branding = workspace?.branding ?? null;
+  const hd = renderRichText(heading);
+  const dd = renderRichText(description);
 
   return (
     <section
@@ -95,12 +104,13 @@ export function ContactCardBlock({
             lineHeight: 1.2,
             color: "var(--pf-color-fg)",
             margin: 0,
+            ...hd.css,
           }}
         >
-          {heading}
+          {hd.text}
         </h2>
 
-        {description && (
+        {dd.text && (
           <p
             style={{
               fontSize: "1rem",
@@ -108,9 +118,11 @@ export function ContactCardBlock({
               color: "var(--pf-color-fg)",
               opacity: 0.8,
               margin: 0,
+              whiteSpace: "pre-line",
+              ...dd.css,
             }}
           >
-            {description}
+            {dd.text}
           </p>
         )}
 
@@ -351,8 +363,8 @@ export const contactCardBlockConfig: ComponentConfig<ContactCardProps> = {
   defaultProps: contactCardDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
-    description: { type: "textarea", label: "Description (optional)" },
+    heading: productionRichTextField as Field<RichTextProp>,
+    description: productionRichTextField as Field<RichTextProp>,
     showEmail: {
       type: "select",
       label: "Show email",

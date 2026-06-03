@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
-// Stub the heavy Puck editor: render its title + the injected headerActions,
-// and expose a "Publish" child so we can exercise onPublish.
+// Stub the heavy Puck editor: render its title + the injected custom header
+// (`overrides.header`), passing a "Publish" action so we can exercise onPublish.
+// Also stub `usePuck` (used by the in-canvas device toggle) so it has context.
 vi.mock("@measured/puck", () => ({
   Puck: ({
     headerTitle,
@@ -12,20 +13,31 @@ vi.mock("@measured/puck", () => ({
     onPublish,
   }: {
     headerTitle?: string;
-    overrides?: { headerActions?: (p: { children: ReactNode }) => ReactNode };
+    overrides?: { header?: (p: { actions: ReactNode; children: ReactNode }) => ReactNode };
     onPublish?: () => void;
   }) => (
     <div data-testid="puck">
       <div data-testid="puck-title">{headerTitle}</div>
-      {overrides?.headerActions?.({
-        children: (
+      {overrides?.header?.({
+        actions: (
           <button type="button" onClick={onPublish}>
             PuckPublish
           </button>
         ),
+        children: null,
       })}
     </div>
   ),
+  usePuck: () => ({
+    appState: {
+      ui: {
+        leftSideBarVisible: true,
+        rightSideBarVisible: true,
+        viewports: { current: { width: 1280, height: "auto" }, controlsVisible: true, options: [] },
+      },
+    },
+    dispatch: vi.fn(),
+  }),
 }));
 
 const savePortfolioDraftAction = vi.fn().mockResolvedValue({ ok: true });
@@ -35,6 +47,8 @@ const updateContactConfigAction = vi.fn().mockResolvedValue({ ok: true });
 const updateFormLocaleAction = vi.fn().mockResolvedValue({ ok: true });
 const switchTemplateAction = vi.fn().mockResolvedValue({ ok: true });
 const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
+const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
+const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
@@ -43,6 +57,8 @@ vi.mock("../_actions", () => ({
   updateFormLocaleAction: (...a: unknown[]) => updateFormLocaleAction(...a),
   switchTemplateAction: (...a: unknown[]) => switchTemplateAction(...a),
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
+  saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
+  deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -69,6 +85,7 @@ const baseProps = {
   // Keep the first-run guide closed during these tests so its overlay doesn't
   // sit over the editor controls.
   guideDismissed: true,
+  initialSavedThemes: [],
 };
 
 beforeEach(() => {
@@ -117,9 +134,9 @@ describe("EditorShell", () => {
   it("treats Contact as a tab — shows its preview and opens settings from there", async () => {
     const { container } = renderWithProviders(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
-    // Contact preview iframe, no Puck.
-    expect(await screen.findByText("Studio Aurora · Contact form")).toBeInTheDocument();
-    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    // Switching to Contact swaps Puck for the contact preview iframe.
+    await waitFor(() => expect(screen.queryByTestId("puck")).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Contact form" }).getAttribute("aria-pressed")).toBe("true");
     expect(container.querySelector("iframe")?.getAttribute("src")).toContain("zone=contact");
     // Settings open from the contact tab, not a side button.
     fireEvent.click(screen.getByRole("button", { name: "Edit contact settings" }));

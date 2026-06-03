@@ -1124,11 +1124,11 @@
           "count": "{count} {count, plural, one {image} other {images}}",
           "dropZone": "Drag photos here or click to select",
           "dropZoneActive": "Drop to upload",
-          "spec": "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px",
+          "spec": "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px on the shorter side",
           "optional": "You can skip this step and upload photos later.",
           "errorType": "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
           "errorSize": "Each photo must be under 10 MB.",
-          "errorDim": "Photos must be at least 600 px on the shorter side."
+          "errorDim": "Each photo must be at least 600 px on its shorter side (e.g. 600×800 or 800×600)."
         },
         "review": {
           "title": "Review & launch",

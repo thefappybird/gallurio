@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   LayoutPanelLeftIcon,
   PaintbrushIcon,
@@ -89,10 +89,14 @@ export function PortfolioGuideOverlay({
 }) {
   const [step, setStep] = useState(0);
 
-  // Always start at the beginning when the guide (re)opens.
-  useEffect(() => {
+  // Always start at the beginning when the guide (re)opens. Adjusting state
+  // during render on a prop change is the documented React pattern ("You Might
+  // Not Need an Effect") and avoids a cascading effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) setStep(0);
-  }, [open]);
+  }
 
   const current = STEPS[step];
   const Icon = current.icon;

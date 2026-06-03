@@ -7,9 +7,16 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig, Field } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  renderRichText,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +31,7 @@ export type ServiceItem = {
 
 export type ServicesListProps = {
   _style?: BlockStyle;
-  heading: string;
+  heading: RichTextProp;
   items: ServiceItem[];
 };
 
@@ -33,7 +40,7 @@ export type ServicesListProps = {
 // ---------------------------------------------------------------------------
 
 export const servicesListDefaultProps: ServicesListProps = {
-  heading: "Services",
+  heading: { text: "Services" },
   items: [
     {
       title: "Wedding Photography",
@@ -62,6 +69,7 @@ export const servicesListDefaultProps: ServicesListProps = {
 
 export function ServicesListBlock({ _style, heading, items, puck }: ServicesListProps & { puck?: BlockPuck }) {
   const cappedItems = items.slice(0, 8);
+  const hd = renderRichText(heading);
   // Read the resolved "Starting from {price}" template from the render context.
   // Falls back to English so the block still renders correctly in the Puck editor
   // (which does not wrap renders in runWithRenderWorkspace).
@@ -84,7 +92,7 @@ export function ServicesListBlock({ _style, heading, items, puck }: ServicesList
           margin: "0 auto",
         }}
       >
-        {heading && (
+        {hd.text && (
           <h2
             style={{
               fontFamily: "var(--pf-font-heading)",
@@ -94,9 +102,10 @@ export function ServicesListBlock({ _style, heading, items, puck }: ServicesList
               color: "var(--pf-color-fg)",
               margin: "0 0 2.5rem 0",
               textAlign: "center",
+              ...hd.css,
             }}
           >
-            {heading}
+            {hd.text}
           </h2>
         )}
 
@@ -210,7 +219,7 @@ export const servicesListBlockConfig: ComponentConfig<ServicesListProps> = {
   defaultProps: servicesListDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Section heading" },
+    heading: productionRichTextField as Field<RichTextProp>,
     items: {
       type: "array",
       label: "Services (max 8)",

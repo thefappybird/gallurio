@@ -15,7 +15,14 @@
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  renderRichText,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -23,15 +30,13 @@ import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/
 
 export type HeroBlockProps = {
   _style?: BlockStyle;
-  headline: string;
-  subhead?: string;
+  headline: RichTextProp;
+  subhead: RichTextProp;
   backgroundImagePublicId?: string;
   backgroundImageUrl?: string;
   backgroundOverlayOpacity: number;
   primaryCtaLabel: string;
   primaryCtaAction: "open-contact" | "go-to-gallery";
-  secondaryCtaLabel?: string;
-  secondaryCtaAction?: "open-contact" | "go-to-gallery";
   alignment: "left" | "center";
   height: "tall" | "medium" | "short";
 };
@@ -41,15 +46,13 @@ export type HeroBlockProps = {
 // ---------------------------------------------------------------------------
 
 export const heroDefaultProps: HeroBlockProps = {
-  headline: "Capturing moments that last forever",
-  subhead: "Fine art photography for weddings, portraits, and events.",
+  headline: { text: "Capturing moments that last forever" },
+  subhead: { text: "Fine art photography for weddings, portraits, and events." },
   backgroundImagePublicId: "",
   backgroundImageUrl: "",
   backgroundOverlayOpacity: 50,
   primaryCtaLabel: "Get in Touch",
   primaryCtaAction: "open-contact",
-  secondaryCtaLabel: "View Work",
-  secondaryCtaAction: "go-to-gallery",
   alignment: "center",
   height: "tall",
 };
@@ -77,8 +80,6 @@ export function HeroBlock({
   backgroundOverlayOpacity,
   primaryCtaLabel,
   primaryCtaAction,
-  secondaryCtaLabel,
-  secondaryCtaAction,
   alignment,
   height,
   puck,
@@ -86,6 +87,8 @@ export function HeroBlock({
   const gallerySlug = getRenderWorkspaceFrom(puck)?.slug;
   const minHeight = HEIGHT_MAP[height] ?? "80vh";
   const overlayAlpha = Math.min(100, Math.max(0, backgroundOverlayOpacity)) / 100;
+  const hl = renderRichText(headline);
+  const sub = renderRichText(subhead);
 
   // Resolve background image URL
   const bgImageSrc =
@@ -177,12 +180,13 @@ export function HeroBlock({
             lineHeight: 1.15,
             color: "#ffffff",
             margin: 0,
+            ...hl.css,
           }}
         >
-          {headline}
+          {hl.text}
         </h1>
 
-        {subhead && (
+        {sub.text && (
           <p
             style={{
               fontFamily: "var(--pf-font-body)",
@@ -191,9 +195,10 @@ export function HeroBlock({
               color: "rgba(255,255,255,0.9)",
               maxWidth: "36rem",
               margin: 0,
+              ...sub.css,
             }}
           >
-            {subhead}
+            {sub.text}
           </p>
         )}
 
@@ -211,14 +216,6 @@ export function HeroBlock({
             gallerySlug={gallerySlug}
             variant="primary"
           />
-          {secondaryCtaLabel && secondaryCtaAction && (
-            <CtaButton
-              label={secondaryCtaLabel}
-              action={secondaryCtaAction}
-              gallerySlug={gallerySlug}
-              variant="secondary"
-            />
-          )}
         </div>
       </div>
     </section>
@@ -291,8 +288,8 @@ export const heroBlockConfig: ComponentConfig<HeroBlockProps> = {
   defaultProps: heroDefaultProps,
   fields: {
     _style: productionStyleField,
-    headline: { type: "text", label: "Headline" },
-    subhead: { type: "text", label: "Sub-headline (optional)" },
+    headline: productionRichTextField as Field<RichTextProp>,
+    subhead: productionRichTextField as Field<RichTextProp>,
     backgroundImagePublicId: {
       type: "text",
       label: "Background image (Cloudinary public ID)",
@@ -311,15 +308,6 @@ export const heroBlockConfig: ComponentConfig<HeroBlockProps> = {
     primaryCtaAction: {
       type: "select",
       label: "Primary CTA action",
-      options: [
-        { label: "Open contact form", value: "open-contact" },
-        { label: "Go to Gallery page", value: "go-to-gallery" },
-      ],
-    },
-    secondaryCtaLabel: { type: "text", label: "Secondary CTA label (optional)" },
-    secondaryCtaAction: {
-      type: "select",
-      label: "Secondary CTA action",
       options: [
         { label: "Open contact form", value: "open-contact" },
         { label: "Go to Gallery page", value: "go-to-gallery" },

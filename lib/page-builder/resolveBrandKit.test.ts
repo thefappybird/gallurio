@@ -7,8 +7,14 @@ import type { PortfolioBrandKit } from "./types";
 // Helpers
 // ---------------------------------------------------------------------------
 
+// Omit the independent headingFont/bodyFont by default so legacy `fontPair`
+// tests exercise the fallback path. Tests covering the independent keys set
+// them explicitly via `overrides`.
 function kit(overrides: Partial<PortfolioBrandKit> = {}): PortfolioBrandKit {
-  return { ...DEFAULT_BRAND_KIT, ...overrides };
+  const { headingFont: _h, bodyFont: _b, ...base } = DEFAULT_BRAND_KIT;
+  void _h;
+  void _b;
+  return { ...base, ...overrides };
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +142,68 @@ describe("resolveBrandKit — font pairs", () => {
     const { cssVars } = resolveBrandKit(kit({ fontPair: "fraunces-inter" }));
     expect(cssVars["--pf-font-heading"]).toBe("var(--font-fraunces), Georgia, serif");
     expect(cssVars["--pf-font-body"]).toBe("var(--font-inter), system-ui, sans-serif");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Independent heading/body font keys (new — Phase 7+)
+// ---------------------------------------------------------------------------
+
+describe("resolveBrandKit — independent headingFont/bodyFont keys", () => {
+  it("uses headingFont family when headingFont is explicitly set", () => {
+    const { cssVars } = resolveBrandKit(kit({ headingFont: "playfair", bodyFont: "inter" }));
+    expect(cssVars["--pf-font-heading"]).toContain("playfair");
+    expect(cssVars["--pf-font-body"]).toContain("inter");
+  });
+
+  it("uses bodyFont family when bodyFont is explicitly set to montserrat", () => {
+    const { cssVars } = resolveBrandKit(kit({ headingFont: "cormorant", bodyFont: "montserrat" }));
+    expect(cssVars["--pf-font-heading"]).toContain("cormorant");
+    expect(cssVars["--pf-font-body"]).toContain("montserrat");
+  });
+
+  it("uses fraunces heading and dm-sans body", () => {
+    const { cssVars } = resolveBrandKit(kit({ headingFont: "fraunces", bodyFont: "dm-sans" }));
+    expect(cssVars["--pf-font-heading"]).toContain("fraunces");
+    expect(cssVars["--pf-font-body"]).toContain("dm-sans");
+  });
+
+  it("prefers headingFont over legacy fontPair for heading when both are set", () => {
+    // headingFont=fraunces overrides fontPair='merriweather-only' for heading
+    const { cssVars } = resolveBrandKit(
+      kit({ fontPair: "merriweather-only", headingFont: "fraunces", bodyFont: "inter" })
+    );
+    expect(cssVars["--pf-font-heading"]).toContain("fraunces");
+    expect(cssVars["--pf-font-body"]).toContain("inter");
+  });
+
+  it("falls back to legacy fontPair for heading when headingFont is absent", () => {
+    // No headingFont set; fontPair='playfair-inter' → heading should be playfair
+    const brandKit = kit({ fontPair: "playfair-inter" });
+    delete (brandKit as Partial<typeof brandKit>).headingFont;
+    delete (brandKit as Partial<typeof brandKit>).bodyFont;
+    const { cssVars } = resolveBrandKit(brandKit);
+    expect(cssVars["--pf-font-heading"]).toContain("playfair");
+    expect(cssVars["--pf-font-body"]).toContain("inter");
+  });
+
+  it("falls back to legacy fontPair for both when headingFont/bodyFont are absent", () => {
+    const brandKit = kit({ fontPair: "fraunces-inter" });
+    delete (brandKit as Partial<typeof brandKit>).headingFont;
+    delete (brandKit as Partial<typeof brandKit>).bodyFont;
+    const { cssVars } = resolveBrandKit(brandKit);
+    expect(cssVars["--pf-font-heading"]).toContain("fraunces");
+    expect(cssVars["--pf-font-body"]).toContain("inter");
+  });
+
+  it("ignores an invalid/unknown headingFont value and falls back to legacy fontPair", () => {
+    // Casting to simulate a stale/corrupt saved value
+    const brandKit = kit({ fontPair: "dm-serif-dm-sans", headingFont: "unknown-font" as never });
+    delete (brandKit as Partial<typeof brandKit>).bodyFont;
+    const { cssVars } = resolveBrandKit(brandKit);
+    // Falls back to fontPair legacy resolution
+    expect(cssVars["--pf-font-heading"]).toContain("dm-serif");
+    expect(cssVars["--pf-font-body"]).toContain("dm-sans");
   });
 });
 

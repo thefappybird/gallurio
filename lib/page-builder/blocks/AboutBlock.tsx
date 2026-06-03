@@ -13,9 +13,16 @@
  * No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig } from "@measured/puck";
+import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  renderRichText,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,8 +35,8 @@ export type CredentialItem = {
 
 export type AboutBlockProps = {
   _style?: BlockStyle;
-  heading: string;
-  body: string;
+  heading: RichTextProp;
+  body: RichTextProp;
   imagePublicId?: string;
   imageUrl?: string;
   imagePosition: "left" | "right";
@@ -41,8 +48,10 @@ export type AboutBlockProps = {
 // ---------------------------------------------------------------------------
 
 export const aboutDefaultProps: AboutBlockProps = {
-  heading: "About Me",
-  body: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
+  heading: { text: "About Me" },
+  body: {
+    text: "I'm a passionate photographer based in Manila, capturing life's most meaningful moments.\n\nWith over a decade of experience, I bring artistry and technical expertise to every session.",
+  },
   imagePublicId: "",
   imageUrl: "",
   imagePosition: "right",
@@ -71,6 +80,8 @@ export function AboutBlock({
 
   const hasImage = Boolean(imgSrc);
   const cappedCredentials = credentials?.slice(0, 6) ?? [];
+  const hd = renderRichText(heading);
+  const bd = renderRichText(body);
 
   return (
     <section
@@ -110,9 +121,10 @@ export function AboutBlock({
               lineHeight: 1.2,
               color: "var(--pf-color-fg)",
               margin: "0 0 1.5rem 0",
+              ...hd.css,
             }}
           >
-            {heading}
+            {hd.text}
           </h2>
 
           <p
@@ -123,9 +135,10 @@ export function AboutBlock({
               opacity: 0.85,
               margin: "0 0 2rem 0",
               whiteSpace: "pre-line",
+              ...bd.css,
             }}
           >
-            {body}
+            {bd.text}
           </p>
 
           {cappedCredentials.length > 0 && (
@@ -187,7 +200,7 @@ export function AboutBlock({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imgSrc!}
-              alt={heading}
+              alt={hd.text}
               style={{
                 width: "100%",
                 aspectRatio: "8 / 9",
@@ -223,8 +236,8 @@ export const aboutBlockConfig: ComponentConfig<AboutBlockProps> = {
   defaultProps: aboutDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
-    body: { type: "textarea", label: "Body text (line breaks preserved)" },
+    heading: productionRichTextField as Field<RichTextProp>,
+    body: productionRichTextField as Field<RichTextProp>,
     imagePublicId: {
       type: "text",
       label: "Image (Cloudinary public ID)",

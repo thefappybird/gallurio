@@ -87,6 +87,7 @@ export function ContactPanelDialog({
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contact-language">{t("languageLabel")}</Label>
           <p className="text-xs text-muted-foreground">{t("languageHelp")}</p>
+          <p className="text-xs text-muted-foreground">This setting only affects the public contact form — it is independent of your own app language.</p>
           <select
             id="contact-language"
             className={selectClass}

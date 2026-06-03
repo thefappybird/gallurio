@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -60,9 +60,13 @@ export function TemplatePickerDialog({
   // The confirm step is a portal-based AlertDialog independent of this dialog's
   // open state — clear it whenever the picker closes (including the success path,
   // where EditorShell closes the picker) so it can't linger over the editor.
-  useEffect(() => {
+  // Adjusting state during render on a prop change is the documented React
+  // pattern ("You Might Not Need an Effect") and avoids a cascading effect.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) setPending(null);
-  }, [open]);
+  }
 
   return (
     <Dialog open={open} onOpenChange={(next) => (switching ? undefined : onOpenChange(next))}>

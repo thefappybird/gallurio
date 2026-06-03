@@ -59,6 +59,30 @@ const fraunces = localFont({
   src: [{ path: "../../app/fonts/fraunces-latin-wght-normal.woff2", weight: "100 900", style: "normal" }],
 });
 
+// Merriweather is the app-shell font AND a curated brand-kit family. It lives
+// here (not inline in app/[locale]/layout.tsx) so its CSS var is part of
+// `portfolioFontVariables` — making it resolve on BOTH the authenticated app
+// root and the public portfolio root (which is outside the [locale] segment).
+const merriweather = localFont({
+  variable: "--font-merriweather",
+  display: "swap",
+  // `preload: false` to match the other curated families: this var rides on
+  // `portfolioFontVariables`, which is also applied to the PUBLIC portfolio
+  // root — portfolios not using Merriweather shouldn't preload its woff2.
+  preload: false,
+  src: [
+    { path: "../../app/fonts/merriweather-latin-300-normal.woff2", weight: "300", style: "normal" },
+    { path: "../../app/fonts/merriweather-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../../app/fonts/merriweather-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "../../app/fonts/merriweather-latin-900-normal.woff2", weight: "900", style: "normal" },
+    { path: "../../app/fonts/merriweather-latin-400-italic.woff2", weight: "400", style: "italic" },
+    { path: "../../app/fonts/merriweather-latin-700-italic.woff2", weight: "700", style: "italic" },
+  ],
+});
+
+/** The app-shell font CSS-variable class — apply to the authenticated app root. */
+export const merriweatherFontVariable = merriweather.variable;
+
 const dmSerif = localFont({
   variable: "--font-dm-serif",
   display: "swap",
@@ -76,6 +100,7 @@ const dmSerif = localFont({
  * authenticated app root, so the in-editor preview resolves the same families).
  */
 export const portfolioFontVariables = [
+  merriweather.variable,
   playfair.variable,
   inter.variable,
   dmSans.variable,

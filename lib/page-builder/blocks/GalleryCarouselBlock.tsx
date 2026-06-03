@@ -14,10 +14,20 @@ import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
-import { resolveBlockStyle, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  productionStyleField,
+  productionRichTextField,
+  type BlockStyle,
+  type RichTextProp,
+} from "@/lib/page-builder/styleToolkit";
+import { GalleryHeader, GalleryFooter } from "./GalleryText";
 
 export type GalleryCarouselProps = {
   _style?: BlockStyle;
+  heading: RichTextProp;
+  description: RichTextProp;
+  footer: RichTextProp;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
   autoplay: boolean;
@@ -25,6 +35,9 @@ export type GalleryCarouselProps = {
 };
 
 export const galleryCarouselDefaultProps: GalleryCarouselProps = {
+  heading: { text: "" },
+  description: { text: "" },
+  footer: { text: "" },
   collectionId: "",
   aspect: "landscape",
   autoplay: false,
@@ -39,6 +52,9 @@ const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height
 
 export async function GalleryCarouselBlock({
   _style,
+  heading,
+  description,
+  footer,
   collectionId,
   aspect,
   autoplay,
@@ -97,12 +113,18 @@ export async function GalleryCarouselBlock({
         ...resolveBlockStyle(_style),
       }}
     >
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryHeader heading={heading} description={description} />
+      </div>
       <GalleryCarouselClient
         slides={slides}
         aspect={aspect}
         autoplay={autoplay}
         labels={{ hint: labels.carouselHint, prev: labels.carouselPrev, next: labels.carouselNext }}
       />
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryFooter footer={footer} />
+      </div>
     </section>
   );
 }
@@ -140,6 +162,9 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
   defaultProps: galleryCarouselDefaultProps,
   fields: {
     _style: productionStyleField,
+    heading: productionRichTextField as Field<RichTextProp>,
+    description: productionRichTextField as Field<RichTextProp>,
+    footer: productionRichTextField as Field<RichTextProp>,
     collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",

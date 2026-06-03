@@ -5,7 +5,9 @@ import {
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
   CONTACT_BUTTON_COLORS,
+  SAVED_THEMES_MAX,
 } from "@/lib/page-builder/types";
+import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 
 // ---------------------------------------------------------------------------
 // Primitive helpers
@@ -21,7 +23,10 @@ const hexColorSchema = z
 
 export const brandKitSchema = z.object({
   themePreset: z.enum(BRAND_KIT_THEME_PRESETS),
+  // Legacy pairing kept for back-compat; new saves also carry independent fonts.
   fontPair: z.enum(BRAND_KIT_FONT_PAIRS),
+  headingFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
+  bodyFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
   primaryColor: hexColorSchema,
   secondaryColor: hexColorSchema,
   accentColor: hexColorSchema,
@@ -32,6 +37,20 @@ export const brandKitSchema = z.object({
 });
 
 export type BrandKitInput = z.infer<typeof brandKitSchema>;
+
+// ---------------------------------------------------------------------------
+// Saved themes — owner's named, reusable brand kits (embedded on the workspace).
+// ---------------------------------------------------------------------------
+
+export const savedThemeSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(1, "Name your theme").max(60),
+  brandKit: brandKitSchema,
+});
+
+export const savedThemesSchema = z.array(savedThemeSchema).max(SAVED_THEMES_MAX);
+
+export type SavedThemeInput = z.infer<typeof savedThemeSchema>;
 
 // ---------------------------------------------------------------------------
 // portfolioContactConfigSchema

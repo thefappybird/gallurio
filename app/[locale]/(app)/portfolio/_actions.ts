@@ -11,6 +11,7 @@ import {
 } from "@/lib/validators/publicPage";
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
+import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
 import { z } from "zod";
 
 export type EditorActionResult =
@@ -195,5 +196,83 @@ export async function updateFormLocaleAction(input: unknown): Promise<EditorActi
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Saved themes
+// ---------------------------------------------------------------------------
+
+const saveThemeNameSchema = z.string().trim().min(1, "Name is required").max(60, "Max 60 chars");
+
+export type SaveThemeResult =
+  | { ok: true; theme: PortfolioSavedTheme }
+  | { error: string };
+
+/**
+ * Save the current brand kit as a named reusable theme. Owner-only.
+ * Enforces the SAVED_THEMES_MAX cap — rejects if the workspace is at the limit.
+ * The id is generated server-side (crypto.randomUUID) so the client cannot
+ * forge or collide it.
+ */
+export async function saveThemeAction(
+  name: unknown,
+  brandKit: unknown
+): Promise<SaveThemeResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const nameParsed = saveThemeNameSchema.safeParse(name);
+  if (!nameParsed.success) {
+    return { error: nameParsed.error.errors[0]?.message ?? "invalid_name" };
+  }
+
+  const kitParsed = brandKitSchema.safeParse(brandKit);
+  if (!kitParsed.success) {
+    return { error: kitParsed.error.errors[0]?.message ?? "invalid_brand_kit" };
+  }
+
+  await connectDB();
+
+  const newTheme: PortfolioSavedTheme = {
+    id: crypto.randomUUID(),
+    name: nameParsed.data,
+    brandKit: kitParsed.data,
+  };
+
+  // Enforce the cap atomically: only push when the array isn't already at the
+  // limit. A read-then-write check races against concurrent saves (two tabs /
+  // double-submit) and a raw $push bypasses the schema's array validator.
+  const res = await Workspace.updateOne(
+    {
+      _id: ctx.workspace._id,
+      [`publicPage.savedThemes.${SAVED_THEMES_MAX - 1}`]: { $exists: false },
+    },
+    { $push: { "publicPage.savedThemes": newTheme } }
+  );
+  if (res.matchedCount === 0) {
+    return { error: `max_themes_reached:${SAVED_THEMES_MAX}` };
+  }
+
+  return { ok: true, theme: newTheme };
+}
+
+/**
+ * Delete a saved theme by id. Owner-only. Silently no-ops if the id is absent
+ * (idempotent so retries after a network blip are safe).
+ */
+export async function deleteThemeAction(id: unknown): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const idParsed = z.string().min(1).max(64).safeParse(id);
+  if (!idParsed.success) return { error: "invalid_id" };
+
+  await connectDB();
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $pull: { "publicPage.savedThemes": { id: idParsed.data } } }
+  );
+
   return { ok: true };
 }
