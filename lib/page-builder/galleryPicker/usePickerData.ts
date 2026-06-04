@@ -8,46 +8,87 @@ type State =
   | { status: "error"; message: string }
   | { status: "ok"; data: PickerData };
 
+// Module-level cache — survives component unmount/remount within the same page
+// session so re-fetching doesn't happen every time a different block is selected
+// and a new picker instance mounts. Cleared on page reload or explicit retry().
+let pickerDataCache: PickerData | null = null;
+// In-flight promise — de-dupes concurrent mounts that both see cache === null,
+// so only ONE network request fires per page session.
+let pickerDataPromise: Promise<PickerData> | null = null;
+
+// Shared fetch: returns the cached data, the in-flight promise, or starts a new
+// request. Bookkeeping handlers (attached here) observe both outcomes so the
+// shared promise is never left as an unhandled rejection.
+function fetchPickerData(): Promise<PickerData> {
+  if (pickerDataCache) return Promise.resolve(pickerDataCache);
+  if (pickerDataPromise) return pickerDataPromise;
+
+  const p = fetch("/api/portfolio/gallery").then(async (res) => {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as PickerData;
+  });
+  pickerDataPromise = p;
+  p.then(
+    (data) => {
+      pickerDataCache = data;
+      pickerDataPromise = null;
+    },
+    () => {
+      pickerDataPromise = null;
+    }
+  );
+  return p;
+}
+
 /**
  * Fetches picker data (collections + items) from the portfolio gallery API.
- * Retries on error via the returned `retry` callback.
+ * Results are cached module-level so the network request only fires once per
+ * page session, with concurrent mounts sharing a single in-flight request.
+ * Calling `retry()` invalidates the cache and re-fetches — use it after uploads
+ * or collection creates.
  */
 export function usePickerData() {
-  // Start in "loading" so the mount effect doesn't have to setState synchronously
-  // (which the React Compiler flags as a cascading render). The effect only kicks
-  // off the fetch; setState happens after the request settles.
-  const [state, setState] = useState<State>({ status: "loading" });
-  const abortRef = useRef<AbortController | null>(null);
+  // Initial state reflects the cache synchronously; otherwise "loading". The
+  // effect only SUBSCRIBES (async setState on settle) — it never calls setState
+  // synchronously, so no cascading-render lint warning.
+  const [state, setState] = useState<State>(
+    pickerDataCache ? { status: "ok", data: pickerDataCache } : { status: "loading" }
+  );
+  const mountedRef = useRef(true);
 
-  const runFetch = useCallback(() => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
-    fetch("/api/portfolio/gallery", { signal: ctrl.signal })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as PickerData;
-        setState({ status: "ok", data });
-      })
-      .catch((err) => {
-        if ((err as { name?: string }).name === "AbortError") return;
-        setState({ status: "error", message: String(err) });
-      });
+  const subscribe = useCallback(() => {
+    fetchPickerData().then(
+      (data) => {
+        if (mountedRef.current) setState({ status: "ok", data });
+      },
+      (err) => {
+        if (mountedRef.current) setState({ status: "error", message: String(err) });
+      }
+    );
   }, []);
 
-  // Event-handler retry may setState synchronously (it's not an effect).
+  // Event-handler retry explicitly busts the cache (called after uploads/creates).
+  // setState("loading") is fine here — an event handler, not an effect body.
   const retry = useCallback(() => {
+    pickerDataCache = null;
+    pickerDataPromise = null;
     setState({ status: "loading" });
-    runFetch();
-  }, [runFetch]);
+    subscribe();
+  }, [subscribe]);
 
   useEffect(() => {
-    runFetch();
+    mountedRef.current = true;
+    subscribe();
     return () => {
-      abortRef.current?.abort();
+      mountedRef.current = false;
     };
-  }, [runFetch]);
+  }, [subscribe]);
 
   return { state, retry };
+}
+
+/** Test-only helper — resets the module-level cache between test runs. */
+export function __clearPickerDataCache(): void {
+  pickerDataCache = null;
+  pickerDataPromise = null;
 }

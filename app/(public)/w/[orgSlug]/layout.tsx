@@ -69,7 +69,12 @@ export default async function PublicPortfolioLayout({
       {children}
       <MotionObserver />
       <ContactTriggerDelegate />
-      <ContactModal workspaceSlug={workspace.slug} contact={contactConfig} labels={contactLabels} />
+      <ContactModal
+        workspaceSlug={workspace.slug}
+        contact={contactConfig}
+        labels={contactLabels}
+        brandVars={cssVars}
+      />
     </div>
   );
 }

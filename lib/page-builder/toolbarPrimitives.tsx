@@ -284,3 +284,38 @@ export function NumberInputRow({
     </label>
   );
 }
+
+/**
+ * A labelled row of icon toggle-buttons for single-select options (e.g. align,
+ * justify, shadow size). Clicking an already-active option deselects it
+ * (returns `undefined`). Uses `ToolbarToggle` so all focus/hover/active states
+ * are consistent with the rest of the toolbar.
+ */
+export function IconRow<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T | undefined;
+  options: { value: T; label: string; Icon: LucideIcon }[];
+  onChange: (v: T | undefined) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {options.map(({ value: v, label: l, Icon }) => (
+          <ToolbarToggle
+            key={v}
+            active={value === v}
+            title={l}
+            Icon={Icon}
+            onClick={() => onChange(value === v ? undefined : v)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}

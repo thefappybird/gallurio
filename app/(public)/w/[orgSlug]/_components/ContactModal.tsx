@@ -29,10 +29,15 @@ export function ContactModal({
   workspaceSlug,
   contact,
   labels,
+  brandVars,
 }: {
   workspaceSlug: string;
   contact?: PortfolioContactConfig | null;
   labels: ContactModalLabels;
+  /** Brand-kit CSS vars (--pf-color-*, --pf-font-*, --pf-radius). The modal
+   *  renders through a Portal at document.body, escaping the page wrapper that
+   *  sets these — so we re-apply them here or the popup has no background. */
+  brandVars?: Record<string, string>;
 }) {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -62,10 +67,12 @@ export function ContactModal({
         <DialogPrimitive.Popup
           className="pf-contact-popup"
           style={{
+            // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
+            ...(brandVars as React.CSSProperties),
             position: "fixed",
             zIndex: 101,
-            backgroundColor: "var(--pf-color-bg)",
-            color: "var(--pf-color-fg)",
+            backgroundColor: "var(--pf-color-bg, #ffffff)",
+            color: "var(--pf-color-fg, #111111)",
             fontFamily: "var(--pf-font-body)",
             display: "flex",
             flexDirection: "column",

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { SingleImagePicker } from "./SingleImagePicker";
+import { __clearPickerDataCache } from "./usePickerData";
 import type { PickerItem } from "./types";
 
 const mockFetch = vi.fn();
@@ -11,6 +12,7 @@ function makeData(items: PickerItem[] = []) {
 }
 
 beforeEach(() => {
+  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockResolvedValue(makeData());
 });

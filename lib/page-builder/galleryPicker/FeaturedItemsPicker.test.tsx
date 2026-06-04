@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { FeaturedItemsPicker } from "./FeaturedItemsPicker";
+import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -20,6 +21,7 @@ function makePickerData(items = sampleItems) {
 }
 
 beforeEach(() => {
+  __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockResolvedValue(makePickerData());
 });

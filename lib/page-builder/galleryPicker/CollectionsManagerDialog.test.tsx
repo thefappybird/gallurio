@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CollectionsManagerDialog } from "./CollectionsManagerDialog";
+import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -13,6 +14,7 @@ function mockPickerResponse(collections: unknown[]) {
 }
 
 beforeEach(() => {
+  __clearPickerDataCache();
   mockFetch.mockReset();
   mockPickerResponse([]);
 });

@@ -18,7 +18,10 @@ import {
   resolveBlockStyle,
   resolveBlockAttrs,
   asText,
+  colorTokenToVar,
   productionStyleField,
+  FLEX_JUSTIFY_MAP,
+  FLEX_ALIGN_MAP,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
 
@@ -230,7 +233,16 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   const slug = gallerySlugFrom(puck);
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
-  const justify = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+  // _style.alignItems (Layout tab) takes priority over the legacy `align` prop.
+  const justify = _style?.alignItems
+    ? (ALIGN_ITEMS_TO_JUSTIFY[_style.alignItems] ?? "flex-start")
+    : (align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start");
+
+  // The button's own fill + label color (Design tab). The wrapper's
+  // resolveBlockStyle only carries frame/spacing; the <a> owns its colors so
+  // the toolkit's "Button color" + "Text color" actually take effect.
+  const buttonBg = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-accent)";
+  const buttonText = colorTokenToVar(_style?.textColorToken) ?? "#ffffff";
 
   return (
     <div style={{ padding: "1rem 1.5rem", display: "flex", justifyContent: justify, ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
@@ -252,8 +264,8 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
           textDecoration: "none",
           cursor: "pointer",
           borderRadius: "var(--pf-radius)",
-          backgroundColor: "var(--pf-color-accent)",
-          color: "#ffffff",
+          backgroundColor: buttonBg,
+          color: buttonText,
           border: "2px solid transparent",
         }}
       >
@@ -440,6 +452,11 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
+// Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
+// "stretch" has no text-align equivalent; falls back to the legacy alignX (ax) value.
+const ALIGN_TO_TEXT: Record<string, string | undefined> = {
+  start: "left", center: "center", end: "right", stretch: undefined,
+};
 
 export function ContainerBlock({
   _style,
@@ -460,8 +477,34 @@ export function ContainerBlock({
 }) {
   const ax = alignX ?? "left";
   const ay = alignY ?? "top";
-  const bgSrc = backgroundImagePublicId ? cloudinaryUrl(backgroundImagePublicId, 2000) : null;
+  const s = _style ?? {};
+  const bgSrc = backgroundImagePublicId
+    ? cloudinaryUrl(backgroundImagePublicId, 2000)
+    : s.bgImagePublicId
+    ? cloudinaryUrl(s.bgImagePublicId, 2000)
+    : null;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+
+  // Vertical positioning of the content block within the section height.
+  const effectiveJustify = s.justifyContent
+    ? FLEX_JUSTIFY_MAP[s.justifyContent as keyof typeof FLEX_JUSTIFY_MAP] ?? ALIGN_Y_MAP[ay]
+    : ALIGN_Y_MAP[ay];
+
+  // Horizontal TEXT alignment inside child blocks. Children always stretch to full
+  // width so that text-align, button justify, etc. have the full container width to
+  // work within. _style.alignItems maps to text-align semantics (start→left, end→right).
+  const effectiveTextAlign = s.alignItems
+    ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
+    : ax;
+
+  const effectiveGap =
+    s.gap != null ? `${Math.min(96, Math.max(0, s.gap))}px` : "1rem";
+
+  // Remove `gap` from the resolved style: it belongs on the inner content wrapper
+  // (via effectiveGap), not on the outer section whose only flex children are the
+  // background image, the overlay div, and the slot — gaps between those are wrong.
+  const sectionStyle = resolveBlockStyle(_style);
+  delete (sectionStyle as Record<string, unknown>).gap;
 
   return (
     <section
@@ -470,12 +513,13 @@ export function ContainerBlock({
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        justifyContent: ALIGN_Y_MAP[ay],
+        flexGrow: 1,
+        justifyContent: effectiveJustify,
         minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
         padding: "1.5rem",
         overflow: "hidden",
         backgroundColor: bgSrc ? "var(--pf-color-fg)" : undefined,
-        ...resolveBlockStyle(_style),
+        ...sectionStyle,
       }}
       {...resolveBlockAttrs(_style)}
     >
@@ -500,9 +544,9 @@ export function ContainerBlock({
           margin: "0 auto",
           display: "flex",
           flexDirection: "column",
-          alignItems: ALIGN_X_ITEMS[ax],
-          textAlign: ax,
-          gap: "1rem",
+          alignItems: "stretch",
+          textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
+          gap: effectiveGap,
         },
       })}
     </section>
@@ -575,6 +619,11 @@ export const flexDefaultProps: FlexBlockProps = {
   content: [],
 };
 
+// Maps _style.alignItems values to CSS justifyContent for ButtonBlock wrapper.
+const ALIGN_ITEMS_TO_JUSTIFY: Record<string, string> = {
+  start: "flex-start", center: "center", end: "flex-end", stretch: "flex-start",
+};
+
 const JUSTIFY_MAP: Record<FlexBlockProps["justify"], string> = {
   start: "flex-start",
   center: "center",
@@ -608,6 +657,21 @@ export function FlexBlock({
   content: SlotComponent;
 }) {
   const clampedGap = Math.min(96, Math.max(0, Number.isFinite(gap) ? gap : 16));
+
+  // _style props take priority; existing direction/justify/align/gap props serve as fallbacks.
+  const s = _style ?? {};
+  const effectiveDir = (s.flexDirection as "row" | "column" | undefined) ?? direction;
+  const effectiveJustify = s.justifyContent
+    ? FLEX_JUSTIFY_MAP[s.justifyContent as keyof typeof FLEX_JUSTIFY_MAP] ?? JUSTIFY_MAP[justify]
+    : JUSTIFY_MAP[justify];
+  // _style.alignItems takes priority; fall back to the legacy align prop so that
+  // existing saved FlexBlocks with align="start"/"center"/"end" render correctly.
+  const effectiveAlign = s.alignItems
+    ? FLEX_ALIGN_MAP[s.alignItems as keyof typeof FLEX_ALIGN_MAP] ?? ALIGN_MAP[align]
+    : ALIGN_MAP[align];
+  const effectiveGap =
+    s.gap != null ? Math.min(96, Math.max(0, s.gap)) : clampedGap;
+
   return (
     <div
       style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}
@@ -616,11 +680,11 @@ export function FlexBlock({
       {Content({
         style: {
           display: "flex",
-          flexDirection: direction,
-          justifyContent: JUSTIFY_MAP[justify],
-          alignItems: ALIGN_MAP[align],
+          flexDirection: effectiveDir,
+          justifyContent: effectiveJustify,
+          alignItems: effectiveAlign,
           flexWrap: wrap ? "wrap" : "nowrap",
-          gap: `${clampedGap}px`,
+          gap: `${effectiveGap}px`,
           maxWidth: "80rem",
           margin: "0 auto",
         },

@@ -187,8 +187,12 @@ function rt(value: unknown): string {
 const styleField = {
   type: "custom",
   label: "Style",
-  render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-    <StyleToolkitField value={value as BlockStyle | undefined} onChange={onChange as (v: BlockStyle) => void} />
+  render: ({ value, onChange, id }: { value: unknown; onChange: (v: unknown) => void; id: string }) => (
+    <StyleToolkitField
+      value={value as BlockStyle | undefined}
+      onChange={onChange as (v: BlockStyle) => void}
+      fieldId={id}
+    />
   ),
 } as unknown as Field<BlockStyle | undefined>;
 
@@ -227,8 +231,8 @@ function collectionField(): Field<string> {
 
 const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
   _style: styleField,
-  backgroundImagePublicId: imagePickerField("Background image"),
-  overlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100 } as unknown as Field<number | undefined>,
+  backgroundImagePublicId: { ...imagePickerField("Background image"), visible: false } as unknown as Field<string | undefined>,
+  overlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100, visible: false } as unknown as Field<number | undefined>,
   minHeight: {
     type: "select",
     label: "Min height",
@@ -242,6 +246,7 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
   alignX: {
     type: "select",
     label: "Horizontal align",
+    visible: false,
     options: [
       { label: "Left", value: "left" },
       { label: "Center", value: "center" },
@@ -251,6 +256,7 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
   alignY: {
     type: "select",
     label: "Vertical align",
+    visible: false,
     options: [
       { label: "Top", value: "top" },
       { label: "Center", value: "center" },
@@ -265,9 +271,19 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
 // SECTION_PRESETS defaultProps for each section.
 // ---------------------------------------------------------------------------
 
+// Hides sidebar fields that are managed by the StyleToolkitField Content/Layout tabs.
+// The double cast is required because Puck's resolveFields return type is a strict
+// branded Fields<T> — we need to go through unknown to avoid the structural mismatch.
+function resolveContainerFields(_data: unknown, { fields }: { fields: Record<string, unknown> }) {
+  const { backgroundImagePublicId: _b, overlayOpacity: _o, alignX: _ax, alignY: _ay, ...rest } = fields;
+  return rest;
+}
+const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
+
 const heroPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.HeroPreset.label,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.HeroPreset.defaultProps,
   render: ContainerBlock,
 };
@@ -275,6 +291,7 @@ const heroPreset: ComponentConfig<ContainerBlockProps> = {
 const aboutPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.AboutPreset.label,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.AboutPreset.defaultProps,
   render: ContainerBlock,
 };
@@ -282,6 +299,7 @@ const aboutPreset: ComponentConfig<ContainerBlockProps> = {
 const servicesPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ServicesPreset.label,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ServicesPreset.defaultProps,
   render: ContainerBlock,
 };
@@ -289,6 +307,7 @@ const servicesPreset: ComponentConfig<ContainerBlockProps> = {
 const ctaPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.CtaPreset.label,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.CtaPreset.defaultProps,
   render: ContainerBlock,
 };
@@ -296,6 +315,7 @@ const ctaPreset: ComponentConfig<ContainerBlockProps> = {
 const contactPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ContactPreset.label,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ContactPreset.defaultProps,
   render: ContainerBlock,
 };
@@ -337,6 +357,10 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
     },
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
+  resolveFields: (_data, { fields }) => {
+    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+  },
   render: ({ _style, heading, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Grid"
@@ -373,6 +397,10 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
     },
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
   },
+  resolveFields: (_data, { fields }) => {
+    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+  },
   render: ({ _style, heading, collectionId, columns, maxItems }) => (
     <Preview
       label="Gallery Masonry"
@@ -407,6 +435,10 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
       ],
     } as Field<boolean>,
     maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
+  },
+  resolveFields: (_data, { fields }) => {
+    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
   render: ({ _style, heading, collectionId, aspect, maxItems }) => (
     <Preview
@@ -443,6 +475,10 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
       ],
     },
   },
+  resolveFields: (_data, { fields }) => {
+    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+  },
   render: ({ _style, heading, subheading, itemIds, layout }) => (
     <Preview
       label="Featured Work"
@@ -461,10 +497,15 @@ const video: ComponentConfig<VideoBlockProps> = {
   defaultProps: videoDefaultProps,
   fields: {
     _style: styleField,
-    heading: richTextField("Heading (optional)"),
-    description: richTextField("Description (optional)", true),
-    videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
-    footer: richTextField("Footer (optional)", true),
+    heading: { ...richTextField("Heading (optional)"), visible: false } as unknown as Field<string>,
+    description: { ...richTextField("Description (optional)", true), visible: false } as unknown as Field<string>,
+    videoUrl: { type: "text", label: "YouTube or Vimeo URL", visible: false } as unknown as Field<string>,
+    footer: { ...richTextField("Footer (optional)", true), visible: false } as unknown as Field<string>,
+  },
+  resolveFields: (_data, { fields }) => {
+    // videoUrl and heading are managed by the Content tab in StyleToolkitField
+    const { videoUrl: _v, heading: _h, description: _d, footer: _f, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: VideoBlock,
 };
@@ -533,7 +574,7 @@ const heading: ComponentConfig<HeadingBlockProps> = {
   defaultProps: headingDefaultProps,
   fields: {
     _style: styleField,
-    text: richTextField("Heading text"),
+    text: { ...richTextField("Heading text"), visible: false } as unknown as Field<string>,
     level: {
       type: "select",
       label: "Level",
@@ -544,6 +585,11 @@ const heading: ComponentConfig<HeadingBlockProps> = {
       ],
     },
   },
+  resolveFields: (_data, { fields }) => {
+    // text and level are managed by the Content tab in StyleToolkitField
+    const { text: _t, level: _l, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
+  },
   render: HeadingBlock,
 };
 
@@ -552,7 +598,12 @@ const text: ComponentConfig<TextBlockProps> = {
   defaultProps: textDefaultProps,
   fields: {
     _style: styleField,
-    text: richTextField("Text", true),
+    text: { ...richTextField("Text", true), visible: false } as unknown as Field<string>,
+  },
+  resolveFields: (_data, { fields }) => {
+    // text is managed by the Content tab in StyleToolkitField
+    const { text: _t, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: TextBlock,
 };
@@ -606,6 +657,11 @@ const button: ComponentConfig<ButtonBlockProps> = {
       ],
     },
   },
+  resolveFields: (_data, { fields }) => {
+    // label, action, and align are managed by the Content tab in StyleToolkitField
+    const { label: _l, action: _a, align: _al, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
+  },
   render: ButtonBlock,
 };
 
@@ -654,6 +710,7 @@ const flex: ComponentConfig<FlexBlockProps> = {
     direction: {
       type: "select",
       label: "Direction",
+      visible: false,
       options: [
         { label: "Row", value: "row" },
         { label: "Column", value: "column" },
@@ -662,6 +719,7 @@ const flex: ComponentConfig<FlexBlockProps> = {
     justify: {
       type: "select",
       label: "Justify content",
+      visible: false,
       options: [
         { label: "Start", value: "start" },
         { label: "Center", value: "center" },
@@ -673,6 +731,7 @@ const flex: ComponentConfig<FlexBlockProps> = {
     align: {
       type: "select",
       label: "Align items",
+      visible: false,
       options: [
         { label: "Start", value: "start" },
         { label: "Center", value: "center" },
@@ -683,13 +742,19 @@ const flex: ComponentConfig<FlexBlockProps> = {
     wrap: {
       type: "select",
       label: "Wrap",
+      visible: false,
       options: [
         { label: "Yes", value: true },
         { label: "No", value: false },
       ],
     } as Field<boolean>,
-    gap: { type: "number", label: "Gap (px)", min: 0, max: 96 } as Field<number>,
+    gap: { type: "number", label: "Gap (px)", min: 0, max: 96, visible: false } as Field<number>,
     content: { type: "slot" },
+  },
+  resolveFields: (_data, { fields }) => {
+    // direction, justify, align, wrap, gap are managed by the Layout tab in StyleToolkitField
+    const { direction: _dir, justify: _j, align: _a, wrap: _w, gap: _g, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: FlexBlock,
 };
@@ -698,6 +763,7 @@ const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   defaultProps: containerDefaultProps,
   fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
   render: ContainerBlock,
 };
 

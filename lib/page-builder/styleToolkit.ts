@@ -68,6 +68,11 @@ export type BlockStyle = {
   // Grid placement when the block is a child of a Columns/grid container
   colSpan?: number;
   rowSpan?: number;
+  // Flex container layout — for Container/Flex/preset sections
+  flexDirection?: "row" | "column";
+  alignItems?: "start" | "center" | "end" | "stretch";
+  justifyContent?: "start" | "center" | "end" | "between" | "around";
+  gap?: number; // px, gap between children (0–96)
   // Background
   bgColorToken?: StyleColorToken;
   bgImagePublicId?: string;
@@ -76,7 +81,8 @@ export type BlockStyle = {
   fontFamily?: PortfolioFontKey;
   fontSize?: number; // px
   textColorToken?: StyleColorToken;
-  highlightColorToken?: StyleColorToken;
+  // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
+  buttonColorToken?: StyleColorToken;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -94,6 +100,21 @@ export const HOVER_EFFECTS = ["none", "scale", "lift", "dim", "brighten"] as con
 export type HoverEffect = (typeof HOVER_EFFECTS)[number];
 
 export const DEFAULT_BLOCK_STYLE: BlockStyle = {};
+
+export const FLEX_JUSTIFY_MAP: Record<NonNullable<BlockStyle["justifyContent"]>, string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  between: "space-between",
+  around: "space-around",
+};
+
+export const FLEX_ALIGN_MAP: Record<NonNullable<BlockStyle["alignItems"]>, string> = {
+  start: "flex-start",
+  center: "center",
+  end: "flex-end",
+  stretch: "stretch",
+};
 
 /**
  * Read the plain text out of a stored text prop. Block text props are plain
@@ -130,6 +151,7 @@ export const STYLE_LIMITS = {
   paddingX: { min: 0, max: 200 },
   marginY: { min: 0, max: 200 },
   fontSize: { min: 10, max: 120 },
+  gap: { min: 0, max: 96 },
 } as const;
 
 // Map a palette token to its CSS custom property.
@@ -239,6 +261,25 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.colSpan && style.colSpan > 1) css.gridColumn = `span ${Math.min(12, Math.floor(style.colSpan))}`;
   if (style.rowSpan && style.rowSpan > 1) css.gridRow = `span ${Math.min(12, Math.floor(style.rowSpan))}`;
 
+  // Content alignment for leaf blocks. `alignItems` maps to text-align so any
+  // block (Heading, Text, etc.) responds to the Layout-tab Align control. Flex
+  // container blocks (Container, Flex) also apply align-items:stretch on their
+  // inner wrapper so children fill width — both mechanisms are consistent.
+  if (style.alignItems) {
+    const ta: Record<string, string | undefined> = {
+      start: "left", center: "center", end: "right", stretch: undefined,
+    };
+    const v = ta[style.alignItems];
+    if (v) css.textAlign = v;
+  }
+
+  // Gap between children — emitted here so it applies on any flex/grid container.
+  // justifyContent is intentionally excluded: flex container blocks apply it to
+  // their inner content wrappers; it has no useful meaning on a leaf block root.
+  if (style.gap != null) {
+    css.gap = `${clamp(style.gap, STYLE_LIMITS.gap.min, STYLE_LIMITS.gap.max)}px`;
+  }
+
   // Entrance-animation duration is exposed as a CSS var consumed by the global
   // motion stylesheet (the data-attrs from resolveBlockAttrs drive the rest).
   if (style.animation && style.animation !== "none" && style.animationDuration) {
@@ -278,11 +319,6 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   }
   if (style.textColorToken) {
     css.color = TOKEN_VAR[style.textColorToken];
-  }
-  // Highlight fills the block surface with the chosen token — applied after the
-  // background so an explicit highlight wins when both are set.
-  if (style.highlightColorToken) {
-    css.backgroundColor = TOKEN_VAR[style.highlightColorToken];
   }
   if (style.bold) css.fontWeight = 700;
   if (style.italic) css.fontStyle = "italic";

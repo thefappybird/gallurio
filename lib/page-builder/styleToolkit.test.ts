@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, type BlockStyle } from "./styleToolkit";
 
 // ---------------------------------------------------------------------------
 // asText
@@ -104,11 +104,6 @@ describe("resolveBlockStyle", () => {
     expect(css.fontFamily).toContain("playfair");
   });
 
-  it("sets backgroundColor when highlightColorToken is provided", () => {
-    const css = resolveBlockStyle({ highlightColorToken: "accent" });
-    expect(css.backgroundColor).toBe("var(--pf-color-accent)");
-  });
-
   it("maps text decoration toggles and alignment", () => {
     const style: BlockStyle = { bold: true, italic: true, underline: true, align: "center", textColorToken: "foreground" };
     const css = resolveBlockStyle(style);
@@ -131,5 +126,42 @@ describe("colorTokenToVar", () => {
     expect(colorTokenToVar("background")).toBe("var(--pf-color-bg)");
     expect(colorTokenToVar("foreground")).toBe("var(--pf-color-fg)");
     expect(colorTokenToVar(undefined)).toBeUndefined();
+  });
+});
+
+describe("flex layout fields", () => {
+  it("emits gap as a clamped px value", () => {
+    expect(resolveBlockStyle({ gap: 16 }).gap).toBe("16px");
+    expect(resolveBlockStyle({ gap: 0 }).gap).toBe("0px");
+    expect(resolveBlockStyle({ gap: 999 }).gap).toBe("96px"); // clamped to max
+    expect(resolveBlockStyle({ gap: -5 }).gap).toBe("0px");   // clamped to min
+  });
+
+  it("emits textAlign from alignItems so leaf blocks respond to the Align control", () => {
+    expect(resolveBlockStyle({ alignItems: "start" }).textAlign).toBe("left");
+    expect(resolveBlockStyle({ alignItems: "center" }).textAlign).toBe("center");
+    expect(resolveBlockStyle({ alignItems: "end" }).textAlign).toBe("right");
+    expect(resolveBlockStyle({ alignItems: "stretch" }).textAlign).toBeUndefined();
+  });
+
+  it("does NOT emit alignItems or justifyContent as CSS flex properties", () => {
+    const css = resolveBlockStyle({ alignItems: "center", justifyContent: "between" });
+    expect((css as Record<string, unknown>).alignItems).toBeUndefined();
+    expect((css as Record<string, unknown>).justifyContent).toBeUndefined();
+  });
+
+  it("exports FLEX_JUSTIFY_MAP with correct CSS values", () => {
+    expect(FLEX_JUSTIFY_MAP.start).toBe("flex-start");
+    expect(FLEX_JUSTIFY_MAP.between).toBe("space-between");
+    expect(FLEX_JUSTIFY_MAP.around).toBe("space-around");
+    expect(FLEX_JUSTIFY_MAP.center).toBe("center");
+    expect(FLEX_JUSTIFY_MAP.end).toBe("flex-end");
+  });
+
+  it("exports FLEX_ALIGN_MAP with correct CSS values", () => {
+    expect(FLEX_ALIGN_MAP.start).toBe("flex-start");
+    expect(FLEX_ALIGN_MAP.center).toBe("center");
+    expect(FLEX_ALIGN_MAP.end).toBe("flex-end");
+    expect(FLEX_ALIGN_MAP.stretch).toBe("stretch");
   });
 });

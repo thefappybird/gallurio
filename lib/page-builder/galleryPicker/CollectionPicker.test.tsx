@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { CollectionPicker } from "./CollectionPicker";
+import { __clearPickerDataCache } from "./usePickerData";
 
 // Mock fetch globally.
 const mockFetch = vi.fn();
@@ -16,6 +17,7 @@ function makePickerData(collections: PickerCollection[] = [], items: unknown[] =
 }
 
 beforeEach(() => {
+  __clearPickerDataCache();
   mockFetch.mockReset();
   // Default: empty workspace.
   mockFetch.mockResolvedValue(makePickerData());

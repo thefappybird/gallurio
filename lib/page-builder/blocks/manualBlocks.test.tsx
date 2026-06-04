@@ -215,6 +215,61 @@ describe("ButtonBlock", () => {
     const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.style.justifyContent).toBe("center");
   });
+
+  it("_style.alignItems overrides legacy align prop for justifyContent", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="left" _style={{ alignItems: "end" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.justifyContent).toBe("flex-end");
+  });
+
+  it("_style.alignItems center centers the button regardless of align prop", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="right" _style={{ alignItems: "center" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.justifyContent).toBe("center");
+  });
+
+  it("_style.alignItems start maps to flex-start for button justify", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ alignItems: "start" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.justifyContent).toBe("flex-start");
+  });
+
+  it("_style.alignItems stretch maps to flex-start (button fallback) for button justify", () => {
+    const { container } = render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ alignItems: "stretch" }} />
+    );
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.style.justifyContent).toBe("flex-start");
+  });
+
+  it("defaults the button fill to the accent var and label to white", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("var(--pf-color-accent)");
+    expect(a.style.color).toBe("#ffffff");
+  });
+
+  it("_style.buttonColorToken sets the button fill color", () => {
+    render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonColorToken: "primary" }} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("_style.textColorToken sets the button label color", () => {
+    render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ textColorToken: "foreground" }} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-fg)");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -356,6 +411,7 @@ describe("FlexBlock", () => {
     expect(slot.style.display).toBe("flex");
     expect(slot.style.flexDirection).toBe("column");
     expect(slot.style.justifyContent).toBe("center");
+    // align="center" falls back to ALIGN_MAP["center"] = "center"
     expect(slot.style.alignItems).toBe("center");
     expect(slot.style.flexWrap).toBe("nowrap");
     expect(slot.style.gap).toBe("24px");
@@ -368,6 +424,54 @@ describe("FlexBlock", () => {
     const slot = screen.getByTestId("slot");
     expect(slot.style.justifyContent).toBe("space-between");
     expect(slot.style.flexWrap).toBe("wrap");
+  });
+
+  it("defaults alignItems to stretch when no _style.alignItems is set (align='stretch')", () => {
+    render(
+      <FlexBlock direction="row" justify="start" align="stretch" wrap={false} gap={0} content={stubSlot} />
+    );
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.alignItems).toBe("stretch");
+  });
+
+  it("respects _style.alignItems when explicitly set", () => {
+    render(
+      <FlexBlock
+        direction="row"
+        justify="start"
+        align="start"
+        wrap={false}
+        gap={0}
+        content={stubSlot}
+        _style={{ alignItems: "center" }}
+      />
+    );
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.alignItems).toBe("center");
+  });
+
+  it("maps _style.alignItems end to flex-end", () => {
+    render(
+      <FlexBlock
+        direction="row"
+        justify="start"
+        align="start"
+        wrap={false}
+        gap={0}
+        content={stubSlot}
+        _style={{ alignItems: "end" }}
+      />
+    );
+    const slot = screen.getByTestId("slot");
+    expect(slot.style.alignItems).toBe("flex-end");
+  });
+
+  it("falls back to ALIGN_MAP[align] when _style.alignItems is absent", () => {
+    // align="center" is NOT the new default ("stretch"), so it must come from the legacy prop
+    const MockSlot: SlotComponent = (props) => <div data-testid="flex-inner" style={props?.style} />;
+    render(<FlexBlock direction="row" justify="start" align="center" wrap={false} gap={16} content={MockSlot} />);
+    const inner = screen.getByTestId("flex-inner");
+    expect(inner.style.alignItems).toBe("center");
   });
 });
 
@@ -392,5 +496,67 @@ describe("ContainerBlock", () => {
     render(<ContainerBlock content={stubSlot} />);
     const slot = screen.getByTestId("slot");
     expect(slot.style.maxWidth).toBe("80rem");
+  });
+});
+
+describe("ContainerBlock flex defaults", () => {
+  const MockSlot: SlotComponent = (props) => <div data-testid="slot-inner" style={props?.style} />;
+
+  it("renders the outer section with flexGrow: 1", () => {
+    const { container } = render(<ContainerBlock content={MockSlot} />);
+    const section = container.querySelector("section");
+    expect(section?.style.flexGrow).toBe("1");
+  });
+
+  it("uses _style.justifyContent over legacy alignY on the outer section", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} alignY="top" _style={{ justifyContent: "center" }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.justifyContent).toBe("center");
+  });
+
+  it("falls back to alignY when _style.justifyContent is absent", () => {
+    const { container } = render(<ContainerBlock content={MockSlot} alignY="bottom" />);
+    const section = container.querySelector("section");
+    expect(section?.style.justifyContent).toBe("flex-end");
+  });
+
+  it("inner content wrapper always has alignItems: stretch (children fill full width)", () => {
+    render(<ContainerBlock content={MockSlot} alignX="left" />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.alignItems).toBe("stretch");
+  });
+
+  it("maps _style.alignItems to textAlign on the inner content wrapper", () => {
+    render(
+      <ContainerBlock content={MockSlot} alignX="left" _style={{ alignItems: "end" }} />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.textAlign).toBe("right");
+    expect(inner.style.alignItems).toBe("stretch");
+  });
+
+  it("maps _style.alignItems center to textAlign center", () => {
+    render(
+      <ContainerBlock content={MockSlot} _style={{ alignItems: "center" }} />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.textAlign).toBe("center");
+  });
+
+  it("_style.alignItems stretch falls back to ax (alignX) for textAlign", () => {
+    render(
+      <ContainerBlock content={MockSlot} alignX="center" _style={{ alignItems: "stretch" }} />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    // "stretch" → ALIGN_TO_TEXT["stretch"] is undefined → falls back to ax = "center"
+    expect(inner.style.textAlign).toBe("center");
+  });
+
+  it("applies _style.gap to the inner content wrapper", () => {
+    render(<ContainerBlock content={MockSlot} _style={{ gap: 32 }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.gap).toBe("32px");
   });
 });
