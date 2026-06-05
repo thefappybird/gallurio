@@ -246,14 +246,17 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
     ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent")
     : "transparent";
   const buttonText = colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)";
-  const defaultBorder = hasColor ? "2px solid transparent" : "2px solid currentColor";
+
+  // Border resolved directly from _style so borderColor works independently of borderWidth.
+  const tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
+  const tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : "var(--pf-color-fg)");
+  const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
-  // Resolve all toolkit styles then split: positioning on wrapper, visuals on <a>.
+  // Resolve toolkit styles for margins, shadow, font family/size overrides.
   const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
 
-  // Wrapper carries only fit-content + positioning (selfAlign margin-auto + top/bottom spacing).
   const wrapperStyle: React.CSSProperties = {
     width: "fit-content",
     ...legacyMargin,
@@ -263,7 +266,6 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   if (resolved.marginTop !== undefined) wrapperStyle.marginTop = resolved.marginTop as string;
   if (resolved.marginBottom !== undefined) wrapperStyle.marginBottom = resolved.marginBottom as string;
 
-  // <a> gets all visual styles: border, radius, shadow, typography.
   const aStyle: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
@@ -273,29 +275,20 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
     padding: "0 1.75rem",
     letterSpacing: "0.04em",
     cursor: "pointer",
-    // Defaults (toolkit overrides below when set)
     fontFamily: "var(--pf-font-body)",
     fontSize: "0.9375rem",
-    fontWeight: 600,
-    textDecoration: "none",
-    borderRadius: "var(--pf-radius)",
-    border: defaultBorder,
-    // Colors
+    fontWeight: _style?.bold ? 700 : 600,
+    fontStyle: _style?.italic ? "italic" : "normal",
+    textDecoration: _style?.underline ? "underline" : "none",
+    borderStyle: "solid",
+    borderWidth: tkBorderWidth,
+    borderColor: tkBorderColor,
+    borderRadius: tkBorderRadius,
     backgroundColor: buttonBg,
     color: buttonText,
-    // Toolkit visual overrides
-    ...(resolved.borderStyle && {
-      borderStyle: resolved.borderStyle as string,
-      borderWidth: resolved.borderWidth as string,
-      borderColor: resolved.borderColor as string,
-    }),
-    ...(resolved.borderRadius && { borderRadius: resolved.borderRadius as string }),
     ...(resolved.boxShadow && { boxShadow: resolved.boxShadow as string }),
     ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
     ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
-    ...(resolved.fontWeight && { fontWeight: resolved.fontWeight }),
-    ...(resolved.fontStyle && { fontStyle: resolved.fontStyle as string }),
-    ...(resolved.textDecoration && { textDecoration: resolved.textDecoration as string }),
   };
 
   return (

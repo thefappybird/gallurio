@@ -79,6 +79,7 @@ const CONTAINER_TYPES = new Set([
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
+const NO_FRAME_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer"]);
 const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
 const FLEX_CONTAINER_BLOCKS = new Set([
   "Container",
@@ -447,7 +448,7 @@ function DesignTab({
 }) {
   const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const isButton = blockType === "Button";
-  const showFrame = !TEXT_ONLY_BLOCKS.has(blockType);
+  const showFrame = !NO_FRAME_BLOCKS.has(blockType);
 
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight

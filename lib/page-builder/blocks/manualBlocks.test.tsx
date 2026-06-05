@@ -253,11 +253,11 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.marginRight).toBe("auto");
   });
 
-  it("defaults to transparent fill and currentColor border when no buttonColorToken is set", () => {
+  it("defaults to transparent fill and pf-color-fg border when no buttonColorToken is set", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.backgroundColor).toBe("transparent");
-    expect(a.style.border.toLowerCase()).toContain("currentcolor");
+    expect(a.style.borderColor).toBe("var(--pf-color-fg)");
   });
 
   it("_style.buttonColorToken sets the button fill color", () => {
@@ -296,7 +296,7 @@ describe("ButtonBlock", () => {
 
   it("_style.borderWidth applies border to the <a> not the wrapper div", () => {
     render(
-      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ borderWidth: "2px", borderStyle: "solid", borderColor: "#ff0000" }} />
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ borderWidth: 2, borderColorToken: "#ff0000" }} />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
     const wrapper = a.parentElement as HTMLElement;
@@ -318,6 +318,14 @@ describe("ButtonBlock", () => {
     const wrapper = a.parentElement as HTMLElement;
     expect(a.style.boxShadow).not.toBe("");
     expect(wrapper.style.boxShadow).toBe("");
+  });
+
+  it("_style.borderColorToken changes border color independently of borderWidth", () => {
+    render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ borderColorToken: "primary" }} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
   });
 
   it("_style.bold does not apply fontWeight to the wrapper div", () => {
