@@ -62,7 +62,7 @@ export type BlockStyle = {
   paddingBottom?: CssLength;
   paddingLeft?: CssLength;
   // Position + size of the block itself
-  selfAlign?: SelfAlign; // horizontal placement via align-self in the flex-col page root
+  selfAlign?: SelfAlign; // horizontal placement via margin-auto (visible when width < container)
   width?: CssLength;
   height?: CssLength;
   // Grid placement when the block is a child of a Columns/grid container
@@ -248,14 +248,19 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.width) css.width = style.width;
   if (style.height) css.height = style.height;
 
-  // Horizontal self-placement via align-self in the flex-col page root.
-  if (style.selfAlign) {
-    const SELF_ALIGN_MAP: Record<SelfAlign, string> = {
-      left: "flex-start",
-      center: "center",
-      right: "flex-end",
-    };
-    css.alignSelf = SELF_ALIGN_MAP[style.selfAlign];
+  // Horizontal self-placement via margin-auto. Works everywhere (editor canvas,
+  // production page) without needing a flex parent. Only has visual effect
+  // when the block's width is less than the container (e.g. explicit width set,
+  // or Button whose wrapper is always fit-content).
+  if (style.selfAlign === "center") {
+    css.marginLeft = "auto";
+    css.marginRight = "auto";
+  } else if (style.selfAlign === "right") {
+    css.marginLeft = "auto";
+    css.marginRight = "0";
+  } else if (style.selfAlign === "left") {
+    css.marginLeft = "0";
+    css.marginRight = "auto";
   }
 
   // Grid placement when this block is a child of a Columns/grid container.

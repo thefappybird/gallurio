@@ -199,28 +199,31 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.width).toBe("fit-content");
   });
 
-  it("renders left-aligned button (alignSelf flex-start)", () => {
+  it("renders left-aligned button (marginRight auto)", () => {
     const { container } = render(
       <ButtonBlock label="Left" action="open-contact" align="left" />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("flex-start");
+    expect(wrapper.style.marginLeft).toBe("0px");
+    expect(wrapper.style.marginRight).toBe("auto");
   });
 
-  it("renders right-aligned button (alignSelf flex-end)", () => {
+  it("renders right-aligned button (marginLeft auto)", () => {
     const { container } = render(
       <ButtonBlock label="Right" action="open-contact" align="right" />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("flex-end");
+    expect(wrapper.style.marginLeft).toBe("auto");
+    expect(wrapper.style.marginRight).toBe("0px");
   });
 
-  it("renders center-aligned button (alignSelf center)", () => {
+  it("renders center-aligned button (both margins auto)", () => {
     const { container } = render(
       <ButtonBlock label="Center" action="open-contact" align="center" />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("center");
+    expect(wrapper.style.marginLeft).toBe("auto");
+    expect(wrapper.style.marginRight).toBe("auto");
   });
 
   it("_style.selfAlign center overrides legacy align=left prop", () => {
@@ -228,7 +231,8 @@ describe("ButtonBlock", () => {
       <ButtonBlock label="Btn" action="open-contact" align="left" _style={{ selfAlign: "center" }} />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("center");
+    expect(wrapper.style.marginLeft).toBe("auto");
+    expect(wrapper.style.marginRight).toBe("auto");
   });
 
   it("_style.selfAlign right overrides legacy align=left prop", () => {
@@ -236,7 +240,8 @@ describe("ButtonBlock", () => {
       <ButtonBlock label="Btn" action="open-contact" align="left" _style={{ selfAlign: "right" }} />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("flex-end");
+    expect(wrapper.style.marginLeft).toBe("auto");
+    expect(wrapper.style.marginRight).toBe("0px");
   });
 
   it("_style.selfAlign left overrides legacy align=right prop", () => {
@@ -244,7 +249,8 @@ describe("ButtonBlock", () => {
       <ButtonBlock label="Btn" action="open-contact" align="right" _style={{ selfAlign: "left" }} />
     );
     const wrapper = container.firstChild as HTMLElement;
-    expect(wrapper.style.alignSelf).toBe("flex-start");
+    expect(wrapper.style.marginLeft).toBe("0px");
+    expect(wrapper.style.marginRight).toBe("auto");
   });
 
   it("defaults to transparent fill and currentColor border when no buttonColorToken is set", () => {

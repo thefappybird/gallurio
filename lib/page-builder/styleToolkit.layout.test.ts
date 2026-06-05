@@ -2,24 +2,28 @@ import { describe, it, expect } from "vitest";
 import { resolveBlockStyle, resolveBlockAttrs } from "./styleToolkit";
 
 describe("resolveBlockStyle — layout / spacing / sizing", () => {
-  it("selfAlign left sets alignSelf to flex-start", () => {
+  it("selfAlign left pins marginLeft 0, marginRight auto", () => {
     const css = resolveBlockStyle({ selfAlign: "left" });
-    expect(css.alignSelf).toBe("flex-start");
+    expect(css.marginLeft).toBe("0");
+    expect(css.marginRight).toBe("auto");
   });
 
-  it("selfAlign center sets alignSelf to center", () => {
+  it("selfAlign center sets margin auto on both sides", () => {
     const css = resolveBlockStyle({ selfAlign: "center" });
-    expect(css.alignSelf).toBe("center");
+    expect(css.marginLeft).toBe("auto");
+    expect(css.marginRight).toBe("auto");
   });
 
-  it("selfAlign right sets alignSelf to flex-end", () => {
+  it("selfAlign right pins left auto, right 0", () => {
     const css = resolveBlockStyle({ selfAlign: "right" });
-    expect(css.alignSelf).toBe("flex-end");
+    expect(css.marginLeft).toBe("auto");
+    expect(css.marginRight).toBe("0");
   });
 
-  it("omits alignSelf when selfAlign is not set", () => {
+  it("omits horizontal margins when selfAlign is not set", () => {
     const css = resolveBlockStyle({});
-    expect(css.alignSelf).toBeUndefined();
+    expect(css.marginLeft).toBeUndefined();
+    expect(css.marginRight).toBeUndefined();
   });
 
   it("applies unit-aware width/height verbatim", () => {

@@ -212,11 +212,11 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   render: ImageBlock,
 };
 
-// Maps the legacy `align` prop to align-self values for ButtonBlock wrapper.
-const BUTTON_ALIGN_TO_SELF: Record<string, string> = {
-  left: "flex-start",
-  center: "center",
-  right: "flex-end",
+// Maps the legacy `align` prop to margin-auto values for ButtonBlock wrapper.
+const BUTTON_ALIGN_TO_MARGIN: Record<string, { marginLeft: string; marginRight: string }> = {
+  left:   { marginLeft: "0",    marginRight: "auto" },
+  center: { marginLeft: "auto", marginRight: "auto" },
+  right:  { marginLeft: "auto", marginRight: "0"    },
 };
 
 // ---------------------------------------------------------------------------
@@ -254,17 +254,18 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   const buttonText = colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)";
 
   // The wrapper is fit-content so the button only occupies its natural width.
-  // align-self positions the wrapper in the flex-col page root. The legacy
+  // Margin-auto positions the wrapper left/center/right — works in both the
+  // editor canvas and the public page without needing a flex parent. The legacy
   // `align` prop is a fallback for saved data predating selfAlign; toolkit
-  // _style.selfAlign overrides it via resolveBlockStyle.
-  const legacyAlignSelf = BUTTON_ALIGN_TO_SELF[align] ?? "flex-start";
+  // _style.selfAlign overrides the margins via resolveBlockStyle.
+  const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
   return (
     <div
       style={{
         padding: "1rem 1.5rem",
         width: "fit-content",
-        alignSelf: legacyAlignSelf,
+        ...legacyMargin,
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
