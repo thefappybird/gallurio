@@ -449,6 +449,7 @@ function DesignTab({
   const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
+  const showPadding = FLEX_CONTAINER_BLOCKS.has(blockType);
 
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight
@@ -586,48 +587,50 @@ function DesignTab({
         </div>
       )}
 
-      {/* Padding */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Padding
-          </span>
-          <button
-            type="button"
-            aria-label="Padding advanced options"
-            onClick={() => setPaddingAdvanced((a) => !a)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            Advanced
-            {paddingAdvanced ? (
-              <ChevronUp className="size-3" aria-hidden />
-            ) : (
-              <ChevronDown className="size-3" aria-hidden />
-            )}
-          </button>
+      {/* Padding — containers only */}
+      {showPadding && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Padding
+            </span>
+            <button
+              type="button"
+              aria-label="Padding advanced options"
+              onClick={() => setPaddingAdvanced((a) => !a)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              Advanced
+              {paddingAdvanced ? (
+                <ChevronUp className="size-3" aria-hidden />
+              ) : (
+                <ChevronDown className="size-3" aria-hidden />
+              )}
+            </button>
+          </div>
+          {paddingAdvanced ? (
+            <div className="flex flex-col gap-2">
+              <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
+              <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
+              <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
+              <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <DimensionInput
+                label="Horizontal (X)"
+                value={paddingX}
+                onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
+              />
+              <DimensionInput
+                label="Vertical (Y)"
+                value={paddingY}
+                onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
+              />
+            </div>
+          )}
         </div>
-        {paddingAdvanced ? (
-          <div className="grid grid-cols-2 gap-2">
-            <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
-            <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
-            <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
-            <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <DimensionInput
-              label="Horizontal (X)"
-              value={paddingX}
-              onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
-            />
-            <DimensionInput
-              label="Vertical (Y)"
-              value={paddingY}
-              onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
-            />
-          </div>
-        )}
-      </div>
+      )}
 
 
       {/* Animations */}

@@ -60,18 +60,10 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(false);
   });
 
-  it("Advanced padding drawer shows 4 per-side inputs when opened", () => {
+  it("Design tab does not show Padding for non-container blocks (standalone blockType is '')", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Drawer is closed by default — only Padding section shows X/Y inputs
-    expect(screen.getByText("Horizontal (X)")).toBeTruthy();
-    expect(screen.getByText("Vertical (Y)")).toBeTruthy();
-    // Open the Padding advanced drawer
-    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
-    expect(screen.getByText("Top")).toBeTruthy();
-    expect(screen.getByText("Right")).toBeTruthy();
-    expect(screen.getByText("Bottom")).toBeTruthy();
-    expect(screen.getByText("Left")).toBeTruthy();
+    expect(screen.queryByText("Padding")).toBeNull();
   });
 
   it("Layout tab shows Align and Justify when no fieldId (no Puck provider)", () => {
