@@ -28,6 +28,7 @@ import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-f
 import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR } from "@/lib/bookings/status-style";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import type { BookingStatus } from "@/lib/validators/booking";
 
 export type OverflowEvent = {
   type: "overflow";
@@ -40,8 +41,6 @@ export type OverflowEvent = {
 
 const locales = {} as const;
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
-
-type BookingStatus = "inquiry" | "booked" | "completed" | "cancelled";
 
 export type CalendarEvent = {
   /** Unique per rendered candle: `<bookingId>_s<sessionIdx>_<YYYY-MM-DD>`. */
@@ -215,7 +214,7 @@ function OverflowPopoverRow({
   const ctx = useContext(CalendarToolbarCtx);
   const tStatus = useTranslations("app.bookings.statusValues");
   const timeMode = useTimeFormat();
-  const bg = ctx ? ctx.eventColor(e) : STATUS_COLOR[e.status];
+  const bg = ctx ? ctx.eventColor(e) : (STATUS_COLOR[e.status] ?? "var(--muted)");
   const clientDisplay = e.clientName || "—";
   const timeRange = formatTimeRange(e.sessionStartAt, e.sessionEndAt, timeMode);
   return (
@@ -265,9 +264,9 @@ function OverflowPopoverRow({
         <span
           aria-hidden
           className="size-1.5 shrink-0"
-          style={{ backgroundColor: STATUS_COLOR[e.status] }}
+          style={{ backgroundColor: STATUS_COLOR[e.status] ?? "var(--muted)" }}
         />
-        {tStatus(e.status)}
+        {typeof tStatus.has === "function" && !tStatus.has(e.status) ? e.status : tStatus(e.status)}
       </span>
     </button>
   );
@@ -294,7 +293,7 @@ function StatusPill({ status, label }: { status: BookingStatus; label: string })
       <span
         aria-hidden
         className="size-1.5 shrink-0"
-        style={{ backgroundColor: STATUS_COLOR[status] }}
+        style={{ backgroundColor: STATUS_COLOR[status] ?? "var(--muted)" }}
       />
       <span className="truncate">{label}</span>
     </span>
@@ -354,7 +353,7 @@ export function MonthBookingEvent({
   }
 
   const booking = ev as CalendarEvent;
-  const bg = ctx ? ctx.eventColor(booking) : STATUS_COLOR[booking.status];
+  const bg = ctx ? ctx.eventColor(booking) : (STATUS_COLOR[booking.status] ?? "var(--muted)");
   const clientDisplay = booking.clientName || "—";
   const timeRange = formatTimeRange(booking.start, booking.end, timeMode);
   const isPast = booking.end < new Date();
@@ -387,7 +386,7 @@ export function MonthBookingEvent({
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
       {showPastVisual && <PastPill label={t("past")} />}
-      <StatusPill status={booking.status} label={tStatus(booking.status)} />
+      <StatusPill status={booking.status} label={typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status)} />
     </span>
   );
 }
@@ -403,7 +402,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
   const ev = event as CalendarEvent;
-  const bg = ctx ? ctx.eventColor(ev) : STATUS_COLOR[ev.status];
+  const bg = ctx ? ctx.eventColor(ev) : (STATUS_COLOR[ev.status] ?? "var(--muted)");
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
@@ -451,7 +450,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </>
       )}
       {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
-      {!isContinuation && <StatusPill status={ev.status} label={tStatus(ev.status)} />}
+      {!isContinuation && <StatusPill status={ev.status} label={typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status)} />}
     </div>
   );
 }
@@ -809,7 +808,7 @@ export function BookingCalendar({
     if (colorMode === "team") {
       return (ev.teamId && teamColorMap?.[ev.teamId]) || INACTIVE_TEAM_COLOR;
     }
-    return STATUS_COLOR[ev.status];
+    return STATUS_COLOR[ev.status] ?? "var(--muted)";
   }
   // Uncontrolled fallback when the parent doesn't pass `view` / `date` props.
   // When controlled, these `useState` calls become inert (we read viewProp/dateProp instead).

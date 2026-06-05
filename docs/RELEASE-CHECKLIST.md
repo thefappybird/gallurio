@@ -130,4 +130,12 @@ The booking location picker (`components/ui/location-picker.tsx`) geocodes via O
 - [ ] If staying on Nominatim, verify the production domain sends an identifiable `Referer` (browsers do this automatically) and consider proxying through a server route to attach a descriptive `User-Agent`.
 - [ ] Map tiles load from `tile.openstreetmap.org` — same fair-use considerations apply; budget a tile provider if traffic grows.
 
+## 12. Data migrations
+
+- [ ] **Backfill removed `quoted` booking status.** The `quoted` booking status was removed (enum is now `inquiry | booked | completed | cancelled`). Any existing `Booking` document with `status: "quoted"` will now FAIL Mongoose enum validation on its next `.save()`. Before/at deploy, run a one-time backfill against production:
+  ```js
+  db.bookings.updateMany({ status: "quoted" }, { $set: { status: "inquiry" } })
+  ```
+  Target is **`inquiry`** (a `quoted` record was an unconfirmed deal — demoting it to an active lead is safer than fabricating a confirmed `booked`). Confirm the desired target before running. Dev/staging databases are cleaned by `pnpm seed`, so this only matters for any DB that holds real data.
+
 When everything in this file is checked, ship it.

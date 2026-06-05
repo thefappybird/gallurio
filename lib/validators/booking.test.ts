@@ -5,6 +5,7 @@ import {
   bookingImportRowSchema,
   bookingSessionSchema,
   bookingClientSchema,
+  BOOKING_STATUSES,
   EDITABLE_KEYS,
 } from "./booking";
 
@@ -318,5 +319,28 @@ describe("bookingImportRowSchema", () => {
     });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.clientEmail).toBe("emma@example.com");
+  });
+});
+
+describe("BOOKING_STATUSES — quoted removal regression", () => {
+  it("does not include the removed 'quoted' status", () => {
+    expect(BOOKING_STATUSES).not.toContain("quoted");
+  });
+
+  it("contains exactly the four expected statuses in order", () => {
+    expect([...BOOKING_STATUSES]).toEqual(["inquiry", "booked", "completed", "cancelled"]);
+  });
+
+  it("bookingCreateSchema rejects status: 'quoted'", () => {
+    const result = bookingCreateSchema.safeParse({
+      ...validCreate,
+      status: "quoted",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("bookingPatchSchema rejects status: 'quoted'", () => {
+    const result = bookingPatchSchema.safeParse({ status: "quoted" });
+    expect(result.success).toBe(false);
   });
 });

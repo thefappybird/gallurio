@@ -34,6 +34,7 @@ import {
   TEAM_COLOR_PALETTE,
 } from "./models";
 import { recordBookingForClient } from "./clientTransactions";
+import type { BookingStatus } from "@/lib/validators/booking";
 
 const DEMO_WORKSPACES = [
   {
@@ -74,7 +75,6 @@ const CLIENT_NAMES = [
 ];
 
 const EVENT_TYPES = ["wedding", "corporate", "portrait", "engagement", "anniversary", "other"];
-type BookingStatus = "inquiry" | "booked" | "completed" | "cancelled";
 
 function mulberry32(seed: number) {
   let t = seed >>> 0;
