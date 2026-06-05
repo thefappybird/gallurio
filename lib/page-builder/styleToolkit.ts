@@ -57,6 +57,8 @@ export type BlockStyle = {
   // Spacing — unit-aware (px/%).
   marginTop?: CssLength;
   marginBottom?: CssLength;
+  marginLeft?: CssLength;
+  marginRight?: CssLength;
   paddingTop?: CssLength;
   paddingRight?: CssLength;
   paddingBottom?: CssLength;
@@ -245,6 +247,8 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.paddingLeft) css.paddingLeft = style.paddingLeft;
   if (style.marginTop) css.marginTop = style.marginTop;
   if (style.marginBottom) css.marginBottom = style.marginBottom;
+  if (style.marginLeft) css.marginLeft = style.marginLeft;
+  if (style.marginRight) css.marginRight = style.marginRight;
   if (style.width) css.width = style.width;
   if (style.height) css.height = style.height;
 

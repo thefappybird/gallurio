@@ -8,7 +8,9 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { STYLE_COLOR_TOKENS, type StyleColorToken } from "./styleToolkit";
@@ -24,6 +26,21 @@ export const COLOR_LABEL: Record<StyleColorToken, string> = {
 
 export const toolbarButtonBase =
   "inline-flex size-9 cursor-pointer items-center justify-center border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+/** Small reset icon button — shared by DimensionInput, NumberInputRow, and select rows. */
+export function ResetButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`Reset ${label}`}
+      title={`Reset ${label}`}
+      className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+    >
+      <RotateCcw className="size-3" aria-hidden />
+    </button>
+  );
+}
 
 export function ToolbarToggle({
   active,
@@ -80,7 +97,7 @@ export function ToolbarPopover({
   );
 }
 
-/** A row of the 5 brand-palette swatches (+ optional "Reset" + custom hex picker). */
+/** A row of the 5 brand-palette swatches (+ optional reset icon + custom hex picker). */
 export function ColorSwatchRow({
   value,
   onChange,
@@ -118,9 +135,11 @@ export function ColorSwatchRow({
         <button
           type="button"
           onClick={() => onChange(undefined)}
-          className="h-7 cursor-pointer border border-border px-2 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          title="Reset color"
+          aria-label="Reset color"
+          className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          Reset
+          <RotateCcw className="size-3.5" aria-hidden />
         </button>
       )}
       {/* Custom color picker — rightmost option, not saved to theme */}
@@ -160,8 +179,8 @@ export function ColorSwatchRow({
 
 /**
  * A labelled CSS-length input: number field + unit select (px / %).
- * Parses an incoming string like "320px" or "50%" into number + unit.
- * Composes back to "${n}${unit}" on change; `undefined` when the number is cleared.
+ * Two-column layout: label left, input+unit+reset right.
+ * Unit persists independently — clearing the number doesn't reset px/%.
  * Clamps to [min,max] on blur when those props are supplied.
  */
 export function DimensionInput({
@@ -177,21 +196,18 @@ export function DimensionInput({
   min?: number;
   max?: number;
 }) {
-  // Parse "320px" → {n:320, unit:"px"}, "50%" → {n:50, unit:"%"}.
   function parse(raw: string | undefined): { n: string; unit: "px" | "%" } {
     if (!raw) return { n: "", unit: "px" };
-    if (raw.endsWith("%")) {
-      const num = raw.slice(0, -1);
-      return { n: num, unit: "%" };
-    }
-    if (raw.endsWith("px")) {
-      const num = raw.slice(0, -2);
-      return { n: num, unit: "px" };
-    }
+    if (raw.endsWith("%")) return { n: raw.slice(0, -1), unit: "%" };
+    if (raw.endsWith("px")) return { n: raw.slice(0, -2), unit: "px" };
     return { n: raw, unit: "px" };
   }
 
-  const { n, unit } = parse(value);
+  // Persist the unit independently — clearing the number value must not reset the unit.
+  const [localUnit, setLocalUnit] = useState<"px" | "%">(() => parse(value).unit);
+  // When value is defined, reflect its actual unit; when undefined, keep the last known unit.
+  const activeUnit = value ? parse(value).unit : localUnit;
+  const n = value ? parse(value).n : "";
 
   function compose(numStr: string, u: "px" | "%"): string | undefined {
     if (numStr === "") return undefined;
@@ -201,61 +217,58 @@ export function DimensionInput({
   }
 
   function handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.value;
-    onChange(compose(raw, unit));
+    onChange(compose(e.target.value, activeUnit));
   }
 
   function handleUnitChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const u = e.target.value as "px" | "%";
+    setLocalUnit(u);
     onChange(compose(n, u));
   }
 
   function handleBlur(e: React.FocusEvent<HTMLInputElement>) {
     const raw = e.target.value;
-    if (raw === "") {
-      onChange(undefined);
-      return;
-    }
+    if (raw === "") { onChange(undefined); return; }
     let num = Number(raw);
-    if (!Number.isFinite(num)) {
-      onChange(undefined);
-      return;
-    }
+    if (!Number.isFinite(num)) { onChange(undefined); return; }
     if (min !== undefined && num < min) num = min;
     if (max !== undefined && num > max) num = max;
-    onChange(`${num}${unit}`);
+    onChange(`${num}${activeUnit}`);
   }
 
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span>{label}</span>
-      <span className="flex">
-        <input
-          type="number"
-          inputMode="numeric"
-          value={n}
-          onChange={handleNumberChange}
-          onBlur={handleBlur}
-          className="h-9 min-w-0 flex-1 border border-border bg-background pl-2 pr-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-        <select
-          value={unit}
-          onChange={handleUnitChange}
-          aria-label={`${label} unit`}
-          className="h-9 cursor-pointer border border-l-0 border-border bg-background px-1 text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <option value="px">px</option>
-          <option value="%">%</option>
-        </select>
-      </span>
-    </label>
+    <div className="flex items-center justify-between gap-2">
+      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="flex">
+          <input
+            type="number"
+            inputMode="numeric"
+            value={n}
+            onChange={handleNumberChange}
+            onBlur={handleBlur}
+            className="h-7 w-14 min-w-0 border border-border bg-background pl-2 pr-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <select
+            value={activeUnit}
+            onChange={handleUnitChange}
+            aria-label={`${label} unit`}
+            className="h-7 cursor-pointer border border-l-0 border-border bg-background px-1 text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="px">px</option>
+            <option value="%">%</option>
+          </select>
+        </span>
+        <ResetButton onClick={() => onChange(undefined)} label={label} />
+      </div>
+    </div>
   );
 }
 
 /**
- * A labelled NUMBER input with steppers (replaces the old range sliders).
- * Clamps to [min,max] on blur so a hostile/empty value can't produce an absurd
- * layout. Empty input → `undefined` (so the block falls back to its default).
+ * A labelled NUMBER input with steppers.
+ * Two-column layout: label left, input+suffix+reset right.
+ * Clamps to [min,max] on blur. Empty input → `undefined` (block falls back to default).
  */
 export function NumberInputRow({
   label,
@@ -275,48 +288,44 @@ export function NumberInputRow({
   onChange: (next: number | undefined) => void;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span>{label}</span>
-      {/* The unit (e.g. "px") sits in a dedicated cell on the input's right edge. */}
-      <span className="relative block">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          step={step}
-          value={value ?? ""}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") {
-              onChange(undefined);
-              return;
-            }
-            const n = Number(raw);
-            if (Number.isFinite(n)) onChange(n);
-          }}
-          onBlur={(e) => {
-            const raw = e.target.value;
-            if (raw === "") return;
-            const n = Number(raw);
-            if (!Number.isFinite(n)) {
-              onChange(undefined);
-              return;
-            }
-            onChange(Math.min(max, Math.max(min, n)));
-          }}
-          className={cn(
-            "h-9 w-full border border-border bg-background pl-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            suffix ? "pr-10" : "pr-2"
+    <div className="flex items-center justify-between gap-2">
+      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className="relative block">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={min}
+            max={max}
+            step={step}
+            value={value ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw === "") { onChange(undefined); return; }
+              const n = Number(raw);
+              if (Number.isFinite(n)) onChange(n);
+            }}
+            onBlur={(e) => {
+              const raw = e.target.value;
+              if (raw === "") return;
+              const n = Number(raw);
+              if (!Number.isFinite(n)) { onChange(undefined); return; }
+              onChange(Math.min(max, Math.max(min, n)));
+            }}
+            className={cn(
+              "h-7 w-16 border border-border bg-background pl-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              suffix ? "pr-8" : "pr-2"
+            )}
+          />
+          {suffix && (
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center border-l border-border px-1.5 text-xs text-muted-foreground">
+              {suffix}
+            </span>
           )}
-        />
-        {suffix && (
-          <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center border-l border-border px-2 text-xs text-muted-foreground">
-            {suffix}
-          </span>
-        )}
-      </span>
-    </label>
+        </span>
+        <ResetButton onClick={() => onChange(undefined)} label={label} />
+      </div>
+    </div>
   );
 }
 
@@ -338,7 +347,7 @@ export function IconRow<T extends string>({
   onChange: (v: T | undefined) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex items-center justify-between gap-2">
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-center gap-1.5">
         {options.map(({ value: v, label: l, Icon }) => (

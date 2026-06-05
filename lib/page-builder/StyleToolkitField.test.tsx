@@ -63,11 +63,11 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("Advanced padding drawer shows 4 per-side inputs when opened", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Drawer is closed by default — X/Y inputs visible
-    expect(screen.getByText("Horizontal (X)")).toBeTruthy();
-    expect(screen.getByText("Vertical (Y)")).toBeTruthy();
-    // Open the drawer
-    fireEvent.click(screen.getByRole("button", { name: /Advanced/i }));
+    // Drawer is closed by default — X/Y inputs visible (both Padding and Margin show them)
+    expect(screen.getAllByText("Horizontal (X)").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Vertical (Y)").length).toBeGreaterThan(0);
+    // Open the Padding advanced drawer specifically
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
     expect(screen.getByText("Top")).toBeTruthy();
     expect(screen.getByText("Right")).toBeTruthy();
     expect(screen.getByText("Bottom")).toBeTruthy();

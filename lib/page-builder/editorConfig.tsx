@@ -28,6 +28,7 @@ import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { StyleToolkitField } from "./StyleToolkitField";
+import { NumberInputRow } from "./toolbarPrimitives";
 import { resolveBlockStyle, asText, type BlockStyle } from "./styleToolkit";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 // Preset defaultProps
@@ -271,7 +272,7 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
 // The double cast is required because Puck's resolveFields return type is a strict
 // branded Fields<T> — we need to go through unknown to avoid the structural mismatch.
 function resolveContainerFields(_data: unknown, { fields }: { fields: Record<string, unknown> }) {
-  const { backgroundImagePublicId: _b, overlayOpacity: _o, alignX: _ax, alignY: _ay, ...rest } = fields;
+  const { backgroundImagePublicId: _b, overlayOpacity: _o, alignX: _ax, alignY: _ay, minHeight: _mh, ...rest } = fields;
   return rest;
 }
 const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
@@ -547,6 +548,10 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
       ],
     } as Field<boolean>,
   },
+  resolveFields: (_data, { fields }) => {
+    // All show* toggles are managed by the ContactDetailsPanel in StyleToolkitField
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+  },
   render: ({ _style, showEmail, showPhone, showAddress, showSocials }) => (
     <Preview
       label="Contact Details"
@@ -621,9 +626,8 @@ const image: ComponentConfig<ImageBlockProps> = {
     },
   },
   resolveFields: (_data, { fields }) => {
-    const f: Record<string, unknown> = { ...fields };
-    delete f.imageUrl;
-    return f as unknown as typeof fields;
+    // imagePublicId, imageUrl, alt, and fit are all managed by the ImagePanel in StyleToolkitField
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
   render: ImageBlock,
 };
@@ -664,7 +668,20 @@ const spacer: ComponentConfig<SpacerBlockProps> = {
   label: "Spacer",
   defaultProps: spacerDefaultProps,
   fields: {
-    height: { type: "number", label: "Height (px)", min: 4, max: 400 } as Field<number>,
+    height: {
+      type: "custom",
+      label: "Height",
+      render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+        <NumberInputRow
+          label="Height"
+          value={value as number | undefined}
+          min={4}
+          max={400}
+          suffix="px"
+          onChange={onChange as (v: number | undefined) => void}
+        />
+      ),
+    } as unknown as Field<number>,
   },
   render: SpacerBlock,
 };
@@ -674,7 +691,11 @@ const divider: ComponentConfig<DividerBlockProps> = {
   defaultProps: dividerDefaultProps,
   fields: {
     _style: styleField,
-    thickness: { type: "number", label: "Thickness (px)", min: 1, max: 12 } as Field<number>,
+    thickness: { type: "number", label: "Thickness (px)", min: 1, max: 12, visible: false } as unknown as Field<number>,
+  },
+  resolveFields: (_data, { fields }) => {
+    // thickness is managed by the DividerPanel in StyleToolkitField
+    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
   render: DividerBlock,
 };

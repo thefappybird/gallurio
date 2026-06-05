@@ -40,6 +40,24 @@ describe("resolveBlockStyle — layout / spacing / sizing", () => {
     expect(css.marginBottom).toBe("10px");
   });
 
+  it("applies explicit marginLeft and marginRight without selfAlign", () => {
+    const css = resolveBlockStyle({ marginLeft: "16px", marginRight: "24px" });
+    expect(css.marginLeft).toBe("16px");
+    expect(css.marginRight).toBe("24px");
+  });
+
+  it("selfAlign overrides explicit marginLeft/marginRight", () => {
+    const css = resolveBlockStyle({ marginLeft: "16px", marginRight: "24px", selfAlign: "center" });
+    expect(css.marginLeft).toBe("auto");
+    expect(css.marginRight).toBe("auto");
+  });
+
+  it("selfAlign right overrides explicit marginLeft", () => {
+    const css = resolveBlockStyle({ marginLeft: "16px", selfAlign: "right" });
+    expect(css.marginLeft).toBe("auto");
+    expect(css.marginRight).toBe("0");
+  });
+
   it("maps colSpan/rowSpan to grid span (and ignores span of 1)", () => {
     expect(resolveBlockStyle({ colSpan: 2 }).gridColumn).toBe("span 2");
     expect(resolveBlockStyle({ rowSpan: 3 }).gridRow).toBe("span 3");
