@@ -397,6 +397,30 @@ function ContentInputs({
       </div>
     );
   }
+  if (type === "Columns") {
+    return (
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
+        <div className="flex items-center gap-1.5">
+          {([2, 3] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={(props.columns as number) === v}
+              onClick={() => setProp("columns", v)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                (props.columns as number) === v &&
+                  "bg-foreground text-background hover:bg-foreground"
+              )}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
   return null;
 }
 
@@ -694,9 +718,11 @@ function DesignTab({
 function ColSpanRowSpanControls({
   s,
   set,
+  parentColumnsCount = 12,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
+  parentColumnsCount?: number;
 }) {
   return (
     <>
@@ -704,7 +730,7 @@ function ColSpanRowSpanControls({
         label="Column span"
         value={s.colSpan}
         min={1}
-        max={12}
+        max={parentColumnsCount}
         suffix="cols"
         onChange={(v) => set({ colSpan: v })}
       />
@@ -712,7 +738,7 @@ function ColSpanRowSpanControls({
         label="Row span"
         value={s.rowSpan}
         min={1}
-        max={12}
+        max={parentColumnsCount}
         suffix="rows"
         onChange={(v) => set({ rowSpan: v })}
       />
@@ -888,6 +914,7 @@ function LayoutTabBody({
   blockType = "",
   p,
   setProp,
+  parentColumnsCount = 12,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
@@ -896,6 +923,7 @@ function LayoutTabBody({
   blockType?: string;
   p?: Record<string, unknown>;
   setProp?: (key: string, val: unknown) => void;
+  parentColumnsCount?: number;
 }) {
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
@@ -989,7 +1017,7 @@ function LayoutTabBody({
         </div>
       )}
       {isGridChild ? (
-        <ColSpanRowSpanControls s={s} set={set} />
+        <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} />
       ) : (
         <>
           <IconRow
@@ -1157,6 +1185,16 @@ function BlockAwarePanel({
     return getItemById(parentId)?.type === "Columns";
   })();
 
+  const parentColumnsCount = (() => {
+    if (!selectedItem) return 12;
+    const sel = getSelectorForId(selectedItem.props.id as string);
+    if (!sel?.zone) return 12;
+    const parentId = sel.zone.split(":")[0];
+    const parent = getItemById(parentId);
+    if (parent?.type === "Columns") return (parent.props.columns as number) ?? 2;
+    return 12;
+  })();
+
   function setProp(key: string, val: unknown) {
     if (!selectedItem) return;
     const id = selectedItem.props?.id;
@@ -1207,6 +1245,7 @@ function BlockAwarePanel({
           blockType={type}
           p={p}
           setProp={setProp}
+          parentColumnsCount={parentColumnsCount}
         />
       )}
     </div>

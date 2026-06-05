@@ -58,12 +58,13 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
   const textContent = asText(text);
   const Tag = level;
   return (
-    // Base color/font on the wrapper so the `_style` toolkit (textColorToken,
+    // Base font on the wrapper so the `_style` toolkit (textColorToken,
     // fontFamily, fontSize…) can override it; the inner tag inherits.
+    // Color is intentionally omitted — it inherits from the root wrapper
+    // (which sets var(--pf-color-fg)) or from a parent ContainerBlock.
     <div
       style={{
         fontFamily: "var(--pf-font-body)",
-        color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -119,8 +120,6 @@ export function TextBlock({ _style, text }: TextBlockProps) {
     <div
       style={{
         fontFamily: "var(--pf-font-body)",
-        fontSize: "1rem",
-        color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -239,6 +238,7 @@ export const buttonDefaultProps: ButtonBlockProps = {
   label: "Get in Touch",
   action: "open-contact",
   align: "center",
+  size: "md",
 };
 
 export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
@@ -325,6 +325,15 @@ export const buttonBlockConfig: ComponentConfig<ButtonBlockProps> = {
         { label: "Right", value: "right" },
       ],
     },
+    size: {
+      type: "select",
+      label: "Size",
+      options: [
+        { label: "Small", value: "sm" },
+        { label: "Medium", value: "md" },
+        { label: "Large", value: "lg" },
+      ],
+    } as Field<"sm" | "md" | "lg">,
   },
   render: ButtonBlock,
 };
@@ -396,7 +405,16 @@ export type ColumnsBlockProps = {
   content: Slot;
 };
 
-export const columnsDefaultProps: ColumnsBlockProps = { columns: 2, content: [] };
+export const columnsDefaultProps: ColumnsBlockProps = {
+  columns: 2,
+  content: [],
+  _style: {
+    paddingTop: "1rem",
+    paddingRight: "1.5rem",
+    paddingBottom: "1rem",
+    paddingLeft: "1.5rem",
+  },
+};
 
 export function ColumnsBlock({
   _style,
@@ -428,14 +446,6 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   defaultProps: columnsDefaultProps,
   fields: {
     _style: productionStyleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,
@@ -469,6 +479,12 @@ export const containerDefaultProps: ContainerBlockProps = {
   alignX: "left",
   alignY: "top",
   content: [],
+  _style: {
+    paddingTop: "1.5rem",
+    paddingRight: "1.5rem",
+    paddingBottom: "1.5rem",
+    paddingLeft: "1.5rem",
+  },
 };
 
 const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
@@ -519,8 +535,11 @@ export function ContainerBlock({
 
   // Horizontal TEXT alignment inside child blocks. Children always stretch to full
   // width so that text-align, button justify, etc. have the full container width to
-  // work within. _style.alignItems maps to text-align semantics (start→left, end→right).
-  const effectiveTextAlign = s.alignItems
+  // work within. _style.align (typography toolbar) takes highest priority, then
+  // _style.alignItems maps to text-align semantics (start→left, end→right).
+  const effectiveTextAlign = s.align
+    ? s.align
+    : s.alignItems
     ? (ALIGN_TO_TEXT[s.alignItems] ?? ax)
     : ax;
 

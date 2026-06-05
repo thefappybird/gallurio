@@ -711,17 +711,17 @@ const divider: ComponentConfig<DividerBlockProps> = {
 
 const columns: ComponentConfig<ColumnsBlockProps> = {
   label: "Columns",
-  defaultProps: columnsDefaultProps,
+  defaultProps: {
+    ...columnsDefaultProps,
+    _style: {
+      paddingTop: "1rem",
+      paddingRight: "1.5rem",
+      paddingBottom: "1rem",
+      paddingLeft: "1.5rem",
+    },
+  },
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,
@@ -729,7 +729,15 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
 
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
-  defaultProps: containerDefaultProps,
+  defaultProps: {
+    ...containerDefaultProps,
+    _style: {
+      paddingTop: "1.5rem",
+      paddingRight: "1.5rem",
+      paddingBottom: "1.5rem",
+      paddingLeft: "1.5rem",
+    },
+  },
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   render: ContainerBlock,

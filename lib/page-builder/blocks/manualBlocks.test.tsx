@@ -582,6 +582,24 @@ describe("ContainerBlock flex defaults", () => {
     expect(inner.style.textAlign).toBe("center");
   });
 
+  it("_style.align overrides alignX for inner content wrapper textAlign", () => {
+    render(
+      <ContainerBlock content={MockSlot} alignX="left" _style={{ align: "right" }} />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    // _style.align: "right" takes priority over alignX: "left"
+    expect(inner.style.textAlign).toBe("right");
+  });
+
+  it("_style.align takes priority over _style.alignItems for textAlign", () => {
+    render(
+      <ContainerBlock content={MockSlot} alignX="left" _style={{ align: "center", alignItems: "end" }} />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    // _style.align wins — alignItems would map to "right", but align is "center"
+    expect(inner.style.textAlign).toBe("center");
+  });
+
   it("applies _style.gap to the inner content wrapper", () => {
     render(<ContainerBlock content={MockSlot} _style={{ gap: 32 }} />);
     const inner = screen.getByTestId("slot-inner");

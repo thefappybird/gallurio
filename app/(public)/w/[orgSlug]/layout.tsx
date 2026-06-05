@@ -51,7 +51,7 @@ export default async function PublicPortfolioLayout({
   return (
     <div
       lang={locale}
-      style={cssVars as React.CSSProperties}
+      style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={className}
     >
       <PortfolioHeader
