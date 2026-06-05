@@ -36,7 +36,6 @@
       },
       "pipeline": {
         "inquiries": "Pertanyaan",
-        "quoted": "Dikuotkan",
         "booked": "Ditempah"
       },
       "quickAdd": {
@@ -151,7 +150,7 @@
               "note": "perkahwinan, korporat, potret, dsb."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Jumlah tempahan keseluruhan"
@@ -197,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
-        "quoted": "Dikuotkan",
         "booked": "Ditempah",
         "completed": "Selesai",
         "cancelled": "Dibatalkan"

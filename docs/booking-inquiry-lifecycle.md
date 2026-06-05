@@ -1,6 +1,6 @@
 # Booking Inquiry Lifecycle
 
-How a public inquiry becomes a confirmed booking. The flow is deliberately **simple and two-step**: an inquiry lands in the owner's Lead Inbox, and the owner approves it into a real booking — filling in pricing, deposit, and any other commercial terms themselves.
+How a public inquiry becomes a confirmed booking. The flow is deliberately **simple and two-step**: an inquiry lands in the owner's Lead Inbox as a new-lead booking, and the owner approves it into a confirmed booking — filling in pricing, deposit, and any other commercial terms themselves.
 
 Gallurio does **not** broker the conversation between the owner and the client. There is no in-app quoting, no counter-offer loop, no client-facing portal, and no durable workflow. The owner and client negotiate however they already do — email, chat, phone, in person. Gallurio's job is to capture the lead and record the **final result**: the booking.
 
@@ -12,7 +12,7 @@ Gallurio does **not** broker the conversation between the owner and the client. 
 Client submits inquiry form  (public site /w/[orgSlug])
        │
        ▼
-[Stage 1] Inquiry + draft Booking created
+[Stage 1] Inquiry + Booking (status: "inquiry") created
           Owner gets a notification email
        │
        ▼
@@ -25,7 +25,7 @@ Client submits inquiry form  (public site /w/[orgSlug])
           details. Owner adds price, deposit, and any final terms, then saves.
        │
        ▼
-   Draft Booking is promoted to a real booking (shows in calendar).
+   Booking status flips "inquiry" → "booked" (confirmed in the calendar).
    Inquiry is marked "converted".
 ```
 
@@ -47,16 +47,16 @@ There is no automated back-and-forth. Either the owner approves the inquiry into
    - If existing: backfill `phone` if missing.
 4. Create `Inquiry` (`status: "new"`, UTM/referrer captured, linked to the client).
 5. Create `Booking` with:
-   - `status: "draft"` (invisible to the calendar)
-   - `createdFromInquiryId: inquiry._id`
+   - `status: "inquiry"` (a new-lead booking, not yet confirmed)
+   - `createdFromInquiryId: inquiry._id` (back-link added for this flow)
    - Event details (date, time, duration, type, guest count, location, description) copied from the form
    - Sessions converted to UTC via the workspace timezone
-6. Link `inquiry.draftBookingId = booking._id`.
+6. Set `inquiry.convertedClientId` to the matched client.
 
 **Post-transaction (best-effort):**
 - One notification email to the owner at `publicPage.inquiryRecipientEmail` (falling back to `contact.email`). This is the **only** automated email in the lifecycle.
 
-Default bookings queries filter `status: { $ne: "draft" }`, so the draft never appears on the calendar or in booking lists until it is approved.
+The new booking carries `status: "inquiry"`, so it reads as a distinct **new-lead** event in the calendar (its own colour) and appears in the Lead Inbox. Default booking lists hide only `cancelled`; an inquiry-stage booking is visible but visually marked as unconfirmed until the owner approves it.
 
 ---
 
@@ -78,16 +78,16 @@ The owner fills in everything the inquiry could not contain — the commercial t
 
 **On save (server action):**
 1. Validate the owner belongs to the workspace.
-2. Promote the draft: update the existing `Booking` (`{ _id, workspaceId }`) with the owner-supplied pricing/terms and move `status` out of `draft` into the normal booking pipeline (e.g. `pending`).
+2. Update the existing `Booking` (`{ _id, workspaceId }`) with the owner-supplied pricing/terms and set `status: "booked"`.
 3. Set `Inquiry.status = "converted"` and `Inquiry.convertedBookingId = booking._id`.
 
-The booking now appears in the calendar and booking lists like any manually-created booking. From here it follows the standard booking lifecycle.
+The booking now reads as a confirmed event in the calendar and booking lists, exactly like any manually-created booking. From here it follows the standard booking lifecycle.
 
-> The draft is **promoted, not duplicated** — there is one `Booking` document from inquiry to confirmation, so there are never two records for the same lead.
+> The same `Booking` document is **promoted, not duplicated** — its status flips from `inquiry` to `booked`, so there are never two records for the same lead.
 
 **Other outcomes:**
-- **Mark contacted** — owner has reached out and is in discussion. `Inquiry.status = "contacted"`. Purely informational; the draft booking is untouched.
-- **Archive** — owner dismisses the lead. `Inquiry.status = "archived"`. The draft booking is cancelled so it never lingers.
+- **Mark contacted** — owner has reached out and is in discussion. `Inquiry.status = "contacted"`. Purely informational; the booking is untouched.
+- **Archive** — owner dismisses the lead. `Inquiry.status = "archived"`. The inquiry-stage booking is cancelled (`status: "cancelled"`) so it never lingers as an unconfirmed event.
 
 ---
 
@@ -98,16 +98,15 @@ The booking now appears in the calendar and booking lists like any manually-crea
 | Field | Meaning |
 |---|---|
 | `status` | `new` → `contacted` → `converted`, or `archived` |
-| `draftBookingId` | The draft `Booking` created in Stage 1 |
-| `convertedClientId` | The matched-or-created `Client` |
-| `convertedBookingId` | Set when approved in Stage 2 |
+| `convertedClientId` | The matched-or-created `Client` (set in Stage 1) |
+| `convertedBookingId` | The booking, set when approved in Stage 2 |
 
 ### Booking (inquiry-related fields)
 
 | Field | Meaning |
 |---|---|
-| `status` | `draft` while it belongs to an unapproved inquiry; promoted into the normal pipeline on approval |
-| `createdFromInquiryId` | Back-link to the originating `Inquiry` |
+| `status` | `inquiry` while it belongs to an unapproved lead; flips to `booked` on approval |
+| `createdFromInquiryId` | Back-link to the originating `Inquiry` (added for this flow) |
 
 There are **no** quote/negotiation fields. `quotes[]`, `currentQuoteRound`, and `activeQuoteHookToken` are **not** part of this design.
 
@@ -115,9 +114,8 @@ There are **no** quote/negotiation fields. `quotes[]`, `currentQuoteRound`, and 
 
 | Status | Meaning |
 |---|---|
-| `draft` | Created from an inquiry; invisible to the calendar until approved |
-| `pending` | Approved into the normal pipeline (awaiting whatever the owner's normal flow requires) |
-| `booked` | Confirmed; appears in the calendar |
+| `inquiry` | Created from an inquiry; a new, unconfirmed lead |
+| `booked` | Owner approved/confirmed it; a real booking |
 | `completed` | Event occurred and marked done |
 | `cancelled` | Archived inquiry or cancelled booking |
 
@@ -139,6 +137,7 @@ There is **no** `quoted` status — it only existed for the removed negotiation 
 These were part of an earlier over-engineered design and have been removed to keep the inquiry flow simple:
 
 - **In-app quoting / counter-offers / re-quote loop** — owners and clients negotiate off-platform.
+- **A `quoted` booking status** — removed; bookings go straight from `inquiry` to `booked`.
 - **Client-facing quote portal** (`/w/[orgSlug]/quote/[bookingId]`) — does not exist.
 - **Vercel Workflow DevKit for inquiries** — no durable workflow, no hooks, no `createHook`/`resumeHook`.
 - **Negotiation emails** (`booking-quote`, `booking-countered-owner`, `booking-requote`, `booking-declined`, etc.) — the only inquiry email is the owner notification in Stage 1.

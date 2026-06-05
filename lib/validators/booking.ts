@@ -4,7 +4,6 @@ import { optionalPhone } from "./client";
 
 export const BOOKING_STATUSES = [
   "inquiry",
-  "quoted",
   "booked",
   "completed",
   "cancelled",

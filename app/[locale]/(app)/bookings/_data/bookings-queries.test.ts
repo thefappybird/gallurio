@@ -94,13 +94,13 @@ describe("listBookings", () => {
   });
 
   it("filters by exact status", async () => {
-    await seedBooking(workspaceId, { status: "quoted" });
+    await seedBooking(workspaceId, { status: "completed" });
     await seedBooking(workspaceId, { status: "booked" });
     await seedBooking(workspaceId, { status: "inquiry" });
 
-    const { rows } = await listBookings(workspaceId, { status: "quoted" });
+    const { rows } = await listBookings(workspaceId, { status: "completed" });
     expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("quoted");
+    expect(rows[0].status).toBe("completed");
   });
 
   it("filters by date range via firstSessionStart (inclusive)", async () => {
@@ -162,7 +162,7 @@ describe("listBookings", () => {
   it("returns total matching the filter, not the page size", async () => {
     await seedBooking(workspaceId, { status: "booked", startAt: days(1) });
     await seedBooking(workspaceId, { status: "booked", startAt: days(2) });
-    await seedBooking(workspaceId, { status: "quoted", startAt: days(3) });
+    await seedBooking(workspaceId, { status: "completed", startAt: days(3) });
 
     const { rows, total } = await listBookings(
       workspaceId,

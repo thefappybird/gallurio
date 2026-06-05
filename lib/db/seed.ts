@@ -74,7 +74,7 @@ const CLIENT_NAMES = [
 ];
 
 const EVENT_TYPES = ["wedding", "corporate", "portrait", "engagement", "anniversary", "other"];
-type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
+type BookingStatus = "inquiry" | "booked" | "completed" | "cancelled";
 
 function mulberry32(seed: number) {
   let t = seed >>> 0;
@@ -240,7 +240,7 @@ async function seedWorkspace(
           : rand() > 0.7
             ? "booked"
             : rand() > 0.4
-              ? "quoted"
+              ? "booked"
               : "inquiry";
     const eventType = pick(EVENT_TYPES);
     const total = range(20, 250) * 1000;

@@ -129,19 +129,18 @@ describe("getKpiSnapshot", () => {
     expect(snap.revenueThisMonth).toBe(0);
   });
 
-  it("counts active bookings only when in current month and booked/quoted", async () => {
+  it("counts active bookings only when in current month and booked", async () => {
     const inMonth = new Date();
     inMonth.setDate(15);
     const nextMonth = new Date(inMonth);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     await seedBooking(workspaceId, { status: "booked", startAt: inMonth });
-    await seedBooking(workspaceId, { status: "quoted", startAt: inMonth });
     await seedBooking(workspaceId, { status: "inquiry", startAt: inMonth });
     await seedBooking(workspaceId, { status: "booked", startAt: nextMonth });
 
     const snap = await getKpiSnapshot(workspaceId);
-    expect(snap.activeBookingsThisMonth).toBe(2);
+    expect(snap.activeBookingsThisMonth).toBe(1);
   });
 
   it("counts new inquiries only with status='new'", async () => {
@@ -256,16 +255,14 @@ describe("getUpcomingWeek", () => {
 });
 
 describe("getPipelineCounts", () => {
-  it("groups new+contacted inquiries, quoted bookings, and booked bookings separately", async () => {
+  it("groups new+contacted inquiries and booked bookings separately", async () => {
     await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "new" });
     await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "contacted" });
     await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived" });
-    await seedBooking(workspaceId, { status: "quoted" });
-    await seedBooking(workspaceId, { status: "quoted" });
     await seedBooking(workspaceId, { status: "booked" });
 
     const counts = await getPipelineCounts(workspaceId);
-    expect(counts).toEqual({ inquiries: 2, quoted: 2, booked: 1 });
+    expect(counts).toEqual({ inquiries: 2, booked: 1 });
   });
 });
 

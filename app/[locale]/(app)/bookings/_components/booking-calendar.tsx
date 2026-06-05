@@ -41,7 +41,7 @@ export type OverflowEvent = {
 const locales = {} as const;
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
+type BookingStatus = "inquiry" | "booked" | "completed" | "cancelled";
 
 export type CalendarEvent = {
   /** Unique per rendered candle: `<bookingId>_s<sessionIdx>_<YYYY-MM-DD>`. */

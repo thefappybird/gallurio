@@ -36,7 +36,6 @@
       },
       "pipeline": {
         "inquiries": "คำถาม",
-        "quoted": "ยื่นใบเสนอราคา",
         "booked": "จองแล้ว"
       },
       "quickAdd": {
@@ -151,7 +150,7 @@
               "note": "งานแต่งงาน คอร์ปอเรต ภาพบุคคล ฯลฯ"
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "ยอดรวมการจอง"
@@ -197,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "สอบถาม",
-        "quoted": "ยื่นใบเสนอราคา",
         "booked": "จองแล้ว",
         "completed": "เสร็จสิ้น",
         "cancelled": "ยกเลิกแล้ว"

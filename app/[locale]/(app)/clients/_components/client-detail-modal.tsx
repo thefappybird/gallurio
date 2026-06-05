@@ -231,7 +231,7 @@ function ClientDetailModalInner({
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Badge variant="outline" className="text-xs capitalize">
-                          {tBookingStatus(b.status as "inquiry" | "quoted" | "booked" | "completed" | "cancelled")}
+                          {tBookingStatus(b.status as "inquiry" | "booked" | "completed" | "cancelled")}
                         </Badge>
                         <span className="text-sm tabular-nums">
                           {new Intl.NumberFormat(locale, {

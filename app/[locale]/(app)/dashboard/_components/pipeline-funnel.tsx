@@ -4,14 +4,13 @@ import type { PipelineCounts } from "../_data/dashboard-metrics";
 type Props = {
   counts: PipelineCounts;
   title: string;
-  labels: { inquiries: string; quoted: string; booked: string };
+  labels: { inquiries: string; booked: string };
 };
 
 export function PipelineFunnel({ counts, title, labels }: Props) {
-  const total = Math.max(counts.inquiries + counts.quoted + counts.booked, 1);
+  const total = Math.max(counts.inquiries + counts.booked, 1);
   const segments = [
     { label: labels.inquiries, value: counts.inquiries, className: "bg-muted text-muted-foreground" },
-    { label: labels.quoted, value: counts.quoted, className: "bg-secondary text-secondary-foreground" },
     { label: labels.booked, value: counts.booked, className: "bg-brand text-brand-foreground" },
   ];
 
@@ -35,7 +34,7 @@ export function PipelineFunnel({ counts, title, labels }: Props) {
             );
           })}
         </div>
-        <div className="grid grid-cols-3 gap-2 text-xs">
+        <div className="grid grid-cols-2 gap-2 text-xs">
           {segments.map((s) => (
             <div key={s.label} className="flex flex-col gap-0.5">
               <span className="text-muted-foreground">{s.label}</span>

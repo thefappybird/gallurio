@@ -36,7 +36,6 @@
       },
       "pipeline": {
         "inquiries": "Inquiries",
-        "quoted": "Quoted",
         "booked": "Booked"
       },
       "quickAdd": {
@@ -151,7 +150,7 @@
               "note": "wedding, corporate, portrait, etc."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total booking amount"
@@ -197,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Inquiry",
-        "quoted": "Quoted",
         "booked": "Booked",
         "completed": "Completed",
         "cancelled": "Cancelled"
