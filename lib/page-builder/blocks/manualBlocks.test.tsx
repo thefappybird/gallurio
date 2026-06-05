@@ -275,6 +275,58 @@ describe("ButtonBlock", () => {
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.color).toBe("var(--pf-color-fg)");
   });
+
+  it("_style.bold applies fontWeight 700 to the <a> element", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ bold: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontWeight).toBe("700");
+  });
+
+  it("_style.italic applies fontStyle italic to the <a> element", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ italic: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.fontStyle).toBe("italic");
+  });
+
+  it("_style.underline applies textDecoration underline to the <a> element", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ underline: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.textDecoration).toBe("underline");
+  });
+
+  it("_style.borderWidth applies border to the <a> not the wrapper div", () => {
+    render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ borderWidth: "2px", borderStyle: "solid", borderColor: "#ff0000" }} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    const wrapper = a.parentElement as HTMLElement;
+    expect(a.style.borderWidth).toBe("2px");
+    expect(wrapper.style.borderWidth).toBe("");
+  });
+
+  it("_style.radius applies borderRadius to the <a> not the wrapper div", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    const wrapper = a.parentElement as HTMLElement;
+    expect(a.style.borderRadius).toBe("8px");
+    expect(wrapper.style.borderRadius).toBe("");
+  });
+
+  it("_style.shadow applies boxShadow to the <a> not the wrapper div", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ shadow: "sm" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    const wrapper = a.parentElement as HTMLElement;
+    expect(a.style.boxShadow).not.toBe("");
+    expect(wrapper.style.boxShadow).toBe("");
+  });
+
+  it("_style.bold does not apply fontWeight to the wrapper div", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ bold: true }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    const wrapper = a.parentElement as HTMLElement;
+    expect(a.style.fontWeight).toBe("700");
+    expect(wrapper.style.fontWeight).toBe("");
+  });
 });
 
 // ---------------------------------------------------------------------------

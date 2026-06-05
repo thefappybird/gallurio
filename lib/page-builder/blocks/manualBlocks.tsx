@@ -241,58 +241,66 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
-  // The button's own fill + label color (Design tab). The wrapper's
-  // resolveBlockStyle only carries frame/spacing; the <a> owns its colors so
-  // the toolkit's "Button color" + "Text color" actually take effect.
-  // When buttonColorToken is undefined (Reset / never set), the button renders
-  // as a ghost (transparent fill, border follows text color).
   const hasColor = _style?.buttonColorToken !== undefined;
   const buttonBg = hasColor
     ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent")
     : "transparent";
-  const buttonBorder = hasColor ? "2px solid transparent" : "2px solid currentColor";
   const buttonText = colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)";
+  const defaultBorder = hasColor ? "2px solid transparent" : "2px solid currentColor";
 
-  // The wrapper is fit-content so the button only occupies its natural width.
-  // Margin-auto positions the wrapper left/center/right — works in both the
-  // editor canvas and the public page without needing a flex parent. The legacy
-  // `align` prop is a fallback for saved data predating selfAlign; toolkit
-  // _style.selfAlign overrides the margins via resolveBlockStyle.
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
+  // Resolve all toolkit styles then split: positioning on wrapper, visuals on <a>.
+  const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
+
+  // Wrapper carries only fit-content + positioning (selfAlign margin-auto + top/bottom spacing).
+  const wrapperStyle: React.CSSProperties = {
+    width: "fit-content",
+    ...legacyMargin,
+  };
+  if (resolved.marginLeft !== undefined) wrapperStyle.marginLeft = resolved.marginLeft as string;
+  if (resolved.marginRight !== undefined) wrapperStyle.marginRight = resolved.marginRight as string;
+  if (resolved.marginTop !== undefined) wrapperStyle.marginTop = resolved.marginTop as string;
+  if (resolved.marginBottom !== undefined) wrapperStyle.marginBottom = resolved.marginBottom as string;
+
+  // <a> gets all visual styles: border, radius, shadow, typography.
+  const aStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "2.75rem",
+    minWidth: "9rem",
+    padding: "0 1.75rem",
+    letterSpacing: "0.04em",
+    cursor: "pointer",
+    // Defaults (toolkit overrides below when set)
+    fontFamily: "var(--pf-font-body)",
+    fontSize: "0.9375rem",
+    fontWeight: 600,
+    textDecoration: "none",
+    borderRadius: "var(--pf-radius)",
+    border: defaultBorder,
+    // Colors
+    backgroundColor: buttonBg,
+    color: buttonText,
+    // Toolkit visual overrides
+    ...(resolved.borderStyle && {
+      borderStyle: resolved.borderStyle as string,
+      borderWidth: resolved.borderWidth as string,
+      borderColor: resolved.borderColor as string,
+    }),
+    ...(resolved.borderRadius && { borderRadius: resolved.borderRadius as string }),
+    ...(resolved.boxShadow && { boxShadow: resolved.boxShadow as string }),
+    ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
+    ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
+    ...(resolved.fontWeight && { fontWeight: resolved.fontWeight }),
+    ...(resolved.fontStyle && { fontStyle: resolved.fontStyle as string }),
+    ...(resolved.textDecoration && { textDecoration: resolved.textDecoration as string }),
+  };
+
   return (
-    <div
-      style={{
-        padding: "1rem 1.5rem",
-        width: "fit-content",
-        ...legacyMargin,
-        ...resolveBlockStyle(_style),
-      }}
-      {...resolveBlockAttrs(_style)}
-    >
-      <a
-        href={href}
-        role="button"
-        data-cta={dataCta}
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "2.75rem",
-          minWidth: "9rem",
-          padding: "0 1.75rem",
-          fontFamily: "var(--pf-font-body)",
-          fontSize: "0.9375rem",
-          fontWeight: 600,
-          letterSpacing: "0.04em",
-          textDecoration: "none",
-          cursor: "pointer",
-          borderRadius: "var(--pf-radius)",
-          backgroundColor: buttonBg,
-          color: buttonText,
-          border: buttonBorder,
-        }}
-      >
+    <div style={wrapperStyle} {...resolveBlockAttrs(_style)}>
+      <a href={href} role="button" data-cta={dataCta} style={aStyle}>
         {label}
       </a>
     </div>

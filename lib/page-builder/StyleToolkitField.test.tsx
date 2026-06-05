@@ -63,10 +63,10 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("Advanced padding drawer shows 4 per-side inputs when opened", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Drawer is closed by default — X/Y inputs visible (both Padding and Margin show them)
-    expect(screen.getAllByText("Horizontal (X)").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Vertical (Y)").length).toBeGreaterThan(0);
-    // Open the Padding advanced drawer specifically
+    // Drawer is closed by default — only Padding section shows X/Y inputs
+    expect(screen.getByText("Horizontal (X)")).toBeTruthy();
+    expect(screen.getByText("Vertical (Y)")).toBeTruthy();
+    // Open the Padding advanced drawer
     fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
     expect(screen.getByText("Top")).toBeTruthy();
     expect(screen.getByText("Right")).toBeTruthy();
@@ -96,5 +96,18 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByRole("button", { name: "Small" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Medium" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Large" })).toBeTruthy();
+  });
+
+  it("Layout tab shows Top spacing and Bottom spacing controls", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.getByText("Top spacing")).toBeTruthy();
+    expect(screen.getByText("Bottom spacing")).toBeTruthy();
+  });
+
+  it("Design tab does not show Margin section", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Margin")).toBeNull();
   });
 });

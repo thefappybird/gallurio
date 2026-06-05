@@ -446,9 +446,8 @@ function DesignTab({
   blockType?: string;
 }) {
   const [paddingAdvanced, setPaddingAdvanced] = useState(false);
-  const [marginAdvanced, setMarginAdvanced] = useState(false);
   const isButton = blockType === "Button";
-  const isTextBlock = TEXT_ONLY_BLOCKS.has(blockType);
+  const showFrame = !TEXT_ONLY_BLOCKS.has(blockType);
 
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight
@@ -457,15 +456,6 @@ function DesignTab({
   const paddingY =
     s.paddingTop !== undefined && s.paddingTop === s.paddingBottom
       ? s.paddingTop
-      : undefined;
-
-  const marginX =
-    s.marginLeft !== undefined && s.marginLeft === s.marginRight
-      ? s.marginLeft
-      : undefined;
-  const marginY =
-    s.marginTop !== undefined && s.marginTop === s.marginBottom
-      ? s.marginTop
       : undefined;
 
   return (
@@ -479,24 +469,28 @@ function DesignTab({
           <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
           <ToolbarToggle active={!!s.italic} title="Italic" Icon={Italic} onClick={() => set({ italic: !s.italic })} />
           <ToolbarToggle active={!!s.underline} title="Underline" Icon={Underline} onClick={() => set({ underline: !s.underline })} />
-          <ToolbarToggle
-            active={s.align === "left"}
-            title="Align left"
-            Icon={AlignLeft}
-            onClick={() => set({ align: s.align === "left" ? undefined : "left" })}
-          />
-          <ToolbarToggle
-            active={s.align === "center"}
-            title="Align center"
-            Icon={AlignCenter}
-            onClick={() => set({ align: s.align === "center" ? undefined : "center" })}
-          />
-          <ToolbarToggle
-            active={s.align === "right"}
-            title="Align right"
-            Icon={AlignRight}
-            onClick={() => set({ align: s.align === "right" ? undefined : "right" })}
-          />
+          {!isButton && (
+            <>
+              <ToolbarToggle
+                active={s.align === "left"}
+                title="Align left"
+                Icon={AlignLeft}
+                onClick={() => set({ align: s.align === "left" ? undefined : "left" })}
+              />
+              <ToolbarToggle
+                active={s.align === "center"}
+                title="Align center"
+                Icon={AlignCenter}
+                onClick={() => set({ align: s.align === "center" ? undefined : "center" })}
+              />
+              <ToolbarToggle
+                active={s.align === "right"}
+                title="Align right"
+                Icon={AlignRight}
+                onClick={() => set({ align: s.align === "right" ? undefined : "right" })}
+              />
+            </>
+          )}
         </div>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
@@ -554,40 +548,42 @@ function DesignTab({
         />
       </div>
 
-      {/* Frame */}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Frame
-        </span>
-        <NumberInputRow
-          label="Border width"
-          value={s.borderWidth}
-          min={STYLE_LIMITS.borderWidth.min}
-          max={STYLE_LIMITS.borderWidth.max}
-          onChange={(v) => set({ borderWidth: v })}
-        />
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Border color</span>
-          <ColorSwatchRow
-            value={s.borderColorToken}
-            onChange={(t) => set({ borderColorToken: t })}
-            allowNone={false}
+      {/* Frame — hidden for text/button leaf blocks */}
+      {showFrame && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Frame
+          </span>
+          <NumberInputRow
+            label="Border width"
+            value={s.borderWidth}
+            min={STYLE_LIMITS.borderWidth.min}
+            max={STYLE_LIMITS.borderWidth.max}
+            onChange={(v) => set({ borderWidth: v })}
+          />
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Border color</span>
+            <ColorSwatchRow
+              value={s.borderColorToken}
+              onChange={(t) => set({ borderColorToken: t })}
+              allowNone={false}
+            />
+          </div>
+          <NumberInputRow
+            label="Corner radius"
+            value={s.radius}
+            min={STYLE_LIMITS.radius.min}
+            max={STYLE_LIMITS.radius.max}
+            onChange={(v) => set({ radius: v })}
+          />
+          <IconRow
+            label="Shadow"
+            value={s.shadow ?? "none"}
+            options={SHADOW_OPTIONS}
+            onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
           />
         </div>
-        <NumberInputRow
-          label="Corner radius"
-          value={s.radius}
-          min={STYLE_LIMITS.radius.min}
-          max={STYLE_LIMITS.radius.max}
-          onChange={(v) => set({ radius: v })}
-        />
-        <IconRow
-          label="Shadow"
-          value={s.shadow ?? "none"}
-          options={SHADOW_OPTIONS}
-          onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
-        />
-      </div>
+      )}
 
       {/* Padding */}
       <div className="flex flex-col gap-2">
@@ -632,61 +628,6 @@ function DesignTab({
         )}
       </div>
 
-      {/* Margin — X/Y for all blocks; text blocks get vertical-only (selfAlign handles horizontal) */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Margin
-          </span>
-          <button
-            type="button"
-            aria-label="Margin advanced options"
-            onClick={() => setMarginAdvanced((a) => !a)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            Advanced
-            {marginAdvanced ? (
-              <ChevronUp className="size-3" aria-hidden />
-            ) : (
-              <ChevronDown className="size-3" aria-hidden />
-            )}
-          </button>
-        </div>
-        {marginAdvanced ? (
-          isTextBlock ? (
-            <div className="flex flex-col gap-2">
-              <DimensionInput label="Top" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-              <DimensionInput label="Bottom" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <DimensionInput label="Top" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-              <DimensionInput label="Right" value={s.marginRight} onChange={(v) => set({ marginRight: v })} />
-              <DimensionInput label="Bottom" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-              <DimensionInput label="Left" value={s.marginLeft} onChange={(v) => set({ marginLeft: v })} />
-            </div>
-          )
-        ) : isTextBlock ? (
-          <DimensionInput
-            label="Vertical (Y)"
-            value={marginY}
-            onChange={(v) => set({ marginTop: v, marginBottom: v })}
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            <DimensionInput
-              label="Horizontal (X)"
-              value={marginX}
-              onChange={(v) => set({ marginLeft: v, marginRight: v })}
-            />
-            <DimensionInput
-              label="Vertical (Y)"
-              value={marginY}
-              onChange={(v) => set({ marginTop: v, marginBottom: v })}
-            />
-          </div>
-        )}
-      </div>
 
       {/* Animations */}
       <div className="flex flex-col gap-2">
@@ -963,8 +904,7 @@ function LayoutTabBody({
     );
   }
 
-  // For text-only and button leaf blocks: position/size controls only.
-  // Margin has moved to the Design tab for consistency with padding.
+  // For text-only and button leaf blocks: position/size + spacing controls.
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
     return (
@@ -980,6 +920,11 @@ function LayoutTabBody({
         </div>
         <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
         {!isButton && <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Spacing</span>
+          <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
+          <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
+        </div>
       </div>
     );
   }
@@ -1037,6 +982,11 @@ function LayoutTabBody({
           )}
         </>
       )}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Spacing</span>
+        <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
+        <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
+      </div>
     </div>
   );
 }
@@ -1217,7 +1167,7 @@ function BlockAwarePanel({
           type={type}
           p={p}
           setProp={setProp}
-          showBanner={!isGallery && type !== "Button"}
+          showBanner={isContainer}
           isContainer={isContainer}
         />
       )}
