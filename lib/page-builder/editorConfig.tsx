@@ -23,7 +23,6 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import type { ReactNode } from "react";
 import type { Config, ComponentConfig, Field } from "@measured/puck";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
@@ -732,23 +731,10 @@ export const editorPuckConfig: Config<EditorComponents> = {
     Columns: columns,
     Container: container,
   },
-  root: {
-    fields: {},
-    // Puck's PuckComponent<T> omits children from root render props in its TS
-    // types, but children is always present at runtime per the Puck API contract.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    render: (({ children }: { children: ReactNode }) => (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          width: "100%",
-          minHeight: "100%",
-        }}
-      >
-        {children}
-      </div>
-    )) as any,
-  },
+  // No root.render in the editor: Puck wraps blocks in a DropZone div, so
+  // blocks are not direct children of any wrapper here — adding root.render
+  // breaks DnD position tracking without giving us align-self preview either.
+  // The flex-col root lives only in config.ts (production <Render>), where
+  // blocks ARE direct children and align-self works correctly.
+  root: { fields: {} },
 };
