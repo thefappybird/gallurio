@@ -1,8 +1,10 @@
 # Paddle + Vercel Workflow DevKit Integration Design
 
+> **Update:** The booking inquiry flow no longer uses quote negotiation. Inquiries now follow a simple two-step path (inquiry → draft booking → owner approves via the Create-Booking modal). See [`docs/booking-inquiry-lifecycle.md`](../../booking-inquiry-lifecycle.md). The Workflow DevKit content below applies only to subscription checkout.
+
 **Date:** 2026-06-01
 **Status:** Approved for implementation
-**Scope:** Replace HitPay subscription billing with Paddle MoR; add Vercel Workflow DevKit for durable subscription checkout and quote negotiation flows.
+**Scope:** Replace HitPay subscription billing with Paddle MoR; add Vercel Workflow DevKit for durable subscription checkout.
 
 ---
 
@@ -16,13 +18,9 @@ Paddle acts as the Merchant of Record: they collect payments globally, remit tax
 
 ### Why add Vercel Workflow DevKit
 
-Two flows in Gallurio are long-running and multi-party:
+The subscription checkout flow is long-running and multi-party: after the owner clicks Upgrade and completes the Paddle checkout, Gallurio must wait for the `subscription.activated` webhook before updating the workspace plan. There is a non-deterministic delay between browser action and webhook arrival. Without durability, a server restart or cold start between the two events loses the correlation.
 
-1. **Subscription checkout** — after the owner clicks Upgrade and completes the Paddle checkout, Gallurio must wait for the `subscription.activated` webhook before updating the workspace plan. There is a non-deterministic delay between browser action and webhook arrival. Without durability, a server restart or cold start between the two events loses the correlation.
-
-2. **Quote negotiation** — a booking inquiry can require unlimited back-and-forth rounds between workspace owner and end client before either party confirms or declines. The workflow suspends indefinitely between each party's turn. This cannot be modelled reliably with stateless webhook handlers.
-
-The Vercel Workflow DevKit (`workflow` package) provides durable, resumable async functions that survive Vercel cold starts and deploys. Both flows become first-class workflow functions with deterministic hook tokens.
+The Vercel Workflow DevKit (`workflow` package) provides durable, resumable async functions that survive Vercel cold starts and deploys. The subscription checkout flow becomes a first-class workflow function with a deterministic hook token.
 
 ---
 
@@ -31,7 +29,6 @@ The Vercel Workflow DevKit (`workflow` package) provides durable, resumable asyn
 - **Marketplace payments (client → workspace owner):** Not in MVP. Workspace owners collect payment from their clients outside the app (bank transfer, GCash, cash, their own payment processor). Gallurio's role ends at a confirmed booking.
 - **Paddle Connect / split payments:** Not needed without marketplace.
 - **In-app notifications:** Deferred — spec at `docs/notifications-scope.md`.
-- **Quote expiry / timeouts:** No timeout at any stage. Workflows wait indefinitely.
 - **Deposit collection:** v1.1.
 - **Contract / e-signature:** Not in MVP.
 
@@ -53,11 +50,10 @@ app/api/
 
 lib/workflows/
   subscriptionCheckout.ts   ← durable checkout confirmation wait
-  quoteNegotiation.ts       ← 3-stage quote loop (per booking-inquiry-lifecycle.md)
 
 lib/workflows/steps/
   billing.ts        ← updateWorkspacePlan(), sendBillingNotification()
-  booking.ts        ← confirmBooking(), cancelBooking(), sendQuoteEmail(), etc.
+  booking.ts        ← confirmBooking(), cancelBooking()
 ```
 
 **Deleted after Paddle is confirmed working:**
@@ -90,34 +86,6 @@ paddleCheckoutWorkflowRunId?: string;   // in-flight checkout workflow run; clea
 ```
 
 **Keep unchanged:** `plan: "free" | "starter" | "pro"` — the plan field is provider-agnostic.
-
-### Booking — quote negotiation fields (unchanged from booking-inquiry-lifecycle.md)
-
-```typescript
-quotes: [{
-  round: number;
-  ownerAmount: number;
-  ownerNotes: string;
-  sentAt: Date;
-  clientResponse: "confirmed" | "countered" | null;
-  clientCounterAmount: number | null;
-  clientCounterNotes: string | null;
-  clientCounterDate: Date | null;
-  clientResponseAt: Date | null;
-}];
-currentQuoteRound: number;         // 0 = no quote sent
-activeQuoteHookToken: string | null;
-```
-
-**Booking status values:**
-
-| Status | Meaning |
-|--------|---------|
-| `draft` | Created from inquiry; invisible to calendar |
-| `quoted` | Active negotiation (any round, any party's turn) |
-| `booked` | Client confirmed; appears in calendar |
-| `completed` | Event occurred, marked done |
-| `cancelled` | Declined or abandoned |
 
 ---
 
@@ -227,45 +195,7 @@ Step functions (`"use step"`) handle all DB writes and external calls — workfl
 
 ---
 
-## 6. Quote Negotiation Flow
-
-Full specification in `docs/booking-inquiry-lifecycle.md`. Key points for implementation:
-
-### 6.1 Workflow entry point
-
-Started from a Server Action when the owner clicks "Send Quote":
-
-```typescript
-// Server action in app/(app)/inquiries/[id]/actions.ts
-const run = await start(quoteNegotiationWorkflow, [booking._id.toString(), round]);
-await Booking.updateOne(
-  { _id: booking._id, workspaceId },
-  { activeQuoteHookToken: `booking-client-${booking._id}-r${round}` }
-);
-```
-
-### 6.2 Hook token scheme
-
-| Token | Awaited by | Format |
-|---|---|---|
-| Client response | `quoteNegotiationWorkflow` | `booking-client-{bookingId}-r{round}` |
-| Owner decision | `quoteNegotiationWorkflow` | `booking-owner-{bookingId}-r{round}` |
-
-Tokens are deterministic — survive cold starts and deploys without any persistence.
-
-### 6.3 Client portal
-
-`/w/[orgSlug]/quote/[bookingId]?token={hookToken}` — no Clerk session required. Token validated against `Booking.activeQuoteHookToken`. If token mismatch (booking already resolved), show "This quote is no longer active."
-
-### 6.4 API routes for hook resumption
-
-- `GET /api/bookings/respond?token={t}&action=confirm` — one-click confirm (from email CTA)
-- `POST /api/bookings/respond` — counter offer form submission
-- `POST /api/bookings/[id]/owner-decision` — owner accepts/re-quotes/declines (auth required)
-
----
-
-## 7. Package Installation
+## 6. Package Installation
 
 ```bash
 pnpm add @paddle/paddle-node-sdk @paddle/paddle-js
@@ -276,7 +206,7 @@ pnpm add workflow @workflow/next
 
 ---
 
-## 8. `next.config.ts` changes
+## 7. `next.config.ts` changes
 
 ```typescript
 import { withWorkflow } from "@workflow/next";
@@ -287,7 +217,7 @@ export default withWorkflow(nextConfig);
 
 ---
 
-## 9. Testing
+## 8. Testing
 
 ### Billing
 - Unit test `lib/paddle/webhook.ts` — valid signature passes, tampered body rejected, missing header rejected
@@ -295,32 +225,24 @@ export default withWorkflow(nextConfig);
 - Integration test `subscriptionCheckoutWorkflow` — use `@workflow/vitest`, `waitForHook`, `resumeHook` to simulate Paddle webhook arrival; assert Workspace.plan updated correctly
 - Tenant isolation: workspace A's checkout webhook cannot update workspace B's plan
 
-### Quote negotiation
-- Integration test full happy path: submit quote → client confirms → booking status = `"booked"`
-- Integration test counter-offer loop: client counters → owner re-quotes → client confirms
-- Integration test decline: owner declines → booking status = `"cancelled"`
-- Unit test token validation on `/api/bookings/respond` — wrong token returns 403, correct token resumes hook
-- Unit test client portal page — invalid token shows "no longer active" state, valid token renders quote
-
 ### General
 - `pnpm typecheck` must pass after Workspace model field changes
-- All five locales updated for any new UI strings (quote modal, client portal, billing pages)
+- All five locales updated for any new UI strings (billing pages)
 
 ---
 
-## 10. Migration / Cutover
+## 9. Migration / Cutover
 
 1. Install packages, set up Paddle sandbox credentials in `.env.local`
 2. Implement `lib/paddle/` and `app/api/webhooks/paddle/route.ts`
 3. Implement `subscriptionCheckoutWorkflow` and wire checkout route
-4. Implement `quoteNegotiationWorkflow` and client portal
-5. Test end-to-end in sandbox (Paddle test cards, simulated webhooks)
-6. Add all items requiring live Paddle to `docs/RELEASE-CHECKLIST.md`
-7. **After production confirmation:** open separate PR to delete `lib/hitpay/`, `app/api/webhooks/hitpay/route.ts`, and remove HitPay Workspace fields
+4. Test end-to-end in sandbox (Paddle test cards, simulated webhooks)
+5. Add all items requiring live Paddle to `docs/RELEASE-CHECKLIST.md`
+6. **After production confirmation:** open separate PR to delete `lib/hitpay/`, `app/api/webhooks/hitpay/route.ts`, and remove HitPay Workspace fields
 
 ---
 
-## 11. Release Checklist Additions
+## 10. Release Checklist Additions
 
 Items that cannot be tested in dev mode:
 
@@ -334,12 +256,11 @@ Items that cannot be tested in dev mode:
 
 ---
 
-## 12. Open Questions (resolved)
+## 11. Open Questions (resolved)
 
 | Question | Decision |
 |---|---|
 | Provider abstraction layer? | No — Paddle is the only provider; delete HitPay cleanly |
 | Marketplace payments (client → owner)? | Out of scope for MVP; owners collect payment themselves |
-| Quote timeout? | None — workflows wait indefinitely |
 | Billing failure handling? | Passive — Paddle dunning; Gallurio reacts to final state only |
 | In-app notifications? | Deferred — separate scope at `docs/notifications-scope.md` |

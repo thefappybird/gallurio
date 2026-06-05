@@ -17,8 +17,6 @@ Facebook-style notification center in the app shell. Triggered by the same event
 | Event | Trigger source | Click destination |
 |-------|---------------|------------------|
 | New inquiry submitted | `POST /api/inquiries` | `/inquiries/[id]` |
-| Client confirmed a booking quote | Vercel Workflow hook | `/bookings/[id]` |
-| Client sent a counter offer | Vercel Workflow hook | `/bookings/[id]` |
 | Subscription activated / plan upgraded | Paddle webhook | `/settings/billing` |
 | Subscription cancelled | Paddle webhook | `/settings/billing` |
 | Team member accepted invite *(v1.1)* | Clerk webhook | `/settings/team` |

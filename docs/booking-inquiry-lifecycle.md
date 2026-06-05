@@ -1,37 +1,35 @@
 # Booking Inquiry Lifecycle
 
-Full specification for the 3-stage inquiry → negotiation → booking confirmation flow. Stages 2–3 use the **Vercel Workflow DevKit** (`workflow` package) for durable, resumable state that survives server restarts, Vercel cold starts, and deploys.
+How a public inquiry becomes a confirmed booking. The flow is deliberately **simple and two-step**: an inquiry lands in the owner's Lead Inbox, and the owner approves it into a real booking — filling in pricing, deposit, and any other commercial terms themselves.
+
+Gallurio does **not** broker the conversation between the owner and the client. There is no in-app quoting, no counter-offer loop, no client-facing portal, and no durable workflow. The owner and client negotiate however they already do — email, chat, phone, in person. Gallurio's job is to capture the lead and record the **final result**: the booking.
 
 ---
 
 ## Overview
 
 ```
-Client submits form
+Client submits inquiry form  (public site /w/[orgSlug])
        │
        ▼
-[Stage 1] Draft Booking created (invisible to calendar)
+[Stage 1] Inquiry + draft Booking created
+          Owner gets a notification email
        │
        ▼
-[Stage 2] Owner reviews → sends quote → workflow suspends
+   Owner & client talk off-platform
+   (email / chat / phone — Gallurio is not involved)
        │
        ▼
-[Stage 3] Client responds via branded portal (no auth)
+[Stage 2] Owner opens the inquiry in the Lead Inbox and clicks "Approve".
+          The Create-Booking modal opens, pre-filled with the inquiry's
+          details. Owner adds price, deposit, and any final terms, then saves.
        │
-    ┌──┴──────────────┐
-    │                 │
- Confirm           Counter offer
-    │                 │
-Booking = booked   Owner notified
-                      │
-               ┌──────┴──────────┐
-               │                 │
-           Accept          Re-quote / Decline
-               │                 │
-          booked ✓      Loop Stage 2 / cancelled
+       ▼
+   Draft Booking is promoted to a real booking (shows in calendar).
+   Inquiry is marked "converted".
 ```
 
-No timeout at any stage. The workflow waits indefinitely for each party.
+There is no automated back-and-forth. Either the owner approves the inquiry into a booking, or they archive it.
 
 ---
 
@@ -42,234 +40,116 @@ No timeout at any stage. The workflow waits indefinitely for each party.
 **Route:** `POST /api/inquiries`
 
 **Transaction (Mongoose session — all-or-nothing):**
-1. Validate workspace exists and is published
-2. Rate-limit by IP (5 per 10 min), honeypot check
-3. Match-or-create `Client` by `{ workspaceId, email }`
-   - If new: insert with `source: "form"`
-   - If exists: backfill phone if missing
-4. Create `Inquiry` (status: `"new"`, UTM/referrer captured)
+1. Validate the workspace exists and is published.
+2. Rate-limit by IP (5 per 10 min) and run the honeypot check.
+3. Match-or-create `Client` by `{ workspaceId, email }`.
+   - If new: insert with `source: "form"`.
+   - If existing: backfill `phone` if missing.
+4. Create `Inquiry` (`status: "new"`, UTM/referrer captured, linked to the client).
 5. Create `Booking` with:
-   - `status: "draft"`
+   - `status: "draft"` (invisible to the calendar)
    - `createdFromInquiryId: inquiry._id`
-   - `currentQuoteRound: 0`
-   - `activeQuoteHookToken: null`
-   - Sessions converted to UTC via workspace timezone
-6. Link `inquiry.draftBookingId = booking._id`
+   - Event details (date, time, duration, type, guest count, location, description) copied from the form
+   - Sessions converted to UTC via the workspace timezone
+6. Link `inquiry.draftBookingId = booking._id`.
 
 **Post-transaction (best-effort):**
-- Notification email to owner at `publicPage.inquiryRecipientEmail` or `contact.email`
+- One notification email to the owner at `publicPage.inquiryRecipientEmail` (falling back to `contact.email`). This is the **only** automated email in the lifecycle.
+
+Default bookings queries filter `status: { $ne: "draft" }`, so the draft never appears on the calendar or in booking lists until it is approved.
 
 ---
 
-## Stage 2 — Owner Sends Quote
+## Stage 2 — Owner Approves the Inquiry
 
-**Trigger:** Owner opens Lead Inbox (`/inquiries/[id]`) and clicks **"Send Quote"**.
+**Trigger:** Owner opens the Lead Inbox (`/inquiries`), reviews the lead, opens it (`/inquiries/[id]`), and clicks **"Approve booking"**.
 
-**UI:** Quotation modal/drawer with fields:
-- Package / service description (text)
-- Total amount (PHP)
+**UI — reuse the Create-Booking modal:**
+Approving opens the existing booking-creation modal (`booking-wizard-modal.tsx`) in a pre-filled state. Every field the client supplied in the inquiry form is populated for the owner:
+
+- Client — name, email, phone (the matched-or-created `Client`)
+- Event — date, time, duration, event type, guest count, location, description
+
+The owner fills in everything the inquiry could not contain — the commercial terms they decided on with the client off-platform:
+
+- Package / service and total price (PHP)
 - Deposit required (PHP)
-- Payment terms (e.g. "50% deposit secures the date")
-- Personal note to client (optional)
+- Any notes, sessions, or scheduling adjustments
 
-**Server Action on submit:**
-1. Validate owner belongs to workspace
-2. Append to `Booking.quotes[]`:
-   ```
-   { round, ownerAmount, ownerNotes, sentAt: now, clientResponse: null, ... }
-   ```
-3. Set `Booking.currentQuoteRound` = new round number
-4. Set `Booking.status` = `"quoted"`, `Inquiry.status` = `"contacted"`
-5. Call `POST /api/bookings/[id]/start-quote-workflow` to start (or resume) the Vercel Workflow
+**On save (server action):**
+1. Validate the owner belongs to the workspace.
+2. Promote the draft: update the existing `Booking` (`{ _id, workspaceId }`) with the owner-supplied pricing/terms and move `status` out of `draft` into the normal booking pipeline (e.g. `pending`).
+3. Set `Inquiry.status = "converted"` and `Inquiry.convertedBookingId = booking._id`.
 
-**Workflow (`lib/workflows/quoteNegotiation.ts`):**
-```typescript
-export async function quoteNegotiationWorkflow(bookingId: string, round: number) {
-  "use workflow";
+The booking now appears in the calendar and booking lists like any manually-created booking. From here it follows the standard booking lifecycle.
 
-  const clientHook = createHook<{
-    action: "confirm" | "counter";
-    counterAmount?: number;
-    counterNotes?: string;
-  }>({ token: `booking-client-${bookingId}-r${round}` });
+> The draft is **promoted, not duplicated** — there is one `Booking` document from inquiry to confirmation, so there are never two records for the same lead.
 
-  // Email already sent before workflow started — suspend and wait
-  const clientResponse = await clientHook;
-
-  if (clientResponse.action === "confirm") {
-    await confirmBooking(bookingId);
-    return { outcome: "booked" };
-  }
-
-  // Counter — save and notify owner; wait for owner decision
-  await saveClientCounter(bookingId, round, clientResponse);
-  await notifyOwnerOfCounter(bookingId, round);
-
-  const ownerHook = createHook<{
-    action: "accept" | "requote" | "decline";
-    newAmount?: number;
-    newNotes?: string;
-  }>({ token: `booking-owner-${bookingId}-r${round}` });
-
-  const ownerDecision = await ownerHook;
-
-  if (ownerDecision.action === "accept") {
-    await confirmBooking(bookingId, ownerDecision.newAmount);
-    return { outcome: "booked" };
-  }
-
-  if (ownerDecision.action === "decline") {
-    await cancelBooking(bookingId);
-    return { outcome: "cancelled" };
-  }
-
-  // Re-quote: send new email, bump round, caller re-invokes workflow for next round
-  await sendQuoteEmail(bookingId, ownerDecision, round + 1);
-  return { outcome: "requote", nextRound: round + 1 };
-}
-```
-
-**Email sent to client:**
-- Subject: `"Your booking quote from [Workspace Name]"`
-- Body: event details, package description, total, deposit, personal note
-- Two CTAs:
-  - **[Confirm Booking]** → `GET /api/bookings/respond?token=booking-client-{id}-r{n}&action=confirm`
-  - **[Counter Offer]** → `https://[domain]/w/[orgSlug]/quote/{bookingId}?token=booking-client-{id}-r{n}`
-
----
-
-## Stage 3 — Client Response
-
-### Client Portal Page
-
-**Route:** `/w/[orgSlug]/quote/[bookingId]?token={hookToken}`
-
-**Auth:** Token validates against `Booking.activeQuoteHookToken`. No Clerk session required. If token is invalid or expired (booking already booked/cancelled), show a polite "This quote is no longer active" message.
-
-**Page content:**
-- Workspace branding (brand kit applied)
-- Event details: date, time, location, type
-- Quote details: description, total, deposit, payment terms, owner's note
-- Round indicator if `currentQuoteRound > 1`: "Updated quote — round {n}"
-- Two actions:
-  - **Confirm Booking** (primary CTA) → one-click POST
-  - **Make Counter Offer** → reveals inline form
-
-**Counter offer form:**
-- Proposed budget (number, required)
-- Notes (textarea, "what would you like to adjust?")
-- Optional date preference (date picker)
-
-### API Routes
-
-`GET /api/bookings/respond?token={t}&action=confirm`
-- Validates token matches `Booking.activeQuoteHookToken`
-- Calls `resumeHook(token, { action: "confirm" })`
-- Redirects to `/w/[orgSlug]/quote/{bookingId}?confirmed=1`
-
-`POST /api/bookings/respond`
-- Body: `{ token, counterAmount, counterNotes, counterDate? }`
-- Validates token
-- Calls `resumeHook(token, { action: "counter", counterAmount, counterNotes })`
-- Returns `{ success: true }`
-
-### Owner Decision (Lead Inbox)
-
-When client counters, owner sees a **"Client Countered"** banner in the booking detail view with:
-- Client's proposed budget
-- Client's notes
-- Three buttons: **Accept Counter** / **Re-quote** / **Decline**
-
-These trigger server actions that call `resumeHook` on the owner hook token:
-- Accept: `{ action: "accept" }` → workflow books it
-- Re-quote: `{ action: "requote", newAmount, newNotes }` → workflow sends new email, owner fills new quote modal
-- Decline: `{ action: "decline" }` → workflow cancels, sends polite email to client
+**Other outcomes:**
+- **Mark contacted** — owner has reached out and is in discussion. `Inquiry.status = "contacted"`. Purely informational; the draft booking is untouched.
+- **Archive** — owner dismisses the lead. `Inquiry.status = "archived"`. The draft booking is cancelled so it never lingers.
 
 ---
 
 ## Data Model
 
-### Additions to `BookingDoc`
+### Inquiry
 
-```typescript
-quotes: [{
-  round: number;
-  ownerAmount: number;
-  ownerNotes: string;
-  sentAt: Date;
-  clientResponse: "confirmed" | "countered" | null;
-  clientCounterAmount: number | null;
-  clientCounterNotes: string | null;
-  clientCounterDate: Date | null;
-  clientResponseAt: Date | null;
-}];
-currentQuoteRound: number;        // 0 = no quote sent
-activeQuoteHookToken: string | null;
-```
+| Field | Meaning |
+|---|---|
+| `status` | `new` → `contacted` → `converted`, or `archived` |
+| `draftBookingId` | The draft `Booking` created in Stage 1 |
+| `convertedClientId` | The matched-or-created `Client` |
+| `convertedBookingId` | Set when approved in Stage 2 |
 
-### Booking Status Values
+### Booking (inquiry-related fields)
+
+| Field | Meaning |
+|---|---|
+| `status` | `draft` while it belongs to an unapproved inquiry; promoted into the normal pipeline on approval |
+| `createdFromInquiryId` | Back-link to the originating `Inquiry` |
+
+There are **no** quote/negotiation fields. `quotes[]`, `currentQuoteRound`, and `activeQuoteHookToken` are **not** part of this design.
+
+### Booking status values
 
 | Status | Meaning |
-|--------|---------|
-| `draft` | Created from inquiry; invisible to calendar |
-| `quoted` | Active negotiation (any round, any party's turn) |
-| `booked` | Client confirmed; appears in calendar |
+|---|---|
+| `draft` | Created from an inquiry; invisible to the calendar until approved |
+| `pending` | Approved into the normal pipeline (awaiting whatever the owner's normal flow requires) |
+| `booked` | Confirmed; appears in the calendar |
 | `completed` | Event occurred and marked done |
-| `cancelled` | Declined by owner or abandoned |
+| `cancelled` | Archived inquiry or cancelled booking |
 
-### Inquiry Status Values (unchanged)
+There is **no** `quoted` status — it only existed for the removed negotiation flow.
+
+### Inquiry status values
 
 | Status | Meaning |
-|--------|---------|
-| `new` | Just submitted, owner hasn't seen it |
-| `contacted` | Owner sent a quote (Stage 2 entered) |
-| `converted` | Client confirmed; `convertedBookingId` is set |
-| `archived` | Manually archived by owner |
+|---|---|
+| `new` | Just submitted; owner hasn't actioned it |
+| `contacted` | Owner has reached out / is in discussion off-platform |
+| `converted` | Approved into a booking; `convertedBookingId` is set |
+| `archived` | Dismissed by the owner |
 
 ---
 
-## Hook Token Scheme
+## Explicitly NOT in this scope
 
-All tokens are deterministic — they survive Vercel cold starts, deploys, and server restarts without any special persistence:
+These were part of an earlier over-engineered design and have been removed to keep the inquiry flow simple:
 
-| Token | Used by | Format |
-|-------|---------|--------|
-| Client response | Vercel Workflow `createHook` | `booking-client-{bookingId}-r{round}` |
-| Owner decision | Vercel Workflow `createHook` | `booking-owner-{bookingId}-r{round}` |
-
-The `activeQuoteHookToken` field on the `Booking` doc stores the currently active client-facing token so the portal page can validate it without querying the Workflow DevKit.
-
----
-
-## Workflow Package
-
-The Vercel Workflow DevKit (`workflow` package from [useworkflow.dev](https://useworkflow.dev)) is **not yet installed**. It must be added before implementing Stages 2–3.
-
-```bash
-pnpm add workflow @workflow/next
-```
-
-All workflow files live under `lib/workflows/`. Step functions (DB calls, email sends) use `"use step"` for full Node.js access; the orchestration function uses `"use workflow"`.
+- **In-app quoting / counter-offers / re-quote loop** — owners and clients negotiate off-platform.
+- **Client-facing quote portal** (`/w/[orgSlug]/quote/[bookingId]`) — does not exist.
+- **Vercel Workflow DevKit for inquiries** — no durable workflow, no hooks, no `createHook`/`resumeHook`.
+- **Negotiation emails** (`booking-quote`, `booking-countered-owner`, `booking-requote`, `booking-declined`, etc.) — the only inquiry email is the owner notification in Stage 1.
+- **Automated deposit collection / payment links** — the owner records the agreed deposit manually; collecting it is a future feature.
 
 ---
 
-## Email Templates (Resend)
+## Email
 
-| Trigger | Recipient | Template |
-|---------|-----------|----------|
-| Inquiry submitted | Owner | `inquiry-new` |
-| Quote sent | Client | `booking-quote` |
-| Client confirmed | Owner | `booking-confirmed-owner` |
-| Client countered | Owner | `booking-countered-owner` |
-| Owner accepted counter | Client | `booking-confirmed-client` |
-| Owner re-quoted | Client | `booking-requote` |
-| Owner declined | Client | `booking-declined` |
+| Trigger | Recipient | Purpose |
+|---|---|---|
+| Inquiry submitted | Owner | Notify of a new lead (the only automated lifecycle email) |
 
----
-
-## Out of Scope (deferred)
-
-- **Deposit collection** — payment link in the confirmation email is a v1.1 feature
-- **Contract / e-signature** — not in MVP
-- **Quote expiry** — no timeout; workflows wait indefinitely by design
-- **Client account** — client portal is token-only; no persistent login
+A "booking confirmed" email to the client is intentionally out of scope — the owner confirms with the client through their own channel.
