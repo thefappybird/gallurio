@@ -913,6 +913,28 @@ function LayoutTabBody({
     const isButton = blockType === "Button";
     return (
       <div className="flex flex-col gap-4 p-3">
+        {isButton && p && setProp && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
+            <div className="flex items-center gap-1.5">
+              {(["sm", "md", "lg"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={(p.size as string | undefined) === v || (p.size === undefined && v === "md")}
+                  onClick={() => setProp("size", v)}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    ((p.size as string | undefined) === v || (p.size === undefined && v === "md")) &&
+                      "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {v === "sm" ? "S" : v === "md" ? "M" : "L"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Position</span>
           <IconRow

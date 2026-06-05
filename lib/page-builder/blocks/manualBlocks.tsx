@@ -62,7 +62,6 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
     // fontFamily, fontSize…) can override it; the inner tag inherits.
     <div
       style={{
-        padding: "1rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
         color: "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
@@ -119,7 +118,6 @@ export function TextBlock({ _style, text }: TextBlockProps) {
   return (
     <div
       style={{
-        padding: "1rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
         fontSize: "1rem",
         color: "var(--pf-color-fg)",
@@ -223,11 +221,18 @@ const BUTTON_ALIGN_TO_MARGIN: Record<string, { marginLeft: string; marginRight: 
 // Button
 // ---------------------------------------------------------------------------
 
+const BUTTON_SIZE_STYLES = {
+  sm: { padding: "0 1rem", minHeight: "2rem", minWidth: "6rem", fontSize: "0.8125rem" },
+  md: { padding: "0 1.75rem", minHeight: "2.75rem", minWidth: "9rem", fontSize: "0.9375rem" },
+  lg: { padding: "0 2.5rem", minHeight: "3.5rem", minWidth: "12rem", fontSize: "1.125rem" },
+} as const;
+
 export type ButtonBlockProps = {
   _style?: BlockStyle;
   label: string;
   action: "open-contact" | "go-to-gallery";
   align: "left" | "center" | "right";
+  size?: "sm" | "md" | "lg";
 };
 
 export const buttonDefaultProps: ButtonBlockProps = {
@@ -236,7 +241,7 @@ export const buttonDefaultProps: ButtonBlockProps = {
   align: "center",
 };
 
-export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
+export function ButtonBlock({ _style, label, action, align, size, puck }: ButtonBlockProps & { puck?: BlockPuck }) {
   const slug = gallerySlugFrom(puck);
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
@@ -270,13 +275,10 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "2.75rem",
-    minWidth: "9rem",
-    padding: "0 1.75rem",
+    ...BUTTON_SIZE_STYLES[size ?? "md"],
     letterSpacing: "0.04em",
     cursor: "pointer",
     fontFamily: "var(--pf-font-body)",
-    fontSize: "0.9375rem",
     fontWeight: _style?.bold ? 700 : 600,
     fontStyle: _style?.italic ? "italic" : "normal",
     textDecoration: _style?.underline ? "underline" : "none",

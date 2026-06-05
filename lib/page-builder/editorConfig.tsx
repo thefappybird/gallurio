@@ -634,10 +634,19 @@ const image: ComponentConfig<ImageBlockProps> = {
 
 const button: ComponentConfig<ButtonBlockProps> = {
   label: "Button",
-  defaultProps: buttonDefaultProps,
+  defaultProps: { ...buttonDefaultProps, size: "md" },
   fields: {
     _style: styleField,
     label: { type: "text", label: "Button label" },
+    size: {
+      type: "select",
+      label: "Size",
+      options: [
+        { label: "Small", value: "sm" },
+        { label: "Medium", value: "md" },
+        { label: "Large", value: "lg" },
+      ],
+    },
     action: {
       type: "select",
       label: "Action",
@@ -657,8 +666,8 @@ const button: ComponentConfig<ButtonBlockProps> = {
     },
   },
   resolveFields: (_data, { fields }) => {
-    // label, action, and align are managed by the Content tab in StyleToolkitField
-    const { label: _l, action: _a, align: _al, ...rest } = fields as Record<string, unknown>;
+    // label, action, align, and size are managed by StyleToolkitField's Content/Layout tabs
+    const { label: _l, action: _a, align: _al, size: _s, ...rest } = fields as Record<string, unknown>;
     return rest as typeof fields;
   },
   render: ButtonBlock,

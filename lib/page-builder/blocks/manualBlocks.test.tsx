@@ -52,6 +52,12 @@ describe("HeadingBlock", () => {
     const { container } = render(<HeadingBlock text="" level="h2" />);
     expect(container).toBeTruthy();
   });
+
+  it("wrapper div has no default padding", () => {
+    const { container } = render(<HeadingBlock text="Test" level="h2" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.padding).toBe("");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -78,6 +84,12 @@ describe("TextBlock", () => {
   it("renders empty text without crashing", () => {
     const { container } = render(<TextBlock text="" />);
     expect(container).toBeTruthy();
+  });
+
+  it("wrapper div has no default padding", () => {
+    const { container } = render(<TextBlock text="Test" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.padding).toBe("");
   });
 });
 
@@ -334,6 +346,29 @@ describe("ButtonBlock", () => {
     const wrapper = a.parentElement as HTMLElement;
     expect(a.style.fontWeight).toBe("700");
     expect(wrapper.style.fontWeight).toBe("");
+  });
+
+  it("defaults to medium size when no size prop is given", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.minHeight).toBe("2.75rem");
+    expect(a.style.minWidth).toBe("9rem");
+  });
+
+  it("size='sm' applies small dimensions", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" size="sm" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.minHeight).toBe("2rem");
+    expect(a.style.minWidth).toBe("6rem");
+    expect(a.style.fontSize).toBe("0.8125rem");
+  });
+
+  it("size='lg' applies large dimensions", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" size="lg" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.minHeight).toBe("3.5rem");
+    expect(a.style.minWidth).toBe("12rem");
+    expect(a.style.fontSize).toBe("1.125rem");
   });
 });
 
