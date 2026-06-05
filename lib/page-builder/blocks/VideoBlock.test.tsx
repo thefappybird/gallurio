@@ -122,7 +122,6 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading=""
         description=""
         footer=""
       />
@@ -135,7 +134,6 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl="https://example.com"
-        heading=""
         description=""
         footer=""
       />
@@ -149,7 +147,6 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading=""
         description=""
         footer=""
       />
@@ -163,7 +160,6 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://vimeo.com/123456789"
-        heading=""
         description=""
         footer=""
       />
@@ -177,7 +173,6 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        heading=""
         description=""
         footer=""
       />
@@ -187,23 +182,10 @@ describe("VideoBlock — populated state", () => {
 });
 
 describe("VideoBlock — text fields", () => {
-  it("renders heading text when provided", () => {
-    render(
-      <VideoBlock
-        videoUrl=""
-        heading="My Video Heading"
-        description=""
-        footer=""
-      />
-    );
-    expect(screen.getByText("My Video Heading")).toBeTruthy();
-  });
-
   it("renders description text when provided", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading=""
         description="Watch this beautiful clip"
         footer=""
       />
@@ -215,7 +197,6 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading=""
         description=""
         footer="Footer caption here"
       />
@@ -227,34 +208,18 @@ describe("VideoBlock — text fields", () => {
     render(
       <VideoBlock
         videoUrl=""
-        heading={"Legacy heading string"}
         description={"Legacy description string"}
         footer={"Legacy footer string"}
       />
     );
-    expect(screen.getByText("Legacy heading string")).toBeTruthy();
     expect(screen.getByText("Legacy description string")).toBeTruthy();
     expect(screen.getByText("Legacy footer string")).toBeTruthy();
   });
 
-  it("renders iframe title using heading text when available", () => {
+  it("always uses 'Embedded video' as iframe title", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading="My Video"
-        description=""
-        footer=""
-      />
-    );
-    const iframe = document.querySelector("iframe");
-    expect(iframe?.title).toBe("My Video");
-  });
-
-  it("falls back to 'Embedded video' as iframe title when heading is empty", () => {
-    render(
-      <VideoBlock
-        videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        heading=""
         description=""
         footer=""
       />
@@ -269,7 +234,6 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl=""
-        heading=""
         description=""
         footer=""
       />
@@ -282,7 +246,6 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        heading=""
         description=""
         footer=""
       />

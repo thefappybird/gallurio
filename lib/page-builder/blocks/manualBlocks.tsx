@@ -212,6 +212,13 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   render: ImageBlock,
 };
 
+// Maps the legacy `align` prop to align-self values for ButtonBlock wrapper.
+const BUTTON_ALIGN_TO_SELF: Record<string, string> = {
+  left: "flex-start",
+  center: "center",
+  right: "flex-end",
+};
+
 // ---------------------------------------------------------------------------
 // Button
 // ---------------------------------------------------------------------------
@@ -233,19 +240,35 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
   const slug = gallerySlugFrom(puck);
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
-  // _style.alignItems (Layout tab) takes priority over the legacy `align` prop.
-  const justify = _style?.alignItems
-    ? (ALIGN_ITEMS_TO_JUSTIFY[_style.alignItems] ?? "flex-start")
-    : (align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start");
 
   // The button's own fill + label color (Design tab). The wrapper's
   // resolveBlockStyle only carries frame/spacing; the <a> owns its colors so
   // the toolkit's "Button color" + "Text color" actually take effect.
-  const buttonBg = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-accent)";
-  const buttonText = colorTokenToVar(_style?.textColorToken) ?? "#ffffff";
+  // When buttonColorToken is undefined (Reset / never set), the button renders
+  // as a ghost (transparent fill, border follows text color).
+  const hasColor = _style?.buttonColorToken !== undefined;
+  const buttonBg = hasColor
+    ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent")
+    : "transparent";
+  const buttonBorder = hasColor ? "2px solid transparent" : "2px solid currentColor";
+  const buttonText = colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)";
+
+  // The wrapper is fit-content so the button only occupies its natural width.
+  // align-self positions the wrapper in the flex-col page root. The legacy
+  // `align` prop is a fallback for saved data predating selfAlign; toolkit
+  // _style.selfAlign overrides it via resolveBlockStyle.
+  const legacyAlignSelf = BUTTON_ALIGN_TO_SELF[align] ?? "flex-start";
 
   return (
-    <div style={{ padding: "1rem 1.5rem", display: "flex", justifyContent: justify, ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div
+      style={{
+        padding: "1rem 1.5rem",
+        width: "fit-content",
+        alignSelf: legacyAlignSelf,
+        ...resolveBlockStyle(_style),
+      }}
+      {...resolveBlockAttrs(_style)}
+    >
       <a
         href={href}
         role="button"
@@ -266,7 +289,7 @@ export function ButtonBlock({ _style, label, action, align, puck }: ButtonBlockP
           borderRadius: "var(--pf-radius)",
           backgroundColor: buttonBg,
           color: buttonText,
-          border: "2px solid transparent",
+          border: buttonBorder,
         }}
       >
         {label}
@@ -595,148 +618,3 @@ export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   render: ContainerBlock,
 };
 
-// ---------------------------------------------------------------------------
-// Flex — a styleable flexbox drop-zone. Lets owners compose row/column
-// layouts with controllable alignment, wrapping, and gap.
-// ---------------------------------------------------------------------------
-
-export type FlexBlockProps = {
-  _style?: BlockStyle;
-  direction: "row" | "column";
-  justify: "start" | "center" | "end" | "between" | "around";
-  align: "start" | "center" | "end" | "stretch";
-  wrap: boolean;
-  gap: number;
-  content: Slot;
-};
-
-export const flexDefaultProps: FlexBlockProps = {
-  direction: "row",
-  justify: "start",
-  align: "stretch",
-  wrap: true,
-  gap: 16,
-  content: [],
-};
-
-// Maps _style.alignItems values to CSS justifyContent for ButtonBlock wrapper.
-const ALIGN_ITEMS_TO_JUSTIFY: Record<string, string> = {
-  start: "flex-start", center: "center", end: "flex-end", stretch: "flex-start",
-};
-
-const JUSTIFY_MAP: Record<FlexBlockProps["justify"], string> = {
-  start: "flex-start",
-  center: "center",
-  end: "flex-end",
-  between: "space-between",
-  around: "space-around",
-};
-
-const ALIGN_MAP: Record<FlexBlockProps["align"], string> = {
-  start: "flex-start",
-  center: "center",
-  end: "flex-end",
-  stretch: "stretch",
-};
-
-export function FlexBlock({
-  _style,
-  direction,
-  justify,
-  align,
-  wrap,
-  gap,
-  content: Content,
-}: {
-  _style?: BlockStyle;
-  direction: "row" | "column";
-  justify: "start" | "center" | "end" | "between" | "around";
-  align: "start" | "center" | "end" | "stretch";
-  wrap: boolean;
-  gap: number;
-  content: SlotComponent;
-}) {
-  const clampedGap = Math.min(96, Math.max(0, Number.isFinite(gap) ? gap : 16));
-
-  // _style props take priority; existing direction/justify/align/gap props serve as fallbacks.
-  const s = _style ?? {};
-  const effectiveDir = (s.flexDirection as "row" | "column" | undefined) ?? direction;
-  const effectiveJustify = s.justifyContent
-    ? FLEX_JUSTIFY_MAP[s.justifyContent as keyof typeof FLEX_JUSTIFY_MAP] ?? JUSTIFY_MAP[justify]
-    : JUSTIFY_MAP[justify];
-  // _style.alignItems takes priority; fall back to the legacy align prop so that
-  // existing saved FlexBlocks with align="start"/"center"/"end" render correctly.
-  const effectiveAlign = s.alignItems
-    ? FLEX_ALIGN_MAP[s.alignItems as keyof typeof FLEX_ALIGN_MAP] ?? ALIGN_MAP[align]
-    : ALIGN_MAP[align];
-  const effectiveGap =
-    s.gap != null ? Math.min(96, Math.max(0, s.gap)) : clampedGap;
-
-  return (
-    <div
-      style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }}
-      {...resolveBlockAttrs(_style)}
-    >
-      {Content({
-        style: {
-          display: "flex",
-          flexDirection: effectiveDir,
-          justifyContent: effectiveJustify,
-          alignItems: effectiveAlign,
-          flexWrap: wrap ? "wrap" : "nowrap",
-          gap: `${effectiveGap}px`,
-          maxWidth: "80rem",
-          margin: "0 auto",
-        },
-      })}
-    </div>
-  );
-}
-
-export const flexBlockConfig: ComponentConfig<FlexBlockProps> = {
-  label: "Flex",
-  defaultProps: flexDefaultProps,
-  fields: {
-    _style: productionStyleField,
-    direction: {
-      type: "select",
-      label: "Direction",
-      options: [
-        { label: "Row", value: "row" },
-        { label: "Column", value: "column" },
-      ],
-    },
-    justify: {
-      type: "select",
-      label: "Justify content",
-      options: [
-        { label: "Start", value: "start" },
-        { label: "Center", value: "center" },
-        { label: "End", value: "end" },
-        { label: "Space between", value: "between" },
-        { label: "Space around", value: "around" },
-      ],
-    },
-    align: {
-      type: "select",
-      label: "Align items",
-      options: [
-        { label: "Start", value: "start" },
-        { label: "Center", value: "center" },
-        { label: "End", value: "end" },
-        { label: "Stretch", value: "stretch" },
-      ],
-    },
-    wrap: {
-      type: "select",
-      label: "Wrap",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    gap: { type: "number", label: "Gap (px)", min: 0, max: 96 } as Field<number>,
-    content: { type: "slot" },
-  },
-  render: FlexBlock,
-};

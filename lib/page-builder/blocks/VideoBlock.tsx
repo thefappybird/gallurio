@@ -1,7 +1,7 @@
 /**
- * VideoBlock — an embedded YouTube or Vimeo video with optional heading,
- * description (above) and footer (below). Link-only: owners paste a YouTube or
- * Vimeo URL; we never store or proxy video files.
+ * VideoBlock — an embedded YouTube or Vimeo video with optional description
+ * (above) and footer (below). Link-only: owners paste a YouTube or Vimeo URL;
+ * we never store or proxy video files.
  *
  * `parseVideoEmbed` is a pure helper (exported for tests) that derives a safe
  * privacy-friendly embed src from the common URL shapes. Unknown URLs render the
@@ -19,14 +19,12 @@ import {
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
-  heading: string;
   description: string;
   videoUrl: string;
   footer: string;
 };
 
 export const videoDefaultProps: VideoBlockProps = {
-  heading: "",
   description: "",
   videoUrl: "",
   footer: "",
@@ -70,8 +68,7 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // Component
 // ---------------------------------------------------------------------------
 
-export function VideoBlock({ _style, heading, description, videoUrl, footer }: VideoBlockProps) {
-  const headingText = asText(heading);
+export function VideoBlock({ _style, description, videoUrl, footer }: VideoBlockProps) {
   const descriptionText = asText(description);
   const footerText = asText(footer);
   const embed = parseVideoEmbed(videoUrl);
@@ -90,36 +87,21 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
       {...resolveBlockAttrs(_style)}
     >
       <div style={{ maxWidth: "56rem", margin: "0 auto" }}>
-        {(headingText || descriptionText) && (
+        {descriptionText && (
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            {headingText && (
-              <h2
-                style={{
-                  fontFamily: "var(--pf-font-heading)",
-                  fontSize: "clamp(1.5rem, 3vw, 2.25rem)",
-                  lineHeight: 1.2,
-                  margin: 0,
-                  color: "var(--pf-color-fg)",
-                }}
-              >
-                {headingText}
-              </h2>
-            )}
-            {descriptionText && (
-              <p
-                style={{
-                  fontSize: "1rem",
-                  lineHeight: 1.6,
-                  margin: "0.5rem auto 0",
-                  maxWidth: "40rem",
-                  color: "var(--pf-color-fg)",
-                  opacity: 0.75,
-                  whiteSpace: "pre-line",
-                }}
-              >
-                {descriptionText}
-              </p>
-            )}
+            <p
+              style={{
+                fontSize: "1rem",
+                lineHeight: 1.6,
+                margin: "0 auto",
+                maxWidth: "40rem",
+                color: "var(--pf-color-fg)",
+                opacity: 0.75,
+                whiteSpace: "pre-line",
+              }}
+            >
+              {descriptionText}
+            </p>
           </div>
         )}
 
@@ -136,7 +118,7 @@ export function VideoBlock({ _style, heading, description, videoUrl, footer }: V
           >
             <iframe
               src={embed.src}
-              title={headingText || "Embedded video"}
+              title="Embedded video"
               loading="lazy"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -190,7 +172,6 @@ export const videoBlockConfig: ComponentConfig<VideoBlockProps> = {
   defaultProps: videoDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
     description: { type: "textarea", label: "Description" },
     videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
     footer: { type: "textarea", label: "Footer" },

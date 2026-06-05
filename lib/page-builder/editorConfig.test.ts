@@ -17,7 +17,6 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
-  flexDefaultProps,
 } from "./blocks/manualBlocks";
 
 // The editor config mirrors the production blocks for client-safe previews. If a
@@ -50,7 +49,6 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     Spacer: spacerDefaultProps,
     Divider: dividerDefaultProps,
     Columns: columnsDefaultProps,
-    Flex: flexDefaultProps,
     Container: containerDefaultProps,
   };
 

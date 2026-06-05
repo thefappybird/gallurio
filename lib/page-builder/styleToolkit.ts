@@ -47,14 +47,14 @@ export type SelfAlign = "left" | "center" | "right";
 export type BlockStyle = {
   // Border + frame
   borderWidth?: number; // px
-  borderColorToken?: StyleColorToken;
+  borderColorToken?: StyleColorToken | string;
   radius?: number; // px
   shadow?: ShadowSize;
   // Spacing — legacy px numbers (kept for back-compat reads of old drafts)
   paddingY?: number;
   paddingX?: number;
   marginY?: number;
-  // Spacing — unit-aware (px/%). Horizontal margin is driven by `selfAlign`.
+  // Spacing — unit-aware (px/%).
   marginTop?: CssLength;
   marginBottom?: CssLength;
   paddingTop?: CssLength;
@@ -62,7 +62,7 @@ export type BlockStyle = {
   paddingBottom?: CssLength;
   paddingLeft?: CssLength;
   // Position + size of the block itself
-  selfAlign?: SelfAlign; // horizontal placement via margin-auto (needs width < 100%)
+  selfAlign?: SelfAlign; // horizontal placement via align-self in the flex-col page root
   width?: CssLength;
   height?: CssLength;
   // Grid placement when the block is a child of a Columns/grid container
@@ -74,15 +74,15 @@ export type BlockStyle = {
   justifyContent?: "start" | "center" | "end" | "between" | "around";
   gap?: number; // px, gap between children (0–96)
   // Background
-  bgColorToken?: StyleColorToken;
+  bgColorToken?: StyleColorToken | string;
   bgImagePublicId?: string;
   // Typography (applied SECTION-WIDE — to the whole block via resolveBlockStyle)
   fontPair?: BrandKitFontPair; // legacy; kept for back-compat reads
   fontFamily?: PortfolioFontKey;
   fontSize?: number; // px
-  textColorToken?: StyleColorToken;
+  textColorToken?: StyleColorToken | string;
   // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
-  buttonColorToken?: StyleColorToken;
+  buttonColorToken?: StyleColorToken | string;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -170,8 +170,12 @@ const SHADOW_VALUE: Record<ShadowSize, string | undefined> = {
   lg: "0 14px 38px rgba(0,0,0,0.20)",
 };
 
-export function colorTokenToVar(token: StyleColorToken | undefined): string | undefined {
-  return token ? TOKEN_VAR[token] : undefined;
+export function colorTokenToVar(token: StyleColorToken | string | undefined): string | undefined {
+  if (!token) return undefined;
+  if ((STYLE_COLOR_TOKENS as readonly string[]).includes(token)) {
+    return TOKEN_VAR[token as StyleColorToken];
+  }
+  return token; // raw hex or other CSS color value
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -244,17 +248,14 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   if (style.width) css.width = style.width;
   if (style.height) css.height = style.height;
 
-  // Horizontal self-placement via margin-auto (parent-agnostic; visible when
-  // width < 100%). Applied after margins so it controls the left/right margins.
-  if (style.selfAlign === "center") {
-    css.marginLeft = "auto";
-    css.marginRight = "auto";
-  } else if (style.selfAlign === "right") {
-    css.marginLeft = "auto";
-    css.marginRight = "0";
-  } else if (style.selfAlign === "left") {
-    css.marginLeft = "0";
-    css.marginRight = "auto";
+  // Horizontal self-placement via align-self in the flex-col page root.
+  if (style.selfAlign) {
+    const SELF_ALIGN_MAP: Record<SelfAlign, string> = {
+      left: "flex-start",
+      center: "center",
+      right: "flex-end",
+    };
+    css.alignSelf = SELF_ALIGN_MAP[style.selfAlign];
   }
 
   // Grid placement when this block is a child of a Columns/grid container.
@@ -288,7 +289,7 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
 
   // Background — solid color and/or image (image layers on top).
   if (style.bgColorToken) {
-    css.backgroundColor = TOKEN_VAR[style.bgColorToken];
+    css.backgroundColor = colorTokenToVar(style.bgColorToken) ?? "";
   }
   if (style.bgImagePublicId) {
     const url = bgImageUrl(style.bgImagePublicId);
@@ -318,7 +319,7 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
     css.fontSize = `${clamp(style.fontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
   }
   if (style.textColorToken) {
-    css.color = TOKEN_VAR[style.textColorToken];
+    css.color = colorTokenToVar(style.textColorToken) ?? "";
   }
   if (style.bold) css.fontWeight = 700;
   if (style.italic) css.fontStyle = "italic";

@@ -60,6 +60,7 @@ import {
   type TextAlign,
   type AnimationType,
   type HoverEffect,
+  type SelfAlign,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 
@@ -73,10 +74,10 @@ const CONTAINER_TYPES = new Set([
   "ContactPreset",
 ]);
 
-const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer"]);
+const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
 const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
 const FLEX_CONTAINER_BLOCKS = new Set([
-  "Container", "Flex",
+  "Container",
   "HeroPreset", "AboutPreset", "ServicesPreset", "CtaPreset", "ContactPreset",
 ]);
 
@@ -111,6 +112,12 @@ const SHADOW_OPTIONS: { value: ShadowSize; label: string; Icon: LucideIcon }[] =
   { value: "sm", label: "Small", Icon: Square },
   { value: "md", label: "Medium", Icon: Layers2 },
   { value: "lg", label: "Large", Icon: Layers },
+];
+
+const BLOCK_POSITION_OPTIONS: { value: SelfAlign; label: string; Icon: LucideIcon }[] = [
+  { value: "left",   label: "Align block left",   Icon: AlignHorizontalJustifyStart },
+  { value: "center", label: "Align block center",  Icon: AlignHorizontalJustifyCenter },
+  { value: "right",  label: "Align block right",   Icon: AlignHorizontalJustifyEnd },
 ];
 
 const ALIGN_OPTIONS: { value: NonNullable<BlockStyle["alignItems"]>; label: string; Icon: LucideIcon }[] = [
@@ -315,15 +322,6 @@ function ContentInputs({
             value={(props.videoUrl as string) ?? ""}
             onChange={(e) => setProp("videoUrl", e.target.value)}
             placeholder="YouTube or Vimeo URL"
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Heading</span>
-          <input
-            type="text"
-            value={(props.heading as string) ?? ""}
-            onChange={(e) => setProp("heading", e.target.value)}
             className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
         </label>
@@ -906,13 +904,23 @@ function LayoutTabBody({
     );
   }
 
-  // For text-only leaf blocks, show only size/position controls
+  // For text-only and button leaf blocks, show position/size/margin controls
   // (no gap, align, justify — those have no meaning for a single block).
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
+    const isButton = blockType === "Button";
     return (
       <div className="flex flex-col gap-4 p-3">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Position</span>
+          <IconRow
+            label="Block position"
+            value={s.selfAlign}
+            options={BLOCK_POSITION_OPTIONS}
+            onChange={(v) => set({ selfAlign: v })}
+          />
+        </div>
         <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
-        <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+        {!isButton && <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Margin</span>
           <DimensionInput label="Top" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
@@ -1021,7 +1029,7 @@ function BlockAwarePanel({
           type={type}
           p={p}
           setProp={setProp}
-          showBanner={!isGallery}
+          showBanner={!isGallery && type !== "Button"}
           isContainer={isContainer}
         />
       )}

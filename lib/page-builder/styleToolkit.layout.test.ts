@@ -2,16 +2,24 @@ import { describe, it, expect } from "vitest";
 import { resolveBlockStyle, resolveBlockAttrs } from "./styleToolkit";
 
 describe("resolveBlockStyle — layout / spacing / sizing", () => {
-  it("selfAlign center sets margin auto on both sides", () => {
-    const css = resolveBlockStyle({ selfAlign: "center" });
-    expect(css.marginLeft).toBe("auto");
-    expect(css.marginRight).toBe("auto");
+  it("selfAlign left sets alignSelf to flex-start", () => {
+    const css = resolveBlockStyle({ selfAlign: "left" });
+    expect(css.alignSelf).toBe("flex-start");
   });
 
-  it("selfAlign right pins left auto, right 0", () => {
+  it("selfAlign center sets alignSelf to center", () => {
+    const css = resolveBlockStyle({ selfAlign: "center" });
+    expect(css.alignSelf).toBe("center");
+  });
+
+  it("selfAlign right sets alignSelf to flex-end", () => {
     const css = resolveBlockStyle({ selfAlign: "right" });
-    expect(css.marginLeft).toBe("auto");
-    expect(css.marginRight).toBe("0");
+    expect(css.alignSelf).toBe("flex-end");
+  });
+
+  it("omits alignSelf when selfAlign is not set", () => {
+    const css = resolveBlockStyle({});
+    expect(css.alignSelf).toBeUndefined();
   });
 
   it("applies unit-aware width/height verbatim", () => {

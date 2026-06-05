@@ -23,6 +23,7 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
+import type { ReactNode } from "react";
 import type { Config, ComponentConfig, Field } from "@measured/puck";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
@@ -63,7 +64,6 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
-  FlexBlock,
   headingDefaultProps,
   textDefaultProps,
   imageDefaultProps,
@@ -72,7 +72,6 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
-  flexDefaultProps,
   type HeadingBlockProps,
   type TextBlockProps,
   type ImageBlockProps,
@@ -81,7 +80,6 @@ import {
   type DividerBlockProps,
   type ColumnsBlockProps,
   type ContainerBlockProps,
-  type FlexBlockProps,
   type ContainerHeight,
   type ContainerAlignX,
   type ContainerAlignY,
@@ -109,7 +107,6 @@ type EditorComponents = {
   Spacer: SpacerBlockProps;
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
-  Flex: FlexBlockProps;
   Container: ContainerBlockProps;
 };
 
@@ -497,14 +494,13 @@ const video: ComponentConfig<VideoBlockProps> = {
   defaultProps: videoDefaultProps,
   fields: {
     _style: styleField,
-    heading: { ...richTextField("Heading (optional)"), visible: false } as unknown as Field<string>,
     description: { ...richTextField("Description (optional)", true), visible: false } as unknown as Field<string>,
     videoUrl: { type: "text", label: "YouTube or Vimeo URL", visible: false } as unknown as Field<string>,
     footer: { ...richTextField("Footer (optional)", true), visible: false } as unknown as Field<string>,
   },
   resolveFields: (_data, { fields }) => {
-    // videoUrl and heading are managed by the Content tab in StyleToolkitField
-    const { videoUrl: _v, heading: _h, description: _d, footer: _f, ...rest } = fields as Record<string, unknown>;
+    // videoUrl, description, and footer are managed by the Content tab in StyleToolkitField
+    const { videoUrl: _v, description: _d, footer: _f, ...rest } = fields as Record<string, unknown>;
     return rest as typeof fields;
   },
   render: VideoBlock,
@@ -702,63 +698,6 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   render: ColumnsBlock,
 };
 
-const flex: ComponentConfig<FlexBlockProps> = {
-  label: "Flex",
-  defaultProps: flexDefaultProps,
-  fields: {
-    _style: styleField,
-    direction: {
-      type: "select",
-      label: "Direction",
-      visible: false,
-      options: [
-        { label: "Row", value: "row" },
-        { label: "Column", value: "column" },
-      ],
-    },
-    justify: {
-      type: "select",
-      label: "Justify content",
-      visible: false,
-      options: [
-        { label: "Start", value: "start" },
-        { label: "Center", value: "center" },
-        { label: "End", value: "end" },
-        { label: "Space between", value: "between" },
-        { label: "Space around", value: "around" },
-      ],
-    },
-    align: {
-      type: "select",
-      label: "Align items",
-      visible: false,
-      options: [
-        { label: "Start", value: "start" },
-        { label: "Center", value: "center" },
-        { label: "End", value: "end" },
-        { label: "Stretch", value: "stretch" },
-      ],
-    },
-    wrap: {
-      type: "select",
-      label: "Wrap",
-      visible: false,
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    gap: { type: "number", label: "Gap (px)", min: 0, max: 96, visible: false } as Field<number>,
-    content: { type: "slot" },
-  },
-  resolveFields: (_data, { fields }) => {
-    // direction, justify, align, wrap, gap are managed by the Layout tab in StyleToolkitField
-    const { direction: _dir, justify: _j, align: _a, wrap: _w, gap: _g, ...rest } = fields as Record<string, unknown>;
-    return rest as typeof fields;
-  },
-  render: FlexBlock,
-};
-
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   defaultProps: containerDefaultProps,
@@ -791,8 +730,25 @@ export const editorPuckConfig: Config<EditorComponents> = {
     Spacer: spacer,
     Divider: divider,
     Columns: columns,
-    Flex: flex,
     Container: container,
   },
-  root: { fields: {} },
+  root: {
+    fields: {},
+    // Puck's PuckComponent<T> omits children from root render props in its TS
+    // types, but children is always present at runtime per the Puck API contract.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    render: (({ children }: { children: ReactNode }) => (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          width: "100%",
+          minHeight: "100%",
+        }}
+      >
+        {children}
+      </div>
+    )) as any,
+  },
 };

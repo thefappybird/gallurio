@@ -80,19 +80,23 @@ export function ToolbarPopover({
   );
 }
 
-/** A row of the 5 brand-palette swatches (+ optional "None"). */
+/** A row of the 5 brand-palette swatches (+ optional "Reset" + custom hex picker). */
 export function ColorSwatchRow({
   value,
   onChange,
   allowNone = true,
 }: {
-  value: StyleColorToken | undefined;
-  onChange: (next: StyleColorToken | undefined) => void;
+  value: StyleColorToken | string | undefined;
+  onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
 }) {
   // Resolved hex (via context) so swatches show the real color even when the
   // popover is portaled outside the `--pf-color-*` scope.
   const colors = useBrandColors();
+  const isCustomHex =
+    typeof value === "string" &&
+    value.startsWith("#") &&
+    !(STYLE_COLOR_TOKENS as readonly string[]).includes(value);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {STYLE_COLOR_TOKENS.map((token) => (
@@ -116,9 +120,40 @@ export function ColorSwatchRow({
           onClick={() => onChange(undefined)}
           className="h-7 cursor-pointer border border-border px-2 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
-          None
+          Reset
         </button>
       )}
+      {/* Custom color picker — rightmost option, not saved to theme */}
+      <label
+        title="Custom color"
+        aria-label="Custom color"
+        className={cn(
+          "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
+          isCustomHex && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+        )}
+        style={{
+          background: isCustomHex ? value : undefined,
+        }}
+      >
+        <input
+          type="color"
+          value={isCustomHex ? value : "#000000"}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          aria-label="Pick custom color"
+        />
+        {/* Show a rainbow gradient when no custom color is active */}
+        {!isCustomHex && (
+          <span
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+              opacity: 0.85,
+            }}
+          />
+        )}
+      </label>
     </div>
   );
 }

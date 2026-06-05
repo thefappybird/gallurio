@@ -31,7 +31,6 @@ export const MANUAL_BLOCK_KEYS = [
   "Button",
   "Video",
   "Columns",
-  "Flex",
   "Container",
   "ContactDetails",
   "Spacer",

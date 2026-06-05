@@ -14,6 +14,7 @@
  * - the editor mirrors this via lib/page-builder/editorConfig.tsx (parity-tested)
  */
 
+import React from "react";
 import type { Config } from "@measured/puck";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
@@ -33,9 +34,7 @@ import {
   dividerBlockConfig,
   columnsBlockConfig,
   containerBlockConfig,
-  flexBlockConfig,
   type ContainerBlockProps,
-  type FlexBlockProps,
 } from "./blocks/manualBlocks";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -80,7 +79,6 @@ type Components = {
   Spacer: SpacerBlockProps;
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
-  Flex: FlexBlockProps;
   Container: ContainerBlockProps;
 };
 
@@ -114,10 +112,27 @@ export const puckConfig: Config<Components> = {
     Spacer: spacerBlockConfig,
     Divider: dividerBlockConfig,
     Columns: columnsBlockConfig,
-    Flex: flexBlockConfig,
     Container: containerBlockConfig,
   },
   root: {
     fields: {},
+    // Puck's PuckComponent<T> omits children from root render props in its TS
+    // types, but children is always present at runtime per the Puck API contract.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    render: (({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            flexDirection: "column" as const,
+            alignItems: "stretch",
+            width: "100%",
+            minHeight: "100%",
+          },
+        },
+        children
+      )
+    ) as any,
   },
 };
