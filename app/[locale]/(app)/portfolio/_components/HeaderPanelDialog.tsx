@@ -3,24 +3,30 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { RotateCcw, Upload, X } from "lucide-react";
+import { ChevronDown, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
 import { cn } from "@/lib/utils";
 import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
 import {
   CONTACT_BUTTON_COLORS,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  BRAND_KIT_RADII,
+  type BrandKitRadius,
   type PortfolioBrandKit,
   type PortfolioHeaderConfig,
 } from "@/lib/page-builder/types";
-import { updateHeaderConfigAction } from "../_actions";
 
 type Tab = "setup" | "design";
-
+type DrawerId = "banner" | "links" | "active" | "contactButton";
 const COLOR_TOKENS = CONTACT_BUTTON_COLORS;
+const LOGO_MAX_BYTES = 250 * 1024;
+const LOGO_MAX_WIDTH = 512;
+const LOGO_MAX_HEIGHT = 256;
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 
 type Props = {
   header: PortfolioHeaderConfig;
@@ -178,8 +184,86 @@ function ToggleButton({
   );
 }
 
-const CLOUDINARY_UPLOAD_URL = (cloudName: string) =>
-  `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+function RadiusRow({
+  label,
+  active,
+  onToggle,
+  getLabel,
+}: {
+  label: string;
+  active: BrandKitRadius | "" | undefined;
+  onToggle: (radius: BrandKitRadius | "") => void;
+  getLabel: (radius: BrandKitRadius) => string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex">
+        {BRAND_KIT_RADII.map((radius) => {
+          const isActive = active === radius;
+          return (
+            <button
+              key={radius}
+              type="button"
+              aria-label={getLabel(radius)}
+              aria-pressed={isActive}
+              onClick={() => onToggle(isActive ? "" : radius)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isActive && "bg-foreground text-background hover:bg-foreground",
+              )}
+            >
+              {getLabel(radius)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getImageSize(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("invalid_image"));
+    };
+    img.src = url;
+  });
+}
+
+function DesignDrawer({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border border-border bg-background">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <span>{title}</span>
+        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && <div className="flex flex-col gap-4 border-t border-border p-3">{children}</div>}
+    </section>
+  );
+}
 
 export function HeaderPanelDialog({
   header,
@@ -193,7 +277,9 @@ export function HeaderPanelDialog({
   const te = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoDragActive, setLogoDragActive] = useState(false);
   const [tab, setTab] = useState<Tab>("setup");
+  const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) {
@@ -207,48 +293,41 @@ export function HeaderPanelDialog({
   async function uploadLogo(file: File) {
     setLogoUploading(true);
     try {
-      const signRes = await fetch("/api/uploads/sign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ folder: "portfolio/header" }),
+      if (!(LOGO_TYPES as readonly string[]).includes(file.type)) {
+        toast.error(t("logoErrors.type"));
+        return;
+      }
+      if (file.size > LOGO_MAX_BYTES) {
+        toast.error(t("logoErrors.size"));
+        return;
+      }
+      const { width, height } = await getImageSize(file);
+      if (width > LOGO_MAX_WIDTH || height > LOGO_MAX_HEIGHT) {
+        toast.error(t("logoErrors.dimensions"));
+        return;
+      }
+      const uploaded = await uploadImageToCloudinary(file, {
+        subfolder: "portfolio_header",
+        validateDimensions: false,
       });
-      if (!signRes.ok) throw new Error("sign_failed");
-      const { signature, timestamp, api_key, cloud_name, folder } = await signRes.json() as {
-        signature: string; timestamp: number; api_key: string; cloud_name: string; folder: string;
-      };
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("signature", signature);
-      formData.append("timestamp", String(timestamp));
-      formData.append("api_key", api_key);
-      formData.append("folder", folder);
-
-      const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL(cloud_name), { method: "POST", body: formData });
-      if (!uploadRes.ok) throw new Error("upload_failed");
-      const { secure_url, public_id } = await uploadRes.json() as { secure_url: string; public_id: string };
-
-      onHeaderChange({ ...header, logoUrl: secure_url, logoPublicId: public_id });
-    } catch {
-      toast.error(te("errorToast"));
+      onHeaderChange({
+        ...header,
+        logoUrl: uploaded.url,
+        logoPublicId: uploaded.cloudinaryPublicId,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error && error.message === "invalid_image" ? t("logoErrors.image") : t("logoErrors.upload"));
     } finally {
       setLogoUploading(false);
     }
   }
 
-  async function save() {
+  function save() {
     setSaving(true);
-    try {
-      const res = await updateHeaderConfigAction(header);
-      if ("error" in res) {
-        toast.error(te("errorToast"));
-        return;
-      }
-      toast.success(te("savedToast"));
+    queueMicrotask(() => {
       onSaved();
-    } finally {
       setSaving(false);
-    }
+    });
   }
 
   const shadowLabels: Record<string, string> = {
@@ -265,21 +344,13 @@ export function HeaderPanelDialog({
 
   return (
     <div
-      className="flex w-[280px] flex-col border-l border-border bg-card"
+      className="flex w-[360px] flex-col border-l border-border bg-card"
       role="complementary"
       aria-label={t("title")}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex items-center border-b border-border px-4 py-3">
         <span className="text-sm font-semibold text-foreground">{t("title")}</span>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label={t("close")}
-          className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <X className="size-4" aria-hidden />
-        </button>
       </div>
 
       {/* Tab bar */}
@@ -308,7 +379,7 @@ export function HeaderPanelDialog({
               <Label htmlFor="header-brand-text">{t("brandTextLabel")}</Label>
               <Input
                 id="header-brand-text"
-                value={header.brandText ?? ""}
+                value={header.brandText === undefined ? workspaceName : header.brandText}
                 placeholder={workspaceName}
                 maxLength={80}
                 onChange={(e) => set("brandText", e.target.value)}
@@ -341,16 +412,35 @@ export function HeaderPanelDialog({
                   type="button"
                   disabled={logoUploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex h-9 items-center justify-center gap-1.5 border border-border bg-background px-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setLogoDragActive(true);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setLogoDragActive(true);
+                  }}
+                  onDragLeave={() => setLogoDragActive(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setLogoDragActive(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) void uploadLogo(file);
+                  }}
+                  className={cn(
+                    "inline-flex min-h-24 flex-col items-center justify-center gap-2 border border-dashed border-border bg-background px-3 text-center text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60",
+                    logoDragActive && "bg-accent text-foreground",
+                  )}
                 >
                   <Upload className="size-3.5" aria-hidden />
-                  {logoUploading ? t("logoUploading") : t("logoUpload")}
+                  <span>{logoUploading ? t("logoUploading") : t("logoUpload")}</span>
+                  <span>{t("logoRequirements")}</span>
                 </button>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -365,10 +455,11 @@ export function HeaderPanelDialog({
         {tab === "design" && (
           <div className="flex flex-col gap-6">
             {/* ── Banner ─────────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                {t("sectionBanner")}
-              </span>
+            <DesignDrawer
+              title={t("sectionBanner")}
+              open={openDrawer === "banner"}
+              onToggle={() => setOpenDrawer((current) => current === "banner" ? null : "banner")}
+            >
 
               <ColorSwatchRow
                 label={t("bgColorLabel")}
@@ -419,15 +510,14 @@ export function HeaderPanelDialog({
                   })}
                 </div>
               </div>
-            </div>
-
-            <div className="border-t border-border" />
+            </DesignDrawer>
 
             {/* ── Links ──────────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                {t("sectionLinks")}
-              </span>
+            <DesignDrawer
+              title={t("sectionLinks")}
+              open={openDrawer === "links"}
+              onToggle={() => setOpenDrawer((current) => current === "links" ? null : "links")}
+            >
 
               {/* Font size */}
               <div className="flex flex-col gap-1.5">
@@ -467,15 +557,14 @@ export function HeaderPanelDialog({
                 brandKit={brandKit}
                 onToggle={(c) => set("activeLinkColor", c)}
               />
-            </div>
-
-            <div className="border-t border-border" />
+            </DesignDrawer>
 
             {/* ── Active link style ──────────────────── */}
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                {t("sectionActiveStyle")}
-              </span>
+            <DesignDrawer
+              title={t("sectionActiveStyle")}
+              open={openDrawer === "active"}
+              onToggle={() => setOpenDrawer((current) => current === "active" ? null : "active")}
+            >
 
               {/* Multi-select: Scale / Highlight / Underline */}
               <div className="flex flex-col gap-1.5">
@@ -502,6 +591,23 @@ export function HeaderPanelDialog({
                   onToggle={(c) => set("highlightColor", c)}
                 />
               )}
+              {header.activeLinkHighlight && (
+                <NumberInputRow
+                  label={t("highlightOpacityLabel")}
+                  value={header.highlightOpacity ?? 100}
+                  min={0}
+                  max={100}
+                  onChange={(v) => set("highlightOpacity", v ?? 100)}
+                />
+              )}
+              {header.activeLinkHighlight && (
+                <RadiusRow
+                  label={t("cornerRadiusLabel")}
+                  active={header.activeLinkRadius}
+                  onToggle={(radius) => set("activeLinkRadius", radius)}
+                  getLabel={(radius) => t(`radius.${radius}`)}
+                />
+              )}
 
               {/* Conditional: underline color */}
               {header.activeLinkUnderline && (
@@ -512,7 +618,40 @@ export function HeaderPanelDialog({
                   onToggle={(c) => set("underlineColor", c)}
                 />
               )}
-            </div>
+            </DesignDrawer>
+
+            <DesignDrawer
+              title={t("sectionContactButton")}
+              open={openDrawer === "contactButton"}
+              onToggle={() => setOpenDrawer((current) => current === "contactButton" ? null : "contactButton")}
+            >
+
+              <ColorSwatchRow
+                label={t("contactButtonColorLabel")}
+                active={header.contactButtonColor}
+                brandKit={brandKit}
+                onToggle={(c) => set("contactButtonColor", c)}
+              />
+              <NumberInputRow
+                label={t("contactButtonOpacityLabel")}
+                value={header.contactButtonOpacity ?? 100}
+                min={0}
+                max={100}
+                onChange={(v) => set("contactButtonOpacity", v ?? 100)}
+              />
+              <ColorSwatchRow
+                label={t("contactButtonTextColorLabel")}
+                active={header.contactButtonTextColor}
+                brandKit={brandKit}
+                onToggle={(c) => set("contactButtonTextColor", c)}
+              />
+              <RadiusRow
+                label={t("cornerRadiusLabel")}
+                active={header.contactButtonRadius}
+                onToggle={(radius) => set("contactButtonRadius", radius)}
+                getLabel={(radius) => t(`radius.${radius}`)}
+              />
+            </DesignDrawer>
           </div>
         )}
       </div>
@@ -523,7 +662,7 @@ export function HeaderPanelDialog({
           {te("publishDialog.cancel")}
         </Button>
         <Button type="button" onClick={save} disabled={saving} className="flex-1">
-          {saving ? t("saving") : t("save")}
+          {saving ? t("saving") : te("done")}
         </Button>
       </div>
     </div>

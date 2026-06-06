@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { ReactNode } from "react";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { useEffect, type ReactNode } from "react";
+import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 // Stub the heavy Puck editor: render its title + the injected custom header
@@ -11,23 +11,42 @@ vi.mock("@measured/puck", () => ({
     headerTitle,
     overrides,
     onPublish,
+    onChange,
   }: {
     headerTitle?: string;
     overrides?: { header?: (p: { actions: ReactNode; children: ReactNode }) => ReactNode };
     onPublish?: () => void;
-  }) => (
-    <div data-testid="puck">
-      <div data-testid="puck-title">{headerTitle}</div>
-      {overrides?.header?.({
-        actions: (
-          <button type="button" onClick={onPublish}>
-            PuckPublish
-          </button>
-        ),
-        children: null,
-      })}
-    </div>
-  ),
+    onChange?: (data: unknown) => void;
+  }) => {
+    useEffect(() => {
+      onChange?.({ content: [], root: {} });
+    }, [onChange]);
+
+    return (
+      <div data-testid="puck">
+        <div data-testid="puck-title">{headerTitle}</div>
+        <button
+          type="button"
+          onClick={() =>
+            onChange?.({
+              content: [{ type: "Hero", props: { id: "hero-1", headline: "Changed" } }],
+              root: {},
+            })
+          }
+        >
+          Simulate Puck change
+        </button>
+        {overrides?.header?.({
+          actions: (
+            <button type="button" onClick={onPublish}>
+              PuckPublish
+            </button>
+          ),
+          children: null,
+        })}
+      </div>
+    );
+  },
   usePuck: () => ({
     appState: {
       ui: {
@@ -93,6 +112,7 @@ const baseProps = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
 });
 
 describe("EditorShell", () => {
@@ -105,6 +125,38 @@ describe("EditorShell", () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
+  });
+
+  it("places Navigation and Contact Form beside the page tabs", () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    const controls = screen.getByRole("group", { name: "Portfolio sections" });
+    expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
+  });
+
+  it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
+    expect(screen.getByText("Send inquiry")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Navigation" }));
+    expect(screen.queryByLabelText("Contact form")).not.toBeInTheDocument();
+    expect(await screen.findByLabelText("Navigation")).toBeInTheDocument();
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
+  });
+
+  it("removes viewport buttons from edit mode but keeps sidebar toggles", () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Toggle properties panel" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mobile" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Tablet" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Desktop" })).not.toBeInTheDocument();
   });
 
   it("opens the publish dialog when Puck's publish fires", () => {
@@ -136,11 +188,10 @@ describe("EditorShell", () => {
 
   it("treats Contact as a tab — auto-opens the inline settings panel", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
-    // Switching to Contact swaps Puck out; the contact sidebar auto-opens.
-    await waitFor(() => expect(screen.queryByTestId("puck")).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Contact form" }).getAttribute("aria-pressed")).toBe("true");
-    // Auto-open means the inline panel is already visible (shows the description).
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Contact Form" }).getAttribute("aria-pressed")).toBe("true");
+    // Auto-open means the panel is already visible (shows the description).
     expect(
       await screen.findByText(
         "The form fields are fixed. You can edit the heading, message, and button only."
@@ -150,12 +201,12 @@ describe("EditorShell", () => {
 
   it("publishes from the contact tab without a lingering 'Saving…' status", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
     expect(await screen.findByText("Saved")).toBeInTheDocument();
     expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
-    expect(publishPortfolioAction).toHaveBeenCalled();
+    await waitFor(() => expect(publishPortfolioAction).toHaveBeenCalled());
   });
 
   it("shows the mobile banner notice", () => {
@@ -163,5 +214,23 @@ describe("EditorShell", () => {
     expect(
       screen.getByText("The editor works best on a larger screen")
     ).toBeInTheDocument();
+  });
+
+  it("keeps Puck edits local until Publish", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(savePortfolioDraftAction).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "PuckPublish" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
+
+    expect(savePortfolioDraftAction).toHaveBeenCalledWith({
+      zone: "home",
+      data: {
+        content: [{ type: "Hero", props: { id: "hero-1", headline: "Changed" } }],
+        root: {},
+      },
+    });
+    await waitFor(() => expect(publishPortfolioAction).toHaveBeenCalled());
   });
 });

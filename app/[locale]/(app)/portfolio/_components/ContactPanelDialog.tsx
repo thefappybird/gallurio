@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
-import { RotateCcw, X } from "lucide-react";
+import { ChevronDown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,6 @@ import {
   type PortfolioBrandKit,
   type PortfolioContactConfig,
 } from "@/lib/page-builder/types";
-import { updateContactConfigAction, updateFormLocaleAction } from "../_actions";
 
 const FORM_LOCALES = ["", "en", "fil", "ms", "id", "th"] as const;
 
@@ -26,6 +24,7 @@ const selectClass =
   "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 type Tab = "setup" | "design";
+type DrawerId = "popup" | "button";
 
 type Props = {
   open: boolean;
@@ -221,6 +220,33 @@ function RadiusRow({
   );
 }
 
+function DesignDrawer({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border border-border bg-background">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <span>{title}</span>
+        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && <div className="flex flex-col gap-4 border-t border-border p-3">{children}</div>}
+    </section>
+  );
+}
+
 export function ContactPanelDialog({
   open,
   contact,
@@ -235,6 +261,7 @@ export function ContactPanelDialog({
   const te = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>("setup");
+  const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
 
   if (!open) return null;
 
@@ -259,41 +286,23 @@ export function ContactPanelDialog({
     set(key, contact[key] === radius ? undefined : radius);
   }
 
-  async function save() {
+  function save() {
     setSaving(true);
-    try {
-      const [contactRes, localeRes] = await Promise.all([
-        updateContactConfigAction(contact),
-        updateFormLocaleAction(formLocale),
-      ]);
-      if ("error" in contactRes || "error" in localeRes) {
-        toast.error(te("errorToast"));
-        return;
-      }
-      toast.success(te("savedToast"));
+    queueMicrotask(() => {
       onSaved();
-    } finally {
       setSaving(false);
-    }
+    });
   }
 
   return (
     <div
-      className="flex w-70 flex-col border-l border-border bg-card"
+      className="flex w-[360px] flex-col border-l border-border bg-card"
       role="complementary"
       aria-label={t("title")}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+      <div className="flex items-center border-b border-border px-4 py-3">
         <span className="text-sm font-semibold text-foreground">{t("title")}</span>
-        <button
-          type="button"
-          onClick={onCancel}
-          aria-label={t("close")}
-          className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        >
-          <X className="size-4" aria-hidden />
-        </button>
       </div>
 
       {/* Tab bar */}
@@ -366,10 +375,11 @@ export function ContactPanelDialog({
         {tab === "design" && (
           <div className="flex flex-col gap-6">
             {/* ── Popup section ─────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                {t("sectionPopup")}
-              </span>
+            <DesignDrawer
+              title={t("sectionPopup")}
+              open={openDrawer === "popup"}
+              onToggle={() => setOpenDrawer((current) => current === "popup" ? null : "popup")}
+            >
 
               <ColorSwatchRow
                 label={t("textColorLabel")}
@@ -404,15 +414,16 @@ export function ContactPanelDialog({
                 onColorChange={(v) => set("popupBorderColor", v)}
                 getColorLabel={(c) => t(`buttonColors.${c}`)}
               />
-            </div>
+            </DesignDrawer>
 
             <div className="border-t border-border" />
 
             {/* ── Button section ────────────────────────── */}
-            <div className="flex flex-col gap-4">
-              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                {t("sectionButton")}
-              </span>
+            <DesignDrawer
+              title={t("sectionButton")}
+              open={openDrawer === "button"}
+              onToggle={() => setOpenDrawer((current) => current === "button" ? null : "button")}
+            >
 
               {/* Button style toggle */}
               <div className="flex flex-col gap-1.5">
@@ -472,7 +483,7 @@ export function ContactPanelDialog({
                 onColorChange={(v) => set("buttonBorderColor", v)}
                 getColorLabel={(c) => t(`buttonColors.${c}`)}
               />
-            </div>
+            </DesignDrawer>
           </div>
         )}
       </div>
@@ -483,7 +494,7 @@ export function ContactPanelDialog({
           {te("publishDialog.cancel")}
         </Button>
         <Button type="button" onClick={save} loading={saving} className="flex-1">
-          {saving ? t("saving") : t("save")}
+          {saving ? t("saving") : te("done")}
         </Button>
       </div>
     </div>

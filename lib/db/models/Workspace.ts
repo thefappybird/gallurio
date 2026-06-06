@@ -5,7 +5,6 @@ import {
   BRAND_KIT_FONT_PAIRS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
-  CONTACT_BUTTON_COLORS,
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
@@ -159,7 +158,7 @@ const workspaceSchema = new Schema(
       // Configurable chrome for the public portfolio navigation header.
       // All fields optional — header falls back to brand-kit values.
       header: {
-        brandText: { type: String, default: "" },
+        brandText: { type: String },
         logoUrl: { type: String, default: "" },
         logoPublicId: { type: String, default: "" },
         backgroundColor: { type: String, default: "" },
@@ -173,8 +172,14 @@ const workspaceSchema = new Schema(
         activeLinkScale: { type: Boolean, default: false },
         activeLinkHighlight: { type: Boolean, default: false },
         highlightColor: { type: String, default: "" },
+        highlightOpacity: { type: Number, default: 100 },
+        activeLinkRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
         activeLinkUnderline: { type: Boolean, default: false },
         underlineColor: { type: String, default: "" },
+        contactButtonColor: { type: String, default: "" },
+        contactButtonTextColor: { type: String, default: "" },
+        contactButtonOpacity: { type: Number, default: 100 },
+        contactButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
       },
     },
     customDomain: { type: String, default: null },

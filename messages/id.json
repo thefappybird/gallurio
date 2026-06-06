@@ -998,7 +998,8 @@
           "home": "Beranda",
           "gallery": "Galeri",
           "contact": "Formulir kontak",
-          "groupLabel": "Bagian halaman"
+          "groupLabel": "Bagian halaman",
+          "sectionsLabel": "Bagian portofolio"
         },
         "save": {
           "saving": "Menyimpan…",
@@ -1012,6 +1013,7 @@
         "publishedToast": "Diterbitkan! Portofolio Anda sudah tayang.",
         "savedToast": "Tersimpan.",
         "errorToast": "Tidak dapat menyimpan. Silakan coba lagi.",
+        "done": "Selesai",
         "publishDialog": {
           "title": "Terbitkan portofolio Anda?",
           "body": "Siapa pun yang memiliki tautannya akan langsung melihat perubahan terbaru Anda.",
@@ -1077,7 +1079,7 @@
           }
         },
         "headerDialog": {
-          "title": "Header",
+          "title": "Navigasi",
           "close": "Tutup",
           "save": "Simpan",
           "saving": "Menyimpan…",
@@ -1085,16 +1087,25 @@
             "setup": "Pengaturan",
             "design": "Desain"
           },
-          "brandTextLabel": "Nama bisnis",
-          "brandTextHelp": "Biarkan kosong untuk menggunakan nama ruang kerja.",
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Awalnya memakai nama ruang kerja. Kosongkan untuk hanya menampilkan logo.",
           "logoLabel": "Logo",
           "logoHelp": "Ditampilkan di sebelah nama bisnis di header.",
           "logoUpload": "Unggah logo",
           "logoUploading": "Mengunggah…",
           "logoRemove": "Hapus logo",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
           "sectionBanner": "Spanduk",
           "sectionLinks": "Tautan",
           "sectionActiveStyle": "Gaya tautan aktif",
+          "sectionContactButton": "Contact button",
           "bgColorLabel": "Warna latar belakang",
           "bgOpacityLabel": "Opasitas latar belakang",
           "linkColorLabel": "Warna teks tautan",
@@ -1108,7 +1119,17 @@
           "activeStyleHighlight": "Sorot",
           "activeStyleUnderline": "Garis bawah",
           "highlightColorLabel": "Warna sorotan",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
           "underlineColorLabel": "Warna garis bawah",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
           "shadow": {
             "none": "Tidak ada",
             "sm": "Kecil",
@@ -1133,7 +1154,8 @@
           "continue": "Lanjutkan saja"
         },
         "contactSettings": "Edit pengaturan kontak",
-        "headerSettings": "Header",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigasi",
         "preview": {
           "show": "Pratinjau",
           "edit": "Edit",

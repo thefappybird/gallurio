@@ -998,7 +998,8 @@
           "home": "หน้าแรก",
           "gallery": "แกลเลอรี",
           "contact": "แบบฟอร์มติดต่อ",
-          "groupLabel": "ส่วนของหน้า"
+          "groupLabel": "ส่วนของหน้า",
+          "sectionsLabel": "Portfolio sections"
         },
         "save": {
           "saving": "กำลังบันทึก…",
@@ -1012,6 +1013,7 @@
         "publishedToast": "เผยแพร่แล้ว! พอร์ตโฟลิโอของคุณพร้อมใช้งานแล้ว",
         "savedToast": "บันทึกแล้ว",
         "errorToast": "ไม่สามารถบันทึกได้ กรุณาลองอีกครั้ง",
+        "done": "Done",
         "publishDialog": {
           "title": "เผยแพร่พอร์ตโฟลิโอของคุณหรือไม่?",
           "body": "ทุกคนที่มีลิงก์จะเห็นการเปลี่ยนแปลงล่าสุดของคุณทันที",
@@ -1077,7 +1079,7 @@
           }
         },
         "headerDialog": {
-          "title": "ส่วนหัว",
+          "title": "Navigation",
           "close": "ปิด",
           "save": "บันทึก",
           "saving": "กำลังบันทึก…",
@@ -1085,16 +1087,25 @@
             "setup": "ตั้งค่า",
             "design": "ออกแบบ"
           },
-          "brandTextLabel": "ชื่อธุรกิจ",
-          "brandTextHelp": "เว้นว่างไว้เพื่อใช้ชื่อพื้นที่ทำงาน",
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "ค่าเริ่มต้นคือชื่อพื้นที่ทำงาน ล้างข้อความเพื่อแสดงเฉพาะโลโก้",
           "logoLabel": "โลโก้",
           "logoHelp": "แสดงข้างชื่อธุรกิจในส่วนหัว",
           "logoUpload": "อัปโหลดโลโก้",
           "logoUploading": "กำลังอัปโหลด…",
           "logoRemove": "ลบโลโก้",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
           "sectionBanner": "แบนเนอร์",
           "sectionLinks": "ลิงก์",
           "sectionActiveStyle": "สไตล์ลิงก์ที่ใช้งาน",
+          "sectionContactButton": "Contact button",
           "bgColorLabel": "สีพื้นหลัง",
           "bgOpacityLabel": "ความโปร่งใสพื้นหลัง",
           "linkColorLabel": "สีข้อความลิงก์",
@@ -1108,7 +1119,17 @@
           "activeStyleHighlight": "ไฮไลต์",
           "activeStyleUnderline": "ขีดเส้นใต้",
           "highlightColorLabel": "สีไฮไลต์",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
           "underlineColorLabel": "สีขีดเส้นใต้",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
           "shadow": {
             "none": "ไม่มี",
             "sm": "เล็ก",
@@ -1133,7 +1154,8 @@
           "continue": "ดำเนินการต่อไป"
         },
         "contactSettings": "แก้ไขการตั้งค่าการติดต่อ",
-        "headerSettings": "ส่วนหัว",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
         "preview": {
           "show": "ดูตัวอย่าง",
           "edit": "แก้ไข",

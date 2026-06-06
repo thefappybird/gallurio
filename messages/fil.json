@@ -998,7 +998,8 @@
           "home": "Home",
           "gallery": "Gallery",
           "contact": "Form ng kontak",
-          "groupLabel": "Seksyon ng pahina"
+          "groupLabel": "Seksyon ng pahina",
+          "sectionsLabel": "Mga seksyon ng portfolio"
         },
         "save": {
           "saving": "Nagse-save…",
@@ -1012,6 +1013,7 @@
         "publishedToast": "Nai-publish na! Live na ang iyong portfolio.",
         "savedToast": "Nai-save.",
         "errorToast": "Hindi ma-save. Subukan muli.",
+        "done": "Tapos",
         "publishDialog": {
           "title": "I-publish ang iyong portfolio?",
           "body": "Makikita agad ng sinumang may link ang iyong mga pinakabagong pagbabago.",
@@ -1077,7 +1079,7 @@
           }
         },
         "headerDialog": {
-          "title": "Header",
+          "title": "Navigation",
           "close": "Isara",
           "save": "I-save",
           "saving": "Sine-save…",
@@ -1085,16 +1087,25 @@
             "setup": "Setup",
             "design": "Disenyo"
           },
-          "brandTextLabel": "Pangalan ng negosyo",
-          "brandTextHelp": "Iwanang blangko para gamitin ang pangalan ng workspace.",
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Nagsisimula sa pangalan ng workspace. Burahin ito para logo lang ang ipakita.",
           "logoLabel": "Logo",
           "logoHelp": "Ipinapakita sa tabi ng pangalan ng negosyo sa header.",
           "logoUpload": "Mag-upload ng logo",
           "logoUploading": "Ina-upload…",
           "logoRemove": "Alisin ang logo",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
           "sectionBanner": "Banner",
           "sectionLinks": "Mga link",
           "sectionActiveStyle": "Estilo ng aktibong link",
+          "sectionContactButton": "Contact button",
           "bgColorLabel": "Kulay ng background",
           "bgOpacityLabel": "Opacity ng background",
           "linkColorLabel": "Kulay ng teksto ng link",
@@ -1108,7 +1119,17 @@
           "activeStyleHighlight": "I-highlight",
           "activeStyleUnderline": "Salungguhit",
           "highlightColorLabel": "Kulay ng highlight",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
           "underlineColorLabel": "Kulay ng salungguhit",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
           "shadow": {
             "none": "Wala",
             "sm": "Maliit",
@@ -1133,7 +1154,8 @@
           "continue": "Magpatuloy naman"
         },
         "contactSettings": "I-edit ang setting ng kontak",
-        "headerSettings": "Header",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
         "preview": {
           "show": "Preview",
           "edit": "I-edit",

@@ -27,7 +27,7 @@ type SignResponse = {
 
 export async function uploadImageToCloudinary(
   file: File,
-  opts: { subfolder?: string } = {}
+  opts: { subfolder?: string; validateDimensions?: boolean } = {}
 ): Promise<UploadedImage> {
   // Pre-upload: validate file type and size.
   const fileCheck = validatePhotoFile(file);
@@ -63,8 +63,10 @@ export async function uploadImageToCloudinary(
   };
 
   // Post-upload: validate dimensions from Cloudinary response.
-  const dimCheck = validatePhotoDimensions(json.width ?? null, json.height ?? null);
-  if (!dimCheck.ok) throw new Error(dimCheck.reason);
+  if (opts.validateDimensions !== false) {
+    const dimCheck = validatePhotoDimensions(json.width ?? null, json.height ?? null);
+    if (!dimCheck.ok) throw new Error(dimCheck.reason);
+  }
 
   return {
     cloudinaryPublicId: json.public_id,

@@ -4,7 +4,6 @@ import {
   BRAND_KIT_FONT_PAIRS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
-  CONTACT_BUTTON_COLORS,
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
@@ -100,8 +99,14 @@ export const portfolioHeaderConfigSchema = z.object({
   activeLinkScale: z.boolean().optional(),
   activeLinkHighlight: z.boolean().optional(),
   highlightColor: z.string().max(32).optional().or(z.literal("")),
+  highlightOpacity: z.number().int().min(0).max(100).optional(),
+  activeLinkRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   activeLinkUnderline: z.boolean().optional(),
   underlineColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonTextColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonOpacity: z.number().int().min(0).max(100).optional(),
+  contactButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
 });
 
 export type PortfolioHeaderConfigInput = z.infer<typeof portfolioHeaderConfigSchema>;

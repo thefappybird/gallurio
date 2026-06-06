@@ -998,7 +998,8 @@
           "home": "Home",
           "gallery": "Gallery",
           "contact": "Contact form",
-          "groupLabel": "Page section"
+          "groupLabel": "Page section",
+          "sectionsLabel": "Portfolio sections"
         },
         "save": {
           "saving": "Saving…",
@@ -1012,6 +1013,7 @@
         "publishedToast": "Published! Your portfolio is live.",
         "savedToast": "Saved.",
         "errorToast": "Couldn't save. Please try again.",
+        "done": "Done",
         "publishDialog": {
           "title": "Publish your portfolio?",
           "body": "Anyone with the link will see your latest changes immediately.",
@@ -1077,7 +1079,7 @@
           }
         },
         "headerDialog": {
-          "title": "Header",
+          "title": "Navigation",
           "close": "Close",
           "save": "Save",
           "saving": "Saving…",
@@ -1085,16 +1087,25 @@
             "setup": "Setup",
             "design": "Design"
           },
-          "brandTextLabel": "Business name",
-          "brandTextHelp": "Leave blank to use your workspace name.",
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Displayed next to your logo in the navbar. Leave empty to show the logo only.",
           "logoLabel": "Logo",
           "logoHelp": "Shown beside your business name in the header.",
           "logoUpload": "Upload logo",
           "logoUploading": "Uploading…",
           "logoRemove": "Remove logo",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
           "sectionBanner": "Banner",
           "sectionLinks": "Links",
           "sectionActiveStyle": "Active link style",
+          "sectionContactButton": "Contact button",
           "bgColorLabel": "Background color",
           "bgOpacityLabel": "Background opacity",
           "linkColorLabel": "Link text color",
@@ -1108,7 +1119,17 @@
           "activeStyleHighlight": "Highlight",
           "activeStyleUnderline": "Underline",
           "highlightColorLabel": "Highlight color",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
           "underlineColorLabel": "Underline color",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
           "shadow": {
             "none": "None",
             "sm": "Small",
@@ -1133,7 +1154,8 @@
           "continue": "Continue anyway"
         },
         "contactSettings": "Edit contact settings",
-        "headerSettings": "Header",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
         "preview": {
           "show": "Preview",
           "edit": "Edit",

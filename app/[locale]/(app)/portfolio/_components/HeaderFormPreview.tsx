@@ -41,6 +41,14 @@ function hexToRgba(hex: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
 }
 
+function withOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  if (color.startsWith("#") && color.length === 7) {
+    return hexToRgba(color, opacity);
+  }
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
+}
+
 type Props = {
   header: PortfolioHeaderConfig;
   brandKit: PortfolioBrandKit;
@@ -72,7 +80,11 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
       style.fontWeight = 700;
     }
     if (header.activeLinkHighlight) {
-      style.backgroundColor = resolveColor(header.highlightColor, brandKit, brandKit.accentColor + "28");
+      const highlightColor = resolveColor(header.highlightColor, brandKit, brandKit.accentColor);
+      style.backgroundColor = withOpacity(highlightColor, header.highlightOpacity ?? 100);
+      style.borderRadius = header.activeLinkRadius
+        ? (RADIUS_MAP[header.activeLinkRadius] ?? brandRadius)
+        : brandRadius;
     }
     if (header.activeLinkUnderline) {
       style.borderBottom = `3px solid ${resolveColor(header.underlineColor, brandKit, brandKit.accentColor)}`;
@@ -102,16 +114,19 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
     justifyContent: "center",
     minHeight: "44px",
     padding: "0 1rem",
-    backgroundColor: brandKit.primaryColor,
-    color: brandKit.backgroundColor,
+    backgroundColor: withOpacity(
+      resolveColor(header.contactButtonColor, brandKit, brandKit.primaryColor),
+      header.contactButtonOpacity ?? 100,
+    ),
+    color: resolveColor(header.contactButtonTextColor, brandKit, brandKit.backgroundColor),
     border: "none",
-    borderRadius: brandRadius,
+    borderRadius: header.contactButtonRadius ? (RADIUS_MAP[header.contactButtonRadius] ?? brandRadius) : brandRadius,
     cursor: "default",
     fontSize,
     fontFamily: "inherit",
   };
 
-  const brandText = header.brandText?.trim() || workspaceName;
+  const brandText = header.brandText === undefined ? workspaceName : header.brandText.trim();
 
   return (
     <div
@@ -208,7 +223,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
           pointerEvents: "none",
         }}
       >
-        "Home" shown as active to preview link styles
+        &quot;Home&quot; shown as active to preview link styles
       </div>
     </div>
   );

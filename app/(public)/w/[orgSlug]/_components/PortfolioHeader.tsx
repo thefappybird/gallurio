@@ -38,6 +38,12 @@ const SHADOW_MAP: Record<string, string> = {
   lg: "0 4px 24px rgba(0,0,0,0.18)",
 };
 
+const RADIUS_MAP: Record<string, string> = {
+  sharp: "0",
+  subtle: "0.25rem",
+  rounded: "0.5rem",
+};
+
 /** Resolve a color token or hex to a CSS value usable in inline style. */
 function resolveColor(token: string | undefined, fallback: string): string {
   if (!token) return fallback;
@@ -59,6 +65,11 @@ function buildBg(config: PortfolioHeaderConfig | null | undefined): string {
   const opacity = config?.backgroundOpacity ?? 100;
   if (opacity >= 100) return bgColor;
   return `color-mix(in srgb, ${bgColor} ${opacity}%, transparent)`;
+}
+
+function buildColorWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
 }
 
 export function PortfolioHeader({
@@ -105,10 +116,17 @@ export function PortfolioHeader({
       style.display = "inline-flex";
     }
     if (config?.activeLinkHighlight) {
-      style.backgroundColor = resolveColor(
+      const highlightColor = resolveColor(
         config.highlightColor,
         "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
       );
+      (style as React.CSSProperties & Record<string, string>)["--pf-active-link-highlight-fill"] = highlightColor;
+      (style as React.CSSProperties & Record<string, string>)["--pf-active-link-highlight-opacity"] =
+        `${config.highlightOpacity ?? 100}%`;
+      style.backgroundColor = buildColorWithOpacity(highlightColor, config.highlightOpacity ?? 100);
+      style.borderRadius = config.activeLinkRadius
+        ? (RADIUS_MAP[config.activeLinkRadius] ?? "var(--pf-radius)")
+        : "var(--pf-radius)";
     }
     if (config?.activeLinkUnderline) {
       style.borderBottom = `3px solid ${resolveColor(config.underlineColor, "var(--pf-color-accent)")}`;
@@ -118,7 +136,7 @@ export function PortfolioHeader({
 
   const activeLinkExtra = getActiveLinkExtraStyle();
 
-  const brandText = config?.brandText?.trim() || labels.brand;
+  const brandText = config && "brandText" in config ? config.brandText?.trim() ?? "" : labels.brand;
 
   return (
     <header
@@ -331,28 +349,35 @@ function ContactButton({
   onActivate?: () => void;
   config?: PortfolioHeaderConfig | null;
 }) {
+  const contactButtonFill = resolveColor(config?.contactButtonColor, "var(--pf-color-primary)");
+  const contactButtonStyle: React.CSSProperties & Record<string, string | number | undefined> = {
+    "--pf-contact-button-fill": contactButtonFill,
+    "--pf-contact-button-opacity": `${config?.contactButtonOpacity ?? 100}%`,
+    display: block ? "block" : "inline-flex",
+    width: block ? "100%" : undefined,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "44px",
+    padding: "0 1rem",
+    marginTop: block ? "0.25rem" : 0,
+    backgroundColor: buildColorWithOpacity(contactButtonFill, config?.contactButtonOpacity ?? 100),
+    color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+    border: "none",
+    borderRadius: config?.contactButtonRadius
+      ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")
+      : "var(--pf-radius)",
+    cursor: "pointer",
+    fontSize: config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem",
+    fontFamily: "var(--pf-font-body)",
+  };
+
   return (
     <button
       type="button"
       data-cta="contact"
       className="pf-nav-contact"
       onClick={onActivate}
-      style={{
-        display: block ? "block" : "inline-flex",
-        width: block ? "100%" : undefined,
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "44px",
-        padding: "0 1rem",
-        marginTop: block ? "0.25rem" : 0,
-        backgroundColor: "var(--pf-color-primary)",
-        color: "var(--pf-color-bg)",
-        border: "none",
-        borderRadius: "var(--pf-radius)",
-        cursor: "pointer",
-        fontSize: config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem",
-        fontFamily: "var(--pf-font-body)",
-      }}
+      style={contactButtonStyle}
     >
       {label}
     </button>

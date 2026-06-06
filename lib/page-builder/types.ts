@@ -88,7 +88,7 @@ export const HEADER_FONT_SIZES = ["sm", "md", "lg"] as const;
 export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
 
 export type PortfolioHeaderConfig = {
-  /** Override for the workspace name shown in the header. Empty = use workspace name. */
+  /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
   brandText?: string;
   /** Cloudinary secure URL for the logo image. */
   logoUrl?: string;
@@ -116,13 +116,28 @@ export type PortfolioHeaderConfig = {
   activeLinkHighlight?: boolean;
   /** Background color for highlight mode. Token or hex. */
   highlightColor?: string;
+  /** 0-100 opacity applied to the active-link highlight fill. */
+  highlightOpacity?: number;
+  /** Radius for the active-link highlight chip. */
+  activeLinkRadius?: BrandKitRadius | "";
   /** Adds a bottom border to the active link. */
   activeLinkUnderline?: boolean;
   /** Border color for underline mode. Token or hex. */
   underlineColor?: string;
+  /** Contact CTA background color. Token or hex. */
+  contactButtonColor?: string;
+  /** Contact CTA text color. Token or hex. */
+  contactButtonTextColor?: string;
+  /** 0-100 opacity applied to the contact CTA fill. */
+  contactButtonOpacity?: number;
+  /** Radius for the contact CTA. */
+  contactButtonRadius?: BrandKitRadius | "";
 };
 
-export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {};
+export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {
+  highlightOpacity: 100,
+  contactButtonOpacity: 100,
+};
 
 // ---------------------------------------------------------------------------
 // PortfolioBrandKit

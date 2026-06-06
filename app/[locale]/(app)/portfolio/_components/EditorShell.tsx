@@ -26,6 +26,8 @@ import {
   publishPortfolioAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
+  updateContactConfigAction,
+  updateFormLocaleAction,
   updateHeaderConfigAction,
 } from "../_actions";
 import { PublishDialog } from "./PublishDialog";
@@ -44,7 +46,7 @@ import { cn } from "@/lib/utils";
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
 type Zone = "home" | "gallery";
-type Tab = Zone | "contact";
+type EditorSection = Zone | "header" | "contact";
 type SaveStatus = "idle" | "saving" | "saved";
 
 /** Serializable starter-template summary for the in-editor switcher. */
@@ -78,8 +80,16 @@ type Props = {
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
-const AUTOSAVE_MS = 1500;
-const TABS: readonly Tab[] = ["home", "gallery", "contact"] as const;
+const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "header", "contact"] as const;
+const LOCAL_DRAFT_VERSION = 1;
+
+type PortfolioBrowserDraft = {
+  version: typeof LOCAL_DRAFT_VERSION;
+  data: Record<Zone, PuckData>;
+  contact: PortfolioContactConfig;
+  formLocale: string;
+  headerConfig: PortfolioHeaderConfig;
+};
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
 // standalone iframe preview. Mirrors the <Puck viewports> prop.
@@ -98,7 +108,6 @@ const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon
  */
 function EditCanvasControls() {
   const { appState, dispatch } = usePuck();
-  const current = appState.ui.viewports.current.width;
   const { leftSideBarVisible, rightSideBarVisible } = appState.ui;
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
@@ -113,26 +122,6 @@ function EditCanvasControls() {
       >
         <PanelLeft className="size-4" aria-hidden />
       </Button>
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      {DEVICES.map(({ key, label, width, Icon }) => (
-        <Button
-          key={key}
-          type="button"
-          size="icon-sm"
-          variant={current === width ? "default" : "outline"}
-          aria-pressed={current === width}
-          aria-label={label}
-          title={label}
-          onClick={() =>
-            dispatch({
-              type: "setUi",
-              ui: (prev) => ({ viewports: { ...prev.viewports, current: { width, height: "auto" } } }),
-            })
-          }
-        >
-          <Icon className="size-4" aria-hidden />
-        </Button>
-      ))}
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <Button
         type="button"
@@ -213,7 +202,6 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
-  const [activeTab, setActiveTab] = useState<Tab>("home");
   const [previewMode, setPreviewMode] = useState(false);
   // Device width for the standalone iframe preview (the in-canvas Puck toggle
   // drives Puck's own viewport state instead).
@@ -239,8 +227,9 @@ export function EditorShell({
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
 
-  const isContact = activeTab === "contact";
-  const showPuck = !isContact && !previewMode && !headerOpen;
+  const sidePanelOpen = headerOpen || contactOpen;
+  const activeSection: EditorSection = headerOpen ? "header" : contactOpen ? "contact" : activeZone;
+  const showPuck = !previewMode && !sidePanelOpen;
 
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
@@ -248,7 +237,6 @@ export function EditorShell({
     home: initialData.home ?? EMPTY_ZONE,
     gallery: initialData.gallery ?? EMPTY_ZONE,
   });
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Puck emits onChange once on mount (and again on the zone-switch remount).
   // Skip that first emission so merely loading a zone doesn't autosave/bump the
   // version — only genuine edits should.
@@ -269,44 +257,63 @@ export function EditorShell({
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
     ensureIds(initialData.home ?? EMPTY_ZONE)
   );
+  const draftKey = `gallurio:portfolio-draft:${slug}`;
 
-  const saveZone = useCallback(async (zone: Zone, data: PuckData): Promise<boolean> => {
-    setSaveStatus("saving");
-    const res = await savePortfolioDraftAction({ zone, data });
-    if ("error" in res) {
-      setSaveStatus("idle");
-      toast.error(t("errorToast"));
+  const persistLocalDraft = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const draft: PortfolioBrowserDraft = {
+      version: LOCAL_DRAFT_VERSION,
+      data: zoneDataRef.current,
+      contact,
+      formLocale,
+      headerConfig,
+    };
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify(draft));
+      return true;
+    } catch {
       return false;
     }
-    setSaveStatus("saved");
-    return true;
-  }, [t]);
+  }, [contact, draftKey, formLocale, headerConfig]);
 
-  // Persist a debounced edit immediately if one is pending; no-op otherwise.
-  const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
-    if (!saveTimer.current) return true;
-    clearTimeout(saveTimer.current);
-    saveTimer.current = null;
-    return saveZone(zone, zoneDataRef.current[zone]);
-  }, [saveZone]);
+  const writeLocalDraft = useCallback(() => {
+    setSaveStatus(persistLocalDraft() ? "saved" : "idle");
+  }, [persistLocalDraft]);
 
-  // Flush a pending autosave when leaving the active zone (effect cleanup runs on
-  // zone change) and on unmount — so a final edit made within the debounce window
-  // isn't lost, and the debounced timer never fires after the component is gone.
   useEffect(() => {
-    return () => {
-      if (saveTimer.current) {
-        clearTimeout(saveTimer.current);
-        saveTimer.current = null;
-        // Intentionally read the LATEST ref value at flush time — that's the
-        // freshest edit for the zone this effect was set up for (captured in
-        // `activeZone`). Not a DOM-node ref, so the exhaustive-deps caution
-        // about stale refs doesn't apply.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        void saveZone(activeZone, zoneDataRef.current[activeZone]);
-      }
-    };
-  }, [activeZone, saveZone]);
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(draftKey);
+    if (!raw) return;
+    try {
+      const draft = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+      if (draft.version !== LOCAL_DRAFT_VERSION || !draft.data) return;
+      queueMicrotask(() => {
+        zoneDataRef.current = {
+          home: draft.data?.home ?? zoneDataRef.current.home,
+          gallery: draft.data?.gallery ?? zoneDataRef.current.gallery,
+        };
+        if (draft.contact) setContact(draft.contact);
+        if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
+        if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
+        ignoreNextChange.current = true;
+        setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setSaveStatus("saved");
+      });
+    } catch {
+      window.localStorage.removeItem(draftKey);
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    persistLocalDraft();
+  }, [contact, formLocale, headerConfig, persistLocalDraft]);
+
+  // Puck/contact/navigation drafts are browser-local until Publish.
+  const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
+    void zone;
+    writeLocalDraft();
+    return true;
+  }, [writeLocalDraft]);
 
   const handleChange = useCallback(
     (data: Data) => {
@@ -316,45 +323,24 @@ export function EditorShell({
         ignoreNextChange.current = false;
         return; // mount/remount echo — capture data, but don't autosave.
       }
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      const zone = activeZone;
-      saveTimer.current = setTimeout(() => void saveZone(zone, next), AUTOSAVE_MS);
+      writeLocalDraft();
     },
-    [activeZone, saveZone]
+    [activeZone, writeLocalDraft]
   );
 
-  async function selectTab(tab: Tab) {
-    if (tab === activeTab) return;
+  function hideEditorPanels() {
+    setContactOpen(false);
+    setHeaderOpen(false);
+  }
 
-    // Close header panel when switching tabs
-    if (headerOpen) {
-      if (headerHasSaved.current) setPreviewNonce((n) => n + 1);
-      setHeaderOpen(false);
-    }
+  async function selectZone(zone: Zone) {
+    if (zone === activeZone && !sidePanelOpen) return;
 
-    if (tab === "contact") {
-      // Persist any in-flight edit of the editable zone we're leaving so the
-      // preview (and a later publish) reflect it, then show the contact preview.
-      if (!isContact) await flushPendingSave(activeZone);
-      setActiveTab("contact");
-      // Auto-open the contact sidebar (snapshot taken for cancel/revert).
-      if (!contactOpen) openContact();
-      return;
-    }
-
-    // Leaving the contact tab — close sidebar without reverting (the user's
-    // unsaved edits are still visible in the preview; they can reopen and cancel
-    // from there if they changed their mind).
-    if (isContact) setContactOpen(false);
-
-    // Entering an editable zone (home/gallery).
-    if (!isContact) await flushPendingSave(activeZone);
-    // The new zone remounts <Puck> (key change) and echoes onChange — ignore it.
+    hideEditorPanels();
+    await flushPendingSave(activeZone);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[tab]));
-    setActiveZone(tab);
-    setActiveTab(tab);
-    // Carry the preview/edit preference across zones; reload the iframe if shown.
+    setPuckSeed(ensureIds(zoneDataRef.current[zone]));
+    setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
 
@@ -373,23 +359,29 @@ export function EditorShell({
   }
 
   async function handlePublish() {
-    // Persist the active zone's latest edits FIRST and only publish if that
-    // succeeds — otherwise we'd flip publishedAt against a stale draft while
-    // telling the owner their newest edits went live.
-    if (saveTimer.current) {
-      clearTimeout(saveTimer.current);
-      saveTimer.current = null;
+    setSaveStatus("saving");
+    const saveResults = await Promise.all([
+      savePortfolioDraftAction({ zone: "home", data: zoneDataRef.current.home }),
+      savePortfolioDraftAction({ zone: "gallery", data: zoneDataRef.current.gallery }),
+      updateContactConfigAction(contact),
+      updateFormLocaleAction(formLocale),
+      updateHeaderConfigAction(headerConfig),
+    ]);
+    if (saveResults.some((res) => "error" in res)) {
+      setSaveStatus("idle");
+      toast.error(t("errorToast"));
+      return;
     }
-    const saved = await saveZone(activeZone, zoneDataRef.current[activeZone]);
-    if (!saved) return;
     const res = await publishPortfolioAction();
     if ("error" in res) {
+      setSaveStatus("idle");
       toast.error(t("errorToast"));
       return;
     }
     // Leave the indicator on "saved" — never a lingering "Saving…" after publish.
     setSaveStatus("saved");
     setPublishOpen(false);
+    if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
     toast.success(t("publishedToast"));
     if (!showPuck) setPreviewNonce((n) => n + 1);
   }
@@ -404,6 +396,7 @@ export function EditorShell({
     if (saved && !showPuck) setPreviewNonce((n) => n + 1);
   }
   function openContact() {
+    if (headerOpen) setHeaderOpen(false);
     contactSnapshot.current = contact;
     formLocaleSnapshot.current = formLocale;
     contactHasSaved.current = false;
@@ -426,7 +419,8 @@ export function EditorShell({
   }
 
   async function openHeader() {
-    if (!isContact && !previewMode) await flushPendingSave(activeZone);
+    if (contactOpen) setContactOpen(false);
+    if (!previewMode) await flushPendingSave(activeZone);
     headerSnapshot.current = headerConfig;
     headerHasSaved.current = false;
     setHeaderOpen(true);
@@ -486,38 +480,56 @@ export function EditorShell({
     background: brandKit.backgroundColor,
     foreground: brandKit.foregroundColor,
   };
-  const headerTitle = `${workspaceName} · ${t(`zone.${activeTab}`)}`;
-  const previewSrc = `${previewBasePath}?zone=${isContact ? "contact" : activeZone}&v=${previewNonce}`;
+  const activeSectionTitle =
+    activeSection === "header"
+      ? t("headerSettings")
+      : activeSection === "contact"
+        ? t("contactSettingsShort")
+        : t(`zone.${activeSection}`);
+  const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
+  const previewSrc =
+    `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
+    `&v=${previewNonce}&header=${encodeURIComponent(JSON.stringify(headerConfig))}`;
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1" role="group" aria-label={t("zone.groupLabel")}>
-          {TABS.map((tab) => (
-            <Button
-              key={tab}
-              type="button"
-              size="sm"
-              variant={activeTab === tab ? "default" : "outline"}
-              aria-pressed={activeTab === tab}
-              onClick={() => void selectTab(tab)}
-            >
-              {t(`zone.${tab}`)}
-            </Button>
-          ))}
+        <div className="flex items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
+          {EDITOR_SECTIONS.map((section) => {
+            const label =
+              section === "header"
+                ? t("headerSettings")
+                : section === "contact"
+                  ? t("contactSettingsShort")
+                  : t(`zone.${section}`);
+            return (
+              <Button
+                key={section}
+                type="button"
+                size="sm"
+                variant={activeSection === section ? "default" : "outline"}
+                aria-pressed={activeSection === section}
+                onClick={() => {
+                  if (section === "header") void openHeader();
+                  else if (section === "contact") openContact();
+                  else void selectZone(section);
+                }}
+              >
+                {label}
+              </Button>
+            );
+          })}
         </div>
-        {!isContact && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            aria-pressed={previewMode}
-            onClick={() => void togglePreview()}
-          >
-            {previewMode ? t("preview.edit") : t("preview.show")}
-          </Button>
-        )}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          aria-pressed={previewMode}
+          onClick={() => void togglePreview()}
+        >
+          {previewMode ? t("preview.edit") : t("preview.show")}
+        </Button>
       </div>
     );
   }
@@ -545,16 +557,6 @@ export function EditorShell({
         <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
           {t("guide")}
         </Button>
-        {!headerOpen && (
-          <Button type="button" size="sm" variant="outline" onClick={() => void openHeader()}>
-            {t("headerSettings")}
-          </Button>
-        )}
-        {isContact && !contactOpen && (
-          <Button type="button" size="sm" variant="outline" onClick={openContact}>
-            {t("contactSettings")}
-          </Button>
-        )}
         {publishSlot}
       </div>
     );
@@ -618,7 +620,7 @@ export function EditorShell({
             <div className="border-b border-border bg-card px-3 py-2">
               {topBar(
                 // Hide device toggle when a sidebar panel is open (inline preview, not resizable iframe).
-                (isContact && contactOpen) || headerOpen ? null : (
+                sidePanelOpen ? null : (
                   <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
                 ),
                 <Button type="button" size="sm" onClick={() => setPublishOpen(true)}>
@@ -627,7 +629,7 @@ export function EditorShell({
               )}
             </div>
             <div className="min-h-0 flex-1 overflow-hidden">
-              {isContact && contactOpen ? (
+              {contactOpen ? (
                 // Issue 2 fix: ContactPanelDialog is now inline (flex sibling), not a fixed overlay.
                 <div className="flex h-full overflow-hidden">
                   <div className="flex-1 overflow-auto bg-muted/40">

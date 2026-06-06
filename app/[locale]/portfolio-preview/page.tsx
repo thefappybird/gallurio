@@ -7,9 +7,10 @@ import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
-import { DEFAULT_BRAND_KIT, type PortfolioContactConfig } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PortfolioContactConfig, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import type { SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
+import { PortfolioHeader } from "@/app/(public)/w/[orgSlug]/_components/PortfolioHeader";
 import { PreviewContactCard } from "./_components/PreviewContactCard";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
@@ -21,6 +22,15 @@ type PreviewZone = "home" | "gallery" | "contact";
 
 function parseZone(value: string | string[] | undefined): PreviewZone {
   return value === "gallery" || value === "contact" ? value : "home";
+}
+
+function parseHeaderConfig(value: string | string[] | undefined): PortfolioHeaderConfig | null {
+  if (typeof value !== "string" || !value) return null;
+  try {
+    return JSON.parse(value) as PortfolioHeaderConfig;
+  } catch {
+    return null;
+  }
 }
 
 function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): SubmitAppearance {
@@ -45,11 +55,13 @@ export default async function PortfolioPreviewPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ zone?: string | string[] }>;
+  searchParams: Promise<{ zone?: string | string[]; header?: string | string[] }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const zone = parseZone((await searchParams).zone);
+  const sp = await searchParams;
+  const zone = parseZone(sp.zone);
+  const liveHeader = parseHeaderConfig(sp.header);
 
   const { workspace, role } = await requireOrg();
   if (role !== "owner") notFound();
@@ -63,6 +75,8 @@ export default async function PortfolioPreviewPage({
   // Chrome locale follows the workspace country (the public page does the same),
   // not the editor UI locale.
   const chromeLocale = resolvePublicChromeLocale(workspace);
+  const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
+  const headerConfig = liveHeader ?? ((pp?.header ?? null) as PortfolioHeaderConfig | null);
 
   let body: React.ReactNode;
 
@@ -135,6 +149,19 @@ export default async function PortfolioPreviewPage({
       style={{ ...(cssVars as React.CSSProperties), minHeight: "100dvh", backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)" }}
       className={className}
     >
+      <PortfolioHeader
+        slug={workspace.slug}
+        labels={{
+          brand: workspace.name,
+          navLandmark: tNav("navLandmark"),
+          home: tNav("home"),
+          gallery: tNav("gallery"),
+          contact: tNav("contact"),
+          openMenu: tNav("openMenu"),
+          closeMenu: tNav("closeMenu"),
+        }}
+        config={headerConfig}
+      />
       {body}
     </div>
   );

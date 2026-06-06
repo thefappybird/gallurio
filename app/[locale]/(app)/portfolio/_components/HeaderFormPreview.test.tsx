@@ -223,6 +223,45 @@ describe("HeaderFormPreview", () => {
     expect(homeSpan.style.backgroundColor).toBe("#007bff");
   });
 
+  it("applies highlight opacity and radius to the active link", () => {
+    render(
+      <HeaderFormPreview
+        header={{
+          ...mockHeader,
+          activeLinkHighlight: true,
+          highlightColor: "accent",
+          highlightOpacity: 45,
+          activeLinkRadius: "rounded",
+        }}
+        brandKit={{ ...mockBrandKit, accentColor: "#007bff" }}
+        workspaceName="Studio"
+      />,
+    );
+    const homeSpan = screen.getByText("Home");
+    expect(homeSpan.style.backgroundColor).toContain("rgba");
+    expect(homeSpan.style.borderRadius).toBe("0.5rem");
+  });
+
+  it("applies contact button color, text color, opacity, and radius", () => {
+    render(
+      <HeaderFormPreview
+        header={{
+          ...mockHeader,
+          contactButtonColor: "accent",
+          contactButtonTextColor: "foreground",
+          contactButtonOpacity: 64,
+          contactButtonRadius: "rounded",
+        }}
+        brandKit={{ ...mockBrandKit, accentColor: "#007bff", foregroundColor: "#111111" }}
+        workspaceName="Studio"
+      />,
+    );
+    const contactButton = screen.getByText("Contact");
+    expect(contactButton.style.backgroundColor).toContain("rgba");
+    expect(contactButton.style.color).toBe("#111111");
+    expect(contactButton.style.borderRadius).toBe("0.5rem");
+  });
+
   it("does not apply highlight background when activeLinkHighlight is false", () => {
     render(
       <HeaderFormPreview
@@ -327,7 +366,7 @@ describe("HeaderFormPreview", () => {
     expect(headerEl.style.borderBottom).toContain("#ff0000");
   });
 
-  it("brandText trims whitespace before display", () => {
+  it("brandText trims whitespace before display and keeps the heading empty", () => {
     render(
       <HeaderFormPreview
         header={{ ...mockHeader, brandText: "   " }}
@@ -335,7 +374,17 @@ describe("HeaderFormPreview", () => {
         workspaceName="Fallback Name"
       />,
     );
-    // Whitespace-only brandText should fall back to workspaceName
-    expect(screen.getByText("Fallback Name")).toBeTruthy();
+    expect(screen.queryByText("Fallback Name")).toBeNull();
+  });
+
+  it("keeps brand text empty when brandText is intentionally empty", () => {
+    render(
+      <HeaderFormPreview
+        header={{ ...mockHeader, brandText: "" }}
+        brandKit={mockBrandKit}
+        workspaceName="Fallback Name"
+      />,
+    );
+    expect(screen.queryByText("Fallback Name")).toBeNull();
   });
 });
