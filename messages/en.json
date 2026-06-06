@@ -1088,7 +1088,7 @@
             "design": "Design"
           },
           "brandTextLabel": "Heading",
-          "brandTextHelp": "Displayed next to your logo in the navbar. Leave empty to show the logo only.",
+          "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
           "logoLabel": "Logo",
           "logoHelp": "Shown beside your business name in the header.",
           "logoUpload": "Upload logo",
