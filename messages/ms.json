@@ -30,12 +30,12 @@
         "calendar": "Kalendar tempahan",
         "eventTypes": "Pecahan jenis acara",
         "transactionsByMethod": "Pembayaran mengikut kaedah (90 hari)",
+        "transactionsByTeam": "Hasil mengikut pasukan",
         "weeklyBookings": "Tempahan mengikut hari dalam seminggu",
         "topClients": "Pelanggan teratas mengikut perbelanjaan"
       },
       "pipeline": {
         "inquiries": "Pertanyaan",
-        "quoted": "Dikuotkan",
         "booked": "Ditempah"
       },
       "quickAdd": {
@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Tempahan",
+      "titleForTeam": "Tempahan {team}",
       "view": {
         "table": "Jadual",
         "calendar": "Kalendar"
@@ -80,6 +81,13 @@
         "import": "Import CSV",
         "export": "Eksport CSV",
         "add": "Tempahan baru"
+      },
+      "teamPicker": {
+        "allTeams": "Semua pasukan",
+        "allMyTeams": "Semua pasukan saya",
+        "label": "Tapis mengikut pasukan",
+        "inactive": "Tidak aktif",
+        "countLabel": "{count, plural, other {# pasukan}}"
       },
       "import": {
         "title": "Import tempahan",
@@ -142,7 +150,7 @@
               "note": "perkahwinan, korporat, potret, dsb."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Jumlah tempahan keseluruhan"
@@ -188,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
-        "quoted": "Dikuotkan",
         "booked": "Ditempah",
         "completed": "Selesai",
         "cancelled": "Dibatalkan"
@@ -217,6 +224,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "activity": "Nota & aktiviti"
         },
         "sections": {
@@ -263,6 +272,7 @@
           "confirmTitle": "Sahkan",
           "cancelTitleEdit": "Batal",
           "editEventType": "Tukar jenis acara",
+          "editStatus": "Tukar status",
           "sendEmail": "Hantar e-mel",
           "callClient": "Hubungi"
         },
@@ -355,7 +365,9 @@
         "showPast": "Tunjukkan lepas",
         "hidePast": "Sembunyi lepas",
         "filterByStatus": "Tapis mengikut status",
-        "filterActive": "Menapis mengikut {status} — ketik sekali lagi untuk kosongkan"
+        "filterActive": "Menapis mengikut {status} — ketik sekali lagi untuk kosongkan",
+        "teamsLegend": "Pasukan",
+        "inactiveTeam": "Pasukan tidak aktif"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -400,6 +412,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "review": "Semak"
         },
         "client": {
@@ -454,7 +468,9 @@
         },
         "review": {
           "intro": "Semak cepat — sahkan semua nampak betul sebelum anda simpan."
-        }
+        },
+        "teamLabel": "Pasukan",
+        "teamPlaceholder": "Pilih pasukan"
       }
     },
     "sidebar": {
@@ -488,7 +504,7 @@
         "publicPage": "Halaman awam",
         "danger": "Zon berbahaya",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Tukar Ruang Kerja"
+        "currentWorkspace": "Ruang kerja semasa"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -579,7 +595,8 @@
       "createButton": "Buat pasukan",
       "toolbar": {
         "search": "Cari pasukan",
-        "searchLabel": "Cari pasukan mengikut nama"
+        "searchLabel": "Cari pasukan mengikut nama",
+        "showDeactivated": "Tunjukkan yang dinyahaktifkan"
       },
       "table": {
         "empty": "Tiada pasukan yang sepadan dengan carian anda.",
@@ -612,11 +629,18 @@
         "saving": "Sedang disimpan…",
         "cancel": "Batal"
       },
-      "deleteDialog": {
-        "title": "Padam pasukan?",
-        "description": "Pasukan ini dan penugasan ahlinya akan dibuang. Ahli kekal dalam ruang kerja dan boleh ditambahkan ke pasukan lain selepas ini. Ini tidak boleh dibatalkan.",
-        "confirm": "Padam pasukan",
-        "deleting": "Sedang dipadamkan…",
+      "deactivateDialog": {
+        "title": "Nyahaktifkan pasukan?",
+        "description": "“{name}” akan disembunyikan daripada pasukan aktif anda dan tidak lagi boleh menerima tempahan baharu. Ahli, tempahan, dan sejarahnya disimpan, dan anda boleh mengaktifkannya semula bila-bila masa.",
+        "confirm": "Nyahaktifkan pasukan",
+        "deactivating": "Sedang dinyahaktifkan…",
+        "cancel": "Batal"
+      },
+      "reactivateDialog": {
+        "title": "Aktifkan semula pasukan?",
+        "description": "“{name}” akan menjadi aktif semula dan boleh menerima tempahan baharu. Ini dikira dalam had pasukan aktif pelan anda.",
+        "confirm": "Aktifkan semula pasukan",
+        "reactivating": "Sedang diaktifkan semula…",
         "cancel": "Batal"
       },
       "team": {
@@ -625,9 +649,11 @@
         "rename": "Namakan semula",
         "changeColor": "Tukar warna",
         "invite": "Jemput rakan sepasukan",
-        "delete": "Padam",
         "actionsLabel": "Tindakan untuk {name}",
-        "edit": "Edit"
+        "edit": "Edit",
+        "deactivate": "Nyahaktifkan",
+        "reactivate": "Aktifkan semula",
+        "inactiveBadge": "Tidak aktif"
       },
       "drawer": {
         "membersHeading": "Ahli",
@@ -654,16 +680,18 @@
         "nameRequired": "Nama pasukan diperlukan.",
         "nameTooLong": "Nama pasukan mestilah 40 aksara atau kurang.",
         "duplicateName": "Pasukan dengan nama ini sudah wujud dalam ruang kerja ini.",
-        "cannotDeleteDefault": "Pasukan lalai tidak boleh dipadamkan.",
         "teamNotFound": "Pasukan tidak dijumpai.",
-        "generic": "Sesuatu telah berlaku. Sila cuba lagi."
+        "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
+        "cannotDeactivateDefault": "Pasukan lalai tidak boleh dinyahaktifkan.",
+        "reactivateCapExceeded": "Pengaktifan semula akan melebihi had pasukan aktif pelan anda. Nyahaktifkan pasukan lain atau naik taraf pelan anda dahulu."
       },
       "toasts": {
         "created": "Pasukan telah dibuat.",
         "renamed": "Pasukan telah dinamakan semula.",
         "colorChanged": "Warna telah dikemas kini.",
-        "deleted": "Pasukan telah dipadamkan.",
-        "saved": "Pasukan dikemas kini."
+        "saved": "Pasukan dikemas kini.",
+        "deactivated": "Pasukan telah dinyahaktifkan.",
+        "reactivated": "Pasukan telah diaktifkan semula."
       },
       "teamsHeading": "Pasukan",
       "invite": {

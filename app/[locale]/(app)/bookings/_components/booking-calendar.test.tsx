@@ -47,6 +47,7 @@ function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
     id: "booking1_s0_2026-08-15",
     bookingId: "booking1",
+    teamId: null,
     title: "Carter Wedding",
     start,
     end,
@@ -305,7 +306,6 @@ function OverflowRow({
   const rowRef = useRef<HTMLButtonElement>(null);
   const STATUS_COLOR_TEST: Record<string, string> = {
     booked: "#0d9488",
-    quoted: "#2563eb",
     inquiry: "#9333ea",
     completed: "#16a34a",
     cancelled: "#6b7280",

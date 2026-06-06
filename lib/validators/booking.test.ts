@@ -5,6 +5,7 @@ import {
   bookingImportRowSchema,
   bookingSessionSchema,
   bookingClientSchema,
+  BOOKING_STATUSES,
   EDITABLE_KEYS,
 } from "./booking";
 
@@ -15,6 +16,7 @@ const validSession = {
 
 const validCreate = {
   client: { mode: "new" as const, name: "Emma Carter", email: "emma@example.com" },
+  teamId: "507f1f77bcf86cd799439011",
   title: "Carter Wedding",
   eventType: "wedding" as const,
   status: "booked" as const,
@@ -96,6 +98,18 @@ describe("bookingCreateSchema", () => {
       ],
     });
     expect(ok.success).toBe(true);
+  });
+
+  it("requires teamId — rejects a payload with no team", () => {
+    const { teamId, ...noTeam } = validCreate;
+    void teamId;
+    expect(bookingCreateSchema.safeParse(noTeam).success).toBe(false);
+  });
+
+  it("rejects a malformed teamId (not a 24-char hex ObjectId)", () => {
+    expect(bookingCreateSchema.safeParse({ ...validCreate, teamId: "not-an-id" }).success).toBe(
+      false,
+    );
   });
 
   it("rejects when sessions array is empty", () => {
@@ -224,6 +238,15 @@ describe("bookingPatchSchema", () => {
     expect(bad.success).toBe(false);
   });
 
+  it("accepts a teamId reassignment (valid ObjectId)", () => {
+    const ok = bookingPatchSchema.safeParse({ teamId: "507f1f77bcf86cd799439011" });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects a malformed teamId", () => {
+    expect(bookingPatchSchema.safeParse({ teamId: "nope" }).success).toBe(false);
+  });
+
   it("accepts location.lat / location.lng patches", () => {
     expect(bookingPatchSchema.safeParse({ "location.lat": 14.6 }).success).toBe(true);
     expect(bookingPatchSchema.safeParse({ "location.lng": 120.98 }).success).toBe(true);
@@ -296,5 +319,28 @@ describe("bookingImportRowSchema", () => {
     });
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.clientEmail).toBe("emma@example.com");
+  });
+});
+
+describe("BOOKING_STATUSES — quoted removal regression", () => {
+  it("does not include the removed 'quoted' status", () => {
+    expect(BOOKING_STATUSES).not.toContain("quoted");
+  });
+
+  it("contains exactly the four expected statuses in order", () => {
+    expect([...BOOKING_STATUSES]).toEqual(["inquiry", "booked", "completed", "cancelled"]);
+  });
+
+  it("bookingCreateSchema rejects status: 'quoted'", () => {
+    const result = bookingCreateSchema.safeParse({
+      ...validCreate,
+      status: "quoted",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("bookingPatchSchema rejects status: 'quoted'", () => {
+    const result = bookingPatchSchema.safeParse({ status: "quoted" });
+    expect(result.success).toBe(false);
   });
 });

@@ -4,7 +4,6 @@ import { optionalPhone } from "./client";
 
 export const BOOKING_STATUSES = [
   "inquiry",
-  "quoted",
   "booked",
   "completed",
   "cancelled",
@@ -80,6 +79,9 @@ export type BookingSessionInput = z.infer<typeof bookingSessionSchema>;
 
 export const bookingCreateSchema = z.object({
   client: bookingClientSchema,
+  // Every new booking is worked by a team. The server additionally verifies the
+  // team belongs to the workspace, is active, and the caller may write to it.
+  teamId: objectIdString,
   title: z.string().min(1, "Required").max(160).trim(),
   eventType: z.enum(EVENT_TYPES).default("other"),
   status: z.enum(BOOKING_STATUSES).default("inquiry"),
@@ -121,6 +123,7 @@ export const EDITABLE_KEYS = [
   "notes",
   "clientName",
   "clientId",
+  "teamId",
 ] as const;
 export type EditableKey = (typeof EDITABLE_KEYS)[number];
 
@@ -142,6 +145,9 @@ export const bookingPatchSchema = z
     notes: z.string().max(2000).trim().optional(),
     clientName: z.string().min(1).max(120).trim().optional(),
     clientId: objectIdString.optional(),
+    // Reassign the booking to a different team. The route validates the target
+    // is active + writable by the caller (owner or lead of that team).
+    teamId: objectIdString.optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, {

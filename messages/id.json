@@ -30,12 +30,12 @@
         "calendar": "Kalender pemesanan",
         "eventTypes": "Rincian jenis acara",
         "transactionsByMethod": "Pembayaran per metode (90 hari)",
+        "transactionsByTeam": "Pendapatan per tim",
         "weeklyBookings": "Pemesanan per hari dalam seminggu",
         "topClients": "Klien teratas berdasarkan pengeluaran"
       },
       "pipeline": {
         "inquiries": "Pertanyaan",
-        "quoted": "Dikutip",
         "booked": "Dipesan"
       },
       "quickAdd": {
@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Pemesanan",
+      "titleForTeam": "Pemesanan {team}",
       "view": {
         "table": "Tabel",
         "calendar": "Kalender"
@@ -80,6 +81,13 @@
         "import": "Impor CSV",
         "export": "Ekspor CSV",
         "add": "Pemesanan baru"
+      },
+      "teamPicker": {
+        "allTeams": "Semua tim",
+        "allMyTeams": "Semua tim saya",
+        "label": "Filter berdasarkan tim",
+        "inactive": "Tidak aktif",
+        "countLabel": "{count, plural, other {# tim}}"
       },
       "import": {
         "title": "Impor pemesanan",
@@ -142,7 +150,7 @@
               "note": "pernikahan, korporat, potret, dll."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total jumlah pemesanan"
@@ -188,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
-        "quoted": "Dikutip",
         "booked": "Dipesan",
         "completed": "Selesai",
         "cancelled": "Dibatalkan"
@@ -217,6 +224,8 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "activity": "Catatan & aktivitas"
         },
         "sections": {
@@ -263,6 +272,7 @@
           "confirmTitle": "Konfirmasi",
           "cancelTitleEdit": "Batal",
           "editEventType": "Ubah jenis acara",
+          "editStatus": "Ubah status",
           "sendEmail": "Kirim email",
           "callClient": "Hubungi"
         },
@@ -355,7 +365,9 @@
         "showPast": "Tampilkan yang lalu",
         "hidePast": "Sembunyikan yang lalu",
         "filterByStatus": "Filter berdasarkan status",
-        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus"
+        "filterActive": "Memfilter berdasarkan {status} — ketuk lagi untuk menghapus",
+        "teamsLegend": "Tim",
+        "inactiveTeam": "Tim tidak aktif"
       },
       "sessions": {
         "label": "Sesi {n}",
@@ -400,6 +412,8 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
+          "eventPricing": "Acara & Harga",
+          "sessionsLocation": "Sesi & Lokasi",
           "review": "Tinjau"
         },
         "client": {
@@ -454,7 +468,9 @@
         },
         "review": {
           "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
-        }
+        },
+        "teamLabel": "Tim",
+        "teamPlaceholder": "Pilih tim"
       }
     },
     "sidebar": {
@@ -488,7 +504,7 @@
         "publicPage": "Halaman publik",
         "danger": "Zona berbahaya",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Ganti Workspace"
+        "currentWorkspace": "Ruang kerja saat ini"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -579,7 +595,8 @@
       "createButton": "Buat tim",
       "toolbar": {
         "search": "Cari tim",
-        "searchLabel": "Cari tim berdasarkan nama"
+        "searchLabel": "Cari tim berdasarkan nama",
+        "showDeactivated": "Tampilkan yang dinonaktifkan"
       },
       "table": {
         "empty": "Tidak ada tim yang sesuai dengan pencarian Anda.",
@@ -612,11 +629,18 @@
         "saving": "Menyimpan…",
         "cancel": "Batal"
       },
-      "deleteDialog": {
-        "title": "Hapus tim?",
-        "description": "Tim ini beserta penugasan anggotanya akan dihapus. Anggota tetap berada di ruang kerja dan dapat ditambahkan ke tim lain setelahnya. Tindakan ini tidak dapat dibatalkan.",
-        "confirm": "Hapus tim",
-        "deleting": "Menghapus…",
+      "deactivateDialog": {
+        "title": "Nonaktifkan tim?",
+        "description": "“{name}” akan disembunyikan dari tim aktif Anda dan tidak dapat lagi menerima pemesanan baru. Anggota, pemesanan, dan riwayatnya tetap tersimpan, dan Anda dapat mengaktifkannya kembali kapan saja.",
+        "confirm": "Nonaktifkan tim",
+        "deactivating": "Menonaktifkan…",
+        "cancel": "Batal"
+      },
+      "reactivateDialog": {
+        "title": "Aktifkan kembali tim?",
+        "description": "“{name}” akan aktif kembali dan dapat menerima pemesanan baru. Ini akan dihitung dalam batas tim aktif paket Anda.",
+        "confirm": "Aktifkan kembali tim",
+        "reactivating": "Mengaktifkan kembali…",
         "cancel": "Batal"
       },
       "team": {
@@ -625,9 +649,11 @@
         "rename": "Ganti nama",
         "changeColor": "Ubah warna",
         "invite": "Undang rekan kerja",
-        "delete": "Hapus",
         "actionsLabel": "Tindakan untuk {name}",
-        "edit": "Edit"
+        "edit": "Edit",
+        "deactivate": "Nonaktifkan",
+        "reactivate": "Aktifkan kembali",
+        "inactiveBadge": "Tidak aktif"
       },
       "drawer": {
         "membersHeading": "Anggota",
@@ -654,16 +680,18 @@
         "nameRequired": "Nama tim diperlukan.",
         "nameTooLong": "Nama tim harus 40 karakter atau kurang.",
         "duplicateName": "Tim dengan nama ini sudah ada di ruang kerja ini.",
-        "cannotDeleteDefault": "Tim default tidak dapat dihapus.",
         "teamNotFound": "Tim tidak ditemukan.",
-        "generic": "Terjadi kesalahan. Silakan coba lagi."
+        "generic": "Terjadi kesalahan. Silakan coba lagi.",
+        "cannotDeactivateDefault": "Tim default tidak dapat dinonaktifkan.",
+        "reactivateCapExceeded": "Mengaktifkan kembali akan melebihi batas tim aktif paket Anda. Nonaktifkan tim lain atau tingkatkan paket Anda terlebih dahulu."
       },
       "toasts": {
         "created": "Tim dibuat.",
         "renamed": "Tim diganti nama.",
         "colorChanged": "Warna diperbarui.",
-        "deleted": "Tim dihapus.",
-        "saved": "Tim diperbarui."
+        "saved": "Tim diperbarui.",
+        "deactivated": "Tim dinonaktifkan.",
+        "reactivated": "Tim diaktifkan kembali."
       },
       "teamsHeading": "Tim",
       "invite": {

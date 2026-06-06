@@ -18,7 +18,9 @@ import {
 } from "@/components/ui/select";
 import { BOOKING_STATUSES, type BookingStatus } from "@/lib/validators/booking";
 import { CsvImportDialog } from "./csv-import-dialog";
+import { TeamPicker } from "./team-picker";
 import type { BookingsView } from "./view-toggle";
+import type { BookingTeamOption } from "../_data/team-options";
 
 const ALL = "__all__";
 
@@ -26,6 +28,10 @@ export function BookingsToolbar({
   defaultCurrency,
   onAddClick,
   view = "table",
+  canCreate = true,
+  teams = [],
+  selectedTeams = [],
+  isOwner = false,
 }: {
   defaultCurrency: string;
   /** When provided, the "New Booking" button calls this directly instead of
@@ -35,6 +41,16 @@ export function BookingsToolbar({
   /** Active view. In calendar view the status dropdown is hidden — the
    *  calendar's clickable color legend owns status filtering there. */
   view?: BookingsView;
+  /** When false, the "New Booking" and "Import" buttons are hidden. Members
+   *  are view-only — only owners can create or bulk-import bookings. Export
+   *  remains visible because it is team-scoped server-side. */
+  canCreate?: boolean;
+  /** Available teams for the team filter picker. */
+  teams?: BookingTeamOption[];
+  /** Currently selected team ids. Empty = all teams. */
+  selectedTeams?: string[];
+  /** Whether the current user is a workspace owner. */
+  isOwner?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,33 +120,43 @@ export function BookingsToolbar({
           />
         </div>
 
-        {view !== "calendar" ? (
-          <Select<string>
-            value={status}
-            onValueChange={(v) =>
-              pushParams({ status: !v || v === ALL ? null : v })
-            }
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue>
-                {(value: string) =>
-                  !value || value === ALL ? (
-                    <span>{t("statusAll")}</span>
-                  ) : (
-                    <span className="capitalize">{value}</span>
-                  )
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
-              {BOOKING_STATUSES.map((s: BookingStatus) => (
-                <SelectItem key={s} value={s} className="capitalize">
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Status filter — a plain dropdown in BOTH views (the calendar status
+            legend was retired; status now shows per-candle as a pill). */}
+        <Select<string>
+          value={status}
+          onValueChange={(v) => pushParams({ status: !v || v === ALL ? null : v })}
+        >
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue>
+              {(value: string) =>
+                !value || value === ALL ? (
+                  <span>{t("statusAll")}</span>
+                ) : (
+                  <span className="capitalize">{value}</span>
+                )
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>{t("statusAll")}</SelectItem>
+            {BOOKING_STATUSES.map((s: BookingStatus) => (
+              <SelectItem key={s} value={s} className="capitalize">
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Team filter — dropdown in TABLE view only; calendar uses the
+            clickable team legend inside the calendar. Hidden for single-team
+            members/leads (nothing to filter); always shown for owners. */}
+        {view !== "calendar" && (isOwner || teams.length > 1) ? (
+          <TeamPicker
+            teams={teams}
+            selected={selectedTeams}
+            isOwner={isOwner}
+            onChange={(next) => pushParams({ team: next.length ? next.join(",") : null })}
+          />
         ) : null}
 
         <label className="flex h-9 cursor-pointer items-center gap-2 text-sm">
@@ -162,15 +188,17 @@ export function BookingsToolbar({
         <ClearFiltersButton
           paramKeys={["q", "status", "includeCancelled", "showPast", "from", "to"]}
         />
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
-          onClick={() => setImportOpen(true)}
-        >
-          <UploadIcon className="size-4" />
-          {t("import")}
-        </Button>
+        {canCreate ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 flex-1 sm:flex-none sm:min-h-0"
+            onClick={() => setImportOpen(true)}
+          >
+            <UploadIcon className="size-4" />
+            {t("import")}
+          </Button>
+        ) : null}
         <Button
           variant="outline"
           size="sm"
@@ -187,26 +215,28 @@ export function BookingsToolbar({
           onClose={() => setImportOpen(false)}
           defaultCurrency={defaultCurrency}
         />
-        <Button
-          variant="brand"
-          size="sm"
-          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
-          onClick={() => {
-            if (onAddClick) {
-              onAddClick();
-            } else {
-              const params = new URLSearchParams(searchParams.toString());
-              params.set("add", "1");
-              const qs = params.toString();
-              startTransition(() => {
-                router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-              });
-            }
-          }}
-        >
-          <PlusIcon className="size-4" />
-          {t("add")}
-        </Button>
+        {canCreate ? (
+          <Button
+            variant="brand"
+            size="sm"
+            className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
+            onClick={() => {
+              if (onAddClick) {
+                onAddClick();
+              } else {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set("add", "1");
+                const qs = params.toString();
+                startTransition(() => {
+                  router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+                });
+              }
+            }}
+          >
+            <PlusIcon className="size-4" />
+            {t("add")}
+          </Button>
+        ) : null}
       </div>
     </div>
   );

@@ -30,12 +30,12 @@
         "calendar": "ปฏิทินการจอง",
         "eventTypes": "สัดส่วนประเภทงาน",
         "transactionsByMethod": "การชำระเงินตามวิธี (90 วัน)",
+        "transactionsByTeam": "รายได้ตามทีม",
         "weeklyBookings": "การจองตามวันในสัปดาห์",
         "topClients": "ลูกค้าชั้นนำตามยอดใช้จ่าย"
       },
       "pipeline": {
         "inquiries": "คำถาม",
-        "quoted": "ยื่นใบเสนอราคา",
         "booked": "จองแล้ว"
       },
       "quickAdd": {
@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "การจอง",
+      "titleForTeam": "การจองของ {team}",
       "view": {
         "table": "ตาราง",
         "calendar": "ปฏิทิน"
@@ -80,6 +81,13 @@
         "import": "นำเข้า CSV",
         "export": "ส่งออก CSV",
         "add": "การจองใหม่"
+      },
+      "teamPicker": {
+        "allTeams": "ทุกทีม",
+        "allMyTeams": "ทีมทั้งหมดของฉัน",
+        "label": "กรองตามทีม",
+        "inactive": "ไม่ใช้งาน",
+        "countLabel": "{count, plural, other {# ทีม}}"
       },
       "import": {
         "title": "นำเข้าการจอง",
@@ -142,7 +150,7 @@
               "note": "งานแต่งงาน คอร์ปอเรต ภาพบุคคล ฯลฯ"
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "ยอดรวมการจอง"
@@ -188,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "สอบถาม",
-        "quoted": "ยื่นใบเสนอราคา",
         "booked": "จองแล้ว",
         "completed": "เสร็จสิ้น",
         "cancelled": "ยกเลิกแล้ว"
@@ -217,6 +224,8 @@
           "client": "ลูกค้า",
           "event": "งาน",
           "pricing": "ราคา",
+          "eventPricing": "งาน & ราคา",
+          "sessionsLocation": "เซสชัน & สถานที่",
           "activity": "บันทึกและกิจกรรม"
         },
         "sections": {
@@ -263,6 +272,7 @@
           "confirmTitle": "ยืนยัน",
           "cancelTitleEdit": "ยกเลิก",
           "editEventType": "เปลี่ยนประเภทอีเวนต์",
+          "editStatus": "เปลี่ยนสถานะ",
           "sendEmail": "ส่งอีเมล",
           "callClient": "โทรหา"
         },
@@ -355,7 +365,9 @@
         "showPast": "แสดงที่ผ่านมา",
         "hidePast": "ซ่อนที่ผ่านมา",
         "filterByStatus": "กรองตามสถานะ",
-        "filterActive": "กรองตาม {status} — แตะอีกครั้งเพื่อล้าง"
+        "filterActive": "กรองตาม {status} — แตะอีกครั้งเพื่อล้าง",
+        "teamsLegend": "ทีม",
+        "inactiveTeam": "ทีมที่ไม่ได้ใช้งาน"
       },
       "sessions": {
         "label": "เซสชัน {n}",
@@ -400,6 +412,8 @@
           "client": "ลูกค้า",
           "event": "งาน",
           "pricing": "ราคา",
+          "eventPricing": "งาน & ราคา",
+          "sessionsLocation": "เซสชัน & สถานที่",
           "review": "ตรวจสอบ"
         },
         "client": {
@@ -454,7 +468,9 @@
         },
         "review": {
           "intro": "ตรวจสอบอย่างรวดเร็ว — ยืนยันว่าทุกอย่างถูกต้องก่อนบันทึก"
-        }
+        },
+        "teamLabel": "ทีม",
+        "teamPlaceholder": "เลือกทีม"
       }
     },
     "sidebar": {
@@ -488,7 +504,7 @@
         "publicPage": "หน้าสาธารณะ",
         "danger": "โซนอันตราย",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "สลับพื้นที่ทำงาน"
+        "currentWorkspace": "พื้นที่ทำงานปัจจุบัน"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -579,7 +595,8 @@
       "createButton": "สร้างทีม",
       "toolbar": {
         "search": "ค้นหาทีม",
-        "searchLabel": "ค้นหาทีมตามชื่อ"
+        "searchLabel": "ค้นหาทีมตามชื่อ",
+        "showDeactivated": "แสดงทีมที่อนการใช้งาน"
       },
       "table": {
         "empty": "ไม่มีทีมที่ตรงกับการค้นหาของคุณ",
@@ -612,11 +629,18 @@
         "saving": "กำลังบันทึก…",
         "cancel": "ยกเลิก"
       },
-      "deleteDialog": {
-        "title": "ลบทีม?",
-        "description": "ทีมนี้และการมอบหมายสมาชิกจะถูกลบออก สมาชิกยังคงอยู่ในที่ทำงานและสามารถเพิ่มเข้าทีมอื่นได้ในภายหลัง การดำเนินการนี้ไม่สามารถยกเลิกได้",
-        "confirm": "ลบทีม",
-        "deleting": "กำลังลบ…",
+      "deactivateDialog": {
+        "title": "อนการใช้งานทีม?",
+        "description": "“{name}” จะถูกซ่อนจากทีมที่ใช้งานอยู่ของคุณและไม่สามารถรับการจองใหม่ได้อีกต่อไป สมาชิก การจอง และประวัติยังคงอยู่ และคุณสามารถเปิดใช้งานใหม่ได้ตลอดเวลา",
+        "confirm": "อนการใช้งานทีม",
+        "deactivating": "กำลังอนการใช้งาน…",
+        "cancel": "ยกเลิก"
+      },
+      "reactivateDialog": {
+        "title": "เปิดใช้งานทีมอีกครั้ง?",
+        "description": "“{name}” จะกลับมาใช้งานได้อีกครั้งและสามารถรับการจองใหม่ได้ ซึ่งจะนับรวมอยู่ในขีดจำกัดทีมที่ใช้งานของแผนของคุณ",
+        "confirm": "เปิดใช้งานทีมอีกครั้ง",
+        "reactivating": "กำลังเปิดใช้งานอีกครั้ง…",
         "cancel": "ยกเลิก"
       },
       "team": {
@@ -625,9 +649,11 @@
         "rename": "เปลี่ยนชื่อ",
         "changeColor": "เปลี่ยนสี",
         "invite": "เชิญเพื่อนร่วมทีม",
-        "delete": "ลบ",
         "actionsLabel": "การดำเนินการสำหรับ {name}",
-        "edit": "แก้ไข"
+        "edit": "แก้ไข",
+        "deactivate": "อนการใช้งาน",
+        "reactivate": "เปิดใช้งานอีกครั้ง",
+        "inactiveBadge": "ไม่ใช้งาน"
       },
       "drawer": {
         "membersHeading": "สมาชิก",
@@ -654,16 +680,18 @@
         "nameRequired": "ต้องระบุชื่อทีม",
         "nameTooLong": "ชื่อทีมต้องมี 40 ตัวอักษรหรือน้อยกว่า",
         "duplicateName": "มีทีมที่ใช้ชื่อนี้อยู่แล้วในพื้นที่ทำงานนี้",
-        "cannotDeleteDefault": "ไม่สามารถลบทีมเริ่มต้นได้",
         "teamNotFound": "ไม่พบทีม",
-        "generic": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"
+        "generic": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง",
+        "cannotDeactivateDefault": "ไม่สามารถอนการใช้งานทีมเริ่มต้นได้",
+        "reactivateCapExceeded": "การเปิดใช้งานอีกครั้งจะเกินขีดจำกัดทีมที่ใช้งานของแผนของคุณ อนการใช้งานทีมอื่นหรืออัพเกรดแผนของคุณก่อน"
       },
       "toasts": {
         "created": "สร้างทีมแล้ว",
         "renamed": "เปลี่ยนชื่อทีมแล้ว",
         "colorChanged": "อัปเดตสีแล้ว",
-        "deleted": "ลบทีมแล้ว",
-        "saved": "อัปเดตทีมแล้ว"
+        "saved": "อัปเดตทีมแล้ว",
+        "deactivated": "อนการใช้งานทีมแล้ว",
+        "reactivated": "เปิดใช้งานทีมอีกครั้งแล้ว"
       },
       "teamsHeading": "ทีม",
       "invite": {

@@ -5,6 +5,9 @@ const clientTransactionEntrySchema = new Schema(
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking", required: true },
     // transactionId is null for zero-deposit bookings — no Transaction doc is created in that case
     transactionId: { type: Schema.Types.ObjectId, ref: "Transaction", default: null },
+    // Team that worked the booking, denormalized for the client-detail payments
+    // list. Read the live Team for current name/color. Null for legacy entries.
+    teamId: { type: Schema.Types.ObjectId, ref: "Team", default: null },
     amount: { type: Number, required: true },
     currency: { type: String, default: "PHP" },
     type: {

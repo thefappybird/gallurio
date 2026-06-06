@@ -30,12 +30,12 @@
         "calendar": "Booking calendar",
         "eventTypes": "Event type breakdown",
         "transactionsByMethod": "Payments by method (90d)",
+        "transactionsByTeam": "Revenue by team",
         "weeklyBookings": "Bookings by weekday",
         "topClients": "Top clients by spend"
       },
       "pipeline": {
         "inquiries": "Inquiries",
-        "quoted": "Quoted",
         "booked": "Booked"
       },
       "quickAdd": {
@@ -68,6 +68,7 @@
     },
     "bookings": {
       "title": "Bookings",
+      "titleForTeam": "{team}'s Bookings",
       "view": {
         "table": "Table",
         "calendar": "Calendar"
@@ -80,6 +81,13 @@
         "import": "Import CSV",
         "export": "Export CSV",
         "add": "New booking"
+      },
+      "teamPicker": {
+        "allTeams": "All teams",
+        "allMyTeams": "All my teams",
+        "label": "Filter by team",
+        "inactive": "Inactive",
+        "countLabel": "{count, plural, one {# team} other {# teams}}"
       },
       "import": {
         "title": "Import bookings",
@@ -142,7 +150,7 @@
               "note": "wedding, corporate, portrait, etc."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total booking amount"
@@ -188,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Inquiry",
-        "quoted": "Quoted",
         "booked": "Booked",
         "completed": "Completed",
         "cancelled": "Cancelled"
@@ -217,6 +224,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
+          "eventPricing": "Event & Pricing",
+          "sessionsLocation": "Sessions & Location",
           "activity": "Notes & activity"
         },
         "sections": {
@@ -263,6 +272,7 @@
           "confirmTitle": "Confirm",
           "cancelTitleEdit": "Cancel",
           "editEventType": "Change event type",
+          "editStatus": "Change status",
           "sendEmail": "Send email",
           "callClient": "Call"
         },
@@ -355,7 +365,9 @@
         "showPast": "Show past",
         "hidePast": "Hide past",
         "filterByStatus": "Filter by status",
-        "filterActive": "Filtering by {status} — tap again to clear"
+        "filterActive": "Filtering by {status} — tap again to clear",
+        "teamsLegend": "Teams",
+        "inactiveTeam": "Inactive team"
       },
       "sessions": {
         "label": "Session {n}",
@@ -400,6 +412,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
+          "eventPricing": "Event & Pricing",
+          "sessionsLocation": "Sessions & Location",
           "review": "Review"
         },
         "client": {
@@ -454,7 +468,9 @@
         },
         "review": {
           "intro": "Quick check — confirm everything looks right before you save."
-        }
+        },
+        "teamLabel": "Team",
+        "teamPlaceholder": "Select a team"
       }
     },
     "sidebar": {
@@ -488,7 +504,7 @@
         "publicPage": "Public page",
         "danger": "Danger zone",
         "devPlan": "Dev · plan",
-        "switchWorkspace": "Switch Workspace"
+        "currentWorkspace": "Current workspace"
       },
       "devPlan": {
         "title": "Dev plan switcher",
@@ -579,7 +595,8 @@
       "createButton": "Create team",
       "toolbar": {
         "search": "Search teams",
-        "searchLabel": "Search teams by name"
+        "searchLabel": "Search teams by name",
+        "showDeactivated": "Show deactivated"
       },
       "table": {
         "empty": "No teams match your search.",
@@ -612,11 +629,18 @@
         "saving": "Saving…",
         "cancel": "Cancel"
       },
-      "deleteDialog": {
-        "title": "Delete team?",
-        "description": "This team and its member assignments will be removed. Members stay in the workspace and can be added to another team afterwards. This cannot be undone.",
-        "confirm": "Delete team",
-        "deleting": "Deleting…",
+      "deactivateDialog": {
+        "title": "Deactivate team?",
+        "description": "\"{name}\" will be hidden from your active teams and can no longer take new bookings. Its members, bookings, and history are kept, and you can reactivate it anytime.",
+        "confirm": "Deactivate team",
+        "deactivating": "Deactivating…",
+        "cancel": "Cancel"
+      },
+      "reactivateDialog": {
+        "title": "Reactivate team?",
+        "description": "\"{name}\" will become active again and can take new bookings. This counts toward your plan’s active-team limit.",
+        "confirm": "Reactivate team",
+        "reactivating": "Reactivating…",
         "cancel": "Cancel"
       },
       "team": {
@@ -626,8 +650,10 @@
         "rename": "Rename",
         "changeColor": "Change color",
         "invite": "Invite teammate",
-        "delete": "Delete",
-        "actionsLabel": "Actions for {name}"
+        "actionsLabel": "Actions for {name}",
+        "deactivate": "Deactivate",
+        "reactivate": "Reactivate",
+        "inactiveBadge": "Inactive"
       },
       "editDialog": {
         "title": "Edit team",
@@ -659,16 +685,18 @@
         "nameRequired": "Team name is required.",
         "nameTooLong": "Team name must be 40 characters or fewer.",
         "duplicateName": "A team with this name already exists in this workspace.",
-        "cannotDeleteDefault": "The default team can't be deleted.",
         "teamNotFound": "Team not found.",
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "cannotDeactivateDefault": "The default team can't be deactivated.",
+        "reactivateCapExceeded": "Reactivating would exceed your plan's active-team limit. Deactivate another team or upgrade your plan first."
       },
       "toasts": {
         "created": "Team created.",
         "renamed": "Team renamed.",
         "colorChanged": "Color updated.",
         "saved": "Team updated.",
-        "deleted": "Team deleted."
+        "deactivated": "Team deactivated.",
+        "reactivated": "Team reactivated."
       },
       "teamsHeading": "Teams",
       "invite": {

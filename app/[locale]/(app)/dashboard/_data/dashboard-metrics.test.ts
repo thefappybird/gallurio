@@ -50,11 +50,13 @@ async function seedBooking(
     startAt: Date;
     total: number;
     deposit: number;
+    teamId: mongoose.Types.ObjectId;
   }> = {}
 ) {
   const start = overrides.startAt ?? daysFromNow(1);
   return Booking.create({
     workspaceId: wid,
+    teamId: overrides.teamId ?? new mongoose.Types.ObjectId(),
     clientId,
     clientName: "Demo Client",
     title: "Demo Booking",
@@ -127,19 +129,18 @@ describe("getKpiSnapshot", () => {
     expect(snap.revenueThisMonth).toBe(0);
   });
 
-  it("counts active bookings only when in current month and booked/quoted", async () => {
+  it("counts active bookings only when in current month and booked", async () => {
     const inMonth = new Date();
     inMonth.setDate(15);
     const nextMonth = new Date(inMonth);
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     await seedBooking(workspaceId, { status: "booked", startAt: inMonth });
-    await seedBooking(workspaceId, { status: "quoted", startAt: inMonth });
     await seedBooking(workspaceId, { status: "inquiry", startAt: inMonth });
     await seedBooking(workspaceId, { status: "booked", startAt: nextMonth });
 
     const snap = await getKpiSnapshot(workspaceId);
-    expect(snap.activeBookingsThisMonth).toBe(2);
+    expect(snap.activeBookingsThisMonth).toBe(1);
   });
 
   it("counts new inquiries only with status='new'", async () => {
@@ -254,16 +255,14 @@ describe("getUpcomingWeek", () => {
 });
 
 describe("getPipelineCounts", () => {
-  it("groups new+contacted inquiries, quoted bookings, and booked bookings separately", async () => {
+  it("groups new+contacted inquiries and booked bookings separately", async () => {
     await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "new" });
     await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "contacted" });
     await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived" });
-    await seedBooking(workspaceId, { status: "quoted" });
-    await seedBooking(workspaceId, { status: "quoted" });
     await seedBooking(workspaceId, { status: "booked" });
 
     const counts = await getPipelineCounts(workspaceId);
-    expect(counts).toEqual({ inquiries: 2, quoted: 2, booked: 1 });
+    expect(counts).toEqual({ inquiries: 2, booked: 1 });
   });
 });
 
@@ -302,6 +301,40 @@ describe("getBookingsByDay", () => {
     const entry = days.find((d) => d.date === key);
     expect(entry?.count).toBe(2);
   });
+
+  it("scopes to the given teamIds (string ids cast to ObjectId in the aggregation)", async () => {
+    const teamA = new mongoose.Types.ObjectId();
+    const teamB = new mongoose.Types.ObjectId();
+    const day = new Date();
+    day.setDate(12);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(workspaceId, { startAt: day, teamId: teamA });
+    await seedBooking(workspaceId, { startAt: day, teamId: teamB });
+
+    const key = day.toISOString().slice(0, 10);
+    const days = await getBookingsByDay(workspaceId, day, [String(teamA)]);
+    expect(days.find((d) => d.date === key)?.count).toBe(1);
+  });
+
+  it("returns nothing for an empty teamIds array (member with no teams — fail closed)", async () => {
+    const day = new Date();
+    day.setDate(13);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(workspaceId, { startAt: day });
+
+    const days = await getBookingsByDay(workspaceId, day, []);
+    expect(days).toHaveLength(0);
+  });
+
+  it("never counts another workspace's bookings", async () => {
+    const day = new Date();
+    day.setDate(14);
+    day.setHours(10, 0, 0, 0);
+    await seedBooking(otherWorkspaceId, { startAt: day });
+
+    const days = await getBookingsByDay(workspaceId, day);
+    expect(days.find((d) => d.date === day.toISOString().slice(0, 10))).toBeUndefined();
+  });
 });
 
 describe("getEventTypeBreakdown", () => {
@@ -312,6 +345,7 @@ describe("getEventTypeBreakdown", () => {
     const now = new Date();
     await Booking.create({
       workspaceId,
+      teamId: new mongoose.Types.ObjectId(),
       clientId,
       clientName: "C",
       title: "T",
@@ -324,6 +358,7 @@ describe("getEventTypeBreakdown", () => {
     });
     await Booking.create({
       workspaceId,
+      teamId: new mongoose.Types.ObjectId(),
       clientId,
       clientName: "C",
       title: "T",

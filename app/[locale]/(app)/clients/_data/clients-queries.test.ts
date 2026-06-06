@@ -56,6 +56,7 @@ async function seedBooking(
   const end = new Date(start.getTime() + 3_600_000);
   return Booking.create({
     workspaceId: wid,
+    teamId: new Types.ObjectId(),
     clientId: cid,
     clientName: "Test Client",
     title: overrides.title ?? "Test Booking",

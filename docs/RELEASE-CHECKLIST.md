@@ -161,4 +161,12 @@ The portfolio brand kit supports **independent heading + body font selection** f
 
 - [ ] If owners want more variety, source a few more latin **variable** woff2 files (e.g. fontsource) into `app/fonts/`, register each with `localFont` in `lib/fonts/portfolio.ts` (append its var to `portfolioFontVariables`), and add an entry to `PORTFOLIO_FONTS` in `lib/page-builder/fonts.ts`. The brand-kit picker and per-text font selector pick up new families automatically. Do NOT switch to a runtime Google Fonts `<link>` — it breaks the offline/reproducible-build invariant and adds a third-party request on every public page.
 
+## 13. Data migrations
+
+- [ ] **Backfill removed `quoted` booking status.** The `quoted` booking status was removed (enum is now `inquiry | booked | completed | cancelled`). Any existing `Booking` document with `status: "quoted"` will now FAIL Mongoose enum validation on its next `.save()`. Before/at deploy, run a one-time backfill against production:
+  ```js
+  db.bookings.updateMany({ status: "quoted" }, { $set: { status: "inquiry" } })
+  ```
+  Target is **`inquiry`** (a `quoted` record was an unconfirmed deal â€” demoting it to an active lead is safer than fabricating a confirmed `booked`). Confirm the desired target before running. Dev/staging databases are cleaned by `pnpm seed`, so this only matters for any DB that holds real data.
+
 When everything in this file is checked, ship it.

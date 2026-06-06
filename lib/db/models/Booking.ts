@@ -7,7 +7,6 @@ export const BOOKING_STATUSES = [
   // inquiry in the lead inbox, which promotes the draft to "inquiry"/"pending".
   "draft",
   "inquiry",
-  "quoted",
   "booked",
   "completed",
   "cancelled",
@@ -24,6 +23,12 @@ const sessionSchema = new Schema(
 const bookingSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
+    // The team that works this booking. Nullable only during the backfill
+    // window; new bookings always carry a teamId (enforced by the create
+    // validator + route). Backed by the {workspaceId, teamId, ...} compound
+    // indexes below — no standalone single-field index (every query is
+    // workspace-scoped). Existing bookings may reference a since-deactivated team.
+    teamId: { type: Schema.Types.ObjectId, ref: "Team", default: null },
     clientId: { type: Schema.Types.ObjectId, ref: "Client", required: true },
     clientName: { type: String, required: true },
     title: { type: String, required: true, trim: true },
@@ -73,6 +78,11 @@ bookingSchema.index({ workspaceId: 1, status: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, clientId: 1 });
 // Backs the lead-inbox lookup of a draft booking from its inquiry.
 bookingSchema.index({ workspaceId: 1, createdFromInquiryId: 1 });
+// Team-scoped calendar/list reads: members see only their teams' bookings, and
+// the team picker filters by teamId. Mirrors the two workspace-scoped indexes
+// above with teamId injected after workspaceId.
+bookingSchema.index({ workspaceId: 1, teamId: 1, firstSessionStart: 1 });
+bookingSchema.index({ workspaceId: 1, teamId: 1, status: 1, firstSessionStart: 1 });
 
 function recomputeDenormalized(
   sessions: { startAt: Date; endAt: Date }[]

@@ -14,6 +14,8 @@ import { useSearchParams } from "next/navigation";
 import { PlusIcon, SearchIcon, MailPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { TeamsTable } from "./teams-table";
 import { TeamDetailDrawer } from "./team-detail-drawer";
 import { InviteForm } from "./invite-form";
@@ -21,7 +23,8 @@ import { DowngradeBlockModal } from "./downgrade-block-modal";
 import {
   CreateDialog,
   EditDialog,
-  DeleteDialog,
+  DeactivateDialog,
+  ReactivateDialog,
   UpsellDialog,
 } from "./team-dialogs";
 import type {
@@ -45,7 +48,8 @@ type OptimisticAction =
   | { type: "add"; team: TeamRow }
   | { type: "rename"; id: string; name: string }
   | { type: "color"; id: string; color: string }
-  | { type: "delete"; id: string };
+  | { type: "deactivate"; id: string }
+  | { type: "reactivate"; id: string };
 
 function applyOptimistic(teams: TeamRow[], action: OptimisticAction): TeamRow[] {
   switch (action.type) {
@@ -55,8 +59,10 @@ function applyOptimistic(teams: TeamRow[], action: OptimisticAction): TeamRow[] 
       return teams.map((t) => (t.id === action.id ? { ...t, name: action.name } : t));
     case "color":
       return teams.map((t) => (t.id === action.id ? { ...t, color: action.color } : t));
-    case "delete":
-      return teams.filter((t) => t.id !== action.id);
+    case "deactivate":
+      return teams.map((t) => (t.id === action.id ? { ...t, isActive: false } : t));
+    case "reactivate":
+      return teams.map((t) => (t.id === action.id ? { ...t, isActive: true } : t));
   }
 }
 
@@ -81,6 +87,7 @@ export function TeamsPageClient({
   // toolbar so back/forward and shared links restore the filter.
   const committedQuery = (searchParams.get("q") ?? "").trim().toLowerCase();
   const [q, setQ] = useState(searchParams.get("q") ?? "");
+  const [showDeactivated, setShowDeactivated] = useState(false);
 
   useEffect(() => {
     const next = searchParams.get("q") ?? "";
@@ -107,34 +114,38 @@ export function TeamsPageClient({
     return () => clearTimeout(id);
   }, [q, searchParams, pushQuery]);
 
-  const filteredTeams = useMemo(
-    () =>
-      committedQuery
-        ? optimisticTeams.filter((tm) => tm.name.toLowerCase().includes(committedQuery))
-        : optimisticTeams,
-    [optimisticTeams, committedQuery],
-  );
+  const filteredTeams = useMemo(() => {
+    let teams = showDeactivated ? optimisticTeams : optimisticTeams.filter((tm) => tm.isActive);
+    if (committedQuery) {
+      teams = teams.filter((tm) => tm.name.toLowerCase().includes(committedQuery));
+    }
+    return teams;
+  }, [optimisticTeams, committedQuery, showDeactivated]);
 
   const invitableTeams: InvitableTeam[] = useMemo(
     () =>
-      optimisticTeams.map((tm) => ({
-        id: tm.id,
-        name: tm.name,
-        color: tm.color,
-        memberCount: tm.memberCount,
-        maxMembersPerTeam,
-      })),
+      optimisticTeams
+        .filter((tm) => tm.isActive)
+        .map((tm) => ({
+          id: tm.id,
+          name: tm.name,
+          color: tm.color,
+          memberCount: tm.memberCount,
+          maxMembersPerTeam,
+        })),
     [optimisticTeams, maxMembersPerTeam],
   );
 
   // Dialog / drawer state
   const [createOpen, setCreateOpen] = useState(false);
   const [upsellOpen, setUpsellOpen] = useState(false);
-  const overCap = initialTeams.length > maxTeams;
+  const activeTeamCount = initialTeams.filter((t) => t.isActive).length;
+  const overCap = activeTeamCount > maxTeams;
   const [downgradeBlockOpen, setDowngradeBlockOpen] = useState(overCap);
 
   const [editTeam, setEditTeam] = useState<TeamRow | null>(null);
-  const [deleteTeam, setDeleteTeam] = useState<TeamRow | null>(null);
+  const [deactivateTeam, setDeactivateTeam] = useState<TeamRow | null>(null);
+  const [reactivateTeam, setReactivateTeam] = useState<TeamRow | null>(null);
 
   const [drawerTeam, setDrawerTeam] = useState<TeamRow | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -142,7 +153,7 @@ export function TeamsPageClient({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteTeamIds, setInviteTeamIds] = useState<string[]>([]);
 
-  const atCap = optimisticTeams.length >= maxTeams;
+  const atCap = optimisticTeams.filter((t) => t.isActive).length >= maxTeams;
 
   const handleCreateClick = useCallback(() => {
     if (atCap) setUpsellOpen(true);
@@ -171,16 +182,29 @@ export function TeamsPageClient({
 
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:w-80">
-          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t("toolbar.search")}
-            aria-label={t("toolbar.searchLabel")}
-            className="pl-8"
-          />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+          <div className="relative w-full sm:w-80">
+            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t("toolbar.search")}
+              aria-label={t("toolbar.searchLabel")}
+              className="pl-8"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              id="show-deactivated"
+              checked={showDeactivated}
+              onCheckedChange={setShowDeactivated}
+              aria-label={t("toolbar.showDeactivated")}
+            />
+            <Label htmlFor="show-deactivated" className="cursor-pointer text-sm text-muted-foreground">
+              {t("toolbar.showDeactivated")}
+            </Label>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => openInvite([])}>
@@ -205,7 +229,8 @@ export function TeamsPageClient({
           onDetails={openDetails}
           onEdit={setEditTeam}
           onInvite={(team) => openInvite([team.id])}
-          onDelete={setDeleteTeam}
+          onDeactivate={setDeactivateTeam}
+          onReactivate={setReactivateTeam}
         />
       </div>
 
@@ -248,13 +273,26 @@ export function TeamsPageClient({
           onColorChanged={(color) => dispatch({ type: "color", id: editTeam.id, color })}
         />
       )}
-      {deleteTeam && (
-        <DeleteDialog
-          team={deleteTeam}
-          open={Boolean(deleteTeam)}
-          onOpenChange={(open) => !open && setDeleteTeam(null)}
-          onDeleted={() => dispatch({ type: "delete", id: deleteTeam.id })}
-          onDeleteFailed={(restored) => dispatch({ type: "add", team: restored })}
+      {deactivateTeam && (
+        <DeactivateDialog
+          team={deactivateTeam}
+          open={Boolean(deactivateTeam)}
+          onOpenChange={(open) => !open && setDeactivateTeam(null)}
+          onDeactivated={() => dispatch({ type: "deactivate", id: deactivateTeam.id })}
+          onFailed={(restored) =>
+            dispatch({ type: "reactivate", id: restored.id })
+          }
+        />
+      )}
+      {reactivateTeam && (
+        <ReactivateDialog
+          team={reactivateTeam}
+          open={Boolean(reactivateTeam)}
+          onOpenChange={(open) => !open && setReactivateTeam(null)}
+          onReactivated={() => dispatch({ type: "reactivate", id: reactivateTeam.id })}
+          onFailed={(restored) =>
+            dispatch({ type: "deactivate", id: restored.id })
+          }
         />
       )}
 

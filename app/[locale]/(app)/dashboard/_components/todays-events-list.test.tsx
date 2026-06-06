@@ -57,13 +57,13 @@ describe("TodaysEventsList", () => {
   it("shows status as a badge", () => {
     renderWithProviders(
       <TodaysEventsList
-        bookings={[makeBooking({ status: "quoted" })]}
+        bookings={[makeBooking({ status: "booked" })]}
         locale="en"
         title="Today"
         empty="Nothing here."
         timeMode="12h"
       />
     );
-    expect(screen.getByText("quoted")).toBeInTheDocument();
+    expect(screen.getByText("booked")).toBeInTheDocument();
   });
 });

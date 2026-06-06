@@ -151,9 +151,9 @@ export function BookingsTable({
             <span className="flex flex-wrap items-center gap-1.5">
               <span
                 className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-white"
-                style={{ backgroundColor: STATUS_COLOR_VAR[v] }}
+                style={{ backgroundColor: STATUS_COLOR_VAR[v] ?? "var(--muted)" }}
               >
-                {tStatus(v)}
+                {typeof tStatus.has === "function" && !tStatus.has(v) ? v : tStatus(v)}
               </span>
               {isPast && (
                 <span className="inline-flex items-center border border-muted-foreground/40 bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

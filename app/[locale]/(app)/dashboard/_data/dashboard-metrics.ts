@@ -1,6 +1,7 @@
 import "server-only";
-import type { Types } from "mongoose";
-import { Booking, Client, Inquiry, Transaction, ActivityLog } from "@/lib/db/models";
+import { Types } from "mongoose";
+import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
+import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -53,7 +54,7 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
     Booking.countDocuments({
       workspaceId,
       firstSessionStart: { $gte: monthStart, $lte: monthEnd },
-      status: { $in: ["booked", "quoted"] },
+      status: "booked",
     }),
     Inquiry.countDocuments({ workspaceId, status: "new" }),
     Booking.aggregate<{ _id: null; total: number; paid: number }>([
@@ -115,7 +116,7 @@ export async function getUpcomingWeek(workspaceId: WorkspaceId, limit = 6) {
   return Booking.find({
     workspaceId,
     firstSessionStart: { $gt: endOfDay(now), $lte: weekEnd },
-    status: { $in: ["booked", "quoted", "inquiry"] },
+    status: { $in: ["booked", "inquiry"] },
   })
     .sort({ firstSessionStart: 1 })
     .limit(limit)
@@ -138,17 +139,15 @@ export async function getActivityFeed(workspaceId: WorkspaceId, limit = 10) {
 
 export type PipelineCounts = {
   inquiries: number;
-  quoted: number;
   booked: number;
 };
 
 export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
-  const [inquiries, quoted, booked] = await Promise.all([
+  const [inquiries, booked] = await Promise.all([
     Inquiry.countDocuments({ workspaceId, status: { $in: ["new", "contacted"] } }),
-    Booking.countDocuments({ workspaceId, status: "quoted" }),
     Booking.countDocuments({ workspaceId, status: "booked" }),
   ]);
-  return { inquiries, quoted, booked };
+  return { inquiries, booked };
 }
 
 export type RevenuePoint = { date: string; amount: number };
@@ -198,18 +197,31 @@ export type CalendarDayCount = { date: string; count: number };
 
 export async function getBookingsByDay(
   workspaceId: WorkspaceId,
-  month: Date
+  month: Date,
+  teamIds?: readonly string[]
 ): Promise<CalendarDayCount[]> {
   const start = startOfMonth(month);
   const end = endOfMonth(month);
+  const matchStage: Record<string, unknown> = {
+    workspaceId,
+    firstSessionStart: { $lte: end },
+    lastSessionEnd: { $gte: start },
+  };
+  if (teamIds !== undefined) {
+    // Aggregation $match does NOT auto-cast like find() does — cast the string
+    // team ids to ObjectId or the $in matches zero ObjectId-typed documents.
+    matchStage.teamId = {
+      $in: teamIds
+        .filter((id) => Types.ObjectId.isValid(id))
+        .map((id) => new Types.ObjectId(id)),
+    };
+  }
   // Unwind sessions so each session contributes its own days to the count.
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
     {
       $match: {
-        workspaceId,
+        ...matchStage,
         status: { $ne: "draft" },
-        firstSessionStart: { $lte: end },
-        lastSessionEnd: { $gte: start },
       },
     },
     { $unwind: "$sessions" },
@@ -269,6 +281,59 @@ export async function getTransactionsByMethod(
     { $sort: { total: -1 } },
   ]);
   return rows.map((r) => ({ method: r._id ?? "other", total: r.total }));
+}
+
+export type TransactionsByTeam = {
+  teamId: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  total: number;
+};
+
+export async function getTransactionsByTeam(
+  workspaceId: WorkspaceId,
+  days = 90
+): Promise<TransactionsByTeam[]> {
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  const rows = await Transaction.aggregate<{ _id: Types.ObjectId | null; total: number }>([
+    {
+      $match: {
+        workspaceId,
+        paidAt: { $gte: start },
+        type: { $in: ["deposit", "balance"] },
+      },
+    },
+    { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
+    { $sort: { total: -1 } },
+  ]);
+
+  // Drop the null-teamId bucket — only show real teams.
+  const withTeam = rows.filter((r) => r._id != null) as { _id: Types.ObjectId; total: number }[];
+  if (withTeam.length === 0) return [];
+
+  const teamIds = withTeam.map((r) => r._id);
+  const teams = await Team.find({ workspaceId, _id: { $in: teamIds } })
+    .select({ _id: 1, name: 1, color: 1, isActive: 1 })
+    .lean();
+
+  const teamMap = new Map(teams.map((t) => [t._id.toString(), t]));
+
+  return withTeam.flatMap((r) => {
+    const team = teamMap.get(r._id.toString());
+    if (!team) return [];
+    return [
+      {
+        teamId: r._id.toString(),
+        name: team.name,
+        color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
+        isActive: team.isActive,
+        total: r.total,
+      },
+    ];
+  });
 }
 
 export type RevenueComparison = {

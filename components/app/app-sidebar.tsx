@@ -3,14 +3,14 @@
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
-  CameraIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  MessageSquareIcon,
   SettingsIcon,
   UsersIcon,
   UsersRound,
   BookOpenIcon,
+  CameraIcon,
+  MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
@@ -26,7 +26,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 
@@ -41,6 +40,7 @@ const OWNER_NAV = [
 
 const MEMBER_NAV = [
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
+  { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
 ];
 
 type AppSidebarProps = {
@@ -75,7 +75,6 @@ export function AppSidebar({ role, workspaceName, workspaceLogoUrl }: AppSidebar
           <span className="truncate text-sm font-medium text-sidebar-foreground group-data-[collapsible=icon]:hidden">
             {workspaceName}
           </span>
-          <SidebarTrigger className="ml-auto size-8 shrink-0 group-data-[collapsible=icon]:ml-0" />
         </div>
       </SidebarHeader>
 
@@ -112,18 +111,16 @@ export function AppSidebar({ role, workspaceName, workspaceLogoUrl }: AppSidebar
           <SidebarMenuItem>
             <ThemeToggle />
           </SidebarMenuItem>
-          {isOwner && (
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/settings" />}
-                tooltip={t("settings")}
-                className="group-data-[collapsible=icon]:mx-auto"
-              >
-                <SettingsIcon className="size-5! shrink-0" />
-                <span>{t("settings")}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href="/settings" />}
+              tooltip={t("settings")}
+              className="group-data-[collapsible=icon]:mx-auto"
+            >
+              <SettingsIcon className="size-5! shrink-0" />
+              <span>{t("settings")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <div className="grid size-7 shrink-0 place-items-center">

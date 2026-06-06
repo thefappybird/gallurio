@@ -72,6 +72,7 @@ async function seedBooking(sessions: { startAt: Date; endAt: Date }[], overrides
   );
   return Booking.create({
     workspaceId: wid,
+    teamId: new Types.ObjectId(),
     clientId,
     clientName: "Demo Client",
     title: overrides.title ?? "Demo Booking",

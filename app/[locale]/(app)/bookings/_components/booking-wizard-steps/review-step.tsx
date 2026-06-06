@@ -7,10 +7,14 @@ import type { WizardValues, WizardSession } from "./types";
 type Props = {
   values: WizardValues;
   locale: string;
+  /** Teams the booking could be assigned to — used to show the team name in the
+   *  summary even when no team picker was shown (single writable team). */
+  teams?: { id: string; name: string }[];
 };
 
-export function ReviewStep({ values, locale }: Props) {
+export function ReviewStep({ values, locale, teams }: Props) {
   const t = useTranslations("app.bookings.wizard.review");
+  const tWiz = useTranslations("app.bookings.wizard");
   const tFields = useTranslations("app.bookings.detail.fields");
   const tSessions = useTranslations("app.bookings.sessions");
 
@@ -19,10 +23,15 @@ export function ReviewStep({ values, locale }: Props) {
       ? values.client.clientName
       : values.client.name;
 
+  const teamName = values.teamId
+    ? (teams?.find((tm) => tm.id === values.teamId)?.name ?? null)
+    : null;
+
   const summaryRows: Array<[string, string]> = [
     [tFields("title"), values.title || "—"],
     [tFields("clientName"), clientLabel || "—"],
     [tFields("eventType"), values.eventType],
+    [tWiz("teamLabel"), teamName ?? "—"],
     [tFields("location"), values.location?.address || "—"],
     [
       tFields("total"),

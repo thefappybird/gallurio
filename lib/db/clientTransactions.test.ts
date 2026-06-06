@@ -66,6 +66,24 @@ describe("recordBookingForClient", () => {
     expect(client?.transactions?.[0]?.source).toBe("manual");
   });
 
+  it("denormalizes the booking's teamId onto the Transaction and the history entry", async () => {
+    await makeClient();
+    const teamId = new Types.ObjectId();
+
+    await recordBookingForClient({
+      workspaceId: WS_ID,
+      clientId: CLIENT_ID,
+      booking: { ...BASE_BOOKING, teamId },
+      source: "manual",
+    });
+
+    const tx = await Transaction.findOne({ workspaceId: WS_ID, bookingId: BOOKING_ID }).lean();
+    expect(String(tx?.teamId)).toBe(String(teamId));
+
+    const client = await Client.findById(CLIENT_ID).lean();
+    expect(String(client?.transactions?.[0]?.teamId)).toBe(String(teamId));
+  });
+
   it("skips Transaction creation when deposit is 0, records history entry with type=other", async () => {
     await makeClient();
 
@@ -344,6 +362,39 @@ describe("reassignBookingBetweenClients", () => {
 
     const txCount = await Transaction.countDocuments({});
     expect(txCount).toBe(0);
+  });
+
+  it("carries the booking's teamId onto the moved transaction + history entry", async () => {
+    await seedFromClient();
+    await seedToClient();
+    await Transaction.create({
+      workspaceId: WS_ID,
+      bookingId: REASSIGN_BOOKING_ID,
+      clientId: FROM_CLIENT_ID,
+      amount: 10_000,
+      currency: "PHP",
+      type: "deposit",
+      method: "other",
+      paidAt: REASSIGN_START,
+    });
+    const teamId = new Types.ObjectId();
+
+    await reassignBookingBetweenClients({
+      workspaceId: WS_ID,
+      fromClientId: FROM_CLIENT_ID,
+      toClientId: TO_CLIENT_ID,
+      booking: { ...BASE_REASSIGN_BOOKING, teamId },
+    });
+
+    const tx = await Transaction.findOne({
+      workspaceId: WS_ID,
+      bookingId: REASSIGN_BOOKING_ID,
+      clientId: TO_CLIENT_ID,
+    }).lean();
+    expect(String(tx?.teamId)).toBe(String(teamId));
+
+    const to = await Client.findById(TO_CLIENT_ID).lean();
+    expect(String(to?.transactions?.[0]?.teamId)).toBe(String(teamId));
   });
 
   it("throws when fromClient is not found", async () => {

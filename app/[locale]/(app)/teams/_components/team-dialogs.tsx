@@ -22,7 +22,8 @@ import {
   createTeamAction,
   renameTeamAction,
   setTeamColorAction,
-  deleteTeamAction,
+  deactivateTeamAction,
+  reactivateTeamAction,
 } from "../_actions";
 import type { TeamRow } from "../_types";
 
@@ -32,8 +33,10 @@ export function mapActionError(error: string, t: Translator): string {
   switch (error) {
     case "DUPLICATE_NAME":
       return t("errors.duplicateName");
-    case "CANNOT_DELETE_DEFAULT":
-      return t("errors.cannotDeleteDefault");
+    case "CANNOT_DEACTIVATE_DEFAULT":
+      return t("errors.cannotDeactivateDefault");
+    case "REACTIVATE_CAP_EXCEEDED":
+      return t("errors.reactivateCapExceeded");
     case "Team not found":
       return t("errors.teamNotFound");
     default:
@@ -325,20 +328,20 @@ export function EditDialog({
   );
 }
 
-// --- Delete ---
+// --- Deactivate ---
 
-export function DeleteDialog({
+export function DeactivateDialog({
   team,
   open,
   onOpenChange,
-  onDeleted,
-  onDeleteFailed,
+  onDeactivated,
+  onFailed,
 }: {
   team: TeamRow;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted: () => void;
-  onDeleteFailed: (team: TeamRow) => void;
+  onDeactivated: () => void;
+  onFailed: (team: TeamRow) => void;
 }) {
   const t = useTranslations("app.teams");
   const router = useRouter();
@@ -349,16 +352,16 @@ export function DeleteDialog({
     onOpenChange(next);
   }
 
-  function handleDelete() {
+  function handleDeactivate() {
     startTransition(async () => {
-      onDeleted();
-      const result = await deleteTeamAction({ teamId: team.id });
+      onDeactivated();
+      const result = await deactivateTeamAction({ teamId: team.id });
       if (result.error) {
-        onDeleteFailed(team);
+        onFailed(team);
         toast.error(mapActionError(result.error, t));
         return;
       }
-      toast.success(t("toasts.deleted"));
+      toast.success(t("toasts.deactivated"));
       onOpenChange(false);
       router.refresh();
     });
@@ -368,21 +371,91 @@ export function DeleteDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("deleteDialog.title")}</DialogTitle>
-          <DialogDescription>{t("deleteDialog.description")}</DialogDescription>
+          <DialogTitle>{t("deactivateDialog.title")}</DialogTitle>
+          <DialogDescription>
+            {t("deactivateDialog.description", { name: team.name })}
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={() => handleOpenChange(false)}>
-            {t("deleteDialog.cancel")}
+            {t("deactivateDialog.cancel")}
           </Button>
-          <Button variant="destructive" disabled={pending} onClick={handleDelete}>
+          <Button variant="destructive" disabled={pending} onClick={handleDeactivate}>
             {pending ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
-                {t("deleteDialog.deleting")}
+                {t("deactivateDialog.deactivating")}
               </>
             ) : (
-              t("deleteDialog.confirm")
+              t("deactivateDialog.confirm")
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- Reactivate ---
+
+export function ReactivateDialog({
+  team,
+  open,
+  onOpenChange,
+  onReactivated,
+  onFailed,
+}: {
+  team: TeamRow;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onReactivated: () => void;
+  onFailed: (team: TeamRow) => void;
+}) {
+  const t = useTranslations("app.teams");
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  function handleOpenChange(next: boolean) {
+    if (pending) return;
+    onOpenChange(next);
+  }
+
+  function handleReactivate() {
+    startTransition(async () => {
+      onReactivated();
+      const result = await reactivateTeamAction({ teamId: team.id });
+      if (result.error) {
+        onFailed(team);
+        toast.error(mapActionError(result.error, t));
+        return;
+      }
+      toast.success(t("toasts.reactivated"));
+      onOpenChange(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("reactivateDialog.title")}</DialogTitle>
+          <DialogDescription>
+            {t("reactivateDialog.description", { name: team.name })}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" disabled={pending} onClick={() => handleOpenChange(false)}>
+            {t("reactivateDialog.cancel")}
+          </Button>
+          <Button variant="default" disabled={pending} onClick={handleReactivate}>
+            {pending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                {t("reactivateDialog.reactivating")}
+              </>
+            ) : (
+              t("reactivateDialog.confirm")
             )}
           </Button>
         </DialogFooter>

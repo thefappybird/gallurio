@@ -45,7 +45,7 @@ export default async function TeamsPage({
   await connectDB();
 
   const rawTeams = await Team.find({ workspaceId: workspace._id })
-    .sort({ isDefault: -1, createdAt: 1 })
+    .sort({ isActive: -1, isDefault: -1, createdAt: 1 })
     .lean<TeamDoc[]>();
 
   const teams: TeamRow[] = rawTeams.map((tm) => ({
@@ -53,6 +53,7 @@ export default async function TeamsPage({
     name: tm.name,
     color: tm.color,
     isDefault: tm.isDefault ?? false,
+    isActive: tm.isActive ?? true,
     memberCount: tm.memberCount ?? 0,
   }));
 

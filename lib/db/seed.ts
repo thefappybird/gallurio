@@ -30,8 +30,11 @@ import {
   GalleryItem,
   Transaction,
   ActivityLog,
+  Team,
+  TEAM_COLOR_PALETTE,
 } from "./models";
 import { recordBookingForClient } from "./clientTransactions";
+import type { BookingStatus } from "@/lib/validators/booking";
 
 const DEMO_WORKSPACES = [
   {
@@ -72,7 +75,6 @@ const CLIENT_NAMES = [
 ];
 
 const EVENT_TYPES = ["wedding", "corporate", "portrait", "engagement", "anniversary", "other"];
-type BookingStatus = "inquiry" | "quoted" | "booked" | "completed" | "cancelled";
 
 function mulberry32(seed: number) {
   let t = seed >>> 0;
@@ -104,6 +106,9 @@ async function dropTenantCollections() {
     "galleryitems",
     "transactions",
     "activitylogs",
+    "teams",
+    "teammemberships",
+    "pendingteamassignments",
   ];
   for (const c of collections) {
     if (tenantNames.includes(c.collectionName)) {
@@ -142,6 +147,16 @@ async function seedWorkspace(
     onboardingCompletedAt: now,
   });
 
+  const mainTeam = await Team.create({
+    workspaceId: workspace._id,
+    name: "Main",
+    color: TEAM_COLOR_PALETTE[0],
+    isDefault: true,
+    isActive: true,
+    memberCount: 0,
+    createdByClerkUserId: w.ownerUserId,
+  });
+
   await User.create({
     clerkUserId: w.ownerUserId,
     email: w.ownerEmail,
@@ -169,6 +184,7 @@ async function seedWorkspace(
   // 2-3 in the next 7 days, and a healthy mix of statuses for the pipeline funnel.
   const bookingPayloads: Array<{
     workspaceId: mongoose.Types.ObjectId;
+    teamId: mongoose.Types.ObjectId;
     clientId: mongoose.Types.ObjectId;
     clientName: string;
     title: string;
@@ -198,6 +214,7 @@ async function seedWorkspace(
   const todaySlot = timedSlot(0);
   bookingPayloads.push({
     workspaceId: workspace._id,
+    teamId: mainTeam._id,
     clientId: clients[0]._id,
     clientName: clients[0].name,
     title: `${clients[0].name.split("&")[0].trim()} — ${w.businessType === "venue" ? "Venue Walkthrough" : "Editorial Shoot"}`,
@@ -223,13 +240,14 @@ async function seedWorkspace(
           : rand() > 0.7
             ? "booked"
             : rand() > 0.4
-              ? "quoted"
+              ? "booked"
               : "inquiry";
     const eventType = pick(EVENT_TYPES);
     const total = range(20, 250) * 1000;
     const slot = timedSlot(dayDelta);
     bookingPayloads.push({
       workspaceId: workspace._id,
+      teamId: mainTeam._id,
       clientId: client._id,
       clientName: client.name,
       title: `${client.name.split("&")[0].trim()} — ${eventType[0].toUpperCase()}${eventType.slice(1)}`,
@@ -259,6 +277,7 @@ async function seedWorkspace(
         _id: b._id,
         amount: b.amount,
         firstSessionStart: b.firstSessionStart,
+        teamId: mainTeam._id,
       },
       source: "seed",
     });

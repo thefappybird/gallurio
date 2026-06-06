@@ -9,6 +9,7 @@ type ReassignBookingOpts = {
     _id: mongoose.Types.ObjectId;
     amount: { total: number; deposit: number; currency: string };
     firstSessionStart: Date;
+    teamId?: mongoose.Types.ObjectId | string | null;
   };
   session?: mongoose.ClientSession;
 };
@@ -38,6 +39,7 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
     const deposit = booking.amount.deposit;
     const currency = booking.amount.currency;
     const occurredAt = booking.firstSessionStart;
+    const teamId = booking.teamId ?? null;
 
     // --- Decrement old client ---
     // Remove the matching transaction doc from the old client (only exists when deposit > 0).
@@ -194,6 +196,7 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
           {
             workspaceId,
             bookingId: booking._id,
+            teamId,
             clientId: toClientId,
             amount: deposit,
             currency,
@@ -208,6 +211,7 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
       const entry = {
         bookingId: booking._id,
         transactionId: txDoc._id,
+        teamId,
         amount: deposit,
         currency,
         type: "deposit",
@@ -246,6 +250,7 @@ export async function reassignBookingBetweenClients(opts: ReassignBookingOpts): 
       const entry = {
         bookingId: booking._id,
         transactionId: null,
+        teamId,
         amount: 0,
         currency,
         type: "other",
@@ -293,6 +298,7 @@ type RecordBookingOpts = {
     _id: mongoose.Types.ObjectId;
     amount: { total: number; deposit: number; currency: string };
     firstSessionStart: Date;
+    teamId?: mongoose.Types.ObjectId | string | null;
   };
   source: "manual" | "import" | "webhook" | "seed";
   session?: mongoose.ClientSession;
@@ -316,6 +322,7 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
   const deposit = booking.amount.deposit;
   const currency = booking.amount.currency;
   const occurredAt = booking.firstSessionStart;
+  const teamId = booking.teamId ?? null;
 
   const runWrites = async (session: mongoose.ClientSession) => {
     if (deposit > 0) {
@@ -324,6 +331,7 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
           {
             workspaceId,
             bookingId: booking._id,
+            teamId,
             clientId,
             amount: deposit,
             currency,
@@ -338,6 +346,7 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
       const entry = {
         bookingId: booking._id,
         transactionId: txDoc._id,
+        teamId,
         amount: deposit,
         currency,
         type: "deposit",
@@ -395,6 +404,7 @@ export async function recordBookingForClient(opts: RecordBookingOpts): Promise<v
       const entry = {
         bookingId: booking._id,
         transactionId: null,
+        teamId,
         amount: 0,
         currency,
         type: "other",

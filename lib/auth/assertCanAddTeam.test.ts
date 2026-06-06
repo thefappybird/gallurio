@@ -72,6 +72,15 @@ describe("assertCanAddTeam — starter plan (max 3)", () => {
     expect(err.currentCount).toBe(3);
     expect(err.max).toBe(3);
   });
+
+  it("excludes deactivated teams from the cap count", async () => {
+    const workspaceId = makeWorkspaceId();
+    await seedTeams(workspaceId, 3); // 3 active → at the starter cap
+    // Deactivating one frees a slot — only ACTIVE teams count.
+    const one = await Team.findOne({ workspaceId });
+    await Team.updateOne({ _id: one!._id }, { $set: { isActive: false, deactivatedAt: new Date() } });
+    await expect(assertCanAddTeam(workspaceId, "starter")).resolves.toBeUndefined();
+  });
 });
 
 describe("assertCanAddTeam — pro plan (max 15)", () => {

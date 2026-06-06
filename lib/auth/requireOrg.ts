@@ -33,14 +33,15 @@ export async function requireOrg(opts: { allowDuringOnboarding?: boolean } = {})
 
   if (!workspace) redirect(localized("/onboarding", locale));
 
-  if (!opts.allowDuringOnboarding) {
-    if (!user?.onboardingCompletedAt) redirect(localized("/onboarding", locale));
+  const isOwner =
+    session.orgRole === "org:admin" || workspace.ownerUserId === session.userId;
+
+  // Onboarding completion only applies to owners (members never onboard).
+  if (isOwner && !opts.allowDuringOnboarding && !user?.onboardingCompletedAt) {
+    redirect(localized("/onboarding", locale));
   }
 
-  const role: "owner" | "staff" =
-    session.orgRole === "org:admin" || workspace.ownerUserId === session.userId
-      ? "owner"
-      : "staff";
+  const role: "owner" | "staff" = isOwner ? "owner" : "staff";
 
   return {
     userId: session.userId,

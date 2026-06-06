@@ -5,6 +5,25 @@ import { renderWithProviders } from "@/test-utils/render";
 import { SettingsUserProfile } from "./settings-user-profile";
 import type { SettingsPage } from "./settings-user-profile";
 
+// Stub SettingsOrgSwitcher so it doesn't pull in Clerk's OrganizationSwitcher.
+vi.mock("./settings-org-switcher", () => ({
+  SettingsOrgSwitcher: () => <div data-testid="org-switcher" />,
+}));
+
+// Stub next-intl — override useTranslations while keeping all other exports intact.
+vi.mock("next-intl", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next-intl")>();
+  return {
+    ...actual,
+    useTranslations: () => (key: string) => {
+      const map: Record<string, string> = {
+        currentWorkspace: "Current workspace",
+      };
+      return map[key] ?? key;
+    },
+  };
+});
+
 // Stub Clerk's UserProfile so the test doesn't try to boot the full component.
 vi.mock("@clerk/nextjs", () => {
   function UserProfile({ children }: { children: React.ReactNode }) {

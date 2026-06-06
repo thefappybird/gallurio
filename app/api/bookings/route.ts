@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getTeamsForUser } from "@/lib/auth/teamContext";
+import { canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, Client, ActivityLog } from "@/lib/db/models";
+import { Booking, Client, ActivityLog, Team } from "@/lib/db/models";
 import { bookingCreateSchema } from "@/lib/validators/booking";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
@@ -23,8 +25,37 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  const { client, title, eventType, status, sessions, location, amount, notes } =
+  const { client, teamId, title, eventType, status, sessions, location, amount, notes } =
     parsed.data;
+
+  // Resolve + authorize the target team before any writes. New bookings may only
+  // target an ACTIVE team in this workspace that the caller may write to (owner
+  // always; lead of that team). Members are view-only (see canWriteBookingForTeam).
+  const team = await Team.findOne({ _id: teamId, workspaceId: ctx.workspace._id })
+    .select({ _id: 1, isActive: 1 })
+    .lean();
+  if (!team) {
+    return NextResponse.json({ error: "Team not found" }, { status: 404 });
+  }
+  // Treat a missing isActive (legacy teams created before the field existed) as
+  // active — only an EXPLICIT false counts as deactivated. (.lean() doesn't apply
+  // the schema default.)
+  if (team.isActive === false) {
+    return NextResponse.json(
+      { error: "Cannot assign a new booking to a deactivated team" },
+      { status: 400 }
+    );
+  }
+  const memberships =
+    ctx.role === "owner" ? [] : await getTeamsForUser(ctx.workspace._id, ctx.userId);
+  if (
+    !canWriteBookingForTeam(
+      { role: ctx.role, memberships },
+      { id: String(team._id), isActive: true }
+    )
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   // Authoritative timezone-aware midnight check.
   // The Zod UTC-day check above is a cheap baseline; this is the definitive guard.
@@ -103,6 +134,7 @@ export async function POST(req: Request) {
         [
           {
             workspaceId: ctx.workspace._id,
+            teamId: team._id,
             clientId,
             clientName,
             title,
@@ -149,6 +181,7 @@ export async function POST(req: Request) {
           _id: booking._id,
           amount: booking.amount!,
           firstSessionStart: booking.firstSessionStart,
+          teamId: booking.teamId,
         },
         source: "manual",
         session,

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getTeamsForUser } from "@/lib/auth/teamContext";
+import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog, Client } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team } from "@/lib/db/models";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
@@ -45,11 +48,17 @@ export async function GET(_req: Request, { params }: Params) {
   // the bookings surfaces (Phase 6 contract) and are only viewed via the lead
   // inbox. Excluding the draft status here keeps a draft id from pulling an
   // unapproved booking into the bookings drawer.
-  const booking = await Booking.findOne({
+  // Team-scope the read for non-owners: a member can only fetch a booking owned
+  // by a team they belong to. Owners (scope === undefined) see everything.
+  const scope = await resolveBookingTeamScope(ctx);
+  const query: Record<string, unknown> = {
     _id: id,
     workspaceId: ctx.workspace._id,
     status: { $ne: "draft" },
-  }).lean();
+  };
+  if (scope !== undefined) query.teamId = { $in: scope };
+
+  const booking = await Booking.findOne(query).lean();
 
   if (!booking) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -78,17 +87,88 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   await connectDB();
-
   // Drafts cannot be edited via the bookings API — promotion happens only
   // through the inquiry approval flow (which records client financials). A
   // direct PATCH would bypass that, so drafts 404 here too.
-  const existing = await Booking.findOne({
+  // Team-scope the lookup for non-owners so a member cannot probe — via a
+  // 403-vs-404 oracle — which booking ids exist on teams they can't see. A
+  // cross-team id returns a uniform 404, matching GET. The canEditBooking check
+  // below still distinguishes member-vs-lead and active-vs-inactive within a
+  // team the caller CAN see.
+  const scope = await resolveBookingTeamScope(ctx);
+  const existingFilter: Record<string, unknown> = {
     _id: id,
     workspaceId: ctx.workspace._id,
     status: { $ne: "draft" },
-  });
+  };
+  if (scope !== undefined) existingFilter.teamId = { $in: scope };
+
+  const existing = await Booking.findOne(existingFilter);
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Edit authorization. Owners may edit any booking (incl. one whose team was
+  // since deactivated). Non-owners must be a lead of the booking's still-active
+  // team — plain members are view-only. Owners short-circuit without the extra
+  // membership/team lookups.
+  if (ctx.role !== "owner") {
+    const memberships = await getTeamsForUser(ctx.workspace._id, ctx.userId);
+    let team: { id: string; isActive: boolean } | null = null;
+    if (existing.teamId) {
+      const t = await Team.findOne({
+        _id: existing.teamId,
+        workspaceId: ctx.workspace._id,
+      })
+        .select({ _id: 1, isActive: 1 })
+        .lean();
+      // Missing isActive (legacy team) counts as active — .lean() skips defaults.
+      if (t) team = { id: String(t._id), isActive: t.isActive ?? true };
+    }
+    const allowed = canEditBooking(
+      { role: ctx.role, memberships },
+      { teamId: existing.teamId ? String(existing.teamId) : null },
+      team
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  // Team reassignment (optional). The target team must belong to the workspace,
+  // be ACTIVE, and be writable by the caller (owner always; lead of that team).
+  // Applied via setOp below so it persists in whichever update path runs.
+  let teamReassignment: { from: string | null; to: mongoose.Types.ObjectId } | null = null;
+  if (parsed.data.teamId && parsed.data.teamId !== String(existing.teamId ?? "")) {
+    const target = await Team.findOne({
+      _id: parsed.data.teamId,
+      workspaceId: ctx.workspace._id,
+    })
+      .select({ _id: 1, isActive: 1 })
+      .lean();
+    if (!target) {
+      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    }
+    if (target.isActive === false) {
+      return NextResponse.json(
+        { error: "Cannot assign a booking to a deactivated team" },
+        { status: 400 }
+      );
+    }
+    const memberships =
+      ctx.role === "owner" ? [] : await getTeamsForUser(ctx.workspace._id, ctx.userId);
+    if (
+      !canWriteBookingForTeam(
+        { role: ctx.role, memberships },
+        { id: String(target._id), isActive: true }
+      )
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    teamReassignment = {
+      from: existing.teamId ? String(existing.teamId) : null,
+      to: target._id,
+    };
   }
 
   // Authoritative timezone-aware midnight check for session patches.
@@ -180,8 +260,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
   for (const [key, value] of Object.entries(parsed.data)) {
     const k = key as EditableKey;
-    // Skip clientId here — handled separately with transaction logic below.
-    if (k === "clientId") continue;
+    // Skip clientId + teamId here — both are validated and applied separately.
+    if (k === "clientId" || k === "teamId") continue;
     const before = beforeOf(k);
     // For sessions arrays, always treat as changed (deep equality is expensive
     // and the client only sends sessions when it intends to update).
@@ -198,6 +278,12 @@ export async function PATCH(req: Request, { params }: Params) {
     const ends = sessions.map((s) => new Date(s.endAt).getTime());
     setOp.firstSessionStart = new Date(Math.min(...starts));
     setOp.lastSessionEnd = new Date(Math.max(...ends));
+  }
+
+  // Apply the validated team reassignment into the same $set + activity diff.
+  if (teamReassignment) {
+    setOp.teamId = teamReassignment.to;
+    diff.teamId = { before: teamReassignment.from, after: String(teamReassignment.to) };
   }
 
   const isClientChange = !!newClientId;
@@ -277,6 +363,8 @@ export async function PATCH(req: Request, { params }: Params) {
               currency: mergedCurrency,
             },
             firstSessionStart: mergedFirstSessionStart,
+            // Carry the post-patch team (a same-request team reassignment wins).
+            teamId: teamReassignment ? teamReassignment.to : existing.teamId,
           },
           session: mongoSession,
         });

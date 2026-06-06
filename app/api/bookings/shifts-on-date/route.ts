@@ -3,6 +3,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking } from "@/lib/db/models";
 import { dayBoundInTz, FALLBACK_TZ } from "@/lib/utils/timezone";
+import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 
 export const runtime = "nodejs";
 
@@ -50,6 +51,7 @@ export async function GET(req: Request) {
   }
 
   await connectDB();
+  const scope = await resolveBookingTeamScope(ctx);
 
   // Resolve workspace timezone — fall back to Manila (launch market) if not set.
   const tz: string = (ctx.workspace as { timezone?: string | null }).timezone || (() => {
@@ -88,6 +90,7 @@ export async function GET(req: Request) {
   if (excludeId && /^[a-f0-9]{24}$/i.test(excludeId)) {
     filter._id = { $ne: excludeId };
   }
+  if (scope !== undefined) filter.teamId = { $in: scope };
 
   const bookings = await Booking.find(filter)
     .select({ _id: 1, title: 1, sessions: 1, firstSessionStart: 1, lastSessionEnd: 1 })

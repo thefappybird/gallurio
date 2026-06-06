@@ -20,9 +20,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ClientStep } from "./booking-wizard-steps/client-step";
-import { EventStep, type ShiftHit } from "./booking-wizard-steps/event-step";
-import { PricingStep } from "./booking-wizard-steps/pricing-step";
+import { EventPricingStep } from "./booking-wizard-steps/event-pricing-step";
+import { SessionsLocationStep } from "./booking-wizard-steps/sessions-location-step";
 import { ReviewStep } from "./booking-wizard-steps/review-step";
+import type { ShiftHit } from "./booking-wizard-steps/types";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 import type {
   WizardMode,
@@ -66,23 +67,30 @@ type Props = {
    *  When provided, the parent owns the "is open" gate — the modal still
    *  manages its own animation state via Dialog's open/onOpenChange. */
   onClose?: () => void;
+  /** Default team id for the new booking (create mode only). When there is
+   *  exactly one writable team this is pre-selected; otherwise the user picks
+   *  from the `teams` list in the event step. */
+  teamId?: string;
+  /** Writable teams the current user may assign new bookings to. Rendered as
+   *  a selector in the event step (create mode only). */
+  teams?: { id: string; name: string }[];
 };
 
 type StepDef = {
-  id: "client" | "event" | "pricing" | "review";
+  id: "client" | "eventPricing" | "sessionsLocation" | "review";
   fields: (keyof WizardValues | "amount.total" | "amount.deposit")[];
 };
 
 const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
-  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
-  { id: "pricing", fields: ["amount"] },
+  { id: "eventPricing", fields: ["title", "eventType", "teamId", "amount"] },
+  { id: "sessionsLocation", fields: ["sessions", "location"] },
   { id: "review", fields: [] },
 ];
 
 const MULTI_SESSION_STEPS: StepDef[] = [
-  { id: "event", fields: ["title", "eventType", "sessions", "location"] },
-  { id: "pricing", fields: ["amount"] },
+  { id: "eventPricing", fields: ["title", "eventType", "amount"] },
+  { id: "sessionsLocation", fields: ["sessions", "location"] },
   { id: "review", fields: [] },
 ];
 
@@ -98,6 +106,8 @@ export function BookingWizardModal({
   clients,
   onClientCreated,
   onClose,
+  teamId,
+  teams,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -148,8 +158,8 @@ export function BookingWizardModal({
   const tz = workspaceTimezone || FALLBACK_TZ;
 
   const defaults = useMemo(
-    () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues }),
-    [defaultDate, defaultTime, defaultCurrency, initialValues]
+    () => makeDefaults({ defaultDate, defaultTime, defaultCurrency, initialValues, defaultTeamId: teamId }),
+    [defaultDate, defaultTime, defaultCurrency, initialValues, teamId]
   );
 
   /**
@@ -246,6 +256,7 @@ export function BookingWizardModal({
             currency: b.amount?.currency ?? defaultCurrency,
           },
           notes: b.notes ?? "",
+          teamId: b.teamId ?? "",
         };
         form.reset(next);
         // Sync the baseline so buildEditDiff compares against fetched values,
@@ -440,19 +451,20 @@ export function BookingWizardModal({
         return false;
       }
     }
-    if (step.id === "event") {
+    if (step.id === "eventPricing") {
       const title = watch("title");
-      const sessions = watch("sessions") ?? [];
       if (!title?.trim()) return false;
-      // Every session must have a start date.
-      if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
-      // Conflicts no longer block navigation — they are surfaced on final submit.
-    }
-    if (step.id === "pricing") {
+      // In create mode, a team must be selected.
+      if (mode === "create" && !watch("teamId")) return false;
       const { total, deposit } = watch("amount");
       if (typeof total !== "number" || total < 0) return false;
       if (typeof deposit !== "number" || deposit < 0) return false;
       if (deposit > total) return false;
+    }
+    if (step.id === "sessionsLocation") {
+      const sessions = watch("sessions") ?? [];
+      // Sessions must be non-empty and every session must have a start date.
+      if (sessions.length === 0 || sessions.some((s) => !s.startDate)) return false;
     }
     return rhfOk;
   }
@@ -474,8 +486,8 @@ export function BookingWizardModal({
     const ok = await validateStep(stepIndex);
     if (!ok) {
       markStepInvalid(stepIndex);
-      // Pricing's specific "deposit > total" surfaces as a top-of-footer error.
-      if (STEPS[stepIndex].id === "pricing") {
+      // Event & Pricing's specific "deposit > total" surfaces as a top-of-footer error.
+      if (STEPS[stepIndex].id === "eventPricing") {
         const { total, deposit } = watch("amount");
         if (deposit > total) setSubmitError(t("depositExceedsTotal"));
       }
@@ -579,7 +591,7 @@ export function BookingWizardModal({
     }
   }, [mode, bookingId, t, close, onClientCreated, isMultiSessionEdit, onClose, clearWizardUrlParams, router, tz]);
 
-  const eventStepIndex = STEPS.findIndex((s) => s.id === "event");
+  const eventStepIndex = STEPS.findIndex((s) => s.id === "sessionsLocation");
 
   /**
    * Single source of truth for submit readiness.
@@ -783,8 +795,19 @@ export function BookingWizardModal({
                     clients={clients}
                   />
                 ) : null}
-                {current.id === "event" ? (
-                  <EventStep
+                {current.id === "eventPricing" ? (
+                  <EventPricingStep
+                    control={control}
+                    register={register}
+                    watch={watch}
+                    setValue={setValue}
+                    errors={errors}
+                    teams={teams}
+                    mode={mode}
+                  />
+                ) : null}
+                {current.id === "sessionsLocation" ? (
+                  <SessionsLocationStep
                     control={control}
                     register={register}
                     watch={watch}
@@ -795,15 +818,8 @@ export function BookingWizardModal({
                     conflictCheckError={conflictCheckError}
                   />
                 ) : null}
-                {current.id === "pricing" ? (
-                  <PricingStep
-                    control={control}
-                    register={register}
-                    errors={errors}
-                  />
-                ) : null}
                 {current.id === "review" ? (
-                  <ReviewStep values={values} locale={locale} />
+                  <ReviewStep values={values} locale={locale} teams={teams} />
                 ) : null}
               </div>
             ) : null}
@@ -858,7 +874,7 @@ export function BookingWizardModal({
                     disabled={
                       submitting ||
                       !!loadError ||
-                      (STEPS[stepIndex].id === "event" &&
+                      (STEPS[stepIndex].id === "sessionsLocation" &&
                         (loadingDates.size > 0 ||
                           conflictCheckError ||
                           conflictsBySession.some((c) => c.length > 0)))
@@ -875,7 +891,12 @@ export function BookingWizardModal({
                     type="submit"
                     variant="brand"
                     size="sm"
-                    disabled={submitting || !!loadError || (mode === "edit" && !isDirty)}
+                    disabled={
+                      submitting ||
+                      !!loadError ||
+                      (mode === "edit" && !isDirty) ||
+                      (mode === "create" && !values.teamId)
+                    }
                   >
                     {submitting ? (
                       <Loader2Icon className="size-4 animate-spin" />
@@ -913,11 +934,13 @@ function makeDefaults({
   defaultTime,
   defaultCurrency,
   initialValues,
+  defaultTeamId,
 }: {
   defaultDate?: string;
   defaultTime?: string;
   defaultCurrency: SupportedCurrency;
   initialValues?: Partial<WizardValues>;
+  defaultTeamId?: string;
 }): WizardValues {
   const now = new Date();
   const today = todayIso(now);
@@ -967,6 +990,7 @@ function makeDefaults({
       currency: initialValues?.amount?.currency ?? defaultCurrency,
     },
     notes: initialValues?.notes ?? "",
+    teamId: initialValues?.teamId ?? defaultTeamId ?? "",
   };
 }
 
@@ -1011,6 +1035,7 @@ function buildCreatePayload(v: WizardValues, timeZone: string) {
       currency: v.amount.currency,
     },
     notes: v.notes,
+    teamId: v.teamId || undefined,
   };
 }
 
@@ -1045,6 +1070,8 @@ function buildEditDiff(
   if (v.amount.currency !== defaults.amount.currency)
     diff["amount.currency"] = v.amount.currency;
   if (v.notes !== defaults.notes) diff.notes = v.notes;
+  // Only include teamId when it actually changed and is non-empty.
+  if (v.teamId !== defaults.teamId && v.teamId) diff.teamId = v.teamId;
   return diff;
 }
 

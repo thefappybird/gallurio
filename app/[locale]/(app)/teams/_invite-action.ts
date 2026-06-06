@@ -33,6 +33,79 @@ function toObjectId(id: string): mongoose.Types.ObjectId | null {
   }
 }
 
+// Clerk's SDK throws a ClerkAPIResponseError whose top-level `.message` is the
+// generic HTTP reason ("Bad Request"); the actionable detail lives in `.errors[]`.
+function clerkErrorDetail(err: unknown): { code: string; message: string } {
+  const e = err as {
+    message?: string;
+    errors?: Array<{ code?: string; message?: string; longMessage?: string }>;
+  };
+  const d = e?.errors?.[0];
+  return {
+    code: d?.code ?? "",
+    message: d?.longMessage ?? d?.message ?? e?.message ?? "Failed to send invite",
+  };
+}
+
+function isDuplicateInviteError(code: string, message: string): boolean {
+  return (
+    code === "duplicate_record" ||
+    /already (a )?member|already.*invit|duplicate|pending invitation/i.test(message)
+  );
+}
+
+// Create a Clerk org invitation. If Clerk reports a stale/duplicate PENDING
+// invite for this email (e.g. our PendingTeamAssignment row expired via TTL but
+// Clerk's invitation still lingers — which otherwise blocks every re-invite),
+// revoke that stale invite and retry once. A genuine "already a member" still
+// throws (no pending invite to clear) and surfaces as ALREADY_INVITED_OR_MEMBER.
+async function sendOrgInvite(
+  clerk: Awaited<ReturnType<typeof clerkClient>>,
+  organizationId: string,
+  email: string,
+  inviterUserId: string,
+): Promise<string> {
+  try {
+    const inv = await clerk.organizations.createOrganizationInvitation({
+      organizationId,
+      emailAddress: email,
+      role: "org:member",
+      inviterUserId,
+    });
+    return inv.id;
+  } catch (err) {
+    const { code, message } = clerkErrorDetail(err);
+    if (!isDuplicateInviteError(code, message)) throw err;
+
+    const list = await clerk.organizations.getOrganizationInvitationList({
+      organizationId,
+      status: ["pending"],
+      limit: 100,
+    });
+    const stale = list.data.find(
+      (i) => i.emailAddress?.toLowerCase() === email.toLowerCase(),
+    );
+    if (!stale) throw err; // already a member — nothing to revoke.
+
+    console.warn("[inviteMemberAction] revoking stale pending Clerk invite + retrying", {
+      email,
+      invitationId: stale.id,
+    });
+    await clerk.organizations.revokeOrganizationInvitation({
+      organizationId,
+      invitationId: stale.id,
+      requestingUserId: inviterUserId,
+    });
+    const retry = await clerk.organizations.createOrganizationInvitation({
+      organizationId,
+      emailAddress: email,
+      role: "org:member",
+      inviterUserId,
+    });
+    return retry.id;
+  }
+}
+
 export async function inviteMemberAction(
   input: InviteMemberInput,
 ): Promise<InviteMemberResult> {
@@ -165,23 +238,24 @@ export async function inviteMemberAction(
   let invitationId: string | null = null;
   try {
     const clerk = await clerkClient();
-    const invitation = await clerk.organizations.createOrganizationInvitation({
-      organizationId: ctx.clerkOrgId,
-      emailAddress: email,
-      role: "org:member",
-      inviterUserId: ctx.userId,
-    });
-    invitationId = invitation.id;
+    invitationId = await sendOrgInvite(clerk, ctx.clerkOrgId, email, ctx.userId);
   } catch (err) {
     // Clerk rejected the invite. Release reserved seats and delete the
     // pending row through the idempotent helper so seat accounting stays
     // honest even under a concurrent revoke/cron race.
     await claimAndReleasePendingInvite(pendingId);
-    const msg = err instanceof Error ? err.message : "Failed to send invite";
-    if (msg.toLowerCase().includes("already")) {
+    const { code, message } = clerkErrorDetail(err);
+    // The top-level Clerk message is often a bare "Bad Request" — log the real
+    // code + detail so failures are diagnosable (previously swallowed).
+    console.error("[inviteMemberAction] Clerk invitation failed", {
+      email,
+      code,
+      message,
+    });
+    if (isDuplicateInviteError(code, message)) {
       return { error: "ALREADY_INVITED_OR_MEMBER" };
     }
-    return { error: msg };
+    return { error: message };
   }
 
   await PendingTeamAssignment.updateOne(

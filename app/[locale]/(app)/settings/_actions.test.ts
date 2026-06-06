@@ -10,6 +10,7 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
+import { Types } from "mongoose";
 import { Workspace, Booking, Client, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
@@ -17,6 +18,16 @@ import { Workspace, Booking, Client, User } from "@/lib/db/models";
 vi.mock("@clerk/nextjs/server", () => ({
   auth: vi.fn(),
   clerkClient: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: vi.fn((url: string) => {
+    throw new Error(`REDIRECT:${url}`);
+  }),
+}));
+
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("en"),
 }));
 
 vi.mock("next/cache", () => ({
@@ -71,10 +82,12 @@ import {
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { resend } from "@/lib/email/resend";
+import type { Attachment } from "resend";
 
 // ---- Helpers ----------------------------------------------------------------
 
 const OWNER_USER_ID = "user_owner_abc";
+const MEMBER_USER_ID = "user_member_xyz";
 const ORG_ID_A = "org_aaa";
 const ORG_ID_B = "org_bbb";
 
@@ -84,6 +97,15 @@ function mockAuthAsOwnerA() {
     userId: OWNER_USER_ID,
     orgId: ORG_ID_A,
     orgRole: "org:admin",
+  });
+}
+
+/** Auth mock for a regular member of org A (not the owner). */
+function mockAuthAsMemberA() {
+  (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    userId: MEMBER_USER_ID,
+    orgId: ORG_ID_A,
+    orgRole: "org:member",
   });
 }
 
@@ -340,6 +362,7 @@ describe("deleteWorkspaceAction", () => {
     });
     await Booking.create({
       workspaceId: ws._id,
+      teamId: new Types.ObjectId(),
       clientId: client._id,
       clientName: "Emma Carter",
       title: "Carter Wedding",
@@ -396,16 +419,38 @@ describe("updateTimeFormatAction", () => {
     expect(result.error).toBeDefined();
   });
 
-  it("rejects non-owner", async () => {
+  it("non-owner member can update their own time format", async () => {
+    // Time format is a per-user preference — members are allowed.
     await seedWorkspaceA();
-    // Simulate a member who is not the workspace owner
-    (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      userId: "user_some_member",
-      orgId: ORG_ID_A,
-      orgRole: "org:member",
+    // Create a User doc for the member (mirrors the owner doc seeded in beforeEach).
+    await User.create({
+      clerkUserId: MEMBER_USER_ID,
+      email: "member@test.com",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [],
     });
+    mockAuthAsMemberA();
+    const mockCookieStore = { get: vi.fn(), set: vi.fn() };
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
     const result = await updateTimeFormatAction("12h");
-    expect(result.error).toBeDefined();
+    expect(result.ok).toBe(true);
+    expect(result.error).toBeUndefined();
+
+    // Persisted to the member's own User doc — not the owner's.
+    const memberUser = await User.findOne({ clerkUserId: MEMBER_USER_ID }).lean();
+    expect(memberUser?.timeFormat).toBe("12h");
+
+    // Owner's doc must be untouched (remains at its default "24h").
+    const ownerUser = await User.findOne({ clerkUserId: OWNER_USER_ID }).lean();
+    expect(ownerUser?.timeFormat).toBe("24h");
+
+    expect(mockCookieStore.set).toHaveBeenCalledWith(
+      "timeFormat",
+      "12h",
+      expect.objectContaining({ path: "/" })
+    );
   });
 });
 
@@ -423,7 +468,7 @@ describe("requestDataExportAction", () => {
 
     expect(vi.mocked(resend.emails.send)).toHaveBeenCalledOnce();
     const call = vi.mocked(resend.emails.send).mock.calls[0][0];
-    const filenames = (call.attachments ?? []).map((a) => String(a.filename ?? ""));
+    const filenames = (call.attachments ?? []).map((a: Attachment) => String(a.filename ?? ""));
     expect(filenames).toContain("bookings.csv");
     expect(filenames).toContain("clients.csv");
     expect(filenames).toContain("inquiries.csv");

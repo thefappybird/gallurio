@@ -1,8 +1,14 @@
 import "server-only";
-import type { Types } from "mongoose";
+import { Types } from "mongoose";
 import { Booking, ActivityLog, type BookingDoc, type ActivityLogDoc } from "@/lib/db/models";
 
 type WorkspaceId = Types.ObjectId;
+
+// Maps a list of team-id strings to ObjectIds, dropping any malformed entries
+// (the team filter can originate from a URL searchParam in Phase 5).
+function toTeamObjectIds(ids: readonly string[]): Types.ObjectId[] {
+  return ids.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+}
 
 export type BookingListFilters = {
   status?: string | null;
@@ -14,6 +20,11 @@ export type BookingListFilters = {
   // every owner-facing list until the inquiry is approved (Phase 6). The lead
   // inbox is the only caller that opts in.
   includeDrafts?: boolean;
+  // Restricts results to bookings owned by these teams. `undefined` means no
+  // team restriction (owner sees the whole workspace). An array — INCLUDING an
+  // empty one — restricts via $in, so a member with no teams matches nothing
+  // rather than everything. Callers resolve this from getTeamsForUser().
+  teamIds?: readonly string[];
 };
 
 export type BookingListPagination = {
@@ -32,6 +43,12 @@ export async function listBookings(
   pagination?: BookingListPagination
 ): Promise<BookingListResult> {
   const query: Record<string, unknown> = { workspaceId };
+
+  // Team visibility scoping. `undefined` → no restriction; any array → $in
+  // (empty array intentionally matches nothing).
+  if (filters.teamIds !== undefined) {
+    query.teamId = { $in: toTeamObjectIds(filters.teamIds) };
+  }
 
   if (filters.status) {
     // Explicit status wins — lets the lead inbox ask for "draft" directly.
@@ -80,9 +97,18 @@ export async function listBookings(
 
 export async function getBookingById(
   workspaceId: WorkspaceId,
-  id: string | Types.ObjectId
+  id: string | Types.ObjectId,
+  // When provided (non-owner callers), the booking's teamId must be in this set
+  // or the lookup returns null — a member cannot fetch another team's booking by
+  // id. `undefined` (owner) applies no team restriction.
+  allowedTeamIds?: readonly string[]
 ): Promise<BookingDoc | null> {
-  return Booking.findOne({ _id: id, workspaceId }).lean();
+  const query: Record<string, unknown> = { _id: id, workspaceId };
+  if (allowedTeamIds !== undefined) {
+    query.teamId = { $in: toTeamObjectIds(allowedTeamIds) };
+  }
+  query.status = { $ne: "draft" };
+  return Booking.findOne(query).lean();
 }
 
 export async function getBookingActivity(

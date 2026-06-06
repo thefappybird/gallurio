@@ -3,13 +3,14 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
+import {
+  LOCALE_PREFIX_RE,
+  isMemberBlocked,
+  landingPathForRole,
+  stripLocale,
+} from "@/lib/auth/memberAccess";
 
 const intlMiddleware = createIntlMiddleware(routing);
-
-// Clerk's createRouteMatcher uses path-to-regexp v6 which doesn't accept raw
-// regex `(?:...)?` groups, so we match against the locale-stripped pathname
-// rather than baking the optional prefix into every pattern.
-const LOCALE_PREFIX_RE = new RegExp(`^/(?:${routing.locales.join("|")})(?=/|$)`);
 
 const isPublicBase = createRouteMatcher([
   "/",
@@ -22,19 +23,6 @@ const isPublicBase = createRouteMatcher([
   "/w/(.*)",
 ]);
 
-// Owner-only app surfaces. Non-owner members get bounced to /bookings, except
-// for /settings/account which is Clerk's own user profile area.
-const MEMBER_BLOCKED_PREFIXES = [
-  "/dashboard",
-  "/clients",
-  "/inquiries",
-  "/portfolio",
-  "/teams",
-  "/settings",
-];
-
-const MEMBER_ALLOWED_SETTINGS = ["/settings/account"];
-
 function isPublicRoute(req: NextRequest): boolean {
   const original = req.nextUrl.pathname;
   if (isPublicBase(req)) return true;
@@ -43,20 +31,6 @@ function isPublicRoute(req: NextRequest): boolean {
   const url = req.nextUrl.clone();
   url.pathname = stripped;
   return isPublicBase({ nextUrl: url } as NextRequest);
-}
-
-function stripLocale(pathname: string): string {
-  return pathname.replace(LOCALE_PREFIX_RE, "") || "/";
-}
-
-function isMemberBlocked(pathname: string): boolean {
-  const stripped = stripLocale(pathname);
-  if (MEMBER_ALLOWED_SETTINGS.some((p) => stripped === p || stripped.startsWith(p + "/"))) {
-    return false;
-  }
-  return MEMBER_BLOCKED_PREFIXES.some(
-    (prefix) => stripped === prefix || stripped.startsWith(prefix + "/"),
-  );
 }
 
 function redirectToBookings(req: NextRequest): NextResponse {
@@ -112,7 +86,9 @@ export default clerkMiddleware(async (auth, req) => {
     if (session.userId && session.orgId) {
       const url = req.nextUrl.clone();
       const localeMatch = req.nextUrl.pathname.match(LOCALE_PREFIX_RE);
-      url.pathname = `${localeMatch ? localeMatch[0] : ""}/dashboard`;
+      const orgRole = session.sessionClaims?.org_role ?? session.orgRole;
+      const dest = landingPathForRole(orgRole);
+      url.pathname = `${localeMatch ? localeMatch[0] : ""}${dest}`;
       url.search = "";
       return NextResponse.redirect(url);
     }
