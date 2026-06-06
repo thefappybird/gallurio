@@ -42,8 +42,13 @@ describe("portfolioContactConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an out-of-set button color (arbitrary hex is not allowed)", () => {
+  it("accepts a hex button color (spectrum picker produces hex values)", () => {
     const result = portfolioContactConfigSchema.safeParse({ buttonColor: "#ff0000" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a button color that exceeds the max length", () => {
+    const result = portfolioContactConfigSchema.safeParse({ buttonColor: "#" + "a".repeat(32) });
     expect(result.success).toBe(false);
   });
 
