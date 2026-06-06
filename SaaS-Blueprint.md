@@ -262,10 +262,9 @@ All documents include `orgId` (indexed) + `createdAt` + `updatedAt`. All non-sha
   clientId,                        // ref clients
   title,                           // "Sarah & Mark Wedding"
   eventType,                       // "wedding" | "corporate" | ...
-  status: "draft"|"pending"|"booked"|"completed"|"cancelled",
-  // draft     = created from inquiry, invisible to calendar until owner approves
-  // pending   = owner approved the inquiry into a real booking
-  // booked    = confirmed; appears in calendar
+  status: "inquiry"|"booked"|"completed"|"cancelled",
+  // inquiry   = created from an inquiry form; a new, unconfirmed lead
+  // booked    = owner approved/confirmed; appears in calendar as a confirmed booking
   // completed / cancelled = terminal states
   startAt, endAt,
   location: { address, lat, lng },
@@ -377,7 +376,7 @@ Three-column on desktop, stack on mobile:
 ```
 
 - **Sidebar**: workspace switcher (Clerk OrgSwitcher), Dashboard, Bookings, Calendar, Clients, Inquiries, Gallery, Public Page, Settings.
-- **Main**: cards — Today's events, Pipeline (Inquiries → Quoted → Booked), Upcoming this week, MRR/Revenue this month.
+- **Main**: cards — Today's events, Pipeline (Inquiries → Booked), Upcoming this week, MRR/Revenue this month.
 - **Right rail**: recent activity feed, quick-add button (booking/client/inquiry).
 
 ### Onboarding flow (target: <3 minutes to first value)
@@ -520,18 +519,18 @@ Honeypot + per-IP rate limit (5 submissions per 10 minutes). UTM/referrer captur
 
 Every inquiry follows a simple two-step path. Full spec: [`docs/booking-inquiry-lifecycle.md`](docs/booking-inquiry-lifecycle.md).
 
-**Stage 1 — Inquiry to Draft Booking** (public form → auto-create, one Mongo transaction)
+**Stage 1 — Inquiry to New-Lead Booking** (public form → auto-create, one Mongo transaction)
 
 1. Match-or-create `Client` by `{ workspaceId, email }`.
 2. Create `Inquiry` (status `new`, UTM/referrer captured, linked to the client).
-3. Create `Booking` with `status: "draft"`, `createdFromInquiryId`, event details pre-filled.
-4. Link `inquiry.draftBookingId = booking._id`.
+3. Create `Booking` with `status: "inquiry"`, `createdFromInquiryId`, event details pre-filled.
+4. Set `inquiry.convertedClientId` to the matched client.
 
-Default bookings queries filter `status: { $ne: "draft" }`. The owner receives one notification email — the only automated email in the flow.
+Default booking lists hide only `cancelled`; the inquiry-status booking surfaces as a new-lead event and in the Lead Inbox. The owner receives one notification email — the only automated email in the flow.
 
-**Stage 2 — Owner Approves** (Lead Inbox → real booking)
+**Stage 2 — Owner Approves** (Lead Inbox → confirmed booking)
 
-Owner opens `/inquiries`, reviews the lead, and clicks **"Approve booking"**. The existing Create-Booking modal opens pre-filled with the inquiry's client + event details. The owner adds the pricing, deposit, and terms they agreed with the client **off-platform**, then saves. The draft is promoted (not duplicated) into the normal booking pipeline: `Booking.status` → `pending`, `Inquiry.status` → `converted`, `Inquiry.convertedBookingId` set.
+Owner opens `/inquiries`, reviews the lead, and clicks **"Approve booking"**. The existing Create-Booking modal opens pre-filled with the inquiry's client + event details. The owner adds the pricing, deposit, and terms they agreed with the client **off-platform**, then saves. The booking is promoted (not duplicated): `Booking.status` → `booked`, `Inquiry.status` → `converted`, `Inquiry.convertedBookingId` set.
 
 Gallurio does **not** broker the owner↔client conversation. There is no in-app quoting, counter-offer loop, client portal, or durable workflow — those were removed. Owners and clients negotiate through their own channels; Gallurio records the final booking.
 

@@ -2,7 +2,6 @@ import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
 export const BOOKING_STATUSES = [
   "inquiry",
-  "quoted",
   "booked",
   "completed",
   "cancelled",

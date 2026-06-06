@@ -271,7 +271,7 @@ async function seedSampleData(workspaceId: string) {
       clientName: clients[1].name,
       title: "Shah Engagement Shoot",
       eventType: "wedding",
-      status: "quoted",
+      status: "booked",
       sessions: [{ startAt: shahSlot.start, endAt: shahSlot.end }],
       firstSessionStart: shahSlot.start,
       lastSessionEnd: shahSlot.end,

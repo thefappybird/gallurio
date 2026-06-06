@@ -14,7 +14,7 @@ Verification run during review:
 |---|----------|------|---------|------|
 | 1 | **P1** | Correctness | Selecting a Nominatim result whose `display_name` > 240 chars stores a sliced address but leaves the **full** untruncated string in the input; the subsequent `onBlur` re-commits the full string, which the Zod `max(240)` then rejects with a 400 on save. | `components/ui/location-picker.tsx:110-118,155` |
 | 2 | P2 | UX / consistency | Coordinate-only save still prepends an **optimistic** activity entry (`location · lat` / `location · lng`), but the server intentionally writes none (SILENT_KEYS). The entry flickers in then disappears on `refetchInlineActivity()`. Optimistic and server paths disagree. | `booking-detail-modal.tsx:507-521` |
-| 3 | P2 | Accessibility | Table status pills use literal `text-white` on mid-luminance status fills. `--event-quoted` (oklch L≈0.68 amber) gives white text ~2.5:1 contrast — fails WCAG AA for the 12px label. | `bookings-table.tsx:150-154`, `globals.css:99` |
+| 3 | P2 | Accessibility | Table status pills use literal `text-white` on mid-luminance status fills. The lighter event-status fills (the former `--event-quoted` token was removed with the `quoted` status; the lightest remaining is `--event-cancelled` at oklch L≈0.60) still yield white-text contrast near or under the 4.5:1 AA threshold for the 12px label. | `bookings-table.tsx:150-154`, `globals.css:99` |
 | 4 | P2 | Dead code (i18n) | `tabs.locationPlaceholder` is now orphaned in all 5 catalogs — its only consumer (the removed wizard `Input` placeholder) is gone. | `messages/*.json:397` |
 | 5 | P2 | Dead code (i18n) | `calendar.filterActive` (with ICU `{status}`) was added to all 5 catalogs but is never consumed anywhere. | `messages/*.json` |
 | 6 | P2 | Test coverage | No test exercises (a) the create-route lat/lng persistence path (no `app/api/bookings/route.test.ts` exists at all) or (b) the >240-char Nominatim `display_name` slice path (finding #1). | — |
@@ -54,11 +54,11 @@ But the client `save()` builds `changes` from the full `pending` map and calls `
 
 **Fix:** strip `location.lat`/`location.lng` from `changes` before `prependOptimisticActivity`, and skip the prepend entirely when `changes` is empty (mirror the server's SILENT_KEYS so the two paths agree). Reuse the same key set rather than duplicating the literals.
 
-### 3 — P2: white-on-amber pill contrast
+### 3 — P2: white-on-lighter-fill pill contrast
 
-`bookings-table.tsx` renders the pill with `text-white` over `style={{ backgroundColor: STATUS_COLOR_VAR[v] }}`. The `--event-*` palette is mid-luminance and theme-invariant by design, and white reads acceptably on booked/inquiry/completed/cancelled. `--event-quoted` is the outlier at `oklch(0.68 0.14 65)` — white on it is roughly 2.5:1, under the 4.5:1 AA threshold for the 12px label. The calendar candle shares the same colors so the issue predates this branch, but the branch newly applies it to the table pill.
+`bookings-table.tsx` renders the pill with `text-white` over `style={{ backgroundColor: STATUS_COLOR_VAR[v] }}`. The `--event-*` palette is mid-luminance and theme-invariant by design. Of the four active tokens — `--event-booked` (L≈0.55), `--event-inquiry` (L≈0.55), `--event-completed` (L≈0.55), `--event-cancelled` (L≈0.60) — the lightest is `--event-cancelled` (the former `--event-quoted` token was removed with the `quoted` status, which had been the outlier at oklch L≈0.68). White on `--event-cancelled` at L≈0.60 sits close to the 4.5:1 AA threshold for the 12px label and warrants verification. The calendar candle shares the same colors so the issue predates this branch, but the branch newly applies it to the table pill.
 
-**Fix (low-effort):** darken `--event-quoted` toward L≈0.60 (keeps the amber hue, lifts contrast), OR drive pill text off a paired `--event-*-foreground` token instead of literal `text-white`. Per CLAUDE.md, literal `text-white` is also a (minor) raw-color deviation — a paired foreground token is the on-spec choice.
+**Fix (low-effort):** verify `--event-cancelled` contrast; darken toward L≈0.55 if it falls short, OR drive pill text off a paired `--event-*-foreground` token instead of literal `text-white`. Per CLAUDE.md, literal `text-white` is also a (minor) raw-color deviation — a paired foreground token is the on-spec choice.
 
 ### 4 / 5 — P2: orphaned i18n keys
 
@@ -101,7 +101,7 @@ Fix **#1 (P1)** before merge — it produces a user-facing save failure on a nor
 - **#4 (P2) — FIXED.** Removed the orphaned `wizard.event.locationPlaceholder` key from all 5 catalogs.
 - **#5 (P2) — FIXED by wiring (not deletion).** `calendar.filterActive` is now consumed: the active legend chip sets `title={filterActive({status})}` for an accessible "Filtering by X — tap again to clear" hint.
 - **#6 (P2) — FIXED.** A pre-existing `app/api/bookings/route.test.ts` did exist (the review missed it); extended it with three create-route cases — lat/lng persistence, null defaults, and out-of-range latitude → 400. The >240-char slice path is covered by the new picker test under #1.
-- **#3 (P2) — DEFERRED (by design).** `--event-quoted` (amber) is a pre-existing, deliberately theme-invariant token already used for calendar candles with white text since before this branch. Darkening it would alter the established calendar color vocabulary — a design-owner decision, not a drive-by change. White-on-amber affects both the new pill and the existing candle equally; tracked here for a separate, intentional accessibility pass on the event palette rather than silently changing a shared design token.
+- **#3 (P2) — DEFERRED (by design).** The lighter event-status fills (`--event-cancelled` at L≈0.60 being the lightest now that `--event-quoted` was removed) are pre-existing, deliberately theme-invariant tokens already used for calendar candles with white text since before this branch. Adjusting them would alter the established calendar color vocabulary — a design-owner decision, not a drive-by change. Tracked here for a separate, intentional accessibility pass on the event palette rather than silently changing shared design tokens.
 - **#7** was explicitly noted as acceptable (deliberate single-source-of-truth round-trip).
 
 Post-fix verification: `pnpm typecheck` clean, `pnpm lint` 0 errors, affected suites (picker, legend, detail-modal, create + `[id]` routes) — 61 tests pass.

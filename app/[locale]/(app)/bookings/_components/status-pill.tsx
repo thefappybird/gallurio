@@ -7,7 +7,6 @@ import type { BookingStatus } from "@/lib/validators/booking";
 
 const KNOWN: Record<BookingStatus, true> = {
   inquiry: true,
-  quoted: true,
   booked: true,
   completed: true,
   cancelled: true,

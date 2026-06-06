@@ -54,7 +54,7 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
     Booking.countDocuments({
       workspaceId,
       firstSessionStart: { $gte: monthStart, $lte: monthEnd },
-      status: { $in: ["booked", "quoted"] },
+      status: "booked",
     }),
     Inquiry.countDocuments({ workspaceId, status: "new" }),
     Booking.aggregate<{ _id: null; total: number; paid: number }>([
@@ -115,7 +115,7 @@ export async function getUpcomingWeek(workspaceId: WorkspaceId, limit = 6) {
   return Booking.find({
     workspaceId,
     firstSessionStart: { $gt: endOfDay(now), $lte: weekEnd },
-    status: { $in: ["booked", "quoted", "inquiry"] },
+    status: { $in: ["booked", "inquiry"] },
   })
     .sort({ firstSessionStart: 1 })
     .limit(limit)
@@ -138,17 +138,15 @@ export async function getActivityFeed(workspaceId: WorkspaceId, limit = 10) {
 
 export type PipelineCounts = {
   inquiries: number;
-  quoted: number;
   booked: number;
 };
 
 export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
-  const [inquiries, quoted, booked] = await Promise.all([
+  const [inquiries, booked] = await Promise.all([
     Inquiry.countDocuments({ workspaceId, status: { $in: ["new", "contacted"] } }),
-    Booking.countDocuments({ workspaceId, status: "quoted" }),
     Booking.countDocuments({ workspaceId, status: "booked" }),
   ]);
-  return { inquiries, quoted, booked };
+  return { inquiries, booked };
 }
 
 export type RevenuePoint = { date: string; amount: number };

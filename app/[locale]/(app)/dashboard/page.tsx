@@ -192,7 +192,6 @@ export default async function DashboardPage({
           title={t("sections.pipeline")}
           labels={{
             inquiries: t("pipeline.inquiries"),
-            quoted: t("pipeline.quoted"),
             booked: t("pipeline.booked"),
           }}
         />

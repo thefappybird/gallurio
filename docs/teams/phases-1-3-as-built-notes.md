@@ -14,7 +14,7 @@ built so the Phase 4–6 docs and any future work reference reality, not the ori
 | Main-team bootstrap | Phase 2/4 migration | **Done** — `ensureDefaultTeam` + `2026-05-default-team-bootstrap.ts`, called during onboarding |
 | Team helpers | To build | `getTeamsForUser` / `isLeadOnTeam` / `isOnTeam` already in `lib/auth/teamContext.ts` |
 | Booking staff field | Add `staffIds` | Already present: `Booking.staffIds: [ObjectId]` (unused; reserved for a future member-edit hook) |
-| Booking status enum | `draft` from inquiries | `["inquiry","quoted","booked","completed","cancelled"]` — **no `draft`**; inquiry→booking conversion is not implemented yet |
+| Booking status enum | `draft` from inquiries | `["inquiry","booked","completed","cancelled"]` — **no `draft`**; inquiry→booking conversion is not implemented yet. (`quoted` was later removed; see `docs/code-review/remove-quoted-status.md`) |
 | Calendar view state | localStorage | URL `searchParams` (`?status=`, `?showPast=`, etc.) |
 | Calendar event color | — | Status-based via `lib/bookings/status-style.ts` `STATUS_COLOR` |
 | Transactions UI | "transactions list + Team column" | **No global table** — only the dashboard by-method chart + `Client.transactions[]` |

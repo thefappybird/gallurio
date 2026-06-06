@@ -36,7 +36,6 @@
       },
       "pipeline": {
         "inquiries": "Mga inquiry",
-        "quoted": "Naka-quote",
         "booked": "Naka-book"
       },
       "quickAdd": {
@@ -151,7 +150,7 @@
               "note": "kasal, corporate, portrait, atb."
             },
             "status": {
-              "note": "inquiry, quoted, booked, completed, cancelled"
+              "note": "inquiry, booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Kabuuang halaga ng booking"
@@ -197,7 +196,6 @@
       },
       "statusValues": {
         "inquiry": "Inquiry",
-        "quoted": "Naka-quote",
         "booked": "Naka-book",
         "completed": "Natapos",
         "cancelled": "Nakansela"

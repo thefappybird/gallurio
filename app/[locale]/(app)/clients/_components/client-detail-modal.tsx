@@ -11,6 +11,7 @@ import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getClientBookingsAction } from "@/lib/actions/clients";
 import type { ClientBookingRow } from "@/app/[locale]/(app)/clients/_data/clients-queries";
+import type { BookingStatus } from "@/lib/validators/booking";
 import type { ClientRow } from "./clients-table";
 import { SourceBadge } from "./source-badge";
 
@@ -231,7 +232,7 @@ function ClientDetailModalInner({
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <Badge variant="outline" className="text-xs capitalize">
-                          {tBookingStatus(b.status as "inquiry" | "quoted" | "booked" | "completed" | "cancelled")}
+                          {tBookingStatus(b.status as BookingStatus)}
                         </Badge>
                         <span className="text-sm tabular-nums">
                           {new Intl.NumberFormat(locale, {
