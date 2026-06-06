@@ -1042,7 +1042,8 @@
             "primary": "Utama",
             "secondary": "Sekunder",
             "accent": "Aksen",
-            "foreground": "Teks"
+            "foreground": "Teks",
+            "background": "Latar belakang"
           },
           "save": "Simpan",
           "saving": "Menyimpan…",
@@ -1055,7 +1056,75 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia",
             "th": "ไทย"
+          },
+          "bgColorLabel": "Warna latar belakang",
+          "textColorLabel": "Warna teks",
+          "cornerRadiusLabel": "Sudut melengkung",
+          "borderWidthLabel": "Lebar batas",
+          "borderColorLabel": "Warna batas",
+          "sectionPopup": "Popup",
+          "sectionButton": "Tombol",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Bulat"
+          },
+          "close": "Tutup",
+          "popupStyleLabel": "Gaya popup",
+          "tabs": {
+            "setup": "Pengaturan",
+            "design": "Desain"
           }
+        },
+        "headerDialog": {
+          "title": "Header",
+          "close": "Tutup",
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "tabs": {
+            "setup": "Pengaturan",
+            "design": "Desain"
+          },
+          "brandTextLabel": "Nama bisnis",
+          "brandTextHelp": "Biarkan kosong untuk menggunakan nama ruang kerja.",
+          "logoLabel": "Logo",
+          "logoHelp": "Ditampilkan di sebelah nama bisnis di header.",
+          "logoUpload": "Unggah logo",
+          "logoUploading": "Mengunggah…",
+          "logoRemove": "Hapus logo",
+          "sectionBanner": "Spanduk",
+          "sectionLinks": "Tautan",
+          "sectionActiveStyle": "Gaya tautan aktif",
+          "bgColorLabel": "Warna latar belakang",
+          "bgOpacityLabel": "Opasitas latar belakang",
+          "linkColorLabel": "Warna teks tautan",
+          "activeLinkColorLabel": "Warna teks tautan aktif",
+          "borderBottomLabel": "Batas bawah",
+          "borderColorLabel": "Warna batas",
+          "shadowLabel": "Bayangan",
+          "fontSizeLabel": "Ukuran tautan",
+          "activeStyleLabel": "Gaya",
+          "activeStyleScale": "Skala",
+          "activeStyleHighlight": "Sorot",
+          "activeStyleUnderline": "Garis bawah",
+          "highlightColorLabel": "Warna sorotan",
+          "underlineColorLabel": "Warna garis bawah",
+          "shadow": {
+            "none": "Tidak ada",
+            "sm": "Kecil",
+            "md": "Sedang",
+            "lg": "Besar"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Mari bekerja sama",
+          "description": "Ceritakan tentang acara Anda.",
+          "submit": "Kirim pertanyaan"
         },
         "mobileBanner": {
           "title": "Editor bekerja paling baik di layar yang lebih besar",
@@ -1064,6 +1133,7 @@
           "continue": "Lanjutkan saja"
         },
         "contactSettings": "Edit pengaturan kontak",
+        "headerSettings": "Header",
         "preview": {
           "show": "Pratinjau",
           "edit": "Edit",

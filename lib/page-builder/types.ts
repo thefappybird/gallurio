@@ -53,16 +53,76 @@ export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 // the form fields themselves are NOT configurable).
 // ---------------------------------------------------------------------------
 
-/** Which brand-kit color slot the contact button is painted with. */
-export const CONTACT_BUTTON_COLORS = ["primary", "secondary", "accent", "foreground"] as const;
+/** Which brand-kit color slot the contact button / modal background is painted with. */
+export const CONTACT_BUTTON_COLORS = ["primary", "secondary", "accent", "background", "foreground"] as const;
 export type ContactButtonColor = (typeof CONTACT_BUTTON_COLORS)[number];
 
 export type PortfolioContactConfig = {
   title?: string;
   description?: string;
+  /** @deprecated Kept for DB compat — UI now uses individual color/radius fields. */
   buttonStyle?: BrandKitButtonStyle;
-  buttonColor?: ContactButtonColor;
+  /** Token name (e.g. "primary") or custom hex (e.g. "#ff0000"). */
+  buttonColor?: string;
+  buttonTextColor?: string;
+  buttonRadius?: BrandKitRadius;
+  buttonBorderColor?: string;
+  buttonBorderWidth?: number;
+  backgroundColor?: string;
+  textColor?: string;
+  popupRadius?: BrandKitRadius;
+  popupBorderColor?: string;
+  popupBorderWidth?: number;
+  /** @deprecated Kept for DB compat — UI now uses individual color/radius fields. */
+  popupStyle?: BrandKitButtonStyle;
 };
+
+// ---------------------------------------------------------------------------
+// PortfolioHeaderConfig
+// ---------------------------------------------------------------------------
+
+export const HEADER_SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
+export type HeaderShadowSize = (typeof HEADER_SHADOW_SIZES)[number];
+
+export const HEADER_FONT_SIZES = ["sm", "md", "lg"] as const;
+export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
+
+export type PortfolioHeaderConfig = {
+  /** Override for the workspace name shown in the header. Empty = use workspace name. */
+  brandText?: string;
+  /** Cloudinary secure URL for the logo image. */
+  logoUrl?: string;
+  /** Cloudinary public ID for the logo image (used for transforms/deletion). */
+  logoPublicId?: string;
+  /** Token name (e.g. "primary") or custom hex (e.g. "#ffffff"). */
+  backgroundColor?: string;
+  /** 0–100. Applied to the header background only (not text). Default 100. */
+  backgroundOpacity?: number;
+  /** Nav link text color. Token or hex. */
+  linkColor?: string;
+  /** Active nav link text color. Token or hex. */
+  activeLinkColor?: string;
+  /** Bottom border width in px (0 = none). */
+  borderBottomWidth?: number;
+  /** Bottom border color. Token or hex. */
+  borderBottomColor?: string;
+  /** Drop shadow size. Empty = none. */
+  shadowSize?: HeaderShadowSize | "";
+  /** Nav link font size. Empty = default (md). */
+  fontSize?: HeaderFontSize | "";
+  /** Slightly scales up the active link text. */
+  activeLinkScale?: boolean;
+  /** Adds a background color behind the active link. */
+  activeLinkHighlight?: boolean;
+  /** Background color for highlight mode. Token or hex. */
+  highlightColor?: string;
+  /** Adds a bottom border to the active link. */
+  activeLinkUnderline?: boolean;
+  /** Border color for underline mode. Token or hex. */
+  underlineColor?: string;
+};
+
+export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {};
 
 // ---------------------------------------------------------------------------
 // PortfolioBrandKit

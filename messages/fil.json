@@ -1042,7 +1042,8 @@
             "primary": "Pangunahin",
             "secondary": "Pangalawa",
             "accent": "Accent",
-            "foreground": "Teksto"
+            "foreground": "Teksto",
+            "background": "Background"
           },
           "save": "I-save",
           "saving": "Nagse-save…",
@@ -1055,7 +1056,75 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia",
             "th": "ไทย"
+          },
+          "bgColorLabel": "Kulay ng background",
+          "textColorLabel": "Kulay ng teksto",
+          "cornerRadiusLabel": "Bilog ng sulok",
+          "borderWidthLabel": "Lapad ng hangganan",
+          "borderColorLabel": "Kulay ng hangganan",
+          "sectionPopup": "Popup",
+          "sectionButton": "Button",
+          "radius": {
+            "sharp": "Matalas",
+            "subtle": "Banayad",
+            "rounded": "Bilog"
+          },
+          "close": "Isara",
+          "popupStyleLabel": "Estilo ng popup",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Disenyo"
           }
+        },
+        "headerDialog": {
+          "title": "Header",
+          "close": "Isara",
+          "save": "I-save",
+          "saving": "Sine-save…",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Disenyo"
+          },
+          "brandTextLabel": "Pangalan ng negosyo",
+          "brandTextHelp": "Iwanang blangko para gamitin ang pangalan ng workspace.",
+          "logoLabel": "Logo",
+          "logoHelp": "Ipinapakita sa tabi ng pangalan ng negosyo sa header.",
+          "logoUpload": "Mag-upload ng logo",
+          "logoUploading": "Ina-upload…",
+          "logoRemove": "Alisin ang logo",
+          "sectionBanner": "Banner",
+          "sectionLinks": "Mga link",
+          "sectionActiveStyle": "Estilo ng aktibong link",
+          "bgColorLabel": "Kulay ng background",
+          "bgOpacityLabel": "Opacity ng background",
+          "linkColorLabel": "Kulay ng teksto ng link",
+          "activeLinkColorLabel": "Kulay ng teksto ng aktibong link",
+          "borderBottomLabel": "Border sa ibaba",
+          "borderColorLabel": "Kulay ng border",
+          "shadowLabel": "Drop shadow",
+          "fontSizeLabel": "Laki ng link",
+          "activeStyleLabel": "Estilo",
+          "activeStyleScale": "Palakihin",
+          "activeStyleHighlight": "I-highlight",
+          "activeStyleUnderline": "Salungguhit",
+          "highlightColorLabel": "Kulay ng highlight",
+          "underlineColorLabel": "Kulay ng salungguhit",
+          "shadow": {
+            "none": "Wala",
+            "sm": "Maliit",
+            "md": "Katamtaman",
+            "lg": "Malaki"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Magtulungan tayo",
+          "description": "Sabihin sa amin ang tungkol sa iyong event.",
+          "submit": "Magpadala ng katanungan"
         },
         "mobileBanner": {
           "title": "Mas maganda ang editor sa mas malaking screen",
@@ -1064,6 +1133,7 @@
           "continue": "Magpatuloy naman"
         },
         "contactSettings": "I-edit ang setting ng kontak",
+        "headerSettings": "Header",
         "preview": {
           "show": "Preview",
           "edit": "I-edit",

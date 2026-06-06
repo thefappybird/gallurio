@@ -1027,12 +1027,23 @@
         "contactDialog": {
           "title": "Contact form",
           "formFixedNote": "The form fields are fixed. You can edit the heading, message, and button only.",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
           "titleLabel": "Heading",
           "titlePlaceholder": "Let's work together",
           "descriptionLabel": "Message",
           "descriptionPlaceholder": "Tell visitors what to expect when they reach out.",
           "buttonStyleLabel": "Button style",
           "buttonColorLabel": "Button color",
+          "bgColorLabel": "Background color",
+          "textColorLabel": "Text color",
+          "cornerRadiusLabel": "Corner radius",
+          "borderWidthLabel": "Border width",
+          "borderColorLabel": "Border color",
+          "sectionPopup": "Popup",
+          "sectionButton": "Button",
           "buttonStyles": {
             "solid": "Solid",
             "outline": "Outline",
@@ -1042,8 +1053,16 @@
             "primary": "Primary",
             "secondary": "Secondary",
             "accent": "Accent",
+            "background": "Background",
             "foreground": "Text"
           },
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "close": "Close",
+          "popupStyleLabel": "Popup style",
           "save": "Save",
           "saving": "Saving…",
           "languageLabel": "Public page language",
@@ -1057,6 +1076,56 @@
             "th": "ไทย"
           }
         },
+        "headerDialog": {
+          "title": "Header",
+          "close": "Close",
+          "save": "Save",
+          "saving": "Saving…",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
+          "brandTextLabel": "Business name",
+          "brandTextHelp": "Leave blank to use your workspace name.",
+          "logoLabel": "Logo",
+          "logoHelp": "Shown beside your business name in the header.",
+          "logoUpload": "Upload logo",
+          "logoUploading": "Uploading…",
+          "logoRemove": "Remove logo",
+          "sectionBanner": "Banner",
+          "sectionLinks": "Links",
+          "sectionActiveStyle": "Active link style",
+          "bgColorLabel": "Background color",
+          "bgOpacityLabel": "Background opacity",
+          "linkColorLabel": "Link text color",
+          "activeLinkColorLabel": "Active link text color",
+          "borderBottomLabel": "Border bottom",
+          "borderColorLabel": "Border color",
+          "shadowLabel": "Drop shadow",
+          "fontSizeLabel": "Link size",
+          "activeStyleLabel": "Style",
+          "activeStyleScale": "Scale",
+          "activeStyleHighlight": "Highlight",
+          "activeStyleUnderline": "Underline",
+          "highlightColorLabel": "Highlight color",
+          "underlineColorLabel": "Underline color",
+          "shadow": {
+            "none": "None",
+            "sm": "Small",
+            "md": "Medium",
+            "lg": "Large"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Let's work together",
+          "description": "Tell us about your event.",
+          "submit": "Send inquiry"
+        },
         "mobileBanner": {
           "title": "The editor works best on a larger screen",
           "body": "Drag-and-drop editing is designed for tablet and desktop.",
@@ -1064,6 +1133,7 @@
           "continue": "Continue anyway"
         },
         "contactSettings": "Edit contact settings",
+        "headerSettings": "Header",
         "preview": {
           "show": "Preview",
           "edit": "Edit",

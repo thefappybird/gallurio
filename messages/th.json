@@ -1042,7 +1042,8 @@
             "primary": "หลัก",
             "secondary": "รอง",
             "accent": "เน้น",
-            "foreground": "ข้อความ"
+            "foreground": "ข้อความ",
+            "background": "พื้นหลัง"
           },
           "save": "บันทึก",
           "saving": "กำลังบันทึก…",
@@ -1055,7 +1056,75 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia",
             "th": "ไทย"
+          },
+          "bgColorLabel": "สีพื้นหลัง",
+          "textColorLabel": "สีข้อความ",
+          "cornerRadiusLabel": "มุมโค้ง",
+          "borderWidthLabel": "ความกว้างเส้นขอบ",
+          "borderColorLabel": "สีเส้นขอบ",
+          "sectionPopup": "ป๊อปอัพ",
+          "sectionButton": "ปุ่ม",
+          "radius": {
+            "sharp": "คม",
+            "subtle": "เล็กน้อย",
+            "rounded": "โค้งมน"
+          },
+          "close": "ปิด",
+          "popupStyleLabel": "รูปแบบป๊อปอัพ",
+          "tabs": {
+            "setup": "ตั้งค่า",
+            "design": "ออกแบบ"
           }
+        },
+        "headerDialog": {
+          "title": "ส่วนหัว",
+          "close": "ปิด",
+          "save": "บันทึก",
+          "saving": "กำลังบันทึก…",
+          "tabs": {
+            "setup": "ตั้งค่า",
+            "design": "ออกแบบ"
+          },
+          "brandTextLabel": "ชื่อธุรกิจ",
+          "brandTextHelp": "เว้นว่างไว้เพื่อใช้ชื่อพื้นที่ทำงาน",
+          "logoLabel": "โลโก้",
+          "logoHelp": "แสดงข้างชื่อธุรกิจในส่วนหัว",
+          "logoUpload": "อัปโหลดโลโก้",
+          "logoUploading": "กำลังอัปโหลด…",
+          "logoRemove": "ลบโลโก้",
+          "sectionBanner": "แบนเนอร์",
+          "sectionLinks": "ลิงก์",
+          "sectionActiveStyle": "สไตล์ลิงก์ที่ใช้งาน",
+          "bgColorLabel": "สีพื้นหลัง",
+          "bgOpacityLabel": "ความโปร่งใสพื้นหลัง",
+          "linkColorLabel": "สีข้อความลิงก์",
+          "activeLinkColorLabel": "สีข้อความลิงก์ที่ใช้งาน",
+          "borderBottomLabel": "ขอบด้านล่าง",
+          "borderColorLabel": "สีขอบ",
+          "shadowLabel": "เงา",
+          "fontSizeLabel": "ขนาดลิงก์",
+          "activeStyleLabel": "สไตล์",
+          "activeStyleScale": "ขยาย",
+          "activeStyleHighlight": "ไฮไลต์",
+          "activeStyleUnderline": "ขีดเส้นใต้",
+          "highlightColorLabel": "สีไฮไลต์",
+          "underlineColorLabel": "สีขีดเส้นใต้",
+          "shadow": {
+            "none": "ไม่มี",
+            "sm": "เล็ก",
+            "md": "กลาง",
+            "lg": "ใหญ่"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "มาทำงานด้วยกันกันเถอะ",
+          "description": "บอกเราเกี่ยวกับงานของคุณ",
+          "submit": "ส่งคำถาม"
         },
         "mobileBanner": {
           "title": "ตัวแก้ไขทำงานได้ดีกว่าบนหน้าจอขนาดใหญ่",
@@ -1064,6 +1133,7 @@
           "continue": "ดำเนินการต่อไป"
         },
         "contactSettings": "แก้ไขการตั้งค่าการติดต่อ",
+        "headerSettings": "ส่วนหัว",
         "preview": {
           "show": "ดูตัวอย่าง",
           "edit": "แก้ไข",

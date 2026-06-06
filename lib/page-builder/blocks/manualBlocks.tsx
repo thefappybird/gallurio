@@ -43,25 +43,24 @@ function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {
 export type HeadingBlockProps = {
   _style?: BlockStyle;
   text: string;
-  level: "h1" | "h2" | "h3";
+  level: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 };
 
 export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
-  h1: "clamp(2rem, 5vw, 3.5rem)",
-  h2: "clamp(1.5rem, 3vw, 2.5rem)",
-  h3: "clamp(1.25rem, 2vw, 1.75rem)",
+  h1: "3rem",
+  h2: "2.25rem",
+  h3: "1.75rem",
+  h4: "1.375rem",
+  h5: "1.125rem",
+  h6: "0.875rem",
 };
 
 export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
   const textContent = asText(text);
   const Tag = level;
   return (
-    // Base font on the wrapper so the `_style` toolkit (textColorToken,
-    // fontFamily, fontSize…) can override it; the inner tag inherits.
-    // Color is intentionally omitted — it inherits from the root wrapper
-    // (which sets var(--pf-color-fg)) or from a parent ContainerBlock.
     <div
       style={{
         fontFamily: "var(--pf-font-body)",
@@ -95,9 +94,12 @@ export const headingBlockConfig: ComponentConfig<HeadingBlockProps> = {
       type: "select",
       label: "Level",
       options: [
-        { label: "H1", value: "h1" },
-        { label: "H2", value: "h2" },
-        { label: "H3", value: "h3" },
+        { label: "Display", value: "h1" },
+        { label: "Title", value: "h2" },
+        { label: "Heading", value: "h3" },
+        { label: "Subheading", value: "h4" },
+        { label: "Caption", value: "h5" },
+        { label: "Label", value: "h6" },
       ],
     },
   },
@@ -246,16 +248,38 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
-  const hasColor = _style?.buttonColorToken !== undefined;
-  const buttonBg = hasColor
-    ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent")
-    : "transparent";
-  const buttonText = colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)";
-
-  // Border resolved directly from _style so borderColor works independently of borderWidth.
-  const tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
-  const tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : "var(--pf-color-fg)");
   const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
+  const customTextColor = colorTokenToVar(_style?.textColorToken);
+  const colorVar = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-primary)";
+
+  let buttonBg: string;
+  let buttonText: string;
+  let tkBorderWidth: string;
+  let tkBorderColor: string;
+
+  if (_style?.buttonStyle === "outline") {
+    buttonBg = "transparent";
+    buttonText = customTextColor ?? colorVar;
+    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
+    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? colorVar;
+  } else if (_style?.buttonStyle === "soft") {
+    buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
+    buttonText = customTextColor ?? colorVar;
+    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
+    tkBorderColor = "transparent";
+  } else if (_style?.buttonStyle === "solid") {
+    buttonBg = colorVar;
+    buttonText = customTextColor ?? "var(--pf-color-bg)";
+    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
+    tkBorderColor = "transparent";
+  } else {
+    // No explicit buttonStyle — legacy per-field behaviour.
+    const hasColor = _style?.buttonColorToken !== undefined;
+    buttonBg = hasColor ? (colorTokenToVar(_style!.buttonColorToken) ?? "transparent") : "transparent";
+    buttonText = customTextColor ?? "var(--pf-color-fg)";
+    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
+    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? (hasColor ? "transparent" : "var(--pf-color-fg)");
+  }
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
@@ -333,7 +357,7 @@ export const buttonBlockConfig: ComponentConfig<ButtonBlockProps> = {
         { label: "Medium", value: "md" },
         { label: "Large", value: "lg" },
       ],
-    } as Field<"sm" | "md" | "lg">,
+    } as Field<"sm" | "md" | "lg" | undefined>,
   },
   render: ButtonBlock,
 };
@@ -446,6 +470,14 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   defaultProps: columnsDefaultProps,
   fields: {
     _style: productionStyleField,
+    columns: {
+      type: "select",
+      label: "Columns",
+      options: [
+        { label: "2 columns", value: 2 },
+        { label: "3 columns", value: 3 },
+      ],
+    } as Field<2 | 3>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,

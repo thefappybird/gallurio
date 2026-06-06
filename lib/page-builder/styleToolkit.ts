@@ -16,7 +16,7 @@
 
 import type { Field } from "@measured/puck";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
-import type { BrandKitFontPair } from "./types";
+import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
 import { fontFamilyValue, type PortfolioFontKey } from "./fonts";
 
 // The `_style` field key — the per-block style toolkit lives here, as the first
@@ -85,6 +85,8 @@ export type BlockStyle = {
   textColorToken?: StyleColorToken | string;
   // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
   buttonColorToken?: StyleColorToken | string;
+  // Button visual style (solid/outline/soft) — overrides brand-kit default for this button.
+  buttonStyle?: BrandKitButtonStyle;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;

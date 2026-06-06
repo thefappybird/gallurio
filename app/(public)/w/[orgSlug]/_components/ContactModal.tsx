@@ -19,10 +19,47 @@ export type ContactModalLabels = {
   form: InquiryFormLabels;
 };
 
+const CONTACT_RADIUS_MAP: Record<string, string> = {
+  sharp: "0",
+  subtle: "0.25rem",
+  rounded: "0.5rem",
+};
+
+/** Resolves a color value (token name OR custom hex) to a CSS color string. */
+function resolveContactColor(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  if (value.startsWith("#")) return value;
+  return `var(--pf-color-${value}, ${fallback})`;
+}
+
 function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): SubmitAppearance {
-  const colorVar = contact?.buttonColor ? `--pf-color-${contact.buttonColor}` : "--pf-color-primary";
+  const color = resolveContactColor(contact?.buttonColor, "var(--pf-color-primary)");
   const style = (contact?.buttonStyle || "solid") as SubmitAppearance["style"];
-  return { colorVar, style };
+  const borderRadius = contact?.buttonRadius ? CONTACT_RADIUS_MAP[contact.buttonRadius] : undefined;
+  const textColor = contact?.buttonTextColor
+    ? resolveContactColor(contact.buttonTextColor, "inherit")
+    : undefined;
+  const border = contact?.buttonBorderWidth
+    ? `${contact.buttonBorderWidth}px solid ${resolveContactColor(contact.buttonBorderColor, "currentColor")}`
+    : undefined;
+  return { color, style, borderRadius, textColor, border };
+}
+
+function resolvePopupExtraStyles(popupStyle?: string): React.CSSProperties {
+  if (popupStyle === "outline") {
+    return {
+      backgroundColor: "color-mix(in srgb, var(--pf-color-bg, #ffffff) 85%, transparent)",
+      border: "2px solid var(--pf-color-fg, #111111)",
+    };
+  }
+  if (popupStyle === "soft") {
+    return {
+      boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+      border: "none",
+    };
+  }
+  // solid (default): thin border in both themes
+  return { border: "1px solid color-mix(in srgb, var(--pf-color-fg, #111111) 14%, transparent)" };
 }
 
 export function ContactModal({
@@ -51,6 +88,10 @@ export function ContactModal({
   const title = contact?.title?.trim() || labels.title;
   const description = contact?.description?.trim() || labels.description;
   const submitAppearance = resolveSubmitAppearance(contact);
+  const popupExtraStyles = resolvePopupExtraStyles(contact?.popupStyle);
+  const popupBorderRadius = contact?.popupRadius
+    ? CONTACT_RADIUS_MAP[contact.popupRadius]
+    : "var(--pf-radius)";
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
@@ -71,12 +112,17 @@ export function ContactModal({
             ...(brandVars as React.CSSProperties),
             position: "fixed",
             zIndex: 101,
-            backgroundColor: "var(--pf-color-bg, #ffffff)",
-            color: "var(--pf-color-fg, #111111)",
+            backgroundColor: resolveContactColor(contact?.backgroundColor, "var(--pf-color-bg, #ffffff)"),
+            color: resolveContactColor(contact?.textColor, "var(--pf-color-fg, #111111)"),
             fontFamily: "var(--pf-font-body)",
             display: "flex",
             flexDirection: "column",
             outline: "none",
+            borderRadius: popupBorderRadius,
+            ...popupExtraStyles,
+            ...(contact?.popupBorderWidth
+              ? { border: `${contact.popupBorderWidth}px solid ${resolveContactColor(contact.popupBorderColor, "var(--pf-color-fg, #111111)")}` }
+              : {}),
           }}
         >
           <div
@@ -163,7 +209,6 @@ export function ContactModal({
             transform: translate(-50%, -50%);
             width: calc(100% - 2rem); max-width: 32rem;
             max-height: 90dvh;
-            border: 1px solid color-mix(in srgb, var(--pf-color-fg) 16%, transparent);
           }
         }
       `}</style>

@@ -3,41 +3,223 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
 import {
   BRAND_KIT_BUTTON_STYLES,
+  BRAND_KIT_RADII,
   CONTACT_BUTTON_COLORS,
+  type BrandKitRadius,
+  type PortfolioBrandKit,
   type PortfolioContactConfig,
 } from "@/lib/page-builder/types";
 import { updateContactConfigAction, updateFormLocaleAction } from "../_actions";
 
 const FORM_LOCALES = ["", "en", "fil", "ms", "id", "th"] as const;
 
+const selectClass =
+  "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+type Tab = "setup" | "design";
+
 type Props = {
   open: boolean;
   contact: PortfolioContactConfig;
   onContactChange: (next: PortfolioContactConfig) => void;
-  /** Per-page chrome language ("" = auto from country). */
   formLocale: string;
   onFormLocaleChange: (next: string) => void;
-  /** Persisted successfully — parent closes and keeps the change. */
+  brandKit: PortfolioBrandKit;
+  /** Called after a successful DB save — parent updates snapshot. */
   onSaved: () => void;
-  /** Closed without saving — parent reverts to the snapshot. */
+  /** Called on X / cancel — parent reverts to snapshot. */
   onCancel: () => void;
 };
 
-const selectClass =
-  "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+/** Map brand-kit color token names to their actual hex values. */
+function resolveSwatchHex(
+  token: (typeof CONTACT_BUTTON_COLORS)[number],
+  brandKit: PortfolioBrandKit,
+): string {
+  switch (token) {
+    case "primary":    return brandKit.primaryColor;
+    case "secondary":  return brandKit.secondaryColor;
+    case "accent":     return brandKit.accentColor;
+    case "background": return brandKit.backgroundColor;
+    case "foreground": return brandKit.foregroundColor;
+  }
+}
+
+function ColorSwatchRow({
+  label,
+  active,
+  brandKit,
+  onToggle,
+  getLabel,
+  allowNone = true,
+}: {
+  label: string;
+  active: string | undefined;
+  brandKit: PortfolioBrandKit;
+  onToggle: (color: string | undefined) => void;
+  getLabel: (color: (typeof CONTACT_BUTTON_COLORS)[number]) => string;
+  allowNone?: boolean;
+}) {
+  const isCustomHex =
+    typeof active === "string" &&
+    active.startsWith("#") &&
+    !(CONTACT_BUTTON_COLORS as readonly string[]).includes(active);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {CONTACT_BUTTON_COLORS.map((colorToken) => {
+          const hex = resolveSwatchHex(colorToken, brandKit);
+          const isActive = active === colorToken;
+          return (
+            <button
+              key={colorToken}
+              type="button"
+              title={getLabel(colorToken)}
+              aria-label={getLabel(colorToken)}
+              aria-pressed={isActive}
+              onClick={() => onToggle(isActive ? undefined : colorToken)}
+              style={{ backgroundColor: hex }}
+              className={cn(
+                "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isActive && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+              )}
+            />
+          );
+        })}
+        {allowNone && (
+          <button
+            type="button"
+            onClick={() => onToggle(undefined)}
+            title="Reset"
+            aria-label="Reset color"
+            className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <RotateCcw className="size-3.5" aria-hidden />
+          </button>
+        )}
+        {/* Spectrum / custom hex picker */}
+        <label
+          title="Custom color"
+          aria-label="Custom color"
+          className={cn(
+            "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
+            isCustomHex && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+          )}
+          style={{ background: isCustomHex ? active : undefined }}
+        >
+          <input
+            type="color"
+            value={isCustomHex ? active : "#000000"}
+            onChange={(e) => onToggle(e.target.value)}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            aria-label="Pick custom color"
+          />
+          {!isCustomHex && (
+            <span
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                opacity: 0.85,
+              }}
+            />
+          )}
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function BorderRow({
+  widthLabel,
+  colorLabel,
+  width,
+  color,
+  brandKit,
+  onWidthChange,
+  onColorChange,
+  getColorLabel,
+}: {
+  widthLabel: string;
+  colorLabel: string;
+  width: number | undefined;
+  color: string | undefined;
+  brandKit: PortfolioBrandKit;
+  onWidthChange: (v: number | undefined) => void;
+  onColorChange: (v: string | undefined) => void;
+  getColorLabel: (c: (typeof CONTACT_BUTTON_COLORS)[number]) => string;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <NumberInputRow
+        label={widthLabel}
+        value={width}
+        min={0}
+        max={12}
+        onChange={onWidthChange}
+      />
+      {!!width && (
+        <ColorSwatchRow
+          label={colorLabel}
+          active={color}
+          brandKit={brandKit}
+          onToggle={onColorChange}
+          getLabel={getColorLabel}
+          allowNone={false}
+        />
+      )}
+    </div>
+  );
+}
+
+function RadiusRow({
+  label,
+  active,
+  onToggle,
+  getLabel,
+}: {
+  label: string;
+  active: BrandKitRadius | undefined;
+  onToggle: (radius: BrandKitRadius) => void;
+  getLabel: (radius: BrandKitRadius) => string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex">
+        {BRAND_KIT_RADII.map((r) => {
+          const isActive = active === r;
+          return (
+            <button
+              key={r}
+              type="button"
+              aria-label={getLabel(r)}
+              aria-pressed={isActive}
+              onClick={() => onToggle(r)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isActive && "bg-foreground text-background hover:bg-foreground",
+              )}
+            >
+              {getLabel(r)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function ContactPanelDialog({
   open,
@@ -45,15 +227,36 @@ export function ContactPanelDialog({
   onContactChange,
   formLocale,
   onFormLocaleChange,
+  brandKit,
   onSaved,
   onCancel,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const te = useTranslations("app.pageBuilder.editor");
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState<Tab>("setup");
 
-  function set<K extends keyof PortfolioContactConfig>(key: K, value: PortfolioContactConfig[K]) {
+  if (!open) return null;
+
+  function set<K extends keyof PortfolioContactConfig>(
+    key: K,
+    value: PortfolioContactConfig[K],
+  ) {
     onContactChange({ ...contact, [key]: value });
+  }
+
+  function toggleColor<K extends keyof PortfolioContactConfig>(
+    key: K,
+    color: PortfolioContactConfig[K],
+  ) {
+    set(key, contact[key] === color ? undefined : color);
+  }
+
+  function toggleRadius<K extends "popupRadius" | "buttonRadius">(
+    key: K,
+    radius: BrandKitRadius,
+  ) {
+    set(key, contact[key] === radius ? undefined : radius);
   }
 
   async function save() {
@@ -75,106 +278,214 @@ export function ContactPanelDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle>{t("title")}</DialogTitle>
-        </DialogHeader>
+    <div
+      className="flex w-70 flex-col border-l border-border bg-card"
+      role="complementary"
+      aria-label={t("title")}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <span className="text-sm font-semibold text-foreground">{t("title")}</span>
+        <button
+          type="button"
+          onClick={onCancel}
+          aria-label={t("close")}
+          className="flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <X className="size-4" aria-hidden />
+        </button>
+      </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-        <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="contact-language">{t("languageLabel")}</Label>
-          <p className="text-xs text-muted-foreground">{t("languageHelp")}</p>
-          <p className="text-xs text-muted-foreground">This setting only affects the public contact form — it is independent of your own app language.</p>
-          <select
-            id="contact-language"
-            className={selectClass}
-            value={formLocale}
-            onChange={(e) => onFormLocaleChange(e.target.value)}
+      {/* Tab bar */}
+      <div className="flex border-b border-border">
+        {(["setup", "design"] as Tab[]).map((id) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              tab === id
+                ? "border-b-2 border-foreground text-foreground"
+                : "text-muted-foreground",
+            )}
           >
-            {FORM_LOCALES.map((loc) => (
-              <option key={loc || "auto"} value={loc}>
-                {t(`languages.${loc || "auto"}`)}
-              </option>
-            ))}
-          </select>
-        </div>
+            {id === "setup" ? t("tabs.setup") : t("tabs.design")}
+          </button>
+        ))}
+      </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contact-title">{t("titleLabel")}</Label>
-            <Input
-              id="contact-title"
-              value={contact.title ?? ""}
-              maxLength={80}
-              placeholder={t("titlePlaceholder")}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
+      {/* Scrollable content */}
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+        {tab === "setup" && (
+          <>
+            <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contact-description">{t("descriptionLabel")}</Label>
-            <Textarea
-              id="contact-description"
-              rows={3}
-              value={contact.description ?? ""}
-              maxLength={280}
-              placeholder={t("descriptionPlaceholder")}
-              onChange={(e) => set("description", e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-button-style">{t("buttonStyleLabel")}</Label>
+              <Label htmlFor="contact-language">{t("languageLabel")}</Label>
+              <p className="text-xs text-muted-foreground">{t("languageHelp")}</p>
               <select
-                id="contact-button-style"
+                id="contact-language"
                 className={selectClass}
-                value={contact.buttonStyle ?? ""}
-                onChange={(e) =>
-                  set("buttonStyle", (e.target.value || undefined) as PortfolioContactConfig["buttonStyle"])
-                }
+                value={formLocale}
+                onChange={(e) => onFormLocaleChange(e.target.value)}
               >
-                {BRAND_KIT_BUTTON_STYLES.map((s) => (
-                  <option key={s} value={s}>
-                    {t(`buttonStyles.${s}`)}
+                {FORM_LOCALES.map((loc) => (
+                  <option key={loc || "auto"} value={loc}>
+                    {t(`languages.${loc || "auto"}`)}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-button-color">{t("buttonColorLabel")}</Label>
-              <select
-                id="contact-button-color"
-                className={selectClass}
-                value={contact.buttonColor ?? ""}
-                onChange={(e) =>
-                  set("buttonColor", (e.target.value || undefined) as PortfolioContactConfig["buttonColor"])
-                }
-              >
-                {CONTACT_BUTTON_COLORS.map((c) => (
-                  <option key={c} value={c}>
-                    {t(`buttonColors.${c}`)}
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="contact-title">{t("titleLabel")}</Label>
+              <Input
+                id="contact-title"
+                value={contact.title ?? ""}
+                maxLength={80}
+                placeholder={t("titlePlaceholder")}
+                onChange={(e) => set("title", e.target.value)}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-description">{t("descriptionLabel")}</Label>
+              <Textarea
+                id="contact-description"
+                rows={4}
+                value={contact.description ?? ""}
+                maxLength={280}
+                placeholder={t("descriptionPlaceholder")}
+                onChange={(e) => set("description", e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        {tab === "design" && (
+          <div className="flex flex-col gap-6">
+            {/* ── Popup section ─────────────────────────── */}
+            <div className="flex flex-col gap-4">
+              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
+                {t("sectionPopup")}
+              </span>
+
+              <ColorSwatchRow
+                label={t("textColorLabel")}
+                active={contact.textColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("textColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
+              <ColorSwatchRow
+                label={t("bgColorLabel")}
+                active={contact.backgroundColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("backgroundColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
+              <RadiusRow
+                label={t("cornerRadiusLabel")}
+                active={contact.popupRadius}
+                onToggle={(r) => toggleRadius("popupRadius", r)}
+                getLabel={(r) => t(`radius.${r}`)}
+              />
+
+              <BorderRow
+                widthLabel={t("borderWidthLabel")}
+                colorLabel={t("borderColorLabel")}
+                width={contact.popupBorderWidth}
+                color={contact.popupBorderColor}
+                brandKit={brandKit}
+                onWidthChange={(v) => set("popupBorderWidth", v)}
+                onColorChange={(v) => set("popupBorderColor", v)}
+                getColorLabel={(c) => t(`buttonColors.${c}`)}
+              />
+            </div>
+
+            <div className="border-t border-border" />
+
+            {/* ── Button section ────────────────────────── */}
+            <div className="flex flex-col gap-4">
+              <span className="text-xs font-semibold uppercase tracking-widest text-foreground">
+                {t("sectionButton")}
+              </span>
+
+              {/* Button style toggle */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
+                <div className="flex">
+                  {BRAND_KIT_BUTTON_STYLES.map((style) => {
+                    const active = contact.buttonStyle === style;
+                    return (
+                      <button
+                        key={style}
+                        type="button"
+                        aria-label={t(`buttonStyles.${style}`)}
+                        aria-pressed={active}
+                        onClick={() => toggleColor("buttonStyle", style)}
+                        className={cn(
+                          "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          active && "bg-foreground text-background hover:bg-foreground",
+                        )}
+                      >
+                        {t(`buttonStyles.${style}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <ColorSwatchRow
+                label={t("textColorLabel")}
+                active={contact.buttonTextColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("buttonTextColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
+              <ColorSwatchRow
+                label={t("buttonColorLabel")}
+                active={contact.buttonColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("buttonColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
+              <RadiusRow
+                label={t("cornerRadiusLabel")}
+                active={contact.buttonRadius}
+                onToggle={(r) => toggleRadius("buttonRadius", r)}
+                getLabel={(r) => t(`radius.${r}`)}
+              />
+
+              <BorderRow
+                widthLabel={t("borderWidthLabel")}
+                colorLabel={t("borderColorLabel")}
+                width={contact.buttonBorderWidth}
+                color={contact.buttonBorderColor}
+                brandKit={brandKit}
+                onWidthChange={(v) => set("buttonBorderWidth", v)}
+                onColorChange={(v) => set("buttonBorderColor", v)}
+                getColorLabel={(c) => t(`buttonColors.${c}`)}
+              />
             </div>
           </div>
-        </div>
-        </div>
+        )}
+      </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
-            {te("publishDialog.cancel")}
-          </Button>
-          <Button type="button" onClick={save} loading={saving}>
-            {saving ? t("saving") : t("save")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      {/* Footer */}
+      <div className="flex gap-2 border-t border-border px-4 py-3">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
+          {te("publishDialog.cancel")}
+        </Button>
+        <Button type="button" onClick={save} loading={saving} className="flex-1">
+          {saving ? t("saving") : t("save")}
+        </Button>
+      </div>
+    </div>
   );
 }

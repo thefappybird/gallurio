@@ -16,18 +16,24 @@ import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 import type {
   PortfolioBrandKit,
   PortfolioContactConfig,
+  PortfolioHeaderConfig,
   PortfolioSavedTheme,
   PuckData,
 } from "@/lib/page-builder/types";
+import { DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import {
   savePortfolioDraftAction,
   publishPortfolioAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
+  updateHeaderConfigAction,
 } from "../_actions";
 import { PublishDialog } from "./PublishDialog";
 import { ThemePanelDialog } from "./ThemePanelDialog";
 import { ContactPanelDialog } from "./ContactPanelDialog";
+import { ContactFormPreview } from "./ContactFormPreview";
+import { HeaderPanelDialog } from "./HeaderPanelDialog";
+import { HeaderFormPreview } from "./HeaderFormPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
@@ -55,6 +61,7 @@ type Props = {
   initialData: { home: PuckData; gallery: PuckData };
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
+  initialHeaderConfig: PortfolioHeaderConfig;
   /** Per-page public chrome language ("" = auto from workspace country). */
   initialFormLocale: string;
   publicOrigin: string;
@@ -195,6 +202,7 @@ export function EditorShell({
   initialBrandKit,
   initialContact,
   initialFormLocale,
+  initialHeaderConfig,
   publicOrigin,
   previewBasePath,
   templates,
@@ -220,6 +228,8 @@ export function EditorShell({
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [headerConfig, setHeaderConfig] = useState<PortfolioHeaderConfig>(initialHeaderConfig ?? DEFAULT_HEADER_CONFIG);
+  const [headerOpen, setHeaderOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templateId, setTemplateId] = useState(currentTemplateId);
@@ -230,7 +240,7 @@ export function EditorShell({
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
 
   const isContact = activeTab === "contact";
-  const showPuck = !isContact && !previewMode;
+  const showPuck = !isContact && !previewMode && !headerOpen;
 
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
@@ -248,6 +258,9 @@ export function EditorShell({
   const themeSnapshot = useRef<PortfolioBrandKit | null>(null);
   const contactSnapshot = useRef<PortfolioContactConfig | null>(null);
   const formLocaleSnapshot = useRef<string | null>(null);
+  const headerSnapshot = useRef<PortfolioHeaderConfig | null>(null);
+  const contactHasSaved = useRef(false);
+  const headerHasSaved = useRef(false);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -313,14 +326,26 @@ export function EditorShell({
   async function selectTab(tab: Tab) {
     if (tab === activeTab) return;
 
+    // Close header panel when switching tabs
+    if (headerOpen) {
+      if (headerHasSaved.current) setPreviewNonce((n) => n + 1);
+      setHeaderOpen(false);
+    }
+
     if (tab === "contact") {
       // Persist any in-flight edit of the editable zone we're leaving so the
       // preview (and a later publish) reflect it, then show the contact preview.
       if (!isContact) await flushPendingSave(activeZone);
       setActiveTab("contact");
-      setPreviewNonce((n) => n + 1);
+      // Auto-open the contact sidebar (snapshot taken for cancel/revert).
+      if (!contactOpen) openContact();
       return;
     }
+
+    // Leaving the contact tab — close sidebar without reverting (the user's
+    // unsaved edits are still visible in the preview; they can reopen and cancel
+    // from there if they changed their mind).
+    if (isContact) setContactOpen(false);
 
     // Entering an editable zone (home/gallery).
     if (!isContact) await flushPendingSave(activeZone);
@@ -381,6 +406,7 @@ export function EditorShell({
   function openContact() {
     contactSnapshot.current = contact;
     formLocaleSnapshot.current = formLocale;
+    contactHasSaved.current = false;
     setContactOpen(true);
   }
   function closeContact(saved: boolean) {
@@ -389,7 +415,30 @@ export function EditorShell({
       if (formLocaleSnapshot.current !== null) setFormLocale(formLocaleSnapshot.current);
     }
     setContactOpen(false);
-    if (saved && isContact) setPreviewNonce((n) => n + 1);
+    if (contactHasSaved.current) setPreviewNonce((n) => n + 1);
+  }
+  // Called after a successful DB save so the snapshot reflects the saved state.
+  // The sidebar stays open — the user can keep editing.
+  function saveContactSnapshot() {
+    contactSnapshot.current = contact;
+    formLocaleSnapshot.current = formLocale;
+    contactHasSaved.current = true;
+  }
+
+  async function openHeader() {
+    if (!isContact && !previewMode) await flushPendingSave(activeZone);
+    headerSnapshot.current = headerConfig;
+    headerHasSaved.current = false;
+    setHeaderOpen(true);
+  }
+  function closeHeader(saved: boolean) {
+    if (!saved && headerSnapshot.current) setHeaderConfig(headerSnapshot.current);
+    setHeaderOpen(false);
+    if (headerHasSaved.current) setPreviewNonce((n) => n + 1);
+  }
+  function saveHeaderSnapshot() {
+    headerSnapshot.current = headerConfig;
+    headerHasSaved.current = true;
   }
 
   async function handleSwitchTemplate(nextTemplateId: string) {
@@ -496,7 +545,12 @@ export function EditorShell({
         <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
           {t("guide")}
         </Button>
-        {isContact && (
+        {!headerOpen && (
+          <Button type="button" size="sm" variant="outline" onClick={() => void openHeader()}>
+            {t("headerSettings")}
+          </Button>
+        )}
+        {isContact && !contactOpen && (
           <Button type="button" size="sm" variant="outline" onClick={openContact}>
             {t("contactSettings")}
           </Button>
@@ -563,27 +617,78 @@ export function EditorShell({
           <div className="flex h-full flex-col">
             <div className="border-b border-border bg-card px-3 py-2">
               {topBar(
-                <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />,
+                // Hide device toggle when a sidebar panel is open (inline preview, not resizable iframe).
+                (isContact && contactOpen) || headerOpen ? null : (
+                  <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
+                ),
                 <Button type="button" size="sm" onClick={() => setPublishOpen(true)}>
                   {t("publish")}
                 </Button>
               )}
             </div>
-            <div className="min-h-0 flex-1 overflow-auto bg-muted/40 p-2">
-              <div
-                className="mx-auto h-full transition-[max-width]"
-                style={{
-                  maxWidth:
-                    previewDevice === "desktop" ? "100%" : `${DEVICES.find((d) => d.key === previewDevice)!.width}px`,
-                }}
-              >
-                <iframe
-                  key={previewNonce}
-                  src={previewSrc}
-                  title={t("preview.title")}
-                  className="h-full w-full border-0 bg-background"
-                />
-              </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              {isContact && contactOpen ? (
+                // Issue 2 fix: ContactPanelDialog is now inline (flex sibling), not a fixed overlay.
+                <div className="flex h-full overflow-hidden">
+                  <div className="flex-1 overflow-auto bg-muted/40">
+                    <ContactFormPreview
+                      contact={contact}
+                      brandKit={brandKit}
+                      defaultTitle={t("contactPreview.title")}
+                      defaultDescription={t("contactPreview.description")}
+                      submitLabel={t("contactPreview.submit")}
+                    />
+                  </div>
+                  <ContactPanelDialog
+                    open={contactOpen}
+                    contact={contact}
+                    onContactChange={setContact}
+                    formLocale={formLocale}
+                    onFormLocaleChange={setFormLocale}
+                    brandKit={brandKit}
+                    onSaved={saveContactSnapshot}
+                    onCancel={() => closeContact(false)}
+                  />
+                </div>
+              ) : headerOpen ? (
+                // Header editing view: preview on left, panel on right.
+                <div className="flex h-full overflow-hidden">
+                  <div className="flex-1 overflow-auto bg-muted/40">
+                    <HeaderFormPreview
+                      header={headerConfig}
+                      brandKit={brandKit}
+                      workspaceName={workspaceName}
+                    />
+                  </div>
+                  <HeaderPanelDialog
+                    header={headerConfig}
+                    onHeaderChange={setHeaderConfig}
+                    brandKit={brandKit}
+                    workspaceName={workspaceName}
+                    onSaved={saveHeaderSnapshot}
+                    onCancel={() => closeHeader(false)}
+                  />
+                </div>
+              ) : (
+                <div className="h-full overflow-auto p-2 bg-muted/40">
+                  <div
+                    className="mx-auto h-full transition-[max-width]"
+                    style={{
+                      maxWidth:
+                        previewDevice === "desktop"
+                          ? "100%"
+                          : `${DEVICES.find((d) => d.key === previewDevice)!.width}px`,
+                    }}
+                  >
+                    <iframe
+                      key={previewNonce}
+                      src={previewSrc}
+                      title={t("preview.title")}
+                      className="h-full w-full border-0 bg-background"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -604,15 +709,6 @@ export function EditorShell({
         onCancel={() => closeTheme(false)}
         savedThemes={savedThemes}
         onSavedThemesChange={setSavedThemes}
-      />
-      <ContactPanelDialog
-        open={contactOpen}
-        contact={contact}
-        onContactChange={setContact}
-        formLocale={formLocale}
-        onFormLocaleChange={setFormLocale}
-        onSaved={() => closeContact(true)}
-        onCancel={() => closeContact(false)}
       />
       <CollectionsManagerDialog open={photosOpen} onOpenChange={setPhotosOpen} />
       <TemplatePickerDialog

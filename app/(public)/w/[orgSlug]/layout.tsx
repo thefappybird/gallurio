@@ -10,7 +10,7 @@ import { ContactModal } from "./_components/ContactModal";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
-import type { PortfolioContactConfig } from "@/lib/page-builder/types";
+import type { PortfolioContactConfig, PortfolioHeaderConfig } from "@/lib/page-builder/types";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -47,6 +47,7 @@ export default async function PublicPortfolioLayout({
 
   const contactLabels = buildContactLabels(tContact);
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
+  const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
   return (
     <div
@@ -65,6 +66,7 @@ export default async function PublicPortfolioLayout({
           openMenu: tNav("openMenu"),
           closeMenu: tNav("closeMenu"),
         }}
+        config={headerConfig}
       />
       {children}
       <MotionObserver />

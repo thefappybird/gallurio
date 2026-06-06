@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
-import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
@@ -77,6 +77,7 @@ export default async function PageBuilderEntry({
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
+  const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
@@ -102,6 +103,7 @@ export default async function PageBuilderEntry({
       initialBrandKit={initialBrandKit}
       initialContact={initialContact}
       initialFormLocale={initialFormLocale}
+      initialHeaderConfig={initialHeaderConfig}
       publicOrigin={publicOrigin}
       previewBasePath={previewBasePath}
       templates={templates}

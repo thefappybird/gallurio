@@ -190,29 +190,38 @@ function TabHeader({
 // Heading level buttons
 // ---------------------------------------------------------------------------
 
+const HEADING_LEVELS = [
+  { value: "h1", label: "Display" },
+  { value: "h2", label: "Title" },
+  { value: "h3", label: "Heading" },
+  { value: "h4", label: "Subheading" },
+  { value: "h5", label: "Caption" },
+  { value: "h6", label: "Label" },
+] as const;
+
 function HeadingLevelButtons({
   value,
   onChange,
 }: {
   value: string | undefined;
-  onChange: (v: "h1" | "h2" | "h3") => void;
+  onChange: (v: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-muted-foreground">Level</span>
-      <div className="flex items-center gap-1.5">
-        {(["h1", "h2", "h3"] as const).map((l) => (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Level</span>
+      <div className="grid grid-cols-3 gap-1.5">
+        {HEADING_LEVELS.map(({ value: v, label }) => (
           <button
-            key={l}
+            key={v}
             type="button"
-            aria-pressed={value === l}
-            onClick={() => onChange(l)}
+            aria-pressed={value === v}
+            onClick={() => onChange(v)}
             className={cn(
-              "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-bold text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              value === l && "bg-foreground text-background hover:bg-foreground"
+              "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === v && "bg-foreground text-background hover:bg-foreground"
             )}
           >
-            {l.toUpperCase()}
+            {label}
           </button>
         ))}
       </div>
@@ -565,13 +574,15 @@ function DesignTab({
             <ResetButton onClick={() => set({ fontFamily: undefined })} label="Font" />
           </div>
         </div>
-        <NumberInputRow
-          label="Font size"
-          value={s.fontSize}
-          min={STYLE_LIMITS.fontSize.min}
-          max={STYLE_LIMITS.fontSize.max}
-          onChange={(v) => set({ fontSize: v })}
-        />
+        {blockType !== "Heading" && (
+          <NumberInputRow
+            label="Font size"
+            value={s.fontSize}
+            min={STYLE_LIMITS.fontSize.min}
+            max={STYLE_LIMITS.fontSize.max}
+            onChange={(v) => set({ fontSize: v })}
+          />
+        )}
       </div>
 
       {/* Frame — hidden for text/button leaf blocks */}
@@ -942,26 +953,47 @@ function LayoutTabBody({
     return (
       <div className="flex flex-col gap-4 p-3">
         {isButton && p && setProp && (
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
-            <div className="flex items-center gap-1.5">
-              {(["sm", "md", "lg"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={(p.size as string | undefined) === v || (p.size === undefined && v === "md")}
-                  onClick={() => setProp("size", v)}
-                  className={cn(
-                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    ((p.size as string | undefined) === v || (p.size === undefined && v === "md")) &&
-                      "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {v === "sm" ? "S" : v === "md" ? "M" : "L"}
-                </button>
-              ))}
+          <>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
+              <div className="flex items-center gap-1.5">
+                {(["solid", "outline", "soft"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={s.buttonStyle === v}
+                    onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
+                    )}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
+              <div className="flex items-center gap-1.5">
+                {(["sm", "md", "lg"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={(p.size as string | undefined) === v || (p.size === undefined && v === "md")}
+                    onClick={() => setProp("size", v)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      ((p.size as string | undefined) === v || (p.size === undefined && v === "md")) &&
+                        "bg-foreground text-background hover:bg-foreground"
+                    )}
+                  >
+                    {v === "sm" ? "S" : v === "md" ? "M" : "L"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
         )}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Position</span>

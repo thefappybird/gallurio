@@ -1042,7 +1042,8 @@
             "primary": "Utama",
             "secondary": "Sekunder",
             "accent": "Aksen",
-            "foreground": "Teks"
+            "foreground": "Teks",
+            "background": "Latar belakang"
           },
           "save": "Simpan",
           "saving": "Menyimpan…",
@@ -1055,7 +1056,75 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia",
             "th": "ไทย"
+          },
+          "bgColorLabel": "Warna latar belakang",
+          "textColorLabel": "Warna teks",
+          "cornerRadiusLabel": "Bucu sudut",
+          "borderWidthLabel": "Lebar sempadan",
+          "borderColorLabel": "Warna sempadan",
+          "sectionPopup": "Popup",
+          "sectionButton": "Butang",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Bulat"
+          },
+          "close": "Tutup",
+          "popupStyleLabel": "Gaya popup",
+          "tabs": {
+            "setup": "Tetapan",
+            "design": "Reka bentuk"
           }
+        },
+        "headerDialog": {
+          "title": "Pengepala",
+          "close": "Tutup",
+          "save": "Simpan",
+          "saving": "Menyimpan…",
+          "tabs": {
+            "setup": "Persediaan",
+            "design": "Reka bentuk"
+          },
+          "brandTextLabel": "Nama perniagaan",
+          "brandTextHelp": "Biarkan kosong untuk menggunakan nama ruang kerja.",
+          "logoLabel": "Logo",
+          "logoHelp": "Dipaparkan di sebelah nama perniagaan dalam pengepala.",
+          "logoUpload": "Muat naik logo",
+          "logoUploading": "Memuat naik…",
+          "logoRemove": "Alih keluar logo",
+          "sectionBanner": "Sepanduk",
+          "sectionLinks": "Pautan",
+          "sectionActiveStyle": "Gaya pautan aktif",
+          "bgColorLabel": "Warna latar belakang",
+          "bgOpacityLabel": "Kelegapan latar belakang",
+          "linkColorLabel": "Warna teks pautan",
+          "activeLinkColorLabel": "Warna teks pautan aktif",
+          "borderBottomLabel": "Sempadan bawah",
+          "borderColorLabel": "Warna sempadan",
+          "shadowLabel": "Bayang jatuh",
+          "fontSizeLabel": "Saiz pautan",
+          "activeStyleLabel": "Gaya",
+          "activeStyleScale": "Skala",
+          "activeStyleHighlight": "Serlahkan",
+          "activeStyleUnderline": "Garis bawah",
+          "highlightColorLabel": "Warna serlahan",
+          "underlineColorLabel": "Warna garis bawah",
+          "shadow": {
+            "none": "Tiada",
+            "sm": "Kecil",
+            "md": "Sederhana",
+            "lg": "Besar"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Mari bekerja bersama",
+          "description": "Ceritakan tentang acara anda.",
+          "submit": "Hantar pertanyaan"
         },
         "mobileBanner": {
           "title": "Editor berfungsi dengan lebih baik pada skrin yang lebih besar",
@@ -1064,6 +1133,7 @@
           "continue": "Teruskan juga"
         },
         "contactSettings": "Edit tetapan hubungi",
+        "headerSettings": "Pengepala",
         "preview": {
           "show": "Pratonton",
           "edit": "Edit",

@@ -49,6 +49,7 @@ const switchTemplateAction = vi.fn().mockResolvedValue({ ok: true });
 const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
+const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
@@ -59,6 +60,7 @@ vi.mock("../_actions", () => ({
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
+  updateHeaderConfigAction: (...a: unknown[]) => updateHeaderConfigAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -76,6 +78,7 @@ const baseProps = {
   initialBrandKit: DEFAULT_BRAND_KIT,
   initialContact: { title: "Hi" },
   initialFormLocale: "",
+  initialHeaderConfig: {},
   publicOrigin: "https://app.test",
   previewBasePath: "/portfolio-preview",
   templates: [
@@ -131,15 +134,13 @@ describe("EditorShell", () => {
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
   });
 
-  it("treats Contact as a tab — shows its preview and opens settings from there", async () => {
-    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+  it("treats Contact as a tab — auto-opens the inline settings panel", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact form" }));
-    // Switching to Contact swaps Puck for the contact preview iframe.
+    // Switching to Contact swaps Puck out; the contact sidebar auto-opens.
     await waitFor(() => expect(screen.queryByTestId("puck")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Contact form" }).getAttribute("aria-pressed")).toBe("true");
-    expect(container.querySelector("iframe")?.getAttribute("src")).toContain("zone=contact");
-    // Settings open from the contact tab, not a side button.
-    fireEvent.click(screen.getByRole("button", { name: "Edit contact settings" }));
+    // Auto-open means the inline panel is already visible (shows the description).
     expect(
       await screen.findByText(
         "The form fields are fixed. You can edit the heading, message, and button only."

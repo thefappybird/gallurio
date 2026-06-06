@@ -24,9 +24,13 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
 }
 
 function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): SubmitAppearance {
-  const colorVar = contact?.buttonColor ? `--pf-color-${contact.buttonColor}` : "--pf-color-primary";
+  const color = contact?.buttonColor
+    ? contact.buttonColor.startsWith("#")
+      ? contact.buttonColor
+      : `var(--pf-color-${contact.buttonColor})`
+    : "var(--pf-color-primary)";
   const style = (contact?.buttonStyle || "solid") as SubmitAppearance["style"];
-  return { colorVar, style };
+  return { color, style };
 }
 
 /**

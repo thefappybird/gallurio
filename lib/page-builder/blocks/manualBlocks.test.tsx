@@ -10,6 +10,7 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  type HeadingBlockProps,
 } from "./manualBlocks";
 import type { SlotComponent } from "@measured/puck";
 
@@ -41,6 +42,38 @@ describe("HeadingBlock", () => {
   it("renders as h3 when level='h3'", () => {
     render(<HeadingBlock text="H3 Title" level="h3" />);
     expect(document.querySelector("h3")).not.toBeNull();
+  });
+
+  it("renders as h4 when level='h4'", () => {
+    render(<HeadingBlock text="H4 Title" level="h4" />);
+    expect(document.querySelector("h4")).not.toBeNull();
+  });
+
+  it("renders as h5 when level='h5'", () => {
+    render(<HeadingBlock text="H5 Title" level="h5" />);
+    expect(document.querySelector("h5")).not.toBeNull();
+  });
+
+  it("renders as h6 when level='h6'", () => {
+    render(<HeadingBlock text="H6 Title" level="h6" />);
+    expect(document.querySelector("h6")).not.toBeNull();
+  });
+
+  it("heading level buttons control font size (Display=3rem, Title=2.25rem, …)", () => {
+    const levels: Array<[HeadingBlockProps["level"], string]> = [
+      ["h1", "3rem"],
+      ["h2", "2.25rem"],
+      ["h3", "1.75rem"],
+      ["h4", "1.375rem"],
+      ["h5", "1.125rem"],
+      ["h6", "0.875rem"],
+    ];
+    for (const [level, expected] of levels) {
+      const { container, unmount } = render(<HeadingBlock text="Test" level={level} />);
+      const tag = container.querySelector(level) as HTMLElement;
+      expect(tag.style.fontSize, `${level} should be ${expected}`).toBe(expected);
+      unmount();
+    }
   });
 
   it("tolerates a legacy {text} object via asText back-compat", () => {
@@ -369,6 +402,69 @@ describe("ButtonBlock", () => {
     expect(a.style.minHeight).toBe("3.5rem");
     expect(a.style.minWidth).toBe("12rem");
     expect(a.style.fontSize).toBe("1.125rem");
+  });
+
+  it("buttonStyle='solid' fills background with colorVar and sets border transparent", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("var(--pf-color-accent)");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonStyle='outline' sets transparent background and colored border", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "outline", buttonColorToken: "primary" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("transparent");
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("buttonStyle='soft' uses colorVar for text and sets border transparent", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", buttonColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-accent)");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonStyle='solid' uses default primary colorVar when no buttonColorToken set", () => {
+    render(
+      <ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "solid" }} />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.backgroundColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("textColorToken overrides automatic text color in buttonStyle='solid'", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "accent", textColorToken: "secondary" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-secondary)");
   });
 });
 

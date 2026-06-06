@@ -579,9 +579,12 @@ const heading: ComponentConfig<HeadingBlockProps> = {
       type: "select",
       label: "Level",
       options: [
-        { label: "H1", value: "h1" },
-        { label: "H2", value: "h2" },
-        { label: "H3", value: "h3" },
+        { label: "Display", value: "h1" },
+        { label: "Title", value: "h2" },
+        { label: "Heading", value: "h3" },
+        { label: "Subheading", value: "h4" },
+        { label: "Caption", value: "h5" },
+        { label: "Label", value: "h6" },
       ],
     },
   },
@@ -722,7 +725,20 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   },
   fields: {
     _style: styleField,
+    columns: {
+      type: "select",
+      label: "Columns",
+      options: [
+        { label: "2 columns", value: 2 },
+        { label: "3 columns", value: 3 },
+      ],
+    } as Field<2 | 3>,
     content: { type: "slot" },
+  },
+  resolveFields: (_data, { fields }) => {
+    const { columns: _c, ...rest } = fields as Record<string, unknown>;
+    void _c;
+    return rest as typeof fields;
   },
   render: ColumnsBlock,
 };
