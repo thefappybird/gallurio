@@ -16,6 +16,7 @@ import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
+import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 
 const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 100;
@@ -111,4 +112,114 @@ export async function getItemsByIds(opts: {
   // Preserve requested order; drop any id not returned by the query.
   const byId = new Map(items.map((it) => [String(it._id), it]));
   return validIds.map((id) => byId.get(id)).filter((it): it is GalleryBlockItem => Boolean(it));
+}
+
+// ---------------------------------------------------------------------------
+// Picker data helpers (owner editor only — called by the portfolio API route)
+// ---------------------------------------------------------------------------
+
+const PICKER_ITEMS_CAP = 60;
+
+export type PickerCollection = {
+  id: string;
+  name: string;
+  coverUrl: string | null;
+  itemCount: number;
+};
+
+export type PickerItem = {
+  id: string;
+  /** Cloudinary public ID — used by single-image fields (Hero/CTA backgrounds). */
+  publicId: string;
+  thumbUrl: string;
+  caption: string | null;
+};
+
+/**
+ * Returns all gallery collections (with cover thumbnails) for a workspace.
+ * Backed by the existing { workspaceId, order } compound index.
+ */
+export async function listCollectionsForPicker(workspaceId: string): Promise<PickerCollection[]> {
+  if (!workspaceId) return [];
+
+  await connectDB();
+
+  const collections = await GalleryCollection.find({ workspaceId })
+    .sort({ order: 1, _id: 1 })
+    .lean();
+
+  const collectionIds = collections.map((c) => c._id);
+
+  // Batch-fetch item counts and cover items in parallel to avoid N+1.
+  const [countsByColId, coversByColId] = await Promise.all([
+    GalleryItem.aggregate<{ _id: Types.ObjectId; count: number }>([
+      { $match: { workspaceId: new Types.ObjectId(workspaceId), collectionId: { $in: collectionIds } } },
+      { $group: { _id: "$collectionId", count: { $sum: 1 } } },
+    ]),
+    // For each collection that has a coverItemId, fetch the cloudinaryPublicId.
+    (async () => {
+      const coverIds = collections
+        .map((c) => c.coverItemId)
+        .filter((id): id is Types.ObjectId => Boolean(id));
+      if (coverIds.length === 0) return new Map<string, string>();
+      const coverItems = await GalleryItem.find({
+        workspaceId,
+        _id: { $in: coverIds },
+      })
+        .select({ cloudinaryPublicId: 1 })
+        .lean();
+      return new Map(coverItems.map((ci) => [String(ci._id), ci.cloudinaryPublicId as string]));
+    })(),
+  ]);
+
+  const countMap = new Map(countsByColId.map((r) => [String(r._id), r.count]));
+
+  return collections.map((c) => {
+    const coverId = c.coverItemId ? String(c.coverItemId) : null;
+    const coverPublicId = coverId ? (coversByColId as Map<string, string>).get(coverId) : undefined;
+    return {
+      id: String(c._id),
+      name: c.name,
+      coverUrl: coverPublicId
+        ? cloudinaryThumbnailUrl(coverPublicId, { width: 240, height: 240 })
+        : null,
+      itemCount: countMap.get(String(c._id)) ?? 0,
+    };
+  });
+}
+
+/**
+ * Returns the most recent gallery items (capped) for a workspace — used by the
+ * FeaturedItemsPicker. Backed by the existing { workspaceId, collectionId, order }
+ * compound index (no collectionId filter = workspaceId leading field scan).
+ *
+ * Logs a warning if items were capped so the operator can tune.
+ */
+export async function listItemsForPicker(workspaceId: string): Promise<PickerItem[]> {
+  if (!workspaceId) return [];
+
+  await connectDB();
+
+  const items = await GalleryItem.find({ workspaceId })
+    .sort({ createdAt: -1 })
+    .limit(PICKER_ITEMS_CAP + 1)
+    .select({ cloudinaryPublicId: 1, caption: 1 })
+    .lean();
+
+  if (items.length > PICKER_ITEMS_CAP) {
+    console.warn(
+      `[gallery:picker] workspace ${workspaceId} has more than ${PICKER_ITEMS_CAP} items — results capped`
+    );
+    items.splice(PICKER_ITEMS_CAP);
+  }
+
+  return items.map((it) => ({
+    id: String(it._id),
+    publicId: it.cloudinaryPublicId as string,
+    thumbUrl: cloudinaryThumbnailUrl(it.cloudinaryPublicId as string, {
+      width: 200,
+      height: 200,
+    }),
+    caption: (it.caption as string) || null,
+  }));
 }

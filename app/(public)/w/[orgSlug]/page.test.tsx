@@ -24,7 +24,7 @@ import { Types } from "mongoose";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
-import { ContactCardBlock, contactCardDefaultProps } from "@/lib/page-builder/blocks/ContactCardBlock";
+import { ContactDetailsBlock, contactDetailsDefaultProps } from "@/lib/page-builder/blocks/ContactDetailsBlock";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 import { generateMetadata } from "./page";
 import type { WorkspaceDoc } from "@/lib/db/models/Workspace";
@@ -56,6 +56,7 @@ vi.mock("next-intl/server", () => ({
 
 vi.mock("@/lib/i18n/localeForCountry", () => ({
   localeForCountry: vi.fn(() => "en"),
+  resolvePublicChromeLocale: vi.fn(() => "en"),
 }));
 
 // ---------------------------------------------------------------------------
@@ -98,7 +99,7 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       description: "",
     },
     publicPage: {
-      templateId: "default",
+      templateId: "minimal",
       data: { home: null, gallery: null },
       brandKit: {
         themePreset: "minimal",
@@ -150,7 +151,7 @@ describe("generateMetadata", () => {
   it("uses seoTitle and seoDescription when set", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
-        templateId: "default",
+        templateId: "minimal",
         data: { home: null, gallery: null },
         brandKit: DEFAULT_BRAND_KIT,
         publishedAt: new Date(),
@@ -349,7 +350,7 @@ describe("buildRenderWorkspace — contact field regression", () => {
     expect(rw.contact).toBeNull();
   });
 
-  it("ContactCardBlock renders contact rows from the built render context", () => {
+  it("ContactDetailsBlock renders contact rows from the built render context", () => {
     const doc = {
       _id: new Types.ObjectId(),
       name: "Studio",
@@ -362,7 +363,7 @@ describe("buildRenderWorkspace — contact field regression", () => {
     };
     const rw = buildRenderWorkspace(doc);
     const { getByText } = runWithRenderWorkspace(rw, () =>
-      render(React.createElement(ContactCardBlock, contactCardDefaultProps))
+      render(React.createElement(ContactDetailsBlock, contactDetailsDefaultProps))
     );
     expect(getByText("hello@studio.com")).toBeInTheDocument();
   });

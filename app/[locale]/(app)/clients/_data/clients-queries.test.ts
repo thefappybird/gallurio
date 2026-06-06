@@ -200,6 +200,16 @@ describe("listClients", () => {
     expect(total).toBe(0);
   });
 
+  it("does not count draft bookings in a client's derived bookingsCount", async () => {
+    const client = await seedClient(workspaceId, { name: "Drafty" });
+    await seedBooking(workspaceId, client._id, { status: "booked" });
+    await seedBooking(workspaceId, client._id, { status: "draft" });
+
+    const { items } = await listClients({ workspaceId });
+    const row = items.find((c) => c.name === "Drafty");
+    expect(row?.bookingsCount).toBe(1);
+  });
+
   it("total reflects entire result set, not just current page", async () => {
     await seedClient(workspaceId, { name: "Client A" });
     await seedClient(workspaceId, { name: "Client B" });
@@ -352,6 +362,17 @@ describe("getClientBookings", () => {
     const rows = await getClientBookings(workspaceId, clientId);
 
     expect(rows).toHaveLength(0);
+  });
+
+  it("excludes draft bookings from a client's history", async () => {
+    const clientId = new Types.ObjectId();
+    await seedBooking(workspaceId, clientId, { title: "Confirmed", status: "booked" });
+    await seedBooking(workspaceId, clientId, { title: "Draft from inquiry", status: "draft" });
+
+    const rows = await getClientBookings(workspaceId, clientId);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].title).toBe("Confirmed");
   });
 
   it("sorts by firstSessionStart descending", async () => {

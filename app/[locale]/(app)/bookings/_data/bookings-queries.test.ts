@@ -93,6 +93,51 @@ describe("listBookings", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("excludes draft bookings by default", async () => {
+    await seedBooking(workspaceId, { status: "booked" });
+    await seedBooking(workspaceId, { status: "draft" });
+
+    const { rows } = await listBookings(workspaceId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("booked");
+  });
+
+  it("excludes both draft and cancelled by default", async () => {
+    await seedBooking(workspaceId, { status: "booked" });
+    await seedBooking(workspaceId, { status: "draft" });
+    await seedBooking(workspaceId, { status: "cancelled" });
+
+    const { rows } = await listBookings(workspaceId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("booked");
+  });
+
+  it("includes drafts when includeDrafts is true", async () => {
+    await seedBooking(workspaceId, { status: "booked" });
+    await seedBooking(workspaceId, { status: "draft" });
+
+    const { rows } = await listBookings(workspaceId, { includeDrafts: true });
+    expect(rows).toHaveLength(2);
+  });
+
+  it("still hides cancelled when only includeDrafts is true", async () => {
+    await seedBooking(workspaceId, { status: "draft" });
+    await seedBooking(workspaceId, { status: "cancelled" });
+
+    const { rows } = await listBookings(workspaceId, { includeDrafts: true });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("draft");
+  });
+
+  it("returns drafts when explicitly filtering by status draft", async () => {
+    await seedBooking(workspaceId, { status: "booked" });
+    await seedBooking(workspaceId, { status: "draft" });
+
+    const { rows } = await listBookings(workspaceId, { status: "draft" });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("draft");
+  });
+
   it("filters by exact status", async () => {
     await seedBooking(workspaceId, { status: "completed" });
     await seedBooking(workspaceId, { status: "booked" });

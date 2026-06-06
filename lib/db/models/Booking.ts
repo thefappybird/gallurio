@@ -1,6 +1,11 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 
 export const BOOKING_STATUSES = [
+  // "draft" is the auto-created state from a public inquiry submission (Phase 6).
+  // Drafts are invisible to every owner-facing booking surface (lists, calendar,
+  // dashboard metrics, client history, export) until the owner approves the
+  // inquiry in the lead inbox, which promotes the draft to "inquiry"/"pending".
+  "draft",
   "inquiry",
   "booked",
   "completed",
@@ -57,6 +62,13 @@ const bookingSchema = new Schema(
     staffIds: { type: [Schema.Types.ObjectId], default: [] },
     notes: { type: String, default: "" },
     customFields: { type: Schema.Types.Mixed, default: {} },
+    // Back-link to the public inquiry that auto-created this draft (Phase 6).
+    // Null for manually-created bookings.
+    createdFromInquiryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Inquiry",
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -64,6 +76,8 @@ const bookingSchema = new Schema(
 bookingSchema.index({ workspaceId: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, status: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, clientId: 1 });
+// Backs the lead-inbox lookup of a draft booking from its inquiry.
+bookingSchema.index({ workspaceId: 1, createdFromInquiryId: 1 });
 // Team-scoped calendar/list reads: members see only their teams' bookings, and
 // the team picker filters by teamId. Mirrors the two workspace-scoped indexes
 // above with teamId injected after workspaceId.

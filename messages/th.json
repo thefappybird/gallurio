@@ -483,7 +483,8 @@
       "teams": "ทีม",
       "settings": "การตั้งค่า",
       "account": "บัญชี",
-      "logOut": "ออกจากระบบ"
+      "logOut": "ออกจากระบบ",
+      "portfolio": "ผลงาน"
     },
     "theme": {
       "label": "ธีม",
@@ -883,6 +884,385 @@
       "toasts": {
         "reactivating": "กำลังเปิดใช้งานลูกค้าอีกครั้ง…",
         "deactivating": "กำลังปิดใช้งานลูกค้า…"
+      }
+    },
+    "inquiries": {
+      "title": "คำถาม",
+      "subtitle": "คำขอจองจากพอร์ตโฟลิโอสาธารณะของคุณ",
+      "toolbar": {
+        "from": "ตั้งแต่",
+        "to": "ถึง",
+        "clear": "ล้างวันที่"
+      },
+      "tabs": {
+        "all": "ทั้งหมด",
+        "new": "ใหม่",
+        "contacted": "ติดต่อแล้ว",
+        "converted": "แปลงแล้ว",
+        "archived": "เก็บถาวร"
+      },
+      "statusValues": {
+        "new": "ใหม่",
+        "contacted": "ติดต่อแล้ว",
+        "converted": "แปลงแล้ว",
+        "archived": "เก็บถาวร"
+      },
+      "eventTypes": {
+        "wedding": "งานแต่งงาน",
+        "corporate": "องค์กร",
+        "portrait": "ภาพบุคคล",
+        "engagement": "หมั้น",
+        "anniversary": "วันครบรอบ",
+        "other": "อื่นๆ"
+      },
+      "preferred": {
+        "email": "อีเมล",
+        "phone": "โทรศัพท์",
+        "either": "อย่างใดอย่างหนึ่ง"
+      },
+      "table": {
+        "empty": "ยังไม่มีคำถาม",
+        "emptyHint": "เมื่อมีคนส่งแบบฟอร์มติดต่อในพอร์ตโฟลิโอของคุณ คำขอจะปรากฏที่นี่",
+        "viewPublicPage": "ดูหน้าสาธารณะของคุณ",
+        "open": "เปิดคำถามจาก {name}",
+        "noDate": "ไม่มีวันที่",
+        "directSource": "โดยตรง",
+        "col": {
+          "status": "สถานะ",
+          "client": "ลูกค้า",
+          "eventDate": "วันที่จัดงาน",
+          "eventType": "ประเภท",
+          "submitted": "ส่งเมื่อ",
+          "source": "แหล่งที่มา"
+        }
+      },
+      "detail": {
+        "back": "กลับไปที่คำถาม",
+        "submittedOn": "ส่งเมื่อ {date}",
+        "notFound": "ไม่พบคำถาม",
+        "clientInfo": {
+          "title": "ข้อมูลลูกค้า",
+          "name": "ชื่อ",
+          "email": "อีเมล",
+          "phone": "โทรศัพท์",
+          "preferredContact": "ช่องทางติดต่อที่ต้องการ",
+          "none": "—"
+        },
+        "eventRequest": {
+          "title": "คำของาน",
+          "eventType": "ประเภทงาน",
+          "guestCount": "จำนวนแขก",
+          "location": "สถานที่",
+          "sessions": "วันที่ขอจอง",
+          "message": "ข้อความ",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "ร่างการจอง",
+          "description": "การอนุมัตินี้จะสร้างการจองในปฏิทินของคุณ ตั้งราคาตอนนี้หรือในภายหลังก็ได้",
+          "total": "รวม",
+          "deposit": "มัดจำ",
+          "notes": "บันทึกภายใน",
+          "notesPlaceholder": "บันทึกที่คุณเห็นคนเดียว…",
+          "save": "บันทึกการแก้ไข",
+          "saving": "กำลังบันทึก…",
+          "approve": "อนุมัติการจอง",
+          "approving": "กำลังอนุมัติ…",
+          "approved": "อนุมัติแล้ว",
+          "missing": "ไม่มีร่างการจองที่เชื่อมโยงกับคำถามนี้",
+          "alreadyConverted": "คำถามนี้ได้รับการอนุมัติแล้ว",
+          "viewBooking": "ดูการจอง",
+          "approveError": "ไม่สามารถอนุมัติได้ กรุณาลองอีกครั้ง",
+          "saveError": "ไม่สามารถบันทึกได้ กรุณาลองอีกครั้ง",
+          "savedToast": "บันทึกร่างแล้ว",
+          "ownerOnly": "เฉพาะเจ้าของพื้นที่ทำงานเท่านั้นที่อนุมัติการจองได้"
+        },
+        "actions": {
+          "markContacted": "ทำเครื่องหมายว่าติดต่อแล้ว",
+          "archive": "เก็บถาวร",
+          "working": "กำลังบันทึก…",
+          "contactedToast": "ทำเครื่องหมายว่าติดต่อแล้ว",
+          "archivedToast": "เก็บถาวรคำถามแล้ว",
+          "approvedToast": "อนุมัติการจองแล้ว",
+          "errorToast": "เกิดข้อผิดพลาด กรุณาลองอีกครั้ง"
+        },
+        "history": {
+          "title": "ประวัติ",
+          "submitted": "ส่งคำถามแล้ว",
+          "converted": "อนุมัติเป็นการจองแล้ว"
+        }
+      }
+    },
+    "pageBuilder": {
+      "title": "ตัวสร้างหน้าเว็บ",
+      "editorComingSoon": "ตัวแก้ไขเต็มรูปแบบจะมาในการอัปเดตครั้งถัดไป พอร์ตโฟลิโอของคุณพร้อมใช้งานแล้ว",
+      "ownerOnly": "เฉพาะเจ้าของพื้นที่ทำงานเท่านั้นที่สามารถแก้ไขพอร์ตโฟลิโอได้",
+      "openPublicPage": "ดูหน้าสาธารณะ",
+      "editPlaceholderHint": "คุณสามารถรันการตั้งค่าใหม่ได้ทุกเมื่อเพื่อเริ่มต้นจากเทมเพลตใหม่",
+      "rerunWizard": "รันการตั้งค่าใหม่",
+      "brandKit": {
+        "themePreset": "ธีม",
+        "presets": {
+          "minimal": "มินิมอล",
+          "editorial": "บรรณาธิการ",
+          "luxury": "หรูหรา",
+          "bold": "โดดเด่น",
+          "romantic": "โรแมนติก",
+          "modern": "โมเดิร์น"
+        },
+        "fontPair": "แบบอักษร",
+        "colors": "สี",
+        "useWorkspaceBranding": "ใช้การสร้างแบรนด์ของพื้นที่ทำงาน",
+        "colorLabels": {
+          "primaryColor": "หลัก",
+          "secondaryColor": "รอง",
+          "accentColor": "เน้น",
+          "backgroundColor": "พื้นหลัง",
+          "foregroundColor": "ข้อความ"
+        }
+      },
+      "editor": {
+        "zone": {
+          "home": "หน้าแรก",
+          "gallery": "แกลเลอรี",
+          "contact": "แบบฟอร์มติดต่อ",
+          "groupLabel": "ส่วนของหน้า",
+          "sectionsLabel": "Portfolio sections"
+        },
+        "save": {
+          "saving": "กำลังบันทึก…",
+          "saved": "บันทึกแล้ว",
+          "idle": "บันทึกการเปลี่ยนแปลงทั้งหมดแล้ว"
+        },
+        "publish": "เผยแพร่",
+        "publishing": "กำลังเผยแพร่…",
+        "theme": "ธีม",
+        "contact": "ติดต่อ",
+        "publishedToast": "เผยแพร่แล้ว! พอร์ตโฟลิโอของคุณพร้อมใช้งานแล้ว",
+        "savedToast": "บันทึกแล้ว",
+        "errorToast": "ไม่สามารถบันทึกได้ กรุณาลองอีกครั้ง",
+        "done": "Done",
+        "publishDialog": {
+          "title": "เผยแพร่พอร์ตโฟลิโอของคุณหรือไม่?",
+          "body": "ทุกคนที่มีลิงก์จะเห็นการเปลี่ยนแปลงล่าสุดของคุณทันที",
+          "confirm": "เผยแพร่เดี๋ยวนี้",
+          "cancel": "ยกเลิก",
+          "liveAt": "เผยแพร่ที่ {url}",
+          "copyLink": "คัดลอกลิงก์",
+          "copied": "คัดลอกแล้ว"
+        },
+        "themeDialog": {
+          "title": "ธีมและแบรนด์"
+        },
+        "contactDialog": {
+          "title": "แบบฟอร์มติดต่อ",
+          "formFixedNote": "ช่องแบบฟอร์มถูกกำหนดไว้แล้ว คุณสามารถแก้ไขได้เฉพาะหัวข้อ ข้อความ และปุ่มเท่านั้น",
+          "titleLabel": "หัวข้อ",
+          "titlePlaceholder": "มาทำงานด้วยกันกันเถอะ",
+          "descriptionLabel": "ข้อความ",
+          "descriptionPlaceholder": "บอกผู้เยี่ยมชมว่าจะเกิดอะไรขึ้นเมื่อพวกเขาติดต่อมา",
+          "buttonStyleLabel": "รูปแบบปุ่ม",
+          "buttonColorLabel": "สีปุ่ม",
+          "buttonStyles": {
+            "solid": "ทึบ",
+            "outline": "กรอบ",
+            "soft": "อ่อน"
+          },
+          "buttonColors": {
+            "primary": "หลัก",
+            "secondary": "รอง",
+            "accent": "เน้น",
+            "foreground": "ข้อความ",
+            "background": "พื้นหลัง"
+          },
+          "save": "บันทึก",
+          "saving": "กำลังบันทึก…",
+          "languageLabel": "ภาษาของหน้าสาธารณะ",
+          "languageHelp": "ภาษาของแบบฟอร์มสอบถาม การนำทาง และส่วนท้ายในหน้าสาธารณะของคุณ",
+          "languages": {
+            "auto": "อัตโนมัติ (ตามประเทศของคุณ)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "th": "ไทย"
+          },
+          "bgColorLabel": "สีพื้นหลัง",
+          "textColorLabel": "สีข้อความ",
+          "cornerRadiusLabel": "มุมโค้ง",
+          "borderWidthLabel": "ความกว้างเส้นขอบ",
+          "borderColorLabel": "สีเส้นขอบ",
+          "sectionPopup": "ป๊อปอัพ",
+          "sectionButton": "ปุ่ม",
+          "radius": {
+            "sharp": "คม",
+            "subtle": "เล็กน้อย",
+            "rounded": "โค้งมน"
+          },
+          "close": "ปิด",
+          "popupStyleLabel": "รูปแบบป๊อปอัพ",
+          "tabs": {
+            "setup": "ตั้งค่า",
+            "design": "ออกแบบ"
+          }
+        },
+        "headerDialog": {
+          "title": "Navigation",
+          "close": "ปิด",
+          "save": "บันทึก",
+          "saving": "กำลังบันทึก…",
+          "tabs": {
+            "setup": "ตั้งค่า",
+            "design": "ออกแบบ"
+          },
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "ค่าเริ่มต้นคือชื่อพื้นที่ทำงาน ล้างข้อความเพื่อแสดงเฉพาะโลโก้",
+          "logoLabel": "โลโก้",
+          "logoHelp": "แสดงข้างชื่อธุรกิจในส่วนหัว",
+          "logoUpload": "อัปโหลดโลโก้",
+          "logoUploading": "กำลังอัปโหลด…",
+          "logoRemove": "ลบโลโก้",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
+          "sectionBanner": "แบนเนอร์",
+          "sectionLinks": "ลิงก์",
+          "sectionActiveStyle": "สไตล์ลิงก์ที่ใช้งาน",
+          "sectionContactButton": "Contact button",
+          "bgColorLabel": "สีพื้นหลัง",
+          "bgOpacityLabel": "ความโปร่งใสพื้นหลัง",
+          "linkColorLabel": "สีข้อความลิงก์",
+          "activeLinkColorLabel": "สีข้อความลิงก์ที่ใช้งาน",
+          "borderBottomLabel": "ขอบด้านล่าง",
+          "borderColorLabel": "สีขอบ",
+          "shadowLabel": "เงา",
+          "fontSizeLabel": "ขนาดลิงก์",
+          "activeStyleLabel": "สไตล์",
+          "activeStyleScale": "ขยาย",
+          "activeStyleHighlight": "ไฮไลต์",
+          "activeStyleUnderline": "ขีดเส้นใต้",
+          "highlightColorLabel": "สีไฮไลต์",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
+          "underlineColorLabel": "สีขีดเส้นใต้",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "shadow": {
+            "none": "ไม่มี",
+            "sm": "เล็ก",
+            "md": "กลาง",
+            "lg": "ใหญ่"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "มาทำงานด้วยกันกันเถอะ",
+          "description": "บอกเราเกี่ยวกับงานของคุณ",
+          "submit": "ส่งคำถาม"
+        },
+        "mobileBanner": {
+          "title": "ตัวแก้ไขทำงานได้ดีกว่าบนหน้าจอขนาดใหญ่",
+          "body": "การแก้ไขแบบลากและวางออกแบบสำหรับแท็บเล็ตและเดสก์ท็อป",
+          "openPreview": "เปิดตัวอย่าง",
+          "continue": "ดำเนินการต่อไป"
+        },
+        "contactSettings": "แก้ไขการตั้งค่าการติดต่อ",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
+        "preview": {
+          "show": "ดูตัวอย่าง",
+          "edit": "แก้ไข",
+          "title": "ดูตัวอย่างสด",
+          "empty": "ยังไม่มีอะไรให้ดูตัวอย่าง เพิ่มส่วนต่าง ๆ แล้วกลับมาใหม่"
+        },
+        "photos": "รูปภาพ",
+        "templates": "เทมเพลต",
+        "guide": "คู่มือ",
+        "templateSwitchedToast": "ใช้เทมเพลตแล้ว"
+      },
+      "wizard": {
+        "title": "มาสร้างพอร์ตโฟลิโอของคุณกัน",
+        "subtitle": "ไม่กี่ขั้นตอนคุณก็จะมีหน้าเว็บที่เปิดใช้งานได้",
+        "skip": "ข้ามการตั้งค่า",
+        "back": "ย้อนกลับ",
+        "next": "ดำเนินการต่อ",
+        "launch": "เปิดตัวแก้ไข",
+        "launching": "กำลังตั้งค่า…",
+        "stepOf": "ขั้นตอนที่ {current} จาก {total}",
+        "overwrite": {
+          "title": "คุณมีพอร์ตโฟลิโออยู่แล้ว",
+          "body": "การรันการตั้งค่าใหม่จะแทนที่หน้าปัจจุบันของคุณ เนื้อหาที่มีอยู่จะถูกเก็บถาวรเพื่อให้คุณกู้คืนได้",
+          "continue": "ดำเนินการต่อ",
+          "cancel": "ยกเลิก"
+        },
+        "steps": {
+          "template": "เทมเพลต",
+          "branding": "การสร้างแบรนด์",
+          "theme": "ธีม",
+          "images": "รูปภาพ",
+          "review": "ตรวจสอบ"
+        },
+        "template": {
+          "title": "เลือกจุดเริ่มต้น",
+          "subtitle": "คุณสามารถเปลี่ยนแปลงทุกอย่างได้ในภายหลัง"
+        },
+        "branding": {
+          "title": "ยืนยันการสร้างแบรนด์ของคุณ",
+          "subtitle": "ดึงมาจากพื้นที่ทำงาน — แก้ไขได้ทุกอย่าง",
+          "tagline": "คำขวัญ",
+          "taglinePlaceholder": "ประโยคสั้น ๆ ที่สื่อถึงตัวคุณ",
+          "description": "เกี่ยวกับ",
+          "descriptionPlaceholder": "หนึ่งหรือสองประโยคเกี่ยวกับงานของคุณ"
+        },
+        "theme": {
+          "title": "เลือกรูปลักษณ์ของคุณ",
+          "subtitle": "ธีม แบบอักษร และสีสำหรับหน้าสาธารณะของคุณ"
+        },
+        "images": {
+          "title": "เพิ่มรูปภาพสักสองสามรูป",
+          "subtitle": "ลากรูปภาพสองสามรูปสำหรับแกลเลอรีของคุณ — หรือข้ามแล้วเพิ่มภายหลังเมื่อใดก็ได้",
+          "upload": "อัปโหลดรูปภาพ",
+          "uploading": "กำลังอัปโหลด…",
+          "remove": "ลบรูปภาพ",
+          "empty": "ยังไม่มีรูปภาพ",
+          "error": "รูปภาพบางรูปอัปโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+          "count": "{count} {count, plural, one {รูปภาพ} other {รูปภาพ}}",
+          "dropZone": "ลากรูปภาพมาที่นี่หรือคลิกเพื่อเลือก",
+          "dropZoneActive": "วางเพื่ออัปโหลด",
+          "spec": "JPEG, PNG, WebP หรือ AVIF · สูงสุด 10 MB · ต่ำสุด 600 px ด้านที่สั้นกว่า",
+          "optional": "คุณสามารถข้ามขั้นตอนนี้และอัปโหลดรูปภาพภายหลังได้",
+          "errorType": "รองรับเฉพาะรูปภาพ JPEG, PNG, WebP และ AVIF เท่านั้น",
+          "errorSize": "รูปภาพแต่ละรูปต้องมีขนาดไม่เกิน 10 MB",
+          "errorDim": "รูปภาพแต่ละรูปต้องมีขนาดอย่างน้อย 600 px ในด้านที่สั้นกว่า (เช่น 600×800 หรือ 800×600)"
+        },
+        "review": {
+          "title": "ตรวจสอบและเปิดตัว",
+          "subtitle": "นี่คือสิ่งที่เราจะตั้งค่า",
+          "template": "เทมเพลต",
+          "theme": "ธีม",
+          "images": "รูปภาพ",
+          "homeBlocks": "{count} ส่วนหน้าแรก",
+          "galleryBlocks": "{count} ส่วนแกลเลอรี"
+        },
+        "toasts": {
+          "saved": "พอร์ตโฟลิโอของคุณพร้อมแล้ว!",
+          "error": "เกิดข้อผิดพลาดบางอย่าง กรุณาลองใหม่อีกครั้ง"
+        }
       }
     }
   },

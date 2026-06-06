@@ -44,11 +44,18 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   await connectDB();
-
+  // Drafts are inquiry placeholders, not real bookings — they're invisible to
+  // the bookings surfaces (Phase 6 contract) and are only viewed via the lead
+  // inbox. Excluding the draft status here keeps a draft id from pulling an
+  // unapproved booking into the bookings drawer.
   // Team-scope the read for non-owners: a member can only fetch a booking owned
   // by a team they belong to. Owners (scope === undefined) see everything.
   const scope = await resolveBookingTeamScope(ctx);
-  const query: Record<string, unknown> = { _id: id, workspaceId: ctx.workspace._id };
+  const query: Record<string, unknown> = {
+    _id: id,
+    workspaceId: ctx.workspace._id,
+    status: { $ne: "draft" },
+  };
   if (scope !== undefined) query.teamId = { $in: scope };
 
   const booking = await Booking.findOne(query).lean();
@@ -80,7 +87,9 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   await connectDB();
-
+  // Drafts cannot be edited via the bookings API — promotion happens only
+  // through the inquiry approval flow (which records client financials). A
+  // direct PATCH would bypass that, so drafts 404 here too.
   // Team-scope the lookup for non-owners so a member cannot probe — via a
   // 403-vs-404 oracle — which booking ids exist on teams they can't see. A
   // cross-team id returns a uniform 404, matching GET. The canEditBooking check
@@ -90,6 +99,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const existingFilter: Record<string, unknown> = {
     _id: id,
     workspaceId: ctx.workspace._id,
+    status: { $ne: "draft" },
   };
   if (scope !== undefined) existingFilter.teamId = { $in: scope };
 

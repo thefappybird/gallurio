@@ -32,6 +32,7 @@ vi.mock("next-intl/server", () => ({
 
 vi.mock("@/lib/i18n/localeForCountry", () => ({
   localeForCountry: vi.fn(() => "en"),
+  resolvePublicChromeLocale: vi.fn(() => "en"),
 }));
 
 vi.mock("@/lib/db/queries/publicPage", () => ({
@@ -64,7 +65,7 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       description: "",
     },
     publicPage: {
-      templateId: "default",
+      templateId: "minimal",
       data: { home: null, gallery: null },
       brandKit: DEFAULT_BRAND_KIT,
       publishedAt: new Date("2025-01-01T00:00:00Z"),
@@ -109,7 +110,7 @@ describe("gallery generateMetadata", () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
-          templateId: "default",
+          templateId: "minimal",
           data: { home: null, gallery: null },
           brandKit: DEFAULT_BRAND_KIT,
           publishedAt: new Date(),

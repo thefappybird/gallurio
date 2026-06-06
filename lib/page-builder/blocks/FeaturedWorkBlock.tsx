@@ -9,8 +9,15 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { getItemsByIds } from "@/lib/db/queries/gallery";
+import {
+  resolveBlockStyle,
+  resolveBlockAttrs,
+  asText,
+  productionStyleField,
+  type BlockStyle,
+} from "@/lib/page-builder/styleToolkit";
 
 // Puck `array` fields persist an array of objects, so `itemIds` round-trips as
 // `Array<{ id }>` from the editor. Tests/fixtures may pass a plain `string[]`.
@@ -18,6 +25,7 @@ import { getItemsByIds } from "@/lib/db/queries/gallery";
 export type FeaturedWorkItemId = string | { id?: string | null };
 
 export type FeaturedWorkProps = {
+  _style?: BlockStyle;
   heading: string;
   subheading: string;
   itemIds: FeaturedWorkItemId[];
@@ -40,12 +48,14 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
 const MAX_FEATURED = 3;
 
 export async function FeaturedWorkBlock({
+  _style,
   heading,
   subheading,
   itemIds,
   layout,
-}: FeaturedWorkProps) {
-  const workspace = getRenderWorkspace();
+  puck,
+}: FeaturedWorkProps & { puck?: BlockPuck }) {
+  const workspace = getRenderWorkspaceFrom(puck);
 
   let items: Awaited<ReturnType<typeof getItemsByIds>> = [];
   if (workspace && String(workspace._id)) {
@@ -64,7 +74,9 @@ export async function FeaturedWorkBlock({
     }
   }
 
-  const labels = getGalleryChromeLabels();
+  const labels = getGalleryChromeLabelsFrom(puck);
+  const headingText = asText(heading);
+  const subheadingText = asText(subheading);
 
   return (
     <section
@@ -74,14 +86,16 @@ export async function FeaturedWorkBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 1.5rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
       {/* Mobile-first: stack to a single column below 640px. */}
       <style>{`
         @media (max-width: 639px) { .pf-featured-grid { grid-template-columns: 1fr !important; } }
       `}</style>
       <div style={{ maxWidth: "72rem", margin: "0 auto" }}>
-        {heading && (
+        {headingText && (
           <h2
             style={{
               fontFamily: "var(--pf-font-heading)",
@@ -92,10 +106,10 @@ export async function FeaturedWorkBlock({
               textAlign: "center",
             }}
           >
-            {heading}
+            {headingText}
           </h2>
         )}
-        {subheading && (
+        {subheadingText && (
           <p
             style={{
               color: "var(--pf-color-fg)",
@@ -105,7 +119,7 @@ export async function FeaturedWorkBlock({
               fontSize: "1.0625rem",
             }}
           >
-            {subheading}
+            {subheadingText}
           </p>
         )}
 
@@ -128,16 +142,17 @@ export async function FeaturedWorkBlock({
               display: "grid",
               gridTemplateColumns: `repeat(${items.length}, 1fr)`,
               gap: "1.5rem",
-              marginTop: heading || subheading ? "2.5rem" : 0,
+              marginTop: headingText || subheadingText ? "2.5rem" : 0,
               alignItems: "start",
             }}
           >
             {items.map((item, i) => {
-              const src = cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-                width: 700,
-                height: 900,
-                crop: "fill",
-              });
+              const src =
+                cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+                  width: 700,
+                  height: 900,
+                  crop: "fill",
+                }) || item.url;
               const alt = item.altText || item.caption || "";
               const staggerOffset =
                 layout === "stagger" && i % 2 === 1 ? "2.5rem" : "0";
@@ -185,8 +200,9 @@ export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
   label: "Featured Work",
   defaultProps: featuredWorkDefaultProps,
   fields: {
+    _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
-    subheading: { type: "text", label: "Subheading" },
+    subheading: { type: "text", label: "Sub-heading" },
     itemIds: {
       type: "array",
       label: "Gallery item IDs (max 3)",

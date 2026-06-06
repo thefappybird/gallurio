@@ -3,13 +3,14 @@ import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
-import { localeForCountry } from "@/lib/i18n/localeForCountry";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
+import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
-import type { PortfolioContactConfig } from "@/lib/page-builder/types";
+import type { PortfolioContactConfig, PortfolioHeaderConfig } from "@/lib/page-builder/types";
 
 /**
  * Layout for the public portfolio page (`/w/[orgSlug]`).
@@ -40,17 +41,18 @@ export default async function PublicPortfolioLayout({
   const brandKit = workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT;
   const { cssVars, className } = resolveBrandKit(brandKit);
 
-  const locale = localeForCountry(workspace.country);
+  const locale = resolvePublicChromeLocale(workspace);
   const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tContact = await getTranslations({ locale, namespace: "publicPage.inquiryForm" });
 
   const contactLabels = buildContactLabels(tContact);
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
+  const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
   return (
     <div
       lang={locale}
-      style={cssVars as React.CSSProperties}
+      style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={className}
     >
       <PortfolioHeader
@@ -64,10 +66,17 @@ export default async function PublicPortfolioLayout({
           openMenu: tNav("openMenu"),
           closeMenu: tNav("closeMenu"),
         }}
+        config={headerConfig}
       />
       {children}
+      <MotionObserver />
       <ContactTriggerDelegate />
-      <ContactModal workspaceSlug={workspace.slug} contact={contactConfig} labels={contactLabels} />
+      <ContactModal
+        workspaceSlug={workspace.slug}
+        contact={contactConfig}
+        labels={contactLabels}
+        brandVars={cssVars}
+      />
     </div>
   );
 }

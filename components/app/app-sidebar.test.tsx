@@ -56,17 +56,14 @@ describe("AppSidebar nav items", () => {
   });
 
   describe("role=owner", () => {
-    it("renders dashboard, bookings, clients, and teams nav links", () => {
+    it("renders dashboard, bookings, clients, inquiries, portfolio, and teams nav links", () => {
       renderSidebar("owner");
       expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /bookings/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /clients/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /inquiries/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /portfolio/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /teams/i })).toBeInTheDocument();
-    });
-
-    it("does NOT render an inquiries link", () => {
-      renderSidebar("owner");
-      expect(screen.queryByRole("link", { name: /inquiries/i })).not.toBeInTheDocument();
     });
 
     it("does NOT render a gallery link", () => {
@@ -103,6 +100,12 @@ describe("AppSidebar nav items", () => {
     it("does NOT render the teams nav link", () => {
       renderSidebar("staff");
       expect(screen.queryByRole("link", { name: /^teams$/i })).not.toBeInTheDocument();
+    });
+
+    it("does NOT render inquiries or portfolio nav links", () => {
+      renderSidebar("staff");
+      expect(screen.queryByRole("link", { name: /^inquiries$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /^portfolio$/i })).not.toBeInTheDocument();
     });
   });
 });

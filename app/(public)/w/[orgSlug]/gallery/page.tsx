@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
-import { localeForCountry } from "@/lib/i18n/localeForCountry";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
@@ -47,7 +47,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const galleryData: any =
     (workspace.publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery ?? null;
 
-  const locale = localeForCountry(workspace.country);
+  const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
   if (!galleryData) {
@@ -78,7 +78,9 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   };
 
   return runWithRenderWorkspace(renderWorkspace, () => (
+    // metadata threads workspace context to every block via props.puck.metadata —
+    // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={galleryData} config={puckConfig as any} />
+    <Render data={galleryData} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
   ));
 }

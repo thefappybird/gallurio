@@ -16,6 +16,10 @@ export type BookingListFilters = {
   from?: Date | null;
   to?: Date | null;
   includeCancelled?: boolean;
+  // Draft bookings are auto-created from public inquiries and stay hidden from
+  // every owner-facing list until the inquiry is approved (Phase 6). The lead
+  // inbox is the only caller that opts in.
+  includeDrafts?: boolean;
   // Restricts results to bookings owned by these teams. `undefined` means no
   // team restriction (owner sees the whole workspace). An array — INCLUDING an
   // empty one — restricts via $in, so a member with no teams matches nothing
@@ -47,9 +51,14 @@ export async function listBookings(
   }
 
   if (filters.status) {
+    // Explicit status wins — lets the lead inbox ask for "draft" directly.
     query.status = filters.status;
-  } else if (!filters.includeCancelled) {
-    query.status = { $ne: "cancelled" };
+  } else {
+    const excluded: string[] = [];
+    if (!filters.includeDrafts) excluded.push("draft");
+    if (!filters.includeCancelled) excluded.push("cancelled");
+    if (excluded.length === 1) query.status = { $ne: excluded[0] };
+    else if (excluded.length > 1) query.status = { $nin: excluded };
   }
 
   // Use denormalized bounds for the range filter — a booking "overlaps" the
@@ -98,6 +107,7 @@ export async function getBookingById(
   if (allowedTeamIds !== undefined) {
     query.teamId = { $in: toTeamObjectIds(allowedTeamIds) };
   }
+  query.status = { $ne: "draft" };
   return Booking.findOne(query).lean();
 }
 

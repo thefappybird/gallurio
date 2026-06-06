@@ -1,6 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/w/luna-studio",
+}));
 
 const labels: PortfolioHeaderLabels = {
   brand: "Luna Studio",
@@ -33,6 +37,45 @@ describe("PortfolioHeader", () => {
     expect(contact).toHaveAttribute("data-cta", "contact");
   });
 
+  it("applies configured contact button color, opacity, radius, and text color", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          contactButtonColor: "accent",
+          contactButtonOpacity: 64,
+          contactButtonRadius: "rounded",
+          contactButtonTextColor: "foreground",
+        }}
+      />,
+    );
+    const contact = screen.getByRole("button", { name: "Contact" });
+    expect(contact.getAttribute("style")).toContain("--pf-contact-button-fill: var(--pf-color-accent)");
+    expect(contact.getAttribute("style")).toContain("--pf-contact-button-opacity: 64%");
+    expect(contact.style.borderRadius).toBe("0.5rem");
+    expect(contact.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("applies active-link highlight opacity and radius to the current page", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          activeLinkHighlight: true,
+          highlightColor: "accent",
+          highlightOpacity: 45,
+          activeLinkRadius: "rounded",
+        }}
+      />,
+    );
+    const home = screen.getByRole("link", { name: "Home" });
+    expect(home.getAttribute("style")).toContain("--pf-active-link-highlight-fill: var(--pf-color-accent)");
+    expect(home.getAttribute("style")).toContain("--pf-active-link-highlight-opacity: 45%");
+    expect(home.style.borderRadius).toBe("0.5rem");
+  });
+
   it("exposes an accessible menu toggle that flips aria-expanded", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const toggle = screen.getByLabelText("Open menu");
@@ -47,5 +90,10 @@ describe("PortfolioHeader", () => {
     // After opening, Home appears in both the desktop and mobile lists.
     const homeLinks = screen.getAllByRole("link", { name: "Home", hidden: true });
     expect(homeLinks.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps the brand heading empty when brandText is intentionally empty", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} config={{ brandText: "" }} />);
+    expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
   });
 });

@@ -1,0 +1,115 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import type { Metadata } from "next";
+import { requireOrg } from "@/lib/auth/requireOrg";
+import { routing } from "@/lib/i18n/routing";
+import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
+import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
+import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
+import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("app.pageBuilder");
+  return { title: t("title") };
+}
+
+const EMPTY_ZONE: PuckData = { content: [], root: {} };
+
+// Strip to plain, serializable JSON before crossing the server→client boundary.
+function toPlain<T>(value: unknown, fallback: T): T {
+  if (value === null || value === undefined) return fallback;
+  try {
+    return JSON.parse(JSON.stringify(value)) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export default async function PageBuilderEntry({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("app.pageBuilder");
+
+  const { workspace, role } = await requireOrg();
+
+  if (role !== "owner") {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
+      </div>
+    );
+  }
+
+  const pp = workspace.publicPage;
+
+  // First visit (no seeded home) → seed the closest starter template inline so
+  // the editor opens on a real page (the wizard is gone; the guide overlay and
+  // template switcher take its place). Idempotent + race-safe.
+  let homeData: unknown = pp?.data?.home ?? null;
+  let galleryData: unknown = pp?.data?.gallery ?? null;
+  let brandKitData: unknown = pp?.brandKit ?? null;
+  let contactData: unknown = pp?.contact ?? null;
+  let templateId: string = pp?.templateId ?? "minimal";
+  if (!homeData) {
+    const seed = await seedDefaultPortfolio(workspace._id);
+    if (seed) {
+      homeData = seed.data.home;
+      galleryData = seed.data.gallery;
+      brandKitData = seed.brandKit;
+      contactData = seed.contact;
+      templateId = seed.templateId;
+    }
+  }
+
+  const initialData = {
+    home: toPlain<PuckData>(homeData, EMPTY_ZONE),
+    gallery: toPlain<PuckData>(galleryData, EMPTY_ZONE),
+  };
+  const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
+  const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
+  const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const initialFormLocale = toPlain<string>(pp?.formLocale, "");
+  const guideDismissed = Boolean(pp?.guideDismissedAt);
+  const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
+
+  // Serializable starter-template summaries for the in-editor switcher.
+  const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
+    id: tpl.id,
+    label: tpl.label,
+    description: tpl.description,
+    defaultBrandKit: toPlain(tpl.defaultBrandKit, DEFAULT_BRAND_KIT),
+  }));
+  const publicOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "";
+  // Locale-aware path to the chrome-less preview route (loaded in an iframe).
+  // English has no prefix under localePrefix: "as-needed".
+  const previewBasePath =
+    locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
+
+  return (
+    <EditorShell
+      slug={workspace.slug}
+      workspaceName={workspace.name}
+      initialData={initialData}
+      initialBrandKit={initialBrandKit}
+      initialContact={initialContact}
+      initialFormLocale={initialFormLocale}
+      initialHeaderConfig={initialHeaderConfig}
+      publicOrigin={publicOrigin}
+      previewBasePath={previewBasePath}
+      templates={templates}
+      currentTemplateId={templateId}
+      guideDismissed={guideDismissed}
+      initialSavedThemes={initialSavedThemes}
+    />
+  );
+}

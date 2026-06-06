@@ -142,7 +142,7 @@ async function seedWorkspace(
       tagline: w.businessType === "venue" ? "Historic venue in Metro Manila" : "Wedding storytelling",
       description: `${w.name} — sample seeded workspace.`,
     },
-    publicPage: { templateId: "default" },
+    publicPage: { templateId: "minimal" },
     plan: "starter",
     onboardingCompletedAt: now,
   });

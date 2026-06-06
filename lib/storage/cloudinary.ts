@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { ACCEPTED_FORMATS } from "@/lib/page-builder/photoSpec";
 
 const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
 const api_key = process.env.CLOUDINARY_API_KEY;
@@ -25,6 +26,8 @@ export type SignedUploadParams = {
   apiKey: string;
   cloudName: string;
   folder: string;
+  /** Comma-separated list of formats Cloudinary will allow; included in the signature. */
+  allowedFormats: string;
   uploadUrl: string;
 };
 
@@ -33,7 +36,15 @@ export function signUpload(params: {
   publicId?: string;
 }): SignedUploadParams {
   const timestamp = Math.floor(Date.now() / 1000);
-  const toSign: Record<string, string | number> = { folder: params.folder, timestamp };
+  const allowedFormats = ACCEPTED_FORMATS.join(",");
+
+  // allowed_formats MUST be included in the signed params so Cloudinary
+  // validates the signature and rejects uploads of other formats.
+  const toSign: Record<string, string | number> = {
+    allowed_formats: allowedFormats,
+    folder: params.folder,
+    timestamp,
+  };
   if (params.publicId) toSign.public_id = params.publicId;
 
   const signature = cloudinary.utils.api_sign_request(toSign, api_secret!);
@@ -44,6 +55,7 @@ export function signUpload(params: {
     apiKey: api_key!,
     cloudName: cloud_name!,
     folder: params.folder,
+    allowedFormats,
     uploadUrl: `https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`,
   };
 }

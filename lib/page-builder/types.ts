@@ -8,6 +8,8 @@
  * - All block components (Phases 3–4)
  */
 
+import type { PortfolioFontKey } from "./fonts";
+
 // ---------------------------------------------------------------------------
 // Theme preset
 // ---------------------------------------------------------------------------
@@ -51,15 +53,90 @@ export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 // the form fields themselves are NOT configurable).
 // ---------------------------------------------------------------------------
 
-/** Which brand-kit color slot the contact button is painted with. */
-export const CONTACT_BUTTON_COLORS = ["primary", "secondary", "accent", "foreground"] as const;
+/** Which brand-kit color slot the contact button / modal background is painted with. */
+export const CONTACT_BUTTON_COLORS = ["primary", "secondary", "accent", "background", "foreground"] as const;
 export type ContactButtonColor = (typeof CONTACT_BUTTON_COLORS)[number];
 
 export type PortfolioContactConfig = {
   title?: string;
   description?: string;
+  /** @deprecated Kept for DB compat — UI now uses individual color/radius fields. */
   buttonStyle?: BrandKitButtonStyle;
-  buttonColor?: ContactButtonColor;
+  /** Token name (e.g. "primary") or custom hex (e.g. "#ff0000"). */
+  buttonColor?: string;
+  buttonTextColor?: string;
+  buttonRadius?: BrandKitRadius;
+  buttonBorderColor?: string;
+  buttonBorderWidth?: number;
+  backgroundColor?: string;
+  textColor?: string;
+  popupRadius?: BrandKitRadius;
+  popupBorderColor?: string;
+  popupBorderWidth?: number;
+  /** @deprecated Kept for DB compat — UI now uses individual color/radius fields. */
+  popupStyle?: BrandKitButtonStyle;
+};
+
+// ---------------------------------------------------------------------------
+// PortfolioHeaderConfig
+// ---------------------------------------------------------------------------
+
+export const HEADER_SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
+export type HeaderShadowSize = (typeof HEADER_SHADOW_SIZES)[number];
+
+export const HEADER_FONT_SIZES = ["sm", "md", "lg"] as const;
+export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
+
+export type PortfolioHeaderConfig = {
+  /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
+  brandText?: string;
+  /** Cloudinary secure URL for the logo image. */
+  logoUrl?: string;
+  /** Cloudinary public ID for the logo image (used for transforms/deletion). */
+  logoPublicId?: string;
+  /** Token name (e.g. "primary") or custom hex (e.g. "#ffffff"). */
+  backgroundColor?: string;
+  /** 0–100. Applied to the header background only (not text). Default 100. */
+  backgroundOpacity?: number;
+  /** Nav link text color. Token or hex. */
+  linkColor?: string;
+  /** Active nav link text color. Token or hex. */
+  activeLinkColor?: string;
+  /** Bottom border width in px (0 = none). */
+  borderBottomWidth?: number;
+  /** Bottom border color. Token or hex. */
+  borderBottomColor?: string;
+  /** Drop shadow size. Empty = none. */
+  shadowSize?: HeaderShadowSize | "";
+  /** Nav link font size. Empty = default (md). */
+  fontSize?: HeaderFontSize | "";
+  /** Slightly scales up the active link text. */
+  activeLinkScale?: boolean;
+  /** Adds a background color behind the active link. */
+  activeLinkHighlight?: boolean;
+  /** Background color for highlight mode. Token or hex. */
+  highlightColor?: string;
+  /** 0-100 opacity applied to the active-link highlight fill. */
+  highlightOpacity?: number;
+  /** Radius for the active-link highlight chip. */
+  activeLinkRadius?: BrandKitRadius | "";
+  /** Adds a bottom border to the active link. */
+  activeLinkUnderline?: boolean;
+  /** Border color for underline mode. Token or hex. */
+  underlineColor?: string;
+  /** Contact CTA background color. Token or hex. */
+  contactButtonColor?: string;
+  /** Contact CTA text color. Token or hex. */
+  contactButtonTextColor?: string;
+  /** 0-100 opacity applied to the contact CTA fill. */
+  contactButtonOpacity?: number;
+  /** Radius for the contact CTA. */
+  contactButtonRadius?: BrandKitRadius | "";
+};
+
+export const DEFAULT_HEADER_CONFIG: PortfolioHeaderConfig = {
+  highlightOpacity: 100,
+  contactButtonOpacity: 100,
 };
 
 // ---------------------------------------------------------------------------
@@ -68,7 +145,16 @@ export type PortfolioContactConfig = {
 
 export type PortfolioBrandKit = {
   themePreset: BrandKitThemePreset;
+  /**
+   * @deprecated Superseded by independent `headingFont` / `bodyFont`. Kept for
+   * back-compat: pre-existing portfolios resolve through `legacyFontPairToFonts`
+   * when `headingFont`/`bodyFont` are absent. New saves always set both fonts.
+   */
   fontPair: BrandKitFontPair;
+  /** Curated family key (lib/page-builder/fonts.ts) for headings. */
+  headingFont?: PortfolioFontKey;
+  /** Curated family key (lib/page-builder/fonts.ts) for body text. */
+  bodyFont?: PortfolioFontKey;
   /** 6-digit hex, e.g. "#111111" */
   primaryColor: string;
   /** 6-digit hex */
@@ -86,6 +172,8 @@ export type PortfolioBrandKit = {
 export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   themePreset: "minimal",
   fontPair: "merriweather-only",
+  headingFont: "merriweather",
+  bodyFont: "merriweather",
   primaryColor: "#111111",
   secondaryColor: "#f5f5f5",
   accentColor: "#2f5d56", // Gallurio brand teal
@@ -93,6 +181,20 @@ export const DEFAULT_BRAND_KIT: PortfolioBrandKit = {
   foregroundColor: "#111111",
   radius: "sharp",
   buttonStyle: "solid",
+};
+
+// ---------------------------------------------------------------------------
+// Saved themes — an owner's named, reusable brand kits (embedded on the
+// workspace's publicPage, NOT a separate collection). Apply/save/delete in the
+// Theme panel, mirroring the collections manager.
+// ---------------------------------------------------------------------------
+
+export const SAVED_THEMES_MAX = 24;
+
+export type PortfolioSavedTheme = {
+  id: string;
+  name: string;
+  brandKit: PortfolioBrandKit;
 };
 
 // ---------------------------------------------------------------------------

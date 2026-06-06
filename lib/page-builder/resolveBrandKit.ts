@@ -8,31 +8,35 @@
  */
 
 import type { PortfolioBrandKit, BrandKitFontPair, BrandKitRadius } from "./types";
+import { PORTFOLIO_FONTS, legacyFontPairToFonts, isPortfolioFontKey } from "./fonts";
 
 // ---------------------------------------------------------------------------
 // Font-pair → CSS family string mapping
 // ---------------------------------------------------------------------------
 
-const FONT_PAIR_MAP: Record<BrandKitFontPair, { heading: string; body: string }> = {
+// Each pairing resolves to the self-hosted font's CSS variable (set on the
+// public/app root by lib/fonts/portfolio.ts) with a generic-family fallback so
+// text is never invisible if the woff2 hasn't loaded yet.
+export const FONT_PAIR_MAP: Record<BrandKitFontPair, { heading: string; body: string }> = {
   "merriweather-only": {
-    heading: "'Merriweather', serif",
-    body: "'Merriweather', serif",
+    heading: "var(--font-merriweather), Georgia, serif",
+    body: "var(--font-merriweather), Georgia, serif",
   },
   "playfair-inter": {
-    heading: "'Playfair Display', serif",
-    body: "'Inter', sans-serif",
+    heading: "var(--font-playfair), Georgia, serif",
+    body: "var(--font-inter), system-ui, sans-serif",
   },
   "dm-serif-dm-sans": {
-    heading: "'DM Serif Display', serif",
-    body: "'DM Sans', sans-serif",
+    heading: "var(--font-dm-serif), Georgia, serif",
+    body: "var(--font-dm-sans), system-ui, sans-serif",
   },
   "cormorant-montserrat": {
-    heading: "'Cormorant Garamond', serif",
-    body: "'Montserrat', sans-serif",
+    heading: "var(--font-cormorant), Georgia, serif",
+    body: "var(--font-montserrat), system-ui, sans-serif",
   },
   "fraunces-inter": {
-    heading: "'Fraunces', serif",
-    body: "'Inter', sans-serif",
+    heading: "var(--font-fraunces), Georgia, serif",
+    body: "var(--font-inter), system-ui, sans-serif",
   },
 };
 
@@ -67,7 +71,12 @@ export type ResolvedBrandKit = {
  * Safe to call on the server — no React deps.
  */
 export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
-  const fonts = FONT_PAIR_MAP[brandKit.fontPair];
+  // Prefer the independent heading/body families; fall back to the legacy
+  // `fontPair` mapping for portfolios saved before independent fonts (no
+  // migration needed). Guard against stale/unknown keys defensively.
+  const legacy = legacyFontPairToFonts(brandKit.fontPair);
+  const headingKey = isPortfolioFontKey(brandKit.headingFont) ? brandKit.headingFont : legacy.headingFont;
+  const bodyKey = isPortfolioFontKey(brandKit.bodyFont) ? brandKit.bodyFont : legacy.bodyFont;
 
   const cssVars: Record<string, string> = {
     "--pf-color-primary": brandKit.primaryColor,
@@ -76,8 +85,8 @@ export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
     "--pf-color-bg": brandKit.backgroundColor,
     "--pf-color-fg": brandKit.foregroundColor,
     "--pf-radius": RADIUS_MAP[brandKit.radius],
-    "--pf-font-heading": fonts.heading,
-    "--pf-font-body": fonts.body,
+    "--pf-font-heading": PORTFOLIO_FONTS[headingKey].family,
+    "--pf-font-body": PORTFOLIO_FONTS[bodyKey].family,
   };
 
   const className = `pf-theme-${brandKit.themePreset} pf-button-${brandKit.buttonStyle}`;

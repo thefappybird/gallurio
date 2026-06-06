@@ -483,7 +483,8 @@
       "teams": "Teams",
       "settings": "Settings",
       "account": "Account",
-      "logOut": "Log out"
+      "logOut": "Log out",
+      "portfolio": "Portfolio"
     },
     "theme": {
       "label": "Theme",
@@ -883,6 +884,385 @@
       "toasts": {
         "reactivating": "Reactivating client…",
         "deactivating": "Deactivating client…"
+      }
+    },
+    "inquiries": {
+      "title": "Inquiries",
+      "subtitle": "Booking requests from your public portfolio.",
+      "toolbar": {
+        "from": "From",
+        "to": "To",
+        "clear": "Clear dates"
+      },
+      "tabs": {
+        "all": "All",
+        "new": "New",
+        "contacted": "Contacted",
+        "converted": "Converted",
+        "archived": "Archived"
+      },
+      "statusValues": {
+        "new": "New",
+        "contacted": "Contacted",
+        "converted": "Converted",
+        "archived": "Archived"
+      },
+      "eventTypes": {
+        "wedding": "Wedding",
+        "corporate": "Corporate",
+        "portrait": "Portrait",
+        "engagement": "Engagement",
+        "anniversary": "Anniversary",
+        "other": "Other"
+      },
+      "preferred": {
+        "email": "Email",
+        "phone": "Phone",
+        "either": "Either"
+      },
+      "table": {
+        "empty": "No inquiries yet.",
+        "emptyHint": "When someone submits your portfolio contact form, their request lands here.",
+        "viewPublicPage": "View your public page",
+        "open": "Open inquiry from {name}",
+        "noDate": "No date",
+        "directSource": "Direct",
+        "col": {
+          "status": "Status",
+          "client": "Client",
+          "eventDate": "Event date",
+          "eventType": "Type",
+          "submitted": "Submitted",
+          "source": "Source"
+        }
+      },
+      "detail": {
+        "back": "Back to inquiries",
+        "submittedOn": "Submitted {date}",
+        "notFound": "Inquiry not found.",
+        "clientInfo": {
+          "title": "Client info",
+          "name": "Name",
+          "email": "Email",
+          "phone": "Phone",
+          "preferredContact": "Preferred contact",
+          "none": "—"
+        },
+        "eventRequest": {
+          "title": "Event request",
+          "eventType": "Event type",
+          "guestCount": "Guests",
+          "location": "Location",
+          "sessions": "Requested dates",
+          "message": "Message",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "Booking draft",
+          "description": "Approving this creates a booking on your calendar. Set your price now or later.",
+          "total": "Total",
+          "deposit": "Deposit",
+          "notes": "Internal notes",
+          "notesPlaceholder": "Notes only you can see…",
+          "save": "Save edits",
+          "saving": "Saving…",
+          "approve": "Approve booking",
+          "approving": "Approving…",
+          "approved": "Approved",
+          "missing": "No linked draft booking for this inquiry.",
+          "alreadyConverted": "This inquiry has been approved.",
+          "viewBooking": "View booking",
+          "approveError": "Could not approve. Please try again.",
+          "saveError": "Could not save. Please try again.",
+          "savedToast": "Draft saved.",
+          "ownerOnly": "Only the workspace owner can approve bookings."
+        },
+        "actions": {
+          "markContacted": "Mark contacted",
+          "archive": "Archive",
+          "working": "Saving…",
+          "contactedToast": "Marked as contacted.",
+          "archivedToast": "Inquiry archived.",
+          "approvedToast": "Booking approved.",
+          "errorToast": "Something went wrong. Please try again."
+        },
+        "history": {
+          "title": "History",
+          "submitted": "Inquiry submitted",
+          "converted": "Approved to booking"
+        }
+      }
+    },
+    "pageBuilder": {
+      "title": "Page builder",
+      "editorComingSoon": "The full editor arrives in the next update. Your portfolio is set up and ready.",
+      "ownerOnly": "Only the workspace owner can edit the portfolio.",
+      "openPublicPage": "View public page",
+      "editPlaceholderHint": "You can re-run setup any time to start from a fresh template.",
+      "rerunWizard": "Re-run setup",
+      "brandKit": {
+        "themePreset": "Theme",
+        "presets": {
+          "minimal": "Minimal",
+          "editorial": "Editorial",
+          "luxury": "Luxury",
+          "bold": "Bold",
+          "romantic": "Romantic",
+          "modern": "Modern"
+        },
+        "fontPair": "Fonts",
+        "colors": "Colors",
+        "useWorkspaceBranding": "Use workspace branding",
+        "colorLabels": {
+          "primaryColor": "Primary",
+          "secondaryColor": "Secondary",
+          "accentColor": "Accent",
+          "backgroundColor": "Background",
+          "foregroundColor": "Text"
+        }
+      },
+      "editor": {
+        "zone": {
+          "home": "Home",
+          "gallery": "Gallery",
+          "contact": "Contact form",
+          "groupLabel": "Page section",
+          "sectionsLabel": "Portfolio sections"
+        },
+        "save": {
+          "saving": "Saving…",
+          "saved": "Saved",
+          "idle": "All changes saved"
+        },
+        "publish": "Publish",
+        "publishing": "Publishing…",
+        "theme": "Theme",
+        "contact": "Contact",
+        "publishedToast": "Published! Your portfolio is live.",
+        "savedToast": "Saved.",
+        "errorToast": "Couldn't save. Please try again.",
+        "done": "Done",
+        "publishDialog": {
+          "title": "Publish your portfolio?",
+          "body": "Anyone with the link will see your latest changes immediately.",
+          "confirm": "Publish now",
+          "cancel": "Cancel",
+          "liveAt": "Live at {url}",
+          "copyLink": "Copy link",
+          "copied": "Copied"
+        },
+        "themeDialog": {
+          "title": "Theme & brand"
+        },
+        "contactDialog": {
+          "title": "Contact form",
+          "formFixedNote": "The form fields are fixed. You can edit the heading, message, and button only.",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
+          "titleLabel": "Heading",
+          "titlePlaceholder": "Let's work together",
+          "descriptionLabel": "Message",
+          "descriptionPlaceholder": "Tell visitors what to expect when they reach out.",
+          "buttonStyleLabel": "Button style",
+          "buttonColorLabel": "Button color",
+          "bgColorLabel": "Background color",
+          "textColorLabel": "Text color",
+          "cornerRadiusLabel": "Corner radius",
+          "borderWidthLabel": "Border width",
+          "borderColorLabel": "Border color",
+          "sectionPopup": "Popup",
+          "sectionButton": "Button",
+          "buttonStyles": {
+            "solid": "Solid",
+            "outline": "Outline",
+            "soft": "Soft"
+          },
+          "buttonColors": {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "accent": "Accent",
+            "background": "Background",
+            "foreground": "Text"
+          },
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "close": "Close",
+          "popupStyleLabel": "Popup style",
+          "save": "Save",
+          "saving": "Saving…",
+          "languageLabel": "Public page language",
+          "languageHelp": "Language of the inquiry form, navigation, and footer on your public page.",
+          "languages": {
+            "auto": "Auto (based on your country)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "th": "ไทย"
+          }
+        },
+        "headerDialog": {
+          "title": "Navigation",
+          "close": "Close",
+          "save": "Save",
+          "saving": "Saving…",
+          "tabs": {
+            "setup": "Setup",
+            "design": "Design"
+          },
+          "brandTextLabel": "Heading",
+          "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
+          "logoLabel": "Logo",
+          "logoHelp": "Shown beside your business name in the header.",
+          "logoUpload": "Upload logo",
+          "logoUploading": "Uploading…",
+          "logoRemove": "Remove logo",
+          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoErrors": {
+            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "size": "Logo must be 250 KB or smaller.",
+            "dimensions": "Logo must be 512 x 256 px or smaller.",
+            "image": "This logo image could not be read.",
+            "upload": "Logo upload failed. Please try again."
+          },
+          "sectionBanner": "Banner",
+          "sectionLinks": "Links",
+          "sectionActiveStyle": "Active link style",
+          "sectionContactButton": "Contact button",
+          "bgColorLabel": "Background color",
+          "bgOpacityLabel": "Background opacity",
+          "linkColorLabel": "Link text color",
+          "activeLinkColorLabel": "Active link text color",
+          "borderBottomLabel": "Border bottom",
+          "borderColorLabel": "Border color",
+          "shadowLabel": "Drop shadow",
+          "fontSizeLabel": "Link size",
+          "activeStyleLabel": "Style",
+          "activeStyleScale": "Scale",
+          "activeStyleHighlight": "Highlight",
+          "activeStyleUnderline": "Underline",
+          "highlightColorLabel": "Highlight color",
+          "highlightOpacityLabel": "Highlight opacity",
+          "cornerRadiusLabel": "Corner radius",
+          "underlineColorLabel": "Underline color",
+          "contactButtonColorLabel": "Button color",
+          "contactButtonOpacityLabel": "Button opacity",
+          "contactButtonTextColorLabel": "Button text color",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          },
+          "shadow": {
+            "none": "None",
+            "sm": "Small",
+            "md": "Medium",
+            "lg": "Large"
+          },
+          "fontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          }
+        },
+        "contactPreview": {
+          "title": "Let's work together",
+          "description": "Tell us about your event.",
+          "submit": "Send inquiry"
+        },
+        "mobileBanner": {
+          "title": "The editor works best on a larger screen",
+          "body": "Drag-and-drop editing is designed for tablet and desktop.",
+          "openPreview": "Open preview",
+          "continue": "Continue anyway"
+        },
+        "contactSettings": "Edit contact settings",
+        "contactSettingsShort": "Contact Form",
+        "headerSettings": "Navigation",
+        "preview": {
+          "show": "Preview",
+          "edit": "Edit",
+          "title": "Live preview",
+          "empty": "Nothing to preview yet. Add some sections, then come back."
+        },
+        "photos": "Photos",
+        "templates": "Templates",
+        "guide": "Guide",
+        "templateSwitchedToast": "Template applied."
+      },
+      "wizard": {
+        "title": "Let's build your portfolio",
+        "subtitle": "A few quick steps and you'll have a live page.",
+        "skip": "Skip setup",
+        "back": "Back",
+        "next": "Continue",
+        "launch": "Launch editor",
+        "launching": "Setting up…",
+        "stepOf": "Step {current} of {total}",
+        "overwrite": {
+          "title": "You already have a portfolio",
+          "body": "Running setup again replaces your current pages. Your existing content is archived so you can recover it.",
+          "continue": "Continue anyway",
+          "cancel": "Cancel"
+        },
+        "steps": {
+          "template": "Template",
+          "branding": "Branding",
+          "theme": "Theme",
+          "images": "Images",
+          "review": "Review"
+        },
+        "template": {
+          "title": "Pick a starting point",
+          "subtitle": "You can change everything later."
+        },
+        "branding": {
+          "title": "Confirm your branding",
+          "subtitle": "Pulled from your workspace — edit anything.",
+          "tagline": "Tagline",
+          "taglinePlaceholder": "A short line that sums you up",
+          "description": "About",
+          "descriptionPlaceholder": "A sentence or two about your work"
+        },
+        "theme": {
+          "title": "Choose your look",
+          "subtitle": "Theme, fonts, and colors for your public page."
+        },
+        "images": {
+          "title": "Add a few photos",
+          "subtitle": "Drag in a few photos for your gallery — or skip and add them anytime.",
+          "upload": "Upload images",
+          "uploading": "Uploading…",
+          "remove": "Remove image",
+          "empty": "No images yet.",
+          "error": "Some images failed to upload. Please try again.",
+          "count": "{count} {count, plural, one {image} other {images}}",
+          "dropZone": "Drag photos here or click to select",
+          "dropZoneActive": "Drop to upload",
+          "spec": "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px on the shorter side",
+          "optional": "You can skip this step and upload photos later.",
+          "errorType": "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
+          "errorSize": "Each photo must be under 10 MB.",
+          "errorDim": "Each photo must be at least 600 px on its shorter side (e.g. 600×800 or 800×600)."
+        },
+        "review": {
+          "title": "Review & launch",
+          "subtitle": "Here's what we'll set up.",
+          "template": "Template",
+          "theme": "Theme",
+          "images": "Images",
+          "homeBlocks": "{count} home sections",
+          "galleryBlocks": "{count} gallery sections"
+        },
+        "toasts": {
+          "saved": "Your portfolio is ready!",
+          "error": "Something went wrong. Please try again."
+        }
       }
     }
   },

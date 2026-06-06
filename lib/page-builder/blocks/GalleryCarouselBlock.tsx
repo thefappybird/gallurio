@@ -11,11 +11,22 @@
 
 import type { ComponentConfig, Field } from "@measured/puck";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspace, getGalleryChromeLabels } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
 import { listItemsForBlock } from "@/lib/db/queries/gallery";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
+import {
+  resolveBlockStyle,
+  resolveBlockAttrs,
+  productionStyleField,
+  type BlockStyle,
+} from "@/lib/page-builder/styleToolkit";
+import { GalleryHeader, GalleryFooter } from "./GalleryText";
 
 export type GalleryCarouselProps = {
+  _style?: BlockStyle;
+  heading: string;
+  description: string;
+  footer: string;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
   autoplay: boolean;
@@ -23,6 +34,9 @@ export type GalleryCarouselProps = {
 };
 
 export const galleryCarouselDefaultProps: GalleryCarouselProps = {
+  heading: "",
+  description: "",
+  footer: "",
   collectionId: "",
   aspect: "landscape",
   autoplay: false,
@@ -36,13 +50,18 @@ const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height
 };
 
 export async function GalleryCarouselBlock({
+  _style,
+  heading,
+  description,
+  footer,
   collectionId,
   aspect,
   autoplay,
   maxItems,
-}: GalleryCarouselProps) {
-  const labels = getGalleryChromeLabels();
-  const workspace = getRenderWorkspace();
+  puck,
+}: GalleryCarouselProps & { puck?: BlockPuck }) {
+  const labels = getGalleryChromeLabelsFrom(puck);
+  const workspace = getRenderWorkspaceFrom(puck);
   if (!workspace || !String(workspace._id)) {
     return <CarouselEmptyState message={labels.unavailable} />;
   }
@@ -74,11 +93,12 @@ export async function GalleryCarouselBlock({
   const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
   const slides: CarouselSlide[] = items.map((item) => ({
     id: String(item._id),
-    src: cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-      width: size.width,
-      height: size.height,
-      crop: "fill",
-    }),
+    src:
+      cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+        width: size.width,
+        height: size.height,
+        crop: "fill",
+      }) || item.url,
     alt: item.altText || item.caption || "",
   }));
 
@@ -89,14 +109,22 @@ export async function GalleryCarouselBlock({
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 0.75rem",
         fontFamily: "var(--pf-font-body)",
+        ...resolveBlockStyle(_style),
       }}
+      {...resolveBlockAttrs(_style)}
     >
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryHeader heading={heading} description={description} />
+      </div>
       <GalleryCarouselClient
         slides={slides}
         aspect={aspect}
         autoplay={autoplay}
         labels={{ hint: labels.carouselHint, prev: labels.carouselPrev, next: labels.carouselNext }}
       />
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryFooter footer={footer} />
+      </div>
     </section>
   );
 }
@@ -133,6 +161,10 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
   label: "Gallery Carousel",
   defaultProps: galleryCarouselDefaultProps,
   fields: {
+    _style: productionStyleField,
+    heading: { type: "text", label: "Heading" },
+    description: { type: "textarea", label: "Description" },
+    footer: { type: "textarea", label: "Footer" },
     collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",

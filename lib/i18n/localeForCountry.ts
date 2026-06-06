@@ -1,4 +1,4 @@
-import type { Locale } from "./routing";
+import { routing, type Locale } from "./routing";
 
 // Map a workspace's country (ISO 3166-1 alpha-2) to the locale used for the
 // Gallurio chrome on its public page (`/w/[orgSlug]`). The visitor's
@@ -20,4 +20,20 @@ export function localeForCountry(country: string | null | undefined): Locale {
     default:
       return "en";
   }
+}
+
+// Resolves the public-page chrome locale. The form language is owner-controlled
+// via `publicPage.formLocale`; when set to a valid locale that value is used,
+// otherwise it defaults to English. The workspace country has no bearing on
+// this — the contact form must never auto-inherit a language the owner did not
+// explicitly choose.
+export function resolvePublicChromeLocale(workspace: {
+  country?: string | null;
+  publicPage?: { formLocale?: string | null } | null;
+}): Locale {
+  const chosen = workspace.publicPage?.formLocale;
+  if (chosen && (routing.locales as readonly string[]).includes(chosen)) {
+    return chosen as Locale;
+  }
+  return "en";
 }

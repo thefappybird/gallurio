@@ -12,6 +12,8 @@ export const LOCALE_PREFIX_RE = new RegExp(
 // enter; block only surfaces that are fully owner-exclusive.
 export const MEMBER_BLOCKED_PREFIXES = [
   "/dashboard",
+  "/inquiries",
+  "/portfolio",
   "/teams",
   "/gallery",       // future
   "/page-builder",  // future

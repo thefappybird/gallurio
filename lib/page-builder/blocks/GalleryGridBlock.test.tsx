@@ -69,7 +69,6 @@ const defaultProps: GalleryGridProps = {
   ...galleryGridDefaultProps,
   columns: 3,
   gap: "normal",
-  showCaptions: false,
   maxItems: 12,
 };
 
@@ -265,11 +264,11 @@ describe("GalleryGridBlock — maxItems", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: captions
+// Tests: block heading / description / footer text
 // ---------------------------------------------------------------------------
 
-describe("GalleryGridBlock — captions", () => {
-  it("shows captions when showCaptions=true", async () => {
+describe("GalleryGridBlock — block text", () => {
+  it("renders heading, description, and footer when provided", async () => {
     const ws = makeWorkspaceId();
     const col = makeCollectionId();
 
@@ -281,17 +280,19 @@ describe("GalleryGridBlock — captions", () => {
         GalleryGridBlock({
           ...defaultProps,
           collectionId: col.toString(),
-          showCaptions: true,
+          heading: "Our Work",
+          description: "A selection of recent shoots",
+          footer: "More on request",
         })
     );
     render(element);
 
-    // seedItems creates captions "Photo 1", "Photo 2"
-    expect(screen.getByText("Photo 1")).toBeInTheDocument();
-    expect(screen.getByText("Photo 2")).toBeInTheDocument();
+    expect(screen.getByText("Our Work")).toBeInTheDocument();
+    expect(screen.getByText("A selection of recent shoots")).toBeInTheDocument();
+    expect(screen.getByText("More on request")).toBeInTheDocument();
   });
 
-  it("hides captions when showCaptions=false", async () => {
+  it("omits per-image captions (captions feature removed)", async () => {
     const ws = makeWorkspaceId();
     const col = makeCollectionId();
 
@@ -299,15 +300,11 @@ describe("GalleryGridBlock — captions", () => {
 
     const element = await runWithRenderWorkspace(
       { _id: ws.toString(), name: "Test Workspace" },
-      () =>
-        GalleryGridBlock({
-          ...defaultProps,
-          collectionId: col.toString(),
-          showCaptions: false,
-        })
+      () => GalleryGridBlock({ ...defaultProps, collectionId: col.toString() })
     );
     render(element);
 
+    // seedItems sets item.caption "Photo N" — these must NOT render as captions.
     expect(screen.queryByText("Photo 1")).toBeNull();
   });
 });

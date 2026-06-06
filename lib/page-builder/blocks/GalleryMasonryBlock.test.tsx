@@ -119,7 +119,7 @@ describe("GalleryMasonryBlock", () => {
       GalleryMasonryBlock({ ...base, collectionId: col._id.toString(), columns: 4 })
     );
     const { container } = render(el);
-    const grid = container.querySelector("[data-block='gallery-masonry'] > div") as HTMLElement;
+    const grid = container.querySelector("[data-block='gallery-masonry'] .pf-masonry") as HTMLElement;
     expect(grid.style.columnCount).toBe("4");
   });
 });

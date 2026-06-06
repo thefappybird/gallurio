@@ -64,7 +64,8 @@ export function GalleryCarouselClient({
     const track = trackRef.current;
     if (!track) return;
     const slide = track.querySelector<HTMLElement>("[data-slide]");
-    const step = slide ? slide.offsetWidth + 16 : track.clientWidth;
+    // No inter-slide gap — step is exactly one slide width.
+    const step = slide ? slide.offsetWidth : track.clientWidth;
     track.scrollBy({ left: dir * step, behavior: reducedMotion ? "auto" : "smooth" });
   }
 
@@ -101,7 +102,7 @@ export function GalleryCarouselClient({
         ref={trackRef}
         style={{
           display: "flex",
-          gap: "16px",
+          gap: "0px",
           overflowX: "auto",
           scrollSnapType: "x mandatory",
           scrollbarWidth: "none",

@@ -3,8 +3,10 @@ import {
   brandKitSchema,
   portfolioPuckDataSchema,
   portfolioContactConfigSchema,
+  savedThemeSchema,
+  savedThemesSchema,
 } from "./publicPage";
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, SAVED_THEMES_MAX } from "@/lib/page-builder/types";
 
 // ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
@@ -40,8 +42,13 @@ describe("portfolioContactConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an out-of-set button color (arbitrary hex is not allowed)", () => {
+  it("accepts a hex button color (spectrum picker produces hex values)", () => {
     const result = portfolioContactConfigSchema.safeParse({ buttonColor: "#ff0000" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a button color that exceeds the max length", () => {
+    const result = portfolioContactConfigSchema.safeParse({ buttonColor: "#" + "a".repeat(32) });
     expect(result.success).toBe(false);
   });
 
@@ -268,5 +275,175 @@ describe("portfolioPuckDataSchema — invalid inputs", () => {
     // gallery field missing
     const result2 = portfolioPuckDataSchema.safeParse({ home: null });
     expect(result2.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// savedThemeSchema
+// ---------------------------------------------------------------------------
+
+describe("savedThemeSchema", () => {
+  const validTheme = {
+    id: "theme-abc-123",
+    name: "My Theme",
+    brandKit: DEFAULT_BRAND_KIT,
+  };
+
+  it("accepts a valid {id, name, brandKit}", () => {
+    expect(savedThemeSchema.safeParse(validTheme).success).toBe(true);
+  });
+
+  it("rejects empty name", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, name: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects name that is only whitespace (trim + min 1 check)", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, name: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects name longer than 60 chars", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, name: "x".repeat(61) });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts name exactly 60 chars", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, name: "a".repeat(60) });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects empty id", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, id: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects id longer than 64 chars", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, id: "x".repeat(65) });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts id exactly 64 chars", () => {
+    const result = savedThemeSchema.safeParse({ ...validTheme, id: "a".repeat(64) });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects when brandKit is missing", () => {
+    const { brandKit: _ignored, ...withoutBrandKit } = validTheme;
+    const result = savedThemeSchema.safeParse(withoutBrandKit);
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects when brandKit has an invalid color", () => {
+    const result = savedThemeSchema.safeParse({
+      ...validTheme,
+      brandKit: { ...DEFAULT_BRAND_KIT, primaryColor: "red" },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// savedThemesSchema
+// ---------------------------------------------------------------------------
+
+describe("savedThemesSchema", () => {
+  const validTheme = {
+    id: "t1",
+    name: "Theme 1",
+    brandKit: DEFAULT_BRAND_KIT,
+  };
+
+  it("accepts an empty array", () => {
+    expect(savedThemesSchema.safeParse([]).success).toBe(true);
+  });
+
+  it("accepts an array with one valid theme", () => {
+    expect(savedThemesSchema.safeParse([validTheme]).success).toBe(true);
+  });
+
+  it(`accepts exactly ${SAVED_THEMES_MAX} themes (the max)`, () => {
+    const themes = Array.from({ length: SAVED_THEMES_MAX }, (_, i) => ({
+      ...validTheme,
+      id: `theme-${i}`,
+      name: `Theme ${i}`,
+    }));
+    expect(savedThemesSchema.safeParse(themes).success).toBe(true);
+  });
+
+  it(`rejects an array with ${SAVED_THEMES_MAX + 1} themes (over the max)`, () => {
+    const themes = Array.from({ length: SAVED_THEMES_MAX + 1 }, (_, i) => ({
+      ...validTheme,
+      id: `theme-${i}`,
+      name: `Theme ${i}`,
+    }));
+    expect(savedThemesSchema.safeParse(themes).success).toBe(false);
+  });
+
+  it("rejects a non-array value", () => {
+    expect(savedThemesSchema.safeParse("not-an-array").success).toBe(false);
+    expect(savedThemesSchema.safeParse(null).success).toBe(false);
+    expect(savedThemesSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// brandKitSchema — optional headingFont/bodyFont (back-compat)
+// ---------------------------------------------------------------------------
+
+describe("brandKitSchema — optional independent font keys", () => {
+  it("accepts a brandKit WITHOUT headingFont/bodyFont (back-compat)", () => {
+    const { headingFont: _h, bodyFont: _b, ...withoutFonts } = DEFAULT_BRAND_KIT;
+    const result = brandKitSchema.safeParse(withoutFonts);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a brandKit WITH headingFont set to a valid key", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "playfair",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a brandKit WITH bodyFont set to a valid key", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      bodyFont: "inter",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a brandKit WITH both headingFont and bodyFont set", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "fraunces",
+      bodyFont: "montserrat",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid headingFont key", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "comic-sans",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid bodyFont key", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      bodyFont: "times-new-roman",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a legacy fontPair string as headingFont value", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "playfair-inter",
+    });
+    expect(result.success).toBe(false);
   });
 });

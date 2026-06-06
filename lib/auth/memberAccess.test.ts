@@ -71,6 +71,13 @@ describe("isMemberBlocked", () => {
     expect(isMemberBlocked("/teams")).toBe(true);
   });
 
+  it("blocks /inquiries and /portfolio", () => {
+    expect(isMemberBlocked("/inquiries")).toBe(true);
+    expect(isMemberBlocked("/inquiries/abc123")).toBe(true);
+    expect(isMemberBlocked("/portfolio")).toBe(true);
+    expect(isMemberBlocked("/portfolio/preview")).toBe(true);
+  });
+
   it("blocks /teams/* (nested)", () => {
     expect(isMemberBlocked("/teams/abc123")).toBe(true);
   });
@@ -92,6 +99,11 @@ describe("isMemberBlocked", () => {
 
   it("blocks locale-prefixed /ms/teams", () => {
     expect(isMemberBlocked("/ms/teams")).toBe(true);
+  });
+
+  it("blocks locale-prefixed /fil/inquiries and /id/portfolio", () => {
+    expect(isMemberBlocked("/fil/inquiries")).toBe(true);
+    expect(isMemberBlocked("/id/portfolio")).toBe(true);
   });
 
   it("blocks locale-prefixed /id/gallery", () => {
@@ -180,6 +192,8 @@ describe("landingPathForRole", () => {
 describe("MEMBER_BLOCKED_PREFIXES", () => {
   it("exports the canonical list of blocked prefixes", () => {
     expect(MEMBER_BLOCKED_PREFIXES).toContain("/dashboard");
+    expect(MEMBER_BLOCKED_PREFIXES).toContain("/inquiries");
+    expect(MEMBER_BLOCKED_PREFIXES).toContain("/portfolio");
     expect(MEMBER_BLOCKED_PREFIXES).toContain("/teams");
     expect(MEMBER_BLOCKED_PREFIXES).toContain("/gallery");
     expect(MEMBER_BLOCKED_PREFIXES).toContain("/page-builder");

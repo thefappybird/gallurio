@@ -4,8 +4,11 @@ import {
   BRAND_KIT_FONT_PAIRS,
   BRAND_KIT_RADII,
   BRAND_KIT_BUTTON_STYLES,
-  CONTACT_BUTTON_COLORS,
+  SAVED_THEMES_MAX,
+  HEADER_SHADOW_SIZES,
+  HEADER_FONT_SIZES,
 } from "@/lib/page-builder/types";
+import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 
 // ---------------------------------------------------------------------------
 // Primitive helpers
@@ -21,7 +24,10 @@ const hexColorSchema = z
 
 export const brandKitSchema = z.object({
   themePreset: z.enum(BRAND_KIT_THEME_PRESETS),
+  // Legacy pairing kept for back-compat; new saves also carry independent fonts.
   fontPair: z.enum(BRAND_KIT_FONT_PAIRS),
+  headingFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
+  bodyFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
   primaryColor: hexColorSchema,
   secondaryColor: hexColorSchema,
   accentColor: hexColorSchema,
@@ -32,6 +38,20 @@ export const brandKitSchema = z.object({
 });
 
 export type BrandKitInput = z.infer<typeof brandKitSchema>;
+
+// ---------------------------------------------------------------------------
+// Saved themes — owner's named, reusable brand kits (embedded on the workspace).
+// ---------------------------------------------------------------------------
+
+export const savedThemeSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(1, "Name your theme").max(60),
+  brandKit: brandKitSchema,
+});
+
+export const savedThemesSchema = z.array(savedThemeSchema).max(SAVED_THEMES_MAX);
+
+export type SavedThemeInput = z.infer<typeof savedThemeSchema>;
 
 // ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
@@ -45,10 +65,51 @@ export const portfolioContactConfigSchema = z.object({
   title: z.string().trim().max(80).optional().or(z.literal("")),
   description: z.string().trim().max(280).optional().or(z.literal("")),
   buttonStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
-  buttonColor: z.enum(CONTACT_BUTTON_COLORS).optional().or(z.literal("")),
+  buttonColor: z.string().max(32).optional().or(z.literal("")),
+  buttonTextColor: z.string().max(32).optional().or(z.literal("")),
+  buttonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  buttonBorderColor: z.string().max(32).optional().or(z.literal("")),
+  buttonBorderWidth: z.number().int().min(0).max(12).optional(),
+  backgroundColor: z.string().max(32).optional().or(z.literal("")),
+  textColor: z.string().max(32).optional().or(z.literal("")),
+  popupRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  popupBorderColor: z.string().max(32).optional().or(z.literal("")),
+  popupBorderWidth: z.number().int().min(0).max(12).optional(),
+  popupStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
 });
 
 export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigSchema>;
+
+// ---------------------------------------------------------------------------
+// portfolioHeaderConfigSchema
+// ---------------------------------------------------------------------------
+
+export const portfolioHeaderConfigSchema = z.object({
+  brandText: z.string().trim().max(80).optional().or(z.literal("")),
+  logoUrl: z.string().max(500).optional().or(z.literal("")),
+  logoPublicId: z.string().max(200).optional().or(z.literal("")),
+  backgroundColor: z.string().max(32).optional().or(z.literal("")),
+  backgroundOpacity: z.number().int().min(0).max(100).optional(),
+  linkColor: z.string().max(32).optional().or(z.literal("")),
+  activeLinkColor: z.string().max(32).optional().or(z.literal("")),
+  borderBottomWidth: z.number().int().min(0).max(8).optional(),
+  borderBottomColor: z.string().max(32).optional().or(z.literal("")),
+  shadowSize: z.enum(HEADER_SHADOW_SIZES).optional().or(z.literal("")),
+  fontSize: z.enum(HEADER_FONT_SIZES).optional().or(z.literal("")),
+  activeLinkScale: z.boolean().optional(),
+  activeLinkHighlight: z.boolean().optional(),
+  highlightColor: z.string().max(32).optional().or(z.literal("")),
+  highlightOpacity: z.number().int().min(0).max(100).optional(),
+  activeLinkRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  activeLinkUnderline: z.boolean().optional(),
+  underlineColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonTextColor: z.string().max(32).optional().or(z.literal("")),
+  contactButtonOpacity: z.number().int().min(0).max(100).optional(),
+  contactButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+});
+
+export type PortfolioHeaderConfigInput = z.infer<typeof portfolioHeaderConfigSchema>;
 
 // ---------------------------------------------------------------------------
 // portfolioPuckDataSchema
@@ -58,7 +119,7 @@ export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigS
 // shape here so the Workspace model can do a surface-level check on save.
 // ---------------------------------------------------------------------------
 
-const puckDataSchema = z.object({
+export const puckDataSchema = z.object({
   root: z.object({ props: z.record(z.unknown()).optional() }).optional(),
   content: z.array(
     z.object({

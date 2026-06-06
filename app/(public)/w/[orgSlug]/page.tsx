@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
-import { localeForCountry } from "@/lib/i18n/localeForCountry";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
@@ -66,7 +66,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
 
   // Derive chrome locale from workspace country and resolve translated strings
   // at the page boundary so blocks stay synchronous and unit-testable.
-  const locale = localeForCountry(workspace.country);
+  const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
   // ComingSoonFallback does not need workspace block context — only <Render>
@@ -106,7 +106,9 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // an isolated, request-scoped store. Concurrent requests cannot clobber
   // each other's workspace context (unlike a module-level singleton).
   return runWithRenderWorkspace(renderWorkspace, () => (
+    // metadata threads workspace context to every block via props.puck.metadata —
+    // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={homeData} config={puckConfig as any} />
+    <Render data={homeData} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
   ));
 }

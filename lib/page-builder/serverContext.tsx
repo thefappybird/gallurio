@@ -27,6 +27,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 export type RenderWorkspace = {
   _id: string | { toString(): string };
   name: string;
+  /** Workspace slug — used to build public links (e.g. the Gallery page) inside blocks. */
+  slug?: string;
   branding?: {
     logoUrl?: string | null;
     tagline?: string | null;
@@ -90,6 +92,7 @@ export type GalleryChromeLabels = {
 export function buildRenderWorkspace(workspace: {
   _id: unknown;
   name: string;
+  slug?: string | null;
   branding?: { logoUrl?: string | null; tagline?: string | null; description?: string | null } | null;
   publicPage?: { inquiryRecipientEmail?: string | null } | null;
   contact?: {
@@ -107,6 +110,7 @@ export function buildRenderWorkspace(workspace: {
   return {
     _id: String(workspace._id),
     name: workspace.name,
+    slug: workspace.slug ?? undefined,
     branding: workspace.branding
       ? {
           logoUrl: workspace.branding.logoUrl ?? null,
@@ -140,6 +144,51 @@ export function buildRenderWorkspace(workspace: {
 // ---------------------------------------------------------------------------
 
 const storage = new AsyncLocalStorage<RenderWorkspace>();
+
+// ---------------------------------------------------------------------------
+// Puck metadata bridge (RSC-safe)
+// ---------------------------------------------------------------------------
+
+/**
+ * Shape of the `metadata` object passed to `<Render metadata={...}>` (and
+ * `<Puck>`), which Puck forwards to every block as `props.puck.metadata`.
+ *
+ * WHY this exists alongside AsyncLocalStorage: with React Server Components,
+ * `runWithRenderWorkspace(ws, () => <Render/>)` only holds the ALS store during
+ * the *synchronous* creation of the element — the async block components run
+ * later, OUTSIDE that store, so `getRenderWorkspace()` returns null at the point
+ * a block actually queries. Puck's `metadata` prop threads context through React
+ * props instead, which is the reliable RSC mechanism. Blocks read it via
+ * `getRenderWorkspaceFrom(puck)`. The ALS path is kept as a fallback so unit
+ * tests that render a block directly inside `runWithRenderWorkspace` still work.
+ */
+export type PortfolioRenderMetadata = { workspace?: RenderWorkspace };
+
+/** The `puck` prop Puck injects into every rendered component. */
+export type BlockPuck = { metadata?: PortfolioRenderMetadata };
+
+/**
+ * Resolves the active workspace for a block: prefers Puck `metadata` (RSC-safe),
+ * falling back to the AsyncLocalStorage store (used by direct-render unit tests).
+ */
+export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace | null {
+  return puck?.metadata?.workspace ?? storage.getStore() ?? null;
+}
+
+/** Like getGalleryChromeLabels, but sourced from Puck metadata first. */
+export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<GalleryChromeLabels> {
+  const g = getRenderWorkspaceFrom(puck)?.chrome?.gallery ?? {};
+  return {
+    empty: g.empty ?? "No photos in this collection yet.",
+    noCollection: g.noCollection ?? "No collection selected.",
+    unavailable: g.unavailable ?? "Gallery not available.",
+    error: g.error ?? "Gallery temporarily unavailable.",
+    featuredEmpty: g.featuredEmpty ?? "No featured photos selected yet.",
+    carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
+    carouselPrev: g.carouselPrev ?? "Previous image",
+    carouselNext: g.carouselNext ?? "Next image",
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Exported API

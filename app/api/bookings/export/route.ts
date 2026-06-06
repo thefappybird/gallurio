@@ -42,8 +42,9 @@ export async function GET(req: Request) {
 
   if (status) {
     filter.status = status;
-  } else if (!includeCancelled) {
-    filter.status = { $ne: "cancelled" };
+  } else {
+    // Always exclude drafts (unapproved inquiries); exclude cancelled by default.
+    filter.status = includeCancelled ? { $ne: "draft" } : { $nin: ["draft", "cancelled"] };
   }
 
   if (q && q.trim()) {

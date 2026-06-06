@@ -9,6 +9,8 @@ import {
   UsersIcon,
   UsersRound,
   BookOpenIcon,
+  CameraIcon,
+  MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
 import { SignOutButton } from "@clerk/nextjs";
@@ -31,6 +33,8 @@ const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
   { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
+  { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
+  { href: "/portfolio" as const, labelKey: "portfolio", icon: CameraIcon },
   { href: "/teams" as const, labelKey: "teams", icon: UsersRound },
 ];
 

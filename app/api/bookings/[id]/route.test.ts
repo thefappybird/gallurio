@@ -136,6 +136,14 @@ describe("GET /api/bookings/[id]", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 404 for a draft booking (drafts are not visible on the bookings surface)", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { status: "draft" });
+    const { GET } = await load();
+    const res = await GET(makeGet(b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(404);
+  });
+
   it("GET includes client block with id, name, email, phone when client exists", async () => {
     const c = await seedClient(workspaceId, {
       name: "Emma Carter",
@@ -183,6 +191,18 @@ describe("GET /api/bookings/[id]", () => {
 });
 
 describe("PATCH /api/bookings/[id]", () => {
+  it("refuses to patch a draft booking (404) — promotion goes through approval", async () => {
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { status: "draft" });
+    const { PATCH } = await load();
+    const res = await PATCH(
+      makePatch({ title: "Renamed" }, b._id.toString()),
+      ctx(b._id.toString())
+    );
+    expect(res.status).toBe(404);
+    expect((await Booking.findById(b._id).lean())?.title).toBe("Carter Wedding");
+  });
+
   it("applies a single-field patch and writes one activity entry", async () => {
     const c = await seedClient(workspaceId);
     const b = await seedBooking(workspaceId, c._id);

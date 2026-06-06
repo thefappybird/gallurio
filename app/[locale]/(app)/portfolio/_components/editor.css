@@ -1,0 +1,221 @@
+/* Scoped editor chrome.
+ *
+ * The wrapper carries the portfolio brand-kit CSS variables (--pf-*) so the
+ * in-place preview (iframe disabled) matches the live page. Puck's own UI uses
+ * its --puck-* variables, so the brand vars only affect the rendered blocks, not
+ * the editor chrome. The app shell (sidebar/topbar) sits outside this wrapper
+ * and is unaffected.
+ *
+ * Theme bridge: Puck ships a light-only stylesheet. We remap --puck-color-grey-*
+ * and --puck-color-azure-* onto our semantic tokens so the editor chrome follows
+ * light and dark mode. Overrides are scoped to .gallurio-editor and its dark
+ * variant so they never leak to the app shell or the portfolio canvas (--pf-*).
+ *
+ * Do NOT add --pf-* overrides here. That namespace belongs to resolveBrandKit().
+ *
+ * Variables mapped (see below for rationale per surface):
+ *   --puck-font-family              → Merriweather (app font)
+ *   --puck-color-white              → --card (panel surfaces)
+ *   --puck-color-black              → --foreground (primary text)
+ *   --puck-color-grey-01..12        → semantic tier ladder
+ *   --puck-color-azure-02..12       → interactive/selected states → brand tints
+ *
+ * Variables intentionally left alone:
+ *   --puck-color-rose-*, -green-*, -yellow-*, -red-*  — semantic status colors
+ *     (error, success, warning) that carry meaning independent of theme; Puck
+ *     uses them sparingly (validation states). No override needed.
+ *   --puck-font-family-monospaced   — path breadcrumbs; system mono is correct.
+ *   --puck-font-size-*              — size scale is fine as-is.
+ *   --puck-space-px, --puck-frame-width, --puck-*-side-bar-width — layout.
+ */
+
+/* ─── Light mode ──────────────────────────────────────────────────────────── */
+.gallurio-editor {
+  /* Fill the app content area; Puck manages its internal scroll regions. */
+  height: calc(100dvh - 7rem);
+  min-height: 32rem;
+
+  /* App font for the editor chrome. */
+  --puck-font-family: var(--font-merriweather, Merriweather, serif);
+
+  /*
+   * Grey scale → neutral token ladder.
+   *
+   * Puck's grey-01 is near-black (#181818) used as ActionBar bg + primary text.
+   * grey-12 is near-white (#fafafa) used for left sidebar + modal masthead.
+   * We bridge them onto our two-pole palette:
+   *
+   *   grey-01 (darkest) → --foreground      (near-black in light)
+   *   grey-02           → --foreground      (dark text, tables)
+   *   grey-03           → --primary         (strong text/icon, layer tree)
+   *   grey-04           → --muted-foreground (label text, disabled text)
+   *   grey-05           → --muted-foreground (secondary labels, toggle icons)
+   *   grey-06           → --muted-foreground (canvas loader)
+   *   grey-07           → --muted-foreground (icon-button disabled, layer zone icons)
+   *   grey-08           → --muted-foreground (action-bar label, action icon)
+   *   grey-09           → --border          (all dividers / input borders)
+   *   grey-10           → --border          (viewport controls bottom border)
+   *   grey-11           → --muted           (read-only inputs, viewport controls bg, left sidebar)
+   *   grey-12           → --card            (left sidebar, modal masthead, search area)
+   *
+   * In light: --foreground ≈ #1a1a1a, --primary ≈ #1a1a1a (inverted scheme ok),
+   *           --muted-foreground ≈ #737373, --border ≈ #e5e5e5,
+   *           --muted ≈ #f5f5f5, --card ≈ white.
+   */
+  --puck-color-grey-01: var(--foreground);
+  --puck-color-grey-02: var(--foreground);
+  --puck-color-grey-03: var(--primary);
+  --puck-color-grey-04: var(--muted-foreground);
+  --puck-color-grey-05: var(--muted-foreground);
+  --puck-color-grey-06: var(--muted-foreground);
+  --puck-color-grey-07: var(--muted-foreground);
+  --puck-color-grey-08: var(--muted-foreground);
+  --puck-color-grey-09: var(--border);
+  --puck-color-grey-10: var(--border);
+  --puck-color-grey-11: var(--muted);
+  --puck-color-grey-12: var(--card);
+
+  /*
+   * White / Black → paired semantic tokens.
+   *
+   * white is used for: right sidebar bg, header bg, menu bar bg, sidebar-section
+   *   titles, array-field items, draggable items, object-field bg, modal inner,
+   *   input bg, search area bg, loading overlays — all "panel" surfaces.
+   * black is used for: header text, sidebar-section text — primary foreground.
+   */
+  --puck-color-white: var(--card);
+  --puck-color-black: var(--foreground);
+
+  /*
+   * Azure scale → brand-tint interactive states.
+   *
+   * Puck uses azure for: primary button, focus rings, hover/active states on
+   *   inputs, array fields, drawer items, component-list titles, layer highlight,
+   *   drag placeholder fills, breadcrumb links.
+   *
+   * We map onto our brand (deep teal) scale so interactive states are
+   * on-brand rather than azure-blue. Because our brand shades are keyed by
+   * luminance (darker = more saturated), the mapping is:
+   *
+   *   azure-02 (darkest, active bg on primary button) → --brand-2 (mid teal)
+   *   azure-03 (hover bg on primary button)           → --brand   (base teal)
+   *   azure-04 (primary button + link color)          → --brand
+   *   azure-05 (focus rings)                          → --ring
+   *   azure-06 (drag placeholder stroke + icon hover) → --brand-2
+   *   azure-07 (icon-button hover outline)            → --brand-3
+   *   azure-08 (overlay bg / drag overlay tint)       → --brand-4
+   *   azure-09 (drop-zone fill + drag placeholder bg) → --brand-4
+   *   azure-10 (active bg on component-list title)    → --accent
+   *   azure-11 (hover bg on inputs/array/drawer)      → --accent
+   *   azure-12 (lightest — subtle hover on select/input/icon) → --muted
+   *
+   * In light mode --muted ≈ #f5f5f5 (very pale), --accent ≈ same, --ring ≈ mid-grey.
+   */
+  --puck-color-azure-02: var(--brand-2);
+  --puck-color-azure-03: var(--brand);
+  --puck-color-azure-04: var(--brand);
+  --puck-color-azure-05: var(--ring);
+  --puck-color-azure-06: var(--brand-2);
+  --puck-color-azure-07: var(--brand-3);
+  --puck-color-azure-08: var(--brand-4);
+  --puck-color-azure-09: var(--brand-4);
+  --puck-color-azure-10: var(--accent);
+  --puck-color-azure-11: var(--accent);
+  --puck-color-azure-12: var(--muted);
+}
+
+/* Puck root should stretch to the wrapper. */
+.gallurio-editor > div {
+  height: 100%;
+}
+
+/* ─── Dark mode ───────────────────────────────────────────────────────────── */
+/*
+ * dark mode is activated by the `.dark` class on <html> (next-themes convention,
+ * confirmed in globals.css line 114 `.dark { ... }` and line 5
+ * `@custom-variant dark (&:is(.dark *))`).
+ *
+ * Grey remapping for dark:
+ *   grey-01 (ActionBar bg, was near-black) → --primary (near-white in dark, the
+ *             "inverted pole" — a dark ActionBar becomes a near-white bar which
+ *             is correct for an always-inverted floating toolbar)
+ *   grey-02 (table text)                  → --foreground
+ *   grey-03 (strong icon/layer text)      → --foreground
+ *   grey-04 (label text)                  → --muted-foreground
+ *   grey-05..08 (secondary / disabled)    → --muted-foreground
+ *   grey-09 (borders)                     → --border (in dark: oklch(1 0 0 / 10%))
+ *   grey-10 (viewport controls border)    → --border
+ *   grey-11 (subtle fill, viewport ctrl)  → --muted (in dark: oklch(0.269 0 0))
+ *   grey-12 (left sidebar, modal masthead)→ --card   (in dark: oklch(0.205 0 0))
+ *
+ * White / Black in dark:
+ *   white → --card (dark: near-black surface — right sidebar, header, inputs)
+ *   black → --foreground (dark: near-white)
+ *
+ * These pairings guarantee:
+ *   • PuckHeader (white bg + black text) → card bg + foreground text — contrasts.
+ *   • Left Sidebar (grey-12 bg) → card (dark near-black) — slightly darker than header.
+ *   • Right Sidebar (white bg) → card — same panel surface.
+ *   • Inputs (white bg, grey-09 border) → card bg, border — readable fields.
+ *   • Viewport controls (grey-11 bg) → muted — subtle, not jarring.
+ *   • ActionBar (grey-01 bg, white text) → primary bg + primary-foreground text.
+ *
+ * Azure remapping stays the same semantic mapping; the token values shift
+ * automatically because our CSS vars are already dark-mode aware.
+ */
+:where(.dark) .gallurio-editor {
+  --puck-color-grey-01: var(--primary);
+  --puck-color-grey-02: var(--foreground);
+  --puck-color-grey-03: var(--foreground);
+  --puck-color-grey-04: var(--muted-foreground);
+  --puck-color-grey-05: var(--muted-foreground);
+  --puck-color-grey-06: var(--muted-foreground);
+  --puck-color-grey-07: var(--muted-foreground);
+  --puck-color-grey-08: var(--muted-foreground);
+  --puck-color-grey-09: var(--border);
+  --puck-color-grey-10: var(--border);
+  --puck-color-grey-11: var(--muted);
+  --puck-color-grey-12: var(--card);
+
+  --puck-color-white: var(--card);
+  --puck-color-black: var(--foreground);
+
+  /* Azure → brand tints. Token values resolve to dark-mode values automatically.
+   * In dark: --brand ≈ oklch(0.70 0.12 195) — brighter teal that pops on dark bg.
+   *          --accent ≈ oklch(0.269 0 0) — dark muted fill for hover states.
+   *          --ring ≈ oklch(0.556 0 0) — mid-grey focus ring (legible in dark).
+   *          --muted ≈ oklch(0.269 0 0) — subtle hover on lightest azure-12 slots.
+   */
+  --puck-color-azure-02: var(--brand-3);
+  --puck-color-azure-03: var(--brand-2);
+  --puck-color-azure-04: var(--brand);
+  --puck-color-azure-05: var(--ring);
+  --puck-color-azure-06: var(--brand-2);
+  --puck-color-azure-07: var(--brand-3);
+  --puck-color-azure-08: var(--brand-4);
+  --puck-color-azure-09: var(--brand-4);
+  --puck-color-azure-10: var(--accent);
+  --puck-color-azure-11: var(--accent);
+  --puck-color-azure-12: var(--muted);
+}
+
+/* ─── Specificity patches ─────────────────────────────────────────────────── */
+/*
+ * Puck hardcodes `background: white` on the canvas root element (not a var):
+ *   ._PuckCanvas-root_18jay_30 { background: white; }
+ * That literal 'white' does NOT respond to our --puck-color-white override above.
+ * The canvas root itself is the portfolio preview surface — it SHOULD be white
+ * (matching a real browser viewport) regardless of the editor theme. No override.
+ *
+ * The ActionBar floating overlay uses grey-01 bg + white text.
+ * With our dark-mode mapping (grey-01 → --primary ≈ near-white, white → --card
+ * ≈ near-black) this inverts correctly: near-white bar with near-black text —
+ * the inverted-scheme trick from CLAUDE.md is in effect here. This is intentional.
+ *
+ * Puck's primary button background is azure-04 / --brand in both modes, which
+ * contrasts its white text (azure primary buttons use azure-04 bg + white text).
+ * In light: --brand = oklch(0.55 0.10 195) — mid teal, white text contrasts fine.
+ * In dark:  --brand = oklch(0.70 0.12 195) — lighter teal on dark bg; the button
+ * interior text is var(--puck-color-white) = var(--card) ≈ near-black in dark,
+ * which contrasts the brighter teal. Contrast is maintained in both modes.
+ */

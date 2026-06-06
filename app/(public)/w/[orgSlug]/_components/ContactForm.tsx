@@ -86,39 +86,48 @@ function readTracking() {
 
 /** Configurable submit-button appearance, derived from publicPage.contact. */
 export type SubmitAppearance = {
-  /** CSS var name for the button color, e.g. "--pf-color-primary". */
-  colorVar: string;
+  /** Resolved CSS color for the button — e.g. "var(--pf-color-primary)" or "#ff0000". */
+  color: string;
   style: "solid" | "outline" | "soft";
+  /** Override the button's border-radius (e.g. "0.5rem"). Falls back to var(--pf-radius). */
+  borderRadius?: string;
+  /** Resolved CSS color for button text. Overrides the style-derived default. */
+  textColor?: string;
+  /** Explicit border string — e.g. "2px solid #ff0000". Overrides the style-derived border. */
+  border?: string;
 };
 
 function submitButtonStyle(appearance: SubmitAppearance, disabled: boolean): CSSProperties {
-  const color = `var(${appearance.colorVar})`;
+  const color = appearance.color;
   const base: CSSProperties = {
     marginTop: "1rem",
     width: "100%",
     minHeight: "48px",
-    borderRadius: "var(--pf-radius)",
+    borderRadius: appearance.borderRadius ?? "var(--pf-radius)",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
     fontSize: "1rem",
     fontFamily: "var(--pf-font-body)",
   };
+  let style: CSSProperties;
   if (appearance.style === "outline") {
-    return { ...base, backgroundColor: "transparent", color, border: `1px solid ${color}` };
-  }
-  if (appearance.style === "soft") {
-    return {
+    style = { ...base, backgroundColor: "transparent", color: appearance.textColor ?? color, border: `1px solid ${color}` };
+  } else if (appearance.style === "soft") {
+    style = {
       ...base,
       backgroundColor: `color-mix(in srgb, ${color} 16%, var(--pf-color-bg))`,
-      color,
+      color: appearance.textColor ?? color,
       border: "none",
     };
+  } else {
+    style = { ...base, backgroundColor: color, color: appearance.textColor ?? "var(--pf-color-bg)", border: "none" };
   }
-  return { ...base, backgroundColor: color, color: "var(--pf-color-bg)", border: "none" };
+  if (appearance.border) style = { ...style, border: appearance.border };
+  return style;
 }
 
 const DEFAULT_SUBMIT_APPEARANCE: SubmitAppearance = {
-  colorVar: "--pf-color-primary",
+  color: "var(--pf-color-primary)",
   style: "solid",
 };
 
@@ -127,11 +136,14 @@ export function ContactForm({
   labels,
   onSuccess,
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
+  preview = false,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
   onSuccess: () => void;
   submitAppearance?: SubmitAppearance;
+  /** Editor preview — never POST a real inquiry; submitting is a no-op. */
+  preview?: boolean;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -178,6 +190,9 @@ export function ContactForm({
   }, [form]);
 
   async function onSubmit(data: InquirySubmissionInput) {
+    // In the owner's editor preview the form is fully interactive but inert —
+    // submitting must not create a real inquiry/booking against the workspace.
+    if (preview) return;
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
