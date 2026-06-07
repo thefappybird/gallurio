@@ -104,6 +104,8 @@ export type PortfolioHeaderConfig = {
   backgroundOpacity?: number;
   /** Nav link text color. Token or hex. */
   linkColor?: string;
+  /** Brand heading color. Token or hex. */
+  brandTextColor?: string;
   /** Active nav link text color. Token or hex. */
   activeLinkColor?: string;
   /** Bottom border width in px (0 = none). */

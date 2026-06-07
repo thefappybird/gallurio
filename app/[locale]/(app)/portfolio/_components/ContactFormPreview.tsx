@@ -79,6 +79,7 @@ export function ContactFormPreview({
             onSuccess={() => {}}
             preview
             compactLocationPicker
+            scrollable
           />
         </div>
       </div>

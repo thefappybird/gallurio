@@ -127,6 +127,7 @@ export function PortfolioHeader({
 
   const fontSize = config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem";
   const linkColor = resolveColor(config?.linkColor, "var(--pf-color-fg)");
+  const brandTextColor = resolveColor(config?.brandTextColor, linkColor);
   const activeLinkColor = resolveColor(config?.activeLinkColor, "var(--pf-color-fg)");
   const shadow = config?.shadowSize ? (SHADOW_MAP[config.shadowSize] ?? "none") : "none";
 
@@ -192,7 +193,7 @@ export function PortfolioHeader({
           href={homeHref}
           style={{
             fontFamily: "var(--pf-font-heading)",
-            color: linkColor,
+            color: brandTextColor,
             fontSize: navbarSize.brandFontSize,
             fontWeight: 700,
             textDecoration: "none",
@@ -388,6 +389,13 @@ function ContactButton({
   config?: PortfolioHeaderConfig | null;
   minHeight: string;
 }) {
+  function handleClick() {
+    onActivate?.();
+    if (typeof window !== "undefined") {
+      window.__gallurioOpenContact?.();
+    }
+  }
+
   const contactButtonFill = resolveColor(config?.contactButtonColor, "var(--pf-color-primary)");
   const contactButtonStyle: React.CSSProperties & Record<string, string | number | undefined> = {
     "--pf-contact-button-fill": contactButtonFill,
@@ -411,7 +419,13 @@ function ContactButton({
   };
 
   return (
-    <button type="button" data-cta="contact" className="pf-nav-contact" onClick={onActivate} style={contactButtonStyle}>
+    <button
+      type="button"
+      data-cta="contact"
+      className="pf-nav-contact"
+      onClick={handleClick}
+      style={contactButtonStyle}
+    >
       {label}
     </button>
   );

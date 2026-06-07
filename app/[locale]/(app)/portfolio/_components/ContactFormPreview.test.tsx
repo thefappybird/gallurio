@@ -151,4 +151,21 @@ describe("ContactFormPreview", () => {
 
     expect(frame.style.maxHeight).toBe("calc(100dvh - 2rem)");
   });
+
+  it("lets the form itself scroll inside the editor preview surface", () => {
+    renderWithProviders(
+      <ContactFormPreview
+        contact={contact}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
+    );
+
+    const form = screen.getByRole("button", { name: "Continue" }).closest("form");
+    expect(form?.style.overflowY).toBe("auto");
+    expect(form?.style.maxHeight).toBe("100%");
+  });
 });

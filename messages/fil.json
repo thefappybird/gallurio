@@ -1141,6 +1141,7 @@
           "bgColorLabel": "Kulay ng background",
           "bgOpacityLabel": "Opacity ng background",
           "linkColorLabel": "Kulay ng teksto ng link",
+          "brandTextColorLabel": "Kulay ng heading",
           "activeLinkColorLabel": "Kulay ng teksto ng aktibong link",
           "borderBottomLabel": "Border sa ibaba",
           "borderColorLabel": "Kulay ng border",

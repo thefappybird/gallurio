@@ -104,6 +104,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
   const navbarSize = NAVBAR_SIZE_MAP[header.navbarSize || "balanced"];
 
   const linkColor = resolveColor(header.linkColor, brandKit, brandKit.foregroundColor);
+  const brandTextColor = resolveColor(header.brandTextColor, brandKit, linkColor);
   const activeLinkColor = resolveColor(header.activeLinkColor, brandKit, brandKit.foregroundColor);
 
   function getActiveLinkStyle(): React.CSSProperties {
@@ -197,7 +198,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
         >
           <span
             style={{
-              color: linkColor,
+              color: brandTextColor,
               fontSize: navbarSize.brandFontSize,
               fontWeight: 700,
               fontFamily: "var(--pf-font-heading)",

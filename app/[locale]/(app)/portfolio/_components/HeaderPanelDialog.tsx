@@ -382,6 +382,30 @@ export function HeaderPanelDialog({
               <p className="text-xs text-muted-foreground">{t("brandTextHelp")}</p>
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">{t("navbarSizeLabel")}</span>
+              <div className="flex">
+                {HEADER_NAVBAR_SIZES.map((s) => {
+                  const isActive = (header.navbarSize || "balanced") === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      aria-label={navbarSizeLabels[s]}
+                      aria-pressed={isActive}
+                      onClick={() => set("navbarSize", s === "balanced" ? "" : s)}
+                      className={cn(
+                        "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        isActive && "bg-foreground text-background hover:bg-foreground",
+                      )}
+                    >
+                      {navbarSizeLabels[s]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Logo upload */}
             <div className="flex flex-col gap-1.5">
               <Label>{t("logoLabel")}</Label>
@@ -519,31 +543,6 @@ export function HeaderPanelDialog({
               onToggle={() => setOpenDrawer((current) => current === "links" ? null : "links")}
             >
 
-              {/* Font size */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-muted-foreground">{t("navbarSizeLabel")}</span>
-                <div className="flex">
-                  {HEADER_NAVBAR_SIZES.map((s) => {
-                    const isActive = (header.navbarSize || "balanced") === s;
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        aria-label={navbarSizeLabels[s]}
-                        aria-pressed={isActive}
-                        onClick={() => set("navbarSize", s === "balanced" ? "" : s)}
-                        className={cn(
-                          "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                          isActive && "bg-foreground text-background hover:bg-foreground",
-                        )}
-                      >
-                        {navbarSizeLabels[s]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("fontSizeLabel")}</span>
                 <div className="flex">
@@ -573,6 +572,13 @@ export function HeaderPanelDialog({
                 active={header.linkColor}
                 brandKit={brandKit}
                 onToggle={(c) => set("linkColor", c)}
+              />
+
+              <ColorSwatchRow
+                label={t("brandTextColorLabel")}
+                active={header.brandTextColor}
+                brandKit={brandKit}
+                onToggle={(c) => set("brandTextColor", c)}
               />
 
               <ColorSwatchRow

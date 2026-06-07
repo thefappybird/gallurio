@@ -103,6 +103,28 @@ describe("PortfolioHeader", () => {
     expect(screen.getByRole("button", { name: "Contact" }).style.minHeight).toBe("52px");
   });
 
+  it("uses a dedicated heading color when configured", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ linkColor: "foreground", brandTextColor: "accent" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.color).toBe("var(--pf-color-accent)");
+    expect(screen.getByRole("link", { name: "Home" }).style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("opens contact directly from the header button", () => {
+    window.__gallurioOpenContact = vi.fn();
+
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact" }));
+
+    expect(window.__gallurioOpenContact).toHaveBeenCalledTimes(1);
+  });
+
   it("exposes an accessible menu toggle that flips aria-expanded", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const toggle = screen.getByLabelText("Open menu");

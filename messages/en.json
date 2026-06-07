@@ -1141,6 +1141,7 @@
           "bgColorLabel": "Background color",
           "bgOpacityLabel": "Background opacity",
           "linkColorLabel": "Link text color",
+          "brandTextColorLabel": "Heading color",
           "activeLinkColorLabel": "Active link text color",
           "borderBottomLabel": "Border bottom",
           "borderColorLabel": "Border color",

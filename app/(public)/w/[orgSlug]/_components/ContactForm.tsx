@@ -42,25 +42,29 @@ export type InquiryFormLabels = {
   requiredHint: string;
 };
 
-const fieldStyle: CSSProperties = {
-  width: "100%",
-  minHeight: "44px",
-  padding: "0 0.75rem",
-  backgroundColor: "var(--pf-color-bg)",
-  color: "var(--pf-color-fg)",
-  border: "1px solid color-mix(in srgb, var(--pf-color-fg) 28%, transparent)",
-  borderRadius: "var(--pf-radius)",
-  fontSize: "0.9375rem",
-  fontFamily: "var(--pf-font-body)",
-};
+function createFieldStyle(): CSSProperties {
+  return {
+    width: "100%",
+    minHeight: "44px",
+    padding: "0 0.75rem",
+    backgroundColor: "var(--pf-color-bg)",
+    color: "currentColor",
+    border: "1px solid color-mix(in srgb, currentColor 28%, transparent)",
+    borderRadius: "var(--pf-radius)",
+    fontSize: "0.9375rem",
+    fontFamily: "var(--pf-font-body)",
+  };
+}
 
-const labelStyle: CSSProperties = {
-  display: "block",
-  fontSize: "0.8125rem",
-  fontWeight: 600,
-  color: "var(--pf-color-fg)",
-  marginBottom: "0.25rem",
-};
+function createLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    fontSize: "0.8125rem",
+    fontWeight: 600,
+    color: "currentColor",
+    marginBottom: "0.25rem",
+  };
+}
 
 function todayIso(): string {
   const d = new Date();
@@ -130,6 +134,7 @@ export function ContactForm({
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
   preview = false,
   compactLocationPicker = false,
+  scrollable = false,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
@@ -137,6 +142,7 @@ export function ContactForm({
   submitAppearance?: SubmitAppearance;
   preview?: boolean;
   compactLocationPicker?: boolean;
+  scrollable?: boolean;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -171,6 +177,8 @@ export function ContactForm({
     }),
     [submitAppearance.errorColor]
   );
+  const fieldStyle = useMemo(createFieldStyle, []);
+  const labelStyle = useMemo(createLabelStyle, []);
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const minDate = todayIso();
@@ -215,8 +223,55 @@ export function ContactForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate style={{ fontFamily: "var(--pf-font-body)" }}>
-      <style>{`.pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }`}</style>
+    <form
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      noValidate
+      className="pf-contact-form"
+      style={{
+        fontFamily: "var(--pf-font-body)",
+        color: "inherit",
+        maxHeight: scrollable ? "100%" : undefined,
+        overflowY: scrollable ? "auto" : undefined,
+        paddingRight: scrollable ? "0.25rem" : undefined,
+      }}
+    >
+      <style>{`
+        .pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+        .pf-contact-form,
+        .pf-contact-form label,
+        .pf-contact-form legend,
+        .pf-contact-form span,
+        .pf-contact-form p {
+          color: inherit;
+        }
+        .pf-contact-form input,
+        .pf-contact-form select,
+        .pf-contact-form textarea,
+        .pf-contact-form [data-slot="input"] {
+          color: inherit;
+          border-color: color-mix(in srgb, currentColor 28%, transparent);
+        }
+        .pf-contact-form input::placeholder,
+        .pf-contact-form textarea::placeholder,
+        .pf-contact-form [data-slot="input"]::placeholder {
+          color: color-mix(in srgb, currentColor 62%, transparent);
+        }
+        .pf-contact-form .pf-contact-phone,
+        .pf-contact-form .pf-contact-location {
+          color: inherit;
+        }
+        .pf-contact-form .pf-contact-phone input,
+        .pf-contact-form .pf-contact-location input,
+        .pf-contact-form .pf-contact-location button,
+        .pf-contact-form .pf-contact-location [data-slot="input"] {
+          color: inherit;
+        }
+        .pf-contact-form .pf-contact-location .text-muted-foreground,
+        .pf-contact-form .pf-contact-location svg,
+        .pf-contact-form .pf-contact-phone .PhoneInputCountrySelectArrow {
+          color: color-mix(in srgb, currentColor 62%, transparent);
+        }
+      `}</style>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "booking")}>
         <TabsList>
           <TabsTab value="client">{labels.tabClient}</TabsTab>
@@ -244,6 +299,7 @@ export function ContactForm({
               render={({ field }) => (
                 <PhoneInput
                   id="cf-phone"
+                  className="pf-contact-phone"
                   value={field.value || undefined}
                   onChange={(value) => field.onChange(value ?? "")}
                 />
@@ -385,6 +441,7 @@ export function ContactForm({
               render={({ field }) => (
                 <LocationPicker
                   id="cf-location"
+                  className="pf-contact-location"
                   value={{
                     address: field.value.address ?? "",
                     lat: field.value.lat ?? null,

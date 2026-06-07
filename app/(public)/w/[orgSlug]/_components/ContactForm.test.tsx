@@ -232,4 +232,20 @@ describe("ContactForm", () => {
     await waitFor(() => expect(screen.getByText(/event title/i)).toBeInTheDocument());
     expect(screen.queryByLabelText("Date")).toBeNull();
   });
+
+  it("applies a custom error color to validation messages", async () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        submitAppearance={{ color: "#111111", style: "solid", errorColor: "#ff3355" }}
+        onSuccess={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts[0]).toHaveStyle({ color: "#ff3355" });
+  });
 });

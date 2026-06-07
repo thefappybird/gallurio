@@ -107,4 +107,16 @@ describe("HeaderPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
+
+  it("keeps navbar size on Setup and heading color on Design", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+
+    expect(screen.getByText("Heading color")).toBeInTheDocument();
+    expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
+  });
 });

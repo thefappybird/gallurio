@@ -1141,6 +1141,7 @@
           "bgColorLabel": "Warna latar belakang",
           "bgOpacityLabel": "Kelegapan latar belakang",
           "linkColorLabel": "Warna teks pautan",
+          "brandTextColorLabel": "Warna heading",
           "activeLinkColorLabel": "Warna teks pautan aktif",
           "borderBottomLabel": "Sempadan bawah",
           "borderColorLabel": "Warna sempadan",

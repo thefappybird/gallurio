@@ -33,11 +33,12 @@ type Props = {
   disabled?: boolean;
   id?: string;
   compact?: boolean;
+  className?: string;
 };
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-export function LocationPicker({ value, onChange, disabled, id, compact }: Props) {
+export function LocationPicker({ value, onChange, disabled, id, compact, className }: Props) {
   const t = useTranslations("app.bookings.locationPicker");
   const generatedId = useId();
   const inputId = id ?? generatedId;
@@ -137,7 +138,7 @@ export function LocationPicker({ value, onChange, disabled, id, compact }: Props
   const hasValue = !!value.address || value.lat != null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={cn("flex flex-col gap-2", className)}>
       <div className="relative">
         <div className="relative">
           <SearchIcon

@@ -93,6 +93,7 @@ export const portfolioHeaderConfigSchema = z.object({
   backgroundColor: z.string().max(32).optional().or(z.literal("")),
   backgroundOpacity: z.number().int().min(0).max(100).optional(),
   linkColor: z.string().max(32).optional().or(z.literal("")),
+  brandTextColor: z.string().max(32).optional().or(z.literal("")),
   activeLinkColor: z.string().max(32).optional().or(z.literal("")),
   borderBottomWidth: z.number().int().min(0).max(8).optional(),
   borderBottomColor: z.string().max(32).optional().or(z.literal("")),
