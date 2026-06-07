@@ -497,6 +497,7 @@ export function HeaderPanelDialog({
                 value={header.backgroundOpacity ?? 100}
                 min={0}
                 max={100}
+                suffix="%"
                 onChange={(v) => set("backgroundOpacity", v ?? 100)}
               />
 
@@ -627,6 +628,7 @@ export function HeaderPanelDialog({
                   value={header.highlightOpacity ?? 100}
                   min={0}
                   max={100}
+                  suffix="%"
                   onChange={(v) => set("highlightOpacity", v ?? 100)}
                 />
               )}
@@ -667,6 +669,7 @@ export function HeaderPanelDialog({
                 value={header.contactButtonOpacity ?? 100}
                 min={0}
                 max={100}
+                suffix="%"
                 onChange={(v) => set("contactButtonOpacity", v ?? 100)}
               />
               <ColorSwatchRow

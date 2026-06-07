@@ -119,6 +119,7 @@ describe("EditorShell", () => {
   it("renders the editor with the workspace name + active zone in the title", () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
+    expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("min-h-svh");
   });
 
   it("renders the zone switcher and switches the active zone", async () => {

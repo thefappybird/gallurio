@@ -162,10 +162,13 @@ describe("updateContactConfigAction", () => {
       description: "We reply fast",
       buttonStyle: "solid",
       buttonColor: "accent",
+      addSessionButtonStyle: "outline",
+      addSessionButtonColor: "secondary",
     });
     expect(res).toEqual({ ok: true });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.contact!.title).toBe("Say hi");
+    expect(ws!.publicPage!.contact!.addSessionButtonColor).toBe("secondary");
   });
 
   it("rejects an over-long title", async () => {

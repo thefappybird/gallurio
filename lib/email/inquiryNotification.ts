@@ -1,5 +1,6 @@
 import "server-only";
 import { sendEmail, type SendEmailResult } from "./send";
+import { buildInquiryAuthPath } from "@/lib/inquiries/links";
 
 type InquiryLocation = {
   label?: string | null;
@@ -37,8 +38,7 @@ function escapeHtml(value: string): string {
 function inboxUrl(inquiryId: string): string | null {
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   if (!base) return null;
-  const redirectTarget = encodeURIComponent(`/inquiries/${inquiryId}`);
-  return `${base}/sign-in?redirect_url=${redirectTarget}`;
+  return buildInquiryAuthPath(base, inquiryId);
 }
 
 function formatSessions(sessions: InquiryNotificationData["sessions"]): string {

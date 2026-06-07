@@ -104,6 +104,25 @@ describe("GalleryCarouselBlock", () => {
     expect(container.querySelectorAll("img")).toHaveLength(4);
   });
 
+  it("renders heading and description as an overlay without a footer", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seed(ws, col._id, 2);
+    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
+      GalleryCarouselBlock({
+        ...base,
+        collectionId: col._id.toString(),
+        heading: "Recent work",
+        description: "Selected from the archive",
+      })
+    );
+    const { container } = render(el);
+    expect(screen.getByText("Recent work")).toBeInTheDocument();
+    expect(screen.getByText("Selected from the archive")).toBeInTheDocument();
+    expect(container.querySelector("[data-gallery-overlay='true']")).not.toBeNull();
+    expect(screen.queryByText(/more on request/i)).toBeNull();
+  });
+
   it("hides items from a private collection", async () => {
     const ws = new Types.ObjectId();
     const col = await makeCollection(ws, false);

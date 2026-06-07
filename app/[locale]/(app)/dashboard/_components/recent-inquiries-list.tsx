@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { InquiryDoc } from "@/lib/db/models";
+import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
 type Props = {
   inquiries: InquiryDoc[];
@@ -31,7 +32,7 @@ export function RecentInquiriesList({ inquiries, locale, title, empty, viewAll }
             {inquiries.map((q) => (
               <li key={String(q._id)}>
                 <Link
-                  href={`/inquiries/${String(q._id)}`}
+                  href={buildInquiryModalPath(String(q._id))}
                   className="flex items-start justify-between gap-2 py-2.5 transition-colors hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring -mx-2 px-2"
                 >
                   <div className="flex flex-1 flex-col min-w-0">

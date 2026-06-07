@@ -81,7 +81,7 @@ Facebook-style notification center in the app shell. Triggered by the same event
 3. The SSE/WebSocket Route Handler and connection management
 4. UI components: bell icon with badge, notification panel, notification row
 5. Read/unread state management (optimistic mark-as-read)
-6. All five locales for notification title/body strings
+6. All four active locales for notification title/body strings
 7. Notification preferences per workspace (which types to enable) — optional, can ship with all-on default
 
 ---

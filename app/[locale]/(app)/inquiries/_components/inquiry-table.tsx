@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/navigation";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
+import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
 export type InquiryRow = {
   id: string;
@@ -66,7 +67,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
         {rows.map((row) => (
           <li key={row.id}>
             <Link
-              href={`/inquiries/${row.id}`}
+              href={buildInquiryModalPath(row.id)}
               aria-label={t("table.open", { name: row.name })}
               className="flex flex-col gap-1.5 border border-border bg-card p-4 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
@@ -110,7 +111,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                 </td>
                 <td className="px-3 py-2.5 align-middle">
                   <Link
-                    href={`/inquiries/${row.id}`}
+                    href={buildInquiryModalPath(row.id)}
                     aria-label={t("table.open", { name: row.name })}
                     className="flex flex-col focus-visible:outline-none focus-visible:underline"
                   >

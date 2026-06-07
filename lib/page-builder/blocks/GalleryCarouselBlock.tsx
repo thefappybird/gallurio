@@ -20,15 +20,15 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
-import { GalleryHeader, GalleryFooter } from "./GalleryText";
+import { GalleryHeader } from "./GalleryText";
 
 export type GalleryCarouselProps = {
   _style?: BlockStyle;
   heading: string;
   description: string;
-  footer: string;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
+  overlayAlign: "left" | "center" | "right";
   autoplay: boolean;
   maxItems: number;
 };
@@ -36,9 +36,9 @@ export type GalleryCarouselProps = {
 export const galleryCarouselDefaultProps: GalleryCarouselProps = {
   heading: "",
   description: "",
-  footer: "",
   collectionId: "",
   aspect: "landscape",
+  overlayAlign: "center",
   autoplay: false,
   maxItems: 12,
 };
@@ -53,9 +53,9 @@ export async function GalleryCarouselBlock({
   _style,
   heading,
   description,
-  footer,
   collectionId,
   aspect,
+  overlayAlign,
   autoplay,
   maxItems,
   puck,
@@ -107,23 +107,49 @@ export async function GalleryCarouselBlock({
       data-block="gallery-carousel"
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 0.75rem",
+        padding: "0.75rem",
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
     >
-      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
-        <GalleryHeader heading={heading} description={description} />
-      </div>
-      <GalleryCarouselClient
-        slides={slides}
-        aspect={aspect}
-        autoplay={autoplay}
-        labels={{ hint: labels.carouselHint, prev: labels.carouselPrev, next: labels.carouselNext }}
-      />
-      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
-        <GalleryFooter footer={footer} />
+      <div style={{ position: "relative", maxWidth: "80rem", margin: "0 auto" }}>
+        <GalleryCarouselClient
+          slides={slides}
+          aspect={aspect}
+          autoplay={autoplay}
+          labels={{ hint: labels.carouselHint, prev: labels.carouselPrev, next: labels.carouselNext }}
+        />
+        <div
+          data-gallery-overlay="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent:
+              overlayAlign === "left"
+                ? "flex-start"
+                : overlayAlign === "right"
+                ? "flex-end"
+                : "center",
+            padding: "1.5rem",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              width: "min(100%, 40rem)",
+            }}
+          >
+            <GalleryHeader
+              heading={heading}
+              description={description}
+              align={overlayAlign}
+              overlay
+            />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -164,7 +190,6 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
     _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
     description: { type: "textarea", label: "Description" },
-    footer: { type: "textarea", label: "Footer" },
     collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",
@@ -175,6 +200,15 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
         { label: "Portrait", value: "portrait" },
       ],
     },
+    overlayAlign: {
+      type: "select",
+      label: "Overlay align",
+      options: [
+        { label: "Left", value: "left" },
+        { label: "Center", value: "center" },
+        { label: "Right", value: "right" },
+      ],
+    } as Field<"left" | "center" | "right">,
     autoplay: {
       type: "select",
       label: "Autoplay",

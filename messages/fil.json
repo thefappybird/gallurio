@@ -537,8 +537,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
@@ -898,13 +897,12 @@
         "all": "Lahat",
         "new": "Bago",
         "contacted": "Nakausap na",
-        "converted": "Na-convert",
+        "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
         "new": "Bago",
         "contacted": "Nakausap na",
-        "converted": "Na-book",
         "archived": "Naka-archive",
         "booked": "Na-book"
       },
@@ -992,7 +990,7 @@
         "history": {
           "title": "Kasaysayan",
           "submitted": "Isinumite ang katanungan",
-          "converted": "Naaprubahan bilang booking"
+          "booked": "Naaprubahan bilang booking"
         }
       }
     },
@@ -1087,8 +1085,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "bgColorLabel": "Kulay ng background",
           "textColorLabel": "Kulay ng teksto",
@@ -1097,6 +1094,8 @@
           "borderColorLabel": "Kulay ng hangganan",
           "sectionPopup": "Popup",
           "sectionButton": "Button",
+          "submitButtonSection": "Submit button",
+          "addSessionButtonSection": "Button ng bagong petsa",
           "radius": {
             "sharp": "Matalas",
             "subtle": "Banayad",
@@ -1451,7 +1450,8 @@
       "confirmBody": "Naipadala na ang iyong katanungan. Makikipag-ugnayan kami sa pamamagitan ng iyong piniling paraan sa lalong madaling panahon.",
       "confirmClose": "Tapos",
       "tabClient": "Iyong detalye",
-      "tabBooking": "Detalye ng kaganapan",
+      "tabEvent": "Detalye ng kaganapan",
+      "tabLocation": "Lokasyon at mga tala",
       "name": "Pangalan",
       "email": "Email",
       "phone": "Telepono (opsyonal)",

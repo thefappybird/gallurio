@@ -4,7 +4,8 @@ import { useCallback, useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 import { useGlobalContactTrigger } from "@/lib/hooks/useGlobalContactTrigger";
-import { ContactForm, type InquiryFormLabels, type SubmitAppearance } from "./ContactForm";
+import { ContactForm, type InquiryFormLabels } from "./ContactForm";
+import { resolveAddSessionAppearance, resolveSubmitAppearance } from "./contactButtonAppearance";
 import { ContactConfirmation } from "./ContactConfirmation";
 
 export type ContactModalLabels = {
@@ -25,27 +26,10 @@ const CONTACT_RADIUS_MAP: Record<string, string> = {
   rounded: "0.5rem",
 };
 
-/** Resolves a color value (token name OR custom hex) to a CSS color string. */
 function resolveContactColor(value: string | undefined, fallback: string): string {
   if (!value) return fallback;
   if (value.startsWith("#")) return value;
   return `var(--pf-color-${value}, ${fallback})`;
-}
-
-function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): SubmitAppearance {
-  const color = resolveContactColor(contact?.buttonColor, "var(--pf-color-primary)");
-  const style = (contact?.buttonStyle || "solid") as SubmitAppearance["style"];
-  const borderRadius = contact?.buttonRadius ? CONTACT_RADIUS_MAP[contact.buttonRadius] : undefined;
-  const textColor = contact?.buttonTextColor
-    ? resolveContactColor(contact.buttonTextColor, "inherit")
-    : undefined;
-  const errorColor = contact?.errorMessageColor
-    ? resolveContactColor(contact.errorMessageColor, "var(--pf-color-accent)")
-    : undefined;
-  const border = contact?.buttonBorderWidth
-    ? `${contact.buttonBorderWidth}px solid ${resolveContactColor(contact.buttonBorderColor, "currentColor")}`
-    : undefined;
-  return { color, style, borderRadius, textColor, border, errorColor };
 }
 
 function resolvePopupExtraStyles(popupStyle?: string): React.CSSProperties {
@@ -91,6 +75,7 @@ export function ContactModal({
   const title = contact?.title?.trim() || labels.title;
   const description = contact?.description?.trim() || labels.description;
   const submitAppearance = resolveSubmitAppearance(contact);
+  const addSessionAppearance = resolveAddSessionAppearance(contact);
   const popupExtraStyles = resolvePopupExtraStyles(contact?.popupStyle);
   const popupBorderRadius = contact?.popupRadius
     ? CONTACT_RADIUS_MAP[contact.popupRadius]
@@ -192,6 +177,7 @@ export function ContactModal({
                 workspaceSlug={workspaceSlug}
                 labels={labels.form}
                 submitAppearance={submitAppearance}
+                addSessionAppearance={addSessionAppearance}
                 onSuccess={() => setSubmitted(true)}
               />
             )}

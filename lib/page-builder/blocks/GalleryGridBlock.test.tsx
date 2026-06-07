@@ -264,34 +264,10 @@ describe("GalleryGridBlock — maxItems", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Tests: block heading / description / footer text
+// Tests: block output
 // ---------------------------------------------------------------------------
 
-describe("GalleryGridBlock — block text", () => {
-  it("renders heading, description, and footer when provided", async () => {
-    const ws = makeWorkspaceId();
-    const col = makeCollectionId();
-
-    await seedItems(ws, col, 2);
-
-    const element = await runWithRenderWorkspace(
-      { _id: ws.toString(), name: "Test Workspace" },
-      () =>
-        GalleryGridBlock({
-          ...defaultProps,
-          collectionId: col.toString(),
-          heading: "Our Work",
-          description: "A selection of recent shoots",
-          footer: "More on request",
-        })
-    );
-    render(element);
-
-    expect(screen.getByText("Our Work")).toBeInTheDocument();
-    expect(screen.getByText("A selection of recent shoots")).toBeInTheDocument();
-    expect(screen.getByText("More on request")).toBeInTheDocument();
-  });
-
+describe("GalleryGridBlock — block output", () => {
   it("omits per-image captions (captions feature removed)", async () => {
     const ws = makeWorkspaceId();
     const col = makeCollectionId();

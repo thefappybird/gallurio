@@ -146,7 +146,7 @@ className="... text-xs font-medium capitalize text-card-foreground"
 const label = isKnown ? tStatus(status as BookingStatus) : status;
 ```
 
-`label` is already the localized status string from `app.bookings.statusValues`. `capitalize` (CSS `text-transform: capitalize`) upper-cases the first letter of **every word**, which (a) is redundant if catalogs are already cased, and (b) mis-cases multi-word labels in any locale (e.g. a two-word translation gets both words capitalized) and is a no-op/incorrect for Thai. For the unknown-status fallback it raw-cases a DB enum value like `draft` → `Draft`, which is fine, but the localized path shouldn't be force-transformed.
+`label` is already the localized status string from `app.bookings.statusValues`. `capitalize` (CSS `text-transform: capitalize`) upper-cases the first letter of **every word**, which (a) is redundant if catalogs are already cased, and (b) mis-cases multi-word labels in any locale. For the unknown-status fallback it raw-cases a DB enum value like `draft` → `Draft`, which is fine, but the localized path shouldn't be force-transformed.
 
 **Recommended fix:** drop `capitalize` and rely on the catalog casing, or apply it only to the unknown-status fallback branch. Low impact but it's a latent i18n correctness nit.
 
@@ -161,6 +161,6 @@ const label = isKnown ? tStatus(status as BookingStatus) : status;
 - **Inactive / off-page deep-link** — `getClientById` does not filter by `isActive` or pagination, so an inactive or off-page client still resolves and opens. Correct.
 - **`StatusPill` unknown-status fallback** — `draft` (not in `BOOKING_STATUSES`) and any unknown string render the raw label with no color dot rather than throwing. Wizard gates the pill on `!loading && values.status`. Detail header always has a real status. Safe.
 - **Save guard / discard flow** — `save()` → guard → `runSave()`; `confirmSubmitDiscardDrafts()` closes the dialog then calls `runSave()`. `runSave` pushes only `lockedDrafts` into `mergedSessions` and clears all drafts (`setDraftSessions([])`) on success, so unconfirmed drafts are genuinely discarded. Error path rolls back booking/activity/drafts/edits. `onSave: () => void` — no caller awaits the now-sync `save`.
-- **i18n completeness** — `viewClient`, `unconfirmedDrafts.{title,description,submit,cancel}`, `editTitleNamed` present in all 5 locales. ICU plural uses `{count, plural, one {…#…} other {…#…}}` with correct `#`; trailing prose lives inside the single message (no fragment concatenation). Thai `one`/`other` identical is correct per CLDR.
+- **i18n completeness** — `viewClient`, `unconfirmedDrafts.{title,description,submit,cancel}`, `editTitleNamed` present in all 4 active locales. ICU plural uses `{count, plural, one {…#…} other {…#…}}` with correct `#`; trailing prose lives inside the single message (no fragment concatenation).
 - **Design rules** — `StatusPill` uses `border border-border bg-card text-card-foreground`, no `rounded-*`, semantic tokens only, status color via the shared `STATUS_COLOR_VAR` CSS vars (no raw colors). Sharp edges preserved.
 - **Touch targets / paired states** — "View client" and "Change client" buttons are `min-h-11` with paired `hover:`/`focus-visible:` and `disabled:` styling; View client shows a real `Loader2Icon` spinner during navigation and has `aria-label`.

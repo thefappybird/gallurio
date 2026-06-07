@@ -108,7 +108,7 @@ Run: `rg "Team(Membership|)\.(find|update|delete)" app lib --type ts` and audit 
 
 ## 7. Locale parity
 
-- [ ] All five locales (`en, fil, ms, id, th`) have every `app.teams.*` key (the block moved out of `app.settings.teams` when Teams became a standalone page) and the `app.sidebar.teams` nav label. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
+- [ ] All four active locales (`en, fil, ms, id`) have every `app.teams.*` key (the block moved out of `app.settings.teams` when Teams became a standalone page) and the `app.sidebar.teams` nav label. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
 - [ ] When a new locale is added, copy the entire `app` block first, then translate values.
 
 ## 8. Routing / proxy

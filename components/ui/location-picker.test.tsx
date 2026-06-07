@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 // Stub the dynamically-imported Leaflet map — the real map touches `window`,
@@ -136,5 +136,41 @@ describe("LocationPicker", () => {
       target: { value: "zzzzzz nowhere" },
     });
     expect(await screen.findByText(/no matches/i)).toBeInTheDocument();
+  });
+
+  it("renders outside a NextIntl provider when explicit labels are passed", () => {
+    render(
+      <LocationPicker
+        value={EMPTY}
+        onChange={() => {}}
+        labels={{
+          searchPlaceholder: "Search venue",
+          searching: "Searching",
+          noResults: "No matches",
+          dragHint: "Drag pin",
+          clear: "Clear",
+        }}
+      />
+    );
+
+    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search venue");
+    expect(screen.getByText("Drag pin")).toBeInTheDocument();
+  });
+
+  it("skips geocoding when search is disabled", () => {
+    vi.useFakeTimers();
+    const fetchMock = mockNominatim([]);
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderWithProviders(
+      <LocationPicker value={EMPTY} onChange={() => {}} searchEnabled={false} />
+    );
+
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "Pier 27, Manila" },
+    });
+    vi.advanceTimersByTime(1000);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

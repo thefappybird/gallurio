@@ -31,8 +31,8 @@ describe("stripLocale", () => {
     expect(stripLocale("/id/settings/account")).toBe("/settings/account");
   });
 
-  it("strips a leading /th prefix", () => {
-    expect(stripLocale("/th/gallery")).toBe("/gallery");
+  it("leaves unsupported locale-like prefixes untouched", () => {
+    expect(stripLocale("/vn/gallery")).toBe("/vn/gallery");
   });
 
   it("strips /en prefix even though en URLs are not emitted with it (regex covers all locales)", () => {
@@ -110,8 +110,8 @@ describe("isMemberBlocked", () => {
     expect(isMemberBlocked("/id/gallery")).toBe(true);
   });
 
-  it("blocks locale-prefixed /th/page-builder", () => {
-    expect(isMemberBlocked("/th/page-builder")).toBe(true);
+  it("does NOT treat unsupported locale-like prefixes as locale wrappers", () => {
+    expect(isMemberBlocked("/vn/page-builder")).toBe(false);
   });
 
   // --- Routes that should NOT be blocked ---

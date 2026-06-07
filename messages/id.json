@@ -537,8 +537,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
@@ -898,13 +897,12 @@
         "all": "Semua",
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Dikonversi",
+        "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Dipesan",
         "archived": "Diarsipkan",
         "booked": "Dipesan"
       },
@@ -992,7 +990,7 @@
         "history": {
           "title": "Riwayat",
           "submitted": "Pertanyaan dikirim",
-          "converted": "Disetujui menjadi pemesanan"
+          "booked": "Disetujui menjadi pemesanan"
         }
       }
     },
@@ -1087,8 +1085,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
@@ -1097,6 +1094,8 @@
           "borderColorLabel": "Warna batas",
           "sectionPopup": "Popup",
           "sectionButton": "Tombol",
+          "submitButtonSection": "Tombol kirim",
+          "addSessionButtonSection": "Tombol tanggal baru",
           "radius": {
             "sharp": "Tajam",
             "subtle": "Halus",
@@ -1451,7 +1450,8 @@
       "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
       "confirmClose": "Selesai",
       "tabClient": "Detail Anda",
-      "tabBooking": "Detail acara",
+      "tabEvent": "Detail acara",
+      "tabLocation": "Lokasi & catatan",
       "name": "Nama",
       "email": "Email",
       "phone": "Telepon (opsional)",

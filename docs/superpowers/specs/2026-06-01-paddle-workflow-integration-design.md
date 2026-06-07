@@ -227,7 +227,7 @@ export default withWorkflow(nextConfig);
 
 ### General
 - `pnpm typecheck` must pass after Workspace model field changes
-- All five locales updated for any new UI strings (billing pages)
+- All four active locales updated for any new UI strings (billing pages)
 
 ---
 

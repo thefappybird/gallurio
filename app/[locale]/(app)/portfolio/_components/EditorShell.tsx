@@ -41,6 +41,10 @@ import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
+import {
+  resolveAddSessionAppearance,
+  resolveSubmitAppearance,
+} from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -203,6 +207,7 @@ export function EditorShell({
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
+  const tLocationPicker = useTranslations("app.bookings.locationPicker");
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -511,7 +516,10 @@ export function EditorShell({
         ? t("contactSettingsShort")
         : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
-  const contactLabels = buildContactLabels((key, values) => tPublicForm(key, values)).form;
+  const contactLabels = buildContactLabels(
+    (key, values) => tPublicForm(key, values),
+    (key, values) => tLocationPicker(key, values)
+  ).form;
   const previewDraft = encodeURIComponent(
     JSON.stringify({
       version: LOCAL_DRAFT_VERSION,
@@ -614,7 +622,8 @@ export function EditorShell({
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
-        className={cn("gallurio-editor", className)}
+        className={cn("gallurio-editor min-h-svh", className)}
+        data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
       >
         {showPuck ? (
@@ -672,32 +681,8 @@ export function EditorShell({
                       contact={contact}
                       brandKit={brandKit}
                       labels={contactLabels}
-                      submitAppearance={{
-                        color: contact.buttonColor?.startsWith("#")
-                          ? contact.buttonColor
-                          : `var(--pf-color-${contact.buttonColor || "primary"})`,
-                        style: (contact.buttonStyle || "solid") as "solid" | "outline" | "soft",
-                        borderRadius: contact.buttonRadius
-                          ? ({ sharp: "0", subtle: "0.25rem", rounded: "0.5rem" }[contact.buttonRadius] ?? "var(--pf-radius)")
-                          : undefined,
-                        textColor: contact.buttonTextColor?.startsWith("#")
-                          ? contact.buttonTextColor
-                          : contact.buttonTextColor
-                            ? `var(--pf-color-${contact.buttonTextColor})`
-                            : undefined,
-                        border: contact.buttonBorderWidth
-                          ? `${contact.buttonBorderWidth}px solid ${
-                              contact.buttonBorderColor?.startsWith("#")
-                                ? contact.buttonBorderColor
-                                : `var(--pf-color-${contact.buttonBorderColor || "foreground"})`
-                            }`
-                          : undefined,
-                        errorColor: contact.errorMessageColor?.startsWith("#")
-                          ? contact.errorMessageColor
-                          : contact.errorMessageColor
-                            ? `var(--pf-color-${contact.errorMessageColor})`
-                            : undefined,
-                      }}
+                      submitAppearance={resolveSubmitAppearance(contact)}
+                      addSessionAppearance={resolveAddSessionAppearance(contact)}
                       defaultTitle={t("contactPreview.title")}
                       defaultDescription={t("contactPreview.description")}
                     />

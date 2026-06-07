@@ -198,7 +198,7 @@ export async function dismissPortfolioGuideAction(): Promise<EditorActionResult>
 }
 
 // "" = auto (locale derived from the workspace country).
-const formLocaleSchema = z.enum(["", "en", "fil", "ms", "id", "th"]);
+const formLocaleSchema = z.enum(["", "en", "fil", "ms", "id"]);
 
 /**
  * Persist the per-page chrome language for the public portfolio (inquiry form,

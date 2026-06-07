@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
+import type { FormEvent } from "react";
 import { renderWithProviders } from "@/test-utils/render";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "./tabs";
 
@@ -36,7 +37,7 @@ describe("Tabs", () => {
   });
 
   it("does not submit a parent form when a tab is clicked", () => {
-    const onSubmit = vi.fn((event: SubmitEvent) => event.preventDefault());
+    const onSubmit = vi.fn((event: FormEvent<HTMLFormElement>) => event.preventDefault());
 
     renderWithProviders(
       <form onSubmit={onSubmit}>

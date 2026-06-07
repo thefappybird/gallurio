@@ -3,6 +3,7 @@ import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, type InquiryDoc, type BookingDoc } from "@/lib/db/models";
 import { INQUIRY_STATUSES } from "@/lib/db/models/Inquiry";
+import { getInquiryStatusFilter } from "@/lib/inquiries/status";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -34,7 +35,7 @@ export async function listInquiries(
   const query: Record<string, unknown> = { workspaceId };
 
   if (filters.status && (INQUIRY_STATUSES as readonly string[]).includes(filters.status)) {
-    query.status = filters.status;
+    query.status = getInquiryStatusFilter(filters.status);
   }
 
   if (filters.from || filters.to) {
@@ -64,7 +65,7 @@ export type InquiryStatusCounts = {
   all: number;
   new: number;
   contacted: number;
-  converted: number;
+  booked: number;
   archived: number;
 };
 
@@ -82,12 +83,12 @@ export async function getInquiryStatusCounts(
   const counts = {
     new: byStatus.get("new") ?? 0,
     contacted: byStatus.get("contacted") ?? 0,
-    converted: byStatus.get("converted") ?? 0,
+    booked: (byStatus.get("booked") ?? 0) + (byStatus.get("converted") ?? 0),
     archived: byStatus.get("archived") ?? 0,
   };
   return {
     ...counts,
-    all: counts.new + counts.contacted + counts.converted + counts.archived,
+    all: counts.new + counts.contacted + counts.booked + counts.archived,
   };
 }
 

@@ -63,6 +63,9 @@ type Components = {
   ServicesPreset: ContainerBlockProps;
   CtaPreset: ContainerBlockProps;
   ContactPreset: ContainerBlockProps;
+  GalleryGridPreset: ContainerBlockProps;
+  GalleryMasonryPreset: ContainerBlockProps;
+  FeaturedWorkPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
@@ -98,6 +101,9 @@ export const puckConfig: Config<Components> = {
     ServicesPreset: presetConfig(SECTION_PRESETS.ServicesPreset.label, SECTION_PRESETS.ServicesPreset.defaultProps),
     CtaPreset: presetConfig(SECTION_PRESETS.CtaPreset.label, SECTION_PRESETS.CtaPreset.defaultProps),
     ContactPreset: presetConfig(SECTION_PRESETS.ContactPreset.label, SECTION_PRESETS.ContactPreset.defaultProps),
+    GalleryGridPreset: presetConfig(SECTION_PRESETS.GalleryGridPreset.label, SECTION_PRESETS.GalleryGridPreset.defaultProps),
+    GalleryMasonryPreset: presetConfig(SECTION_PRESETS.GalleryMasonryPreset.label, SECTION_PRESETS.GalleryMasonryPreset.defaultProps),
+    FeaturedWorkPreset: presetConfig(SECTION_PRESETS.FeaturedWorkPreset.label, SECTION_PRESETS.FeaturedWorkPreset.defaultProps),
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     GalleryCarousel: galleryCarouselBlockConfig,

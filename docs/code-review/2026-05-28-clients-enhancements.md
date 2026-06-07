@@ -5,7 +5,7 @@
 
 ## Summary
 
-This PR delivers six focused enhancements to the Clients module: a fixed source `<Select>` label, a reflowed add/edit form layout, a height-capped scrollable modal, a shared `SourceBadge` component replacing duplicated source-color maps, a right-aligned "Total spent" sortable header, and a restructured deactivate dialog. The work is clean, well-commented where it matters, ships colocated tests for both new components, and updates all five locales for the new `sourceValues` strings.
+This PR delivers six focused enhancements to the Clients module: a fixed source `<Select>` label, a reflowed add/edit form layout, a height-capped scrollable modal, a shared `SourceBadge` component replacing duplicated source-color maps, a right-aligned "Total spent" sortable header, and a restructured deactivate dialog. The work is clean, well-commented where it matters, ships colocated tests for both new components, and updates all four active locales for the new `sourceValues` strings.
 
 Overall the diff is high quality. The mobile, accessibility, and i18n fundamentals are largely respected (paired `hover:`/`focus-visible:`, ≥44px touch targets via `min-h-11`, `aria-sort`, sticky shrink-0 footers, `100dvh` height caps). The one substantive concern is the design-system color choice for the source pills, which fails the "visually distinct" goal in practice. The remaining items are minor.
 
@@ -71,7 +71,7 @@ The test passes regardless of whether two tokens render the same color (see Find
 - **Accessibility is genuinely handled, not bolted on.** Tag-remove buttons have `aria-label` with the interpolated tag, paired `focus-visible:ring`, and ≥44px touch targets that collapse on `sm:`. The table header carries `aria-sort` and the sort control is a real `<button>`. The row's `onKeyDown` correctly ignores events bubbling from interactive children (`e.target !== e.currentTarget`).
 - **The TanStack `ColumnMeta` augmentation is correctly typed** — the generic signature `<TData extends RowData, TValue>` matches `@tanstack/table-core@8.21.3` exactly, so `meta.align` type-checks. Header and cell both read `meta?.align === "right"` consistently. It is a *global* ambient augmentation (`declare module` is hoisted regardless of file location), so `align` is now available to every table — the standard, accepted TanStack pattern and harmless here.
 - **Source-color de-duplication achieves its goal:** both `clients-table.tsx` and `client-detail-modal.tsx` now consume the single `SourceBadge`, eliminating the two divergent `SOURCE_BADGE_CLASS` maps.
-- **All five locales updated** with sensible translations for `sourceValues` (en/fil/ms/id/th). `capitalize` is a no-op for Thai script — acceptable since Thai has no case.
+- **All four active locales updated** with sensible translations for `sourceValues` (en/fil/ms/id).
 - **Error handling in the deactivate dialog is sound:** failures surface via `toast.error` reusing the loading toast id, the dialog stays open for retry, and `onSuccess`/`onOpenChange(false)` are correctly *not* called on error. The test asserts real behavior; the mock shape `{ ok: true }` / `{ error }` matches the real `MutationResult` union.
 
 ---

@@ -5,10 +5,13 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import {
   listInquiries,
   getInquiryStatusCounts,
+  getInquiryWithDraft,
 } from "@/lib/db/queries/inquiries";
 import { InquiriesPageClient } from "./_components/inquiries-page-client";
 import type { InquiryRow } from "./_components/inquiry-table";
 import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
+import type { InquiryDetailModalData } from "./_components/inquiry-detail-modal";
+import { isValidObjectId } from "mongoose";
 
 export async function generateMetadata({
   params,
@@ -27,6 +30,7 @@ type SearchParams = {
   to?: string;
   page?: string;
   limit?: string;
+  inquiryId?: string;
 };
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -42,8 +46,8 @@ function compactSource(source: {
   utm_source?: string | null;
   referrer?: string | null;
 } | null | undefined): string | null {
-  if (!source) return null;
-  if (source.kind === "portfolio") return "portfolio";
+  if (!source) return "portfolio";
+  if (source.kind) return source.kind;
   if (source.utm_source) return source.utm_source;
   if (source.referrer) {
     try {
@@ -66,7 +70,7 @@ export default async function InquiriesPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.inquiries");
 
-  const { workspace } = await requireOrg();
+  const { workspace, role } = await requireOrg();
 
   const sp = await searchParams;
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
@@ -116,6 +120,60 @@ export default async function InquiriesPage({
     source: compactSource(q.source),
   }));
 
+  let initialDetail: InquiryDetailModalData | null = null;
+  if (sp.inquiryId) {
+    const cleanParams = new URLSearchParams(
+      Object.entries(sp).filter(([key, value]) => key !== "inquiryId" && value !== undefined) as [
+        string,
+        string,
+      ][]
+    );
+
+    if (!isValidObjectId(sp.inquiryId)) {
+      redirect({
+        href: { pathname: "/inquiries", query: Object.fromEntries(cleanParams.entries()) },
+        locale,
+      });
+    }
+
+    const detailResult = await getInquiryWithDraft(workspace._id, sp.inquiryId);
+    if (!detailResult) {
+      redirect({
+        href: { pathname: "/inquiries", query: Object.fromEntries(cleanParams.entries()) },
+        locale,
+      });
+    }
+    const detail = detailResult!;
+
+    initialDetail = {
+      inquiryId: String(detail.inquiry._id),
+      locale,
+      name: detail.inquiry.name,
+      email: detail.inquiry.email,
+      phone: detail.inquiry.phone ?? null,
+      preferredContact: detail.inquiry.preferredContact ?? "email",
+      status: detail.inquiry.status,
+      eventType: detail.inquiry.eventType ?? "other",
+      guestCount: detail.inquiry.guestCount ?? null,
+      location: detail.inquiry.location ?? null,
+      message: detail.inquiry.message ?? "",
+      sessions: detail.inquiry.sessions ?? [],
+      submittedAt: detail.inquiry.createdAt.toISOString(),
+      updatedAt: detail.inquiry.updatedAt.toISOString(),
+      bookingMissing: detail.booking === null,
+      booking: detail.booking
+        ? {
+            id: String(detail.booking._id),
+            currency: detail.booking.amount?.currency ?? workspace.currency ?? "PHP",
+            total: detail.booking.amount?.total ?? 0,
+            deposit: detail.booking.amount?.deposit ?? 0,
+            notes: detail.booking.notes ?? "",
+          }
+        : null,
+      isOwner: role === "owner",
+    };
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -134,6 +192,7 @@ export default async function InquiriesPage({
         to={DATE_RE.test(sp.to ?? "") ? sp.to! : ""}
         empty={t("table.empty")}
         emptyHint={t("table.emptyHint")}
+        initialDetail={initialDetail}
       />
     </div>
   );

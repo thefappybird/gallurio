@@ -7,6 +7,15 @@ vi.mock("@/lib/email/inquiryNotification", () => ({
   sendInquiryNotification: (...args: unknown[]) => sendInquiryNotification(...args),
 }));
 
+const sendInquiryClientConfirmation = vi.fn().mockResolvedValue({
+  ok: true,
+  id: null,
+  skipped: true,
+});
+vi.mock("@/lib/email/inquiryClientConfirmation", () => ({
+  sendInquiryClientConfirmation: (...args: unknown[]) => sendInquiryClientConfirmation(...args),
+}));
+
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace, Client, Inquiry, Booking } from "@/lib/db/models";
 import { submitInquiry } from "./inquirySubmission";
@@ -56,6 +65,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   sendInquiryNotification.mockClear();
+  sendInquiryClientConfirmation.mockClear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -197,6 +207,8 @@ describe("submitInquiry", () => {
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
     expect(sendInquiryNotification).toHaveBeenCalledOnce();
     expect(sendInquiryNotification.mock.calls[0][0].recipientEmail).toBe("owner@studio.test");
+    expect(sendInquiryClientConfirmation).toHaveBeenCalledOnce();
+    expect(sendInquiryClientConfirmation.mock.calls[0][0].workspaceName).toBe("Studio Aurora");
   });
 
   it("keeps the inquiry submission committed when email delivery fails", async () => {

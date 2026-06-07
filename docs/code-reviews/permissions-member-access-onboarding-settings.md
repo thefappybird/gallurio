@@ -10,7 +10,7 @@ Pre-merge review of the member-permissions overhaul, onboarding-redirect fix, an
 - **Settings UI** — removed the Switch-Workspace tab and floated the org switcher above the Clerk card; hid the Clerk API-keys tab via `apiKeysProps={{ hide: true }}`; fixed the card width with Tailwind `!important` overrides on Clerk appearance elements.
 - **`components/app/app-sidebar.tsx`** — `MEMBER_NAV` gains `clients`; Settings link shown to all roles; removed dead `/inquiries` + `/gallery` owner links; removed the duplicate in-sidebar collapse trigger (the header `SidebarTrigger` is now the single one).
 - **`dashboard/page.tsx`** — added `if (role !== "owner") notFound()` defense-in-depth gate.
-- i18n: `switchWorkspace → currentWorkspace` across all five locales.
+- i18n: `switchWorkspace → currentWorkspace` across all four active locales.
 
 ## Security audit — verdict: no vulnerabilities
 
@@ -37,7 +37,7 @@ Pre-merge review of the member-permissions overhaul, onboarding-redirect fix, an
 
 ### Confirmed clean
 - No dead imports left (`ArrowLeftRight`, in-sidebar `SidebarTrigger`, `CameraIcon`, `MessageSquareIcon`, `SettingsOrgSwitcher` in page.tsx all removed).
-- All five locales updated consistently; no leftover `switchWorkspace` references in code.
+- All four active locales updated consistently; no leftover `switchWorkspace` references in code.
 - Sharp edges / semantic tokens preserved.
 
 ## Known follow-ups (not blocking this PR)

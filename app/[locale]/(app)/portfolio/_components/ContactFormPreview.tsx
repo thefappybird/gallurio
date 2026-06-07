@@ -1,6 +1,7 @@
 "use client";
 
 import { ContactForm, type InquiryFormLabels, type SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
+import type { ButtonAppearance } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import type { PortfolioBrandKit, PortfolioContactConfig } from "@/lib/page-builder/types";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
   brandKit: PortfolioBrandKit;
   labels: InquiryFormLabels;
   submitAppearance: SubmitAppearance;
+  addSessionAppearance: ButtonAppearance;
   defaultTitle: string;
   defaultDescription: string;
 };
@@ -46,6 +48,7 @@ export function ContactFormPreview({
   brandKit,
   labels,
   submitAppearance,
+  addSessionAppearance,
   defaultTitle,
   defaultDescription,
 }: Props) {
@@ -76,6 +79,7 @@ export function ContactFormPreview({
             workspaceSlug="preview"
             labels={labels}
             submitAppearance={submitAppearance}
+            addSessionAppearance={addSessionAppearance}
             onSuccess={() => {}}
             preview
             compactLocationPicker

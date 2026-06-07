@@ -10,24 +10,34 @@ import { asText } from "@/lib/page-builder/styleToolkit";
 export function GalleryHeader({
   heading,
   description,
+  align = "center",
+  overlay = false,
 }: {
   heading?: string;
   description?: string;
+  align?: "left" | "center" | "right";
+  overlay?: boolean;
 }) {
   const h = asText(heading);
   const d = asText(description);
   if (!h && !d) return null;
 
+  const maxWidth = align === "center" ? "40rem" : "36rem";
+  const paragraphMargin =
+    align === "center" ? "0.5rem auto 0" : align === "right" ? "0.5rem 0 0 auto" : "0.5rem 0 0";
+  const textColor = overlay ? "var(--pf-color-bg)" : "var(--pf-color-fg)";
+
   return (
-    <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+    <div style={{ textAlign: align, marginBottom: "1.5rem" }}>
       {h && (
         <h2
           style={{
             fontFamily: "var(--pf-font-heading)",
             fontSize: "clamp(1.5rem, 3vw, 2.25rem)",
             lineHeight: 1.2,
-            color: "var(--pf-color-fg)",
+            color: textColor,
             margin: 0,
+            textShadow: overlay ? "0 1px 3px rgba(0,0,0,0.45)" : undefined,
           }}
         >
           {h}
@@ -39,11 +49,12 @@ export function GalleryHeader({
             fontFamily: "var(--pf-font-body)",
             fontSize: "1rem",
             lineHeight: 1.6,
-            color: "var(--pf-color-fg)",
-            opacity: 0.75,
-            maxWidth: "40rem",
-            margin: "0.5rem auto 0",
+            color: textColor,
+            opacity: overlay ? 0.92 : 0.75,
+            maxWidth,
+            margin: paragraphMargin,
             whiteSpace: "pre-line",
+            textShadow: overlay ? "0 1px 3px rgba(0,0,0,0.45)" : undefined,
           }}
         >
           {d}

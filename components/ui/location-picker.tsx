@@ -31,15 +31,38 @@ type Props = {
   value: LocationValue;
   onChange: (value: LocationValue) => void;
   disabled?: boolean;
+  searchEnabled?: boolean;
   id?: string;
   compact?: boolean;
   className?: string;
+  labels?: {
+    searchPlaceholder: string;
+    searching: string;
+    noResults: string;
+    dragHint: string;
+    clear: string;
+  };
 };
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-export function LocationPicker({ value, onChange, disabled, id, compact, className }: Props) {
-  const t = useTranslations("app.bookings.locationPicker");
+function BaseLocationPicker({
+  value,
+  onChange,
+  disabled,
+  searchEnabled = true,
+  id,
+  compact,
+  className,
+  labels,
+}: Props) {
+  const resolvedLabels = labels ?? {
+    searchPlaceholder: "Search venue or address",
+    searching: "Searching",
+    noResults: "No matches",
+    dragHint: "Drag the pin to fine-tune the exact spot.",
+    clear: "Clear location",
+  };
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listboxId = `${inputId}-results`;
@@ -56,7 +79,7 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
   // Debounced geocoding search. A trailing-edge debounce keeps us well under
   // Nominatim's ~1 req/sec courtesy limit during typing.
   useEffect(() => {
-    if (disabled) return;
+    if (disabled || !searchEnabled) return;
     const term = query.trim();
     if (skipNextSearchRef.current) {
       skipNextSearchRef.current = false;
@@ -100,7 +123,7 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
     }, 450);
 
     return () => clearTimeout(handle);
-  }, [query, disabled]);
+  }, [query, disabled, searchEnabled]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -155,7 +178,7 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
             role="combobox"
             aria-expanded={open}
             aria-controls={listboxId}
-            placeholder={t("searchPlaceholder")}
+            placeholder={resolvedLabels.searchPlaceholder}
             className="pl-8 pr-16"
             onChange={(e) => setQuery(e.target.value)}
             onBlur={() => commitAddress(query.trim())}
@@ -167,14 +190,14 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
             {searching ? (
               <Loader2Icon
                 className="size-4 animate-spin text-muted-foreground"
-                aria-label={t("searching")}
+                aria-label={resolvedLabels.searching}
               />
             ) : null}
             {hasValue && !disabled ? (
               <button
                 type="button"
                 onClick={clear}
-                aria-label={t("clear")}
+                aria-label={resolvedLabels.clear}
                 className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
               >
                 <XIcon className="size-4" />
@@ -191,7 +214,7 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
           >
             {results.length === 0 ? (
               <li className="px-3 py-2 text-sm text-muted-foreground">
-                {t("noResults")}
+                {resolvedLabels.noResults}
               </li>
             ) : (
               results.map((r) => (
@@ -227,8 +250,32 @@ export function LocationPicker({ value, onChange, disabled, id, compact, classNa
       </div>
 
       <p className={cn("text-xs text-muted-foreground", disabled && "opacity-60")}>
-        {t("dragHint")}
+        {resolvedLabels.dragHint}
       </p>
     </div>
   );
+}
+
+function IntlLocationPicker(props: Omit<Props, "labels">) {
+  const t = useTranslations("app.bookings.locationPicker");
+
+  return (
+    <BaseLocationPicker
+      {...props}
+      labels={{
+        searchPlaceholder: t("searchPlaceholder"),
+        searching: t("searching"),
+        noResults: t("noResults"),
+        dragHint: t("dragHint"),
+        clear: t("clear"),
+      }}
+    />
+  );
+}
+
+export function LocationPicker(props: Props) {
+  if (props.labels) {
+    return <BaseLocationPicker {...props} />;
+  }
+  return <IntlLocationPicker {...props} />;
 }

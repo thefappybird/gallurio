@@ -260,7 +260,7 @@ Each phase ends with:
 4. For Phases 2, 4, 5, 6: cross-workspace isolation test using `mongodb-memory-server` (org A cannot read or submit to org B's data) — **non-negotiable**.
 
 Before merging the whole feature into `dev`:
-1. Locale catalogues consolidated across `en/fil/ms/id/th` (any new keys translated).
+1. Locale catalogues consolidated across `en/fil/ms/id` (any new keys translated).
 2. `pnpm test` full sweep.
 3. `pnpm build`.
 4. Opus agent code review (per CLAUDE.md merge policy).

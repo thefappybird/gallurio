@@ -125,12 +125,54 @@ export const CONTACT_PRESET: ContainerBlockProps = {
   ]),
 };
 
+export const GALLERY_GRID_PRESET: ContainerBlockProps = {
+  backgroundImagePublicId: "",
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Gallery highlights" }),
+    child("Text", { text: "A curated selection from one collection." }),
+    child("GalleryGrid", { collectionId: "", columns: 3, gap: "normal", maxItems: 12 }),
+  ]),
+};
+
+export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
+  backgroundImagePublicId: "",
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Story gallery" }),
+    child("Text", { text: "A more editorial layout for one collection." }),
+    child("GalleryMasonry", { collectionId: "", columns: 3, gap: "normal", maxItems: 18 }),
+  ]),
+};
+
+export const FEATURED_WORK_PRESET: ContainerBlockProps = {
+  backgroundImagePublicId: "",
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Featured work" }),
+    child("Text", { text: "Spotlight a few signature images." }),
+    child("FeaturedWork", { itemIds: [], layout: "row" }),
+  ]),
+};
+
 export const SECTION_PRESETS = {
   HeroPreset: { label: "Hero", defaultProps: HERO_PRESET },
   AboutPreset: { label: "About", defaultProps: ABOUT_PRESET },
   ServicesPreset: { label: "Services", defaultProps: SERVICES_PRESET },
   CtaPreset: { label: "Call to action", defaultProps: CTA_PRESET },
   ContactPreset: { label: "Contact", defaultProps: CONTACT_PRESET },
+  GalleryGridPreset: { label: "Gallery grid section", defaultProps: GALLERY_GRID_PRESET },
+  GalleryMasonryPreset: { label: "Gallery masonry section", defaultProps: GALLERY_MASONRY_PRESET },
+  FeaturedWorkPreset: { label: "Featured work section", defaultProps: FEATURED_WORK_PRESET },
 } as const;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

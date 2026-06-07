@@ -1,16 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import en from "./en.json";
 import fil from "./fil.json";
 import id from "./id.json";
 import ms from "./ms.json";
-import th from "./th.json";
 
 // Guards against structural drift in the portfolio-maker locale blocks. A crash
 // or a mis-anchored translation insert once nested `pageBuilder` under
-// `inquiries` in th.json; this test would have caught it. We assert the four
-// non-English catalogs carry the exact same key TREE as English for the blocks
-// added across Phases 6–9 (we do not assert values — those are translated).
-const LOCALES = { fil, id, ms, th } as Record<string, typeof en>;
+// `inquiries`; this test would have caught it. We assert the three non-English
+// catalogs carry the exact same key tree as English for the blocks added across
+// Phases 6-9 (we do not assert translated values).
+const LOCALES = { fil, id, ms } as Record<string, typeof en>;
 const BLOCKS = ["inquiries", "pageBuilder"] as const;
 
 function deepKeys(value: unknown, prefix = ""): string[] {
@@ -38,5 +37,18 @@ describe("portfolio-maker locale parity", () => {
         expect(inquiries?.pageBuilder).toBeUndefined();
       });
     }
+  }
+
+  for (const [locale, catalog] of Object.entries(LOCALES)) {
+    it(`${locale}: advertises only en, fil, ms, and id public-page language options`, () => {
+      expect(Object.keys(catalog.app.settings.customize.languages)).toEqual(["en", "fil", "ms", "id"]);
+      expect(Object.keys(catalog.app.pageBuilder.editor.contactDialog.languages)).toEqual([
+        "auto",
+        "en",
+        "fil",
+        "ms",
+        "id",
+      ]);
+    });
   }
 });

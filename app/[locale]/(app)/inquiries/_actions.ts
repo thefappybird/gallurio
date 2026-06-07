@@ -7,6 +7,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, ActivityLog } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 // The status a draft is promoted to on approval. Our Booking enum has no
 // "pending"; "inquiry" is the first real pipeline state the owner then moves
@@ -37,7 +38,7 @@ function revalidateInquiry(id: string) {
 
 /**
  * Promote an inquiry's draft booking to a real booking and mark the inquiry
- * converted. Owner-only, idempotent (re-clicking a converted inquiry is a
+ * booked. Owner-only, idempotent (re-clicking an already-booked inquiry is a
  * no-op), and transactional — the booking promotion, client financial record,
  * and inquiry status flip all commit together or not at all.
  */
@@ -62,7 +63,7 @@ export async function approveInquiryBookingAction(
   if (!inquiry) return { error: "not_found" };
 
   // Idempotency: already approved → return the existing booking, do nothing.
-  if (inquiry.status === "converted" && inquiry.convertedBookingId) {
+  if (isBookedInquiryStatus(inquiry.status) && inquiry.convertedBookingId) {
     return { ok: true, bookingId: inquiry.convertedBookingId.toString(), idempotent: true };
   }
 
@@ -121,7 +122,7 @@ export async function approveInquiryBookingAction(
         { _id: inquiry._id, workspaceId },
         {
           $set: {
-            status: "converted",
+            status: "booked",
             convertedBookingId: booking._id,
             convertedClientId: inquiry.clientId,
           },
@@ -206,13 +207,17 @@ export async function markContactedAction(inquiryId: string): Promise<InquiryAct
   return { ok: true };
 }
 
-/** Triage: archive an inquiry. Converted inquiries cannot be archived. */
+/** Triage: archive an inquiry. Booked inquiries cannot be archived. */
 export async function archiveInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
   await connectDB();
 
   const res = await Inquiry.updateOne(
-    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $ne: "converted" } },
+    {
+      _id: inquiryId,
+      workspaceId: ctx.workspace._id,
+      status: { $nin: ["booked", "converted"] },
+    },
     { $set: { status: "archived" } }
   );
   if (res.matchedCount === 0) return { error: "not_found" };

@@ -8,7 +8,8 @@ type Translator = (key: string, values?: Record<string, string | number>) => str
  * `[locale]` segment, so strings are resolved at the boundary and passed as props
  * (mirrors how chrome strings reach server-rendered blocks).
  */
-export function buildContactLabels(t: Translator): ContactModalLabels {
+export function buildContactLabels(t: Translator, tLocationPicker?: Translator): ContactModalLabels {
+  const tp = tLocationPicker ?? t;
   return {
     title: t("title"),
     description: t("description"),
@@ -18,7 +19,8 @@ export function buildContactLabels(t: Translator): ContactModalLabels {
     confirmClose: t("confirmClose"),
     form: {
       tabClient: t("tabClient"),
-      tabBooking: t("tabBooking"),
+      tabEvent: t("tabEvent"),
+      tabLocation: t("tabLocation"),
       name: t("name"),
       email: t("email"),
       phone: t("phone"),
@@ -54,6 +56,13 @@ export function buildContactLabels(t: Translator): ContactModalLabels {
       submitting: t("submitting"),
       errorGeneric: t("errorGeneric"),
       requiredHint: t("requiredHint"),
+      locationPicker: {
+        searchPlaceholder: tp("searchPlaceholder"),
+        searching: tp("searching"),
+        noResults: tp("noResults"),
+        dragHint: tp("dragHint"),
+        clear: tp("clear"),
+      },
     },
   };
 }

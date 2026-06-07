@@ -36,6 +36,9 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     ServicesPreset: SECTION_PRESETS.ServicesPreset.defaultProps,
     CtaPreset: SECTION_PRESETS.CtaPreset.defaultProps,
     ContactPreset: SECTION_PRESETS.ContactPreset.defaultProps,
+    GalleryGridPreset: SECTION_PRESETS.GalleryGridPreset.defaultProps,
+    GalleryMasonryPreset: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
+    FeaturedWorkPreset: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
     GalleryCarousel: galleryCarouselDefaultProps,
@@ -70,4 +73,42 @@ describe("editorPuckConfig parity with production puckConfig", () => {
       expect(editorFields).toEqual(prodFields);
     });
   }
+
+  it("removes footer from GalleryCarousel defaultProps and field keys", () => {
+    expect(galleryCarouselDefaultProps).not.toHaveProperty("footer");
+    const editorFields = Object.keys(editorPuckConfig.components.GalleryCarousel.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.GalleryCarousel.fields ?? {});
+    expect(editorFields).not.toContain("footer");
+    expect(prodFields).not.toContain("footer");
+  });
+
+  it("removes gallery copy inputs from GalleryGrid field keys", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.GalleryGrid.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.GalleryGrid.fields ?? {});
+    expect(editorFields).not.toEqual(expect.arrayContaining(["heading", "description", "footer"]));
+    expect(prodFields).not.toEqual(expect.arrayContaining(["heading", "description", "footer"]));
+  });
+
+  it("removes gallery copy inputs from GalleryMasonry field keys", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.GalleryMasonry.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.GalleryMasonry.fields ?? {});
+    expect(editorFields).not.toEqual(expect.arrayContaining(["heading", "description", "footer"]));
+    expect(prodFields).not.toEqual(expect.arrayContaining(["heading", "description", "footer"]));
+  });
+
+  it("removes copy inputs from FeaturedWork field keys", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.FeaturedWork.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.FeaturedWork.fields ?? {});
+    expect(editorFields).not.toEqual(expect.arrayContaining(["heading", "subheading"]));
+    expect(prodFields).not.toEqual(expect.arrayContaining(["heading", "subheading"]));
+  });
+
+  it("registers the new gallery preset section blocks", () => {
+    expect(editorPuckConfig.components).toHaveProperty("GalleryGridPreset");
+    expect(editorPuckConfig.components).toHaveProperty("GalleryMasonryPreset");
+    expect(editorPuckConfig.components).toHaveProperty("FeaturedWorkPreset");
+    expect(puckConfig.components).toHaveProperty("GalleryGridPreset");
+    expect(puckConfig.components).toHaveProperty("GalleryMasonryPreset");
+    expect(puckConfig.components).toHaveProperty("FeaturedWorkPreset");
+  });
 });

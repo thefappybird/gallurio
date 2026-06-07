@@ -119,4 +119,29 @@ describe("HeaderPanelDialog", () => {
     expect(screen.getByText("Heading color")).toBeInTheDocument();
     expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
   });
+
+  it("shows percent suffixes for opacity controls", () => {
+    renderWithProviders(
+      <HeaderPanelDialog
+        {...baseProps}
+        header={{ activeLinkHighlight: true } satisfies PortfolioHeaderConfig}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Banner" }));
+    let spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
+
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+    spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact button" }));
+    spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
+  });
 });

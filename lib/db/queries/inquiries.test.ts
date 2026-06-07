@@ -63,11 +63,12 @@ describe("listInquiries", () => {
 
   it("filters by status", async () => {
     await seedInquiry(workspaceId, { status: "new" });
+    await seedInquiry(workspaceId, { status: "booked" });
     await seedInquiry(workspaceId, { status: "converted" });
 
-    const { rows } = await listInquiries(workspaceId, { status: "converted" });
-    expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("converted");
+    const { rows } = await listInquiries(workspaceId, { status: "booked" });
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.status)).toEqual(["converted", "booked"]);
   });
 
   it("ignores an invalid status value", async () => {
@@ -109,11 +110,12 @@ describe("getInquiryStatusCounts", () => {
     await seedInquiry(workspaceId, { status: "new" });
     await seedInquiry(workspaceId, { status: "new" });
     await seedInquiry(workspaceId, { status: "contacted" });
+    await seedInquiry(workspaceId, { status: "booked" });
     await seedInquiry(workspaceId, { status: "converted" });
     await seedInquiry(otherWorkspaceId, { status: "new" });
 
     const counts = await getInquiryStatusCounts(workspaceId);
-    expect(counts).toEqual({ new: 2, contacted: 1, converted: 1, archived: 0, all: 4 });
+    expect(counts).toEqual({ new: 2, contacted: 1, booked: 2, archived: 0, all: 5 });
   });
 });
 

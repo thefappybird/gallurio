@@ -44,8 +44,12 @@ export default async function PublicPortfolioLayout({
   const locale = resolvePublicChromeLocale(workspace);
   const tNav = await getTranslations({ locale, namespace: "publicPage.nav" });
   const tContact = await getTranslations({ locale, namespace: "publicPage.inquiryForm" });
+  const tLocationPicker = await getTranslations({
+    locale,
+    namespace: "app.bookings.locationPicker",
+  });
 
-  const contactLabels = buildContactLabels(tContact);
+  const contactLabels = buildContactLabels(tContact, tLocationPicker);
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
   const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
@@ -53,7 +57,7 @@ export default async function PublicPortfolioLayout({
     <div
       lang={locale}
       style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
-      className={className}
+      className={`${className} min-h-svh`}
     >
       <PortfolioHeader
         slug={workspace.slug}

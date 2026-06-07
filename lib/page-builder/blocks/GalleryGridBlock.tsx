@@ -27,7 +27,6 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
-import { GalleryHeader, GalleryFooter } from "./GalleryText";
 import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
@@ -36,9 +35,6 @@ import { Types } from "mongoose";
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
-  heading: string;
-  description: string;
-  footer: string;
   collectionId: string;
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
@@ -50,9 +46,6 @@ export type GalleryGridProps = {
 // ---------------------------------------------------------------------------
 
 export const galleryGridDefaultProps: GalleryGridProps = {
-  heading: "",
-  description: "",
-  footer: "",
   collectionId: "",
   columns: 3,
   gap: "normal",
@@ -100,9 +93,6 @@ type LeanGalleryItem = {
 
 export async function GalleryGridBlock({
   _style,
-  heading,
-  description,
-  footer,
   collectionId,
   columns,
   gap,
@@ -174,7 +164,6 @@ export async function GalleryGridBlock({
           margin: "0 auto",
         }}
       >
-        <GalleryHeader heading={heading} description={description} />
         <div
           style={{
             display: "grid",
@@ -212,7 +201,6 @@ export async function GalleryGridBlock({
             );
           })}
         </div>
-        <GalleryFooter footer={footer} />
       </div>
     </section>
   );
@@ -259,9 +247,6 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   defaultProps: galleryGridDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
-    description: { type: "textarea", label: "Description" },
-    footer: { type: "textarea", label: "Footer" },
     collectionId: {
       type: "text",
       label: "Collection ID",

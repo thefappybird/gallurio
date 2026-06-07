@@ -51,13 +51,12 @@ it("is registered in puckConfig", () => {
 });
 
 describe("FeaturedWorkBlock", () => {
-  it("renders heading + empty message when no items selected", async () => {
+  it("renders the empty message when no items selected", async () => {
     const ws = new Types.ObjectId();
     const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, heading: "Best of", itemIds: [] })
+      FeaturedWorkBlock({ ...base, itemIds: [] })
     );
     render(el);
-    expect(screen.getByText("Best of")).toBeInTheDocument();
     expect(screen.getByText(/no featured photos selected yet/i)).toBeInTheDocument();
   });
 

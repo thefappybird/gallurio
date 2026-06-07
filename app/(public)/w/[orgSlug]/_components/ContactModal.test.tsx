@@ -11,7 +11,8 @@ const labels: ContactModalLabels = {
   confirmClose: "Done",
   form: {
     tabClient: "Your details",
-    tabBooking: "Event details",
+    tabEvent: "Event details",
+    tabLocation: "Location & notes",
     name: "Name",
     email: "Email",
     phone: "Phone",
@@ -43,6 +44,13 @@ const labels: ContactModalLabels = {
     submitting: "Sending…",
     errorGeneric: "Could not submit.",
     requiredHint: "Required",
+    locationPicker: {
+      searchPlaceholder: "Search venue or address",
+      searching: "Searching",
+      noResults: "No matches",
+      dragHint: "Drag the pin to fine-tune the exact spot.",
+      clear: "Clear location",
+    },
   },
 };
 

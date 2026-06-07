@@ -399,7 +399,6 @@ Maintain app/editor/public copy parity for:
 - `fil`
 - `ms`
 - `id`
-- `th`
 
 Client confirmation email is English-only.
 

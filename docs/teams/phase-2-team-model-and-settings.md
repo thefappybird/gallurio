@@ -60,7 +60,7 @@ Owners on **every** plan can create/rename/delete teams within their plan's `max
 
 - `lib/actions/onboarding.ts` — after workspace upsert, ensure the new workspace's Main team is created (call into the same idempotent helper used by the bootstrap migration). New users get their Main team immediately.
 - `app/[locale]/(app)/settings/[[...catchall]]/page.tsx` — register `<CustomPage slug="teams" url="/settings/teams" labelKey="teams.title" icon={UsersRoundIcon} ownerOnly />`. Add `"teams"` to `OWNER_ONLY_SLUGS`.
-- `messages/{en,fil,ms,id,th}.json` — add `settings.teams.*` keys (machine-translate non-English at the end of the phase).
+- `messages/{en,fil,ms,id}.json` — add `settings.teams.*` keys (machine-translate non-English at the end of the phase).
 - `app/[locale]/(app)/settings/_components/settings-user-profile.tsx` — render the new panel for the `/settings/teams` URL.
 - `app/api/webhooks/hitpay/route.ts` (or wherever the plan-change handler lives) — add a guard: refuse the plan transition if `currentTeamCount > newPlan.maxTeams`. Throw a structured error the billing UI can translate into "Delete N team(s) before downgrading". The block-modal UI for this ships in Phase 3 alongside the rest of Team-settings UI.
 

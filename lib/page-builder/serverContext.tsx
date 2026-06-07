@@ -49,7 +49,7 @@ export type RenderWorkspace = {
       website?: string | null;
     } | null;
   } | null;
-  /** BCP-47 locale derived from workspace.country (en|fil|ms|id|th). Set by the page boundary, not the helper. */
+  /** BCP-47 locale derived from workspace.country or stored form locale (en|fil|ms|id). Set by the page boundary, not the helper. */
   locale?: string;
   /**
    * Pre-resolved chrome strings for the public page. Set by the page boundary after

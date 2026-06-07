@@ -26,8 +26,8 @@ const rows: InquiryRow[] = [
 ];
 
 describe("InquiryStatusBadge", () => {
-  it("renders booked for the converted persisted status", () => {
-    renderWithProviders(<InquiryStatusBadge status="converted" />);
+  it("renders booked for the booked status", () => {
+    renderWithProviders(<InquiryStatusBadge status="booked" />);
     expect(screen.getByText("Booked")).toBeInTheDocument();
   });
 });
@@ -42,7 +42,7 @@ describe("InquiryTable", () => {
     expect(screen.getAllByText("Emma & Noah Wedding").length).toBeGreaterThan(0);
     expect(screen.getAllByText("portfolio").length).toBeGreaterThan(0);
     const links = screen.getAllByRole("link", { name: /Open inquiry from Emma Carter/i });
-    expect(links[0]).toHaveAttribute("href", "/inquiries/111111111111111111111111");
+    expect(links[0]).toHaveAttribute("href", "/inquiries?inquiryId=111111111111111111111111");
   });
 
   it("renders the empty state when there are no rows", () => {

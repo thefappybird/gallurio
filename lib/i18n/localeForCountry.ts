@@ -15,8 +15,6 @@ export function localeForCountry(country: string | null | undefined): Locale {
       return "ms";
     case "ID":
       return "id";
-    case "TH":
-      return "th";
     default:
       return "en";
   }

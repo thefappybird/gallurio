@@ -63,4 +63,21 @@ describe("RecentInquiriesList", () => {
     expect(screen.getByText("new")).toBeInTheDocument();
     expect(screen.getByText("contacted")).toBeInTheDocument();
   });
+
+  it("links each inquiry to the inbox modal deep-link", () => {
+    renderWithProviders(
+      <RecentInquiriesList
+        inquiries={[makeInquiry({ name: "Lena Okafor" })]}
+        locale="en"
+        title="Recent inquiries"
+        empty="Nothing here."
+        viewAll="View all"
+      />
+    );
+
+    expect(screen.getByRole("link", { name: /Lena Okafor/i })).toHaveAttribute(
+      "href",
+      expect.stringContaining(`/inquiries?inquiryId=`)
+    );
+  });
 });

@@ -537,8 +537,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
@@ -898,13 +897,12 @@
         "all": "All",
         "new": "New",
         "contacted": "Contacted",
-        "converted": "Converted",
+        "booked": "Booked",
         "archived": "Archived"
       },
       "statusValues": {
         "new": "New",
         "contacted": "Contacted",
-        "converted": "Booked",
         "archived": "Archived",
         "booked": "Booked"
       },
@@ -992,7 +990,7 @@
         "history": {
           "title": "History",
           "submitted": "Inquiry submitted",
-          "converted": "Approved to booking"
+          "booked": "Approved to booking"
         }
       }
     },
@@ -1077,6 +1075,8 @@
           "borderColorLabel": "Border color",
           "sectionPopup": "Popup",
           "sectionButton": "Button",
+          "submitButtonSection": "Submit button",
+          "addSessionButtonSection": "New dates button",
           "buttonStyles": {
             "solid": "Solid",
             "outline": "Outline",
@@ -1105,8 +1105,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "errorColorLabel": "Error message color"
         },
@@ -1451,7 +1450,8 @@
       "confirmBody": "Your inquiry has been sent. We'll reach out via your preferred contact method soon.",
       "confirmClose": "Done",
       "tabClient": "Your details",
-      "tabBooking": "Event details",
+      "tabEvent": "Event details",
+      "tabLocation": "Location & notes",
       "name": "Name",
       "email": "Email",
       "phone": "Phone (optional)",

@@ -537,8 +537,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Format Masa",
         "timeFormatHint": "Pilih cara masa dipaparkan dalam seluruh apl.",
@@ -898,13 +897,12 @@
         "all": "Semua",
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Ditukar",
+        "booked": "Ditempah",
         "archived": "Diarkib"
       },
       "statusValues": {
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Ditempah",
         "archived": "Diarkib",
         "booked": "Ditempah"
       },
@@ -992,7 +990,7 @@
         "history": {
           "title": "Sejarah",
           "submitted": "Pertanyaan dihantar",
-          "converted": "Diluluskan ke tempahan"
+          "booked": "Diluluskan ke tempahan"
         }
       }
     },
@@ -1087,8 +1085,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
@@ -1097,6 +1094,8 @@
           "borderColorLabel": "Warna sempadan",
           "sectionPopup": "Popup",
           "sectionButton": "Butang",
+          "submitButtonSection": "Butang hantar",
+          "addSessionButtonSection": "Butang tarikh baru",
           "radius": {
             "sharp": "Tajam",
             "subtle": "Halus",
@@ -1451,7 +1450,8 @@
       "confirmBody": "Pertanyaan anda telah dihantar. Kami akan menghubungi melalui kaedah pilihan anda tidak lama lagi.",
       "confirmClose": "Selesai",
       "tabClient": "Butiran anda",
-      "tabBooking": "Butiran acara",
+      "tabEvent": "Butiran acara",
+      "tabLocation": "Lokasi & nota",
       "name": "Nama",
       "email": "E-mel",
       "phone": "Telefon (pilihan)",

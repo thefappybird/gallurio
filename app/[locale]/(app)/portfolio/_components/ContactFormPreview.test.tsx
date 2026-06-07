@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ContactFormPreview } from "./ContactFormPreview";
@@ -7,7 +7,8 @@ import type { InquiryFormLabels, SubmitAppearance } from "@/app/(public)/w/[orgS
 
 const labels: InquiryFormLabels = {
   tabClient: "Client",
-  tabBooking: "Booking",
+  tabEvent: "Event",
+  tabLocation: "Location",
   name: "Name",
   email: "Email",
   phone: "Phone",
@@ -43,6 +44,13 @@ const labels: InquiryFormLabels = {
   submitting: "Sending...",
   errorGeneric: "Something went wrong",
   requiredHint: "Required",
+  locationPicker: {
+    searchPlaceholder: "Search venue or address",
+    searching: "Searching",
+    noResults: "No matches",
+    dragHint: "Drag the pin to fine-tune the exact spot.",
+    clear: "Clear location",
+  },
 };
 
 const submitAppearance: SubmitAppearance = {
@@ -50,6 +58,14 @@ const submitAppearance: SubmitAppearance = {
   style: "solid",
   textColor: "#ffffff",
   errorColor: "#ff3366",
+  borderRadius: "0.5rem",
+  border: "2px solid #335577",
+};
+
+const addSessionAppearance: SubmitAppearance = {
+  color: "#335577",
+  style: "outline",
+  textColor: "#335577",
   borderRadius: "0.5rem",
   border: "2px solid #335577",
 };
@@ -63,6 +79,17 @@ const contact: PortfolioContactConfig = {
 };
 
 describe("ContactFormPreview", () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
   it("renders the actual inquiry form structure", () => {
     renderWithProviders(
       <ContactFormPreview
@@ -70,6 +97,7 @@ describe("ContactFormPreview", () => {
         brandKit={DEFAULT_BRAND_KIT}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         defaultTitle="Default title"
         defaultDescription="Default description"
       />
@@ -77,7 +105,8 @@ describe("ContactFormPreview", () => {
 
     expect(screen.getByLabelText("Contact form preview")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Client" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Booking" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Event" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Location" })).toBeInTheDocument();
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });
@@ -89,14 +118,15 @@ describe("ContactFormPreview", () => {
         brandKit={DEFAULT_BRAND_KIT}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         defaultTitle="Default title"
         defaultDescription="Default description"
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: "Booking" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Location" }));
 
-    expect(screen.getByLabelText("Location")).toBeInTheDocument();
+    expect(screen.getByRole("tabpanel", { name: "Location" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send inquiry" })).toBeInTheDocument();
     expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();
   });
@@ -108,6 +138,7 @@ describe("ContactFormPreview", () => {
         brandKit={DEFAULT_BRAND_KIT}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         defaultTitle="Default title"
         defaultDescription="Default description"
       />
@@ -131,6 +162,7 @@ describe("ContactFormPreview", () => {
         brandKit={DEFAULT_BRAND_KIT}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         defaultTitle="Default title"
         defaultDescription="Default description"
       />
@@ -152,6 +184,27 @@ describe("ContactFormPreview", () => {
     expect(frame.style.maxHeight).toBe("calc(100dvh - 2rem)");
   });
 
+  it("applies the dedicated add-session button appearance", () => {
+    renderWithProviders(
+      <ContactFormPreview
+        contact={contact}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Event" }));
+
+    const addSession = screen.getByRole("button", { name: /\+ Add session/i });
+    expect(addSession.style.color).toBe("#335577");
+    expect(addSession.getAttribute("style")).toContain("border: 2px solid #335577");
+    expect(addSession.getAttribute("style")).toContain("border-radius: 0.5rem");
+  });
+
   it("lets the form itself scroll inside the editor preview surface", () => {
     renderWithProviders(
       <ContactFormPreview
@@ -159,6 +212,7 @@ describe("ContactFormPreview", () => {
         brandKit={DEFAULT_BRAND_KIT}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         defaultTitle="Default title"
         defaultDescription="Default description"
       />
@@ -167,5 +221,26 @@ describe("ContactFormPreview", () => {
     const form = screen.getByRole("button", { name: "Continue" }).closest("form");
     expect(form?.style.overflowY).toBe("auto");
     expect(form?.style.maxHeight).toBe("100%");
+  });
+
+  it("shows validation states in preview without submitting the inquiry", async () => {
+    renderWithProviders(
+      <ContactFormPreview
+        contact={contact}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(
+      await screen.findByText(/please enter your name/i)
+    ).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useForm, useFieldArray, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -12,10 +12,15 @@ import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { LocationPicker } from "@/components/ui/location-picker";
+import {
+  buildButtonStyle,
+  type ButtonAppearance,
+} from "./contactButtonAppearance";
 
 export type InquiryFormLabels = {
   tabClient: string;
-  tabBooking: string;
+  tabEvent: string;
+  tabLocation: string;
   name: string;
   email: string;
   phone: string;
@@ -40,6 +45,13 @@ export type InquiryFormLabels = {
   submitting: string;
   errorGeneric: string;
   requiredHint: string;
+  locationPicker: {
+    searchPlaceholder: string;
+    searching: string;
+    noResults: string;
+    dragHint: string;
+    clear: string;
+  };
 };
 
 function createFieldStyle(): CSSProperties {
@@ -84,47 +96,17 @@ function readTracking() {
   };
 }
 
-export type SubmitAppearance = {
-  color: string;
-  style: "solid" | "outline" | "soft";
-  borderRadius?: string;
-  textColor?: string;
-  border?: string;
-  errorColor?: string;
-};
+export type SubmitAppearance = ButtonAppearance;
 
-function submitButtonStyle(appearance: SubmitAppearance, disabled: boolean): CSSProperties {
-  const color = appearance.color;
-  const base: CSSProperties = {
-    marginTop: "1rem",
-    width: "100%",
-    minHeight: "48px",
-    borderRadius: appearance.borderRadius ?? "var(--pf-radius)",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.7 : 1,
-    fontSize: "1rem",
-    fontFamily: "var(--pf-font-body)",
-  };
-  let style: CSSProperties;
-  if (appearance.style === "outline") {
-    style = { ...base, backgroundColor: "transparent", color: appearance.textColor ?? color, border: `1px solid ${color}` };
-  } else if (appearance.style === "soft") {
-    style = {
-      ...base,
-      backgroundColor: `color-mix(in srgb, ${color} 16%, var(--pf-color-bg))`,
-      color: appearance.textColor ?? color,
-      border: "none",
-    };
-  } else {
-    style = { ...base, backgroundColor: color, color: appearance.textColor ?? "var(--pf-color-bg)", border: "none" };
-  }
-  if (appearance.border) style = { ...style, border: appearance.border };
-  return style;
-}
-
-const DEFAULT_SUBMIT_APPEARANCE: SubmitAppearance = {
+const DEFAULT_SUBMIT_APPEARANCE: ButtonAppearance = {
   color: "var(--pf-color-primary)",
   style: "solid",
+};
+
+const DEFAULT_ADD_SESSION_APPEARANCE: ButtonAppearance = {
+  color: "var(--pf-color-fg)",
+  style: "outline",
+  border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
 };
 
 export function ContactForm({
@@ -132,6 +114,7 @@ export function ContactForm({
   labels,
   onSuccess,
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
+  addSessionAppearance = DEFAULT_ADD_SESSION_APPEARANCE,
   preview = false,
   compactLocationPicker = false,
   scrollable = false,
@@ -140,6 +123,7 @@ export function ContactForm({
   labels: InquiryFormLabels;
   onSuccess: () => void;
   submitAppearance?: SubmitAppearance;
+  addSessionAppearance?: ButtonAppearance;
   preview?: boolean;
   compactLocationPicker?: boolean;
   scrollable?: boolean;
@@ -169,26 +153,28 @@ export function ContactForm({
     formState: { errors, isSubmitting },
   } = form;
 
-  const errorStyle = useMemo<CSSProperties>(
-    () => ({
-      fontSize: "0.75rem",
-      color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
-      marginTop: "0.25rem",
-    }),
-    [submitAppearance.errorColor]
-  );
-  const fieldStyle = useMemo(createFieldStyle, []);
-  const labelStyle = useMemo(createLabelStyle, []);
+  const errorStyle: CSSProperties = {
+    fontSize: "0.75rem",
+    color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
+    marginTop: "0.25rem",
+  };
+  const fieldStyle = createFieldStyle();
+  const labelStyle = createLabelStyle();
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const minDate = todayIso();
-  const [activeTab, setActiveTab] = useState<"client" | "booking">("client");
+  const [activeTab, setActiveTab] = useState<"client" | "event" | "location">("client");
 
   function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
-    const tab1HasError = Boolean(
-      errs.name || errs.email || errs.phone || errs.preferredContact || errs.eventTitle
-    );
-    setActiveTab(tab1HasError ? "client" : "booking");
+    if (errs.name || errs.email || errs.phone || errs.preferredContact) {
+      setActiveTab("client");
+      return;
+    }
+    if (errs.eventTitle || errs.sessions || errs.eventType) {
+      setActiveTab("event");
+      return;
+    }
+    setActiveTab("location");
   }
 
   useEffect(() => {
@@ -200,8 +186,13 @@ export function ContactForm({
   }, [form]);
 
   async function handleContinue() {
-    const ok = await trigger(["name", "email", "phone", "preferredContact", "eventTitle"]);
-    if (ok) setActiveTab("booking");
+    const ok = await trigger(["name", "email", "phone", "preferredContact"]);
+    if (ok) setActiveTab("event");
+  }
+
+  async function handleEventContinue() {
+    const ok = await trigger(["eventTitle", "sessions", "eventType"]);
+    if (ok) setActiveTab("location");
   }
 
   async function onSubmit(data: InquirySubmissionInput) {
@@ -272,10 +263,11 @@ export function ContactForm({
           color: color-mix(in srgb, currentColor 62%, transparent);
         }
       `}</style>
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "booking")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "event" | "location")}>
         <TabsList>
           <TabsTab value="client">{labels.tabClient}</TabsTab>
-          <TabsTab value="booking">{labels.tabBooking}</TabsTab>
+          <TabsTab value="event">{labels.tabEvent}</TabsTab>
+          <TabsTab value="location">{labels.tabLocation}</TabsTab>
         </TabsList>
 
         <TabsPanel value="client">
@@ -316,18 +308,23 @@ export function ContactForm({
             </select>
           </div>
 
+          <button
+            type="button"
+            className="pf-cf-btn"
+            onClick={() => void handleContinue()}
+            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
+          >
+            {labels.continue}
+          </button>
+        </TabsPanel>
+
+        <TabsPanel value="event">
           <div>
             <label htmlFor="cf-eventTitle" style={labelStyle}>{labels.eventTitle}</label>
             <input id="cf-eventTitle" style={fieldStyle} aria-invalid={errors.eventTitle ? "true" : undefined} {...register("eventTitle")} />
             {errors.eventTitle && <p style={errorStyle} role="alert">{errors.eventTitle.message}</p>}
           </div>
 
-          <button type="button" className="pf-cf-btn" onClick={() => void handleContinue()} style={submitButtonStyle(submitAppearance, false)}>
-            {labels.continue}
-          </button>
-        </TabsPanel>
-
-        <TabsPanel value="booking">
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
             <legend style={{ ...labelStyle, marginBottom: "0.5rem" }}>{labels.sessionsLabel}</legend>
             <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>{labels.shiftHint}</p>
@@ -408,17 +405,12 @@ export function ContactForm({
               type="button"
               className="pf-cf-btn"
               onClick={() => append({ startDate: "", startTime: "10:00", endTime: "17:00" })}
-              style={{
+              style={buildButtonStyle(addSessionAppearance, false, {
                 marginTop: "0.5rem",
                 minHeight: "44px",
                 padding: "0 0.75rem",
-                background: "transparent",
-                color: "var(--pf-color-fg)",
-                border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
-                borderRadius: "var(--pf-radius)",
-                cursor: "pointer",
                 fontSize: "0.875rem",
-              }}
+              })}
             >
               + {labels.addSession}
             </button>
@@ -433,6 +425,17 @@ export function ContactForm({
             </select>
           </div>
 
+          <button
+            type="button"
+            className="pf-cf-btn"
+            onClick={() => void handleEventContinue()}
+            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
+          >
+            {labels.continue}
+          </button>
+        </TabsPanel>
+
+        <TabsPanel value="location">
           <div>
             <label htmlFor="cf-location" style={labelStyle}>{labels.location}</label>
             <Controller
@@ -442,6 +445,8 @@ export function ContactForm({
                 <LocationPicker
                   id="cf-location"
                   className="pf-contact-location"
+                  labels={labels.locationPicker}
+                  searchEnabled={!preview}
                   value={{
                     address: field.value.address ?? "",
                     lat: field.value.lat ?? null,
@@ -494,8 +499,13 @@ export function ContactForm({
         )}
       </div>
 
-      {activeTab === "booking" ? (
-        <button type="submit" className="pf-cf-btn" disabled={isSubmitting} style={submitButtonStyle(submitAppearance, isSubmitting)}>
+      {activeTab === "location" ? (
+        <button
+          type="submit"
+          className="pf-cf-btn"
+          disabled={isSubmitting}
+          style={buildButtonStyle(submitAppearance, isSubmitting, { marginTop: "1rem" })}
+        >
           {isSubmitting ? labels.submitting : labels.submit}
         </button>
       ) : null}

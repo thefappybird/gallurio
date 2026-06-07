@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -10,10 +10,11 @@ import { TableSkeleton } from "@/components/app/table-skeleton";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
 import type { InquiryStatusCounts } from "@/lib/db/queries/inquiries";
+import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detail-modal";
 
 const INQUIRY_TABLE_COLUMNS = 6;
 
-const TABS = ["all", "new", "contacted", "converted", "archived"] as const;
+const TABS = ["all", "new", "contacted", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
 
 type Props = {
@@ -28,6 +29,7 @@ type Props = {
   to: string;
   empty: string;
   emptyHint: string;
+  initialDetail: InquiryDetailModalData | null;
 };
 
 export function InquiriesPageClient({
@@ -42,6 +44,7 @@ export function InquiriesPageClient({
   to,
   empty,
   emptyHint,
+  initialDetail,
 }: Props) {
   const t = useTranslations("app.inquiries");
   const tc = useTranslations("common.pagination");
@@ -49,6 +52,17 @@ export function InquiriesPageClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [detail, setDetail] = useState(initialDetail);
+  const [detailOpen, setDetailOpen] = useState(Boolean(initialDetail));
+
+  const [syncedDeepLink, setSyncedDeepLink] = useState(initialDetail);
+  if (initialDetail !== syncedDeepLink) {
+    setSyncedDeepLink(initialDetail);
+    if (initialDetail) {
+      setDetail(initialDetail);
+      setDetailOpen(true);
+    }
+  }
 
   const activeTab: TabKey = (TABS as readonly string[]).includes(status)
     ? (status as TabKey)
@@ -88,6 +102,16 @@ export function InquiriesPageClient({
 
   function goToPage(p: number) {
     pushParams((params) => params.set("page", String(p)));
+  }
+
+  function stripInquiryParam() {
+    if (!searchParams.has("inquiryId")) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("inquiryId");
+    startTransition(() => {
+      const next = params.toString();
+      router.replace(next ? `${pathname}?${next}` : pathname);
+    });
   }
 
   const totalPages = Math.ceil(total / limit);
@@ -192,6 +216,15 @@ export function InquiriesPageClient({
           </div>
         </div>
       )}
+
+      <InquiryDetailModal
+        detail={detail}
+        open={detailOpen}
+        onClose={() => {
+          setDetailOpen(false);
+          stripInquiryParam();
+        }}
+      />
     </>
   );
 }

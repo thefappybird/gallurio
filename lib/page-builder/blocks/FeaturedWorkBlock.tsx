@@ -14,7 +14,6 @@ import { getItemsByIds } from "@/lib/db/queries/gallery";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
-  asText,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
@@ -26,8 +25,6 @@ export type FeaturedWorkItemId = string | { id?: string | null };
 
 export type FeaturedWorkProps = {
   _style?: BlockStyle;
-  heading: string;
-  subheading: string;
   itemIds: FeaturedWorkItemId[];
   layout: "row" | "stagger";
 };
@@ -39,8 +36,6 @@ function normalizeItemIds(itemIds: FeaturedWorkItemId[]): string[] {
 }
 
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
-  heading: "Featured work",
-  subheading: "",
   itemIds: [],
   layout: "row",
 };
@@ -49,8 +44,6 @@ const MAX_FEATURED = 3;
 
 export async function FeaturedWorkBlock({
   _style,
-  heading,
-  subheading,
   itemIds,
   layout,
   puck,
@@ -75,8 +68,6 @@ export async function FeaturedWorkBlock({
   }
 
   const labels = getGalleryChromeLabelsFrom(puck);
-  const headingText = asText(heading);
-  const subheadingText = asText(subheading);
 
   return (
     <section
@@ -95,34 +86,6 @@ export async function FeaturedWorkBlock({
         @media (max-width: 639px) { .pf-featured-grid { grid-template-columns: 1fr !important; } }
       `}</style>
       <div style={{ maxWidth: "72rem", margin: "0 auto" }}>
-        {headingText && (
-          <h2
-            style={{
-              fontFamily: "var(--pf-font-heading)",
-              color: "var(--pf-color-fg)",
-              fontSize: "1.875rem",
-              fontWeight: 700,
-              margin: 0,
-              textAlign: "center",
-            }}
-          >
-            {headingText}
-          </h2>
-        )}
-        {subheadingText && (
-          <p
-            style={{
-              color: "var(--pf-color-fg)",
-              opacity: 0.7,
-              textAlign: "center",
-              margin: "0.5rem 0 0",
-              fontSize: "1.0625rem",
-            }}
-          >
-            {subheadingText}
-          </p>
-        )}
-
         {items.length === 0 ? (
           <p
             style={{
@@ -142,7 +105,6 @@ export async function FeaturedWorkBlock({
               display: "grid",
               gridTemplateColumns: `repeat(${items.length}, 1fr)`,
               gap: "1.5rem",
-              marginTop: headingText || subheadingText ? "2.5rem" : 0,
               alignItems: "start",
             }}
           >
@@ -201,8 +163,6 @@ export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
   defaultProps: featuredWorkDefaultProps,
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
-    subheading: { type: "text", label: "Sub-heading" },
     itemIds: {
       type: "array",
       label: "Gallery item IDs (max 3)",

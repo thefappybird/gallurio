@@ -86,7 +86,11 @@ describe("sendInquiryNotification", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test/";
     await sendInquiryNotification(makeData({ inquiryId: "inq_42" }));
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.text).toContain("https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%2Finq_42");
-    expect(arg.html).toContain("https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%2Finq_42");
+    expect(arg.text).toContain(
+      "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_42"
+    );
+    expect(arg.html).toContain(
+      "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_42"
+    );
   });
 });

@@ -121,4 +121,11 @@ describe("AppSidebar SidebarTrigger", () => {
     renderSidebar("owner");
     expect(screen.getByTitle("Test Workspace")).toBeInTheDocument();
   });
+
+  it("uses the collapsed header stack classes so the toggle can sit above the workspace icon", () => {
+    renderSidebar("owner");
+    const headerChrome = screen.getByTestId("sidebar-workspace-header");
+    expect(headerChrome.className).toContain("group-data-[collapsible=icon]:flex-col-reverse");
+    expect(headerChrome.className).toContain("group-data-[collapsible=icon]:items-center");
+  });
 });

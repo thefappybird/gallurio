@@ -69,6 +69,12 @@ export type PortfolioContactConfig = {
   buttonRadius?: BrandKitRadius;
   buttonBorderColor?: string;
   buttonBorderWidth?: number;
+  addSessionButtonStyle?: BrandKitButtonStyle;
+  addSessionButtonColor?: string;
+  addSessionButtonTextColor?: string;
+  addSessionButtonRadius?: BrandKitRadius;
+  addSessionButtonBorderColor?: string;
+  addSessionButtonBorderWidth?: number;
   backgroundColor?: string;
   textColor?: string;
   popupRadius?: BrandKitRadius;

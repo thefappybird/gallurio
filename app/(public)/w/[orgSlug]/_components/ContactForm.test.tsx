@@ -48,7 +48,8 @@ vi.mock("@/components/ui/location-picker", () => ({
 
 const labels: InquiryFormLabels = {
   tabClient: "Your details",
-  tabBooking: "Event details",
+  tabEvent: "Event details",
+  tabLocation: "Location & notes",
   name: "Name",
   email: "Email",
   phone: "Phone",
@@ -80,6 +81,13 @@ const labels: InquiryFormLabels = {
   submitting: "Sending…",
   errorGeneric: "Could not submit — please try again later.",
   requiredHint: "Required",
+  locationPicker: {
+    searchPlaceholder: "Search venue or address",
+    searching: "Searching",
+    noResults: "No matches",
+    dragHint: "Drag the pin to fine-tune the exact spot.",
+    clear: "Clear location",
+  },
 };
 
 function futureDate(days = 30): string {
@@ -90,19 +98,19 @@ function futureDate(days = 30): string {
   ).padStart(2, "0")}`;
 }
 
-function goToBooking() {
-  // base-ui unmounts inactive tab panels, so booking fields only exist once
-  // the Event details tab is active.
+function goToEventDetails() {
   fireEvent.click(screen.getByRole("tab", { name: "Event details" }));
 }
 
 async function fillValidForm() {
-  // Tab 1 (active by default).
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Event title");
   fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
-  goToBooking();
   fireEvent.change(screen.getByLabelText("Date"), { target: { value: futureDate() } });
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Location");
   fireEvent.change(screen.getByLabelText("Location"), {
     target: { value: "Manila, Metro Manila, Philippines" },
   });
@@ -126,6 +134,7 @@ describe("ContactForm", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     expect(screen.getByRole("tab", { name: "Your details" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Event details" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Location & notes" })).toBeInTheDocument();
 
     const honeypot = document.querySelector('input[name="company_name"]') as HTMLInputElement;
     expect(honeypot).toBeTruthy();
@@ -135,7 +144,7 @@ describe("ContactForm", () => {
 
   it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
-    goToBooking();
+    goToEventDetails();
     expect(screen.getAllByLabelText("Date")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /Add another day/i }));
     expect(screen.getAllByLabelText("Date")).toHaveLength(2);
@@ -198,18 +207,42 @@ describe("ContactForm", () => {
     resolveFetch({ ok: true });
   });
 
-  it("switches to the booking tab when submit fails validation there", async () => {
+  it("switches to the event tab when first-step continue fails validation there", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
-    // Fill Tab 1 validly; leave Tab 2 (date + description) empty.
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
-    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
-    // Booking fields are not mounted while the client tab is active.
-    expect(screen.queryByLabelText("Date")).toBeNull();
+    expect(screen.queryByLabelText("Event title")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
-    // Invalid submit should reveal the booking tab so its errors are visible.
+    await waitFor(() => expect(screen.getByLabelText("Event title")).toBeInTheDocument());
+  });
+
+  it("advances from event details to location and notes only when the second tab is valid", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Event title");
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: futureDate() } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(screen.getByLabelText("Location")).toBeInTheDocument());
+    expect(screen.queryByLabelText("Date")).toBeNull();
+  });
+
+  it("stays on event details when the second-step continue is invalid", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Event title");
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
     await waitFor(() => expect(screen.getByLabelText("Date")).toBeInTheDocument());
   });
 
@@ -222,7 +255,7 @@ describe("ContactForm", () => {
     await waitFor(() => expect(screen.getByText(/valid email/i)).toBeInTheDocument());
   });
 
-  it("requires event title before advancing to booking details", async () => {
+  it("requires event title before advancing to location and notes", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
@@ -230,7 +263,32 @@ describe("ContactForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => expect(screen.getByText(/event title/i)).toBeInTheDocument());
-    expect(screen.queryByLabelText("Date")).toBeNull();
+    expect(screen.queryByLabelText("Location")).toBeNull();
+  });
+
+  it("uses the alternate button appearance for add-another-day controls", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        submitAppearance={{ color: "#111111", style: "solid" }}
+        addSessionAppearance={{
+          color: "#224466",
+          style: "outline",
+          textColor: "#224466",
+          border: "2px solid #224466",
+          borderRadius: "0.5rem",
+        }}
+        onSuccess={() => {}}
+      />
+    );
+
+    goToEventDetails();
+
+    const addDay = screen.getByRole("button", { name: /Add another day/i });
+    expect(addDay.style.color).toBe("#224466");
+    expect(addDay.getAttribute("style")).toContain("border: 2px solid #224466");
+    expect(addDay.getAttribute("style")).toContain("border-radius: 0.5rem");
   });
 
   it("applies a custom error color to validation messages", async () => {

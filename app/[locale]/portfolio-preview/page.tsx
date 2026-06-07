@@ -15,8 +15,11 @@ import {
   type PuckData,
 } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
-import type { SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
 import { PortfolioHeader } from "@/app/(public)/w/[orgSlug]/_components/PortfolioHeader";
+import {
+  resolveAddSessionAppearance,
+  resolveSubmitAppearance,
+} from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { PreviewContactCard } from "./_components/PreviewContactCard";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
@@ -45,36 +48,6 @@ function parseHeaderConfig(value: string | string[] | undefined): PortfolioHeade
   } catch {
     return null;
   }
-}
-
-function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): SubmitAppearance {
-  const color = contact?.buttonColor
-    ? contact.buttonColor.startsWith("#")
-      ? contact.buttonColor
-      : `var(--pf-color-${contact.buttonColor})`
-    : "var(--pf-color-primary)";
-  const style = (contact?.buttonStyle || "solid") as SubmitAppearance["style"];
-  const textColor = contact?.buttonTextColor
-    ? contact.buttonTextColor.startsWith("#")
-      ? contact.buttonTextColor
-      : `var(--pf-color-${contact.buttonTextColor})`
-    : undefined;
-  const errorColor = contact?.errorMessageColor
-    ? contact.errorMessageColor.startsWith("#")
-      ? contact.errorMessageColor
-      : `var(--pf-color-${contact.errorMessageColor})`
-    : undefined;
-  const borderRadius = contact?.buttonRadius
-    ? ({ sharp: "0", subtle: "0.25rem", rounded: "0.5rem" }[contact.buttonRadius] ?? "var(--pf-radius)")
-    : undefined;
-  const border = contact?.buttonBorderWidth
-    ? `${contact.buttonBorderWidth}px solid ${
-        contact.buttonBorderColor?.startsWith("#")
-          ? contact.buttonBorderColor
-          : `var(--pf-color-${contact.buttonBorderColor || "foreground"})`
-      }`
-    : undefined;
-  return { color, style, textColor, errorColor, borderRadius, border };
 }
 
 function parseDraft(value: string | string[] | undefined): BrowserPreviewDraft | null {
@@ -128,8 +101,12 @@ export default async function PortfolioPreviewPage({
 
   if (zone === "contact") {
     const tForm = await getTranslations({ locale: chromeLocale, namespace: "publicPage.inquiryForm" });
+    const tLocationPicker = await getTranslations({
+      locale: chromeLocale,
+      namespace: "app.bookings.locationPicker",
+    });
     const contact = draft?.contact ?? ((pp?.contact ?? null) as PortfolioContactConfig | null);
-    const labels = buildContactLabels(tForm);
+    const labels = buildContactLabels(tForm, tLocationPicker);
     body = (
       <PreviewContactCard
         workspaceSlug={workspace.slug}
@@ -137,6 +114,7 @@ export default async function PortfolioPreviewPage({
         description={contact?.description?.trim() || labels.description}
         labels={labels.form}
         submitAppearance={resolveSubmitAppearance(contact)}
+        addSessionAppearance={resolveAddSessionAppearance(contact)}
       />
     );
   } else {

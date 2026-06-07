@@ -68,7 +68,7 @@ async function seedDraft(wid: Types.ObjectId) {
 }
 
 describe("approveInquiryBookingAction", () => {
-  it("promotes the draft, applies edits, and converts the inquiry", async () => {
+  it("promotes the draft, applies edits, and marks the inquiry booked", async () => {
     const { booking, inquiry, client } = await seedDraft(workspaceId);
 
     const res = await approveInquiryBookingAction(String(inquiry._id), {
@@ -85,7 +85,7 @@ describe("approveInquiryBookingAction", () => {
     expect(freshBooking?.notes).toBe("VIP");
 
     const freshInquiry = await Inquiry.findById(inquiry._id).lean();
-    expect(freshInquiry?.status).toBe("converted");
+    expect(freshInquiry?.status).toBe("booked");
     expect(String(freshInquiry?.convertedBookingId)).toBe(String(booking._id));
     expect(String(freshInquiry?.convertedClientId)).toBe(String(client._id));
 
@@ -105,6 +105,17 @@ describe("approveInquiryBookingAction", () => {
     const freshClient = await Client.findById(client._id).lean();
     expect(freshClient?.bookingsCount).toBe(1); // not 2
     expect(freshClient?.totalSpent).toBe(10000);
+  });
+
+  it("treats a legacy converted inquiry as already booked", async () => {
+    const { booking, inquiry } = await seedDraft(workspaceId);
+    await Inquiry.updateOne(
+      { _id: inquiry._id },
+      { $set: { status: "converted", convertedBookingId: booking._id } }
+    );
+
+    const res = await approveInquiryBookingAction(String(inquiry._id));
+    expect(res).toMatchObject({ ok: true, idempotent: true, bookingId: String(booking._id) });
   });
 
   it("refuses a non-owner (staff) and leaves the draft untouched", async () => {
@@ -137,7 +148,7 @@ describe("approveInquiryBookingAction", () => {
 });
 
 describe("saveDraftBookingFieldsAction", () => {
-  it("persists edits to the draft without converting", async () => {
+  it("persists edits to the draft without marking the inquiry booked", async () => {
     const { booking, inquiry } = await seedDraft(workspaceId);
     const res = await saveDraftBookingFieldsAction(String(inquiry._id), {
       total: 5000,
@@ -168,9 +179,9 @@ describe("markContactedAction", () => {
     expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("contacted");
   });
 
-  it("will not re-open a converted inquiry", async () => {
+  it("will not re-open a booked inquiry", async () => {
     const { inquiry } = await seedDraft(workspaceId);
-    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "converted" } });
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
     const res = await markContactedAction(String(inquiry._id));
     expect(res).toEqual({ error: "not_found" });
   });
@@ -184,9 +195,9 @@ describe("archiveInquiryAction", () => {
     expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("archived");
   });
 
-  it("refuses to archive a converted inquiry", async () => {
+  it("refuses to archive a booked inquiry", async () => {
     const { inquiry } = await seedDraft(workspaceId);
-    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "converted" } });
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
     const res = await archiveInquiryAction(String(inquiry._id));
     expect(res).toEqual({ error: "not_found" });
   });

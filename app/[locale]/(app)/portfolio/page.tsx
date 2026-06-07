@@ -96,20 +96,22 @@ export default async function PageBuilderEntry({
     locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
 
   return (
-    <EditorShell
-      slug={workspace.slug}
-      workspaceName={workspace.name}
-      initialData={initialData}
-      initialBrandKit={initialBrandKit}
-      initialContact={initialContact}
-      initialFormLocale={initialFormLocale}
-      initialHeaderConfig={initialHeaderConfig}
-      publicOrigin={publicOrigin}
-      previewBasePath={previewBasePath}
-      templates={templates}
-      currentTemplateId={templateId}
-      guideDismissed={guideDismissed}
-      initialSavedThemes={initialSavedThemes}
-    />
+    <div className="min-h-svh">
+      <EditorShell
+        slug={workspace.slug}
+        workspaceName={workspace.name}
+        initialData={initialData}
+        initialBrandKit={initialBrandKit}
+        initialContact={initialContact}
+        initialFormLocale={initialFormLocale}
+        initialHeaderConfig={initialHeaderConfig}
+        publicOrigin={publicOrigin}
+        previewBasePath={previewBasePath}
+        templates={templates}
+        currentTemplateId={templateId}
+        guideDismissed={guideDismissed}
+        initialSavedThemes={initialSavedThemes}
+      />
+    </div>
   );
 }
