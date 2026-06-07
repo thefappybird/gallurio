@@ -32,11 +32,12 @@ type Props = {
   onChange: (value: LocationValue) => void;
   disabled?: boolean;
   id?: string;
+  compact?: boolean;
 };
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
-export function LocationPicker({ value, onChange, disabled, id }: Props) {
+export function LocationPicker({ value, onChange, disabled, id, compact }: Props) {
   const t = useTranslations("app.bookings.locationPicker");
   const generatedId = useId();
   const inputId = id ?? generatedId;
@@ -220,6 +221,7 @@ export function LocationPicker({ value, onChange, disabled, id }: Props) {
           lng={value.lng}
           onPick={handlePin}
           disabled={disabled}
+          compact={compact}
         />
       </div>
 

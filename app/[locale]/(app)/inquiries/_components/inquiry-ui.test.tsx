@@ -17,17 +17,18 @@ const rows: InquiryRow[] = [
     name: "Emma Carter",
     email: "emma@example.com",
     status: "new",
+    eventTitle: "Emma & Noah Wedding",
     eventDate: "2030-08-15T00:00:00.000Z",
     eventType: "wedding",
     submittedAt: "2026-05-30T10:00:00.000Z",
-    source: "instagram",
+    source: "portfolio",
   },
 ];
 
 describe("InquiryStatusBadge", () => {
-  it("renders the translated status label", () => {
+  it("renders booked for the converted persisted status", () => {
     renderWithProviders(<InquiryStatusBadge status="converted" />);
-    expect(screen.getByText("Converted")).toBeInTheDocument();
+    expect(screen.getByText("Booked")).toBeInTheDocument();
   });
 });
 
@@ -38,6 +39,8 @@ describe("InquiryTable", () => {
     );
     // Name appears in both mobile card + desktop table layouts.
     expect(screen.getAllByText("Emma Carter").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Emma & Noah Wedding").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("portfolio").length).toBeGreaterThan(0);
     const links = screen.getAllByRole("link", { name: /Open inquiry from Emma Carter/i });
     expect(links[0]).toHaveAttribute("href", "/inquiries/111111111111111111111111");
   });

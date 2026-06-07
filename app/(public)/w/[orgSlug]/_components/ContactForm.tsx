@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
-import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useForm, useFieldArray, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   inquirySubmissionSchema,
@@ -10,6 +10,8 @@ import {
 } from "@/lib/validators/inquiry";
 import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { LocationPicker } from "@/components/ui/location-picker";
 
 export type InquiryFormLabels = {
   tabClient: string;
@@ -19,8 +21,8 @@ export type InquiryFormLabels = {
   phone: string;
   preferredContact: string;
   preferred: Record<(typeof PREFERRED_CONTACT_METHODS)[number], string>;
+  eventTitle: string;
   sessionsLabel: string;
-  /** Contains a literal "{n}" token replaced per row. */
   sessionLabel: string;
   startDate: string;
   startTime: string;
@@ -30,10 +32,10 @@ export type InquiryFormLabels = {
   shiftHint: string;
   eventType: string;
   eventTypes: Record<EventType, string>;
-  guestCount: string;
   location: string;
   message: string;
   messagePlaceholder: string;
+  continue: string;
   submit: string;
   submitting: string;
   errorGeneric: string;
@@ -60,12 +62,6 @@ const labelStyle: CSSProperties = {
   marginBottom: "0.25rem",
 };
 
-const errorStyle: CSSProperties = {
-  fontSize: "0.75rem",
-  color: "var(--pf-color-accent)",
-  marginTop: "0.25rem",
-};
-
 function todayIso(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
@@ -84,17 +80,13 @@ function readTracking() {
   };
 }
 
-/** Configurable submit-button appearance, derived from publicPage.contact. */
 export type SubmitAppearance = {
-  /** Resolved CSS color for the button — e.g. "var(--pf-color-primary)" or "#ff0000". */
   color: string;
   style: "solid" | "outline" | "soft";
-  /** Override the button's border-radius (e.g. "0.5rem"). Falls back to var(--pf-radius). */
   borderRadius?: string;
-  /** Resolved CSS color for button text. Overrides the style-derived default. */
   textColor?: string;
-  /** Explicit border string — e.g. "2px solid #ff0000". Overrides the style-derived border. */
   border?: string;
+  errorColor?: string;
 };
 
 function submitButtonStyle(appearance: SubmitAppearance, disabled: boolean): CSSProperties {
@@ -137,13 +129,14 @@ export function ContactForm({
   onSuccess,
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
   preview = false,
+  compactLocationPicker = false,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
   onSuccess: () => void;
   submitAppearance?: SubmitAppearance;
-  /** Editor preview — never POST a real inquiry; submitting is a no-op. */
   preview?: boolean;
+  compactLocationPicker?: boolean;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -152,10 +145,10 @@ export function ContactForm({
       email: "",
       phone: "",
       preferredContact: "email",
+      eventTitle: "",
       sessions: [{ startDate: "", startTime: "10:00", endTime: "17:00" }],
       eventType: "other",
-      guestCount: undefined,
-      location: "",
+      location: { label: null, address: null, placeId: null, lat: null, lng: null },
       description: "",
       company_name: "",
     },
@@ -166,21 +159,30 @@ export function ContactForm({
     control,
     handleSubmit,
     setError,
+    trigger,
     formState: { errors, isSubmitting },
   } = form;
+
+  const errorStyle = useMemo<CSSProperties>(
+    () => ({
+      fontSize: "0.75rem",
+      color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
+      marginTop: "0.25rem",
+    }),
+    [submitAppearance.errorColor]
+  );
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const minDate = todayIso();
   const [activeTab, setActiveTab] = useState<"client" | "booking">("client");
 
-  // On a failed client-side validation, surface the first tab that has an error
-  // so the user isn't left staring at a submit button that "does nothing".
   function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
-    const tab1HasError = Boolean(errs.name || errs.email || errs.phone || errs.preferredContact);
+    const tab1HasError = Boolean(
+      errs.name || errs.email || errs.phone || errs.preferredContact || errs.eventTitle
+    );
     setActiveTab(tab1HasError ? "client" : "booking");
   }
 
-  // Attach tracking params once on mount.
   useEffect(() => {
     const t = readTracking();
     if (t.utm_source) form.setValue("utm_source", t.utm_source);
@@ -189,9 +191,12 @@ export function ContactForm({
     if (t.referrer) form.setValue("referrer", t.referrer);
   }, [form]);
 
+  async function handleContinue() {
+    const ok = await trigger(["name", "email", "phone", "preferredContact", "eventTitle"]);
+    if (ok) setActiveTab("booking");
+  }
+
   async function onSubmit(data: InquirySubmissionInput) {
-    // In the owner's editor preview the form is fully interactive but inert —
-    // submitting must not create a real inquiry/booking against the workspace.
     if (preview) return;
     try {
       const res = await fetch("/api/inquiries", {
@@ -210,78 +215,66 @@ export function ContactForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit, onInvalid)}
-      noValidate
-      style={{ fontFamily: "var(--pf-font-body)" }}
-    >
-      <style>{`
-        .pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
-      `}</style>
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate style={{ fontFamily: "var(--pf-font-body)" }}>
+      <style>{`.pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }`}</style>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "booking")}>
         <TabsList>
           <TabsTab value="client">{labels.tabClient}</TabsTab>
           <TabsTab value="booking">{labels.tabBooking}</TabsTab>
         </TabsList>
 
-        {/* Tab 1 — client info */}
         <TabsPanel value="client">
           <div>
-            <label htmlFor="cf-name" style={labelStyle}>
-              {labels.name}
-            </label>
-            <input
-              id="cf-name"
-              style={fieldStyle}
-              aria-invalid={errors.name ? "true" : undefined}
-              {...register("name")}
-            />
+            <label htmlFor="cf-name" style={labelStyle}>{labels.name}</label>
+            <input id="cf-name" style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
             {errors.name && <p style={errorStyle} role="alert">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="cf-email" style={labelStyle}>
-              {labels.email}
-            </label>
-            <input
-              id="cf-email"
-              type="email"
-              style={fieldStyle}
-              aria-invalid={errors.email ? "true" : undefined}
-              {...register("email")}
-            />
+            <label htmlFor="cf-email" style={labelStyle}>{labels.email}</label>
+            <input id="cf-email" type="email" style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} {...register("email")} />
             {errors.email && <p style={errorStyle} role="alert">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="cf-phone" style={labelStyle}>
-              {labels.phone}
-            </label>
-            <input id="cf-phone" type="tel" style={fieldStyle} {...register("phone")} />
+            <label htmlFor="cf-phone" style={labelStyle}>{labels.phone}</label>
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field }) => (
+                <PhoneInput
+                  id="cf-phone"
+                  value={field.value || undefined}
+                  onChange={(value) => field.onChange(value ?? "")}
+                />
+              )}
+            />
           </div>
 
           <div>
-            <label htmlFor="cf-preferred" style={labelStyle}>
-              {labels.preferredContact}
-            </label>
+            <label htmlFor="cf-preferred" style={labelStyle}>{labels.preferredContact}</label>
             <select id="cf-preferred" style={fieldStyle} {...register("preferredContact")}>
               {PREFERRED_CONTACT_METHODS.map((m) => (
-                <option key={m} value={m}>
-                  {labels.preferred[m]}
-                </option>
+                <option key={m} value={m}>{labels.preferred[m]}</option>
               ))}
             </select>
           </div>
+
+          <div>
+            <label htmlFor="cf-eventTitle" style={labelStyle}>{labels.eventTitle}</label>
+            <input id="cf-eventTitle" style={fieldStyle} aria-invalid={errors.eventTitle ? "true" : undefined} {...register("eventTitle")} />
+            {errors.eventTitle && <p style={errorStyle} role="alert">{errors.eventTitle.message}</p>}
+          </div>
+
+          <button type="button" className="pf-cf-btn" onClick={() => void handleContinue()} style={submitButtonStyle(submitAppearance, false)}>
+            {labels.continue}
+          </button>
         </TabsPanel>
 
-        {/* Tab 2 — booking request */}
         <TabsPanel value="booking">
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
             <legend style={{ ...labelStyle, marginBottom: "0.5rem" }}>{labels.sessionsLabel}</legend>
-            <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>
-              {labels.shiftHint}
-            </p>
-
+            <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>{labels.shiftHint}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {fields.map((field, index) => (
                 <div
@@ -295,13 +288,7 @@ export function ContactForm({
                     gap: "0.5rem",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
                       {labels.sessionLabel.replace("{n}", String(index + 1))}
                     </span>
@@ -328,9 +315,7 @@ export function ContactForm({
                   </div>
 
                   <div>
-                    <label htmlFor={`cf-start-${index}`} style={labelStyle}>
-                      {labels.startDate}
-                    </label>
+                    <label htmlFor={`cf-start-${index}`} style={labelStyle}>{labels.startDate}</label>
                     <input
                       id={`cf-start-${index}`}
                       type="date"
@@ -339,29 +324,16 @@ export function ContactForm({
                       aria-invalid={errors.sessions?.[index]?.startDate ? "true" : undefined}
                       {...register(`sessions.${index}.startDate` as const)}
                     />
-                    {errors.sessions?.[index]?.startDate && (
-                      <p style={errorStyle} role="alert">
-                        {errors.sessions[index]?.startDate?.message}
-                      </p>
-                    )}
+                    {errors.sessions?.[index]?.startDate && <p style={errorStyle} role="alert">{errors.sessions[index]?.startDate?.message}</p>}
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
-                      <label htmlFor={`cf-stime-${index}`} style={labelStyle}>
-                        {labels.startTime}
-                      </label>
-                      <input
-                        id={`cf-stime-${index}`}
-                        type="time"
-                        style={fieldStyle}
-                        {...register(`sessions.${index}.startTime` as const)}
-                      />
+                      <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
+                      <input id={`cf-stime-${index}`} type="time" style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
                     </div>
                     <div>
-                      <label htmlFor={`cf-etime-${index}`} style={labelStyle}>
-                        {labels.endTime}
-                      </label>
+                      <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
                       <input
                         id={`cf-etime-${index}`}
                         type="time"
@@ -369,11 +341,7 @@ export function ContactForm({
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
                         {...register(`sessions.${index}.endTime` as const)}
                       />
-                      {errors.sessions?.[index]?.endTime && (
-                        <p style={errorStyle} role="alert">
-                          {errors.sessions[index]?.endTime?.message}
-                        </p>
-                      )}
+                      {errors.sessions?.[index]?.endTime && <p style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
                     </div>
                   </div>
                 </div>
@@ -401,44 +369,44 @@ export function ContactForm({
           </fieldset>
 
           <div>
-            <label htmlFor="cf-eventType" style={labelStyle}>
-              {labels.eventType}
-            </label>
+            <label htmlFor="cf-eventType" style={labelStyle}>{labels.eventType}</label>
             <select id="cf-eventType" style={fieldStyle} {...register("eventType")}>
               {EVENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {labels.eventTypes[t]}
-                </option>
+                <option key={t} value={t}>{labels.eventTypes[t]}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-            <div>
-              <label htmlFor="cf-guests" style={labelStyle}>
-                {labels.guestCount}
-              </label>
-              <input
-                id="cf-guests"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                style={fieldStyle}
-                {...register("guestCount")}
-              />
-            </div>
-            <div>
-              <label htmlFor="cf-location" style={labelStyle}>
-                {labels.location}
-              </label>
-              <input id="cf-location" style={fieldStyle} {...register("location")} />
-            </div>
+          <div>
+            <label htmlFor="cf-location" style={labelStyle}>{labels.location}</label>
+            <Controller
+              control={control}
+              name="location"
+              render={({ field }) => (
+                <LocationPicker
+                  id="cf-location"
+                  value={{
+                    address: field.value.address ?? "",
+                    lat: field.value.lat ?? null,
+                    lng: field.value.lng ?? null,
+                  }}
+                  compact={compactLocationPicker}
+                  onChange={(value) =>
+                    field.onChange({
+                      label: value.address || null,
+                      address: value.address || null,
+                      placeId: null,
+                      lat: value.lat ?? null,
+                      lng: value.lng ?? null,
+                    })
+                  }
+                />
+              )}
+            />
           </div>
 
           <div>
-            <label htmlFor="cf-description" style={labelStyle}>
-              {labels.message}
-            </label>
+            <label htmlFor="cf-description" style={labelStyle}>{labels.message}</label>
             <textarea
               id="cf-description"
               rows={4}
@@ -447,16 +415,11 @@ export function ContactForm({
               aria-invalid={errors.description ? "true" : undefined}
               {...register("description")}
             />
-            {errors.description && (
-              <p style={errorStyle} role="alert">
-                {errors.description.message}
-              </p>
-            )}
+            {errors.description && <p style={errorStyle} role="alert">{errors.description.message}</p>}
           </div>
         </TabsPanel>
       </Tabs>
 
-      {/* Honeypot — visually hidden, off the tab order */}
       <input
         type="text"
         tabIndex={-1}
@@ -466,7 +429,6 @@ export function ContactForm({
         {...register("company_name")}
       />
 
-      {/* Live region for the top-level submit error */}
       <div aria-live="polite">
         {errors.root && (
           <p style={{ ...errorStyle, fontSize: "0.8125rem" }} role="alert">
@@ -475,14 +437,11 @@ export function ContactForm({
         )}
       </div>
 
-      <button
-        type="submit"
-        className="pf-cf-btn"
-        disabled={isSubmitting}
-        style={submitButtonStyle(submitAppearance, isSubmitting)}
-      >
-        {isSubmitting ? labels.submitting : labels.submit}
-      </button>
+      {activeTab === "booking" ? (
+        <button type="submit" className="pf-cf-btn" disabled={isSubmitting} style={submitButtonStyle(submitAppearance, isSubmitting)}>
+          {isSubmitting ? labels.submitting : labels.submit}
+        </button>
+      ) : null}
     </form>
   );
 }

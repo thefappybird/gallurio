@@ -12,7 +12,15 @@ export type InquirySessionView = {
 type Props = {
   eventType: string;
   guestCount: number | null;
-  location: string | null;
+  location:
+    | {
+        label?: string | null;
+        address?: string | null;
+        placeId?: string | null;
+        lat?: number | null;
+        lng?: number | null;
+      }
+    | null;
   message: string;
   sessions: InquirySessionView[];
   locale: string;
@@ -28,6 +36,7 @@ export function EventRequestCard({
 }: Props) {
   const t = useTranslations("app.inquiries.detail.eventRequest");
   const te = useTranslations("app.inquiries.eventTypes");
+  const locationLabel = location?.address || location?.label || null;
 
   const eventLabel = (() => {
     try {
@@ -61,7 +70,7 @@ export function EventRequestCard({
           </div>
           <div className="flex flex-col gap-0.5 col-span-2 sm:col-span-1">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("location")}</span>
-            <span className="text-sm break-words">{location || t("none")}</span>
+            <span className="text-sm break-words">{locationLabel || t("none")}</span>
           </div>
         </div>
 

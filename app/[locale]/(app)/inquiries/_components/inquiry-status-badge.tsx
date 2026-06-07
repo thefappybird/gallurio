@@ -20,11 +20,12 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 
 export function InquiryStatusBadge({ status }: { status: string }) {
   const t = useTranslations("app.inquiries.statusValues");
+  const labelKey = status === "converted" ? "booked" : status;
   const label = (() => {
     try {
-      return t(status);
+      return t(labelKey);
     } catch {
-      return status;
+      return labelKey;
     }
   })();
 

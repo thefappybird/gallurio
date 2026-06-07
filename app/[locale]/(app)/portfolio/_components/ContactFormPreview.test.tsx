@@ -1,24 +1,60 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import React from "react";
+import { describe, expect, it } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { ContactFormPreview } from "./ContactFormPreview";
-import type { PortfolioBrandKit, PortfolioContactConfig } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PortfolioContactConfig } from "@/lib/page-builder/types";
+import type { InquiryFormLabels, SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
 
-const mockBrandKit: PortfolioBrandKit = {
-  themePreset: "minimal",
-  fontPair: "merriweather-only",
-  headingFont: "merriweather",
-  bodyFont: "merriweather",
-  primaryColor: "#111111",
-  secondaryColor: "#444444",
-  accentColor: "#007bff",
-  backgroundColor: "#ffffff",
-  foregroundColor: "#111111",
-  radius: "sharp",
-  buttonStyle: "solid",
+const labels: InquiryFormLabels = {
+  tabClient: "Client",
+  tabBooking: "Booking",
+  name: "Name",
+  email: "Email",
+  phone: "Phone",
+  preferredContact: "Preferred contact",
+  preferred: {
+    email: "Email",
+    phone: "Phone",
+    either: "Either",
+  },
+  eventTitle: "Event title",
+  sessionsLabel: "Sessions",
+  sessionLabel: "Session {n}",
+  startDate: "Start date",
+  startTime: "Start time",
+  endTime: "End time",
+  addSession: "Add session",
+  removeSession: "Remove session",
+  shiftHint: "Time ranges are approximate.",
+  eventType: "Event type",
+  eventTypes: {
+    wedding: "Wedding",
+    corporate: "Corporate",
+    portrait: "Portrait",
+    engagement: "Engagement",
+    anniversary: "Anniversary",
+    other: "Other",
+  },
+  location: "Location",
+  message: "Message",
+  messagePlaceholder: "Tell us more",
+  continue: "Continue",
+  submit: "Send inquiry",
+  submitting: "Sending...",
+  errorGeneric: "Something went wrong",
+  requiredHint: "Required",
 };
 
-const mockContact: PortfolioContactConfig = {
+const submitAppearance: SubmitAppearance = {
+  color: "#111111",
+  style: "solid",
+  textColor: "#ffffff",
+  errorColor: "#ff3366",
+  borderRadius: "0.5rem",
+  border: "2px solid #335577",
+};
+
+const contact: PortfolioContactConfig = {
   title: "Work with us",
   description: "Tell us about your event",
   buttonStyle: "solid",
@@ -27,176 +63,92 @@ const mockContact: PortfolioContactConfig = {
 };
 
 describe("ContactFormPreview", () => {
-  it("renders without crashing", () => {
-    const { container } = render(
+  it("renders the actual inquiry form structure", () => {
+    renderWithProviders(
       <ContactFormPreview
-        contact={mockContact}
-        brandKit={mockBrandKit}
-        defaultTitle="Default Title"
+        contact={contact}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        defaultTitle="Default title"
         defaultDescription="Default description"
-        submitLabel="Send inquiry"
-      />,
+      />
     );
-    expect(container).toBeTruthy();
+
+    expect(screen.getByLabelText("Contact form preview")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Client" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Booking" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });
 
-  it("shows contact.title when set", () => {
-    render(
+  it("switches tabs and shows the final submit button without submitting", () => {
+    renderWithProviders(
       <ContactFormPreview
-        contact={mockContact}
-        brandKit={mockBrandKit}
-        defaultTitle="Fallback"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
+        contact={contact}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
     );
-    expect(screen.getByText("Work with us")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Booking" }));
+
+    expect(screen.getByLabelText("Location")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send inquiry" })).toBeInTheDocument();
+    expect(screen.queryByText("Something went wrong")).not.toBeInTheDocument();
   });
 
-  it("falls back to defaultTitle when contact.title is empty", () => {
-    render(
+  it("falls back to the provided title and description", () => {
+    renderWithProviders(
       <ContactFormPreview
-        contact={{ ...mockContact, title: "" }}
-        brandKit={mockBrandKit}
-        defaultTitle="Fallback Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
+        contact={{}}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
     );
-    expect(screen.getByText("Fallback Title")).toBeTruthy();
+
+    expect(screen.getByText("Default title")).toBeInTheDocument();
+    expect(screen.getByText("Default description")).toBeInTheDocument();
   });
 
-  it("shows the submit label", () => {
-    render(
+  it("applies popup and button styling with themed fonts", () => {
+    renderWithProviders(
       <ContactFormPreview
-        contact={mockContact}
-        brandKit={mockBrandKit}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send inquiry"
-      />,
+        contact={{
+          ...contact,
+          textColor: "#223344",
+          backgroundColor: "#f6f1eb",
+          popupRadius: "rounded",
+          popupBorderWidth: 3,
+          popupBorderColor: "#884422",
+        }}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
     );
-    expect(screen.getByText("Send inquiry")).toBeTruthy();
-  });
 
-  it("applies solid popup style by default (border on container)", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, popupStyle: undefined }}
-        brandKit={mockBrandKit}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    // The popup div is the z-10 element
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup).not.toBeNull();
-    // Solid style sets a border
-    expect(popup.style.border).toContain("1px solid");
-  });
+    const frame = screen.getByLabelText("Contact form preview");
+    expect(frame.style.backgroundColor).toBe("#f6f1eb");
+    expect(frame.style.color).toBe("#223344");
+    expect(frame.style.borderRadius).toBe("0.5rem");
+    expect(frame.style.border).toContain("3px solid #884422");
+    expect(frame.style.fontFamily).toBe("var(--pf-font-body)");
 
-  it("applies soft popup style (box-shadow, no border)", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, popupStyle: "soft" }}
-        brandKit={mockBrandKit}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup.style.boxShadow).toBeTruthy();
-    expect(popup.style.border).toBe("");
-  });
+    expect(screen.getByText("Work with us").style.fontFamily).toBe("var(--pf-font-heading)");
 
-  it("applies textColor from contact config to popup text", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, textColor: "accent" }}
-        brandKit={{ ...mockBrandKit, accentColor: "#007bff" }}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup.style.color).toBe("#007bff");
-  });
+    const continueButton = screen.getByRole("button", { name: "Continue" });
+    expect(continueButton.style.borderRadius).toBe("0.5rem");
+    expect(continueButton.style.border).toContain("2px solid #335577");
 
-  it("falls back to foregroundColor when textColor is not set", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, textColor: undefined }}
-        brandKit={{ ...mockBrandKit, foregroundColor: "#111111" }}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup.style.color).toBe("#111111");
-  });
-
-  it("applies brandKit.radius to popup and button when no per-element radius set", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={mockContact}
-        brandKit={{ ...mockBrandKit, radius: "rounded" }}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup.style.borderRadius).toBe("0.5rem");
-    const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.style.borderRadius).toBe("0.5rem");
-  });
-
-  it("overrides popup radius independently of button radius", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, popupRadius: "rounded", buttonRadius: "sharp" }}
-        brandKit={mockBrandKit}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const popup = container.querySelector(".z-10") as HTMLElement;
-    expect(popup.style.borderRadius).toBe("0.5rem");
-    const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.style.borderRadius).toBe("0px");
-  });
-
-  it("applies buttonTextColor to button text", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, buttonTextColor: "accent" }}
-        brandKit={{ ...mockBrandKit, accentColor: "#007bff" }}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.style.color).toBe("#007bff");
-  });
-
-  it("applies outline button style (transparent background)", () => {
-    const { container } = render(
-      <ContactFormPreview
-        contact={{ ...mockContact, buttonStyle: "outline" }}
-        brandKit={mockBrandKit}
-        defaultTitle="Title"
-        defaultDescription=""
-        submitLabel="Send"
-      />,
-    );
-    const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.style.backgroundColor).toBe("transparent");
-    expect(button.style.border).toContain("2px solid");
+    expect(frame.style.maxHeight).toBe("calc(100dvh - 2rem)");
   });
 });

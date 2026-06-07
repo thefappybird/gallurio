@@ -102,4 +102,11 @@ describe("StyleToolkitField — 3-tab panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.queryByText("Margin")).toBeNull();
   });
+
+  it("hides the Bold control for Heading blocks", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Heading" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
+  });
 });

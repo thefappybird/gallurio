@@ -7,6 +7,7 @@ import {
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  HEADER_NAVBAR_SIZES,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 
@@ -67,6 +68,7 @@ export const portfolioContactConfigSchema = z.object({
   buttonStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
   buttonColor: z.string().max(32).optional().or(z.literal("")),
   buttonTextColor: z.string().max(32).optional().or(z.literal("")),
+  errorMessageColor: z.string().max(32).optional().or(z.literal("")),
   buttonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   buttonBorderColor: z.string().max(32).optional().or(z.literal("")),
   buttonBorderWidth: z.number().int().min(0).max(12).optional(),
@@ -96,6 +98,7 @@ export const portfolioHeaderConfigSchema = z.object({
   borderBottomColor: z.string().max(32).optional().or(z.literal("")),
   shadowSize: z.enum(HEADER_SHADOW_SIZES).optional().or(z.literal("")),
   fontSize: z.enum(HEADER_FONT_SIZES).optional().or(z.literal("")),
+  navbarSize: z.enum(HEADER_NAVBAR_SIZES).optional().or(z.literal("")),
   activeLinkScale: z.boolean().optional(),
   activeLinkHighlight: z.boolean().optional(),
   highlightColor: z.string().max(32).optional().or(z.literal("")),

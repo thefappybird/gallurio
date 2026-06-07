@@ -141,7 +141,7 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
-    expect(screen.getByText("Send inquiry")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Navigation" }));
     expect(screen.queryByLabelText("Contact form")).not.toBeInTheDocument();
@@ -181,6 +181,8 @@ describe("EditorShell", () => {
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
+    expect(iframe?.getAttribute("src")).toContain("&draft=");
+    expect(iframe?.getAttribute("src")).not.toContain("&header=");
     // Back to editing.
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(await screen.findByTestId("puck")).toBeInTheDocument();
@@ -214,6 +216,22 @@ describe("EditorShell", () => {
     expect(
       screen.getByText("The editor works best on a larger screen")
     ).toBeInTheDocument();
+  });
+
+  it("entering preview from the contact panel closes edit-only tabs and returns to home", async () => {
+    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
+    expect(await screen.findByLabelText("Contact form preview")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+    expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Contact Form" })).not.toBeInTheDocument();
+    const iframe = container.querySelector("iframe");
+    expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
+    expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("keeps Puck edits local until Publish", async () => {

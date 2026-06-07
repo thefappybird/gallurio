@@ -8,6 +8,7 @@ import {
 } from "@/lib/validators/inquiry";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
+import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
 
 export type SubmitInquiryResult =
   | { ok: true; inquiryId: string; draftBookingId: string; clientId: string }
@@ -24,20 +25,16 @@ function normalizeOptional(value: string | undefined | null): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
-/**
- * The core product mechanic: a public inquiry submission becomes a near-final
- * booking. In one transaction we match-or-create the Client (by email, scoped to
- * the workspace), write the Inquiry, and create a **draft** Booking linked back
- * via `createdFromInquiryId`. The owner later approves the draft in the lead
- * inbox (Phase 7), which promotes it onto the calendar.
- *
- * Draft bookings are deliberately NOT recorded against client financial metrics
- * (no `recordBookingForClient` here) — an unapproved draft must not inflate a
- * client's bookings count or spend. That bookkeeping happens on approval.
- *
- * All four writes share a Mongoose session/transaction: any failure rolls back
- * every write, so a partial submission never leaves orphan records.
- */
+function normalizeLocation(payload: InquirySubmissionInput["location"]) {
+  return {
+    label: normalizeOptional(payload.label ?? null),
+    address: normalizeOptional(payload.address ?? null),
+    placeId: normalizeOptional(payload.placeId ?? null),
+    lat: payload.lat ?? null,
+    lng: payload.lng ?? null,
+  };
+}
+
 export async function submitInquiry(
   input: SubmitInquiryInput
 ): Promise<SubmitInquiryResult> {
@@ -48,8 +45,6 @@ export async function submitInquiry(
   const slug = workspaceSlug.trim().toLowerCase();
   if (!slug) return { ok: false, error: "workspace_not_found" };
 
-  // Resolve the workspace from the slug ONLY — never trust a client-supplied id.
-  // Published portfolios only: an unpublished page cannot accept inquiries.
   const workspace = await Workspace.findOne({
     slug,
     "publicPage.publishedAt": { $ne: null },
@@ -73,20 +68,16 @@ export async function submitInquiry(
   const email = payload.email.trim().toLowerCase();
   const name = payload.name.trim();
   const phone = normalizeOptional(payload.phone);
-  const location = normalizeOptional(payload.location);
-  const guestCount =
-    typeof payload.guestCount === "number" ? payload.guestCount : null;
+  const eventTitle = payload.eventTitle.trim();
+  const location = normalizeLocation(payload.location);
   const description = payload.description.trim();
 
-  // Convert the wall-clock inquiry sessions into UTC instants for the booking.
   const bookingSessions = inquirySessionsToBookingSessions(payload.sessions, timeZone);
-  // Defensive: the Zod schema enforces sessions.min(1), but this helper is
-  // exported and trusts its input — an empty array would make Math.min(...[])
-  // → Infinity → Invalid Date. Fail loudly instead of writing a bad booking.
   if (bookingSessions.length === 0) {
     console.error("[inquiry] submission rejected: no sessions provided");
     return { ok: false, error: "submission_failed" };
   }
+
   const sessionStarts = bookingSessions.map((s) => s.startAt.getTime());
   const sessionEnds = bookingSessions.map((s) => s.endAt.getTime());
   const firstSessionStart = new Date(Math.min(...sessionStarts));
@@ -99,12 +90,7 @@ export async function submitInquiry(
 
   try {
     await session.withTransaction(async () => {
-      // 1. Match-or-create the client by { workspaceId, email }.
-      const existing = await Client.findOne(
-        { workspaceId, email },
-        null,
-        { session }
-      );
+      const existing = await Client.findOne({ workspaceId, email }, null, { session });
 
       let resolvedClientId: mongoose.Types.ObjectId;
       let resolvedClientName: string;
@@ -112,7 +98,6 @@ export async function submitInquiry(
       if (existing) {
         resolvedClientId = existing._id;
         resolvedClientName = existing.name;
-        // Backfill a phone number only if we don't already have one.
         if (phone && !existing.phone) {
           await Client.updateOne(
             { _id: existing._id, workspaceId },
@@ -129,7 +114,6 @@ export async function submitInquiry(
         resolvedClientName = created.name;
       }
 
-      // 2. Create the inquiry (status "new").
       const [inquiry] = await Inquiry.create(
         [
           {
@@ -141,10 +125,11 @@ export async function submitInquiry(
             message: description,
             sessions: payload.sessions,
             eventDate: firstSessionStart,
+            eventTitle,
             eventType: payload.eventType,
-            guestCount,
             location,
             source: {
+              kind: "portfolio",
               utm_source: normalizeOptional(payload.utm_source),
               utm_medium: normalizeOptional(payload.utm_medium),
               utm_campaign: normalizeOptional(payload.utm_campaign),
@@ -157,20 +142,19 @@ export async function submitInquiry(
         { session }
       );
 
-      // 3. Create the draft booking, linked back to the inquiry.
       const [booking] = await Booking.create(
         [
           {
             workspaceId,
             clientId: resolvedClientId,
             clientName: resolvedClientName,
-            title: `${resolvedClientName} — inquiry`,
+            title: eventTitle,
             eventType: payload.eventType,
             status: "draft",
             sessions: bookingSessions,
             firstSessionStart,
             lastSessionEnd,
-            location: { address: location ?? "" },
+            location,
             amount: { total: 0, deposit: 0, currency },
             notes: description,
             createdFromInquiryId: inquiry._id,
@@ -179,7 +163,6 @@ export async function submitInquiry(
         { session }
       );
 
-      // 4. Link the inquiry to its draft booking.
       await Inquiry.updateOne(
         { _id: inquiry._id, workspaceId },
         { $set: { draftBookingId: booking._id } },
@@ -201,22 +184,23 @@ export async function submitInquiry(
     return { ok: false, error: "submission_failed" };
   }
 
-  // 5. Best-effort owner notification — must NOT roll back the submission.
   const recipient =
     normalizeOptional(workspace.publicPage?.inquiryRecipientEmail) ??
     normalizeOptional(workspace.contact?.email);
+
   if (recipient) {
     try {
       await sendInquiryNotification({
         workspaceName: workspace.name,
         recipientEmail: recipient,
         inquiryId: String(inquiryId),
+        ownerEmail: recipient,
         clientName: name,
         clientEmail: email,
         clientPhone: phone,
         preferredContact: payload.preferredContact,
+        eventTitle,
         eventType: payload.eventType,
-        guestCount,
         location,
         description,
         sessions: payload.sessions,
@@ -224,6 +208,17 @@ export async function submitInquiry(
     } catch (err) {
       console.error("[inquiry] notification failed (non-fatal):", err);
     }
+  }
+
+  try {
+    await sendInquiryClientConfirmation({
+      workspaceName: workspace.name,
+      clientEmail: email,
+      clientName: name,
+      ownerEmail: recipient,
+    });
+  } catch (err) {
+    console.error("[inquiry] client confirmation failed (non-fatal):", err);
   }
 
   return {

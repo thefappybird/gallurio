@@ -904,8 +904,9 @@
       "statusValues": {
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Ditukar",
-        "archived": "Diarkib"
+        "converted": "Ditempah",
+        "archived": "Diarkib",
+        "booked": "Ditempah"
       },
       "eventTypes": {
         "wedding": "Perkahwinan",
@@ -933,8 +934,10 @@
           "eventDate": "Tarikh acara",
           "eventType": "Jenis",
           "submitted": "Dihantar",
-          "source": "Sumber"
-        }
+          "source": "Sumber",
+          "eventTitle": "Tajuk acara"
+        },
+        "noTitle": "Acara tanpa tajuk"
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1104,7 +1107,8 @@
           "tabs": {
             "setup": "Tetapan",
             "design": "Reka bentuk"
-          }
+          },
+          "errorColorLabel": "Warna mesej ralat"
         },
         "headerDialog": {
           "title": "Navigasi",
@@ -1141,6 +1145,7 @@
           "borderBottomLabel": "Sempadan bawah",
           "borderColorLabel": "Warna sempadan",
           "shadowLabel": "Bayang jatuh",
+          "navbarSizeLabel": "Saiz navbar",
           "fontSizeLabel": "Saiz pautan",
           "activeStyleLabel": "Gaya",
           "activeStyleScale": "Skala",
@@ -1163,6 +1168,11 @@
             "sm": "Kecil",
             "md": "Sederhana",
             "lg": "Besar"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1467,14 +1477,15 @@
         "anniversary": "Ulang tahun",
         "other": "Lain-lain"
       },
-      "guestCount": "Tetamu (pilihan)",
       "location": "Lokasi (pilihan)",
       "message": "Beritahu kami lagi",
       "messagePlaceholder": "Kongsi butiran acara anda…",
       "submit": "Hantar pertanyaan",
       "submitting": "Menghantar…",
       "errorGeneric": "Tidak dapat dihantar — sila cuba lagi nanti.",
-      "requiredHint": "Diperlukan"
+      "requiredHint": "Diperlukan",
+      "eventTitle": "Tajuk acara",
+      "continue": "Ditempah"
     }
   },
   "notFound": {

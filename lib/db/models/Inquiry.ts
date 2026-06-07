@@ -32,11 +32,19 @@ const inquirySchema = new Schema(
     // first session's date for the existing dashboard/list sort + display paths.
     sessions: { type: [inquirySessionSchema], default: [] },
     eventDate: { type: Date, default: null },
+    eventTitle: { type: String, default: "", trim: true },
     eventType: { type: String, default: "other" },
     guestCount: { type: Number, default: null },
-    location: { type: String, default: null },
+    location: {
+      label: { type: String, default: null },
+      address: { type: String, default: null },
+      placeId: { type: String, default: null },
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
     budgetRange: { type: String, default: null },
     source: {
+      kind: { type: String, default: "direct" },
       utm_source: { type: String, default: null },
       utm_medium: { type: String, default: null },
       utm_campaign: { type: String, default: null },

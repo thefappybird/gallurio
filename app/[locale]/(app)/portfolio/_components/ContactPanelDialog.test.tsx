@@ -37,4 +37,11 @@ describe("ContactPanelDialog", () => {
     expect(popup).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Background color")).toBeInTheDocument();
   });
+
+  it("does not render Done or Cancel footer buttons", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+
+    expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+  });
 });

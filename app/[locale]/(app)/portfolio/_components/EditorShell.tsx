@@ -2,7 +2,7 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Puck, usePuck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
+import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,7 @@ const LOCAL_DRAFT_VERSION = 1;
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
   data: Record<Zone, PuckData>;
+  brandKit: PortfolioBrandKit;
   contact: PortfolioContactConfig;
   formLocale: string;
   headerConfig: PortfolioHeaderConfig;
@@ -200,6 +202,7 @@ export function EditorShell({
   initialSavedThemes,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
+  const tPublicForm = useTranslations("publicPage.inquiryForm");
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -213,6 +216,10 @@ export function EditorShell({
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
+  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>({
+    home: initialData.home ?? EMPTY_ZONE,
+    gallery: initialData.gallery ?? EMPTY_ZONE,
+  });
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -264,6 +271,7 @@ export function EditorShell({
     const draft: PortfolioBrowserDraft = {
       version: LOCAL_DRAFT_VERSION,
       data: zoneDataRef.current,
+      brandKit,
       contact,
       formLocale,
       headerConfig,
@@ -274,7 +282,7 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [contact, draftKey, formLocale, headerConfig]);
+  }, [brandKit, contact, draftKey, formLocale, headerConfig]);
 
   const writeLocalDraft = useCallback(() => {
     setSaveStatus(persistLocalDraft() ? "saved" : "idle");
@@ -292,6 +300,8 @@ export function EditorShell({
           home: draft.data?.home ?? zoneDataRef.current.home,
           gallery: draft.data?.gallery ?? zoneDataRef.current.gallery,
         };
+        setRenderDraftData(zoneDataRef.current);
+        if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
         if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
@@ -319,9 +329,10 @@ export function EditorShell({
     (data: Data) => {
       const next = data as unknown as PuckData;
       zoneDataRef.current[activeZone] = next;
+      setRenderDraftData((current) => ({ ...current, [activeZone]: next }));
       if (ignoreNextChange.current) {
         ignoreNextChange.current = false;
-        return; // mount/remount echo — capture data, but don't autosave.
+        return; // mount/remount echo - capture data, but don't autosave.
       }
       writeLocalDraft();
     },
@@ -337,6 +348,12 @@ export function EditorShell({
     if (zone === activeZone && !sidePanelOpen) return;
 
     hideEditorPanels();
+    if (sidePanelOpen) {
+      hideEditorPanels();
+      ignoreNextChange.current = true;
+      setPuckSeed(ensureIds(zoneDataRef.current.home));
+      setActiveZone("home");
+    }
     await flushPendingSave(activeZone);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[zone]));
@@ -354,6 +371,12 @@ export function EditorShell({
     }
     // Entering preview — guarantee the iframe shows the latest edits.
     await flushPendingSave(activeZone);
+    if (sidePanelOpen) {
+      hideEditorPanels();
+      ignoreNextChange.current = true;
+      setPuckSeed(ensureIds(zoneDataRef.current.home));
+      setActiveZone("home");
+    }
     setPreviewNonce((n) => n + 1);
     setPreviewMode(true);
   }
@@ -450,6 +473,7 @@ export function EditorShell({
       home: (seed.data.home as PuckData) ?? EMPTY_ZONE,
       gallery: (seed.data.gallery as PuckData) ?? EMPTY_ZONE,
     };
+    setRenderDraftData(zoneDataRef.current);
     setBrandKit(seed.brandKit);
     setContact(seed.contact);
     setTemplateId(seed.templateId);
@@ -487,16 +511,27 @@ export function EditorShell({
         ? t("contactSettingsShort")
         : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
+  const contactLabels = buildContactLabels((key, values) => tPublicForm(key, values)).form;
+  const previewDraft = encodeURIComponent(
+    JSON.stringify({
+      version: LOCAL_DRAFT_VERSION,
+      data: renderDraftData,
+      brandKit,
+      contact,
+      formLocale,
+      headerConfig,
+    } satisfies PortfolioBrowserDraft)
+  );
   const previewSrc =
     `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
-    `&v=${previewNonce}&header=${encodeURIComponent(JSON.stringify(headerConfig))}`;
+    `&v=${previewNonce}&draft=${previewDraft}`;
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-          {EDITOR_SECTIONS.map((section) => {
+          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact")).map((section) => {
             const label =
               section === "header"
                 ? t("headerSettings")
@@ -535,7 +570,7 @@ export function EditorShell({
   }
 
   // Right cluster: tools + the save indicator + the Publish slot.
-  function toolsCluster(publishSlot: React.ReactNode) {
+  function toolsCluster(publishSlot: ReactNode) {
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
         <span className="text-xs text-muted-foreground" aria-live="polite">
@@ -563,7 +598,7 @@ export function EditorShell({
   }
 
   // Three-section top bar: nav (left) · device toggle (center) · tools (right).
-  function topBar(center: React.ReactNode, publishSlot: React.ReactNode) {
+  function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
       <div className="flex w-full flex-wrap items-center gap-2">
         <div className="flex min-w-0 flex-1 justify-start">{navCluster()}</div>
@@ -636,9 +671,35 @@ export function EditorShell({
                     <ContactFormPreview
                       contact={contact}
                       brandKit={brandKit}
+                      labels={contactLabels}
+                      submitAppearance={{
+                        color: contact.buttonColor?.startsWith("#")
+                          ? contact.buttonColor
+                          : `var(--pf-color-${contact.buttonColor || "primary"})`,
+                        style: (contact.buttonStyle || "solid") as "solid" | "outline" | "soft",
+                        borderRadius: contact.buttonRadius
+                          ? ({ sharp: "0", subtle: "0.25rem", rounded: "0.5rem" }[contact.buttonRadius] ?? "var(--pf-radius)")
+                          : undefined,
+                        textColor: contact.buttonTextColor?.startsWith("#")
+                          ? contact.buttonTextColor
+                          : contact.buttonTextColor
+                            ? `var(--pf-color-${contact.buttonTextColor})`
+                            : undefined,
+                        border: contact.buttonBorderWidth
+                          ? `${contact.buttonBorderWidth}px solid ${
+                              contact.buttonBorderColor?.startsWith("#")
+                                ? contact.buttonBorderColor
+                                : `var(--pf-color-${contact.buttonBorderColor || "foreground"})`
+                            }`
+                          : undefined,
+                        errorColor: contact.errorMessageColor?.startsWith("#")
+                          ? contact.errorMessageColor
+                          : contact.errorMessageColor
+                            ? `var(--pf-color-${contact.errorMessageColor})`
+                            : undefined,
+                      }}
                       defaultTitle={t("contactPreview.title")}
                       defaultDescription={t("contactPreview.description")}
-                      submitLabel={t("contactPreview.submit")}
                     />
                   </div>
                   <ContactPanelDialog
@@ -733,3 +794,6 @@ export function EditorShell({
     </>
   );
 }
+
+
+

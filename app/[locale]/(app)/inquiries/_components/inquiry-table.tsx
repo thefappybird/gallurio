@@ -9,9 +9,10 @@ export type InquiryRow = {
   name: string;
   email: string;
   status: string;
-  eventDate: string | null; // ISO date string
+  eventTitle: string | null;
+  eventDate: string | null;
   eventType: string;
-  submittedAt: string; // ISO datetime string
+  submittedAt: string;
   source: string | null;
 };
 
@@ -61,7 +62,6 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
 
   return (
     <>
-      {/* Mobile: stacked cards (≥44px tap targets). */}
       <ul className="flex flex-col gap-2 md:hidden">
         {rows.map((row) => (
           <li key={row.id}>
@@ -75,6 +75,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                 <InquiryStatusBadge status={row.status} />
               </div>
               <span className="truncate text-xs text-muted-foreground">{row.email}</span>
+              {row.eventTitle ? <span className="text-xs">{row.eventTitle}</span> : null}
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                 <span>{eventTypeLabel(row.eventType)}</span>
                 <span>·</span>
@@ -85,13 +86,13 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
         ))}
       </ul>
 
-      {/* Desktop: table. */}
       <div className="hidden overflow-x-auto border border-border bg-card md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.status")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.client")}</th>
+              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventTitle")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventType")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventDate")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.submitted")}</th>
@@ -117,11 +118,10 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                     <span className="text-xs text-muted-foreground">{row.email}</span>
                   </Link>
                 </td>
+                <td className="px-3 py-2.5 align-middle">{row.eventTitle ?? t("table.noTitle")}</td>
                 <td className="px-3 py-2.5 align-middle">{eventTypeLabel(row.eventType)}</td>
                 <td className="px-3 py-2.5 align-middle">{fmtDate(row.eventDate)}</td>
-                <td className="px-3 py-2.5 align-middle text-muted-foreground">
-                  {fmtDateTime(row.submittedAt)}
-                </td>
+                <td className="px-3 py-2.5 align-middle text-muted-foreground">{fmtDateTime(row.submittedAt)}</td>
                 <td className="px-3 py-2.5 align-middle text-muted-foreground">
                   {row.source ?? t("table.directSource")}
                 </td>

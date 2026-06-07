@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -254,12 +253,8 @@ export function ContactPanelDialog({
   formLocale,
   onFormLocaleChange,
   brandKit,
-  onSaved,
-  onCancel,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
-  const te = useTranslations("app.pageBuilder.editor");
-  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>("setup");
   const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
 
@@ -284,14 +279,6 @@ export function ContactPanelDialog({
     radius: BrandKitRadius,
   ) {
     set(key, contact[key] === radius ? undefined : radius);
-  }
-
-  function save() {
-    setSaving(true);
-    queueMicrotask(() => {
-      onSaved();
-      setSaving(false);
-    });
   }
 
   return (
@@ -397,6 +384,14 @@ export function ContactPanelDialog({
                 getLabel={(c) => t(`buttonColors.${c}`)}
               />
 
+              <ColorSwatchRow
+                label={t("errorColorLabel")}
+                active={contact.errorMessageColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("errorMessageColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
               <RadiusRow
                 label={t("cornerRadiusLabel")}
                 active={contact.popupRadius}
@@ -488,15 +483,6 @@ export function ContactPanelDialog({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex gap-2 border-t border-border px-4 py-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
-          {te("publishDialog.cancel")}
-        </Button>
-        <Button type="button" onClick={save} loading={saving} className="flex-1">
-          {saving ? t("saving") : te("done")}
-        </Button>
-      </div>
     </div>
   );
 }

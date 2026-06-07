@@ -72,10 +72,13 @@ export type InquirySessionInput = z.infer<typeof inquirySessionSchema>;
 // Full submission schema — shared by the client form and (Phase 6) the API.
 // ---------------------------------------------------------------------------
 
-const optionalGuestCount = z.preprocess(
-  (v) => (v === "" || v === null || v === undefined ? undefined : v),
-  z.coerce.number().int().min(0).max(100000).optional()
-);
+export const inquiryLocationSchema = z.object({
+  label: z.string().trim().max(240).nullable(),
+  address: z.string().trim().max(240).nullable(),
+  placeId: z.string().trim().max(240).nullable().optional(),
+  lat: z.number().min(-90).max(90).nullable().optional(),
+  lng: z.number().min(-180).max(180).nullable().optional(),
+});
 
 export const inquirySubmissionSchema = z.object({
   // Tab 1 — client info
@@ -83,6 +86,7 @@ export const inquirySubmissionSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email"),
   phone: z.string().trim().min(7).max(30).optional().or(z.literal("")),
   preferredContact: z.enum(PREFERRED_CONTACT_METHODS).default("email"),
+  eventTitle: z.string().trim().min(2, "Please enter an event title").max(120),
 
   // Tab 2 — booking request
   sessions: z
@@ -90,8 +94,7 @@ export const inquirySubmissionSchema = z.object({
     .min(1, "Add at least one session")
     .max(20, "Too many sessions"),
   eventType: z.enum(EVENT_TYPES),
-  guestCount: optionalGuestCount,
-  location: z.string().trim().max(200).optional().or(z.literal("")),
+  location: inquiryLocationSchema,
   description: z.string().trim().min(10, "Tell us a little more (10+ characters)").max(2000),
 
   // Anti-bot honeypot — must be empty.

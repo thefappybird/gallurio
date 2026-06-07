@@ -904,8 +904,9 @@
       "statusValues": {
         "new": "New",
         "contacted": "Contacted",
-        "converted": "Converted",
-        "archived": "Archived"
+        "converted": "Booked",
+        "archived": "Archived",
+        "booked": "Booked"
       },
       "eventTypes": {
         "wedding": "Wedding",
@@ -933,8 +934,10 @@
           "eventDate": "Event date",
           "eventType": "Type",
           "submitted": "Submitted",
-          "source": "Source"
-        }
+          "source": "Source",
+          "eventTitle": "Event title"
+        },
+        "noTitle": "Untitled event"
       },
       "detail": {
         "back": "Back to inquiries",
@@ -1104,7 +1107,8 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia",
             "th": "ไทย"
-          }
+          },
+          "errorColorLabel": "Error message color"
         },
         "headerDialog": {
           "title": "Navigation",
@@ -1141,6 +1145,7 @@
           "borderBottomLabel": "Border bottom",
           "borderColorLabel": "Border color",
           "shadowLabel": "Drop shadow",
+          "navbarSizeLabel": "Navbar size",
           "fontSizeLabel": "Link size",
           "activeStyleLabel": "Style",
           "activeStyleScale": "Scale",
@@ -1163,6 +1168,11 @@
             "sm": "Small",
             "md": "Medium",
             "lg": "Large"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1467,14 +1477,15 @@
         "anniversary": "Anniversary",
         "other": "Other"
       },
-      "guestCount": "Guests (optional)",
       "location": "Location (optional)",
       "message": "Tell us more",
       "messagePlaceholder": "Share details about your event…",
       "submit": "Send inquiry",
       "submitting": "Sending…",
       "errorGeneric": "Could not submit — please try again later.",
-      "requiredHint": "Required"
+      "requiredHint": "Required",
+      "eventTitle": "Event title",
+      "continue": "Continue"
     }
   },
   "notFound": {

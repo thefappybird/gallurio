@@ -21,16 +21,52 @@ const RADIUS_MAP: Record<string, string> = {
   rounded: "0.5rem",
 };
 
+const NAVBAR_SIZE_MAP = {
+  sleek: {
+    navPadding: "0.625rem 1.25rem",
+    brandFontSize: "1rem",
+    logoHeight: "1.5rem",
+    navGap: "0.375rem",
+    linkMinHeight: "40px",
+    linkPaddingX: "0.625rem",
+    contactMinHeight: "44px",
+  },
+  balanced: {
+    navPadding: "0.75rem 1.5rem",
+    brandFontSize: "1.125rem",
+    logoHeight: "1.75rem",
+    navGap: "0.5rem",
+    linkMinHeight: "44px",
+    linkPaddingX: "0.75rem",
+    contactMinHeight: "44px",
+  },
+  flashy: {
+    navPadding: "1rem 1.5rem",
+    brandFontSize: "1.375rem",
+    logoHeight: "2.125rem",
+    navGap: "0.75rem",
+    linkMinHeight: "48px",
+    linkPaddingX: "0.9rem",
+    contactMinHeight: "52px",
+  },
+} as const;
+
 function resolveColor(token: string | undefined, brandKit: PortfolioBrandKit, fallback: string): string {
   if (!token) return fallback;
   if (token.startsWith("#")) return token;
   switch (token) {
-    case "primary":    return brandKit.primaryColor;
-    case "secondary":  return brandKit.secondaryColor;
-    case "accent":     return brandKit.accentColor;
-    case "background": return brandKit.backgroundColor;
-    case "foreground": return brandKit.foregroundColor;
-    default:           return fallback;
+    case "primary":
+      return brandKit.primaryColor;
+    case "secondary":
+      return brandKit.secondaryColor;
+    case "accent":
+      return brandKit.accentColor;
+    case "background":
+      return brandKit.backgroundColor;
+    case "foreground":
+      return brandKit.foregroundColor;
+    default:
+      return fallback;
   }
 }
 
@@ -43,9 +79,7 @@ function hexToRgba(hex: string, opacity: number): string {
 
 function withOpacity(color: string, opacity: number): string {
   if (opacity >= 100) return color;
-  if (color.startsWith("#") && color.length === 7) {
-    return hexToRgba(color, opacity);
-  }
+  if (color.startsWith("#") && color.length === 7) return hexToRgba(color, opacity);
   return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
 }
 
@@ -67,6 +101,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
 
   const fontSize = header.fontSize ? (FONT_SIZE_MAP[header.fontSize] ?? "0.9375rem") : "0.9375rem";
   const brandRadius = RADIUS_MAP[brandKit.radius ?? "sharp"] ?? "0";
+  const navbarSize = NAVBAR_SIZE_MAP[header.navbarSize || "balanced"];
 
   const linkColor = resolveColor(header.linkColor, brandKit, brandKit.foregroundColor);
   const activeLinkColor = resolveColor(header.activeLinkColor, brandKit, brandKit.foregroundColor);
@@ -74,6 +109,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
   function getActiveLinkStyle(): React.CSSProperties {
     const style: React.CSSProperties = {
       color: activeLinkColor,
+      fontFamily: "var(--pf-font-body)",
     };
     if (header.activeLinkScale) {
       style.transform = "scale(1.08)";
@@ -95,10 +131,11 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
   const navLinkBase: React.CSSProperties = {
     display: "inline-flex",
     alignItems: "center",
-    minHeight: "44px",
-    padding: "0 0.75rem",
+    minHeight: navbarSize.linkMinHeight,
+    padding: `0 ${navbarSize.linkPaddingX}`,
     textDecoration: "none",
     fontSize,
+    fontFamily: "var(--pf-font-body)",
     borderRadius: brandRadius,
     color: linkColor,
     borderBottom: "3px solid transparent",
@@ -112,7 +149,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "44px",
+    minHeight: navbarSize.contactMinHeight,
     padding: "0 1rem",
     backgroundColor: withOpacity(
       resolveColor(header.contactButtonColor, brandKit, brandKit.primaryColor),
@@ -123,17 +160,13 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
     borderRadius: header.contactButtonRadius ? (RADIUS_MAP[header.contactButtonRadius] ?? brandRadius) : brandRadius,
     cursor: "default",
     fontSize,
-    fontFamily: "inherit",
+    fontFamily: "var(--pf-font-body)",
   };
 
   const brandText = header.brandText === undefined ? workspaceName : header.brandText.trim();
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden bg-muted/40"
-      aria-hidden="true"
-    >
-      {/* Header preview strip */}
+    <div className="relative h-full w-full overflow-hidden bg-muted/40" aria-hidden="true">
       <div
         style={{
           backgroundColor: bgFinal,
@@ -142,20 +175,20 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
           position: "sticky",
           top: 0,
           zIndex: 10,
+          fontFamily: "var(--pf-font-body)",
         }}
       >
-        {/* Logo (if set) */}
         {header.logoUrl && (
           <div style={{ position: "absolute", left: "1.5rem", top: "50%", transform: "translateY(-50%)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={header.logoUrl} alt="Logo" style={{ height: "2rem", width: "auto", objectFit: "contain" }} />
+            <img src={header.logoUrl} alt="Logo" style={{ height: navbarSize.logoHeight, width: "auto", objectFit: "contain" }} />
           </div>
         )}
         <nav
           style={{
             maxWidth: "80rem",
             margin: "0 auto",
-            padding: "0.75rem 1.5rem",
+            padding: navbarSize.navPadding,
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -165,8 +198,9 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
           <span
             style={{
               color: linkColor,
-              fontSize: "1.125rem",
+              fontSize: navbarSize.brandFontSize,
               fontWeight: 700,
+              fontFamily: "var(--pf-font-heading)",
               textDecoration: "none",
               paddingLeft: header.logoUrl ? "2.5rem" : 0,
             }}
@@ -174,12 +208,9 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
             {brandText}
           </span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {/* Home — marked as active */}
+          <div style={{ display: "flex", alignItems: "center", gap: navbarSize.navGap }}>
             <span style={activeLinkStyle}>Home</span>
-            {/* Gallery — inactive */}
             <span style={navLinkBase}>Gallery</span>
-            {/* Contact — CTA button */}
             <button type="button" style={contactBtnStyle} tabIndex={-1}>
               Contact
             </button>
@@ -187,7 +218,6 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
         </nav>
       </div>
 
-      {/* Placeholder page body */}
       <div
         style={{
           padding: "3rem 2rem",
@@ -210,7 +240,6 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
         ))}
       </div>
 
-      {/* Instructional caption */}
       <div
         style={{
           position: "absolute",

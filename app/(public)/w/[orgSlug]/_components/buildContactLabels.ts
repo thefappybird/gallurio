@@ -1,6 +1,6 @@
 import type { ContactModalLabels } from "./ContactModal";
 
-type Translator = (key: string) => string;
+type Translator = (key: string, values?: Record<string, string | number>) => string;
 
 /**
  * Builds the fully-resolved contact modal labels from a `publicPage.inquiryForm`
@@ -28,8 +28,9 @@ export function buildContactLabels(t: Translator): ContactModalLabels {
         phone: t("preferred.phone"),
         either: t("preferred.either"),
       },
+      eventTitle: t("eventTitle"),
       sessionsLabel: t("sessionsLabel"),
-      sessionLabel: t("sessionLabel"),
+      sessionLabel: t("sessionLabel", { n: "{n}" }),
       startDate: t("startDate"),
       startTime: t("startTime"),
       endTime: t("endTime"),
@@ -45,10 +46,10 @@ export function buildContactLabels(t: Translator): ContactModalLabels {
         anniversary: t("eventTypes.anniversary"),
         other: t("eventTypes.other"),
       },
-      guestCount: t("guestCount"),
       location: t("location"),
       message: t("message"),
       messagePlaceholder: t("messagePlaceholder"),
+      continue: t("continue"),
       submit: t("submit"),
       submitting: t("submitting"),
       errorGeneric: t("errorGeneric"),

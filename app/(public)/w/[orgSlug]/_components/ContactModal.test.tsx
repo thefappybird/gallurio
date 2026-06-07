@@ -17,6 +17,7 @@ const labels: ContactModalLabels = {
     phone: "Phone",
     preferredContact: "Preferred contact",
     preferred: { email: "Email", phone: "Phone", either: "Either" },
+    eventTitle: "Event title",
     sessionsLabel: "Event dates",
     sessionLabel: "Day {n}",
     startDate: "Date",
@@ -34,10 +35,10 @@ const labels: ContactModalLabels = {
       anniversary: "Anniversary",
       other: "Other",
     },
-    guestCount: "Guests",
     location: "Location",
     message: "Tell us more",
     messagePlaceholder: "Details…",
+    continue: "Continue",
     submit: "Send inquiry",
     submitting: "Sending…",
     errorGeneric: "Could not submit.",
@@ -86,7 +87,7 @@ describe("ContactModal", () => {
   it("renders the fixed form with a hidden honeypot when open", async () => {
     render(<ContactModal workspaceSlug="luna" labels={labels} />);
     open();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Send inquiry" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument());
     const honeypot = document.querySelector('input[name="company_name"]') as HTMLInputElement;
     expect(honeypot.getAttribute("aria-hidden")).toBe("true");
   });

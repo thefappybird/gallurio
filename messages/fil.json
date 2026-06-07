@@ -904,8 +904,9 @@
       "statusValues": {
         "new": "Bago",
         "contacted": "Nakausap na",
-        "converted": "Na-convert",
-        "archived": "Naka-archive"
+        "converted": "Na-book",
+        "archived": "Naka-archive",
+        "booked": "Na-book"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -933,8 +934,10 @@
           "eventDate": "Petsa ng kaganapan",
           "eventType": "Uri",
           "submitted": "Isinumite",
-          "source": "Pinagmulan"
-        }
+          "source": "Pinagmulan",
+          "eventTitle": "Pamagat ng event"
+        },
+        "noTitle": "Walang pamagat na event"
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
@@ -1104,7 +1107,8 @@
           "tabs": {
             "setup": "Setup",
             "design": "Disenyo"
-          }
+          },
+          "errorColorLabel": "Kulay ng mensahe ng error"
         },
         "headerDialog": {
           "title": "Navigation",
@@ -1141,6 +1145,7 @@
           "borderBottomLabel": "Border sa ibaba",
           "borderColorLabel": "Kulay ng border",
           "shadowLabel": "Drop shadow",
+          "navbarSizeLabel": "Navbar size",
           "fontSizeLabel": "Laki ng link",
           "activeStyleLabel": "Estilo",
           "activeStyleScale": "Palakihin",
@@ -1163,6 +1168,11 @@
             "sm": "Maliit",
             "md": "Katamtaman",
             "lg": "Malaki"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1467,14 +1477,15 @@
         "anniversary": "Anibersaryo",
         "other": "Iba pa"
       },
-      "guestCount": "Mga bisita (opsyonal)",
       "location": "Lokasyon (opsyonal)",
       "message": "Sabihin pa sa amin",
       "messagePlaceholder": "Ibahagi ang mga detalye ng iyong kaganapan…",
       "submit": "Ipadala ang katanungan",
       "submitting": "Ipinapadala…",
       "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
-      "requiredHint": "Kinakailangan"
+      "requiredHint": "Kinakailangan",
+      "eventTitle": "Pamagat ng event",
+      "continue": "Na-book"
     }
   },
   "notFound": {

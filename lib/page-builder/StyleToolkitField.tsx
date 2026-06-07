@@ -39,7 +39,6 @@ import {
   Layers2,
   Layers,
   Minus,
-  RotateCcw,
 } from "lucide-react";
 import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
@@ -87,9 +86,6 @@ const FLEX_CONTAINER_BLOCKS = new Set([
 ]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
-
-// Blocks that bypass the tab system and get a minimal inline panel.
-const SIMPLIFIED_BLOCKS = new Set(["Image", "Video", "ContactDetails", "Divider"]);
 
 const ANIMATION_LABEL: Record<AnimationType, string> = {
   none: "None",
@@ -501,7 +497,9 @@ function DesignTab({
           Typography
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
-          <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
+          {blockType !== "Heading" && (
+            <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
+          )}
           <ToolbarToggle active={!!s.italic} title="Italic" Icon={Italic} onClick={() => set({ italic: !s.italic })} />
           <ToolbarToggle active={!!s.underline} title="Underline" Icon={Underline} onClick={() => set({ underline: !s.underline })} />
           {!isButton && (
@@ -1292,10 +1290,12 @@ export function StyleToolkitField({
   value,
   onChange,
   fieldId,
+  blockType = "",
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle) => void;
   fieldId?: string;
+  blockType?: string;
 }) {
   const [tab, setTab] = useState<"content" | "design" | "layout">("content");
   const s = value ?? {};
@@ -1311,11 +1311,19 @@ export function StyleToolkitField({
     <div className="flex flex-col">
       <TabHeader tab={tab} tabs={allTabs} onTabChange={setTab} />
       {tab === "content" && (
-        <ContentTabBody s={s} set={set} type="" p={undefined} setProp={() => {}} showBanner={true} isContainer={false} />
+        <ContentTabBody
+          s={s}
+          set={set}
+          type={blockType}
+          p={undefined}
+          setProp={() => {}}
+          showBanner={true}
+          isContainer={false}
+        />
       )}
-      {tab === "design" && <DesignTab s={s} set={set} />}
+      {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}
       {tab === "layout" && (
-        <LayoutTabBody s={s} set={set} isGridChild={false} showJustify={true} />
+        <LayoutTabBody s={s} set={set} isGridChild={false} showJustify={true} blockType={blockType} />
       )}
     </div>
   );

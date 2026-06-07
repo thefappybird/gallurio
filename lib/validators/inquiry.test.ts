@@ -26,10 +26,16 @@ function validPayload(overrides: Record<string, unknown> = {}): Record<string, u
     email: "ADA@example.com",
     phone: "+63 900 000 0000",
     preferredContact: "email",
+    eventTitle: "Ada & Charles Wedding",
     sessions: [{ startDate: FUTURE, startTime: "09:00", endTime: "17:00" }],
     eventType: "wedding",
-    guestCount: "120",
-    location: "Manila",
+    location: {
+      label: "Manila Cathedral",
+      address: "Manila, Metro Manila, Philippines",
+      placeId: "place_123",
+      lat: 14.5896,
+      lng: 120.9747,
+    },
     description: "Two-day wedding shoot, garden venue.",
     company_name: "",
     ...overrides,
@@ -42,7 +48,8 @@ describe("inquirySubmissionSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.email).toBe("ada@example.com");
-      expect(result.data.guestCount).toBe(120);
+      expect(result.data.eventTitle).toBe("Ada & Charles Wedding");
+      expect(result.data.location.address).toBe("Manila, Metro Manila, Philippines");
     }
   });
 
@@ -68,6 +75,10 @@ describe("inquirySubmissionSchema", () => {
     const p = validPayload();
     delete (p as Record<string, unknown>).name;
     expect(inquirySubmissionSchema.safeParse(p).success).toBe(false);
+  });
+
+  it("rejects a missing event title", () => {
+    expect(inquirySubmissionSchema.safeParse(validPayload({ eventTitle: "" })).success).toBe(false);
   });
 
   it("rejects an empty sessions array", () => {
@@ -120,10 +131,17 @@ describe("inquirySubmissionSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("treats empty guestCount as undefined (not 0)", () => {
-    const result = inquirySubmissionSchema.safeParse(validPayload({ guestCount: "" }));
+  it("removes guestCount from the public inquiry payload shape", () => {
+    const result = inquirySubmissionSchema.safeParse(validPayload({ guestCount: 120 }));
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.guestCount).toBeUndefined();
+    if (result.success) expect("guestCount" in result.data).toBe(false);
+  });
+
+  it("accepts an empty structured location", () => {
+    const result = inquirySubmissionSchema.safeParse(
+      validPayload({ location: { label: "", address: "", placeId: null, lat: null, lng: null } })
+    );
+    expect(result.success).toBe(true);
   });
 });
 

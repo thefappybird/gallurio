@@ -65,6 +65,7 @@ export type PortfolioContactConfig = {
   /** Token name (e.g. "primary") or custom hex (e.g. "#ff0000"). */
   buttonColor?: string;
   buttonTextColor?: string;
+  errorMessageColor?: string;
   buttonRadius?: BrandKitRadius;
   buttonBorderColor?: string;
   buttonBorderWidth?: number;
@@ -86,6 +87,9 @@ export type HeaderShadowSize = (typeof HEADER_SHADOW_SIZES)[number];
 
 export const HEADER_FONT_SIZES = ["sm", "md", "lg"] as const;
 export type HeaderFontSize = (typeof HEADER_FONT_SIZES)[number];
+
+export const HEADER_NAVBAR_SIZES = ["sleek", "balanced", "flashy"] as const;
+export type HeaderNavbarSize = (typeof HEADER_NAVBAR_SIZES)[number];
 
 export type PortfolioHeaderConfig = {
   /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
@@ -110,6 +114,8 @@ export type PortfolioHeaderConfig = {
   shadowSize?: HeaderShadowSize | "";
   /** Nav link font size. Empty = default (md). */
   fontSize?: HeaderFontSize | "";
+  /** Overall navbar density/presence. Empty = balanced. */
+  navbarSize?: HeaderNavbarSize | "";
   /** Slightly scales up the active link text. */
   activeLinkScale?: boolean;
   /** Adds a background color behind the active link. */

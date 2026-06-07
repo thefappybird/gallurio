@@ -904,8 +904,9 @@
       "statusValues": {
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Dikonversi",
-        "archived": "Diarsipkan"
+        "converted": "Dipesan",
+        "archived": "Diarsipkan",
+        "booked": "Dipesan"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -933,8 +934,10 @@
           "eventDate": "Tanggal acara",
           "eventType": "Jenis",
           "submitted": "Dikirim",
-          "source": "Sumber"
-        }
+          "source": "Sumber",
+          "eventTitle": "Judul acara"
+        },
+        "noTitle": "Acara tanpa judul"
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1104,7 +1107,8 @@
           "tabs": {
             "setup": "Pengaturan",
             "design": "Desain"
-          }
+          },
+          "errorColorLabel": "Warna pesan error"
         },
         "headerDialog": {
           "title": "Navigasi",
@@ -1141,6 +1145,7 @@
           "borderBottomLabel": "Batas bawah",
           "borderColorLabel": "Warna batas",
           "shadowLabel": "Bayangan",
+          "navbarSizeLabel": "Ukuran navbar",
           "fontSizeLabel": "Ukuran tautan",
           "activeStyleLabel": "Gaya",
           "activeStyleScale": "Skala",
@@ -1163,6 +1168,11 @@
             "sm": "Kecil",
             "md": "Sedang",
             "lg": "Besar"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1467,14 +1477,15 @@
         "anniversary": "Hari jadi",
         "other": "Lainnya"
       },
-      "guestCount": "Tamu (opsional)",
       "location": "Lokasi (opsional)",
       "message": "Ceritakan lebih lanjut",
       "messagePlaceholder": "Bagikan detail acara Anda…",
       "submit": "Kirim pertanyaan",
       "submitting": "Mengirim…",
       "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
-      "requiredHint": "Wajib"
+      "requiredHint": "Wajib",
+      "eventTitle": "Judul acara",
+      "continue": "Dipesan"
     }
   },
   "notFound": {

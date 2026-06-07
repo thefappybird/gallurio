@@ -31,10 +31,16 @@ function makePayload(overrides: Partial<InquirySubmissionInput> = {}): InquirySu
     email: "emma@example.com",
     phone: "+63 900 000 0000",
     preferredContact: "email",
+    eventTitle: "Emma & Noah Wedding",
     sessions: [{ startDate: "2030-08-15", startTime: "10:00", endTime: "18:00" }],
     eventType: "wedding",
-    guestCount: 120,
-    location: "Tagaytay",
+    location: {
+      label: "Tagaytay Highlands",
+      address: "Tagaytay, Cavite, Philippines",
+      placeId: "place_tagaytay",
+      lat: 14.1154,
+      lng: 120.9621,
+    },
     description: "Looking for full-day coverage.",
     company_name: "",
     ...overrides,
@@ -84,6 +90,14 @@ describe("submitInquiry", () => {
     expect(client.email).toBe("emma@example.com");
     expect(inquiry.status).toBe("new");
     expect(inquiry.convertedBookingId).toBeNull();
+    expect(inquiry.eventTitle).toBe("Emma & Noah Wedding");
+    expect(booking.title).toBe("Emma & Noah Wedding");
+    expect(booking.location).toMatchObject({
+      address: "Tagaytay, Cavite, Philippines",
+      lat: 14.1154,
+      lng: 120.9621,
+    });
+    expect(inquiry.source).toMatchObject({ kind: "portfolio" });
     // Sessions converted to UTC instants on the booking.
     expect(booking.sessions).toHaveLength(1);
   });
@@ -183,6 +197,19 @@ describe("submitInquiry", () => {
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
     expect(sendInquiryNotification).toHaveBeenCalledOnce();
     expect(sendInquiryNotification.mock.calls[0][0].recipientEmail).toBe("owner@studio.test");
+  });
+
+  it("keeps the inquiry submission committed when email delivery fails", async () => {
+    sendInquiryNotification.mockRejectedValueOnce(new Error("mail down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const ws = await Workspace.create(makeWorkspace());
+    const res = await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+
+    expect(res.ok).toBe(true);
+    expect(await Inquiry.countDocuments({ workspaceId: ws._id })).toBe(1);
+    expect(await Client.countDocuments({ workspaceId: ws._id })).toBe(1);
+    expect(await Booking.countDocuments({ workspaceId: ws._id })).toBe(1);
   });
 
   it("skips notification when no recipient email is configured", async () => {

@@ -38,10 +38,12 @@ function parseDate(value: string | undefined, endOfDay = false): Date | null {
 }
 
 function compactSource(source: {
+  kind?: string | null;
   utm_source?: string | null;
   referrer?: string | null;
 } | null | undefined): string | null {
   if (!source) return null;
+  if (source.kind === "portfolio") return "portfolio";
   if (source.utm_source) return source.utm_source;
   if (source.referrer) {
     try {
@@ -107,6 +109,7 @@ export default async function InquiriesPage({
     name: q.name,
     email: q.email,
     status: q.status,
+    eventTitle: q.eventTitle ?? null,
     eventDate: q.eventDate ? new Date(q.eventDate).toISOString() : null,
     eventType: q.eventType ?? "other",
     submittedAt: q.createdAt.toISOString(),

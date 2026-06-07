@@ -904,8 +904,9 @@
       "statusValues": {
         "new": "ใหม่",
         "contacted": "ติดต่อแล้ว",
-        "converted": "แปลงแล้ว",
-        "archived": "เก็บถาวร"
+        "converted": "???????",
+        "archived": "เก็บถาวร",
+        "booked": "???????"
       },
       "eventTypes": {
         "wedding": "งานแต่งงาน",
@@ -933,8 +934,10 @@
           "eventDate": "วันที่จัดงาน",
           "eventType": "ประเภท",
           "submitted": "ส่งเมื่อ",
-          "source": "แหล่งที่มา"
-        }
+          "source": "แหล่งที่มา",
+          "eventTitle": "???????"
+        },
+        "noTitle": "????????????"
       },
       "detail": {
         "back": "กลับไปที่คำถาม",
@@ -1104,7 +1107,8 @@
           "tabs": {
             "setup": "ตั้งค่า",
             "design": "ออกแบบ"
-          }
+          },
+          "errorColorLabel": "????????????????"
         },
         "headerDialog": {
           "title": "Navigation",
@@ -1141,6 +1145,7 @@
           "borderBottomLabel": "ขอบด้านล่าง",
           "borderColorLabel": "สีขอบ",
           "shadowLabel": "เงา",
+          "navbarSizeLabel": "Navbar size",
           "fontSizeLabel": "ขนาดลิงก์",
           "activeStyleLabel": "สไตล์",
           "activeStyleScale": "ขยาย",
@@ -1163,6 +1168,11 @@
             "sm": "เล็ก",
             "md": "กลาง",
             "lg": "ใหญ่"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1467,14 +1477,15 @@
         "anniversary": "วันครบรอบ",
         "other": "อื่นๆ"
       },
-      "guestCount": "จำนวนแขก (ไม่บังคับ)",
       "location": "สถานที่ (ไม่บังคับ)",
       "message": "บอกรายละเอียดเพิ่มเติม",
       "messagePlaceholder": "แชร์รายละเอียดงานของคุณ…",
       "submit": "ส่งคำสอบถาม",
       "submitting": "กำลังส่ง…",
       "errorGeneric": "ไม่สามารถส่งได้ — โปรดลองอีกครั้งภายหลัง",
-      "requiredHint": "จำเป็น"
+      "requiredHint": "จำเป็น",
+      "eventTitle": "???????",
+      "continue": "???????"
     }
   },
   "notFound": {

@@ -39,10 +39,13 @@ function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): Submi
   const textColor = contact?.buttonTextColor
     ? resolveContactColor(contact.buttonTextColor, "inherit")
     : undefined;
+  const errorColor = contact?.errorMessageColor
+    ? resolveContactColor(contact.errorMessageColor, "var(--pf-color-accent)")
+    : undefined;
   const border = contact?.buttonBorderWidth
     ? `${contact.buttonBorderWidth}px solid ${resolveContactColor(contact.buttonBorderColor, "currentColor")}`
     : undefined;
-  return { color, style, borderRadius, textColor, border };
+  return { color, style, borderRadius, textColor, border, errorColor };
 }
 
 function resolvePopupExtraStyles(popupStyle?: string): React.CSSProperties {
