@@ -123,6 +123,45 @@ describe("GalleryCarouselBlock", () => {
     expect(screen.queryByText(/more on request/i)).toBeNull();
   });
 
+  it("positions the floating header per floatX/floatY", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seed(ws, col._id, 2);
+    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
+      GalleryCarouselBlock({
+        ...base,
+        collectionId: col._id.toString(),
+        heading: "H",
+        floatX: "right",
+        floatY: "bottom",
+      })
+    );
+    const { container } = render(el);
+    const overlay = container.querySelector("[data-gallery-overlay='true']") as HTMLElement;
+    expect(overlay.style.justifyContent).toBe("flex-end");
+    expect(overlay.style.alignItems).toBe("flex-end");
+  });
+
+  it("maps legacy overlayAlign onto floatX when floatX is unset", async () => {
+    const ws = new Types.ObjectId();
+    const col = await makeCollection(ws);
+    await seed(ws, col._id, 2);
+    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
+      GalleryCarouselBlock({
+        ...base,
+        collectionId: col._id.toString(),
+        heading: "H",
+        // Legacy draft: floatX absent, only overlayAlign stored.
+        floatX: undefined as unknown as "center",
+        overlayAlign: "left",
+      })
+    );
+    const { container } = render(el);
+    const overlay = container.querySelector("[data-gallery-overlay='true']") as HTMLElement;
+    expect(overlay.style.justifyContent).toBe("flex-start");
+    expect(overlay.style.alignItems).toBe("center");
+  });
+
   it("hides items from a private collection", async () => {
     const ws = new Types.ObjectId();
     const col = await makeCollection(ws, false);

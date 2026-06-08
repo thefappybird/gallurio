@@ -22,13 +22,20 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import { GalleryHeader } from "./GalleryText";
 
+export type CarouselFloatX = "left" | "center" | "right";
+export type CarouselFloatY = "top" | "center" | "bottom";
+
 export type GalleryCarouselProps = {
   _style?: BlockStyle;
   heading: string;
   description: string;
   collectionId: string;
   aspect: "square" | "landscape" | "portrait";
-  overlayAlign: "left" | "center" | "right";
+  // Floating header position over the carousel: horizontal (X) + vertical (Y).
+  floatX: CarouselFloatX;
+  floatY: CarouselFloatY;
+  /** @deprecated legacy horizontal overlay alignment; auto-mapped to floatX at render. */
+  overlayAlign?: CarouselFloatX;
   autoplay: boolean;
   maxItems: number;
 };
@@ -38,9 +45,22 @@ export const galleryCarouselDefaultProps: GalleryCarouselProps = {
   description: "",
   collectionId: "",
   aspect: "landscape",
-  overlayAlign: "center",
+  floatX: "center",
+  floatY: "center",
   autoplay: false,
   maxItems: 12,
+};
+
+const FLOAT_X_TO_JUSTIFY: Record<CarouselFloatX, string> = {
+  left: "flex-start",
+  center: "center",
+  right: "flex-end",
+};
+
+const FLOAT_Y_TO_ALIGN: Record<CarouselFloatY, string> = {
+  top: "flex-start",
+  center: "center",
+  bottom: "flex-end",
 };
 
 const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height: number }> = {
@@ -55,6 +75,8 @@ export async function GalleryCarouselBlock({
   description,
   collectionId,
   aspect,
+  floatX,
+  floatY,
   overlayAlign,
   autoplay,
   maxItems,
@@ -89,6 +111,11 @@ export async function GalleryCarouselBlock({
   if (items.length === 0) {
     return <CarouselEmptyState message={labels.empty} />;
   }
+
+  // Floating header position. Legacy carousels stored `overlayAlign` (horizontal
+  // only) — map it onto floatX when floatX is unset so old drafts look identical.
+  const horizontal: CarouselFloatX = floatX ?? overlayAlign ?? "center";
+  const vertical: CarouselFloatY = floatY ?? "center";
 
   const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
   const slides: CarouselSlide[] = items.map((item) => ({
@@ -126,13 +153,8 @@ export async function GalleryCarouselBlock({
             position: "absolute",
             inset: 0,
             display: "flex",
-            alignItems: "center",
-            justifyContent:
-              overlayAlign === "left"
-                ? "flex-start"
-                : overlayAlign === "right"
-                ? "flex-end"
-                : "center",
+            alignItems: FLOAT_Y_TO_ALIGN[vertical],
+            justifyContent: FLOAT_X_TO_JUSTIFY[horizontal],
             padding: "1.5rem",
             pointerEvents: "none",
           }}
@@ -145,7 +167,7 @@ export async function GalleryCarouselBlock({
             <GalleryHeader
               heading={heading}
               description={description}
-              align={overlayAlign}
+              align={horizontal}
               overlay
             />
           </div>
@@ -200,15 +222,24 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
         { label: "Portrait", value: "portrait" },
       ],
     },
-    overlayAlign: {
+    floatX: {
       type: "select",
-      label: "Overlay align",
+      label: "Floating header — horizontal",
       options: [
         { label: "Left", value: "left" },
         { label: "Center", value: "center" },
         { label: "Right", value: "right" },
       ],
-    } as Field<"left" | "center" | "right">,
+    } as Field<CarouselFloatX>,
+    floatY: {
+      type: "select",
+      label: "Floating header — vertical",
+      options: [
+        { label: "Top", value: "top" },
+        { label: "Middle", value: "center" },
+        { label: "Bottom", value: "bottom" },
+      ],
+    } as Field<CarouselFloatY>,
     autoplay: {
       type: "select",
       label: "Autoplay",

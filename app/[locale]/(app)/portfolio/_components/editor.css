@@ -31,9 +31,10 @@
 
 /* ─── Light mode ──────────────────────────────────────────────────────────── */
 .gallurio-editor {
-  /* Fill the app content area; Puck manages its internal scroll regions. */
-  height: calc(100dvh - 7rem);
-  min-height: 32rem;
+  /* Fill the full-bleed editor wrapper (h-svh set in page.tsx); Puck manages its
+   * internal scroll regions so the outer page never scrolls. */
+  height: 100%;
+  min-height: 0;
 
   /* App font for the editor chrome. */
   --puck-font-family: var(--font-merriweather, Merriweather, serif);

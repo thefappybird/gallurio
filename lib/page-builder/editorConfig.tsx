@@ -47,7 +47,7 @@ import type { FeaturedWorkProps, FeaturedWorkItemId } from "./blocks/FeaturedWor
 // test compares these against the real server-block defaults).
 const galleryGridDefaultProps: GalleryGridProps = { collectionId: "", columns: 3, gap: "normal", maxItems: 12 };
 const galleryMasonryDefaultProps: GalleryMasonryProps = { collectionId: "", columns: 3, gap: "normal", maxItems: 18 };
-const galleryCarouselDefaultProps: GalleryCarouselProps = { heading: "", description: "", collectionId: "", aspect: "landscape", overlayAlign: "center", autoplay: false, maxItems: 12 };
+const galleryCarouselDefaultProps: GalleryCarouselProps = { heading: "", description: "", collectionId: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false, maxItems: 12 };
 const featuredWorkDefaultProps: FeaturedWorkProps = { itemIds: [], layout: "row" };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
@@ -478,15 +478,24 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
         { label: "Portrait", value: "portrait" },
       ],
     },
-    overlayAlign: {
+    floatX: {
       type: "select",
-      label: "Overlay align",
+      label: "Floating header — horizontal",
       options: [
         { label: "Left", value: "left" },
         { label: "Center", value: "center" },
         { label: "Right", value: "right" },
       ],
     } as Field<"left" | "center" | "right">,
+    floatY: {
+      type: "select",
+      label: "Floating header — vertical",
+      options: [
+        { label: "Top", value: "top" },
+        { label: "Middle", value: "center" },
+        { label: "Bottom", value: "bottom" },
+      ],
+    } as Field<"top" | "center" | "bottom">,
     autoplay: {
       type: "select",
       label: "Autoplay",

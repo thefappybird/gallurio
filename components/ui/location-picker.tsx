@@ -45,6 +45,7 @@ type Props = {
 };
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse";
 
 function BaseLocationPicker({
   value,
@@ -145,8 +146,38 @@ function BaseLocationPicker({
     onChange({ address, lat, lng });
   }
 
-  function handlePin(lat: number, lng: number) {
+  async function handlePin(lat: number, lng: number) {
+    // Show the pin immediately; the address fills in once reverse geocoding lands.
     onChange({ ...value, lat, lng });
+    if (disabled || !searchEnabled) return;
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setSearching(true);
+    try {
+      const url = `${NOMINATIM_REVERSE_URL}?format=jsonv2&lat=${lat}&lon=${lng}`;
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error(`Nominatim reverse ${res.status}`);
+      const data = (await res.json()) as { display_name?: string };
+      const address = (data.display_name ?? "").slice(0, 240);
+      if (!address) return;
+      // Keep the visible input in sync and suppress the forward-search effect that
+      // the setQuery below would otherwise trigger.
+      skipNextSearchRef.current = true;
+      setQuery(address);
+      setOpen(false);
+      setResults([]);
+      onChange({ address, lat, lng });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      console.error("[LocationPicker] reverse geocoding failed", err);
+    } finally {
+      setSearching(false);
+    }
   }
 
   function clear() {

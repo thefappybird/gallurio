@@ -6,8 +6,15 @@ import { renderWithProviders } from "@/test-utils/render";
 // loads CSS, and pulls raster assets that don't belong in happy-dom.
 vi.mock("next/dynamic", () => ({
   default: () =>
-    function MockMap() {
-      return <div data-testid="location-map" />;
+    function MockMap(props: { onPick?: (lat: number, lng: number) => void }) {
+      // Expose a trigger so tests can simulate dropping/dragging a pin.
+      return (
+        <div data-testid="location-map">
+          <button type="button" data-testid="map-pick" onClick={() => props.onPick?.(1.23, 4.56)}>
+            pick
+          </button>
+        </div>
+      );
     },
 }));
 
@@ -155,6 +162,65 @@ describe("LocationPicker", () => {
 
     expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search venue");
     expect(screen.getByText("Drag pin")).toBeInTheDocument();
+  });
+
+  it("reverse-geocodes a dropped map pin and fills the address input", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ display_name: "Reverse Found Place, Manila" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onChange = vi.fn();
+    renderWithProviders(<LocationPicker value={EMPTY} onChange={onChange} />);
+    fireEvent.click(screen.getByTestId("map-pick"));
+
+    // Coordinates land immediately (optimistic), address arrives after geocoding.
+    expect(onChange).toHaveBeenCalledWith({ address: "", lat: 1.23, lng: 4.56 });
+    await screen.findByDisplayValue("Reverse Found Place, Manila");
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/reverse?format=jsonv2&lat=1.23&lon=4.56"),
+      expect.anything()
+    );
+    expect(onChange).toHaveBeenLastCalledWith({
+      address: "Reverse Found Place, Manila",
+      lat: 1.23,
+      lng: 4.56,
+    });
+  });
+
+  it("clamps a long reverse-geocoded address to 240 chars", async () => {
+    const longName = "B".repeat(400);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ display_name: longName }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onChange = vi.fn();
+    renderWithProviders(<LocationPicker value={EMPTY} onChange={onChange} />);
+    fireEvent.click(screen.getByTestId("map-pick"));
+
+    await vi.waitFor(() => {
+      const last = onChange.mock.calls.at(-1)?.[0] as { address: string };
+      expect(last.address.length).toBe(240);
+    });
+  });
+
+  it("skips reverse geocoding for a map pin when search is disabled", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const onChange = vi.fn();
+    renderWithProviders(
+      <LocationPicker value={EMPTY} onChange={onChange} searchEnabled={false} />
+    );
+    fireEvent.click(screen.getByTestId("map-pick"));
+
+    expect(onChange).toHaveBeenCalledWith({ address: "", lat: 1.23, lng: 4.56 });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("skips geocoding when search is disabled", () => {

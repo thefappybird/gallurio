@@ -95,8 +95,11 @@ export default async function PageBuilderEntry({
   const previewBasePath =
     locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
 
+  // Full-bleed editor: `-m-6` cancels the app shell's `<main>` padding so the
+  // editor fills the whole content area, and `h-svh` pins it to the viewport so
+  // only Puck's internal regions scroll (no outer page scroll).
   return (
-    <div className="min-h-svh">
+    <div className="-m-6 h-svh">
       <EditorShell
         slug={workspace.slug}
         workspaceName={workspace.name}

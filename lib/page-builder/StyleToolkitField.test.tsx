@@ -109,4 +109,20 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
   });
+
+  it("hides Frame and Typography for image-only gallery blocks (GalleryGrid)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.queryByText("Typography")).toBeNull();
+    // Animations remain available.
+    expect(screen.getByText("Animations")).toBeTruthy();
+  });
+
+  it("hides Frame but keeps Typography for the GalleryCarousel (it renders text)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.getByText("Typography")).toBeTruthy();
+  });
 });
