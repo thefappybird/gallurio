@@ -27,6 +27,8 @@ import type { Config, ComponentConfig, Field } from "@measured/puck";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
+import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
+import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { usePickerData } from "./galleryPicker/usePickerData";
 import { StyleToolkitField } from "./StyleToolkitField";
 import { NumberInputRow } from "./toolbarPrimitives";
@@ -244,6 +246,34 @@ function imagePickerField(label: string): Field<string | undefined> {
       <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
     ),
   } as unknown as Field<string | undefined>;
+}
+
+/** Single-image Puck custom field backed by the unified MediaPicker. */
+function imageField(label: string): Field<string | undefined> {
+  return {
+    type: "custom",
+    label,
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <SingleImageControl value={(value as string) ?? ""} onChange={onChange as (v: string) => void} />
+    ),
+  } as unknown as Field<string | undefined>;
+}
+
+/** Multi-image Puck custom field backed by the unified MediaPicker. Wired to the
+ *  gallery blocks in sub-project #2; defined here with tests as its deliverable. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function imagesField(label: string, opts: { max?: number } = {}): Field<MediaPickerSelection[]> {
+  return {
+    type: "custom",
+    label,
+    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+      <MultiImageControl
+        value={(value as MediaPickerSelection[]) ?? []}
+        onChange={onChange as (v: MediaPickerSelection[]) => void}
+        max={opts.max}
+      />
+    ),
+  } as unknown as Field<MediaPickerSelection[]>;
 }
 
 function collectionField(): Field<string> {
@@ -689,7 +719,7 @@ const image: ComponentConfig<ImageBlockProps> = {
   defaultProps: imageDefaultProps,
   fields: {
     _style: styleField,
-    imagePublicId: imagePickerField("Image"),
+    imagePublicId: imageField("Image"),
     imageUrl: { type: "text", label: "Image URL (fallback)" },
     alt: { type: "text", label: "Alt text" },
     fit: {
