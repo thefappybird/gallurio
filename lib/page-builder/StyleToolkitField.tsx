@@ -43,6 +43,7 @@ import {
 import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
+import { SingleImageControl } from "./galleryPicker/MediaField";
 import { CollectionPicker } from "./galleryPicker/CollectionPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import type { FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
@@ -1138,7 +1139,7 @@ function LayoutTabBody({
 function ImagePanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
   return (
     <div className="flex flex-col gap-3 p-3">
-      <SingleImagePicker
+      <SingleImageControl
         value={(p?.imagePublicId as string) ?? ""}
         onChange={(v) => setProp("imagePublicId", v)}
       />
