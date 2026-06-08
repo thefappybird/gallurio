@@ -166,9 +166,13 @@ photos".
 
 ## What this sub-project changes at call sites
 
-- **Re-points (value-compatible, no migration):** Image block and container
-  background `_style.bgImagePublicId` / `backgroundImagePublicId` move from
-  `SingleImagePicker` to `imageField`.
+> **Amended (see spec #3):** the **container background** is NOT re-pointed here.
+> Spec #3 turns it into a **multi-image** field (`imagesField`), so to avoid a
+> single→multi flip it stays on `SingleImagePicker` until #3. The Image block is
+> #1's single-field (`imageField`) consumer.
+
+- **Re-points (value-compatible, no migration):** the Image block's image moves
+  from `SingleImagePicker` to `imageField`.
 - **Adds:** `imagesField` (used by #2's gallery blocks; introduced here with
   tests but its block call sites land in #2).
 - **Leaves intact for now:** `FeaturedItemsPicker` (Featured Work) and
@@ -206,7 +210,7 @@ photos".
 
 - `MediaPicker` + `imageField` + `imagesField` implemented with all states.
 - Collection items endpoint + paginated query helpers implemented.
-- Image block + container background re-pointed to `imageField`.
+- Image block re-pointed to `imageField` (container background deferred to #3).
 - Tests above passing; `pnpm typecheck` + `pnpm lint` clean.
 - Mobile checked at 375px.
 - No locale files needed (editor chrome is English-only by design); confirm no
