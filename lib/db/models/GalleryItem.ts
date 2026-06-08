@@ -24,6 +24,8 @@ const galleryItemSchema = new Schema(
 );
 
 galleryItemSchema.index({ workspaceId: 1, collectionId: 1, order: 1 });
+// Backs the "All photos" picker feed (listAllItemsPage): newest-first paginated.
+galleryItemSchema.index({ workspaceId: 1, createdAt: -1 });
 
 export type GalleryItemDoc = InferSchemaType<typeof galleryItemSchema> & {
   _id: mongoose.Types.ObjectId;
