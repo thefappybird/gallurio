@@ -107,4 +107,48 @@ describe("MediaPicker", () => {
     render(<MediaPicker mode="single" value="" onChange={vi.fn()} open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByRole("button", { name: /all photos/i })).toBeNull();
   });
+
+  it("switching collections ignores a stale slow response and shows the new collection", async () => {
+    const twoCollections = [
+      { id: "slow", name: "SlowCol", coverUrl: "https://x/s.jpg", itemCount: 1 },
+      { id: "fast", name: "FastCol", coverUrl: "https://x/f.jpg", itemCount: 1 },
+    ];
+    const slowItems = [{ id: "s1", publicId: "pid-s1", thumbUrl: "https://x/s1.jpg", caption: "SlowPhoto" }];
+    const fastItems = [{ id: "f1", publicId: "pid-f1", thumbUrl: "https://x/f1.jpg", caption: "FastPhoto" }];
+
+    // Deferred promise for the slow collection's feed; resolve it manually later.
+    let resolveSlow: (r: Response) => void = () => {};
+    const slowResponse = new Promise<Response>((resolve) => {
+      resolveSlow = resolve;
+    });
+
+    mockFetch.mockImplementation((u: string) => {
+      const url = String(u);
+      if (url === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections: twoCollections, items: [] }) } as Response);
+      }
+      if (url.startsWith("/api/portfolio/gallery/collections/slow")) {
+        return slowResponse;
+      }
+      // fast collection feed resolves immediately
+      return Promise.resolve({ ok: true, json: async () => ({ items: fastItems, nextCursor: null }) } as Response);
+    });
+
+    render(<MediaPicker mode="single" value="" onChange={vi.fn()} open onOpenChange={vi.fn()} />);
+
+    // Open the slow collection (its feed is still pending).
+    fireEvent.click(await screen.findByRole("button", { name: /slowcol/i }));
+    // Go back, then open the fast collection.
+    fireEvent.click(await screen.findByRole("button", { name: /back to collections/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /fastcol/i }));
+
+    // Fast collection's photo should render.
+    await screen.findByRole("button", { name: /FastPhoto/ });
+
+    // Now let the stale slow response resolve — it must not overwrite the view.
+    resolveSlow({ ok: true, json: async () => ({ items: slowItems, nextCursor: null }) } as Response);
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: /SlowPhoto/ })).toBeNull());
+    expect(screen.getByRole("button", { name: /FastPhoto/ })).toBeTruthy();
+  });
 });

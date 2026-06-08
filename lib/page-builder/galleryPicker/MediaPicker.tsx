@@ -98,6 +98,10 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Monotonic token invalidating in-flight feed fetches when the view changes,
+  // so a slow response from a prior collection cannot bleed into the current one.
+  const fetchToken = useRef(0);
+
   // Accumulated id->item map so the multi reorder strip can resolve thumbnails
   // for selections regardless of which page/collection they came from.
   const seen = useRef<Map<string, PickerItem>>(new Map());
@@ -114,6 +118,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       setNav({ kind: "collections" });
       setFeed(EMPTY_FEED);
       setUploadError(null);
+      fetchToken.current++; // invalidate any in-flight feed fetch from a prior open
     }
   }, [open]);
 
@@ -124,6 +129,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
 
   const fetchFeed = useCallback(
     async (id: string, cursor: string | null) => {
+      const token = ++fetchToken.current;
       setFeed((f) => ({ ...f, loading: true, error: false }));
       try {
         const qs = new URLSearchParams({ limit: String(PAGE_SIZE) });
@@ -132,6 +138,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null };
         remember(data.items);
+        if (token !== fetchToken.current) return; // stale: a newer view superseded this fetch
         setFeed((f) => ({
           items: cursor ? [...f.items, ...data.items] : data.items,
           nextCursor: data.nextCursor,
@@ -139,6 +146,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           error: false,
         }));
       } catch {
+        if (token !== fetchToken.current) return; // stale: do not flag the current view as errored
         setFeed((f) => ({ ...f, loading: false, error: true }));
       }
     },
@@ -146,6 +154,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   );
 
   function openCollection(id: string, name: string) {
+    fetchToken.current++; // invalidate any in-flight fetch from the prior view
     setNav({ kind: "photos", id, name });
     setFeed(EMPTY_FEED);
     setUploadError(null);
@@ -153,6 +162,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   }
 
   function goBack() {
+    fetchToken.current++; // invalidate any in-flight fetch from the collection we left
     setNav({ kind: "collections" });
     setFeed(EMPTY_FEED);
   }
@@ -243,6 +253,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       return;
     }
 
+    // Capture the current view's token so a slow upload that finishes after the
+    // owner navigates away does not prepend the new item into the wrong feed.
+    const token = fetchToken.current;
     setUploading(true);
     setUploadError(null);
     const results = await Promise.allSettled(
@@ -274,7 +287,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           caption: created.caption,
         };
         remember([item]);
-        setFeed((f) => ({ ...f, items: [item, ...f.items] }));
+        if (token === fetchToken.current) {
+          setFeed((f) => ({ ...f, items: [item, ...f.items] }));
+        }
       } catch {
         generalErr = true;
       }
@@ -361,6 +376,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
               onPickSingle={pickSingle}
               onToggleMulti={toggleMulti}
               onLoadMore={() => nav.kind === "photos" && feed.nextCursor && fetchFeed(nav.id, feed.nextCursor)}
+              onRetry={() => nav.kind === "photos" && fetchFeed(nav.id, null)}
               emptyLabel={nav.id === ALL_PHOTOS_ID ? L.emptyWorkspace : L.emptyCollection}
               uploadSlot={
                 <UploadZone
@@ -530,6 +546,7 @@ function PhotoGrid({
   onPickSingle,
   onToggleMulti,
   onLoadMore,
+  onRetry,
   emptyLabel,
   uploadSlot,
 }: {
@@ -540,10 +557,11 @@ function PhotoGrid({
   onPickSingle: (item: PickerItem) => void;
   onToggleMulti: (item: PickerItem) => void;
   onLoadMore: () => void;
+  onRetry: () => void;
   emptyLabel: string;
   uploadSlot: React.ReactNode;
 }) {
-  if (feed.error) return <ErrorRetry onRetry={onLoadMore} />;
+  if (feed.error) return <ErrorRetry onRetry={onRetry} />;
 
   return (
     <div className="flex flex-col gap-3 p-1">
