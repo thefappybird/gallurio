@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { GalleryItem } from "@/lib/db/models";
+import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 import { validatePhotoMeta } from "@/lib/page-builder/photoSpec";
 
@@ -17,6 +18,7 @@ const bodySchema = z.object({
   sizeBytes: z.number().int().nonnegative().optional(),
   caption: z.string().max(300).optional(),
   altText: z.string().max(300).optional(),
+  collectionId: z.string().min(1).max(64).optional(),
 });
 
 function makeWorkspacePrefixCheck(workspaceId: string) {
@@ -67,12 +69,30 @@ export async function POST(req: Request) {
 
   await connectDB();
 
-  // Assign the next order index within this workspace (no collection = null).
-  const existingCount = await GalleryItem.countDocuments({ workspaceId, collectionId: null });
+  // Resolve an optional collection — must be a valid id owned by THIS workspace.
+  let collectionId: typeof workspaceId | null = null;
+  if (parsed.data.collectionId) {
+    if (!isValidObjectId(parsed.data.collectionId)) {
+      return NextResponse.json({ error: "invalid_collection" }, { status: 400 });
+    }
+    const collection = await GalleryCollection.findOne({
+      _id: parsed.data.collectionId,
+      workspaceId,
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (!collection) {
+      return NextResponse.json({ error: "invalid_collection" }, { status: 400 });
+    }
+    collectionId = collection._id;
+  }
+
+  // Next order index within the target scope (collection or standalone).
+  const existingCount = await GalleryItem.countDocuments({ workspaceId, collectionId });
 
   const item = await GalleryItem.create({
     workspaceId,
-    collectionId: null,
+    collectionId,
     cloudinaryPublicId: parsed.data.cloudinaryPublicId,
     url: parsed.data.url,
     width: parsed.data.width ?? null,
