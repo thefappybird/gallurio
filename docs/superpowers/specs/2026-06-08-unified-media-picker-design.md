@@ -156,8 +156,8 @@ Backed by the existing flat `listItemsForPicker` logic, made paginated.
 - Validates `id` with `isValidObjectId` ⇒ 400 on bad input.
 - `runtime = "nodejs"`.
 - The virtual "All photos" feed reuses the same handler shape without the
-  `collectionId` filter (paginated `listItemsForPicker`), via a dedicated path or
-  an `id="all"` sentinel — decided at plan time.
+  `collectionId` filter (paginated `listItemsForPicker`), via an **`id="all"`
+  sentinel** on this same route (no separate route).
 
 New query helper (gallery query layer): a paginated
 `listCollectionItemsPage({ workspaceId, collectionId, cursor, limit })` returning
