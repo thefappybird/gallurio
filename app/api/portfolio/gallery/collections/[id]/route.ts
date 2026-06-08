@@ -4,10 +4,55 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { destroyAsset } from "@/lib/storage/cloudinary";
+import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
+
+/**
+ * GET /api/portfolio/gallery/collections/[id]?cursor=<c>&limit=16
+ *
+ * Owner-only paginated feed of a collection's photos for the MediaPicker.
+ * `id="all"` is a virtual sentinel: newest-first across the whole workspace
+ * (covers standalone collectionId:null items). `?newest=<n>` returns the newest
+ * n items of a collection (bulk "select all"). Tenant-scoped — a foreign or
+ * missing collection resolves to an empty page.
+ *
+ * Response: { items: PickerItem[]; nextCursor: string | null }
+ */
+export async function GET(req: Request, { params }: Params) {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") {
+    return NextResponse.json({ error: "owner_only" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const cursor = searchParams.get("cursor");
+  const limitRaw = searchParams.get("limit");
+  const limit = limitRaw == null ? undefined : Number(limitRaw);
+  const newestRaw = searchParams.get("newest");
+  const workspaceId = ctx.workspace._id.toString();
+
+  if (id === "all") {
+    const page = await listAllItemsPage({ workspaceId, cursor, limit });
+    return NextResponse.json(page);
+  }
+
+  if (!isValidObjectId(id)) {
+    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+  }
+
+  // Bulk "select all in collection": the newest N items, no pagination.
+  if (newestRaw != null) {
+    const items = await listCollectionNewest({ workspaceId, collectionId: id, limit: Number(newestRaw) });
+    return NextResponse.json({ items, nextCursor: null });
+  }
+
+  const page = await listCollectionItemsPage({ workspaceId, collectionId: id, cursor, limit });
+  return NextResponse.json(page);
+}
 
 /**
  * DELETE /api/portfolio/gallery/collections/[id]

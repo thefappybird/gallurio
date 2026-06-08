@@ -26,6 +26,7 @@ vi.mock("@/lib/storage/cloudinary", () => ({
     if (destroyShouldThrow) throw new Error("cloudinary_down");
     destroyed.push(publicId);
   },
+  cloudinaryThumbnailUrl: (publicId: string) => `https://res.cloudinary.com/test/image/upload/c_fill,w_200,h_200,q_auto,f_auto/${publicId}`,
 }));
 
 let mockCtx: {
@@ -45,6 +46,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryCollection, GalleryItem, Workspace } from "@/lib/db/models";
 import { DELETE } from "./route";
+import { GET } from "./route";
 
 let workspaceId: Types.ObjectId;
 
@@ -180,5 +182,67 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     // DB is still fully cleaned up despite the Cloudinary failures.
     expect(await GalleryCollection.countDocuments({})).toBe(0);
     expect(await GalleryItem.countDocuments({})).toBe(0);
+  });
+});
+
+describe("GET /api/portfolio/gallery/collections/[id]", () => {
+  it("rejects a non-owner with 403", async () => {
+    const col = await seedCollectionWithItems(workspaceId, 2);
+    mockCtx.role = "staff";
+    const res = (await GET(new Request("http://t/?limit=16"), makeParams(String(col._id)))) as unknown as MockResp;
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 400 for an invalid (non-'all') id", async () => {
+    const res = (await GET(new Request("http://t"), makeParams("not-an-id"))) as unknown as MockResp;
+    expect(res.status).toBe(400);
+  });
+
+  it("returns a collection's items, paginated by cursor", async () => {
+    const col = await seedCollectionWithItems(workspaceId, 5); // orders 0..4
+    const r1 = (await GET(new Request("http://t/?limit=2"), makeParams(String(col._id)))) as unknown as MockResp;
+    const b1 = r1.body as { items: { id: string }[]; nextCursor: string | null };
+    expect(b1.items).toHaveLength(2);
+    expect(b1.nextCursor).toBeTruthy();
+
+    const r2 = (await GET(
+      new Request(`http://t/?limit=2&cursor=${encodeURIComponent(b1.nextCursor!)}`),
+      makeParams(String(col._id))
+    )) as unknown as MockResp;
+    expect((r2.body as { items: unknown[] }).items).toHaveLength(2);
+  });
+
+  it("cannot read another workspace's collection items (tenant isolation)", async () => {
+    const otherWs = await Workspace.create({
+      slug: "ws-c", name: "C", ownerUserId: "user_c",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`, currency: "PHP",
+    });
+    const foreign = await seedCollectionWithItems(otherWs._id, 3);
+    const res = (await GET(new Request("http://t/?limit=16"), makeParams(String(foreign._id)))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    expect((res.body as { items: unknown[] }).items).toEqual([]);
+  });
+
+  it("serves the virtual 'all' feed newest-first across collections", async () => {
+    await seedCollectionWithItems(workspaceId, 2);
+    await GalleryItem.create({
+      workspaceId, collectionId: null,
+      cloudinaryPublicId: `gallurio/${workspaceId}/portfolio/last.jpg`,
+      url: "https://x/last.jpg", caption: "Last", order: 0,
+    });
+    const res = (await GET(new Request("http://t/?limit=10"), makeParams("all"))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    const body = res.body as { items: { caption: string | null }[] };
+    expect(body.items.length).toBeGreaterThanOrEqual(3);
+    expect(body.items[0].caption).toBe("Last"); // newest-first
+  });
+
+  it("?newest=N returns the newest N of a collection (bulk select), nextCursor null", async () => {
+    const col = await seedCollectionWithItems(workspaceId, 5); // orders 0..4, createdAt increasing
+    const res = (await GET(new Request("http://t/?newest=2"), makeParams(String(col._id)))) as unknown as MockResp;
+    expect(res.status).toBe(200);
+    const body = res.body as { items: unknown[]; nextCursor: string | null };
+    expect(body.items).toHaveLength(2);
+    expect(body.nextCursor).toBeNull();
   });
 });
