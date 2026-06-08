@@ -144,7 +144,11 @@ Backed by the existing flat `listItemsForPicker` logic, made paginated.
 
 ## Backend — collection items endpoint
 
-`GET /api/portfolio/gallery/collections/[id]/items?cursor=<c>&limit=16`
+`GET /api/portfolio/gallery/collections/[id]?cursor=<c>&limit=16`
+
+> **As implemented:** the handler lives on the existing `collections/[id]/route.ts`
+> (no `/items` suffix). `id="all"` is the virtual-feed sentinel and `?newest=<n>`
+> returns the newest n items for bulk "select all in collection".
 
 - Owner-only via `requireOrg` (403 for member/none).
 - `workspaceId` from the Clerk session — never from the client.
