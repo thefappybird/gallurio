@@ -223,3 +223,155 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
     caption: (it.caption as string) || null,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Paginated picker feeds (owner editor only — back the MediaPicker drill-in)
+// ---------------------------------------------------------------------------
+
+const PAGE_DEFAULT = 16;
+const PAGE_MAX = 50;
+
+function clampLimit(limit: number | undefined): number {
+  const n = Number.isFinite(limit) ? (limit as number) : PAGE_DEFAULT;
+  return Math.min(Math.max(1, Math.trunc(n)), PAGE_MAX);
+}
+
+// Opaque cursor = base64url of "<sortValue>|<_id>". sortValue is `order` for a
+// collection feed (ascending) or createdAt-ms for the "all" feed (descending).
+function encodeCursor(sortValue: string | number, id: string): string {
+  return Buffer.from(`${sortValue}|${id}`, "utf8").toString("base64url");
+}
+function decodeCursor(cursor: string): { sortValue: string; id: string } | null {
+  try {
+    const [sortValue, id] = Buffer.from(cursor, "base64url").toString("utf8").split("|");
+    if (!sortValue || !id || !Types.ObjectId.isValid(id)) return null;
+    return { sortValue, id };
+  } catch {
+    return null;
+  }
+}
+
+function toPickerItem(it: { _id: unknown; cloudinaryPublicId?: unknown; caption?: unknown }): PickerItem {
+  const publicId = (it.cloudinaryPublicId as string) ?? "";
+  return {
+    id: String(it._id),
+    publicId,
+    thumbUrl: cloudinaryThumbnailUrl(publicId, { width: 200, height: 200 }),
+    caption: (it.caption as string) || null,
+  };
+}
+
+/**
+ * One page of a collection's items, ordered by the existing
+ * { workspaceId, collectionId, order } index. Cursor pagination on (order,_id)
+ * ascending. Foreign/missing collections return an empty page (tenant-safe).
+ */
+export async function listCollectionItemsPage(opts: {
+  workspaceId: string;
+  collectionId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PickerItem[]; nextCursor: string | null }> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  await connectDB();
+
+  const filter: Record<string, unknown> = { workspaceId, collectionId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const order = Number(c.sortValue);
+      if (Number.isFinite(order)) {
+        filter.$or = [
+          { order: { $gt: order } },
+          { order, _id: { $gt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ order: 1, _id: 1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, caption: 1, order: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
+  return { items: page.map(toPickerItem), nextCursor };
+}
+
+/**
+ * One page of ALL workspace items, newest-first, paginated. Backs the virtual
+ * "All photos" collection (covers standalone collectionId:null items too).
+ * Cursor pagination on (createdAt,_id) descending. Backed by the
+ * { workspaceId, createdAt } index (added alongside this feed).
+ */
+export async function listAllItemsPage(opts: {
+  workspaceId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PickerItem[]; nextCursor: string | null }> {
+  const { workspaceId } = opts;
+  if (!workspaceId) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  await connectDB();
+
+  const filter: Record<string, unknown> = { workspaceId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const ms = Number(c.sortValue);
+      if (Number.isFinite(ms)) {
+        const d = new Date(ms);
+        filter.$or = [
+          { createdAt: { $lt: d } },
+          { createdAt: d, _id: { $lt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, caption: 1, createdAt: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor =
+    hasMore && last ? encodeCursor(new Date(last.createdAt as Date).getTime(), String(last._id)) : null;
+  return { items: page.map(toPickerItem), nextCursor };
+}
+
+/**
+ * The newest `limit` items of one collection, newest-first — backs the
+ * "Select all in collection" bulk action (owner wants the latest N). Tenant-safe;
+ * foreign/missing collections return []. `limit` is clamped to the safety cap.
+ */
+export async function listCollectionNewest(opts: {
+  workspaceId: string;
+  collectionId: string;
+  limit: number;
+}): Promise<PickerItem[]> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return [];
+
+  const limit = Math.min(Math.max(1, Math.trunc(Number.isFinite(opts.limit) ? opts.limit : 1)), PICKER_ITEMS_CAP);
+  await connectDB();
+
+  const docs = await GalleryItem.find({ workspaceId, collectionId })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .select({ cloudinaryPublicId: 1, caption: 1 })
+    .lean();
+
+  return docs.map(toPickerItem);
+}
