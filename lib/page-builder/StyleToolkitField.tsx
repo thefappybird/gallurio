@@ -532,6 +532,102 @@ function ContentTabBody({
 }
 
 // ---------------------------------------------------------------------------
+// Carousel text controls — Text Padding + independent heading/description
+// highlight bands. Carousel-only; stored on `_style` (BlockStyle), threaded into
+// GalleryHeader by GalleryCarouselBlock.
+// ---------------------------------------------------------------------------
+
+function HighlightToggle({
+  label,
+  on,
+  onToggle,
+}: {
+  label: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        onClick={onToggle}
+        className={cn(
+          "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          on ? "bg-foreground" : "bg-muted"
+        )}
+      >
+        <span
+          className={cn(
+            "inline-block h-3 w-3 translate-x-1 transition-transform bg-background",
+            on && "translate-x-5"
+          )}
+        />
+      </button>
+    </div>
+  );
+}
+
+export function CarouselTextControls({
+  s,
+  set,
+}: {
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Text padding
+        </span>
+        <DimensionInput
+          label="Horizontal (X)"
+          value={s.textPaddingX}
+          onChange={(v) => set({ textPaddingX: v })}
+        />
+        <DimensionInput
+          label="Vertical (Y)"
+          value={s.textPaddingY}
+          onChange={(v) => set({ textPaddingY: v })}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <HighlightToggle
+          label="Heading highlight"
+          on={!!s.headingHighlight}
+          onToggle={() => set({ headingHighlight: !s.headingHighlight })}
+        />
+        {s.headingHighlight && (
+          <ColorSwatchRow
+            value={s.headingHighlightToken}
+            onChange={(t) => set({ headingHighlightToken: t })}
+            allowNone={false}
+          />
+        )}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <HighlightToggle
+          label="Description highlight"
+          on={!!s.descriptionHighlight}
+          onToggle={() => set({ descriptionHighlight: !s.descriptionHighlight })}
+        />
+        {s.descriptionHighlight && (
+          <ColorSwatchRow
+            value={s.descriptionHighlightToken}
+            onChange={(t) => set({ descriptionHighlightToken: t })}
+            allowNone={false}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Design tab
 // ---------------------------------------------------------------------------
 
@@ -655,6 +751,8 @@ function DesignTab({
         )}
       </div>
       )}
+
+      {blockType === "GalleryCarousel" && <CarouselTextControls s={s} set={set} />}
 
       {/* Frame — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (

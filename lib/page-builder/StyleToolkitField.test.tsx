@@ -179,3 +179,60 @@ describe("ContainerBackgroundControls — animation gating", () => {
     expect(onAnimationChange).toHaveBeenCalledWith("slide");
   });
 });
+
+import { CarouselTextControls } from "./StyleToolkitField";
+
+describe("CarouselTextControls", () => {
+  it("renders Text padding X/Y inputs", () => {
+    render(<CarouselTextControls s={{}} set={() => {}} />);
+    expect(screen.getByText("Text padding")).toBeTruthy();
+    expect(screen.getByText("Horizontal (X)")).toBeTruthy();
+    expect(screen.getByText("Vertical (Y)")).toBeTruthy();
+  });
+
+  it("toggles the heading highlight via onChange", () => {
+    const set = vi.fn();
+    render(<CarouselTextControls s={{}} set={set} />);
+    fireEvent.click(screen.getByLabelText("Heading highlight"));
+    expect(set).toHaveBeenCalledWith({ headingHighlight: true });
+  });
+
+  it("hides the heading color swatches until the highlight is on", () => {
+    const { rerender } = render(<CarouselTextControls s={{}} set={() => {}} />);
+    expect(screen.queryByLabelText("Accent")).toBeNull();
+    rerender(<CarouselTextControls s={{ headingHighlight: true }} set={() => {}} />);
+    expect(screen.getByLabelText("Accent")).toBeTruthy();
+  });
+
+  it("picks a heading highlight color via onChange", () => {
+    const set = vi.fn();
+    render(<CarouselTextControls s={{ headingHighlight: true }} set={set} />);
+    fireEvent.click(screen.getByLabelText("Primary"));
+    expect(set).toHaveBeenCalledWith({ headingHighlightToken: "primary" });
+  });
+
+  it("toggles the description highlight independently", () => {
+    const set = vi.fn();
+    render(<CarouselTextControls s={{}} set={set} />);
+    fireEvent.click(screen.getByLabelText("Description highlight"));
+    expect(set).toHaveBeenCalledWith({ descriptionHighlight: true });
+  });
+});
+
+describe("StyleToolkitField — carousel Design tab wiring", () => {
+  it("shows Text padding for the carousel", () => {
+    const { getByRole, getByText } = render(
+      <StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />
+    );
+    fireEvent.click(getByRole("button", { name: "Design" }));
+    expect(getByText("Text padding")).toBeTruthy();
+  });
+
+  it("does not show Text padding for an image-only gallery block", () => {
+    const { getByRole, queryByText } = render(
+      <StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />
+    );
+    fireEvent.click(getByRole("button", { name: "Design" }));
+    expect(queryByText("Text padding")).toBeNull();
+  });
+});
