@@ -38,6 +38,14 @@ export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
 export type TextAlign = "left" | "center" | "right";
 
+export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+
+// Highlight (marker band) appearance — shared by the carousel heading/description.
+export const HIGHLIGHT_SHAPES = ["sharp", "subtle", "rounded"] as const;
+export type HighlightShape = (typeof HIGHLIGHT_SHAPES)[number];
+export const HIGHLIGHT_SIZES = ["sm", "md", "lg"] as const;
+export type HighlightSize = (typeof HIGHLIGHT_SIZES)[number];
+
 // A CSS length with a unit picker in the UI (px or %). Stored as the raw CSS
 // string, e.g. "320px" or "50%". `undefined` → not set (browser default / auto).
 export type CssLength = string;
@@ -91,14 +99,36 @@ export type BlockStyle = {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
-  // Carousel-only: floating-overlay text padding + independent heading/description
-  // highlighter bands. Threaded into GalleryHeader by GalleryCarouselBlock.
+  // Carousel-only: floating-overlay text padding (shared) + per-target text
+  // styling. Heading and description are styled independently and threaded into
+  // GalleryHeader by GalleryCarouselBlock. All optional; supersedes the earlier
+  // shared carousel typography (same branch, unreleased) so no migration needed.
   textPaddingX?: CssLength;
   textPaddingY?: CssLength;
+  // Heading target
+  headingBold?: boolean;
+  headingItalic?: boolean;
+  headingUnderline?: boolean;
+  headingAlign?: TextAlign;
+  headingColorToken?: StyleColorToken | string;
+  headingFontFamily?: PortfolioFontKey;
+  headingLevel?: HeadingLevel;
   headingHighlight?: boolean;
   headingHighlightToken?: StyleColorToken | string;
+  headingHighlightShape?: HighlightShape;
+  headingHighlightSize?: HighlightSize;
+  // Description target
+  descriptionBold?: boolean;
+  descriptionItalic?: boolean;
+  descriptionUnderline?: boolean;
+  descriptionAlign?: TextAlign;
+  descriptionColorToken?: StyleColorToken | string;
+  descriptionFontFamily?: PortfolioFontKey;
+  descriptionFontSize?: number; // px
   descriptionHighlight?: boolean;
   descriptionHighlightToken?: StyleColorToken | string;
+  descriptionHighlightShape?: HighlightShape;
+  descriptionHighlightSize?: HighlightSize;
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms

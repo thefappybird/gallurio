@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
+
+describe("highlight option constants", () => {
+  it("exposes the three band shapes in order", () => {
+    expect(HIGHLIGHT_SHAPES).toEqual(["sharp", "subtle", "rounded"]);
+  });
+  it("exposes the three band sizes in order", () => {
+    expect(HIGHLIGHT_SIZES).toEqual(["sm", "md", "lg"]);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // asText
