@@ -47,7 +47,7 @@ export function ThemeGrid({ value, onChange, savedThemes, onSaveTheme, onDeleteT
   }
 
   return (
-    <section className="flex flex-col gap-3">
+    <section aria-label={t("themes")} className="flex flex-col gap-3">
       {/* Toolbar */}
       <div className="flex items-center gap-2">
         <input
@@ -80,7 +80,9 @@ export function ThemeGrid({ value, onChange, savedThemes, onSaveTheme, onDeleteT
               deleting={deletingId === tile.savedThemeId}
               onApply={() => onChange(tile.brandKit)}
               onDelete={
-                tile.savedThemeId ? () => void handleDelete(tile.savedThemeId!) : undefined
+                tile.savedThemeId && onDeleteTheme
+                  ? () => void handleDelete(tile.savedThemeId!)
+                  : undefined
               }
             />
           ))}
