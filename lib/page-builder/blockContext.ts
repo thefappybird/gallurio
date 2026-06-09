@@ -9,6 +9,8 @@
  * `lib/page-builder/serverContext.tsx` and re-export the types defined here.
  */
 
+import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
+
 // ---------------------------------------------------------------------------
 // Minimal workspace shape needed by server-rendered blocks
 // ---------------------------------------------------------------------------
@@ -25,7 +27,10 @@ export type RenderWorkspace = {
   } | null;
   publicPage?: {
     inquiryRecipientEmail?: string | null;
+    collectionsPopup?: PortfolioCollectionsPopupConfig | null;
   } | null;
+  /** True when rendered inside the editor canvas / chrome-less preview (owner context). */
+  editorPreview?: boolean;
   /** Workspace contact details used by ContactCardBlock */
   contact?: {
     email?: string | null;

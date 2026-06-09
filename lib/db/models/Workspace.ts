@@ -162,6 +162,14 @@ const workspaceSchema = new Schema(
         popupBorderWidth: { type: Number, default: 0 },
         popupStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
       },
+      // Configurable chrome for the collections popup surface.
+      // All fields optional — popup falls back to brand-kit values.
+      collectionsPopup: {
+        backgroundColor: { type: String, default: "" },
+        borderColor: { type: String, default: "" },
+        borderWidth: { type: Number, default: 0 },
+        radius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+      },
       // Configurable chrome for the public portfolio navigation header.
       // All fields optional — header falls back to brand-kit values.
       header: {

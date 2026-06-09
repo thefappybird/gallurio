@@ -55,6 +55,21 @@ export const savedThemesSchema = z.array(savedThemeSchema).max(SAVED_THEMES_MAX)
 export type SavedThemeInput = z.infer<typeof savedThemeSchema>;
 
 // ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema
+//
+// Workspace-wide style config for the collections popup surface.
+// All fields optional → falls back to brand-kit values.
+// ---------------------------------------------------------------------------
+
+export const portfolioCollectionsPopupConfigSchema = z.object({
+  backgroundColor: z.string().max(32).optional().or(z.literal("")),
+  borderColor: z.string().max(32).optional().or(z.literal("")),
+  borderWidth: z.number().int().min(0).max(12).optional(),
+  radius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+});
+export type PortfolioCollectionsPopupConfigInput = z.infer<typeof portfolioCollectionsPopupConfigSchema>;
+
+// ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
 //
 // The only editable surface of the prebuilt contact modal: title/description

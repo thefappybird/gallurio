@@ -48,6 +48,17 @@ export const BRAND_KIT_BUTTON_STYLES = ["solid", "outline", "soft"] as const;
 export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 
 // ---------------------------------------------------------------------------
+// PortfolioCollectionsPopupConfig
+// ---------------------------------------------------------------------------
+
+export type PortfolioCollectionsPopupConfig = {
+  backgroundColor?: string; // token name or hex
+  borderColor?: string;     // token name or hex
+  borderWidth?: number;     // px, 0 = none
+  radius?: BrandKitRadius | "";
+};
+
+// ---------------------------------------------------------------------------
 // Contact panel config (the only customizable surface of the fixed contact
 // modal — title/description copy plus which brand color/style the button uses;
 // the form fields themselves are NOT configurable).

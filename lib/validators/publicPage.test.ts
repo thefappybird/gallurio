@@ -3,10 +3,31 @@ import {
   brandKitSchema,
   portfolioPuckDataSchema,
   portfolioContactConfigSchema,
+  portfolioCollectionsPopupConfigSchema,
   savedThemeSchema,
   savedThemesSchema,
 } from "./publicPage";
 import { DEFAULT_BRAND_KIT, SAVED_THEMES_MAX } from "@/lib/page-builder/types";
+
+// ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema
+// ---------------------------------------------------------------------------
+
+describe("portfolioCollectionsPopupConfigSchema", () => {
+  it("accepts an empty object (all optional → flat sharp defaults)", () => {
+    expect(portfolioCollectionsPopupConfigSchema.parse({})).toEqual({});
+  });
+  it("accepts valid border/background/radius", () => {
+    const v = { backgroundColor: "surface", borderColor: "#1a1a1a", borderWidth: 2, radius: "subtle" as const };
+    expect(portfolioCollectionsPopupConfigSchema.parse(v)).toEqual(v);
+  });
+  it("rejects borderWidth out of range", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ borderWidth: 999 }).success).toBe(false);
+  });
+  it("rejects an unknown radius", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ radius: "huge" }).success).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
