@@ -26,7 +26,7 @@ type FetchState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "populated"; images: PopupImage[]; nextCursor: string | null }
+  | { status: "populated"; images: PopupImage[]; nextCursor: string | null; loadMoreError: boolean }
   | { status: "loadingMore"; images: PopupImage[]; nextCursor: string }
   | { status: "empty" };
 
@@ -102,21 +102,42 @@ function normalizeItem(item: {
 }
 
 // ---------------------------------------------------------------------------
+// Scoped focus-visible styles for inline-styled interactive controls
+// ---------------------------------------------------------------------------
+
+const FOCUS_VISIBLE_STYLES = `
+[data-popup-close]:focus-visible,
+[data-popup-thumb]:focus-visible,
+[data-lightbox-close]:focus-visible {
+  outline: 2px solid var(--pf-color-foreground, #111);
+  outline-offset: 2px;
+}
+`;
+
+// ---------------------------------------------------------------------------
 // Floating close button (shared between popup and lightbox)
 // ---------------------------------------------------------------------------
 
 function FloatingCloseButton({
   onClick,
   label = "Close",
+  dataAttr,
 }: {
   onClick: () => void;
   label?: string;
+  dataAttr: "data-popup-close" | "data-lightbox-close";
 }) {
+  const dataProps =
+    dataAttr === "data-popup-close"
+      ? { "data-popup-close": "" }
+      : { "data-lightbox-close": "" };
+
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
+      {...dataProps}
       style={{
         position: "absolute",
         top: "10px",
@@ -187,7 +208,8 @@ function Lightbox({
             justifyContent: "center",
           }}
         >
-          <FloatingCloseButton onClick={onClose} label="Close" />
+          <style>{FOCUS_VISIBLE_STYLES}</style>
+          <FloatingCloseButton onClick={onClose} label="Close" dataAttr="data-lightbox-close" />
           {src ? (
             <img
               src={src}
@@ -249,8 +271,9 @@ export function CollectionPopup({
   const fetchPage = useCallback(
     async (cursor: string | null, appendTo?: PopupImage[]) => {
       const url = buildUrl(mode, collectionId, slug, cursor);
+      const isAppending = appendTo !== undefined;
 
-      if (!appendTo) {
+      if (!isAppending) {
         setState({ status: "loading" });
       } else {
         setState({
@@ -278,10 +301,34 @@ export function CollectionPopup({
             status: "populated",
             images: merged,
             nextCursor: data.nextCursor,
+            loadMoreError: false,
           });
         }
-      } catch {
-        setState({ status: "error", message: "Failed to load photos." });
+      } catch (err) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("CollectionPopup fetch failed", err);
+        }
+        if (isAppending && appendTo) {
+          // Keep existing images; show inline load-more error
+          setState((prev) => {
+            if (prev.status === "loadingMore") {
+              return {
+                status: "populated",
+                images: prev.images,
+                nextCursor: prev.nextCursor,
+                loadMoreError: true,
+              };
+            }
+            return {
+              status: "populated",
+              images: appendTo,
+              nextCursor: cursor as string,
+              loadMoreError: true,
+            };
+          });
+        } else {
+          setState({ status: "error", message: "Failed to load photos." });
+        }
       }
     },
     [mode, collectionId, slug]
@@ -350,8 +397,11 @@ export function CollectionPopup({
             aria-label={collectionName}
             style={shellStyle}
           >
+            {/* Scoped focus-visible styles for inline-styled interactive controls */}
+            <style>{FOCUS_VISIBLE_STYLES}</style>
+
             {/* Floating close button — absolutely positioned so always reachable */}
-            <FloatingCloseButton onClick={onClose} label="Close" />
+            <FloatingCloseButton onClick={onClose} label="Close" dataAttr="data-popup-close" />
 
             {/* Sticky header */}
             <div
@@ -474,6 +524,7 @@ export function CollectionPopup({
                           key={img.id}
                           type="button"
                           aria-label={img.alt || "Open photo"}
+                          data-popup-thumb=""
                           onClick={() => setLightboxImage(img)}
                           style={{
                             flex: "0 0 calc(100% / 6 - 7px)",
@@ -526,8 +577,8 @@ export function CollectionPopup({
                     })}
                   </div>
 
-                  {/* Load more */}
-                  {state.status === "populated" && state.nextCursor ? (
+                  {/* Load more / loading more / inline load-more error */}
+                  {state.status === "populated" && state.nextCursor && !state.loadMoreError ? (
                     <div
                       style={{
                         display: "flex",
@@ -554,6 +605,46 @@ export function CollectionPopup({
                         }}
                       >
                         Load more
+                      </button>
+                    </div>
+                  ) : state.status === "populated" && state.loadMoreError ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "16px 0 8px",
+                        textAlign: "center",
+                        color: "var(--pf-color-foreground, #111)",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      <span>Failed to load more photos.</span>
+                      <button
+                        type="button"
+                        data-testid="load-more-retry"
+                        onClick={() =>
+                          fetchPage(
+                            (state as { status: "populated"; images: PopupImage[]; nextCursor: string | null }).nextCursor,
+                            state.images
+                          )
+                        }
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "6px 14px",
+                          border: "1px solid currentColor",
+                          borderRadius: "4px",
+                          background: "transparent",
+                          color: "inherit",
+                          cursor: "pointer",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        <RefreshCwIcon aria-hidden style={{ width: "14px", height: "14px" }} />
+                        Retry
                       </button>
                     </div>
                   ) : state.status === "loadingMore" ? (

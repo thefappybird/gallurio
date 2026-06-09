@@ -69,6 +69,32 @@ function make500Fetch() {
   );
 }
 
+/**
+ * Returns a fetch that succeeds once (page 1), then fails on the second call
+ * (load-more), then succeeds on the third call (retry).
+ */
+function makeLoadMoreFailThenSucceedFetch() {
+  let callCount = 0;
+  return vi.fn((_url: string) => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({ items: page1Items, nextCursor: "cursor-abc" }),
+      });
+    }
+    if (callCount === 2) {
+      return Promise.reject(new Error("Network error on load-more"));
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({ items: page2Items, nextCursor: null }),
+    });
+  });
+}
+
 beforeEach(() => {
   process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
 });
@@ -407,28 +433,135 @@ describe("CollectionPopup", () => {
 
   it("applies borderRadius from popupConfig radius (rounded)", async () => {
     vi.stubGlobal("fetch", makeFetch(null));
-    const { container } = render(
+    render(
       <CollectionPopup {...defaultProps({ popupConfig: { radius: "rounded" } })} />
     );
 
     await screen.findAllByRole("img");
-    const popup = container.querySelector("[data-popup-shell]") as HTMLElement | null;
-    if (popup) {
-      expect(popup.style.borderRadius).toBeTruthy();
-      expect(popup.style.borderRadius).not.toBe("0px");
-    }
+    // base-ui portals to document.body, not the container
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).not.toBeNull();
+    expect((popup as HTMLElement).style.borderRadius).toBeTruthy();
+    expect((popup as HTMLElement).style.borderRadius).not.toBe("0px");
   });
 
   it("applies sharp borderRadius (0px) from popupConfig", async () => {
     vi.stubGlobal("fetch", makeFetch(null));
-    const { container } = render(
+    render(
       <CollectionPopup {...defaultProps({ popupConfig: { radius: "sharp" } })} />
     );
 
     await screen.findAllByRole("img");
-    const popup = container.querySelector("[data-popup-shell]") as HTMLElement | null;
-    if (popup) {
-      expect(popup.style.borderRadius).toBe("0px");
-    }
+    const popup = document.querySelector("[data-popup-shell]");
+    expect(popup).not.toBeNull();
+    expect((popup as HTMLElement).style.borderRadius).toBe("0px");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Focus-visible data attributes and scoped style presence
+  // ---------------------------------------------------------------------------
+
+  it("popup close button has data-popup-close attribute", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const closeBtn = document.querySelector("[data-popup-close]");
+    expect(closeBtn).not.toBeNull();
+    expect(closeBtn?.tagName.toLowerCase()).toBe("button");
+  });
+
+  it("thumbnail buttons have data-popup-thumb attribute", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findAllByRole("img");
+    const thumbBtns = document.querySelectorAll("[data-popup-thumb]");
+    expect(thumbBtns.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("renders a scoped <style> block inside the popup", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const styleEl = document.querySelector("[data-popup-shell] style, [data-popup-shell] ~ * style");
+    // The style block may be anywhere inside or adjacent; search the whole doc
+    const allStyles = Array.from(document.querySelectorAll("style"));
+    const focusStyle = allStyles.find((s) => s.textContent?.includes("data-popup-close"));
+    expect(focusStyle).not.toBeUndefined();
+  });
+
+  it("lightbox close button has data-lightbox-close attribute", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    const thumbs = await screen.findAllByRole("img");
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w_400"))!;
+    fireEvent.click(thumb.closest("button") ?? thumb);
+
+    await waitFor(() => {
+      const lightboxClose = document.querySelector("[data-lightbox-close]");
+      expect(lightboxClose).not.toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Load-more failure resilience (Fix 2)
+  // ---------------------------------------------------------------------------
+
+  it("load-more failure keeps existing images visible and shows inline retry", async () => {
+    const fetchFn = makeLoadMoreFailThenSucceedFetch();
+    vi.stubGlobal("fetch", fetchFn);
+    render(<CollectionPopup {...defaultProps()} />);
+
+    // Wait for page 1
+    await screen.findAllByRole("img");
+    const page1Thumbs = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
+      (img) => img.src.includes("w_400")
+    );
+    expect(page1Thumbs.length).toBe(3);
+
+    // Click load more — this will fail on second fetch
+    const loadMoreBtn = screen.getByRole("button", { name: /load more/i });
+    fireEvent.click(loadMoreBtn);
+
+    // Inline error should appear without wiping the grid
+    const inlineRetry = await screen.findByTestId("load-more-retry");
+    expect(inlineRetry).toBeInTheDocument();
+
+    // Original page-1 images still visible
+    const stillVisible = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
+      (img) => img.src.includes("w_400")
+    );
+    expect(stillVisible.length).toBe(3);
+
+    // Full error panel must NOT be shown
+    expect(screen.queryByText("Failed to load photos.")).not.toBeInTheDocument();
+
+    // Click inline retry — third fetch succeeds
+    fireEvent.click(inlineRetry);
+
+    // All 5 images now present
+    await waitFor(() => {
+      const allThumbs = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
+        (img) => img.src.includes("w_400")
+      );
+      expect(allThumbs.length).toBe(5);
+    });
+
+    // Inline retry gone
+    expect(screen.queryByTestId("load-more-retry")).not.toBeInTheDocument();
+  });
+
+  it("initial fetch failure still shows full error panel (not inline)", async () => {
+    vi.stubGlobal("fetch", makeErrorFetch());
+    render(<CollectionPopup {...defaultProps()} />);
+
+    // Full error panel text present
+    await screen.findByText("Failed to load photos.");
+
+    // No images in the grid
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 });
