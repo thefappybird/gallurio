@@ -45,6 +45,7 @@ describe("SaveThemePopover", () => {
     fireEvent.change(input, { target: { value: "Spring 26" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledWith("Spring 26"));
+    await waitFor(() => expect(screen.queryByPlaceholderText("Theme name")).toBeNull());
   });
 
   it("blocks an empty name", async () => {
@@ -57,6 +58,31 @@ describe("SaveThemePopover", () => {
 
   it("disables the trigger at the saved-theme limit", () => {
     setup({ atLimit: true });
-    expect(screen.getByRole("button", { name: "Save current as theme" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "You've reached the maximum of 24 saved themes." })
+    ).toBeDisabled();
+  });
+
+  it("rejects a name longer than 60 characters", async () => {
+    const { onSave } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Save current as theme" }));
+    const input = await screen.findByPlaceholderText("Theme name");
+    fireEvent.change(input, { target: { value: "x".repeat(61) } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("Theme name must be 60 characters or fewer.")).toBeInTheDocument();
+  });
+
+  it("shows an error and keeps the popover open when saving fails", async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error("nope"));
+    renderWithProviders(<SaveThemePopover onSave={onSave} atLimit={false} />, { messages });
+    fireEvent.click(screen.getByRole("button", { name: "Save current as theme" }));
+    const input = await screen.findByPlaceholderText("Theme name");
+    fireEvent.change(input, { target: { value: "Retry me" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(screen.getByText("Could not save theme. Please try again.")).toBeInTheDocument()
+    );
+    expect(screen.getByPlaceholderText("Theme name")).toHaveValue("Retry me");
   });
 });

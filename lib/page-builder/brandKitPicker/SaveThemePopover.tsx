@@ -50,7 +50,7 @@ export function SaveThemePopover({ onSave, atLimit }: Props) {
         type="button"
         disabled={atLimit}
         title={atLimit ? t("themeLimitReached", { max: SAVED_THEMES_MAX }) : t("saveCurrentAsTheme")}
-        aria-label={t("saveCurrentAsTheme")}
+        aria-label={atLimit ? t("themeLimitReached", { max: SAVED_THEMES_MAX }) : t("saveCurrentAsTheme")}
         className="inline-flex size-9 shrink-0 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
       >
         <SaveIcon className="size-4" aria-hidden />
