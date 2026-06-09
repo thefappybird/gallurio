@@ -13,7 +13,7 @@ import {
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
-import { reconcileGalleryImages } from "@/lib/page-builder/reconcile";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import type { PuckData } from "@/lib/page-builder/types";
 import { z } from "zod";
 
@@ -91,8 +91,8 @@ export async function publishPortfolioAction(): Promise<EditorActionResult> {
   const set: Record<string, unknown> = {};
   const home = ws?.publicPage?.data?.home as PuckData | null | undefined;
   const gallery = ws?.publicPage?.data?.gallery as PuckData | null | undefined;
-  if (home) set["publicPage.data.home"] = await reconcileGalleryImages(workspaceId, home);
-  if (gallery) set["publicPage.data.gallery"] = await reconcileGalleryImages(workspaceId, gallery);
+  if (home) set["publicPage.data.home"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, home));
+  if (gallery) set["publicPage.data.gallery"] = await reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, gallery));
 
   const now = new Date();
   set["publicPage.publishedAt"] = now;

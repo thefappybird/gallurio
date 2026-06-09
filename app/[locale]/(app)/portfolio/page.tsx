@@ -5,7 +5,7 @@ import { routing } from "@/lib/i18n/routing";
 import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
-import { reconcileGalleryImages } from "@/lib/page-builder/reconcile";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
 
 export async function generateMetadata({
@@ -73,9 +73,11 @@ export default async function PageBuilderEntry({
   }
 
   const workspaceId = String(workspace._id);
+  const reconcileZone = async (raw: unknown) =>
+    reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, toPlain<PuckData>(raw, EMPTY_ZONE)));
   const initialData = {
-    home: await reconcileGalleryImages(workspaceId, toPlain<PuckData>(homeData, EMPTY_ZONE)),
-    gallery: await reconcileGalleryImages(workspaceId, toPlain<PuckData>(galleryData, EMPTY_ZONE)),
+    home: await reconcileZone(homeData),
+    gallery: await reconcileZone(galleryData),
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
