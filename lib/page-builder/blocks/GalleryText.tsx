@@ -1,8 +1,9 @@
 /**
- * Shared heading/description/footer text for the gallery blocks (Grid, Masonry,
- * Carousel). Server-safe (no "use client"). Text is styled section-wide by the
- * block's `_style` toolkit; an empty value renders nothing so the block stays
- * clean by default.
+ * Carousel heading/description text + a shared gallery footer. Server-safe (no
+ * "use client"). `GalleryHeader` is consumed only by GalleryCarouselBlock, which
+ * styles the heading and description independently via per-target `_style` groups
+ * (color, bold/italic/underline, align, font, level/size, highlight band). An
+ * empty value renders nothing so the block stays clean by default.
  */
 
 import type { CSSProperties } from "react";
