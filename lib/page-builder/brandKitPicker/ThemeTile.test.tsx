@@ -59,6 +59,13 @@ describe("ThemeTile", () => {
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
+  it("shows a spinner and disables the delete control while deleting", () => {
+    renderTile({ deleting: true });
+    const del = screen.getByRole("button", { name: "Delete theme: My Wedding" });
+    expect(del).toBeDisabled();
+    expect(del.querySelector(".animate-spin")).not.toBeNull();
+  });
+
   it("omits the delete control when no deleteLabel is given (presets)", () => {
     renderTile({ deleteLabel: undefined, onDelete: undefined });
     expect(screen.queryByRole("button", { name: /Delete theme/ })).toBeNull();
