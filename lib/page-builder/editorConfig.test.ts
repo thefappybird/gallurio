@@ -128,3 +128,23 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(heroFields).toEqual(expect.arrayContaining(["bgAnimation", "bgSpeed"]));
   });
 });
+
+describe("block label renames", () => {
+  const label = (cfg: { components: Record<string, { label?: string }> }, key: string) =>
+    cfg.components[key]?.label;
+
+  it("renames the gallery/featured preset labels", () => {
+    expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Gallery Grid");
+    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Masonry");
+    expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Featured Work");
+  });
+
+  it("renames the manual gallery/featured labels in both configs", () => {
+    for (const cfg of [editorPuckConfig, puckConfig] as const) {
+      expect(label(cfg as never, "GalleryGrid")).toBe("Photo Grid");
+      expect(label(cfg as never, "GalleryMasonry")).toBe("Masonry");
+      expect(label(cfg as never, "FeaturedWork")).toBe("Highlights");
+      expect(label(cfg as never, "GalleryCarousel")).toBe("Gallery Carousel");
+    }
+  });
+});

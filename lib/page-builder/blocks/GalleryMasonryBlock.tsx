@@ -134,7 +134,7 @@ function MasonryEmptyState({ message }: { message: string }) {
 }
 
 export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
-  label: "Gallery Masonry",
+  label: "Masonry",
   defaultProps: galleryMasonryDefaultProps,
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight

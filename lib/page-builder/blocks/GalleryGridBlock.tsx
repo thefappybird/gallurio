@@ -137,7 +137,7 @@ function GalleryEmptyState({ message }: { message: string }) {
 }
 
 export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
-  label: "Gallery Grid",
+  label: "Photo Grid",
   defaultProps: galleryGridDefaultProps,
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight

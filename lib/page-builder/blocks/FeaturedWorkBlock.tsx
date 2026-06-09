@@ -159,7 +159,7 @@ export async function FeaturedWorkBlock({
 }
 
 export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
-  label: "Featured Work",
+  label: "Highlights",
   defaultProps: featuredWorkDefaultProps,
   fields: {
     _style: productionStyleField,

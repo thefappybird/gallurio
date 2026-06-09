@@ -375,7 +375,7 @@ const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
 // ---------------------------------------------------------------------------
 
 const galleryGrid: ComponentConfig<GalleryGridProps> = {
-  label: "Gallery Grid",
+  label: "Photo Grid",
   defaultProps: galleryGridDefaultProps,
   // `images` is intentionally absent — the editor drives it via StyleToolkitField
   // (Task 7). The cast is required because Puck's Fields<T> demands all keys.
@@ -407,7 +407,7 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
 };
 
 const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
-  label: "Gallery Masonry",
+  label: "Masonry",
   defaultProps: galleryMasonryDefaultProps,
   // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
   fields: {
@@ -487,7 +487,7 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
 };
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
-  label: "Featured Work",
+  label: "Highlights",
   defaultProps: featuredWorkDefaultProps,
   fields: {
     _style: styleField,
