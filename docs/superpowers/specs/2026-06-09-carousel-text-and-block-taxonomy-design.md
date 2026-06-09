@@ -13,7 +13,7 @@ gallery baked images → container background slideshow). Two themes:
    heading + description overlay, but the text-color picker does nothing, there
    is no padding control for the overlay text, and there is no highlight
    (highlighter) effect. Fix the color bug and add Text Padding + a marker-band
-   highlight.
+   highlight, and threading bold / italic / underline / align into carousel text.
 2. **Block taxonomy** — rename the preset and manual gallery/featured blocks to
    cleaner labels, and move the standalone Gallery Carousel into the Preset
    blocks group.
@@ -31,11 +31,10 @@ need nothing here.
   configurable **independently** (separate toggle + color each).
 - Rename gallery/featured blocks to the agreed labels.
 - Move Gallery Carousel into the Preset blocks group (recategorize only).
+- Thread bold / italic / underline / align into carousel text.
 
 ## Non-goals
 
-- Threading bold / italic / underline / align into carousel text (not requested;
-  heading alignment is already driven by the float-horizontal control).
 - Adding any of these controls to the Grid / Masonry / Highlights blocks (no text
   inputs) or to the gallery preset sections (they use Heading/Text blocks that
   already have the controls).
@@ -58,8 +57,8 @@ sources.
 
 | Unit | File | Change |
 |---|---|---|
-| `GalleryHeader` | `lib/page-builder/blocks/GalleryText.tsx` | New optional props: `textColorToken`, `headingHighlight`, `headingHighlightToken`, `descriptionHighlight`, `descriptionHighlightToken`. Resolve text color from token; wrap heading/description in `<mark>` band when its highlight is on. |
-| `GalleryCarouselBlock` | `lib/page-builder/blocks/GalleryCarouselBlock.tsx` | New props `textPaddingX`, `textPaddingY` (CssLength), `headingHighlight`, `headingHighlightToken`, `descriptionHighlight`, `descriptionHighlightToken`. Apply padding to the overlay wrapper; thread `_style.textColorToken` + highlight props into `GalleryHeader`. Add defaults to the shared config. |
+| `GalleryHeader` | `lib/page-builder/blocks/GalleryText.tsx` | New optional props: `textColorToken`, `bold`, `italic`, `underline`, `align`, `headingHighlight`, `headingHighlightToken`, `descriptionHighlight`, `descriptionHighlightToken`. Resolve text color + font styling from props; wrap heading/description in `<mark>` band when its highlight is on. |
+| `GalleryCarouselBlock` | `lib/page-builder/blocks/GalleryCarouselBlock.tsx` | New props `textPaddingX`, `textPaddingY` (CssLength), `headingHighlight`, `headingHighlightToken`, `descriptionHighlight`, `descriptionHighlightToken`. Apply padding to the overlay wrapper; thread `_style` (`textColorToken`, `bold`, `italic`, `underline`, `align`) + highlight props into `GalleryHeader`. Add defaults to the shared config. |
 | `StyleToolkitField` | `lib/page-builder/StyleToolkitField.tsx` | Carousel-only "Text" group (Design tab): Text Padding X/Y `DimensionInput`s, Heading highlight (toggle + `ColorSwatchRow`), Description highlight (toggle + `ColorSwatchRow`). |
 | Taxonomy keys | `lib/page-builder/blockCategories.ts` | Move `"GalleryCarousel"` from `MANUAL_BLOCK_KEYS` to `PRESET_BLOCK_KEYS`. |
 | Preset labels | `lib/page-builder/blocks/sectionPresets.ts` | Rename 3 preset labels. |
@@ -106,6 +105,24 @@ highlight is on, wrap its content in a `<mark>` with:
 When off, render the plain text node (no `<mark>`). Heading and description are
 independent. `box-decoration-break` is widely supported with the `-webkit-`
 prefix; the fallback (a single rectangular band) is still acceptable.
+
+### 4. Bold / italic / underline / align
+
+The Design-tab typography toggles (`_style.bold`, `_style.italic`,
+`_style.underline`, `_style.align`) render for the carousel but, like text color,
+never reach `GalleryHeader` (it hardcodes its own font styling and is not wrapped
+by `resolveBlockStyle`'s output). Thread them through:
+
+- `bold` → `fontWeight: 700`, `italic` → `fontStyle: "italic"`, `underline` →
+  `textDecoration: "underline"` — applied to **both** heading and description
+  (matching how `resolveBlockStyle` applies typography to a whole block).
+- `align` → overrides the text alignment when set; otherwise the existing
+  float-horizontal-derived `align` prop stands. (The float control keeps working
+  as the default; an explicit `_style.align` wins.)
+
+`GalleryCarouselBlock` passes the relevant `_style` values into `GalleryHeader`
+alongside `textColorToken`. No new fields — these reuse existing `BlockStyle`
+keys and their existing toolkit controls; this is pure threading.
 
 ## Detail — toolkit controls
 
@@ -156,12 +173,14 @@ registered in both configs; only its category group differs.
 ## Testing
 
 - **`GalleryText` / `GalleryHeader`:** text color uses the provided token
-  (and falls back when unset); heading band present when `headingHighlight` on,
-  absent when off; description band independent of heading; band uses the chosen
-  color token; plain text node when off.
-- **`GalleryCarouselBlock`:** threads `_style.textColorToken` + highlight props
-  to `GalleryHeader`; applies `textPaddingX/Y` to the overlay wrapper (and the
-  `1.5rem` fallback when unset).
+  (and falls back when unset); `bold`/`italic`/`underline` apply to heading +
+  description; `align` overrides the float-derived alignment when set; heading
+  band present when `headingHighlight` on, absent when off; description band
+  independent of heading; band uses the chosen color token; plain text node when
+  off.
+- **`GalleryCarouselBlock`:** threads `_style` (`textColorToken`, `bold`,
+  `italic`, `underline`, `align`) + highlight props to `GalleryHeader`; applies
+  `textPaddingX/Y` to the overlay wrapper (and the `1.5rem` fallback when unset).
 - **`StyleToolkitField`:** for a carousel block, the Text Padding inputs and both
   highlight toggle+color rows render and round-trip via `onChange`; they do not
   render for non-carousel blocks.
@@ -174,8 +193,8 @@ registered in both configs; only its category group differs.
 
 ## Definition of done
 
-- Carousel text color honored; Text Padding X/Y + independent heading/description
-  highlight implemented with all control states.
+- Carousel text color + bold/italic/underline/align honored; Text Padding X/Y +
+  independent heading/description highlight implemented with all control states.
 - Six labels renamed; Gallery Carousel recategorized to Preset blocks.
 - Tests above passing; `pnpm typecheck` + `pnpm lint` clean; `pnpm next build`
   succeeds (client-bundle hygiene for the isomorphic carousel path).
