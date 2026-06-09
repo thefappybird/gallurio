@@ -49,4 +49,43 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
     expect(galleryCarouselDefaultProps).not.toHaveProperty("overlayAlign");
     expect(puckConfig.components.GalleryCarousel.defaultProps).toHaveProperty("images");
   });
+
+  it("threads the picked text color token into the heading", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textColorToken: "primary" } })
+    );
+    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("var(--pf-color-primary)");
+  });
+
+  it("renders a heading highlight band when _style.headingHighlight is on", () => {
+    const { container } = render(
+      GalleryCarouselBlock({
+        ...base,
+        images: imgs(2),
+        heading: "Hi",
+        _style: { headingHighlight: true, headingHighlightToken: "accent" },
+      })
+    );
+    expect(container.querySelector("[data-gallery-overlay] h2 mark")).not.toBeNull();
+  });
+
+  it("applies Text Padding to the overlay layer (default 1.5rem, overridable)", () => {
+    const def = render(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
+    expect(def.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "").toContain("padding: 1.5rem");
+
+    const custom = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
+    );
+    const style = custom.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "";
+    expect(style).toContain("3rem");
+    expect(style).toContain("2rem");
+  });
+
+  it("lets _style.align override the float-derived heading alignment", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", floatX: "center", _style: { align: "left" } })
+    );
+    const wrapper = container.querySelector("h2")!.parentElement!;
+    expect(wrapper.getAttribute("style") ?? "").toContain("text-align: left");
+  });
 });

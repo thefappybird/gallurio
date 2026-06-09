@@ -117,12 +117,26 @@ export function GalleryCarouselBlock({
             display: "flex",
             alignItems: FLOAT_Y_TO_ALIGN[vertical],
             justifyContent: FLOAT_X_TO_JUSTIFY[horizontal],
-            padding: "1.5rem",
+            // Text Padding (toolkit) drives the overlay inset; default keeps the prior 1.5rem.
+            padding: `${_style?.textPaddingY ?? "1.5rem"} ${_style?.textPaddingX ?? "1.5rem"}`,
             pointerEvents: "none",
           }}
         >
           <div style={{ width: "min(100%, 40rem)" }}>
-            <GalleryHeader heading={heading} description={description} align={horizontal} overlay />
+            <GalleryHeader
+              heading={heading}
+              description={description}
+              align={_style?.align ?? horizontal}
+              overlay
+              textColorToken={_style?.textColorToken}
+              bold={_style?.bold}
+              italic={_style?.italic}
+              underline={_style?.underline}
+              headingHighlight={_style?.headingHighlight}
+              headingHighlightToken={_style?.headingHighlightToken}
+              descriptionHighlight={_style?.descriptionHighlight}
+              descriptionHighlightToken={_style?.descriptionHighlightToken}
+            />
           </div>
         </div>
       </div>
