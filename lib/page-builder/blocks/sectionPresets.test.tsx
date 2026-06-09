@@ -10,7 +10,7 @@ import {
   SERVICES_PRESET,
 } from "./sectionPresets";
 
-// Gallery blocks (imported transitively via config) touch the Cloudinary SDK.
+// Gallery blocks (imported transitively via config) use the client-safe cloudinary URL builder.
 vi.mock("@/lib/storage/cloudinary", () => ({
   cloudinaryThumbnailUrl: vi.fn((id: string) => `https://res.cloudinary.com/test/${id}`),
 }));

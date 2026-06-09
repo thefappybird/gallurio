@@ -34,6 +34,6 @@ export const weddingPhotographerTemplate: PortfolioTemplate = {
       servicesPreset("wp-home-services"),
       ctaPreset("wp-home-cta"),
     ]),
-    gallery: zone([galleryMasonry("wp-gallery-masonry", { columns: 3, maxItems: 24 })]),
+    gallery: zone([galleryMasonry("wp-gallery-masonry", { columns: 3 })]),
   }),
 };

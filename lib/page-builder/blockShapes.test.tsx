@@ -10,8 +10,9 @@
  *
  * 2. **Render output** — sync blocks (Heading, HeroPreset, ServicesPreset) are
  *    rendered via Puck's <Render> component with fixture-shaped data and
- *    assertions are made on the DOM. Async data blocks (GalleryGrid etc.) are
- *    covered by their own dedicated test files.
+ *    assertions are made on the DOM. Gallery blocks (GalleryGrid etc.) are now
+ *    isomorphic/client-safe (baked images model) and are covered by their own
+ *    dedicated test files.
  *
  * Note: Puck's <Render> resolves slot components synchronously when the
  * data is plain JSON (no async DB calls). Preset blocks are Container-based
@@ -181,13 +182,14 @@ describe("blockShapes integration — HeroPreset renders composed children", () 
   });
 });
 
-describe("blockShapes integration — GalleryGrid registered (async; see GalleryGridBlock.test.tsx)", () => {
+describe("blockShapes integration — GalleryGrid registered (isomorphic; see GalleryGridBlock.test.tsx)", () => {
   it("GalleryGrid render function is defined in puckConfig", () => {
     expect(typeof puckConfig.components.GalleryGrid.render).toBe("function");
   });
 
-  it("GalleryGrid defaultProps has collectionId field", () => {
-    expect(puckConfig.components.GalleryGrid.defaultProps).toHaveProperty("collectionId");
+  it("GalleryGrid defaultProps has images field (baked images model)", () => {
+    expect(puckConfig.components.GalleryGrid.defaultProps).toHaveProperty("images");
+    expect(puckConfig.components.GalleryGrid.defaultProps).not.toHaveProperty("collectionId");
   });
 });
 

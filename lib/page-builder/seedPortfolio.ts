@@ -20,26 +20,21 @@ export type PortfolioSeed = {
 };
 
 /**
- * Fill any seeded gallery block's empty collectionId with a real collection, and
- * seed FeaturedWork.itemIds with the first uploaded photos, so a freshly seeded
- * portfolio isn't visibly empty when the workspace already has a Featured-work
- * collection. Mutates `data` in place.
- *
- * FeaturedWork.itemIds rows are `{ id }` objects — the shape the Puck array
- * editor round-trips (see FeaturedWorkBlock); the renderer accepts both shapes.
+ * Seed FeaturedWork.itemIds with the first uploaded photos so a freshly seeded
+ * portfolio's Featured Work isn't visibly empty when the workspace already has a
+ * Featured-work collection. Gallery blocks now bake `images[]` directly (no
+ * collectionId pointer), so they are seeded empty and the owner picks photos in
+ * the editor. Mutates `data` in place.
  */
 export function injectGalleryRefs(
   data: PortfolioPuckData,
-  collectionId: string,
+  _collectionId: string,
   itemIds: string[]
 ): void {
   const zones: (PuckData | null)[] = [data.home, data.gallery];
   for (const z of zones) {
     if (!z) continue;
     for (const block of z.content) {
-      if (block.type.startsWith("Gallery") && block.props.collectionId === "") {
-        block.props.collectionId = collectionId;
-      }
       if (
         block.type === "FeaturedWork" &&
         Array.isArray(block.props.itemIds) &&

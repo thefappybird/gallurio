@@ -34,6 +34,6 @@ export const venueStylistTemplate: PortfolioTemplate = {
       servicesPreset("vs-home-services"),
       ctaPreset("vs-home-cta"),
     ]),
-    gallery: zone([galleryCarousel("vs-gallery-carousel", { aspect: "landscape", maxItems: 16 })]),
+    gallery: zone([galleryCarousel("vs-gallery-carousel", { aspect: "landscape" })]),
   }),
 };

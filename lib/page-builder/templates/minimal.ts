@@ -25,6 +25,6 @@ export const minimalTemplate: PortfolioTemplate = {
       aboutPreset("min-home-about"),
       ctaPreset("min-home-cta"),
     ]),
-    gallery: zone([galleryGrid("min-gallery-grid", { columns: 3, maxItems: 12 })]),
+    gallery: zone([galleryGrid("min-gallery-grid", { columns: 3 })]),
   }),
 };
