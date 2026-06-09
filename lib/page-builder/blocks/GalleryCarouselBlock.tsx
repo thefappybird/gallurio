@@ -1,18 +1,14 @@
 /**
- * GalleryCarouselBlock — server component that fetches a collection's items and
- * hands already-resolved thumbnail URLs to the client carousel island.
- *
- * Multi-tenant safety: `workspaceId` comes from the server render context, never
- * Puck props. `listItemsForBlock` drops private/foreign collections.
- *
- * Split design: the fetch + tenant scoping happen on the server (AsyncLocalStorage
- * is server-only); only the interactive scroll/arrow logic ships to the client.
+ * GalleryCarouselBlock — ISOMORPHIC (client-safe). Maps its own `images[]` prop to
+ * CarouselSlide[] and feeds the existing GalleryCarouselClient island. No DB, no
+ * server context, no server-only Cloudinary import. Floating header copy renders
+ * via the shared GalleryHeader; empty/chrome labels come from puck.metadata chrome
+ * (pure, client-safe) with English fallbacks.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { listItemsForBlock } from "@/lib/db/queries/gallery";
+import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
 import {
   resolveBlockStyle,
@@ -21,34 +17,30 @@ import {
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
 import { GalleryHeader } from "./GalleryText";
+import type { GalleryImage } from "./GalleryGridBlock";
 
 export type CarouselFloatX = "left" | "center" | "right";
 export type CarouselFloatY = "top" | "center" | "bottom";
 
 export type GalleryCarouselProps = {
   _style?: BlockStyle;
+  images: GalleryImage[];
   heading: string;
   description: string;
-  collectionId: string;
   aspect: "square" | "landscape" | "portrait";
-  // Floating header position over the carousel: horizontal (X) + vertical (Y).
   floatX: CarouselFloatX;
   floatY: CarouselFloatY;
-  /** @deprecated legacy horizontal overlay alignment; auto-mapped to floatX at render. */
-  overlayAlign?: CarouselFloatX;
   autoplay: boolean;
-  maxItems: number;
 };
 
 export const galleryCarouselDefaultProps: GalleryCarouselProps = {
+  images: [],
   heading: "",
   description: "",
-  collectionId: "",
   aspect: "landscape",
   floatX: "center",
   floatY: "center",
   autoplay: false,
-  maxItems: 12,
 };
 
 const FLOAT_X_TO_JUSTIFY: Record<CarouselFloatX, string> = {
@@ -69,65 +61,35 @@ const THUMB_SIZE: Record<GalleryCarouselProps["aspect"], { width: number; height
   portrait: { width: 700, height: 933 },
 };
 
-export async function GalleryCarouselBlock({
+export function GalleryCarouselBlock({
   _style,
+  images,
   heading,
   description,
-  collectionId,
   aspect,
   floatX,
   floatY,
-  overlayAlign,
   autoplay,
-  maxItems,
   puck,
 }: GalleryCarouselProps & { puck?: BlockPuck }) {
   const labels = getGalleryChromeLabelsFrom(puck);
-  const workspace = getRenderWorkspaceFrom(puck);
-  if (!workspace || !String(workspace._id)) {
-    return <CarouselEmptyState message={labels.unavailable} />;
-  }
+  const list = Array.isArray(images) ? images : [];
 
-  if (!collectionId || !collectionId.trim()) {
-    return <CarouselEmptyState message={labels.noCollection} />;
-  }
-
-  let items;
-  try {
-    items = await listItemsForBlock({
-      workspaceId: String(workspace._id),
-      collectionId,
-      limit: maxItems,
-    });
-  } catch (err) {
-    console.error("GalleryCarouselBlock query failed", {
-      workspaceId: String(workspace._id),
-      collectionId,
-      err,
-    });
-    return <CarouselEmptyState message={labels.error} />;
-  }
-
-  if (items.length === 0) {
+  if (list.length === 0) {
     return <CarouselEmptyState message={labels.empty} />;
   }
 
-  // Floating header position. Legacy carousels stored `overlayAlign` (horizontal
-  // only) — map it onto floatX when floatX is unset so old drafts look identical.
-  const horizontal: CarouselFloatX = floatX ?? overlayAlign ?? "center";
+  const horizontal: CarouselFloatX = floatX ?? "center";
   const vertical: CarouselFloatY = floatY ?? "center";
-
   const size = THUMB_SIZE[aspect] ?? THUMB_SIZE.landscape;
-  const slides: CarouselSlide[] = items.map((item) => ({
-    id: String(item._id),
-    src:
-      cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-        width: size.width,
-        height: size.height,
-        crop: "fill",
-      }) || item.url,
-    alt: item.altText || item.caption || "",
-  }));
+
+  const slides: CarouselSlide[] = list
+    .map((img) => ({
+      id: img.id,
+      src: cloudinaryImageUrl(img.publicId, { width: size.width, height: size.height, crop: "fill" }),
+      alt: img.alt ?? "",
+    }))
+    .filter((s) => s.src);
 
   return (
     <section
@@ -159,17 +121,8 @@ export async function GalleryCarouselBlock({
             pointerEvents: "none",
           }}
         >
-          <div
-            style={{
-              width: "min(100%, 40rem)",
-            }}
-          >
-            <GalleryHeader
-              heading={heading}
-              description={description}
-              align={horizontal}
-              overlay
-            />
+          <div style={{ width: "min(100%, 40rem)" }}>
+            <GalleryHeader heading={heading} description={description} align={horizontal} overlay />
           </div>
         </div>
       </div>
@@ -208,11 +161,13 @@ function CarouselEmptyState({ message }: { message: string }) {
 export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
   defaultProps: galleryCarouselDefaultProps,
+  // `images` is intentionally absent from the sidebar fields — the editor drives
+  // it via StyleToolkitField (Task 7). Production <Render> reads images straight
+  // from saved props; no sidebar field is needed there either.
   fields: {
     _style: productionStyleField,
     heading: { type: "text", label: "Heading" },
     description: { type: "textarea", label: "Description" },
-    collectionId: { type: "text", label: "Collection ID" },
     aspect: {
       type: "select",
       label: "Image shape",
@@ -248,9 +203,6 @@ export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> =
         { label: "On", value: true },
       ],
     } as Field<boolean>,
-    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
-  },
-  // Async server component — Puck's PuckComponent type expects sync JSX.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  render: GalleryCarouselBlock as any,
+  } as unknown as Fields<GalleryCarouselProps>,
+  render: GalleryCarouselBlock,
 };
