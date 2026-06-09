@@ -77,8 +77,8 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
       GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
     );
     const style = custom.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "";
-    expect(style).toContain("3rem");
-    expect(style).toContain("2rem");
+    // Guard the Y-then-X axis order (padding: <vertical> <horizontal>).
+    expect(style).toContain("padding: 3rem 2rem");
   });
 
   it("lets _style.align override the float-derived heading alignment", () => {
