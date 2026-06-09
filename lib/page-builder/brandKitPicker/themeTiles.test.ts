@@ -55,12 +55,12 @@ describe("paginate", () => {
   it("returns the first page of THEMES_PER_PAGE items", () => {
     const { pageItems, pageCount, page } = paginate(items, 0);
     expect(THEMES_PER_PAGE).toBe(9);
-    expect(pageItems).toHaveLength(9);
-    expect(pageCount).toBe(2);
+    expect(pageItems).toHaveLength(THEMES_PER_PAGE);
+    expect(pageCount).toBe(Math.ceil(items.length / THEMES_PER_PAGE));
     expect(page).toBe(0);
   });
   it("returns the remainder on the last page", () => {
-    expect(paginate(items, 1).pageItems).toHaveLength(5);
+    expect(paginate(items, 1).pageItems).toHaveLength(items.length - THEMES_PER_PAGE);
   });
   it("clamps an out-of-range page", () => {
     const { page, pageItems } = paginate(items, 9);

@@ -53,10 +53,11 @@ export function paginate<T>(
   page: number,
   perPage: number = THEMES_PER_PAGE
 ): { pageItems: T[]; pageCount: number; page: number } {
-  const pageCount = Math.max(1, Math.ceil(items.length / perPage));
+  const safePerPage = Math.max(1, perPage);
+  const pageCount = Math.max(1, Math.ceil(items.length / safePerPage));
   const safePage = Math.min(Math.max(0, page), pageCount - 1);
-  const start = safePage * perPage;
-  return { pageItems: items.slice(start, start + perPage), pageCount, page: safePage };
+  const start = safePage * safePerPage;
+  return { pageItems: items.slice(start, start + safePerPage), pageCount, page: safePage };
 }
 
 const SELECTION_COLOR_FIELDS = [
