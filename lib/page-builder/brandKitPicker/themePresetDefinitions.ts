@@ -66,7 +66,7 @@ export const THEME_PRESET_DEFINITIONS: Record<
     name: "Bold",
     brandKit: {
       themePreset: "bold",
-      fontPair: "playfair-inter",
+      fontPair: "playfair-inter", // deprecated/no-op; headingFont/bodyFont are authoritative (no montserrat pair exists)
       headingFont: "montserrat",
       bodyFont: "inter",
       primaryColor: "#101010",
