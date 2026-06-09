@@ -450,7 +450,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             <p className="text-xs text-muted-foreground">
               {L.selectedCount(collectionSelection.length, max)} · {L.dragHint}
             </p>
-            <ul className="flex flex-wrap gap-2" role="listbox" aria-label="Selected collections (drag to reorder)">
+            <ul className="flex flex-wrap gap-2" role="listbox" aria-multiselectable="true" aria-label="Selected collections (drag to reorder)">
               {collectionSelection.map((s) => {
                 const col = collections.find((c) => c.id === s.id);
                 return (
@@ -863,6 +863,7 @@ function CollectionReorderChip({
     <li
       role="option"
       aria-selected
+      aria-label={name}
       draggable
       onDragStart={(e) => e.dataTransfer.setData("text/plain", id)}
       onDragOver={(e) => e.preventDefault()}

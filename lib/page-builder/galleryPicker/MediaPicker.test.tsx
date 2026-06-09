@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MediaPicker } from "./MediaPicker";
 import type { MediaPickerCollectionSelection } from "./MediaPicker";
 import { __clearPickerDataCache } from "./usePickerData";
@@ -214,11 +214,13 @@ describe("MediaPicker", () => {
           onOpenChange={vi.fn()}
         />
       );
-      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      // Wait for the collection grid to render (scoped to the "Collections" listbox, not the reorder strip)
+      await waitFor(() => screen.getByRole("listbox", { name: /^collections$/i }));
+      const { getByRole: getInGrid } = within(screen.getByRole("listbox", { name: /^collections$/i }));
       // The selected tile reflects aria-selected=true
-      expect(screen.getByRole("option", { name: /weddings/i }).getAttribute("aria-selected")).toBe("true");
+      expect(getInGrid("option", { name: /weddings/i }).getAttribute("aria-selected")).toBe("true");
       // Unselected tile is still aria-selected=false
-      expect(screen.getByRole("option", { name: /portraits/i }).getAttribute("aria-selected")).toBe("false");
+      expect(getInGrid("option", { name: /portraits/i }).getAttribute("aria-selected")).toBe("false");
     });
 
     it("clicking a collection tile in collections mode does NOT navigate to a photos view", async () => {
@@ -279,6 +281,14 @@ describe("MediaPicker", () => {
       // Remove buttons must exist (at least one)
       const removeButtons = screen.getAllByRole("button", { name: /remove/i });
       expect(removeButtons.length).toBeGreaterThanOrEqual(1);
+      // a11y: reorder-strip listbox must be multi-selectable
+      const listbox = screen.getByRole("listbox", { name: /selected collections/i });
+      expect(listbox.getAttribute("aria-multiselectable")).toBe("true");
+      // a11y: each reorder chip's option accessible name must be the collection name (Fix 1)
+      const chipOptions = Array.from(listbox.querySelectorAll('[role="option"]'));
+      const chipNames = chipOptions.map((el) => el.getAttribute("aria-label"));
+      expect(chipNames).toContain("Weddings");
+      expect(chipNames).toContain("Portraits");
     });
 
     it("shows a Done button and no navigation back button in collections mode", async () => {
