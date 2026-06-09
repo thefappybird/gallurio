@@ -8,6 +8,27 @@ import type { PuckData, PuckBlockEntry } from "@/lib/page-builder/types";
 /** Block types whose `images[]` cache is reconciled against live GalleryItems. */
 const GALLERY_BLOCK_TYPES = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
 
+/** Block types whose `backgroundImages[]` cache is reconciled (Container + presets). */
+const BG_BLOCK_TYPES = new Set([
+  "Container",
+  "HeroPreset",
+  "AboutPreset",
+  "ServicesPreset",
+  "CtaPreset",
+  "ContactPreset",
+  "GalleryGridPreset",
+  "GalleryMasonryPreset",
+  "FeaturedWorkPreset",
+]);
+
+/** Which prop keys on a block hold a baked GalleryImage[] to reconcile. */
+function imageKeysOf(type: string): string[] {
+  const keys: string[] = [];
+  if (GALLERY_BLOCK_TYPES.has(type)) keys.push("images");
+  if (BG_BLOCK_TYPES.has(type)) keys.push("backgroundImages");
+  return keys;
+}
+
 type StoredImage = { id?: unknown; publicId?: unknown; alt?: unknown };
 
 /** All block arrays in a Puck data tree: root content + every zone/slot array. */
@@ -23,8 +44,8 @@ function blockArrays(data: PuckData): PuckBlockEntry[][] {
   return arrays;
 }
 
-function storedImagesOf(block: PuckBlockEntry): StoredImage[] {
-  const imgs = block.props?.images;
+function storedImagesAt(block: PuckBlockEntry, key: string): StoredImage[] {
+  const imgs = block.props?.[key];
   return Array.isArray(imgs) ? (imgs as StoredImage[]) : [];
 }
 
@@ -33,7 +54,8 @@ function validId(id: unknown): id is string {
 }
 
 /**
- * Rebuilds every gallery block's `images[]` from the live GalleryItem documents.
+ * Rebuilds every gallery block's `images[]` and every Container/preset block's
+ * `backgroundImages[]` from the live GalleryItem documents.
  *
  * - ONE batched query: `GalleryItem.find({ workspaceId, _id: { $in: allIds } })`
  *   (no N+1). `workspaceId` comes from the CALLER's session — never Puck props —
@@ -41,7 +63,7 @@ function validId(id: unknown): id is string {
  * - For each stored id still present: emit `{ id, publicId: cloudinaryPublicId,
  *   alt: altText || caption || "" }`. Refreshes a changed publicId/alt.
  * - Drops ids whose item no longer exists. Preserves the stored order. NEVER adds.
- * - No-op (and no DB call) when the tree has no gallery blocks.
+ * - No-op (and no DB call) when the tree has no gallery or background-image blocks.
  *
  * Pure transform over the fetched map — returns a NEW data object; does not mutate
  * the input.
@@ -51,19 +73,22 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
 
   const arrays = blockArrays(data);
 
-  // 1. Collect every gallery block's image ids across all blocks + zones.
+  // 1. Collect every reconciled image id across all blocks + zones (images + backgroundImages).
   const allIds = new Set<string>();
-  let hasGalleryBlock = false;
+  let hasImageBlock = false;
   for (const arr of arrays) {
     for (const block of arr) {
-      if (!GALLERY_BLOCK_TYPES.has(block.type)) continue;
-      hasGalleryBlock = true;
-      for (const img of storedImagesOf(block)) {
-        if (validId(img.id)) allIds.add(img.id);
+      const keys = imageKeysOf(block.type);
+      if (keys.length === 0) continue;
+      hasImageBlock = true;
+      for (const key of keys) {
+        for (const img of storedImagesAt(block, key)) {
+          if (validId(img.id)) allIds.add(img.id);
+        }
       }
     }
   }
-  if (!hasGalleryBlock) return data;
+  if (!hasImageBlock) return data;
 
   // 2. ONE batched, tenant-scoped query.
   const map = new Map<string, { publicId: string; alt: string }>();
@@ -80,17 +105,22 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
     }
   }
 
-  // 3. Rebuild each gallery block's images[], preserving order, pruning misses.
+  // 3. Rebuild each block's image arrays, preserving order, pruning misses.
   const rebuildBlock = (block: PuckBlockEntry): PuckBlockEntry => {
-    if (!GALLERY_BLOCK_TYPES.has(block.type)) return block;
-    const next: Array<{ id: string; publicId: string; alt: string }> = [];
-    for (const img of storedImagesOf(block)) {
-      if (!validId(img.id)) continue;
-      const live = map.get(img.id);
-      if (!live) continue; // pruned (missing or foreign workspace)
-      next.push({ id: img.id, publicId: live.publicId, alt: live.alt });
+    const keys = imageKeysOf(block.type);
+    if (keys.length === 0) return block;
+    const nextProps = { ...block.props } as Record<string, unknown>;
+    for (const key of keys) {
+      const next: Array<{ id: string; publicId: string; alt: string }> = [];
+      for (const img of storedImagesAt(block, key)) {
+        if (!validId(img.id)) continue;
+        const live = map.get(img.id);
+        if (!live) continue; // pruned (missing or foreign workspace)
+        next.push({ id: img.id, publicId: live.publicId, alt: live.alt });
+      }
+      nextProps[key] = next;
     }
-    return { ...block, props: { ...block.props, images: next } };
+    return { ...block, props: nextProps };
   };
 
   const nextData: PuckData = {

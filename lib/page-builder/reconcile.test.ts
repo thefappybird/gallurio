@@ -142,4 +142,70 @@ describe("reconcileGalleryImages", () => {
     const out = await reconcileGalleryImages(ws.toString(), data);
     expect(out.content[0].props.images).toEqual([]);
   });
+
+  function containerBlock(
+    type: string,
+    backgroundImages: Array<{ id: string; publicId: string; alt?: string }>
+  ): { type: string; props: Record<string, unknown> } {
+    return { type, props: { id: "c1", backgroundImages, overlayOpacity: 0, content: [] } };
+  }
+
+  it("refreshes a Container's backgroundImages like a gallery block", async () => {
+    const ws = new Types.ObjectId();
+    const it = await makeItem(ws, 5);
+    const data: PuckData = {
+      root: {},
+      content: [containerBlock("Container", [{ id: String(it._id), publicId: "STALE", alt: "stale" }])],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    expect(out.content[0].props.backgroundImages).toEqual([
+      { id: String(it._id), publicId: `ws/${ws}/item5`, alt: "Alt 5" },
+    ]);
+  });
+
+  it("prunes a foreign-workspace background image (tenant isolation)", async () => {
+    const wsA = new Types.ObjectId();
+    const wsB = new Types.ObjectId();
+    const foreign = await makeItem(wsB, 0);
+    const mine = await makeItem(wsA, 1);
+    const data: PuckData = {
+      root: {},
+      content: [containerBlock("HeroPreset", [
+        { id: String(foreign._id), publicId: "x" },
+        { id: String(mine._id), publicId: "x" },
+      ])],
+    };
+    const out = await reconcileGalleryImages(wsA.toString(), data);
+    const ids = (out.content[0].props.backgroundImages as Array<{ id: string }>).map((i) => i.id);
+    expect(ids).toEqual([String(mine._id)]);
+  });
+
+  it("collects gallery images AND container backgrounds in a SINGLE query", async () => {
+    const ws = new Types.ObjectId();
+    const a = await makeItem(ws, 0);
+    const b = await makeItem(ws, 1);
+    const findSpy = vi.spyOn(GalleryItem, "find");
+    const data: PuckData = {
+      root: {},
+      content: [
+        gridBlock([{ id: String(a._id), publicId: "x" }]),
+        containerBlock("Container", [{ id: String(b._id), publicId: "x" }]),
+      ],
+    };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    expect(findSpy).toHaveBeenCalledTimes(1);
+    expect((out.content[0].props.images as unknown[]).length).toBe(1);
+    expect((out.content[1].props.backgroundImages as unknown[]).length).toBe(1);
+    findSpy.mockRestore();
+  });
+
+  it("is still a no-op (no query) for a Container with an empty backgroundImages", async () => {
+    const ws = new Types.ObjectId();
+    const findSpy = vi.spyOn(GalleryItem, "find");
+    const data: PuckData = { root: {}, content: [containerBlock("Container", [])] };
+    const out = await reconcileGalleryImages(ws.toString(), data);
+    expect(findSpy).not.toHaveBeenCalled();
+    expect(out.content[0].props.backgroundImages).toEqual([]);
+    findSpy.mockRestore();
+  });
 });
