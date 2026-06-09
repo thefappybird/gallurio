@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "./gallery";
+import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest, listPublicCollectionItemsPage } from "./gallery";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -211,6 +211,42 @@ describe("listCollectionNewest", () => {
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
     expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+  });
+});
+
+describe("listPublicCollectionItemsPage", () => {
+  it("returns { id, publicId, alt } paginated by (order,_id) for a PUBLIC collection", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
+    await GalleryItem.insertMany(
+      Array.from({ length: 3 }, (_, i) => ({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: `p${i}`, url: "u", altText: i === 0 ? "Alt0" : "", caption: i === 0 ? "" : `Cap${i}`, order: i }))
+    );
+    const p1 = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2 });
+    expect(p1.items.map((i) => i.publicId)).toEqual(["p0", "p1"]);
+    expect(p1.items[0]).toEqual({ id: expect.any(String), publicId: "p0", alt: "Alt0" });
+    expect(p1.items[1].alt).toBe("Cap1"); // alt falls back to caption
+    expect(p1.nextCursor).toBeTruthy();
+    const p2 = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2, cursor: p1.nextCursor });
+    expect(p2.items.map((i) => i.publicId)).toEqual(["p2"]);
+    expect(p2.nextCursor).toBeNull();
+  });
+  it("returns empty for a PRIVATE collection", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: false });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
+    expect(page).toEqual({ items: [], nextCursor: null });
+  });
+  it("tenant isolation: foreign workspace id yields empty", async () => {
+    const wsA = new Types.ObjectId(); const wsB = new Types.ObjectId();
+    const colB = await GalleryCollection.create({ workspaceId: wsB, name: "B", slug: "b", isPublic: true });
+    await GalleryItem.create({ workspaceId: wsB, collectionId: colB._id, cloudinaryPublicId: "p", url: "u", order: 0 });
+    const page = await listPublicCollectionItemsPage({ workspaceId: wsA.toString(), collectionId: colB._id.toString() });
+    expect(page).toEqual({ items: [], nextCursor: null });
+  });
+  it("invalid collectionId yields empty (no throw)", async () => {
+    const page = await listPublicCollectionItemsPage({ workspaceId: new Types.ObjectId().toString(), collectionId: "not-an-id" });
+    expect(page).toEqual({ items: [], nextCursor: null });
   });
 });
 

@@ -338,6 +338,69 @@ export async function listAllItemsPage(opts: {
   return { items: page.map(toPickerItem), nextCursor };
 }
 
+// ---------------------------------------------------------------------------
+// Public read helpers — gated on GalleryCollection.isPublic
+// ---------------------------------------------------------------------------
+
+export type PublicCollectionImage = { id: string; publicId: string; alt: string };
+
+/**
+ * One page of a PUBLIC collection's images for the live portfolio page.
+ * Gates on the collection's `isPublic` flag (tenant-scoped). Returns
+ * `{ id, publicId, alt }` where alt = altText || caption || "".
+ * Foreign workspace, private, or missing collection → empty page (never throws).
+ */
+export async function listPublicCollectionItemsPage(opts: {
+  workspaceId: string;
+  collectionId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null }> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+
+  await connectDB();
+
+  const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId, isPublic: true })
+    .select({ _id: 1 })
+    .lean();
+  if (!col) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  const filter: Record<string, unknown> = { workspaceId, collectionId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const order = Number(c.sortValue);
+      if (Number.isFinite(order)) {
+        filter.$or = [
+          { order: { $gt: order } },
+          { order, _id: { $gt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ order: 1, _id: 1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, altText: 1, caption: 1, order: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
+  return {
+    items: page.map((d) => ({
+      id: String(d._id),
+      publicId: (d.cloudinaryPublicId as string) ?? "",
+      alt: (d.altText as string) || (d.caption as string) || "",
+    })),
+    nextCursor,
+  };
+}
+
 /**
  * The newest `limit` items of one collection, newest-first — backs the
  * "Select all in collection" bulk action (owner wants the latest N). Tenant-safe;
