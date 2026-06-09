@@ -1,60 +1,42 @@
 /**
- * GalleryGridBlock — server component that queries gallery items for a given
- * collection and renders a responsive thumbnail grid.
+ * GalleryGridBlock — ISOMORPHIC (client-safe) responsive thumbnail grid.
  *
- * Multi-tenant safety:
- * - `workspaceId` is NEVER taken from Puck props. It is always derived from
- *   the server render context set by the renderer page before <Render>.
- * - The query always filters by { workspaceId, collectionId } together, so
- *   a Puck prop that supplies a collectionId from another workspace returns 0
- *   items (the workspaceId mismatch eliminates the rows).
+ * Renders purely from its own `images[]` prop (baked by the editor's multi-image
+ * picker and refreshed by reconcileGalleryImages on editor-load / publish). No DB
+ * access, no server context, no server-only Cloudinary import — so the SAME
+ * component renders in the editor canvas AND on the public page (WYSIWYG,
+ * fetch-free).
  *
- * Renders an empty-state placeholder when:
- * - `collectionId` is empty / missing from props
- * - no GalleryItems match { workspaceId, collectionId }
- * - the server context workspaceId is not set (should not happen in production
- *   but handled gracefully to avoid hard crashes during previews)
+ * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
-import { connectDB } from "@/lib/db/mongoose";
-import { GalleryItem } from "@/lib/db/models/GalleryItem";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
-import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
 
+export type GalleryImage = { id: string; publicId: string; alt?: string };
+
 export type GalleryGridProps = {
   _style?: BlockStyle;
-  collectionId: string;
+  images: GalleryImage[];
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
-  maxItems: number;
 };
-
-// ---------------------------------------------------------------------------
-// Default props
-// ---------------------------------------------------------------------------
 
 export const galleryGridDefaultProps: GalleryGridProps = {
-  collectionId: "",
+  images: [],
   columns: 3,
   gap: "normal",
-  maxItems: 12,
 };
-
-// ---------------------------------------------------------------------------
-// Gap → pixel value
-// ---------------------------------------------------------------------------
 
 const GAP_MAP: Record<GalleryGridProps["gap"], string> = {
   tight: "4px",
@@ -62,89 +44,19 @@ const GAP_MAP: Record<GalleryGridProps["gap"], string> = {
   loose: "16px",
 };
 
-// ---------------------------------------------------------------------------
-// Thumbnail size by columns
-// ---------------------------------------------------------------------------
-
 const THUMB_WIDTH_MAP: Record<GalleryGridProps["columns"], number> = {
   2: 800,
   3: 600,
   4: 400,
 };
 
-// ---------------------------------------------------------------------------
-// Lean item shape
-// ---------------------------------------------------------------------------
-
-type LeanGalleryItem = {
-  _id: Types.ObjectId;
-  cloudinaryPublicId: string;
-  url: string;
-  caption: string;
-  altText: string;
-  order: number;
-  width: number | null;
-  height: number | null;
-};
-
-// ---------------------------------------------------------------------------
-// Component (async server component)
-// ---------------------------------------------------------------------------
-
-export async function GalleryGridBlock({
-  _style,
-  collectionId,
-  columns,
-  gap,
-  maxItems,
-  puck,
-}: GalleryGridProps & { puck?: BlockPuck }) {
+export function GalleryGridBlock({ _style, images, columns, gap }: GalleryGridProps) {
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
-  const cappedMax = Math.min(Math.max(1, maxItems), 100);
+  const list = Array.isArray(images) ? images : [];
 
-  // Guard: no collection specified
-  if (!collectionId || !collectionId.trim()) {
-    return <GalleryEmptyState message="No collection selected." />;
-  }
-
-  // Guard: no workspace context (preview / test without context)
-  const workspace = getRenderWorkspaceFrom(puck);
-  if (!workspace) {
-    return <GalleryEmptyState message="Gallery not available." />;
-  }
-
-  const workspaceId = String(workspace._id);
-
-  // Guard: workspace ID must be a non-empty string (e.g. not "" from a test fixture
-  // or an isolated preview context without a real workspace).
-  if (!workspaceId) {
-    return <GalleryEmptyState message="Gallery not available." />;
-  }
-
-  // Guard: collectionId must be a valid ObjectId — a malformed string is a
-  // configuration error, not a DB outage; render the empty state rather than
-  // letting Mongoose throw a CastError that falls into the DB-outage catch.
-  if (!Types.ObjectId.isValid(collectionId)) {
-    return <GalleryEmptyState message="No collection selected." />;
-  }
-
-  let items: LeanGalleryItem[] = [];
-
-  try {
-    await connectDB();
-    items = (await GalleryItem.find({ workspaceId, collectionId })
-      .sort({ order: 1, _id: 1 })
-      .limit(cappedMax)
-      .lean()) as unknown as LeanGalleryItem[];
-  } catch (err) {
-    console.error("GalleryGridBlock query failed", err);
-    // DB unavailable during SSG or in isolated preview — degrade gracefully
-    return <GalleryEmptyState message="Gallery temporarily unavailable." />;
-  }
-
-  if (items.length === 0) {
-    return <GalleryEmptyState message="No photos in this collection yet." />;
+  if (list.length === 0) {
+    return <GalleryEmptyState message="No photos selected yet." />;
   }
 
   return (
@@ -158,12 +70,7 @@ export async function GalleryGridBlock({
       }}
       {...resolveBlockAttrs(_style)}
     >
-      <div
-        style={{
-          maxWidth: "80rem",
-          margin: "0 auto",
-        }}
-      >
+      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
         <div
           style={{
             display: "grid",
@@ -171,31 +78,22 @@ export async function GalleryGridBlock({
             gap: gapValue,
           }}
         >
-          {items.map((item) => {
-            const src =
-              cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-                width: thumbWidth,
-                height: thumbWidth,
-                crop: "fill",
-              }) || item.url;
-            const alt = item.altText || item.caption || "";
-
+          {list.map((img) => {
+            const src = cloudinaryImageUrl(img.publicId, {
+              width: thumbWidth,
+              height: thumbWidth,
+              crop: "fill",
+            });
+            // Skip a blank publicId / unset cloud name rather than emit a broken <img src="">.
+            if (!src) return null;
             return (
-              <figure
-                key={String(item._id)}
-                style={{ margin: 0, padding: 0 }}
-              >
+              <figure key={img.id} style={{ margin: 0, padding: 0 }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={src}
-                  alt={alt}
+                  alt={img.alt ?? ""}
                   loading="lazy"
-                  style={{
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
+                  style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
                 />
               </figure>
             );
@@ -205,10 +103,6 @@ export async function GalleryGridBlock({
     </section>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Empty state
-// ---------------------------------------------------------------------------
 
 function GalleryEmptyState({ message }: { message: string }) {
   return (
@@ -238,19 +132,14 @@ function GalleryEmptyState({ message }: { message: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Puck registration
-// ---------------------------------------------------------------------------
-
 export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
   defaultProps: galleryGridDefaultProps,
+  // `images` is intentionally absent from the sidebar fields — the editor drives
+  // it via StyleToolkitField (Task 7). Production <Render> reads images straight
+  // from saved props; no sidebar field is needed there either.
   fields: {
     _style: productionStyleField,
-    collectionId: {
-      type: "text",
-      label: "Collection ID",
-    },
     columns: {
       type: "select",
       label: "Columns",
@@ -269,16 +158,6 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
         { label: "Loose (16px)", value: "loose" },
       ],
     },
-    maxItems: {
-      type: "number",
-      label: "Max items (1–100)",
-      min: 1,
-      max: 100,
-    } as Field<number>,
-  },
-  // GalleryGridBlock is an async server component — Puck's PuckComponent type
-  // expects synchronous JSX.Element, so we cast here. The RSC renderer handles
-  // async components natively; this cast is safe in Next.js RSC context.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  render: GalleryGridBlock as any,
+  } as unknown as Fields<GalleryGridProps>,
+  render: GalleryGridBlock,
 };
