@@ -24,6 +24,7 @@ import {
   publishPortfolioAction,
   updateBrandKitAction,
   updateContactConfigAction,
+  updateCollectionsPopupConfigAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
 } from "./_actions";
@@ -232,6 +233,23 @@ describe("dismissPortfolioGuideAction", () => {
     expect(res).toEqual({ error: "owner_only" });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.guideDismissedAt ?? null).toBeNull();
+  });
+});
+
+describe("updateCollectionsPopupConfigAction", () => {
+  it("owner-only (403/error for staff)", async () => {
+    mockCtx.role = "staff";
+    expect(await updateCollectionsPopupConfigAction({})).toEqual({ error: "owner_only" });
+  });
+  it("persists to publicPage.collectionsPopup + revalidates", async () => {
+    const res = await updateCollectionsPopupConfigAction({ borderWidth: 2, radius: "subtle" });
+    expect(res).toMatchObject({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.collectionsPopup).toMatchObject({ borderWidth: 2, radius: "subtle" });
+    expect(revalidatePath).toHaveBeenCalledWith("/w/studio-aurora");
+  });
+  it("rejects invalid input", async () => {
+    expect(await updateCollectionsPopupConfigAction({ borderWidth: 999 })).toHaveProperty("error");
   });
 });
 

@@ -9,6 +9,7 @@ import {
   brandKitSchema,
   portfolioContactConfigSchema,
   portfolioHeaderConfigSchema,
+  portfolioCollectionsPopupConfigSchema,
 } from "@/lib/validators/publicPage";
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
@@ -171,6 +172,28 @@ export async function updateHeaderConfigAction(
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
+  return { ok: true };
+}
+
+/** Persist the collections popup style config. Owner-only. */
+export async function updateCollectionsPopupConfigAction(
+  input: unknown
+): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = portfolioCollectionsPopupConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? "invalid_collections_popup" };
+  }
+
+  await connectDB();
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    { $set: { "publicPage.collectionsPopup": parsed.data } }
+  );
+
+  revalidatePath(`/w/${ctx.workspace.slug}`);
   return { ok: true };
 }
 
