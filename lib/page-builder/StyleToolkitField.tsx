@@ -43,8 +43,8 @@ import {
 import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
-import { SingleImageControl } from "./galleryPicker/MediaField";
-import { CollectionPicker } from "./galleryPicker/CollectionPicker";
+import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
+import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import type { FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
 import {
@@ -343,15 +343,16 @@ function ContentInputs({
   }
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
     // Only the carousel renders on-page text — grid/masonry are images only, so
-    // they expose just the collection picker (heading/description/footer removed).
+    // they expose just the Photos (multi-image) picker (heading/description only on carousel).
     const isCarousel = type === "GalleryCarousel";
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Collection</span>
-          <CollectionPicker
-            value={(props.collectionId as string) ?? ""}
-            onChange={(v) => setProp("collectionId", v)}
+          <span className="text-xs text-muted-foreground">Photos</span>
+          <MultiImageControl
+            value={(props.images as MediaPickerSelection[]) ?? []}
+            onChange={(v) => setProp("images", v)}
+            max={60}
           />
         </div>
         {isCarousel && (
@@ -867,7 +868,7 @@ function GalleryLayoutControls({
             <span className="text-xs text-muted-foreground">Floating header — horizontal</span>
             <div className="flex items-center gap-1.5">
               {CAROUSEL_FLOAT_X_OPTIONS.map(({ value, label }) => {
-                const current = (p.floatX as string) ?? (p.overlayAlign as string) ?? "center";
+                const current = (p.floatX as string) ?? "center";
                 return (
                   <button
                     key={value}
@@ -931,14 +932,6 @@ function GalleryLayoutControls({
             </div>
           </div>
         )}
-        <NumberInputRow
-          label="Max items"
-          value={p.maxItems as number | undefined}
-          min={1}
-          max={100}
-          suffix=""
-          onChange={(v) => setProp("maxItems", v)}
-        />
       </div>
     );
   }
