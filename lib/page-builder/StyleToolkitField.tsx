@@ -65,6 +65,9 @@ import {
   type AnimationType,
   type HoverEffect,
   type SelfAlign,
+  type TextAlign,
+  type HighlightShape,
+  type HighlightSize,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 
@@ -249,6 +252,18 @@ const BG_SPEED_OPTIONS = [
   { value: "slow", label: "Slow (7s)" },
   { value: "medium", label: "Medium (5s)" },
   { value: "fast", label: "Fast (3s)" },
+] as const;
+
+const HIGHLIGHT_SHAPE_OPTIONS = [
+  { value: "sharp", label: "Sharp" },
+  { value: "subtle", label: "Subtle" },
+  { value: "rounded", label: "Rounded" },
+] as const;
+
+const HIGHLIGHT_SIZE_OPTIONS = [
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
 ] as const;
 
 export function ContainerBackgroundControls({
@@ -537,6 +552,58 @@ function ContentTabBody({
 // GalleryHeader by GalleryCarouselBlock.
 // ---------------------------------------------------------------------------
 
+function Drawer({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {title}
+        {open ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
+      </button>
+      {open && <div className="flex flex-col gap-3 border-t border-border p-3">{children}</div>}
+    </div>
+  );
+}
+
+function ChoiceRow<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T | undefined;
+  options: readonly { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {options.map(({ value: v, label: l }) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={value === v}
+            onClick={() => onChange(v)}
+            className={cn(
+              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === v && "bg-foreground text-background hover:bg-foreground"
+            )}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HighlightToggle({
   label,
   on,
@@ -571,7 +638,139 @@ function HighlightToggle({
   );
 }
 
-export function CarouselTextControls({
+function CarouselTargetControls({
+  target,
+  s,
+  set,
+}: {
+  target: "heading" | "description";
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+}) {
+  const isHeading = target === "heading";
+  const bold = isHeading ? s.headingBold : s.descriptionBold;
+  const italic = isHeading ? s.headingItalic : s.descriptionItalic;
+  const underline = isHeading ? s.headingUnderline : s.descriptionUnderline;
+  const align = isHeading ? s.headingAlign : s.descriptionAlign;
+  const colorToken = isHeading ? s.headingColorToken : s.descriptionColorToken;
+  const fontFamily = isHeading ? s.headingFontFamily : s.descriptionFontFamily;
+  const highlight = isHeading ? s.headingHighlight : s.descriptionHighlight;
+  const highlightToken = isHeading ? s.headingHighlightToken : s.descriptionHighlightToken;
+  const highlightShape = isHeading ? s.headingHighlightShape : s.descriptionHighlightShape;
+  const highlightSize = isHeading ? s.headingHighlightSize : s.descriptionHighlightSize;
+
+  const setAlign = (a: TextAlign) => {
+    const next = align === a ? undefined : a;
+    set(isHeading ? { headingAlign: next } : { descriptionAlign: next });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ToolbarToggle
+          active={!!bold}
+          title="Bold"
+          Icon={Bold}
+          onClick={() => set(isHeading ? { headingBold: !bold } : { descriptionBold: !bold })}
+        />
+        <ToolbarToggle
+          active={!!italic}
+          title="Italic"
+          Icon={Italic}
+          onClick={() => set(isHeading ? { headingItalic: !italic } : { descriptionItalic: !italic })}
+        />
+        <ToolbarToggle
+          active={!!underline}
+          title="Underline"
+          Icon={Underline}
+          onClick={() => set(isHeading ? { headingUnderline: !underline } : { descriptionUnderline: !underline })}
+        />
+        <ToolbarToggle active={align === "left"} title="Align left" Icon={AlignLeft} onClick={() => setAlign("left")} />
+        <ToolbarToggle active={align === "center"} title="Align center" Icon={AlignCenter} onClick={() => setAlign("center")} />
+        <ToolbarToggle active={align === "right"} title="Align right" Icon={AlignRight} onClick={() => setAlign("right")} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="text-xs text-muted-foreground">Text color</span>
+        </div>
+        <ColorSwatchRow
+          value={colorToken}
+          onChange={(t) => set(isHeading ? { headingColorToken: t } : { descriptionColorToken: t })}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+        <div className="flex items-center gap-1">
+          <select
+            value={fontFamily ?? ""}
+            onChange={(e) => {
+              const f = e.target.value ? (e.target.value as PortfolioFontKey) : undefined;
+              set(isHeading ? { headingFontFamily: f } : { descriptionFontFamily: f });
+            }}
+            className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">Theme font</option>
+            {PORTFOLIO_FONT_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {PORTFOLIO_FONTS[key].label}
+              </option>
+            ))}
+          </select>
+          <ResetButton
+            onClick={() => set(isHeading ? { headingFontFamily: undefined } : { descriptionFontFamily: undefined })}
+            label="Font"
+          />
+        </div>
+      </div>
+
+      {isHeading ? (
+        <HeadingLevelButtons value={s.headingLevel} onChange={(v) => set({ headingLevel: v })} />
+      ) : (
+        <NumberInputRow
+          label="Font size"
+          value={s.descriptionFontSize}
+          min={STYLE_LIMITS.fontSize.min}
+          max={STYLE_LIMITS.fontSize.max}
+          onChange={(v) => set({ descriptionFontSize: v })}
+        />
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <HighlightToggle
+          label={isHeading ? "Heading highlight" : "Description highlight"}
+          on={!!highlight}
+          onToggle={() => set(isHeading ? { headingHighlight: !highlight } : { descriptionHighlight: !highlight })}
+        />
+        {highlight && (
+          <div className="flex flex-col gap-2">
+            <ColorSwatchRow
+              value={highlightToken}
+              onChange={(t) => set(isHeading ? { headingHighlightToken: t } : { descriptionHighlightToken: t })}
+              allowNone={false}
+            />
+            <ChoiceRow
+              label="Shape"
+              value={(highlightShape ?? "subtle") as HighlightShape}
+              options={HIGHLIGHT_SHAPE_OPTIONS}
+              onChange={(v) => set(isHeading ? { headingHighlightShape: v } : { descriptionHighlightShape: v })}
+            />
+            <ChoiceRow
+              label="Size"
+              value={(highlightSize ?? "md") as HighlightSize}
+              options={HIGHLIGHT_SIZE_OPTIONS}
+              onChange={(v) => set(isHeading ? { headingHighlightSize: v } : { descriptionHighlightSize: v })}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CarouselTextPadding({
   s,
   set,
 }: {
@@ -579,50 +778,10 @@ export function CarouselTextControls({
   set: (patch: Partial<BlockStyle>) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Text padding
-        </span>
-        <DimensionInput
-          label="Horizontal (X)"
-          value={s.textPaddingX}
-          onChange={(v) => set({ textPaddingX: v })}
-        />
-        <DimensionInput
-          label="Vertical (Y)"
-          value={s.textPaddingY}
-          onChange={(v) => set({ textPaddingY: v })}
-        />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <HighlightToggle
-          label="Heading highlight"
-          on={!!s.headingHighlight}
-          onToggle={() => set({ headingHighlight: !s.headingHighlight })}
-        />
-        {s.headingHighlight && (
-          <ColorSwatchRow
-            value={s.headingHighlightToken}
-            onChange={(t) => set({ headingHighlightToken: t })}
-            allowNone={false}
-          />
-        )}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <HighlightToggle
-          label="Description highlight"
-          on={!!s.descriptionHighlight}
-          onToggle={() => set({ descriptionHighlight: !s.descriptionHighlight })}
-        />
-        {s.descriptionHighlight && (
-          <ColorSwatchRow
-            value={s.descriptionHighlightToken}
-            onChange={(t) => set({ descriptionHighlightToken: t })}
-            allowNone={false}
-          />
-        )}
-      </div>
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Text padding</span>
+      <DimensionInput label="Horizontal (X)" value={s.textPaddingX} onChange={(v) => set({ textPaddingX: v })} />
+      <DimensionInput label="Vertical (Y)" value={s.textPaddingY} onChange={(v) => set({ textPaddingY: v })} />
     </div>
   );
 }
@@ -644,8 +803,9 @@ function DesignTab({
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
   const showPadding = FLEX_CONTAINER_BLOCKS.has(blockType);
-  // Image-only gallery blocks have no on-page text — hide typography controls.
-  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
+  const isCarousel = blockType === "GalleryCarousel";
+  // Image-only gallery blocks have no on-page text; the carousel uses per-target drawers.
+  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
 
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight
@@ -752,7 +912,16 @@ function DesignTab({
       </div>
       )}
 
-      {blockType === "GalleryCarousel" && <CarouselTextControls s={s} set={set} />}
+      {isCarousel && (
+        <div className="flex flex-col gap-2">
+          <Drawer title="Heading">
+            <CarouselTargetControls target="heading" s={s} set={set} />
+          </Drawer>
+          <Drawer title="Description">
+            <CarouselTargetControls target="description" s={s} set={set} />
+          </Drawer>
+        </div>
+      )}
 
       {/* Frame — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (
@@ -1163,12 +1332,18 @@ function LayoutTabBody({
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
 
+  const isCarousel = blockType === "GalleryCarousel";
   if (isGalleryLayout && p && setProp) {
     return (
       <div className="flex flex-col gap-4 p-3">
         <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
+        {isCarousel && <CarouselTextPadding s={s} set={set} />}
       </div>
     );
+  }
+  // Standalone (no Puck provider — tests): the carousel still exposes Text padding.
+  if (isGalleryLayout) {
+    return <div className="flex flex-col gap-4 p-3">{isCarousel && <CarouselTextPadding s={s} set={set} />}</div>;
   }
 
   // For text-only and button leaf blocks: position/size + spacing controls.
