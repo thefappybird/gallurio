@@ -30,7 +30,7 @@ const slot = (items: ReturnType<typeof child>[]): Slot => items as unknown as Sl
 const onDark = { textColorToken: "background" } as const;
 
 export const HERO_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 50,
   minHeight: "tall",
   alignX: "center",
@@ -44,7 +44,7 @@ export const HERO_PRESET: ContainerBlockProps = {
 };
 
 export const ABOUT_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -58,7 +58,7 @@ export const ABOUT_PRESET: ContainerBlockProps = {
 };
 
 export const CTA_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "medium",
   alignX: "center",
@@ -72,7 +72,7 @@ export const CTA_PRESET: ContainerBlockProps = {
 };
 
 export const SERVICES_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "center",
@@ -112,7 +112,7 @@ export const SERVICES_PRESET: ContainerBlockProps = {
 };
 
 export const CONTACT_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "center",
@@ -126,7 +126,7 @@ export const CONTACT_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_GRID_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -139,7 +139,7 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
 };
 
 export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -152,7 +152,7 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
 };
 
 export const FEATURED_WORK_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
