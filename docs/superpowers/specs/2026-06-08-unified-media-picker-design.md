@@ -170,10 +170,12 @@ photos".
 
 ## What this sub-project changes at call sites
 
-> **Amended (see spec #3):** the **container background** is NOT re-pointed here.
-> Spec #3 turns it into a **multi-image** field (`imagesField`), so to avoid a
-> single→multi flip it stays on `SingleImagePicker` until #3. The Image block is
-> #1's single-field (`imageField`) consumer.
+> **Amended (spec #3, implemented 2026-06-09):** the **container background** is
+> NOT a single-image consumer of this spec. Spec #3 replaced it with a
+> **multi-image** field — `backgroundImages: GalleryImage[]` driven by
+> `MultiImageControl` and reconciled by `reconcileGalleryImages` — so it never
+> went through `SingleImagePicker`/`imageField`. The Image block remains #1's
+> only single-field (`imageField`) consumer.
 
 - **Re-points (value-compatible, no migration):** the Image block's image moves
   from `SingleImagePicker` to `imageField`.

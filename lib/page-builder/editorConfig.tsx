@@ -14,10 +14,11 @@
  * Their defaultProps are imported directly to guarantee
  * parity.
  *
- * The 5 preset blocks (HeroPreset/AboutPreset/ServicesPreset/CtaPreset/
- * ContactPreset) are Container-based compositions. They render the REAL
- * ContainerBlock with editor-friendly container fields (style picker + image
- * picker). Their defaultProps come from SECTION_PRESETS.
+ * The 8 preset blocks (HeroPreset/AboutPreset/ServicesPreset/CtaPreset/
+ * ContactPreset/GalleryGridPreset/GalleryMasonryPreset/FeaturedWorkPreset) are
+ * Container-based compositions. They render the REAL ContainerBlock with
+ * editor-friendly container fields (style picker + background controls). Their
+ * defaultProps come from SECTION_PRESETS.
  *
  * Component `type` keys + field keys MUST match `puckConfig` exactly so data
  * round-trips. A test (editorConfig.test.ts) guards parity.
