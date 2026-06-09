@@ -2,6 +2,7 @@ export type PickerCollection = {
   id: string;
   name: string;
   coverUrl: string | null;
+  coverPublicId: string;
   itemCount: number;
 };
 

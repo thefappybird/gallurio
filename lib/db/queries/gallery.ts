@@ -79,6 +79,7 @@ export type PickerCollection = {
   id: string;
   name: string;
   coverUrl: string | null;
+  coverPublicId: string;
   itemCount: number;
 };
 
@@ -105,18 +106,23 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
 
   const collectionIds = collections.map((c) => c._id);
 
-  // Batch-fetch item counts and cover items in parallel to avoid N+1.
-  const [countsByColId, coversByColId] = await Promise.all([
+  // Separate collections with an explicit cover from those without.
+  const withCover = collections.filter((c) => Boolean(c.coverItemId));
+  const withoutCover = collections.filter((c) => !c.coverItemId);
+  const withoutCoverIds = withoutCover.map((c) => c._id);
+
+  // Batch-fetch item counts, explicit cover items, and newest-item fallbacks in parallel.
+  const [countsByColId, explicitCoverMap, newestByColId] = await Promise.all([
     GalleryItem.aggregate<{ _id: Types.ObjectId; count: number }>([
       { $match: { workspaceId: new Types.ObjectId(workspaceId), collectionId: { $in: collectionIds } } },
       { $group: { _id: "$collectionId", count: { $sum: 1 } } },
     ]),
     // For each collection that has a coverItemId, fetch the cloudinaryPublicId.
-    (async () => {
-      const coverIds = collections
+    (async (): Promise<Map<string, string>> => {
+      const coverIds = withCover
         .map((c) => c.coverItemId)
         .filter((id): id is Types.ObjectId => Boolean(id));
-      if (coverIds.length === 0) return new Map<string, string>();
+      if (coverIds.length === 0) return new Map();
       const coverItems = await GalleryItem.find({
         workspaceId,
         _id: { $in: coverIds },
@@ -125,20 +131,46 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
         .lean();
       return new Map(coverItems.map((ci) => [String(ci._id), ci.cloudinaryPublicId as string]));
     })(),
+    // For cover-less collections, fetch the newest item per collection in a single aggregate.
+    (async (): Promise<Map<string, string>> => {
+      if (withoutCoverIds.length === 0) return new Map();
+      const rows = await GalleryItem.aggregate<{ _id: Types.ObjectId; cloudinaryPublicId: string }>([
+        {
+          $match: {
+            workspaceId: new Types.ObjectId(workspaceId),
+            collectionId: { $in: withoutCoverIds },
+          },
+        },
+        { $sort: { createdAt: -1, _id: -1 } },
+        {
+          $group: {
+            _id: "$collectionId",
+            cloudinaryPublicId: { $first: "$cloudinaryPublicId" },
+          },
+        },
+      ]);
+      return new Map(rows.map((r) => [String(r._id), r.cloudinaryPublicId]));
+    })(),
   ]);
 
   const countMap = new Map(countsByColId.map((r) => [String(r._id), r.count]));
 
   return collections.map((c) => {
-    const coverId = c.coverItemId ? String(c.coverItemId) : null;
-    const coverPublicId = coverId ? (coversByColId as Map<string, string>).get(coverId) : undefined;
+    const colId = String(c._id);
+    let coverPublicId: string;
+    if (c.coverItemId) {
+      coverPublicId = explicitCoverMap.get(String(c.coverItemId)) ?? "";
+    } else {
+      coverPublicId = newestByColId.get(colId) ?? "";
+    }
     return {
-      id: String(c._id),
+      id: colId,
       name: c.name,
       coverUrl: coverPublicId
         ? cloudinaryThumbnailUrl(coverPublicId, { width: 240, height: 240 })
         : null,
-      itemCount: countMap.get(String(c._id)) ?? 0,
+      coverPublicId,
+      itemCount: countMap.get(colId) ?? 0,
     };
   });
 }

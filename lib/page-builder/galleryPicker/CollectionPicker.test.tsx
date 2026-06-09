@@ -45,7 +45,7 @@ describe("CollectionPicker", () => {
 
   it("renders collection cards from API data", async () => {
     mockFetch.mockResolvedValue(
-      makePickerData([{ id: "col1", name: "Wedding 2024", coverUrl: null, itemCount: 5 }])
+      makePickerData([{ id: "col1", name: "Wedding 2024", coverUrl: null, coverPublicId: "", itemCount: 5 }])
     );
     render(<CollectionPicker value="" onChange={vi.fn()} />);
     await waitFor(() => expect(screen.getByText("Wedding 2024")).toBeTruthy());
@@ -55,7 +55,7 @@ describe("CollectionPicker", () => {
   it("calls onChange when a collection card is clicked", async () => {
     const onChange = vi.fn();
     mockFetch.mockResolvedValue(
-      makePickerData([{ id: "col1", name: "My Collection", coverUrl: null, itemCount: 2 }])
+      makePickerData([{ id: "col1", name: "My Collection", coverUrl: null, coverPublicId: "", itemCount: 2 }])
     );
     render(<CollectionPicker value="" onChange={onChange} />);
     await waitFor(() => screen.getByText("My Collection"));
@@ -66,7 +66,7 @@ describe("CollectionPicker", () => {
   it("deselects when the same collection is clicked while selected", async () => {
     const onChange = vi.fn();
     mockFetch.mockResolvedValue(
-      makePickerData([{ id: "col1", name: "My Collection", coverUrl: null, itemCount: 2 }])
+      makePickerData([{ id: "col1", name: "My Collection", coverUrl: null, coverPublicId: "", itemCount: 2 }])
     );
     render(<CollectionPicker value="col1" onChange={onChange} />);
     await waitFor(() => screen.getByText("My Collection"));

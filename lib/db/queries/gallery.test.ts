@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds } from "./gallery";
+import { getItemsByIds, listCollectionsForPicker } from "./gallery";
 import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "./gallery";
 
 beforeAll(async () => {
@@ -212,5 +212,27 @@ describe("listCollectionNewest", () => {
     const colB = await makeCollection(wsB);
     await seedItems(wsB, colB._id, 3);
     expect(await listCollectionNewest({ workspaceId: wsA.toString(), collectionId: colB._id.toString(), limit: 10 })).toEqual([]);
+  });
+});
+
+describe("listCollectionsForPicker — coverPublicId", () => {
+  it("resolves coverPublicId from coverItemId, else newest item, else ''", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "Weddings", slug: "weddings", isPublic: true });
+    const a = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-a", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-b", url: "u", order: 1 });
+    // no explicit cover → falls back to an item's publicId (non-empty)
+    let cols = await listCollectionsForPicker(ws.toString());
+    expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBeTruthy();
+    // explicit cover → that item's publicId
+    await GalleryCollection.updateOne({ _id: col._id }, { $set: { coverItemId: a._id } });
+    cols = await listCollectionsForPicker(ws.toString());
+    expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBe("pid-a");
+  });
+  it("coverPublicId is '' for an empty collection", async () => {
+    const ws = new Types.ObjectId();
+    const col = await GalleryCollection.create({ workspaceId: ws, name: "Empty", slug: "empty", isPublic: true });
+    const cols = await listCollectionsForPicker(ws.toString());
+    expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBe("");
   });
 });
