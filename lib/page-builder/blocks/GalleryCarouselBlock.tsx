@@ -126,14 +126,14 @@ export function GalleryCarouselBlock({
             <GalleryHeader
               heading={heading}
               description={description}
-              align={_style?.align ?? horizontal}
+              align={horizontal}
               overlay
               headingStyle={{
-                colorToken: _style?.headingColorToken ?? _style?.textColorToken,
-                bold: _style?.headingBold ?? _style?.bold,
-                italic: _style?.headingItalic ?? _style?.italic,
-                underline: _style?.headingUnderline ?? _style?.underline,
+                bold: _style?.headingBold,
+                italic: _style?.headingItalic,
+                underline: _style?.headingUnderline,
                 align: _style?.headingAlign,
+                colorToken: _style?.headingColorToken,
                 fontFamily: _style?.headingFontFamily,
                 level: _style?.headingLevel,
                 highlight: _style?.headingHighlight,
@@ -142,11 +142,11 @@ export function GalleryCarouselBlock({
                 highlightSize: _style?.headingHighlightSize,
               }}
               descriptionStyle={{
-                colorToken: _style?.descriptionColorToken ?? _style?.textColorToken,
-                bold: _style?.descriptionBold ?? _style?.bold,
-                italic: _style?.descriptionItalic ?? _style?.italic,
-                underline: _style?.descriptionUnderline ?? _style?.underline,
+                bold: _style?.descriptionBold,
+                italic: _style?.descriptionItalic,
+                underline: _style?.descriptionUnderline,
                 align: _style?.descriptionAlign,
+                colorToken: _style?.descriptionColorToken,
                 fontFamily: _style?.descriptionFontFamily,
                 fontSize: _style?.descriptionFontSize,
                 highlight: _style?.descriptionHighlight,

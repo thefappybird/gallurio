@@ -50,23 +50,47 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
     expect(puckConfig.components.GalleryCarousel.defaultProps).toHaveProperty("images");
   });
 
-  it("threads the picked text color token into the heading", () => {
-    const { container } = render(
-      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textColorToken: "primary" } })
-    );
-    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("var(--pf-color-primary)");
-  });
-
-  it("renders a heading highlight band when _style.headingHighlight is on", () => {
+  it("threads heading and description colors independently", () => {
     const { container } = render(
       GalleryCarouselBlock({
         ...base,
         images: imgs(2),
         heading: "Hi",
-        _style: { headingHighlight: true, headingHighlightToken: "accent" },
+        description: "Yo",
+        _style: { headingColorToken: "primary", descriptionColorToken: "secondary" },
       })
     );
-    expect(container.querySelector("[data-gallery-overlay] h2 mark")).not.toBeNull();
+    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("var(--pf-color-primary)");
+    expect(container.querySelector("[data-gallery-overlay] p")!.getAttribute("style") ?? "").toContain("var(--pf-color-secondary)");
+  });
+
+  it("renders the heading at the chosen level", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { headingLevel: "h1" } })
+    );
+    expect(container.querySelector("h1")).not.toBeNull();
+  });
+
+  it("applies the description font size", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), description: "Yo", _style: { descriptionFontSize: 22 } })
+    );
+    expect(container.querySelector("[data-gallery-overlay] p")!.getAttribute("style") ?? "").toContain("font-size: 22px");
+  });
+
+  it("renders a heading highlight band with the chosen shape and size", () => {
+    const { container } = render(
+      GalleryCarouselBlock({
+        ...base,
+        images: imgs(2),
+        heading: "Hi",
+        _style: { headingHighlight: true, headingHighlightToken: "accent", headingHighlightShape: "rounded", headingHighlightSize: "lg" },
+      })
+    );
+    const mark = container.querySelector("[data-gallery-overlay] h2 mark");
+    expect(mark).not.toBeNull();
+    expect(mark!.getAttribute("style") ?? "").toContain("border-radius: 0.6em");
+    expect(mark!.getAttribute("style") ?? "").toContain("padding: 0.2em 0.45em");
   });
 
   it("applies Text Padding to the overlay layer (default 1.5rem, overridable)", () => {
@@ -77,15 +101,13 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
       GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
     );
     const style = custom.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "";
-    // Guard the Y-then-X axis order (padding: <vertical> <horizontal>).
     expect(style).toContain("padding: 3rem 2rem");
   });
 
-  it("lets _style.align override the float-derived heading alignment", () => {
+  it("lets _style.headingAlign override the float-derived heading alignment", () => {
     const { container } = render(
-      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", floatX: "center", _style: { align: "left" } })
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", floatX: "center", _style: { headingAlign: "left" } })
     );
-    const wrapper = container.querySelector("h2")!.parentElement!;
-    expect(wrapper.getAttribute("style") ?? "").toContain("text-align: left");
+    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("text-align: left");
   });
 });
