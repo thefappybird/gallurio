@@ -128,14 +128,32 @@ export function GalleryCarouselBlock({
               description={description}
               align={_style?.align ?? horizontal}
               overlay
-              textColorToken={_style?.textColorToken}
-              bold={_style?.bold}
-              italic={_style?.italic}
-              underline={_style?.underline}
-              headingHighlight={_style?.headingHighlight}
-              headingHighlightToken={_style?.headingHighlightToken}
-              descriptionHighlight={_style?.descriptionHighlight}
-              descriptionHighlightToken={_style?.descriptionHighlightToken}
+              headingStyle={{
+                colorToken: _style?.headingColorToken ?? _style?.textColorToken,
+                bold: _style?.headingBold ?? _style?.bold,
+                italic: _style?.headingItalic ?? _style?.italic,
+                underline: _style?.headingUnderline ?? _style?.underline,
+                align: _style?.headingAlign,
+                fontFamily: _style?.headingFontFamily,
+                level: _style?.headingLevel,
+                highlight: _style?.headingHighlight,
+                highlightToken: _style?.headingHighlightToken,
+                highlightShape: _style?.headingHighlightShape,
+                highlightSize: _style?.headingHighlightSize,
+              }}
+              descriptionStyle={{
+                colorToken: _style?.descriptionColorToken ?? _style?.textColorToken,
+                bold: _style?.descriptionBold ?? _style?.bold,
+                italic: _style?.descriptionItalic ?? _style?.italic,
+                underline: _style?.descriptionUnderline ?? _style?.underline,
+                align: _style?.descriptionAlign,
+                fontFamily: _style?.descriptionFontFamily,
+                fontSize: _style?.descriptionFontSize,
+                highlight: _style?.descriptionHighlight,
+                highlightToken: _style?.descriptionHighlightToken,
+                highlightShape: _style?.descriptionHighlightShape,
+                highlightSize: _style?.descriptionHighlightSize,
+              }}
             />
           </div>
         </div>
