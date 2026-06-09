@@ -111,4 +111,20 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(puckConfig.components).toHaveProperty("GalleryMasonryPreset");
     expect(puckConfig.components).toHaveProperty("FeaturedWorkPreset");
   });
+
+  it("Container exposes bgAnimation + bgSpeed and drops the legacy bg-publicId field", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.Container.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.Container.fields ?? {});
+    expect(editorFields).toContain("bgAnimation");
+    expect(editorFields).toContain("bgSpeed");
+    expect(editorFields).not.toContain("backgroundImagePublicId");
+    expect(prodFields).toContain("bgAnimation");
+    expect(prodFields).toContain("bgSpeed");
+    expect(prodFields).not.toContain("backgroundImagePublicId");
+  });
+
+  it("Hero preset inherits the container background animation fields", () => {
+    const heroFields = Object.keys(editorPuckConfig.components.HeroPreset.fields ?? {});
+    expect(heroFields).toEqual(expect.arrayContaining(["bgAnimation", "bgSpeed"]));
+  });
 });

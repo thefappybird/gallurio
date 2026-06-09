@@ -10,8 +10,8 @@
  *
  * The Video block and the manual primitives (Heading/Text/Image/Button/Spacer/
  * Divider/Columns/Container) are ISOMORPHIC (client-safe), so the editor renders
- * the REAL component and only swaps in editor-friendly fields (StyleToolkit /
- * SingleImagePicker). Their defaultProps are imported directly to guarantee
+ * the REAL component and only swaps in editor-friendly fields (StyleToolkit).
+ * Their defaultProps are imported directly to guarantee
  * parity.
  *
  * The 5 preset blocks (HeroPreset/AboutPreset/ServicesPreset/CtaPreset/
@@ -27,7 +27,6 @@
 
 import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
-import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { StyleToolkitField } from "./StyleToolkitField";
@@ -199,16 +198,6 @@ function richTextField(label: string, multiline = false): Field<string> {
   return { type: multiline ? "textarea" : "text", label } as Field<string>;
 }
 
-function imagePickerField(label: string): Field<string | undefined> {
-  return {
-    type: "custom",
-    label,
-    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-      <SingleImagePicker value={(value as string) ?? ""} onChange={onChange} />
-    ),
-  } as unknown as Field<string | undefined>;
-}
-
 /** Single-image Puck custom field backed by the unified MediaPicker. */
 function imageField(label: string): Field<string | undefined> {
   return {
@@ -239,14 +228,34 @@ function imagesField(label: string, opts: { max?: number } = {}): Field<MediaPic
 
 // ---------------------------------------------------------------------------
 // Container fields for the editor — same KEYS as containerFields in manualBlocks,
-// but `_style` uses the StyleToolkitField and `backgroundImagePublicId` uses the
-// SingleImagePicker so authors get visual pickers instead of raw text inputs.
+// but `_style` uses the StyleToolkitField. Animation/layout fields are hidden
+// here and managed by StyleToolkitField panels; resolveContainerFields strips them
+// from the sidebar so only `_style` + `content` are ever shown.
 // ---------------------------------------------------------------------------
 
-const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
+const editorContainerFields = {
   _style: styleField,
-  backgroundImagePublicId: { ...imagePickerField("Background image"), visible: false } as unknown as Field<string | undefined>,
-  overlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100, visible: false } as unknown as Field<number | undefined>,
+  bgAnimation: {
+    type: "select",
+    label: "Background animation",
+    visible: false,
+    options: [
+      { label: "Crossfade", value: "crossfade" },
+      { label: "Ken Burns", value: "kenburns" },
+      { label: "Slide", value: "slide" },
+    ],
+  } as unknown as Field<ContainerBlockProps["bgAnimation"]>,
+  bgSpeed: {
+    type: "select",
+    label: "Animation speed",
+    visible: false,
+    options: [
+      { label: "Slow (7s)", value: "slow" },
+      { label: "Medium (5s)", value: "medium" },
+      { label: "Fast (3s)", value: "fast" },
+    ],
+  } as unknown as Field<ContainerBlockProps["bgSpeed"]>,
+  overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100, visible: false } as unknown as Field<number | undefined>,
   minHeight: {
     type: "select",
     label: "Min height",
@@ -278,7 +287,7 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
     ],
   } as unknown as Field<ContainerAlignY | undefined>,
   content: { type: "slot" },
-};
+} as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 
 // ---------------------------------------------------------------------------
 // Preset block editor configs — real ContainerBlock render + editor fields +
@@ -289,7 +298,7 @@ const editorContainerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
 // The double cast is required because Puck's resolveFields return type is a strict
 // branded Fields<T> — we need to go through unknown to avoid the structural mismatch.
 function resolveContainerFields(_data: unknown, { fields }: { fields: Record<string, unknown> }) {
-  const { backgroundImagePublicId: _b, overlayOpacity: _o, alignX: _ax, alignY: _ay, minHeight: _mh, ...rest } = fields;
+  const { bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, alignX: _ax, alignY: _ay, minHeight: _mh, ...rest } = fields;
   return rest;
 }
 const resolveContainerFieldsTyped = resolveContainerFields as unknown as ComponentConfig<ContainerBlockProps>["resolveFields"];
