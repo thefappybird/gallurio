@@ -1020,7 +1020,22 @@
           "accentColor": "Accent",
           "backgroundColor": "Background",
           "foregroundColor": "Teksto"
-        }
+        },
+        "themes": "Mga tema",
+        "searchPlaceholder": "Maghanap ng tema",
+        "noThemesMatch": "Walang temang tumugma sa iyong paghahanap.",
+        "prevPage": "Mga nakaraang tema",
+        "nextPage": "Higit pang tema",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Ilapat ang tema: {name}",
+        "deleteTheme": "Burahin ang tema: {name}",
+        "saveCurrentAsTheme": "I-save ang kasalukuyan bilang tema",
+        "themeNamePlaceholder": "Pangalan ng tema",
+        "saveAction": "I-save",
+        "enterThemeName": "Maglagay ng pangalan para sa temang ito.",
+        "nameTooLong": "Ang pangalan ng tema ay dapat 60 character o mas kaunti.",
+        "saveThemeError": "Hindi ma-save ang tema. Pakisubukan muli.",
+        "themeLimitReached": "Naabot mo na ang maximum na {max} na naka-save na tema."
       },
       "editor": {
         "zone": {

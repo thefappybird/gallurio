@@ -1020,7 +1020,22 @@
           "accentColor": "Aksen",
           "backgroundColor": "Latar belakang",
           "foregroundColor": "Teks"
-        }
+        },
+        "themes": "Tema",
+        "searchPlaceholder": "Cari tema",
+        "noThemesMatch": "Tidak ada tema yang cocok dengan pencarian Anda.",
+        "prevPage": "Tema sebelumnya",
+        "nextPage": "Tema berikutnya",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Terapkan tema: {name}",
+        "deleteTheme": "Hapus tema: {name}",
+        "saveCurrentAsTheme": "Simpan saat ini sebagai tema",
+        "themeNamePlaceholder": "Nama tema",
+        "saveAction": "Simpan",
+        "enterThemeName": "Masukkan nama untuk tema ini.",
+        "nameTooLong": "Nama tema harus 60 karakter atau kurang.",
+        "saveThemeError": "Tidak dapat menyimpan tema. Silakan coba lagi.",
+        "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan."
       },
       "editor": {
         "zone": {

@@ -1020,7 +1020,22 @@
           "accentColor": "Accent",
           "backgroundColor": "Background",
           "foregroundColor": "Text"
-        }
+        },
+        "themes": "Themes",
+        "searchPlaceholder": "Search themes",
+        "noThemesMatch": "No themes match your search.",
+        "prevPage": "Previous themes",
+        "nextPage": "More themes",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Apply theme: {name}",
+        "deleteTheme": "Delete theme: {name}",
+        "saveCurrentAsTheme": "Save current as theme",
+        "themeNamePlaceholder": "Theme name",
+        "saveAction": "Save",
+        "enterThemeName": "Enter a name for this theme.",
+        "nameTooLong": "Theme name must be 60 characters or fewer.",
+        "saveThemeError": "Could not save theme. Please try again.",
+        "themeLimitReached": "You've reached the maximum of {max} saved themes."
       },
       "editor": {
         "zone": {
