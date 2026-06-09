@@ -25,6 +25,8 @@ import {
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
 import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import type { GalleryImage } from "./GalleryGridBlock";
 
 // Client-safe Cloudinary delivery URL. `c_limit` caps the image to a `w × 4w` box
 // under `c_limit` only the smaller dimension binds, so width is the effective cap
@@ -498,8 +500,11 @@ export type ContainerAlignY = "top" | "center" | "bottom";
 
 export type ContainerBlockProps = {
   _style?: BlockStyle;
-  backgroundImagePublicId?: string;
-  /** Dark scrim over the background image, 0–100. Only meaningful with an image. */
+  /** Baked background images (reconciled like gallery blocks). 0 -> none, 1 -> static, 2+ -> slideshow. */
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  /** Dark scrim over the background, 0-100. Only meaningful with >=1 image. */
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
   alignX?: ContainerAlignX;
@@ -508,7 +513,7 @@ export type ContainerBlockProps = {
 };
 
 export const containerDefaultProps: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -538,7 +543,9 @@ const ALIGN_TO_TEXT: Record<string, string | undefined> = {
 
 export function ContainerBlock({
   _style,
-  backgroundImagePublicId,
+  backgroundImages,
+  bgAnimation,
+  bgSpeed,
   overlayOpacity,
   minHeight,
   alignX,
@@ -546,7 +553,9 @@ export function ContainerBlock({
   content: Content,
 }: {
   _style?: BlockStyle;
-  backgroundImagePublicId?: string;
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
   alignX?: ContainerAlignX;
@@ -556,11 +565,14 @@ export function ContainerBlock({
   const ax = alignX ?? "left";
   const ay = alignY ?? "top";
   const s = _style ?? {};
-  const bgSrc = backgroundImagePublicId
-    ? cloudinaryUrl(backgroundImagePublicId, 2000)
-    : s.bgImagePublicId
-    ? cloudinaryUrl(s.bgImagePublicId, 2000)
-    : null;
+
+  // Resolve baked background images -> cover-layer URLs (same transform as the
+  // legacy single background). Drop any that don't resolve (blank publicId / no
+  // cloud name) so a 3-image set with one bad id still animates the good two.
+  const layers = (Array.isArray(backgroundImages) ? backgroundImages : [])
+    .map((img) => ({ id: img.id, src: cloudinaryUrl(img.publicId, 2000) }))
+    .filter((l): l is { id: string; src: string } => Boolean(l.src));
+  const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
 
   // Vertical positioning of the content block within the section height.
@@ -571,7 +583,7 @@ export function ContainerBlock({
   // Horizontal TEXT alignment inside child blocks. Children always stretch to full
   // width so that text-align, button justify, etc. have the full container width to
   // work within. _style.align (typography toolbar) takes highest priority, then
-  // _style.alignItems maps to text-align semantics (start→left, end→right).
+  // _style.alignItems maps to text-align semantics (start->left, end->right).
   const effectiveTextAlign = s.align
     ? s.align
     : s.alignItems
@@ -583,7 +595,7 @@ export function ContainerBlock({
 
   // Remove `gap` from the resolved style: it belongs on the inner content wrapper
   // (via effectiveGap), not on the outer section whose only flex children are the
-  // background image, the overlay div, and the slot — gaps between those are wrong.
+  // background layer, the overlay div, and the slot.
   const sectionStyle = resolveBlockStyle(_style);
   delete (sectionStyle as Record<string, unknown>).gap;
 
@@ -599,22 +611,34 @@ export function ContainerBlock({
         minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
         padding: "1.5rem",
         overflow: "hidden",
-        backgroundColor: bgSrc ? "var(--pf-color-fg)" : undefined,
+        backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {bgSrc && (
+      {/* Scrim renders FIRST but uses zIndex:1 so it paints ABOVE the background
+          layers (img/slideshow island, zIndex 0) while staying BELOW the content
+          slot (also zIndex:1, later in DOM order). Order is load-bearing — the
+          slideshow island root is itself a `section > div[aria-hidden]`, so the
+          scrim must precede it. Do not reorder. */}
+      {hasBg && overlayAlpha > 0 && (
+        <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
+      )}
+      {layers.length === 1 && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={bgSrc}
+          src={layers[0].src}
           alt=""
           aria-hidden="true"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         />
       )}
-      {bgSrc && overlayAlpha > 0 && (
-        <div aria-hidden="true" style={{ position: "absolute", inset: 0, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
+      {layers.length >= 2 && (
+        <ContainerBackgroundSlideshow
+          images={layers}
+          animation={bgAnimation ?? "crossfade"}
+          speed={bgSpeed ?? "medium"}
+        />
       )}
       {Content({
         style: {
@@ -634,10 +658,27 @@ export function ContainerBlock({
   );
 }
 
-export const containerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
+export const containerFields = {
   _style: productionStyleField,
-  backgroundImagePublicId: { type: "text", label: "Background image (Cloudinary public ID)" },
-  overlayOpacity: { type: "number", label: "Overlay opacity (0–100)", min: 0, max: 100 } as Field<number | undefined>,
+  bgAnimation: {
+    type: "select",
+    label: "Background animation",
+    options: [
+      { label: "Crossfade", value: "crossfade" },
+      { label: "Ken Burns", value: "kenburns" },
+      { label: "Slide", value: "slide" },
+    ],
+  } as Field<ContainerBlockProps["bgAnimation"]>,
+  bgSpeed: {
+    type: "select",
+    label: "Animation speed",
+    options: [
+      { label: "Slow (7s)", value: "slow" },
+      { label: "Medium (5s)", value: "medium" },
+      { label: "Fast (3s)", value: "fast" },
+    ],
+  } as Field<ContainerBlockProps["bgSpeed"]>,
+  overlayOpacity: { type: "number", label: "Overlay opacity (0-100)", min: 0, max: 100 } as Field<number | undefined>,
   minHeight: {
     type: "select",
     label: "Min height",
@@ -667,7 +708,7 @@ export const containerFields: ComponentConfig<ContainerBlockProps>["fields"] = {
     ],
   } as Field<ContainerAlignY | undefined>,
   content: { type: "slot" },
-};
+} as unknown as ComponentConfig<ContainerBlockProps>["fields"];
 
 export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
