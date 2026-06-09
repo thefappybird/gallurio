@@ -39,7 +39,7 @@ beforeEach(async () => {
 });
 
 describe("injectGalleryRefs", () => {
-  it("fills empty gallery collectionIds and seeds FeaturedWork itemIds as {id} rows", () => {
+  it("seeds FeaturedWork itemIds as {id} rows and does NOT touch gallery blocks", () => {
     const data: PortfolioPuckData = {
       home: {
         content: [
@@ -49,24 +49,30 @@ describe("injectGalleryRefs", () => {
         root: {},
       },
       gallery: {
-        content: [{ type: "GalleryGrid", props: { id: "g1", collectionId: "" } }],
+        content: [{ type: "GalleryGrid", props: { id: "g1", images: [] } }],
         root: {},
       },
     };
 
     injectGalleryRefs(data, "col-123", ["a", "b", "c", "d"]);
 
-    expect(data.gallery!.content[0].props.collectionId).toBe("col-123");
+    // FeaturedWork.itemIds filled with first 3 items
     expect(data.home!.content[0].props.itemIds).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
+    // Gallery blocks are NOT touched — no collectionId is injected; images stays []
+    expect(data.gallery!.content[0].props.images).toEqual([]);
+    expect(data.gallery!.content[0].props).not.toHaveProperty("collectionId");
   });
 
-  it("leaves an already-set collectionId untouched", () => {
+  it("does not add or modify any prop on gallery blocks", () => {
+    // Guard: injectGalleryRefs must never write collectionId, images, or any other
+    // prop onto gallery blocks, regardless of what itemIds are passed.
+    const galleryPropsBefore = { id: "g1", images: [] };
     const data: PortfolioPuckData = {
       home: null,
-      gallery: { content: [{ type: "GalleryGrid", props: { id: "g1", collectionId: "kept" } }], root: {} },
+      gallery: { content: [{ type: "GalleryGrid", props: { ...galleryPropsBefore } }], root: {} },
     };
-    injectGalleryRefs(data, "col-999", []);
-    expect(data.gallery!.content[0].props.collectionId).toBe("kept");
+    injectGalleryRefs(data, "col-999", ["x", "y"]);
+    expect(data.gallery!.content[0].props).toEqual(galleryPropsBefore);
   });
 });
 
@@ -95,7 +101,11 @@ describe("seedDefaultPortfolio", () => {
     expect(home.content).toHaveLength(1); // unchanged
   });
 
-  it("wires an existing featured-work collection's photos into the seed", async () => {
+  it("seeded gallery blocks have empty images[] even when a featured-work collection exists", async () => {
+    // The wedding-photographer template (photographer businessType) has no top-level
+    // FeaturedWork block — FeaturedWork lives inside preset slot children that
+    // injectGalleryRefs does not traverse. So even when a featured-work collection
+    // exists, gallery blocks are seeded empty; the owner populates them in the editor.
     await makeWorkspace();
     const col = await GalleryCollection.create({
       workspaceId,
@@ -110,9 +120,13 @@ describe("seedDefaultPortfolio", () => {
     ]);
 
     const seed = await seedDefaultPortfolio(workspaceId);
-    // A gallery block in the seeded data should now reference the real collection.
+    // Gallery blocks bake images[] directly — no collectionId pointer is injected.
     const galleryBlocks = (seed!.data.gallery?.content ?? []).filter((b) => b.type.startsWith("Gallery"));
-    expect(galleryBlocks.some((b) => b.props.collectionId === String(col._id))).toBe(true);
+    expect(galleryBlocks.length).toBeGreaterThan(0);
+    for (const b of galleryBlocks) {
+      expect(b.props.images).toEqual([]);
+      expect(b.props).not.toHaveProperty("collectionId");
+    }
   });
 });
 

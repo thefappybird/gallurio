@@ -35,7 +35,7 @@ describe("GalleryGridBlock — isomorphic render", () => {
 
   it("renders the empty state when images is empty", () => {
     render(GalleryGridBlock({ ...base, images: [] }));
-    expect(screen.getByText(/no photos selected yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
     expect(document.querySelector("[data-block='gallery-grid'][data-empty='true']")).toBeInTheDocument();
   });
 

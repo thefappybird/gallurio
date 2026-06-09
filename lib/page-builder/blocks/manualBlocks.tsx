@@ -26,13 +26,13 @@ import {
 } from "@/lib/page-builder/styleToolkit";
 import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
 
-// Client-safe Cloudinary delivery URL. `c_limit` caps the image to a `w x w` box,
-// only ever downscaling and never distorting; for tall/portrait images this lowers
-// long-axis resolution versus a width-only bound, but the cap (>=1200) is large
-// enough to be imperceptible. Returns null when unavailable so existing
+// Client-safe Cloudinary delivery URL. `c_limit` caps the image to a `w × 4w` box
+// under `c_limit` only the smaller dimension binds, so width is the effective cap
+// for landscape images and portrait/tall images are delivered at full height (up to
+// 4× the width) without distortion. Returns null when unavailable so existing
 // `cloudinaryUrl(...) || imageUrl` fallbacks still work.
 function cloudinaryUrl(publicId: string, w = 1200): string | null {
-  return cloudinaryImageUrl(publicId, { width: w, crop: "limit" }) || null;
+  return cloudinaryImageUrl(publicId, { width: w, height: w * 4, crop: "limit" }) || null;
 }
 
 function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {

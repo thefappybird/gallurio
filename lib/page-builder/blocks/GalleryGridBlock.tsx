@@ -18,6 +18,10 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import {
+  getGalleryChromeLabelsFrom,
+  type BlockPuck,
+} from "@/lib/page-builder/blockContext";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -50,13 +54,13 @@ const THUMB_WIDTH_MAP: Record<GalleryGridProps["columns"], number> = {
   4: 400,
 };
 
-export function GalleryGridBlock({ _style, images, columns, gap }: GalleryGridProps) {
+export function GalleryGridBlock({ _style, images, columns, gap, puck }: GalleryGridProps & { puck?: BlockPuck }) {
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
 
   if (list.length === 0) {
-    return <GalleryEmptyState message="No photos selected yet." />;
+    return <GalleryEmptyState message={getGalleryChromeLabelsFrom(puck).empty} />;
   }
 
   return (

@@ -27,6 +27,6 @@ describe("editor gallery previews", () => {
       />
     );
 
-    expect(screen.getByText("No photos selected yet.")).toBeInTheDocument();
+    expect(screen.getByText("No photos in this collection yet.")).toBeInTheDocument();
   });
 });

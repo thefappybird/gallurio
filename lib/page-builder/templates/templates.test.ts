@@ -54,10 +54,12 @@ describe("portfolio template registry", () => {
         }
       });
 
-      it("seeds gallery blocks with an empty collectionId (filled at save time)", () => {
+      it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         for (const block of data.gallery?.content ?? []) {
           if (block.type.startsWith("Gallery")) {
-            expect(block.props.collectionId).toBe("");
+            expect(block.props.images).toEqual([]);
+            expect(block.props).not.toHaveProperty("collectionId");
+            expect(block.props).not.toHaveProperty("maxItems");
           }
         }
       });
