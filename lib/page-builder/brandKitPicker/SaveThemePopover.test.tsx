@@ -48,6 +48,15 @@ describe("SaveThemePopover", () => {
     await waitFor(() => expect(screen.queryByPlaceholderText("Theme name")).toBeNull());
   });
 
+  it("trims the name and saves via the Enter key", async () => {
+    const { onSave } = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Save current as theme" }));
+    const input = await screen.findByPlaceholderText("Theme name");
+    fireEvent.change(input, { target: { value: "  Moody  " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("Moody"));
+  });
+
   it("blocks an empty name", async () => {
     const { onSave } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Save current as theme" }));

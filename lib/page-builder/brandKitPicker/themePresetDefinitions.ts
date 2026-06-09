@@ -82,7 +82,7 @@ export const THEME_PRESET_DEFINITIONS: Record<
     name: "Romantic",
     brandKit: {
       themePreset: "romantic",
-      fontPair: "cormorant-montserrat",
+      fontPair: "cormorant-montserrat", // deprecated/no-op; headingFont/bodyFont are authoritative (no cormorant+dm-sans pair exists)
       headingFont: "cormorant",
       bodyFont: "dm-sans",
       primaryColor: "#3a2b2b",
