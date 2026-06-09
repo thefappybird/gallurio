@@ -91,6 +91,14 @@ export type BlockStyle = {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
+  // Carousel-only: floating-overlay text padding + independent heading/description
+  // highlighter bands. Threaded into GalleryHeader by GalleryCarouselBlock.
+  textPaddingX?: CssLength;
+  textPaddingY?: CssLength;
+  headingHighlight?: boolean;
+  headingHighlightToken?: StyleColorToken | string;
+  descriptionHighlight?: boolean;
+  descriptionHighlightToken?: StyleColorToken | string;
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
