@@ -239,14 +239,91 @@ function HeadingLevelButtons({
 // Content tab
 // ---------------------------------------------------------------------------
 
+const BG_ANIMATION_OPTIONS = [
+  { value: "crossfade", label: "Crossfade" },
+  { value: "kenburns", label: "Ken Burns" },
+  { value: "slide", label: "Slide" },
+] as const;
+
+const BG_SPEED_OPTIONS = [
+  { value: "slow", label: "Slow (7s)" },
+  { value: "medium", label: "Medium (5s)" },
+  { value: "fast", label: "Fast (3s)" },
+] as const;
+
+export function ContainerBackgroundControls({
+  images,
+  onImagesChange,
+  animation,
+  speed,
+  onAnimationChange,
+  onSpeedChange,
+}: {
+  images: MediaPickerSelection[];
+  onImagesChange: (v: MediaPickerSelection[]) => void;
+  animation: string;
+  speed: string;
+  onAnimationChange: (v: string) => void;
+  onSpeedChange: (v: string) => void;
+}) {
+  const showAnimation = images.length >= 2;
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs text-muted-foreground">Background images</span>
+        <MultiImageControl value={images} onChange={onImagesChange} max={12} />
+      </div>
+      {showAnimation && (
+        <>
+          <label className="flex items-center justify-between gap-2">
+            <span className="shrink-0 text-xs text-muted-foreground">Background animation</span>
+            <select
+              aria-label="Background animation"
+              value={animation}
+              onChange={(e) => onAnimationChange(e.target.value)}
+              className="h-7 flex-1 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {BG_ANIMATION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center justify-between gap-2">
+            <span className="shrink-0 text-xs text-muted-foreground">Animation speed</span>
+            <select
+              aria-label="Animation speed"
+              value={speed}
+              onChange={(e) => onSpeedChange(e.target.value)}
+              className="h-7 flex-1 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {BG_SPEED_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
+    </div>
+  );
+}
+
+type ContainerBgControls = {
+  images: MediaPickerSelection[];
+  onImagesChange: (v: MediaPickerSelection[]) => void;
+  animation: string;
+  speed: string;
+  onAnimationChange: (v: string) => void;
+  onSpeedChange: (v: string) => void;
+};
+
 function BannerSection({
   s,
   set,
-  onImageChange,
+  container,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
-  onImageChange?: (pid: string) => void;
+  container?: ContainerBgControls | null;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -257,19 +334,17 @@ function BannerSection({
         <span className="text-xs text-muted-foreground">Color</span>
         <ColorSwatchRow value={s.bgColorToken} onChange={(t) => set({ bgColorToken: t })} />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs text-muted-foreground">Image</span>
-        <SingleImagePicker
-          value={s.bgImagePublicId ?? ""}
-          onChange={(pid) => {
-            if (onImageChange) {
-              onImageChange(pid);
-            } else {
-              set({ bgImagePublicId: pid || undefined });
-            }
-          }}
-        />
-      </div>
+      {container ? (
+        <ContainerBackgroundControls {...container} />
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground">Image</span>
+          <SingleImagePicker
+            value={s.bgImagePublicId ?? ""}
+            onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -437,17 +512,20 @@ function ContentTabBody({
   showBanner: boolean;
   isContainer: boolean;
 }) {
+  const container: ContainerBgControls | null =
+    isContainer && p
+      ? {
+          images: (p.backgroundImages as MediaPickerSelection[]) ?? [],
+          onImagesChange: (v) => setProp("backgroundImages", v),
+          animation: (p.bgAnimation as string) ?? "crossfade",
+          speed: (p.bgSpeed as string) ?? "medium",
+          onAnimationChange: (v) => setProp("bgAnimation", v),
+          onSpeedChange: (v) => setProp("bgSpeed", v),
+        }
+      : null;
   return (
     <div className="flex flex-col gap-4 p-3">
-      {showBanner && (
-        <BannerSection
-          s={s}
-          set={set}
-          onImageChange={
-            isContainer ? (pid) => setProp("backgroundImagePublicId", pid) : undefined
-          }
-        />
-      )}
+      {showBanner && <BannerSection s={s} set={set} container={container} />}
       {!isContainer && p && <ContentInputs type={type} props={p} setProp={setProp} />}
     </div>
   );

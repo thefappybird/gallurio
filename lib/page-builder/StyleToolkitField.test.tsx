@@ -126,3 +126,56 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByText("Typography")).toBeTruthy();
   });
 });
+
+import { ContainerBackgroundControls } from "./StyleToolkitField";
+
+describe("ContainerBackgroundControls — animation gating", () => {
+  const noop = () => {};
+
+  it("hides animation + speed selects with fewer than 2 images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+      />
+    );
+    expect(screen.getByText("Background images")).toBeTruthy();
+    expect(screen.queryByLabelText("Background animation")).toBeNull();
+    expect(screen.queryByLabelText("Animation speed")).toBeNull();
+  });
+
+  it("shows animation + speed selects at 2 or more images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }, { id: "b", publicId: "q" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+      />
+    );
+    expect(screen.getByLabelText("Background animation")).toBeTruthy();
+    expect(screen.getByLabelText("Animation speed")).toBeTruthy();
+  });
+
+  it("fires onAnimationChange when the animation select changes", () => {
+    const onAnimationChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }, { id: "b", publicId: "q" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={onAnimationChange}
+        onSpeedChange={noop}
+      />
+    );
+    fireEvent.change(screen.getByLabelText("Background animation"), { target: { value: "slide" } });
+    expect(onAnimationChange).toHaveBeenCalledWith("slide");
+  });
+});
