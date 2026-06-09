@@ -28,6 +28,7 @@ import type { PickerCollection, PickerItem } from "./types";
 const L = {
   title: "Choose photos",
   titleSingle: "Choose a photo",
+  titleCollections: "Choose collections",
   back: "Back to collections",
   allPhotos: "All photos",
   createCollection: "New collection",
@@ -45,6 +46,7 @@ const L = {
   selectedCount: (n: number, max?: number) => (max ? `${n}/${max} selected` : `${n} selected`),
   dragHint: "Drag to reorder",
   removePhoto: "Remove photo",
+  removeCollection: "Remove collection",
   uploadHere: "Upload photo",
   uploading: "Uploading…",
   dropActive: "Drop to upload",
@@ -59,18 +61,43 @@ const PAGE_SIZE = 16;
 const SAFETY_CAP = 60;
 
 export type MediaPickerSelection = { id: string; publicId: string };
-export type MediaPickerValue = string | MediaPickerSelection[];
-
-type Props = {
-  mode: "single" | "multi";
-  /** single: publicId string (""=none). multi: ordered [{id,publicId}]. */
-  value: MediaPickerValue;
-  onChange: (next: MediaPickerValue) => void;
-  /** multi only: hard cap on selections. */
-  max?: number;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export type MediaPickerCollectionSelection = {
+  id: string;
+  name: string;
+  coverPublicId: string;
+  itemCount: number;
 };
+export type MediaPickerValue = string | MediaPickerSelection[] | MediaPickerCollectionSelection[];
+
+type Props =
+  | {
+      mode: "single";
+      /** single: publicId string (""=none). */
+      value: string;
+      onChange: (next: string) => void;
+      max?: never;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }
+  | {
+      mode: "multi";
+      /** multi: ordered [{id,publicId}]. */
+      value: MediaPickerSelection[];
+      onChange: (next: MediaPickerSelection[]) => void;
+      /** hard cap on selections. */
+      max?: number;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }
+  | {
+      mode: "collections";
+      /** collections: ordered [{id,name,coverPublicId,itemCount}]. */
+      value: MediaPickerCollectionSelection[];
+      onChange: (next: MediaPickerCollectionSelection[]) => void;
+      max?: number;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    };
 
 type Nav = { kind: "collections" } | { kind: "photos"; id: string; name: string };
 
@@ -83,7 +110,11 @@ type FeedState = {
 
 const EMPTY_FEED: FeedState = { items: [], nextCursor: null, loading: false, error: false };
 
-function asSelection(value: MediaPickerValue): MediaPickerSelection[] {
+function asPhotoSelection(value: MediaPickerSelection[] | string): MediaPickerSelection[] {
+  return Array.isArray(value) ? (value as MediaPickerSelection[]) : [];
+}
+
+function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPickerCollectionSelection[] {
   return Array.isArray(value) ? value : [];
 }
 
@@ -109,7 +140,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     for (const it of items) seen.current.set(it.id, it);
   }, []);
 
-  const selection = asSelection(value);
+  // Derive typed selections based on mode.
+  const selection = mode === "multi" ? asPhotoSelection(value as MediaPickerSelection[]) : [];
+  const collectionSelection = mode === "collections" ? asCollectionSelection(value as MediaPickerCollectionSelection[]) : [];
 
   // Reset navigation each time the modal opens.
   useEffect(() => {
@@ -168,15 +201,17 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   }
 
   // -------------------------------------------------------------------------
-  // Selection
+  // Selection — single / multi (photos)
   // -------------------------------------------------------------------------
 
   function pickSingle(item: PickerItem) {
+    if (mode !== "single") return;
     onChange(item.publicId);
     onOpenChange(false);
   }
 
   function toggleMulti(item: PickerItem) {
+    if (mode !== "multi") return;
     const exists = selection.some((s) => s.id === item.id);
     if (exists) {
       onChange(selection.filter((s) => s.id !== item.id));
@@ -187,6 +222,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   }
 
   function selectAllOnPage() {
+    if (mode !== "multi") return;
     const cap = max ?? SAFETY_CAP;
     const next = [...selection];
     for (const it of feed.items) {
@@ -201,6 +237,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   // bulk-select is intentionally newest-first (owner wants the latest N).
   const [bulkLoading, setBulkLoading] = useState(false);
   async function selectAllInCollection() {
+    if (mode !== "multi") return;
     if (nav.kind !== "photos" || nav.id === ALL_PHOTOS_ID) return;
     const cap = max ?? SAFETY_CAP;
     setBulkLoading(true);
@@ -218,12 +255,45 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   }
 
   function clearSelection() {
-    onChange([]);
+    if (mode === "multi") onChange([]);
+    else if (mode === "collections") onChange([]);
   }
 
   function reorder(fromId: string, toId: string) {
+    if (mode !== "multi") return;
     if (fromId === toId) return;
     const copy = [...selection];
+    const fi = copy.findIndex((s) => s.id === fromId);
+    const ti = copy.findIndex((s) => s.id === toId);
+    if (fi === -1 || ti === -1) return;
+    const [moved] = copy.splice(fi, 1);
+    copy.splice(ti, 0, moved);
+    onChange(copy);
+  }
+
+  // -------------------------------------------------------------------------
+  // Selection — collections mode
+  // -------------------------------------------------------------------------
+
+  function toggleCollection(col: PickerCollection) {
+    if (mode !== "collections") return;
+    const exists = collectionSelection.some((s) => s.id === col.id);
+    if (exists) {
+      onChange(collectionSelection.filter((s) => s.id !== col.id));
+      return;
+    }
+    const cap = max ?? SAFETY_CAP;
+    if (collectionSelection.length >= cap) return;
+    onChange([
+      ...collectionSelection,
+      { id: col.id, name: col.name, coverPublicId: col.coverPublicId, itemCount: col.itemCount },
+    ]);
+  }
+
+  function reorderCollections(fromId: string, toId: string) {
+    if (mode !== "collections") return;
+    if (fromId === toId) return;
+    const copy = [...collectionSelection];
     const fi = copy.findIndex((s) => s.id === fromId);
     const ti = copy.findIndex((s) => s.id === toId);
     if (fi === -1 || ti === -1) return;
@@ -311,6 +381,11 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     mode === "single" ? false : selection.some((s) => s.id === id);
   const orderOf = (id: string) => selection.findIndex((s) => s.id === id) + 1;
 
+  const isCollectionSelected = (id: string) =>
+    mode === "collections" ? collectionSelection.some((s) => s.id === id) : false;
+  const collectionOrderOf = (id: string) =>
+    collectionSelection.findIndex((s) => s.id === id) + 1;
+
   const selectionItems = useMemo(
     () =>
       // eslint-disable-next-line react-hooks/refs -- intentional: the seen-map is a write-only accumulator of resolved thumbnails; recomputation is driven by `selection`, and a missing entry renders a placeholder
@@ -323,7 +398,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[100dvh] w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
+      <DialogContent className="flex h-dvh w-full max-w-[calc(100%-1rem)] flex-col overflow-hidden sm:h-[80vh] sm:max-w-3xl">
         <DialogHeader>
           <div className="flex items-center gap-2">
             {nav.kind === "photos" && (
@@ -336,11 +411,19 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
                 <ArrowLeftIcon className="size-4" aria-hidden />
               </button>
             )}
-            <DialogTitle>{nav.kind === "photos" ? nav.name : mode === "single" ? L.titleSingle : L.title}</DialogTitle>
+            <DialogTitle>
+              {nav.kind === "photos"
+                ? nav.name
+                : mode === "single"
+                  ? L.titleSingle
+                  : mode === "collections"
+                    ? L.titleCollections
+                    : L.title}
+            </DialogTitle>
           </div>
         </DialogHeader>
 
-        {/* Multi reorder strip */}
+        {/* Multi (photos) reorder strip */}
         {mode === "multi" && selection.length > 0 && (
           <div className="flex flex-col gap-1.5">
             <p className="text-xs text-muted-foreground">
@@ -348,8 +431,39 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             </p>
             <ul className="flex flex-wrap gap-2" aria-label="Selected photos (drag to reorder)">
               {selectionItems.map(({ id, item }) => (
-                <ReorderChip key={id} id={id} item={item} onReorder={reorder} onRemove={() => onChange(selection.filter((s) => s.id !== id))} />
+                <ReorderChip
+                  key={id}
+                  id={id}
+                  item={item}
+                  removeLabel={L.removePhoto}
+                  onReorder={reorder}
+                  onRemove={() => onChange(selection.filter((s) => s.id !== id))}
+                />
               ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Collections mode reorder strip */}
+        {mode === "collections" && collectionSelection.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs text-muted-foreground">
+              {L.selectedCount(collectionSelection.length, max)} · {L.dragHint}
+            </p>
+            <ul className="flex flex-wrap gap-2" role="listbox" aria-label="Selected collections (drag to reorder)">
+              {collectionSelection.map((s) => {
+                const col = collections.find((c) => c.id === s.id);
+                return (
+                  <CollectionReorderChip
+                    key={s.id}
+                    id={s.id}
+                    name={s.name}
+                    coverUrl={col?.coverUrl ?? null}
+                    onReorder={reorderCollections}
+                    onRemove={() => onChange(collectionSelection.filter((c) => c.id !== s.id))}
+                  />
+                );
+              })}
             </ul>
           </div>
         )}
@@ -358,7 +472,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           {state.status === "loading" && <CenterSpinner label={L.loading} />}
           {state.status === "error" && <ErrorRetry onRetry={retry} />}
 
-          {state.status === "ok" && nav.kind === "collections" && (
+          {state.status === "ok" && nav.kind === "collections" && mode !== "collections" && (
             <CollectionGrid
               collections={collections}
               hasAnyPhotos={state.data.items.length > 0 || collections.some((c) => c.itemCount > 0)}
@@ -367,10 +481,20 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
             />
           )}
 
+          {state.status === "ok" && nav.kind === "collections" && mode === "collections" && (
+            <CollectionSelectGrid
+              collections={collections}
+              isSelected={isCollectionSelected}
+              orderOf={collectionOrderOf}
+              onToggle={toggleCollection}
+              onCreate={() => setCreateOpen(true)}
+            />
+          )}
+
           {state.status === "ok" && nav.kind === "photos" && (
             <PhotoGrid
               feed={feed}
-              mode={mode}
+              mode={mode as "single" | "multi"}
               isSelected={isSelected}
               orderOf={orderOf}
               onPickSingle={pickSingle}
@@ -390,7 +514,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           )}
         </div>
 
-        {/* Multi bulk actions + footer */}
+        {/* Bulk actions + footer */}
         <DialogFooter className="items-center sm:justify-between">
           {mode === "multi" && nav.kind === "photos" ? (
             <div className="flex flex-wrap gap-2">
@@ -418,7 +542,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           ) : (
             <span />
           )}
-          {mode === "multi" && (
+          {(mode === "multi" || mode === "collections") && (
             <Button type="button" onClick={() => onOpenChange(false)}>
               {L.done}
             </Button>
@@ -679,11 +803,13 @@ function UploadZone({
 function ReorderChip({
   id,
   item,
+  removeLabel,
   onReorder,
   onRemove,
 }: {
   id: string;
   item: PickerItem | null;
+  removeLabel: string;
   onReorder: (fromId: string, toId: string) => void;
   onRemove: () => void;
 }) {
@@ -710,12 +836,135 @@ function ReorderChip({
       </span>
       <button
         type="button"
-        aria-label={L.removePhoto}
+        aria-label={removeLabel}
         onClick={onRemove}
         className="absolute right-0.5 top-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <XIcon className="size-3" aria-hidden />
       </button>
     </li>
+  );
+}
+
+function CollectionReorderChip({
+  id,
+  name,
+  coverUrl,
+  onReorder,
+  onRemove,
+}: {
+  id: string;
+  name: string;
+  coverUrl: string | null;
+  onReorder: (fromId: string, toId: string) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <li
+      role="option"
+      aria-selected
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/plain", id)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const from = e.dataTransfer.getData("text/plain");
+        if (from) onReorder(from, id);
+      }}
+      className="relative aspect-square w-16 shrink-0 overflow-hidden border border-foreground"
+    >
+      {coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={coverUrl} alt="" className="size-full object-cover" />
+      ) : (
+        <span className="flex size-full items-center justify-center bg-muted text-xs text-muted-foreground">
+          <ImagePlusIcon className="size-4" aria-hidden />
+        </span>
+      )}
+      {/* Visible drag affordance */}
+      <span aria-hidden className="absolute left-0.5 top-0.5 flex size-5 items-center justify-center bg-background/80">
+        <GripVerticalIcon className="size-3.5 text-muted-foreground" />
+      </span>
+      <button
+        type="button"
+        aria-label={`${L.removeCollection} ${name}`}
+        onClick={onRemove}
+        className="absolute right-0.5 top-0.5 inline-flex size-5 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        <XIcon className="size-3" aria-hidden />
+      </button>
+    </li>
+  );
+}
+
+function CollectionSelectGrid({
+  collections,
+  isSelected,
+  orderOf,
+  onToggle,
+  onCreate,
+}: {
+  collections: PickerCollection[];
+  isSelected: (id: string) => boolean;
+  orderOf: (id: string) => number;
+  onToggle: (col: PickerCollection) => void;
+  onCreate: () => void;
+}) {
+  return (
+    <ul className="grid grid-cols-2 gap-2 p-1 sm:grid-cols-4" role="listbox" aria-label="Collections" aria-multiselectable="true">
+      {collections.map((col) => {
+        const selected = isSelected(col.id);
+        const order = orderOf(col.id);
+        return (
+          <li key={col.id} role="option" aria-selected={selected}>
+            <button
+              type="button"
+              onClick={() => onToggle(col)}
+              aria-label={`${col.name}${selected ? ` — selected ${order}` : ""}`}
+              className={cn(
+                "flex w-full flex-col overflow-hidden border text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                selected ? "border-foreground" : "border-border hover:bg-accent/40"
+              )}
+            >
+              <span className="relative aspect-square w-full overflow-hidden bg-muted">
+                {col.coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={col.coverUrl} alt="" className="size-full object-cover" loading="lazy" />
+                ) : (
+                  <span className="flex size-full items-center justify-center">
+                    <ImagePlusIcon className="size-6 text-muted-foreground" aria-hidden />
+                  </span>
+                )}
+                {selected && (
+                  <span className="absolute right-1 top-1 inline-flex size-5 items-center justify-center bg-foreground text-xs font-bold text-background">
+                    {order}
+                  </span>
+                )}
+              </span>
+              <span className="flex flex-col gap-0.5 px-2 py-1.5">
+                <span className="truncate text-xs font-medium">{col.name}</span>
+                <span className="text-xs text-muted-foreground">{L.photos(col.itemCount)}</span>
+              </span>
+            </button>
+          </li>
+        );
+      })}
+
+      {/* Create collection */}
+      <li>
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex aspect-square w-full flex-col items-center justify-center gap-1 border border-dashed border-border text-xs text-muted-foreground hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <PlusIcon className="size-5" aria-hidden />
+          {L.createCollection}
+        </button>
+      </li>
+
+      {collections.length === 0 && (
+        <li className="col-span-full py-4 text-center text-sm text-muted-foreground">{L.emptyWorkspace}</li>
+      )}
+    </ul>
   );
 }

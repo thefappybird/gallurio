@@ -1,13 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MediaPicker } from "./MediaPicker";
+import type { MediaPickerCollectionSelection } from "./MediaPicker";
 import { __clearPickerDataCache } from "./usePickerData";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
 const collections = [
-  { id: "col1", name: "Weddings", coverUrl: "https://x/c1.jpg", itemCount: 3 },
+  { id: "col1", name: "Weddings", coverUrl: "https://x/c1.jpg", coverPublicId: "pid-col1", itemCount: 3 },
+  { id: "col2", name: "Portraits", coverUrl: "https://x/c2.jpg", coverPublicId: "pid-col2", itemCount: 5 },
+  { id: "col3", name: "Events", coverUrl: "https://x/c3.jpg", coverPublicId: "pid-col3", itemCount: 2 },
 ];
 const colItems = [
   { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A" },
@@ -106,6 +109,192 @@ describe("MediaPicker", () => {
   it("does not render its dialog content when closed", () => {
     render(<MediaPicker mode="single" value="" onChange={vi.fn()} open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByRole("button", { name: /all photos/i })).toBeNull();
+  });
+
+  // ---------------------------------------------------------------------------
+  // collections mode
+  // ---------------------------------------------------------------------------
+
+  describe("collections mode", () => {
+    it("renders collection tiles as options with aria-selected reflecting selection state", async () => {
+      render(
+        <MediaPicker
+          mode="collections"
+          value={[]}
+          onChange={vi.fn()}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      // Wait for data to load
+      await waitFor(() => expect(screen.getByRole("option", { name: /weddings/i })).toBeTruthy());
+      // All tiles start unselected
+      const weddingsOpt = screen.getByRole("option", { name: /weddings/i });
+      expect(weddingsOpt.getAttribute("aria-selected")).toBe("false");
+      // Three real collections should be present
+      expect(screen.getByRole("option", { name: /portraits/i })).toBeTruthy();
+      expect(screen.getByRole("option", { name: /events/i })).toBeTruthy();
+    });
+
+    it("clicking a tile selects it: calls onChange with [{ id, name, coverPublicId, itemCount }]", async () => {
+      const onChange = vi.fn();
+      render(
+        <MediaPicker
+          mode="collections"
+          value={[]}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+      ] satisfies MediaPickerCollectionSelection[]);
+    });
+
+    it("clicking a second tile appends it in order (order 2)", async () => {
+      const onChange = vi.fn();
+      const firstSelection: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+      ];
+      render(
+        <MediaPicker
+          mode="collections"
+          value={firstSelection}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      await waitFor(() => screen.getByRole("button", { name: /portraits/i }));
+      fireEvent.click(screen.getByRole("button", { name: /portraits/i }));
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+        { id: "col2", name: "Portraits", coverPublicId: "pid-col2", itemCount: 5 },
+      ] satisfies MediaPickerCollectionSelection[]);
+    });
+
+    it("re-clicking a selected tile removes it; remaining tiles reindex from 1", async () => {
+      const onChange = vi.fn();
+      // Start with col1 and col2 both selected
+      const twoSelected: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+        { id: "col2", name: "Portraits", coverPublicId: "pid-col2", itemCount: 5 },
+      ];
+      render(
+        <MediaPicker
+          mode="collections"
+          value={twoSelected}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      // Wait for tiles; use the selected-tile aria-label to avoid ambiguity with the reorder strip remove button.
+      await waitFor(() => screen.getByRole("button", { name: /weddings.*selected/i }));
+      // Deselect col1 (first) by clicking its tile
+      fireEvent.click(screen.getByRole("button", { name: /weddings.*selected/i }));
+      expect(onChange).toHaveBeenCalledWith([
+        { id: "col2", name: "Portraits", coverPublicId: "pid-col2", itemCount: 5 },
+      ] satisfies MediaPickerCollectionSelection[]);
+    });
+
+    it("value round-trips the { id, name, coverPublicId, itemCount } shape", async () => {
+      const selection: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+      ];
+      const onChange = vi.fn();
+      render(
+        <MediaPicker
+          mode="collections"
+          value={selection}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      // The selected tile reflects aria-selected=true
+      expect(screen.getByRole("option", { name: /weddings/i }).getAttribute("aria-selected")).toBe("true");
+      // Unselected tile is still aria-selected=false
+      expect(screen.getByRole("option", { name: /portraits/i }).getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("clicking a collection tile in collections mode does NOT navigate to a photos view", async () => {
+      render(
+        <MediaPicker
+          mode="collections"
+          value={[]}
+          onChange={vi.fn()}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      // Photo grid must not appear
+      expect(screen.queryByRole("listbox", { name: /photos/i })).toBeNull();
+      // Back button must not appear
+      expect(screen.queryByRole("button", { name: /back to collections/i })).toBeNull();
+      // Collection tiles must still be visible (still on collections view)
+      expect(screen.getByRole("option", { name: /weddings/i })).toBeTruthy();
+    });
+
+    it("selected collection tiles show an order badge (not color alone)", async () => {
+      const selection: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+        { id: "col2", name: "Portraits", coverPublicId: "pid-col2", itemCount: 5 },
+      ];
+      render(
+        <MediaPicker
+          mode="collections"
+          value={selection}
+          onChange={vi.fn()}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      // Order badges "1" and "2" must be rendered
+      expect(screen.getByText("1")).toBeTruthy();
+      expect(screen.getByText("2")).toBeTruthy();
+    });
+
+    it("renders a reorder strip for selected collections with remove buttons", async () => {
+      const selection: MediaPickerCollectionSelection[] = [
+        { id: "col1", name: "Weddings", coverPublicId: "pid-col1", itemCount: 3 },
+        { id: "col2", name: "Portraits", coverPublicId: "pid-col2", itemCount: 5 },
+      ];
+      const onChange = vi.fn();
+      render(
+        <MediaPicker
+          mode="collections"
+          value={selection}
+          onChange={onChange}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      // Remove buttons must exist (at least one)
+      const removeButtons = screen.getAllByRole("button", { name: /remove/i });
+      expect(removeButtons.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("shows a Done button and no navigation back button in collections mode", async () => {
+      render(
+        <MediaPicker
+          mode="collections"
+          value={[]}
+          onChange={vi.fn()}
+          open
+          onOpenChange={vi.fn()}
+        />
+      );
+      await waitFor(() => screen.getByRole("option", { name: /weddings/i }));
+      expect(screen.getByRole("button", { name: /done/i })).toBeTruthy();
+      expect(screen.queryByRole("button", { name: /back to collections/i })).toBeNull();
+    });
   });
 
   it("switching collections ignores a stale slow response and shows the new collection", async () => {
