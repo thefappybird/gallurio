@@ -1,40 +1,34 @@
 /**
- * GalleryMasonryBlock — server component rendering a CSS column-count masonry
- * layout of a collection's gallery items.
+ * GalleryMasonryBlock — ISOMORPHIC (client-safe) CSS column-count masonry layout.
  *
- * Multi-tenant safety: `workspaceId` is derived from the server render context
- * (never Puck props) and passed to `listItemsForBlock`, which also drops
- * private/foreign collections. A collectionId from another workspace yields 0
- * items → empty state.
- *
- * Pure CSS masonry (`column-count`) — no JS measurement library, keeps the
- * public bundle small. Images preserve their natural aspect ratio.
+ * Renders from its own `images[]` prop (no DB, no server context, no server-only
+ * Cloudinary import). Empty-state copy is read from `puck.metadata` chrome via
+ * getGalleryChromeLabelsFrom (a pure, client-safe prop read) so a localized public
+ * render still gets translated copy, falling back to English.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { listItemsForBlock } from "@/lib/db/queries/gallery";
+import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import type { GalleryImage } from "./GalleryGridBlock";
 
 export type GalleryMasonryProps = {
   _style?: BlockStyle;
-  collectionId: string;
+  images: GalleryImage[];
   columns: 2 | 3 | 4;
   gap: "tight" | "normal" | "loose";
-  maxItems: number;
 };
 
 export const galleryMasonryDefaultProps: GalleryMasonryProps = {
-  collectionId: "",
+  images: [],
   columns: 3,
   gap: "normal",
-  maxItems: 18,
 };
 
 const GAP_MAP: Record<GalleryMasonryProps["gap"], string> = {
@@ -49,44 +43,19 @@ const THUMB_WIDTH_MAP: Record<GalleryMasonryProps["columns"], number> = {
   4: 400,
 };
 
-export async function GalleryMasonryBlock({
+export function GalleryMasonryBlock({
   _style,
-  collectionId,
+  images,
   columns,
   gap,
-  maxItems,
   puck,
 }: GalleryMasonryProps & { puck?: BlockPuck }) {
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const labels = getGalleryChromeLabelsFrom(puck);
+  const list = Array.isArray(images) ? images : [];
 
-  const workspace = getRenderWorkspaceFrom(puck);
-  if (!workspace || !String(workspace._id)) {
-    return <MasonryEmptyState message={labels.unavailable} />;
-  }
-
-  if (!collectionId || !collectionId.trim()) {
-    return <MasonryEmptyState message={labels.noCollection} />;
-  }
-
-  let items;
-  try {
-    items = await listItemsForBlock({
-      workspaceId: String(workspace._id),
-      collectionId,
-      limit: maxItems,
-    });
-  } catch (err) {
-    console.error("GalleryMasonryBlock query failed", {
-      workspaceId: String(workspace._id),
-      collectionId,
-      err,
-    });
-    return <MasonryEmptyState message={labels.error} />;
-  }
-
-  if (items.length === 0) {
+  if (list.length === 0) {
     return <MasonryEmptyState message={labels.empty} />;
   }
 
@@ -101,48 +70,34 @@ export async function GalleryMasonryBlock({
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {/* Mobile-first: cap columns on small viewports (inline columnCount is the
-          desktop value; the stylesheet overrides it with !important below 640px). */}
       <style>{`
         @media (max-width: 639px) { .pf-masonry { column-count: 2 !important; } }
         @media (max-width: 399px) { .pf-masonry { column-count: 1 !important; } }
       `}</style>
       <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
-        <div
-          className="pf-masonry"
-          style={{
-            columnCount: columns,
-            columnGap: gapValue,
-          }}
-        >
-          {items.map((item) => {
-          const src =
-            cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
+        <div className="pf-masonry" style={{ columnCount: columns, columnGap: gapValue }}>
+          {list.map((img) => {
+            const src = cloudinaryImageUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth * 2,
               crop: "limit",
-            }) || item.url;
-          const alt = item.altText || item.caption || "";
-          return (
-            <figure
-              key={String(item._id)}
-              style={{
-                margin: 0,
-                marginBottom: gapValue,
-                padding: 0,
-                breakInside: "avoid",
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={src}
-                alt={alt}
-                loading="lazy"
-                decoding="async"
-                style={{ width: "100%", height: "auto", display: "block" }}
-              />
-            </figure>
-          );
+            });
+            if (!src) return null;
+            return (
+              <figure
+                key={img.id}
+                style={{ margin: 0, marginBottom: gapValue, padding: 0, breakInside: "avoid" }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src}
+                  alt={img.alt ?? ""}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ width: "100%", height: "auto", display: "block" }}
+                />
+              </figure>
+            );
           })}
         </div>
       </div>
@@ -181,9 +136,11 @@ function MasonryEmptyState({ message }: { message: string }) {
 export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
   defaultProps: galleryMasonryDefaultProps,
+  // `images` is intentionally absent from the sidebar fields — the editor drives
+  // it via StyleToolkitField (Task 7). Production <Render> reads images straight
+  // from saved props; no sidebar field is needed there either.
   fields: {
     _style: productionStyleField,
-    collectionId: { type: "text", label: "Collection ID" },
     columns: {
       type: "select",
       label: "Columns",
@@ -202,9 +159,6 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
         { label: "Loose", value: "loose" },
       ],
     },
-    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
-  },
-  // Async server component — Puck's PuckComponent type expects sync JSX.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  render: GalleryMasonryBlock as any,
+  } as unknown as Fields<GalleryMasonryProps>,
+  render: GalleryMasonryBlock,
 };
