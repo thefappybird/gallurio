@@ -13,6 +13,8 @@ import {
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
+import { reconcileGalleryImages } from "@/lib/page-builder/reconcile";
+import type { PuckData } from "@/lib/page-builder/types";
 import { z } from "zod";
 
 export type EditorActionResult =
@@ -67,19 +69,36 @@ export async function savePortfolioDraftAction(
 }
 
 /**
- * Publish the current draft. Owner-only. Flips publishedAt/lastPublishedAt and
- * revalidates the public routes + sitemap so the live page reflects the latest.
+ * Publish the current draft. Owner-only. Reconciles gallery block image caches
+ * against live GalleryItems (refresh publicId/alt, prune deleted), persists the
+ * reconciled data, THEN flips publishedAt/lastPublishedAt and revalidates public
+ * routes + sitemap so the live page renders fresh, fetch-free images.
  */
 export async function publishPortfolioAction(): Promise<EditorActionResult> {
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return { error: "owner_only" };
 
   await connectDB();
+  const workspaceId = String(ctx.workspace._id);
+
+  // Read current draft zones, reconcile their gallery images against live
+  // GalleryItems, and persist the refreshed data so the live page renders fresh,
+  // fetch-free images. Reconcile runs BEFORE publishedAt is set.
+  const ws = await Workspace.findById(ctx.workspace._id)
+    .select({ "publicPage.data.home": 1, "publicPage.data.gallery": 1 })
+    .lean();
+
+  const set: Record<string, unknown> = {};
+  const home = ws?.publicPage?.data?.home as PuckData | null | undefined;
+  const gallery = ws?.publicPage?.data?.gallery as PuckData | null | undefined;
+  if (home) set["publicPage.data.home"] = await reconcileGalleryImages(workspaceId, home);
+  if (gallery) set["publicPage.data.gallery"] = await reconcileGalleryImages(workspaceId, gallery);
+
   const now = new Date();
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { "publicPage.publishedAt": now, "publicPage.lastPublishedAt": now } }
-  );
+  set["publicPage.publishedAt"] = now;
+  set["publicPage.lastPublishedAt"] = now;
+
+  await Workspace.updateOne({ _id: ctx.workspace._id }, { $set: set });
 
   revalidatePath(`/w/${ctx.workspace.slug}`);
   revalidatePath(`/w/${ctx.workspace.slug}/gallery`);

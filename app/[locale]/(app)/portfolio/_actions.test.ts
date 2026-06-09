@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Types } from "mongoose";
+import { GalleryItem } from "@/lib/db/models";
 
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
@@ -231,5 +232,68 @@ describe("dismissPortfolioGuideAction", () => {
     expect(res).toEqual({ error: "owner_only" });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.guideDismissedAt ?? null).toBeNull();
+  });
+});
+
+describe("publishPortfolioAction — reconcile + publish", () => {
+  it("rejects a non-owner", async () => {
+    mockCtx.role = "staff";
+    expect(await publishPortfolioAction()).toEqual({ error: "owner_only" });
+  });
+
+  it("persists reconciled images (refresh + prune) AND sets publishedAt", async () => {
+    const wsId = mockCtx.workspace._id;
+    const live = await GalleryItem.create({
+      workspaceId: wsId,
+      collectionId: null,
+      cloudinaryPublicId: `ws/${wsId}/live`,
+      url: "https://x/l.jpg",
+      altText: "Live alt",
+      order: 0,
+    });
+    const missing = new Types.ObjectId().toString();
+
+    // Patch the existing workspace (created by seedWorkspace in beforeEach)
+    // with a GalleryGrid block containing stale + missing image references.
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          "publicPage.data.home": {
+            root: {},
+            content: [
+              {
+                type: "GalleryGrid",
+                props: {
+                  id: "g1",
+                  images: [
+                    { id: String(live._id), publicId: "STALE", alt: "stale" },
+                    { id: missing, publicId: "x" },
+                  ],
+                  columns: 3,
+                  gap: "normal",
+                },
+              },
+            ],
+          },
+          "publicPage.data.gallery": { root: {}, content: [] },
+        },
+      }
+    );
+
+    const res = await publishPortfolioAction();
+    expect(res).toEqual({ ok: true });
+
+    const fresh = await Workspace.findById(wsId).lean();
+    const images = (
+      fresh!.publicPage!.data!.home as {
+        content: Array<{ props: { images: Array<{ id: string; publicId: string; alt: string }> } }>;
+      }
+    ).content[0].props.images;
+    expect(images).toEqual([
+      { id: String(live._id), publicId: `ws/${wsId}/live`, alt: "Live alt" },
+    ]);
+    expect(fresh!.publicPage!.publishedAt).toBeTruthy();
+    expect(fresh!.publicPage!.lastPublishedAt).toBeTruthy();
   });
 });
