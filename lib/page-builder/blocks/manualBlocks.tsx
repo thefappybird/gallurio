@@ -24,12 +24,15 @@ import {
   FLEX_ALIGN_MAP,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
 
-// Client-safe Cloudinary delivery URL (PUBLIC cloud name only — no server SDK).
+// Client-safe Cloudinary delivery URL. `c_limit` caps the image to a `w x w` box,
+// only ever downscaling and never distorting; for tall/portrait images this lowers
+// long-axis resolution versus a width-only bound, but the cap (>=1200) is large
+// enough to be imperceptible. Returns null when unavailable so existing
+// `cloudinaryUrl(...) || imageUrl` fallbacks still work.
 function cloudinaryUrl(publicId: string, w = 1200): string | null {
-  const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  if (!cloud || !publicId) return null;
-  return `https://res.cloudinary.com/${cloud}/image/upload/c_limit,w_${w},q_auto,f_auto/${publicId}`;
+  return cloudinaryImageUrl(publicId, { width: w, crop: "limit" }) || null;
 }
 
 function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {
