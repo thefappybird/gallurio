@@ -27,7 +27,9 @@ const locales = { en, fil, ms, id } as const;
 describe("brandKit locale keys", () => {
   for (const [name, messages] of Object.entries(locales)) {
     it(`${name} defines all new theme-grid keys`, () => {
-      const bk = (messages as Record<string, unknown> & { app: { pageBuilder: { brandKit: Record<string, string> } } }).app.pageBuilder.brandKit;
+      const bk = (messages as unknown as {
+        app: { pageBuilder: { brandKit: Record<string, string> } };
+      }).app.pageBuilder.brandKit;
       for (const key of REQUIRED_KEYS) {
         expect(typeof bk[key], `${name}.${key}`).toBe("string");
         expect(bk[key].length, `${name}.${key}`).toBeGreaterThan(0);
@@ -36,7 +38,9 @@ describe("brandKit locale keys", () => {
   }
 
   it("interpolation placeholders are present where required", () => {
-    const bk = (en as Record<string, unknown> & { app: { pageBuilder: { brandKit: Record<string, string> } } }).app.pageBuilder.brandKit;
+    const bk = (en as unknown as {
+      app: { pageBuilder: { brandKit: Record<string, string> } };
+    }).app.pageBuilder.brandKit;
     expect(bk.applyTheme).toContain("{name}");
     expect(bk.deleteTheme).toContain("{name}");
     expect(bk.pageIndicator).toContain("{current}");
