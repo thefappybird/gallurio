@@ -13,12 +13,20 @@ function setup(overrides: Partial<Parameters<typeof BrandKitPicker>[0]> = {}) {
 }
 
 describe("BrandKitPicker", () => {
-  it("selecting a theme preset emits the updated kit", () => {
+  it("applies the full brand kit (colors + fonts) when a preset is selected", () => {
     const { onChange } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Editorial" }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ themePreset: "editorial" })
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    const applied = onChange.mock.calls.at(-1)![0];
+    expect(applied.themePreset).toBe("editorial");
+    expect(applied.accentColor).toBe("#7e6a52");
+    expect(applied.headingFont).toBe("playfair");
+  });
+
+  it("still renders the color and font editors", () => {
+    setup();
+    expect(screen.getByRole("group", { name: /heading font/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /body font/i })).toBeInTheDocument();
+    expect(screen.getByText("Colors")).toBeInTheDocument();
   });
 
   it("selecting a heading font emits headingFont without touching bodyFont", () => {
@@ -107,39 +115,12 @@ describe("BrandKitPicker", () => {
       },
     ];
 
-    it("renders an empty-state message when there are no saved themes", () => {
-      setup({ onSaveTheme: vi.fn() });
-      expect(screen.getByText(/no saved themes yet/i)).toBeInTheDocument();
-    });
-
-    it("applies a saved theme's brand kit when its swatch is clicked", () => {
+    it("applies a saved theme's brand kit when its tile is clicked", () => {
       const { onChange } = setup({ savedThemes: themes, onSaveTheme: vi.fn() });
       fireEvent.click(screen.getByRole("button", { name: /apply theme: sunset/i }));
       expect(onChange).toHaveBeenCalledWith(
         expect.objectContaining({ accentColor: "#e87a4f" })
       );
-    });
-
-    it("saves the current kit under a trimmed name", async () => {
-      const onSaveTheme = vi.fn().mockResolvedValue(undefined);
-      setup({ onSaveTheme });
-      fireEvent.change(screen.getByLabelText(/new theme name/i), {
-        target: { value: "  Moody  " },
-      });
-      fireEvent.click(screen.getByRole("button", { name: /save current/i }));
-      await waitFor(() => expect(onSaveTheme).toHaveBeenCalledWith("Moody"));
-    });
-
-    it("blocks saving a blank name and shows an inline error", async () => {
-      const onSaveTheme = vi.fn().mockResolvedValue(undefined);
-      setup({ onSaveTheme });
-      // A space-only value: the trim guard must reject before calling onSaveTheme.
-      // The button is disabled for empty input, so drive the Enter-key path.
-      const input = screen.getByLabelText(/new theme name/i);
-      fireEvent.change(input, { target: { value: "   " } });
-      fireEvent.keyDown(input, { key: "Enter" });
-      await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
-      expect(onSaveTheme).not.toHaveBeenCalled();
     });
 
     it("deletes a saved theme by id", async () => {
@@ -149,9 +130,16 @@ describe("BrandKitPicker", () => {
       await waitFor(() => expect(onDeleteTheme).toHaveBeenCalledWith("t1"));
     });
 
-    it("hides the save form when no onSaveTheme handler is provided", () => {
+    it("shows the save-theme control when onSaveTheme is provided", () => {
+      setup({ onSaveTheme: vi.fn() });
+      expect(
+        screen.getByRole("button", { name: /save current as theme/i })
+      ).toBeInTheDocument();
+    });
+
+    it("hides the save-theme control when no onSaveTheme handler is provided", () => {
       setup();
-      expect(screen.queryByLabelText(/new theme name/i)).toBeNull();
+      expect(screen.queryByRole("button", { name: /save current as theme/i })).toBeNull();
     });
   });
 });

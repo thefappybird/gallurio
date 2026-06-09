@@ -2,9 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import {
-  BRAND_KIT_THEME_PRESETS,
   type PortfolioBrandKit,
-  type BrandKitThemePreset,
 } from "@/lib/page-builder/types";
 import {
   PORTFOLIO_FONTS,
@@ -13,13 +11,11 @@ import {
   type PortfolioFontKey,
 } from "@/lib/page-builder/fonts";
 import type { PortfolioSavedTheme } from "@/lib/page-builder/types";
-import { THEME_PRESET_SWATCHES } from "./themePresetSwatches";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { CheckIcon, Trash2Icon, PlusIcon, Loader2Icon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CheckIcon } from "lucide-react";
+import { ThemeGrid } from "./ThemeGrid";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -56,9 +52,9 @@ type Props = {
   onChange: (next: PortfolioBrandKit) => void;
   /** When provided, enables a "use workspace branding" shortcut for the colors. */
   workspaceBranding?: { primaryColor?: string; secondaryColor?: string } | null;
-  /** Owner's saved named themes for the "Saved themes" section. */
+  /** Owner's saved named themes, shown in the unified theme grid. */
   savedThemes?: PortfolioSavedTheme[];
-  /** Called when user clicks "Save current as theme". */
+  /** Called when user saves the current kit as a named theme. */
   onSaveTheme?: (name: string) => Promise<void>;
   /** Called when user deletes a saved theme by id. */
   onDeleteTheme?: (id: string) => Promise<void>;
@@ -128,12 +124,6 @@ export function BrandKitPicker({
   const headingFont: PortfolioFontKey = value.headingFont ?? resolvedFonts.headingFont;
   const bodyFont: PortfolioFontKey = value.bodyFont ?? resolvedFonts.bodyFont;
 
-  // Saved-theme inline save state.
-  const [saveNameInput, setSaveNameInput] = useState("");
-  const [savingTheme, setSavingTheme] = useState(false);
-  const [saveThemeError, setSaveThemeError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   function set<K extends keyof PortfolioBrandKit>(key: K, v: PortfolioBrandKit[K]) {
     onChange({ ...value, [key]: v });
   }
@@ -154,69 +144,18 @@ export function BrandKitPicker({
     onChange(next);
   }
 
-  async function handleSaveTheme() {
-    const name = saveNameInput.trim();
-    if (!name) {
-      setSaveThemeError("Enter a name for this theme.");
-      return;
-    }
-    if (name.length > 60) {
-      setSaveThemeError("Theme name must be 60 characters or fewer.");
-      return;
-    }
-    setSaveThemeError(null);
-    setSavingTheme(true);
-    try {
-      await onSaveTheme?.(name);
-      setSaveNameInput("");
-    } catch {
-      setSaveThemeError("Could not save theme. Please try again.");
-    } finally {
-      setSavingTheme(false);
-    }
-  }
-
-  async function handleDeleteTheme(id: string) {
-    setDeletingId(id);
-    try {
-      await onDeleteTheme?.(id);
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-6">
-      {/* Theme preset */}
+      {/* Unified theme grid (presets + saved) */}
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">{t("themePreset")}</legend>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {BRAND_KIT_THEME_PRESETS.map((preset: BrandKitThemePreset) => {
-            const sw = THEME_PRESET_SWATCHES[preset];
-            const active = value.themePreset === preset;
-            return (
-              <button
-                key={preset}
-                type="button"
-                aria-pressed={active}
-                onClick={() => set("themePreset", preset)}
-                className={cn(
-                  "flex min-h-11 items-center gap-2 border p-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  active ? "border-foreground" : "border-border hover:bg-accent/40 focus-visible:bg-accent/40"
-                )}
-              >
-                <span
-                  className="size-7 shrink-0 border border-border"
-                  style={{ background: sw.bg }}
-                  aria-hidden
-                >
-                  <span className="block size-full" style={{ background: `linear-gradient(135deg, ${sw.accent} 50%, ${sw.fg} 50%)`, opacity: 0.85 }} />
-                </span>
-                <span className="capitalize">{t(`presets.${preset}`)}</span>
-              </button>
-            );
-          })}
-        </div>
+        <legend className="text-sm font-medium">{t("themes")}</legend>
+        <ThemeGrid
+          value={value}
+          onChange={onChange}
+          savedThemes={savedThemes}
+          onSaveTheme={onSaveTheme}
+          onDeleteTheme={onDeleteTheme}
+        />
       </fieldset>
 
       {/* Independent font selectors */}
@@ -280,117 +219,6 @@ export function BrandKitPicker({
           ))}
         </div>
       </fieldset>
-
-      {/* Saved themes */}
-      <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-medium">Saved themes</h3>
-
-        {/* Save current as theme */}
-        {onSaveTheme && (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Theme name"
-                value={saveNameInput}
-                onChange={(e) => {
-                  setSaveNameInput(e.target.value);
-                  setSaveThemeError(null);
-                }}
-                maxLength={60}
-                className="h-9 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="New theme name"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleSaveTheme();
-                }}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => void handleSaveTheme()}
-                disabled={savingTheme || !saveNameInput.trim()}
-                className="shrink-0 gap-1.5"
-              >
-                {savingTheme ? (
-                  <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <PlusIcon className="size-3.5" aria-hidden />
-                )}
-                Save current
-              </Button>
-            </div>
-            {saveThemeError && (
-              <p role="alert" className="text-xs text-destructive">{saveThemeError}</p>
-            )}
-          </div>
-        )}
-
-        {/* Saved theme cards */}
-        {savedThemes.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {savedThemes.map((theme) => {
-              const bk = theme.brandKit;
-              const isDeleting = deletingId === theme.id;
-              return (
-                <li
-                  key={theme.id}
-                  className="group relative flex flex-col overflow-hidden border border-border"
-                >
-                  {/* Color swatch preview */}
-                  <button
-                    type="button"
-                    aria-label={`Apply theme: ${theme.name}`}
-                    onClick={() => onChange(bk)}
-                    className="relative flex h-12 w-full items-center justify-center overflow-hidden focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    style={{ background: bk.backgroundColor }}
-                  >
-                    <span
-                      className="absolute left-0 top-0 h-full w-1/3"
-                      style={{ background: bk.primaryColor }}
-                      aria-hidden
-                    />
-                    <span
-                      className="absolute left-1/3 top-0 h-full w-1/3"
-                      style={{ background: bk.accentColor }}
-                      aria-hidden
-                    />
-                    <span
-                      className="absolute right-0 top-0 h-full w-1/3"
-                      style={{ background: bk.foregroundColor }}
-                      aria-hidden
-                    />
-                  </button>
-                  <span className="flex items-center justify-between gap-1 px-2 py-1.5">
-                    <span className="min-w-0 truncate text-xs font-medium" title={theme.name}>
-                      {theme.name}
-                    </span>
-                    {onDeleteTheme && (
-                      <button
-                        type="button"
-                        aria-label={`Delete theme: ${theme.name}`}
-                        onClick={() => void handleDeleteTheme(theme.id)}
-                        disabled={isDeleting}
-                        className="inline-flex size-6 shrink-0 items-center justify-center border border-transparent text-muted-foreground transition-colors hover:border-border hover:text-destructive focus-visible:border-border focus-visible:text-destructive focus-visible:outline-none disabled:opacity-50"
-                      >
-                        {isDeleting ? (
-                          <Loader2Icon className="size-3.5 animate-spin" aria-hidden />
-                        ) : (
-                          <Trash2Icon className="size-3.5" aria-hidden />
-                        )}
-                      </button>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No saved themes yet. Customise your brand kit above, then save it as a theme.
-          </p>
-        )}
-      </section>
     </div>
   );
 }
