@@ -3,8 +3,7 @@ import { Types } from "mongoose";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { getItemsByIds, listCollectionsForPicker } from "./gallery";
-import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "./gallery";
+import { getItemsByIds, listCollectionsForPicker, listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "./gallery";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -221,9 +220,9 @@ describe("listCollectionsForPicker — coverPublicId", () => {
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Weddings", slug: "weddings", isPublic: true });
     const a = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-a", url: "u", order: 0 });
     await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-b", url: "u", order: 1 });
-    // no explicit cover → falls back to an item's publicId (non-empty)
+    // no explicit cover → falls back to the newest item's publicId (pid-b created last)
     let cols = await listCollectionsForPicker(ws.toString());
-    expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBeTruthy();
+    expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBe("pid-b");
     // explicit cover → that item's publicId
     await GalleryCollection.updateOne({ _id: col._id }, { $set: { coverItemId: a._id } });
     cols = await listCollectionsForPicker(ws.toString());
