@@ -1,10 +1,12 @@
 /**
  * Client-safe Puck config for the EDITOR canvas.
  *
- * The gallery/featured blocks and the ContactDetails block are async server
- * components (Mongo + AsyncLocalStorage), so they cannot be imported into the
- * client <Puck> editor. For those, this config mirrors each block's `fields` +
- * `defaultProps` and renders a lightweight client PREVIEW.
+ * The gallery blocks are now ISOMORPHIC (client-safe) — they render their own
+ * `images[]` prop with no DB access. The editor uses the REAL component for
+ * true WYSIWYG. All content/layout editing flows through StyleToolkitField.
+ *
+ * FeaturedWork and ContactDetails remain server-only data blocks; the editor
+ * renders lightweight client Previews for those.
  *
  * The Video block and the manual primitives (Heading/Text/Image/Button/Spacer/
  * Divider/Columns/Container) are ISOMORPHIC (client-safe), so the editor renders
@@ -23,16 +25,14 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import type { Config, ComponentConfig, Field } from "@measured/puck";
-import { CollectionPicker } from "./galleryPicker/CollectionPicker";
+import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
 import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
-import { usePickerData } from "./galleryPicker/usePickerData";
 import { StyleToolkitField } from "./StyleToolkitField";
 import { NumberInputRow } from "./toolbarPrimitives";
-import { resolveBlockStyle, asText, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 // Preset defaultProps
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
@@ -40,16 +40,19 @@ import { SECTION_PRESETS } from "./blocks/sectionPresets";
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
+import { GalleryGridBlock } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
+import { GalleryMasonryBlock } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
+import { GalleryCarouselBlock } from "./blocks/GalleryCarouselBlock";
 import type { GalleryCarouselProps } from "./blocks/GalleryCarouselBlock";
 import type { FeaturedWorkProps, FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
 
 // Inlined copies of the data blocks' defaultProps (kept in sync; the parity
 // test compares these against the real server-block defaults).
-const galleryGridDefaultProps: GalleryGridProps = { collectionId: "", columns: 3, gap: "normal", maxItems: 12 };
-const galleryMasonryDefaultProps: GalleryMasonryProps = { collectionId: "", columns: 3, gap: "normal", maxItems: 18 };
-const galleryCarouselDefaultProps: GalleryCarouselProps = { heading: "", description: "", collectionId: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false, maxItems: 12 };
+const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal" };
+const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal" };
+const galleryCarouselDefaultProps: GalleryCarouselProps = { images: [], heading: "", description: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false };
 const featuredWorkDefaultProps: FeaturedWorkProps = { itemIds: [], layout: "row" };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
@@ -173,48 +176,6 @@ function Preview({
   );
 }
 
-function useCollectionName(collectionId: string): string {
-  const { state } = usePickerData();
-  if (!collectionId || state.status !== "ok") return "";
-  return state.data.collections.find((collection) => collection.id === collectionId)?.name ?? "";
-}
-
-function GalleryCollectionPreview({
-  label,
-  blockStyle,
-  heading,
-  collectionId,
-  summary,
-}: {
-  label: string;
-  blockStyle?: BlockStyle;
-  heading?: string;
-  collectionId: string;
-  summary: string;
-}) {
-  const resolvedHeading = rt(heading);
-  const collectionName = useCollectionName(collectionId);
-  const primaryLine = resolvedHeading || collectionName || "No collection selected";
-
-  return (
-    <Preview
-      label={label}
-      lines={[primaryLine, summary]}
-      blockStyle={blockStyle}
-    />
-  );
-}
-
-function truncate(value: string | undefined, max = 120): string {
-  if (!value) return "";
-  return value.length > max ? `${value.slice(0, max)}…` : value;
-}
-
-/** Preview helper — pulls the plain text out of a stored value (tolerates legacy objects). */
-function rt(value: unknown): string {
-  return asText(value);
-}
-
 // ---------------------------------------------------------------------------
 // Shared editor fields
 // ---------------------------------------------------------------------------
@@ -274,16 +235,6 @@ function imagesField(label: string, opts: { max?: number } = {}): Field<MediaPic
       />
     ),
   } as unknown as Field<MediaPickerSelection[]>;
-}
-
-function collectionField(): Field<string> {
-  return {
-    type: "custom",
-    label: "Collection",
-    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-      <CollectionPicker value={value as string} onChange={onChange as (v: string) => void} />
-    ),
-  } as unknown as Field<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -408,15 +359,18 @@ const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
 };
 
 // ---------------------------------------------------------------------------
-// Gallery data blocks — server-only; editor renders a lightweight Preview.
+// Gallery data blocks — now ISOMORPHIC. Editor renders the REAL component for
+// true WYSIWYG; all content/layout editing flows through the StyleToolkitField
+// Content/Layout tabs, so resolveFields strips everything but _style.
 // ---------------------------------------------------------------------------
 
 const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Gallery Grid",
   defaultProps: galleryGridDefaultProps,
+  // `images` is intentionally absent — the editor drives it via StyleToolkitField
+  // (Task 7). The cast is required because Puck's Fields<T> demands all keys.
   fields: {
     _style: styleField,
-    collectionId: collectionField(),
     columns: {
       type: "select",
       label: "Columns",
@@ -435,28 +389,19 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
         { label: "Loose (16px)", value: "loose" },
       ],
     },
-    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
-  },
+  } as unknown as Fields<GalleryGridProps>,
   resolveFields: (_data, { fields }) => {
-    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, collectionId, columns, maxItems }) => (
-    <GalleryCollectionPreview
-      label="Gallery Grid"
-      collectionId={collectionId}
-      summary={`${columns} columns · up to ${maxItems}`}
-      blockStyle={_style}
-    />
-  ),
+  render: GalleryGridBlock,
 };
 
 const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Gallery Masonry",
   defaultProps: galleryMasonryDefaultProps,
+  // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
   fields: {
     _style: styleField,
-    collectionId: collectionField(),
     columns: {
       type: "select",
       label: "Columns",
@@ -475,20 +420,11 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
         { label: "Loose", value: "loose" },
       ],
     },
-    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
-  },
+  } as unknown as Fields<GalleryMasonryProps>,
   resolveFields: (_data, { fields }) => {
-    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, collectionId, columns, maxItems }) => (
-    <GalleryCollectionPreview
-      label="Gallery Masonry"
-      collectionId={collectionId}
-      summary={`${columns} columns · up to ${maxItems}`}
-      blockStyle={_style}
-    />
-  ),
+  render: GalleryMasonryBlock,
 };
 
 const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
@@ -498,7 +434,6 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
     _style: styleField,
     heading: richTextField("Heading (optional)"),
     description: richTextField("Description (optional)", true),
-    collectionId: collectionField(),
     aspect: {
       type: "select",
       label: "Image shape",
@@ -534,21 +469,11 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
         { label: "On", value: true },
       ],
     } as Field<boolean>,
-    maxItems: { type: "number", label: "Max items (1–100)", min: 1, max: 100 } as Field<number>,
-  },
+  } as unknown as Fields<GalleryCarouselProps>,
   resolveFields: (_data, { fields }) => {
-    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, heading, collectionId, aspect, maxItems }) => (
-    <GalleryCollectionPreview
-      label="Gallery Carousel"
-      heading={heading}
-      collectionId={collectionId}
-      summary={`${aspect} · up to ${maxItems}`}
-      blockStyle={_style}
-    />
-  ),
+  render: GalleryCarouselBlock,
 };
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
