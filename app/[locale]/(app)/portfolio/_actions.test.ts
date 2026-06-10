@@ -354,7 +354,7 @@ describe("updateThemeAction", () => {
     const doc = await Workspace.findById(workspaceId).lean();
     expect(doc!.publicPage!.savedThemes!.map((t: { id: string }) => t.id)).toEqual(["a", "b"]);
     expect(doc!.publicPage!.savedThemes![0].name).toBe("Sunset Bright");
-    expect(doc!.publicPage!.savedThemes![0].brandKit.accentColor).toBe("#123456");
+    expect(doc!.publicPage!.savedThemes![0].brandKit!.accentColor).toBe("#123456");
   });
 
   it("allows a theme to keep its own name", async () => {
