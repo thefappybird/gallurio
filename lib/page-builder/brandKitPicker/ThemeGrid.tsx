@@ -11,32 +11,59 @@ import {
 } from "@/lib/page-builder/types";
 import {
   buildThemeTiles,
+  buildCurrentTile,
   filterThemeTiles,
-  paginate,
+  paginateWithCurrent,
   brandKitsEqualForSelection,
+  type ThemeTileModel,
 } from "./themeTiles";
 import { ThemeTile } from "./ThemeTile";
 import { SaveThemePopover } from "./SaveThemePopover";
+import { ConfirmDialog } from "./ConfirmDialog";
+import type { ThemeEditorController } from "./useThemeEditor";
 
 type Props = {
   value: PortfolioBrandKit;
-  onChange: (next: PortfolioBrandKit) => void;
   savedThemes: PortfolioSavedTheme[];
+  controller: ThemeEditorController;
   onSaveTheme?: (name: string) => Promise<void>;
   onDeleteTheme?: (id: string) => Promise<void>;
 };
 
-export function ThemeGrid({ value, onChange, savedThemes, onSaveTheme, onDeleteTheme }: Props) {
+export function ThemeGrid({ value, savedThemes, controller, onSaveTheme, onDeleteTheme }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const presetName = (id: BrandKitThemePreset) => t(`presets.${id}`);
-  const tiles = buildThemeTiles({ presetName, savedThemes });
-  const filtered = filterThemeTiles(tiles, query);
-  const { pageItems, pageCount, page: safePage } = paginate(filtered, page);
+  const allTiles = buildThemeTiles({ presetName, savedThemes });
+  const realTiles = filterThemeTiles(allTiles, query);
+  const currentTile = controller.hasUnsavedCurrent
+    ? buildCurrentTile(controller.currentTheme!, t("currentTheme"))
+    : null;
+  const { pageItems, pageCount, page: safePage } = paginateWithCurrent(realTiles, currentTile, page);
 
+  const savedById = new Map(savedThemes.map((s) => [s.id, s]));
+
+  const activeName =
+    controller.selection.kind === "tile"
+      ? allTiles.find((tile) => tile.key === (controller.selection as { kind: "tile"; key: string }).key)?.name ?? ""
+      : "";
+
+  function isSelected(tile: ThemeTileModel): boolean {
+    if (tile.variant === "current") return controller.selection.kind === "current";
+    return (
+      brandKitsEqualForSelection(tile.brandKit, value) && controller.selection.kind !== "current"
+    );
+  }
+
+  function applyWithGuard(tile: ThemeTileModel) {
+    controller.requestExit(() => controller.applyTile(tile));
+  }
+  function editWithGuard(theme: PortfolioSavedTheme) {
+    controller.requestExit(() => controller.enterEdit(theme));
+  }
   async function handleDelete(id: string) {
     setDeletingId(id);
     try {
@@ -48,50 +75,53 @@ export function ThemeGrid({ value, onChange, savedThemes, onSaveTheme, onDeleteT
 
   return (
     <section aria-label={t("themes")} className="flex flex-col gap-3">
-      {/* Toolbar */}
       <div className="flex items-center gap-2">
         <input
           type="search"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setPage(0); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(0);
+          }}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
           className="h-9 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
         {onSaveTheme && (
-          <SaveThemePopover onSave={onSaveTheme} atLimit={savedThemes.length >= SAVED_THEMES_MAX} />
+          <SaveThemePopover
+            onSave={onSaveTheme}
+            atLimit={savedThemes.length >= SAVED_THEMES_MAX}
+            takenNames={savedThemes.map((s) => s.name)}
+          />
         )}
       </div>
 
-      {/* Grid / empty state */}
       {pageItems.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {pageItems.map((tile) => (
-            <ThemeTile
-              key={tile.key}
-              tile={tile}
-              selected={brandKitsEqualForSelection(tile.brandKit, value)}
-              applyLabel={t("applyTheme", { name: tile.name })}
-              deleteLabel={
-                tile.savedThemeId && onDeleteTheme
-                  ? t("deleteTheme", { name: tile.name })
-                  : undefined
-              }
-              deleting={deletingId === tile.savedThemeId}
-              onApply={() => onChange(tile.brandKit)}
-              onDelete={
-                tile.savedThemeId && onDeleteTheme
-                  ? () => void handleDelete(tile.savedThemeId!)
-                  : undefined
-              }
-            />
-          ))}
+          {pageItems.map((tile) => {
+            const saved = tile.savedThemeId ? savedById.get(tile.savedThemeId) : undefined;
+            return (
+              <ThemeTile
+                key={tile.key}
+                tile={tile}
+                selected={isSelected(tile)}
+                editing={!!saved && controller.editing?.id === saved.id}
+                applyLabel={t("applyTheme", { name: tile.name })}
+                currentBadge={tile.variant === "current" ? t("currentThemeBadge") : undefined}
+                editLabel={saved ? t("editTheme", { name: tile.name }) : undefined}
+                deleteLabel={saved && onDeleteTheme ? t("deleteTheme", { name: tile.name }) : undefined}
+                deleting={deletingId === tile.savedThemeId}
+                onApply={() => applyWithGuard(tile)}
+                onEdit={saved ? () => editWithGuard(saved) : undefined}
+                onDelete={saved && onDeleteTheme ? () => void handleDelete(saved.id) : undefined}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className="py-6 text-center text-sm text-muted-foreground">{t("noThemesMatch")}</p>
       )}
 
-      {/* Pagination */}
       {pageCount > 1 && (
         <div className="flex items-center justify-center gap-3">
           <button
@@ -117,6 +147,16 @@ export function ThemeGrid({ value, onChange, savedThemes, onSaveTheme, onDeleteT
           </button>
         </div>
       )}
+
+      <ConfirmDialog
+        open={controller.overrideOpen}
+        title={t("overrideCurrentTitle")}
+        body={t("overrideCurrentBody", { name: activeName })}
+        confirmLabel={t("continueAction")}
+        cancelLabel={t("cancelAction")}
+        onConfirm={controller.confirmOverride}
+        onCancel={controller.cancelOverride}
+      />
     </section>
   );
 }

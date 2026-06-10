@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   type PortfolioBrandKit,
@@ -16,6 +17,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "lucide-react";
 import { ThemeGrid } from "./ThemeGrid";
+import { useThemeEditor, type ThemeEditorController } from "./useThemeEditor";
+import { EditThemeBar } from "./EditThemeBar";
+import { UnsavedEditDialog } from "./UnsavedEditDialog";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -58,6 +62,14 @@ type Props = {
   onSaveTheme?: (name: string) => Promise<void>;
   /** Called when user deletes a saved theme by id. */
   onDeleteTheme?: (id: string) => Promise<void>;
+  /** Optional shared controller (provided by ThemePanelDialog for the close-guard). */
+  controller?: ThemeEditorController;
+  /** Persist edit-mode changes to a saved theme. */
+  onUpdateTheme?: (
+    id: string,
+    name: string,
+    brandKit: PortfolioBrandKit
+  ) => Promise<{ ok: true; theme: PortfolioSavedTheme } | { error: string }>;
 };
 
 /** A single font-family selector — heading or body. */
@@ -116,32 +128,51 @@ export function BrandKitPicker({
   savedThemes = [],
   onSaveTheme,
   onDeleteTheme,
+  controller,
+  onUpdateTheme,
 }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
 
+  // Uncontrolled mirror so standalone usage reflects edits in the grid; when a
+  // controller is supplied (ThemePanelDialog), `value` is the source of truth.
+  const [internalValue, setInternalValue] = useState(value);
+  const isControlled = controller !== undefined;
+  const workingValue = isControlled ? value : internalValue;
+  const emitChange = (next: PortfolioBrandKit) => {
+    if (!isControlled) setInternalValue(next);
+    onChange(next);
+  };
+  const ownController = useThemeEditor({
+    value: workingValue,
+    onChange: emitChange,
+    savedThemes,
+    onUpdateTheme,
+  });
+  const ctrl = controller ?? ownController;
+
   // Derive current heading/body from explicit keys or legacy pair fallback.
-  const resolvedFonts = legacyFontPairToFonts(value.fontPair);
-  const headingFont: PortfolioFontKey = value.headingFont ?? resolvedFonts.headingFont;
-  const bodyFont: PortfolioFontKey = value.bodyFont ?? resolvedFonts.bodyFont;
+  const resolvedFonts = legacyFontPairToFonts(workingValue.fontPair);
+  const headingFont: PortfolioFontKey = workingValue.headingFont ?? resolvedFonts.headingFont;
+  const bodyFont: PortfolioFontKey = workingValue.bodyFont ?? resolvedFonts.bodyFont;
 
   function set<K extends keyof PortfolioBrandKit>(key: K, v: PortfolioBrandKit[K]) {
-    onChange({ ...value, [key]: v });
+    ctrl.changeControl({ ...workingValue, [key]: v });
   }
 
   function setFont(slot: "headingFont" | "bodyFont", key: PortfolioFontKey) {
-    onChange({ ...value, [slot]: key });
+    ctrl.changeControl({ ...workingValue, [slot]: key });
   }
 
   function useWorkspaceBranding() {
     if (!workspaceBranding) return;
-    const next = { ...value };
+    const next = { ...workingValue };
     if (workspaceBranding.primaryColor && HEX_RE.test(workspaceBranding.primaryColor)) {
       next.primaryColor = workspaceBranding.primaryColor;
     }
     if (workspaceBranding.secondaryColor && HEX_RE.test(workspaceBranding.secondaryColor)) {
       next.secondaryColor = workspaceBranding.secondaryColor;
     }
-    onChange(next);
+    ctrl.changeControl(next);
   }
 
   return (
@@ -150,13 +181,21 @@ export function BrandKitPicker({
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium">{t("themes")}</legend>
         <ThemeGrid
-          value={value}
-          onChange={onChange}
+          value={workingValue}
           savedThemes={savedThemes}
+          controller={ctrl}
           onSaveTheme={onSaveTheme}
           onDeleteTheme={onDeleteTheme}
         />
       </fieldset>
+
+      {ctrl.editing && (
+        <EditThemeBar
+          name={ctrl.editName}
+          onNameChange={ctrl.changeEditName}
+          onExit={() => ctrl.requestExit(() => {})}
+        />
+      )}
 
       {/* Independent font selectors */}
       <div className="flex flex-col gap-4">
@@ -198,17 +237,17 @@ export function BrandKitPicker({
               >
                 <span
                   className="size-7 shrink-0 border border-border"
-                  style={{ background: value[key] }}
+                  style={{ background: workingValue[key] }}
                   aria-hidden
                 />
                 <span className="flex flex-1 flex-col">
                   <span className="text-xs text-muted-foreground">{t(`colorLabels.${key}`)}</span>
-                  <span className="font-mono text-xs uppercase">{value[key]}</span>
+                  <span className="font-mono text-xs uppercase">{workingValue[key]}</span>
                 </span>
               </PopoverTrigger>
               <PopoverContent className="w-auto" align="start">
                 <ColorPicker
-                  value={value[key]}
+                  value={workingValue[key]}
                   onChange={(hex) => set(key, hex)}
                   presets={BRAND_PRESETS}
                   presetsLabel={t("colors")}
@@ -219,6 +258,21 @@ export function BrandKitPicker({
           ))}
         </div>
       </fieldset>
+
+      <UnsavedEditDialog
+        open={ctrl.editGuardOpen}
+        title={t("unsavedChangesTitle")}
+        body={t("unsavedChangesBody")}
+        discardLabel={t("discardAction")}
+        saveLabel={t("saveAndCloseAction")}
+        saving={ctrl.editSaving}
+        error={ctrl.editGuardError ? t("themeNameExists") : null}
+        onDiscard={ctrl.discardEdit}
+        onSaveAndClose={() => void ctrl.saveAndExitEdit()}
+        onOpenChange={(o) => {
+          if (!o) ctrl.cancelEditGuard();
+        }}
+      />
     </div>
   );
 }

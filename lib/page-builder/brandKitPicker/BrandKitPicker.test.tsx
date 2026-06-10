@@ -106,6 +106,23 @@ describe("BrandKitPicker", () => {
     expect(screen.queryByRole("button", { name: /use workspace branding/i })).toBeNull();
   });
 
+  it("shows a Current Theme tile after a divergent color edit", () => {
+    setup({ onSaveTheme: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    expect(screen.getByRole("button", { name: "Apply theme: Current Theme" })).toBeInTheDocument();
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+  });
+
+  it("enters edit mode from a saved tile and shows the name bar", () => {
+    const themes = [
+      { id: "t1", name: "Sunset", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#e87a4f" } },
+    ];
+    setup({ savedThemes: themes, onSaveTheme: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: "Edit theme: Sunset" }));
+    expect(screen.getByLabelText("Theme name")).toHaveValue("Sunset");
+  });
+
   describe("saved themes", () => {
     const themes: PortfolioSavedTheme[] = [
       {
