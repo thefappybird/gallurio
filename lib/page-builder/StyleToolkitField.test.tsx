@@ -240,3 +240,21 @@ describe("StyleToolkitField — carousel Layout tab", () => {
     expect(screen.queryByText("Text padding")).toBeNull();
   });
 });
+
+import { CarouselTextPadding } from "./StyleToolkitField";
+
+describe("CarouselTextPadding heading gap control", () => {
+  it("renders a heading gap input and writes _style.headingGap", () => {
+    const set = vi.fn();
+    render(<CarouselTextPadding s={{}} set={set} />);
+    // NumberInputRow uses a <span> for the label (no htmlFor/aria-label on the input),
+    // so getByLabelText is not available. We verify the label text is present, then
+    // fire change on the last spinbutton (X and Y DimensionInputs come first; the
+    // new Heading gap NumberInputRow is last in the DOM).
+    expect(screen.getByText(/heading gap/i)).toBeTruthy();
+    const spinbuttons = screen.getAllByRole("spinbutton");
+    const headingGapInput = spinbuttons[spinbuttons.length - 1];
+    fireEvent.change(headingGapInput, { target: { value: "20" } });
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ headingGap: 20 }));
+  });
+});

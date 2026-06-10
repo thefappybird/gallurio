@@ -769,7 +769,7 @@ function CarouselTargetControls({
   );
 }
 
-function CarouselTextPadding({
+export function CarouselTextPadding({
   s,
   set,
 }: {
@@ -781,6 +781,14 @@ function CarouselTextPadding({
       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Text padding</span>
       <DimensionInput label="Horizontal (X)" value={s.textPaddingX} onChange={(v) => set({ textPaddingX: v })} />
       <DimensionInput label="Vertical (Y)" value={s.textPaddingY} onChange={(v) => set({ textPaddingY: v })} />
+      <NumberInputRow
+        label="Heading gap"
+        value={s.headingGap}
+        min={0}
+        max={96}
+        suffix="px"
+        onChange={(v) => set({ headingGap: v })}
+      />
     </div>
   );
 }
