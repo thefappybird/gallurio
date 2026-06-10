@@ -160,7 +160,7 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Featured work" }),
     child("Text", { text: "Spotlight a few signature images." }),
-    child("FeaturedWork", { itemIds: [], layout: "row" }),
+    child("FeaturedWork", { collections: [], columns: 3 }),
   ]),
 };
 

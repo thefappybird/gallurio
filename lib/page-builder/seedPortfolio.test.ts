@@ -6,11 +6,9 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace, GalleryCollection, GalleryItem } from "@/lib/db/models";
 import {
-  injectGalleryRefs,
   seedDefaultPortfolio,
   reseedPortfolioFromTemplate,
 } from "./seedPortfolio";
-import type { PortfolioPuckData } from "@/lib/page-builder/types";
 
 let workspaceId: Types.ObjectId;
 
@@ -38,44 +36,6 @@ beforeEach(async () => {
   await clearCollections();
 });
 
-describe("injectGalleryRefs", () => {
-  it("seeds FeaturedWork itemIds as {id} rows and does NOT touch gallery blocks", () => {
-    const data: PortfolioPuckData = {
-      home: {
-        content: [
-          { type: "FeaturedWork", props: { id: "f1", itemIds: [] } },
-          { type: "HeroPreset", props: { id: "h1" } },
-        ],
-        root: {},
-      },
-      gallery: {
-        content: [{ type: "GalleryGrid", props: { id: "g1", images: [] } }],
-        root: {},
-      },
-    };
-
-    injectGalleryRefs(data, "col-123", ["a", "b", "c", "d"]);
-
-    // FeaturedWork.itemIds filled with first 3 items
-    expect(data.home!.content[0].props.itemIds).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
-    // Gallery blocks are NOT touched — no collectionId is injected; images stays []
-    expect(data.gallery!.content[0].props.images).toEqual([]);
-    expect(data.gallery!.content[0].props).not.toHaveProperty("collectionId");
-  });
-
-  it("does not add or modify any prop on gallery blocks", () => {
-    // Guard: injectGalleryRefs must never write collectionId, images, or any other
-    // prop onto gallery blocks, regardless of what itemIds are passed.
-    const galleryPropsBefore = { id: "g1", images: [] };
-    const data: PortfolioPuckData = {
-      home: null,
-      gallery: { content: [{ type: "GalleryGrid", props: { ...galleryPropsBefore } }], root: {} },
-    };
-    injectGalleryRefs(data, "col-999", ["x", "y"]);
-    expect(data.gallery!.content[0].props).toEqual(galleryPropsBefore);
-  });
-});
-
 describe("seedDefaultPortfolio", () => {
   it("seeds the businessType-matched template when home is empty", async () => {
     await makeWorkspace();
@@ -101,13 +61,12 @@ describe("seedDefaultPortfolio", () => {
     expect(home.content).toHaveLength(1); // unchanged
   });
 
-  it("seeded gallery blocks have empty images[] even when a featured-work collection exists", async () => {
-    // The wedding-photographer template (photographer businessType) has no top-level
-    // FeaturedWork block — FeaturedWork lives inside preset slot children that
-    // injectGalleryRefs does not traverse. So even when a featured-work collection
-    // exists, gallery blocks are seeded empty; the owner populates them in the editor.
+  it("seeded gallery blocks have empty images[] even when collections exist", async () => {
+    // Gallery blocks bake images[] directly (no collectionId pointer).
+    // FeaturedWork blocks are seeded with empty collections[]; the owner populates them
+    // via the editor's collections picker.
     await makeWorkspace();
-    const col = await GalleryCollection.create({
+    await GalleryCollection.create({
       workspaceId,
       name: "Featured work",
       slug: "featured-work",
@@ -115,8 +74,7 @@ describe("seedDefaultPortfolio", () => {
       order: 0,
     });
     await GalleryItem.create([
-      { workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
-      { workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/p/2.jpg`, url: "u2", order: 1 },
+      { workspaceId, cloudinaryPublicId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
     ]);
 
     const seed = await seedDefaultPortfolio(workspaceId);
@@ -126,6 +84,16 @@ describe("seedDefaultPortfolio", () => {
     for (const b of galleryBlocks) {
       expect(b.props.images).toEqual([]);
       expect(b.props).not.toHaveProperty("collectionId");
+    }
+    // FeaturedWork blocks are seeded with empty collections[]
+    const allContent = [
+      ...(seed!.data.home?.content ?? []),
+      ...(seed!.data.gallery?.content ?? []),
+    ];
+    const featuredBlocks = allContent.filter((b) => b.type === "FeaturedWork");
+    for (const b of featuredBlocks) {
+      expect(b.props.collections).toEqual([]);
+      expect(b.props).not.toHaveProperty("itemIds");
     }
   });
 });

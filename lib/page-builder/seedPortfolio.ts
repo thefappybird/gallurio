@@ -1,16 +1,14 @@
 import "server-only";
 
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, GalleryCollection, GalleryItem } from "@/lib/db/models";
+import { Workspace } from "@/lib/db/models";
 import {
   getTemplate,
   getTemplateForBusinessType,
   type PortfolioTemplate,
 } from "@/lib/page-builder/templates";
-import type { PortfolioBrandKit, PortfolioContactConfig, PortfolioPuckData, PuckData } from "@/lib/page-builder/types";
+import type { PortfolioBrandKit, PortfolioContactConfig, PortfolioPuckData } from "@/lib/page-builder/types";
 import type { Types } from "mongoose";
-
-const FEATURED_COLLECTION_SLUG = "featured-work";
 
 export type PortfolioSeed = {
   templateId: string;
@@ -19,53 +17,13 @@ export type PortfolioSeed = {
   contact: PortfolioContactConfig;
 };
 
-/**
- * Seed FeaturedWork.itemIds with the first uploaded photos so a freshly seeded
- * portfolio's Featured Work isn't visibly empty when the workspace already has a
- * Featured-work collection. Gallery blocks now bake `images[]` directly (no
- * collectionId pointer), so they are seeded empty and the owner picks photos in
- * the editor. Mutates `data` in place.
- */
-export function injectGalleryRefs(
-  data: PortfolioPuckData,
-  _collectionId: string,
-  itemIds: string[]
-): void {
-  const zones: (PuckData | null)[] = [data.home, data.gallery];
-  for (const z of zones) {
-    if (!z) continue;
-    for (const block of z.content) {
-      if (
-        block.type === "FeaturedWork" &&
-        Array.isArray(block.props.itemIds) &&
-        block.props.itemIds.length === 0
-      ) {
-        block.props.itemIds = itemIds.slice(0, 3).map((id) => ({ id }));
-      }
-    }
-  }
-}
-
-// Build a template's seed data and wire in the workspace's existing
-// "featured-work" collection (and its first photos) when one exists.
+// Build a template's seed data.
 async function buildSeed(
   template: PortfolioTemplate,
-  workspaceId: Types.ObjectId,
+  _workspaceId: Types.ObjectId,
   ctx: { name: string; branding?: { tagline?: string | null; description?: string | null } | null }
 ): Promise<PortfolioSeed> {
   const data = template.seedData({ workspace: { name: ctx.name, branding: ctx.branding ?? null } });
-
-  const collection = await GalleryCollection.findOne({ workspaceId, slug: FEATURED_COLLECTION_SLUG })
-    .select({ _id: 1 })
-    .lean();
-  if (collection) {
-    const items = await GalleryItem.find({ workspaceId, collectionId: collection._id })
-      .sort({ order: 1, _id: 1 })
-      .limit(3)
-      .select({ _id: 1 })
-      .lean();
-    injectGalleryRefs(data, String(collection._id), items.map((i) => String(i._id)));
-  }
 
   return {
     templateId: template.id,

@@ -3,8 +3,20 @@
 import { useMemo, useState } from "react";
 import { ImageIcon, ImagePlusIcon, XIcon } from "lucide-react";
 import { usePickerData } from "./usePickerData";
-import { MediaPicker, type MediaPickerSelection } from "./MediaPicker";
+import { MediaPicker, type MediaPickerSelection, type MediaPickerCollectionSelection } from "./MediaPicker";
 import type { PickerItem } from "./types";
+
+// ---------------------------------------------------------------------------
+// FeaturedCollectionRef — mirrors the block type but defined here to avoid a
+// circular import (MediaField ← block type ← editorConfig ← MediaField).
+// ---------------------------------------------------------------------------
+
+export type CollectionRef = {
+  id: string;
+  name: string;
+  coverPublicId: string;
+  itemCount: number;
+};
 
 const L = {
   choosePhoto: "Choose photo",
@@ -135,6 +147,68 @@ export function MultiImageControl({
         max={max}
         value={selection}
         onChange={(v) => onChange(v as MediaPickerSelection[])}
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// MultiCollectionControl — collections-mode picker for FeaturedWork
+// ---------------------------------------------------------------------------
+
+export function MultiCollectionControl({
+  value,
+  onChange,
+}: {
+  value: CollectionRef[];
+  onChange: (v: CollectionRef[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selection = Array.isArray(value) ? value : [];
+
+  function handleChange(next: unknown) {
+    const cols = (next as MediaPickerCollectionSelection[]).map(
+      (c): CollectionRef => ({
+        id: c.id,
+        name: c.name,
+        coverPublicId: c.coverPublicId,
+        itemCount: c.itemCount,
+      })
+    );
+    onChange(cols);
+  }
+
+  const pickerValue: MediaPickerCollectionSelection[] = selection.map((c) => ({
+    id: c.id,
+    name: c.name,
+    coverPublicId: c.coverPublicId,
+    itemCount: c.itemCount,
+  }));
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-muted-foreground">
+          {selection.length === 0
+            ? "No collections selected"
+            : `${selection.length} collection${selection.length === 1 ? "" : "s"} selected`}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1 border border-border px-2 py-1 text-xs hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          <ImagePlusIcon className="size-3.5" aria-hidden />
+          Choose collections
+        </button>
+      </div>
+
+      <MediaPicker
+        mode="collections"
+        value={pickerValue}
+        onChange={handleChange}
         open={open}
         onOpenChange={setOpen}
       />

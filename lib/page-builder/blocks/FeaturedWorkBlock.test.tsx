@@ -1,139 +1,217 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+/**
+ * FeaturedWorkBlock — isomorphic (client-safe) unit tests.
+ *
+ * These tests mirror GalleryGridBlock.test.tsx: no in-memory Mongo, no server
+ * context, just rendering from props with NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME set.
+ */
+
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Types } from "mongoose";
-import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem } from "@/lib/db/models/GalleryItem";
-import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { puckConfig } from "@/lib/page-builder/config";
-import { FeaturedWorkBlock, featuredWorkDefaultProps } from "./FeaturedWorkBlock";
+import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
 
-vi.mock("@/lib/storage/cloudinary", () => ({
-  cloudinaryThumbnailUrl: vi.fn((publicId: string) => `https://res.cloudinary.com/test/${publicId}`),
-}));
+// ---------------------------------------------------------------------------
+// Cloudinary env
+// ---------------------------------------------------------------------------
 
-beforeAll(async () => {
-  await startInMemoryMongo();
-});
-afterAll(async () => {
-  await stopInMemoryMongo();
-});
-afterEach(async () => {
-  await clearCollections();
+beforeEach(() => {
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
 });
 
-async function makeCollection(workspaceId: Types.ObjectId) {
-  return GalleryCollection.create({
-    workspaceId,
-    name: "C",
-    slug: `c-${new Types.ObjectId().toString()}`,
-    isPublic: true,
-  });
-}
-async function seed(workspaceId: Types.ObjectId, collectionId: Types.ObjectId, n: number) {
-  return GalleryItem.insertMany(
-    Array.from({ length: n }, (_, i) => ({
-      workspaceId,
-      collectionId,
-      cloudinaryPublicId: `${workspaceId}/item${i}`,
-      url: `u${i}`,
-      caption: `Photo ${i + 1}`,
-      altText: `Alt ${i + 1}`,
-      order: i,
-    }))
-  );
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function makeCollection(overrides: Partial<FeaturedCollectionRef> = {}): FeaturedCollectionRef {
+  return {
+    id: "col-1",
+    name: "Weddings",
+    coverPublicId: "gallurio/weddings/cover.jpg",
+    itemCount: 12,
+    ...overrides,
+  };
 }
 
-const base = { ...featuredWorkDefaultProps };
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 it("is registered in puckConfig", () => {
   expect(puckConfig.components.FeaturedWork).toBeDefined();
 });
 
-describe("FeaturedWorkBlock", () => {
-  it("renders the empty message when no items selected", async () => {
-    const ws = new Types.ObjectId();
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: [] })
+it("FeaturedWorkBlock is NOT a Promise (sync render)", () => {
+  const result = FeaturedWorkBlock({ ...featuredWorkDefaultProps });
+  // A sync component returns a React element, not a Promise
+  expect(result).not.toBeInstanceOf(Promise);
+  expect(result).not.toBeNull();
+});
+
+describe("FeaturedWorkBlock — empty state", () => {
+  it("renders data-empty=true with empty collections", () => {
+    const { container } = render(
+      <FeaturedWorkBlock {...featuredWorkDefaultProps} collections={[]} />
     );
-    render(el);
-    expect(screen.getByText(/no featured photos selected yet/i)).toBeInTheDocument();
+    const section = container.querySelector("[data-block='featured-work']");
+    expect(section).not.toBeNull();
+    expect(section!.getAttribute("data-empty")).toBe("true");
   });
 
-  it("renders selected items in requested order", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const created = await seed(ws, col._id, 3);
-    const ids = created.map((d) => d._id.toString());
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: [ids[2], ids[0]] })
+  it("renders the empty label (English default)", () => {
+    render(<FeaturedWorkBlock {...featuredWorkDefaultProps} collections={[]} />);
+    expect(screen.getByText(/no featured photos selected yet/i)).toBeTruthy();
+  });
+});
+
+describe("FeaturedWorkBlock — tiles render", () => {
+  it("renders one tile per collection", () => {
+    const collections = [
+      makeCollection({ id: "c1", name: "Weddings", itemCount: 5, coverPublicId: "w/cover.jpg" }),
+      makeCollection({ id: "c2", name: "Portraits", itemCount: 3, coverPublicId: "p/cover.jpg" }),
+    ];
+    const { container } = render(
+      <FeaturedWorkBlock {...featuredWorkDefaultProps} collections={collections} columns={3} />
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(2);
+    // 2 tile buttons rendered
+    const tiles = container.querySelectorAll("[data-featured-tile]");
+    expect(tiles).toHaveLength(2);
   });
 
-  it("caps at 3 items", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const created = await seed(ws, col._id, 5);
-    const ids = created.map((d) => d._id.toString());
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: ids })
+  it("renders collection names", () => {
+    const collections = [
+      makeCollection({ id: "c1", name: "Weddings", itemCount: 2 }),
+      makeCollection({ id: "c2", name: "Portraits", itemCount: 1 }),
+    ];
+    render(
+      <FeaturedWorkBlock {...featuredWorkDefaultProps} collections={collections} />
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(3);
+    expect(screen.getByText("Weddings")).toBeTruthy();
+    expect(screen.getByText("Portraits")).toBeTruthy();
   });
 
-  it("drops itemIds from another workspace (tenant isolation)", async () => {
-    const wsA = new Types.ObjectId();
-    const wsB = new Types.ObjectId();
-    const colA = await makeCollection(wsA);
-    const colB = await makeCollection(wsB);
-    const aItems = await seed(wsA, colA._id, 1);
-    const bItems = await seed(wsB, colB._id, 2);
-    const el = await runWithRenderWorkspace({ _id: wsA.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({
-        ...base,
-        itemIds: [bItems[0]._id.toString(), aItems[0]._id.toString(), bItems[1]._id.toString()],
-      })
+  it("renders pluralized count text — 1 photo", () => {
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ itemCount: 1 })]}
+      />
     );
-    const { container } = render(el);
-    // Only workspace A's single item survives.
-    expect(container.querySelectorAll("img")).toHaveLength(1);
+    expect(screen.getByText("1 photo")).toBeTruthy();
   });
 
-  it("renders when itemIds arrive in Puck's stored object shape ([{ id }])", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const created = await seed(ws, col._id, 2);
-    const puckShape = created.map((d) => ({ id: d._id.toString() }));
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: puckShape })
+  it("renders pluralized count text — 0 photos", () => {
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ itemCount: 0 })]}
+      />
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(2);
+    expect(screen.getByText("No photos")).toBeTruthy();
   });
 
-  it("ignores malformed object rows (missing/blank id) without crashing", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const created = await seed(ws, col._id, 1);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: [{ id: created[0]._id.toString() }, { id: "" }, {}] })
+  it("renders pluralized count text — many photos", () => {
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ itemCount: 12 })]}
+      />
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(1);
+    expect(screen.getByText("12 photos")).toBeTruthy();
   });
 
-  it("drops missing ids without crashing", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const created = await seed(ws, col._id, 1);
-    const missing = new Types.ObjectId().toString();
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      FeaturedWorkBlock({ ...base, itemIds: [created[0]._id.toString(), missing] })
+  it("renders cover image for a collection with coverPublicId", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ coverPublicId: "gallery/cover.jpg" })]}
+      />
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(1);
+    const imgs = container.querySelectorAll("img");
+    expect(imgs.length).toBeGreaterThan(0);
+    expect(imgs[0].src).toContain("test-cloud");
+    expect(imgs[0].src).toContain("gallery/cover.jpg");
+  });
+
+  it("renders a placeholder when coverPublicId is empty", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ coverPublicId: "" })]}
+      />
+    );
+    // No img when publicId is blank (cloudinaryImageUrl returns "")
+    const placeholders = container.querySelectorAll("[data-cover-placeholder]");
+    expect(placeholders.length).toBeGreaterThan(0);
+  });
+
+  it("section has no data-empty when collections are present", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+      />
+    );
+    const section = container.querySelector("[data-block='featured-work']");
+    expect(section!.getAttribute("data-empty")).toBeNull();
+  });
+});
+
+describe("FeaturedWorkBlock — columns", () => {
+  it("sets repeat(2, 1fr) for columns=2", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ id: "c1" }), makeCollection({ id: "c2" })]}
+        columns={2}
+      />
+    );
+    const grid = container.querySelector(".pf-featured-grid");
+    expect(grid).not.toBeNull();
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("repeat(2, 1fr)");
+  });
+
+  it("sets repeat(4, 1fr) for columns=4", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ id: "c1" })]}
+        columns={4}
+      />
+    );
+    const grid = container.querySelector(".pf-featured-grid");
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("repeat(4, 1fr)");
+  });
+});
+
+describe("FeaturedWorkBlock — client safety", () => {
+  it("produces cloudinary URLs using only NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ coverPublicId: "some/image.jpg" })]}
+      />
+    );
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain("res.cloudinary.com/test-cloud");
+    expect(img!.src).not.toContain("undefined");
+  });
+
+  it("renders without crashing when NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is absent", () => {
+    const prev = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    try {
+      const { container } = render(
+        <FeaturedWorkBlock
+          {...featuredWorkDefaultProps}
+          collections={[makeCollection({ coverPublicId: "some/image.jpg" })]}
+        />
+      );
+      // No img (cloudinaryImageUrl returns "" when no cloud name) → placeholder rendered
+      const placeholders = container.querySelectorAll("[data-cover-placeholder]");
+      expect(placeholders.length).toBeGreaterThan(0);
+    } finally {
+      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = prev;
+    }
   });
 });

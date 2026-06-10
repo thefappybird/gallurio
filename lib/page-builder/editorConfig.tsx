@@ -5,8 +5,8 @@
  * `images[]` prop with no DB access. The editor uses the REAL component for
  * true WYSIWYG. All content/layout editing flows through StyleToolkitField.
  *
- * FeaturedWork and ContactDetails remain server-only data blocks; the editor
- * renders lightweight client Previews for those.
+ * FeaturedWork is now ISOMORPHIC — the editor renders the real component for true
+ * WYSIWYG. ContactDetails remains server-only; the editor renders a lightweight Preview.
  *
  * The Video block and the manual primitives (Heading/Text/Image/Button/Spacer/
  * Divider/Columns/Container) are ISOMORPHIC (client-safe), so the editor renders
@@ -27,7 +27,6 @@
  */
 
 import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
-import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
 import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { StyleToolkitField } from "./StyleToolkitField";
@@ -46,14 +45,13 @@ import { GalleryMasonryBlock } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import { GalleryCarouselBlock } from "./blocks/GalleryCarouselBlock";
 import type { GalleryCarouselProps } from "./blocks/GalleryCarouselBlock";
-import type { FeaturedWorkProps, FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
+import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 
 // Inlined copies of the data blocks' defaultProps (kept in sync; the parity
 // test compares these against the real server-block defaults).
 const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal" };
 const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal" };
 const galleryCarouselDefaultProps: GalleryCarouselProps = { images: [], heading: "", description: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false };
-const featuredWorkDefaultProps: FeaturedWorkProps = { itemIds: [], layout: "row" };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
@@ -226,6 +224,7 @@ function imagesField(label: string, opts: { max?: number } = {}): Field<MediaPic
     ),
   } as unknown as Field<MediaPickerSelection[]>;
 }
+
 
 // ---------------------------------------------------------------------------
 // Container fields for the editor — same KEYS as containerFields in manualBlocks,
@@ -489,38 +488,25 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   label: "Highlights",
   defaultProps: featuredWorkDefaultProps,
+  // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
+  // This matches the production featuredWorkBlockConfig field keys exactly.
   fields: {
     _style: styleField,
-    itemIds: {
-      type: "custom",
-      label: "Featured photos (max 3)",
-      render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-        <FeaturedItemsPicker
-          value={value as FeaturedWorkItemId[]}
-          onChange={onChange as (v: Array<{ id: string }>) => void}
-        />
-      ),
-    } as unknown as Field<FeaturedWorkItemId[]>,
-    layout: {
+    columns: {
       type: "select",
-      label: "Layout",
+      label: "Columns",
       options: [
-        { label: "Row", value: "row" },
-        { label: "Stagger", value: "stagger" },
+        { label: "2 columns", value: 2 },
+        { label: "3 columns", value: 3 },
+        { label: "4 columns", value: 4 },
       ],
-    },
-  },
+    } as Field<2 | 3 | 4>,
+  } as unknown as Fields<FeaturedWorkProps>,
   resolveFields: (_data, { fields }) => {
-    // All non-_style fields are managed by the StyleToolkitField Content/Layout tabs
+    // collections and columns are managed by the StyleToolkitField Content/Layout tabs
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, itemIds, layout }) => (
-    <Preview
-      label="Featured Work"
-      lines={[`${itemIds?.length ?? 0} items · ${layout}`]}
-      blockStyle={_style}
-    />
-  ),
+  render: FeaturedWorkBlock,
 };
 
 // ---------------------------------------------------------------------------

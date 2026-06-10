@@ -43,10 +43,9 @@ import {
 import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
-import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
+import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
-import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
-import type { FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
+import type { CollectionRef } from "./galleryPicker/MediaField";
 import {
   ToolbarToggle,
   ColorSwatchRow,
@@ -474,10 +473,10 @@ function ContentInputs({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Photos (max 3)</span>
-          <FeaturedItemsPicker
-            value={(props.itemIds as FeaturedWorkItemId[]) ?? []}
-            onChange={(v) => setProp("itemIds", v)}
+          <span className="text-xs text-muted-foreground">Collections</span>
+          <MultiCollectionControl
+            value={(props.collections as CollectionRef[]) ?? []}
+            onChange={(v) => setProp("collections", v)}
           />
         </div>
       </div>
@@ -1126,11 +1125,6 @@ const CAROUSEL_FLOAT_Y_OPTIONS = [
   { value: "bottom", label: "Bottom" },
 ] as const;
 
-const FEATURED_LAYOUT_OPTIONS = [
-  { value: "row",     label: "Row" },
-  { value: "stagger", label: "Stagger" },
-] as const;
-
 function GalleryLayoutControls({
   type,
   p,
@@ -1285,20 +1279,21 @@ function GalleryLayoutControls({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Layout</span>
+          <span className="text-xs text-muted-foreground">Columns</span>
           <div className="flex items-center gap-1.5">
-            {FEATURED_LAYOUT_OPTIONS.map(({ value, label }) => (
+            {([2, 3, 4] as const).map((v) => (
               <button
-                key={value}
+                key={v}
                 type="button"
-                aria-pressed={(p.layout as string) === value}
-                onClick={() => setProp("layout", value)}
+                aria-pressed={(p.columns as number) === v}
+                onClick={() => setProp("columns", v)}
                 className={cn(
-                  "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.layout as string) === value && "bg-foreground text-background hover:bg-foreground"
+                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  (p.columns as number) === v &&
+                    "bg-foreground text-background hover:bg-foreground"
                 )}
               >
-                {label}
+                {v}
               </button>
             ))}
           </div>
