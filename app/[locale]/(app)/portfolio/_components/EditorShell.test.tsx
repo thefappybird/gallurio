@@ -196,7 +196,7 @@ describe("EditorShell", () => {
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
-    expect(iframe?.getAttribute("src")).toContain("&draft=");
+    expect(iframe?.getAttribute("src")).not.toContain("draft=");
     expect(iframe?.getAttribute("src")).not.toContain("&header=");
     // Back to editing.
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -272,5 +272,16 @@ describe("EditorShell", () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
     expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
+  });
+
+  it("builds a preview src without inlining the draft", async () => {
+    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
+    const iframe = container.querySelector("iframe");
+    const src = iframe?.getAttribute("src") ?? "";
+    expect(src).not.toContain("draft=");
+    expect(src).toContain("zone=");
+    expect(src).toContain("v=");
   });
 });

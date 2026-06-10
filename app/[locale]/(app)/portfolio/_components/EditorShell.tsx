@@ -558,20 +558,9 @@ export function EditorShell({
     (key, values) => tPublicForm(key, values),
     (key, values) => tLocationPicker(key, values)
   ).form;
-  const previewDraft = encodeURIComponent(
-    JSON.stringify({
-      version: LOCAL_DRAFT_VERSION,
-      data: renderDraftData,
-      brandKit,
-      contact,
-      formLocale,
-      headerConfig,
-      collectionsPopup,
-    } satisfies PortfolioBrowserDraft)
-  );
   const previewSrc =
     `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
-    `&v=${previewNonce}&draft=${previewDraft}`;
+    `&v=${previewNonce}`;
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
