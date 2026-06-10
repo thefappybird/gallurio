@@ -18,6 +18,7 @@ import type { Field } from "@measured/puck";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
 import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
 import { fontFamilyValue, type PortfolioFontKey } from "./fonts";
+export { fontFamilyValue };
 
 // The `_style` field key — the per-block style toolkit lives here, as the first
 // field of every block so it renders as the first ("toolkit") section.
