@@ -61,13 +61,13 @@ export type PortfolioCollectionsPopupConfig = {
   radius?: BrandKitRadius | "";
   // Title styles (global override + typography). Empty titleText -> collection name.
   titleText?: string;
-  titleFontFamily?: PortfolioFontKey;
+  titleFontFamily?: PortfolioFontKey | "";
   titleFontSize?: number; // px
   titleColorToken?: string; // token name or hex
   titleBold?: boolean;
   titleItalic?: boolean;
   titleUnderline?: boolean;
-  titleAlign?: PopupTitleAlign; // moves the title across the full popup header width
+  titleAlign?: PopupTitleAlign | ""; // moves the title across the full popup header width
   // Close-button styles
   closeButtonSize?: number; // px (button width/height)
   closeButtonRadius?: BrandKitRadius | "";

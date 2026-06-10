@@ -169,6 +169,22 @@ const workspaceSchema = new Schema(
         borderColor: { type: String, default: "" },
         borderWidth: { type: Number, default: 0 },
         radius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        // Title styling
+        titleText: { type: String, default: "" },
+        titleFontFamily: { type: String, enum: [...PORTFOLIO_FONT_KEYS, ""], default: "" },
+        titleFontSize: { type: Number, default: 0 },
+        titleColorToken: { type: String, default: "" },
+        titleBold: { type: Boolean, default: false },
+        titleItalic: { type: Boolean, default: false },
+        titleUnderline: { type: Boolean, default: false },
+        titleAlign: { type: String, enum: ["left", "center", "right", ""], default: "" },
+        // Close button styling
+        closeButtonSize: { type: Number, default: 0 },
+        closeButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        closeButtonBorderWidth: { type: Number, default: 0 },
+        closeButtonBorderColorToken: { type: String, default: "" },
+        closeButtonOpacity: { type: Number, default: 0 },
+        closeButtonBgColorToken: { type: String, default: "" },
       },
       // Configurable chrome for the public portfolio navigation header.
       // All fields optional — header falls back to brand-kit values.

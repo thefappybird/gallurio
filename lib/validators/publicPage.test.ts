@@ -30,6 +30,35 @@ describe("portfolioCollectionsPopupConfigSchema", () => {
 });
 
 // ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema — new title + close-button fields
+// ---------------------------------------------------------------------------
+
+describe("portfolioCollectionsPopupConfigSchema new fields", () => {
+  it("keeps title + close-button fields through parse", () => {
+    const input = {
+      backgroundColor: "primary",
+      titleText: "Galleries",
+      titleFontSize: 24,
+      titleColorToken: "foreground",
+      titleBold: true,
+      titleAlign: "center",
+      closeButtonSize: 44,
+      closeButtonRadius: "rounded",
+      closeButtonBorderWidth: 2,
+      closeButtonBorderColorToken: "foreground",
+      closeButtonOpacity: 80,
+      closeButtonBgColorToken: "background",
+    };
+    const parsed = portfolioCollectionsPopupConfigSchema.parse(input);
+    expect(parsed.titleText).toBe("Galleries");
+    expect(parsed.titleAlign).toBe("center");
+    expect(parsed.closeButtonSize).toBe(44);
+    expect(parsed.closeButtonRadius).toBe("rounded");
+    expect(parsed.closeButtonBgColorToken).toBe("background");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
 // ---------------------------------------------------------------------------
 

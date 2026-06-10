@@ -125,8 +125,8 @@ export function CollectionPopupChrome({
             fontStyle: config.titleItalic ? "italic" : undefined,
             textDecoration: config.titleUnderline ? "underline" : undefined,
             lineHeight: 1.3,
-            textAlign: config.titleAlign ?? "left",
-            fontFamily: fontFamilyValue(config.titleFontFamily) ?? "inherit",
+            textAlign: (config.titleAlign || "left") as import("react").CSSProperties["textAlign"],
+            fontFamily: fontFamilyValue(config.titleFontFamily || undefined) ?? "inherit",
             color: config.titleColorToken
               ? (colorTokenToVar(config.titleColorToken) ??
                 "var(--pf-color-foreground, #111)")

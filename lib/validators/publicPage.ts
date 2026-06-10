@@ -66,6 +66,22 @@ export const portfolioCollectionsPopupConfigSchema = z.object({
   borderColor: z.string().max(32).optional().or(z.literal("")),
   borderWidth: z.number().int().min(0).max(12).optional(),
   radius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  // Title styling
+  titleText: z.string().optional(),
+  titleFontFamily: z.enum(PORTFOLIO_FONT_KEYS).optional().or(z.literal("")),
+  titleFontSize: z.number().optional(),
+  titleColorToken: z.string().optional(),
+  titleBold: z.boolean().optional(),
+  titleItalic: z.boolean().optional(),
+  titleUnderline: z.boolean().optional(),
+  titleAlign: z.enum(["left", "center", "right"]).optional().or(z.literal("")),
+  // Close button styling
+  closeButtonSize: z.number().optional(),
+  closeButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  closeButtonBorderWidth: z.number().optional(),
+  closeButtonBorderColorToken: z.string().optional(),
+  closeButtonOpacity: z.number().optional(),
+  closeButtonBgColorToken: z.string().optional(),
 });
 export type PortfolioCollectionsPopupConfigInput = z.infer<typeof portfolioCollectionsPopupConfigSchema>;
 
