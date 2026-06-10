@@ -798,10 +798,71 @@ export function CarouselTextPadding({
 }
 
 // ---------------------------------------------------------------------------
+// Padding controls — shared by LayoutTabBody (flex containers only)
+// ---------------------------------------------------------------------------
+
+function PaddingControls({
+  s,
+  set,
+}: {
+  s: BlockStyle;
+  set: (p: Partial<BlockStyle>) => void;
+}) {
+  const [paddingAdvanced, setPaddingAdvanced] = useState(false);
+  const paddingX =
+    s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight ? s.paddingLeft : undefined;
+  const paddingY =
+    s.paddingTop !== undefined && s.paddingTop === s.paddingBottom ? s.paddingTop : undefined;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Padding
+        </span>
+        <button
+          type="button"
+          aria-label="Padding advanced options"
+          onClick={() => setPaddingAdvanced((a) => !a)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          Advanced
+          {paddingAdvanced ? (
+            <ChevronUp className="size-3" aria-hidden />
+          ) : (
+            <ChevronDown className="size-3" aria-hidden />
+          )}
+        </button>
+      </div>
+      {paddingAdvanced ? (
+        <div className="flex flex-col gap-2">
+          <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
+          <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
+          <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
+          <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <DimensionInput
+            label="Horizontal (X)"
+            value={paddingX}
+            onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
+          />
+          <DimensionInput
+            label="Vertical (Y)"
+            value={paddingY}
+            onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Design tab
 // ---------------------------------------------------------------------------
 
-function DesignTab({
+export function DesignTab({
   s,
   set,
   blockType = "",
@@ -810,22 +871,11 @@ function DesignTab({
   set: (p: Partial<BlockStyle>) => void;
   blockType?: string;
 }) {
-  const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
-  const showPadding = FLEX_CONTAINER_BLOCKS.has(blockType);
   const isCarousel = blockType === "GalleryCarousel";
   // Image-only gallery blocks have no on-page text; the carousel uses per-target drawers.
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
-
-  const paddingX =
-    s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight
-      ? s.paddingLeft
-      : undefined;
-  const paddingY =
-    s.paddingTop !== undefined && s.paddingTop === s.paddingBottom
-      ? s.paddingTop
-      : undefined;
 
   return (
     <div className="flex flex-col gap-4 p-3">
@@ -970,52 +1020,6 @@ function DesignTab({
           />
         </div>
       )}
-
-      {/* Padding — containers only */}
-      {showPadding && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Padding
-            </span>
-            <button
-              type="button"
-              aria-label="Padding advanced options"
-              onClick={() => setPaddingAdvanced((a) => !a)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              Advanced
-              {paddingAdvanced ? (
-                <ChevronUp className="size-3" aria-hidden />
-              ) : (
-                <ChevronDown className="size-3" aria-hidden />
-              )}
-            </button>
-          </div>
-          {paddingAdvanced ? (
-            <div className="flex flex-col gap-2">
-              <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
-              <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
-              <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
-              <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <DimensionInput
-                label="Horizontal (X)"
-                value={paddingX}
-                onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
-              />
-              <DimensionInput
-                label="Vertical (Y)"
-                value={paddingY}
-                onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
 
       {/* Animations */}
       <div className="flex flex-col gap-2">
@@ -1317,7 +1321,7 @@ function GalleryLayoutControls({
   return null;
 }
 
-function LayoutTabBody({
+export function LayoutTabBody({
   s,
   set,
   isGridChild,
@@ -1424,6 +1428,7 @@ function LayoutTabBody({
   // Container / generic block layout
   return (
     <div className="flex flex-col gap-4 p-3">
+      {isFlexContainer && <PaddingControls s={s} set={set} />}
       <NumberInputRow
         label="Gap"
         value={s.gap}

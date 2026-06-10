@@ -241,7 +241,7 @@ describe("StyleToolkitField — carousel Layout tab", () => {
   });
 });
 
-import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS } from "./StyleToolkitField";
+import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab } from "./StyleToolkitField";
 
 describe("CarouselTextPadding heading gap control", () => {
   it("renders a heading gap input and writes _style.headingGap", () => {
@@ -256,6 +256,28 @@ describe("CarouselTextPadding heading gap control", () => {
     const headingGapInput = spinbuttons[spinbuttons.length - 1];
     fireEvent.change(headingGapInput, { target: { value: "20" } });
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ headingGap: 20 }));
+  });
+});
+
+describe("padding lives in the Layout tab", () => {
+  it("LayoutTabBody shows Padding for a Container", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.getByText("Padding")).toBeInTheDocument();
+  });
+
+  it("DesignTab no longer shows Padding for a Container", () => {
+    render(<DesignTab s={{}} set={() => {}} blockType="Container" />);
+    expect(screen.queryByText("Padding")).not.toBeInTheDocument();
   });
 });
 
