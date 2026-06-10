@@ -14,7 +14,9 @@
  * - the editor mirrors this via lib/page-builder/editorConfig.tsx (parity-tested)
  */
 
+import React from "react";
 import type { Config } from "@measured/puck";
+import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
@@ -119,5 +121,14 @@ export const puckConfig: Config<Components> = {
     Columns: columnsBlockConfig,
     Container: containerBlockConfig,
   },
-  root: { fields: {} },
+  root: {
+    fields: {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    render: (({ _rootStyle, children }: { _rootStyle?: RootPageStyle; children?: React.ReactNode }) =>
+      React.createElement(
+        "div",
+        { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%" } },
+        children,
+      )) as any,
+  },
 };

@@ -30,6 +30,8 @@ import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
 import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { StyleToolkitField } from "./StyleToolkitField";
+import { RootStyleField } from "./RootStyleField";
+import type { RootPageStyle } from "./rootStyle";
 import { NumberInputRow } from "./toolbarPrimitives";
 import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
@@ -189,6 +191,18 @@ const styleField = {
     />
   ),
 } as unknown as Field<BlockStyle | undefined>;
+
+const rootStyleField = {
+  type: "custom",
+  label: "Page style",
+  render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
+    <RootStyleField
+      value={value as RootPageStyle | undefined}
+      onChange={onChange as (v: RootPageStyle) => void}
+    />
+  ),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as unknown as Field<any>;
 
 // Plain text/textarea field. (Text styling is section-wide via the `_style`
 // toolkit — there is no per-text toolbar.) Kept as a helper so block configs
@@ -817,5 +831,5 @@ export const editorPuckConfig: Config<EditorComponents> = {
   // breaks DnD position tracking without giving us align-self preview either.
   // The flex-col root lives only in config.ts (production <Render>), where
   // blocks ARE direct children and align-self works correctly.
-  root: { fields: {} },
+  root: { fields: { _rootStyle: rootStyleField } },
 };
