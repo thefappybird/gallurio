@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
+import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS } from "@/lib/page-builder/fonts";
+import type { PortfolioFontKey } from "@/lib/page-builder/fonts";
 import {
   BRAND_KIT_RADII,
   CONTACT_BUTTON_COLORS,
@@ -11,16 +13,6 @@ import {
   type PortfolioBrandKit,
   type PortfolioCollectionsPopupConfig,
 } from "@/lib/page-builder/types";
-
-// ---------------------------------------------------------------------------
-// Radius scale for live preview
-// ---------------------------------------------------------------------------
-
-const RADIUS_PX: Record<BrandKitRadius, string> = {
-  sharp: "0px",
-  subtle: "6px",
-  rounded: "16px",
-};
 
 // ---------------------------------------------------------------------------
 // Shared panel primitives (inlined — same pattern as ContactPanelDialog)
@@ -238,23 +230,6 @@ function DesignDrawer({
 }
 
 // ---------------------------------------------------------------------------
-// Preview helpers
-// ---------------------------------------------------------------------------
-
-function resolveColorValue(
-  token: string | undefined,
-  brandKit: PortfolioBrandKit,
-): string | undefined {
-  if (!token) return undefined;
-  if (token.startsWith("#")) return token;
-  const key = token as (typeof CONTACT_BUTTON_COLORS)[number];
-  if ((CONTACT_BUTTON_COLORS as readonly string[]).includes(key)) {
-    return resolveSwatchHex(key, brandKit);
-  }
-  return token;
-}
-
-// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -266,7 +241,8 @@ type Props = {
   onCancel?: () => void;
 };
 
-type DrawerId = "popup";
+type DrawerId = "popup" | "header";
+type SubDrawerId = "title" | "button";
 
 export function CollectionsPopupPanelDialog({
   config,
@@ -274,6 +250,7 @@ export function CollectionsPopupPanelDialog({
   brandKit,
 }: Props) {
   const [openDrawer, setOpenDrawer] = useState<DrawerId | null>("popup");
+  const [openSub, setOpenSub] = useState<SubDrawerId | null>(null);
 
   function set<K extends keyof PortfolioCollectionsPopupConfig>(
     key: K,
@@ -281,17 +258,6 @@ export function CollectionsPopupPanelDialog({
   ) {
     onChange({ ...config, [key]: value });
   }
-
-  // Preview styles
-  const previewBg = resolveColorValue(config.backgroundColor, brandKit);
-  const previewBorderColor = resolveColorValue(config.borderColor, brandKit);
-  const previewBorderWidth = config.borderWidth ?? 0;
-  const radiusValue = config.radius;
-  const activeRadius =
-    radiusValue && (BRAND_KIT_RADII as readonly string[]).includes(radiusValue)
-      ? (radiusValue as BrandKitRadius)
-      : undefined;
-  const previewRadius = activeRadius ? RADIUS_PX[activeRadius] : "0px";
 
   return (
     <div
@@ -304,26 +270,6 @@ export function CollectionsPopupPanelDialog({
         <span className="text-sm font-semibold text-foreground">
           Collections popup
         </span>
-      </div>
-
-      {/* Live preview */}
-      <div className="flex items-center justify-center border-b border-border bg-muted/30 p-4">
-        <div
-          data-testid="collections-popup-preview"
-          aria-hidden
-          style={{
-            width: "140px",
-            height: "80px",
-            backgroundColor: previewBg ?? "var(--background)",
-            borderWidth: previewBorderWidth > 0 ? `${previewBorderWidth}px` : "1px",
-            borderStyle: "solid",
-            borderColor:
-              previewBorderWidth > 0 && previewBorderColor
-                ? previewBorderColor
-                : "var(--border)",
-            borderRadius: previewRadius,
-          }}
-        />
       </div>
 
       {/* Scrollable controls */}
@@ -360,6 +306,124 @@ export function CollectionsPopupPanelDialog({
               active={config.radius}
               onToggle={(r) => set("radius", r)}
             />
+          </DesignDrawer>
+
+          <DesignDrawer
+            title="Header styles"
+            open={openDrawer === "header"}
+            onToggle={() => setOpenDrawer((c) => (c === "header" ? null : "header"))}
+          >
+            <DesignDrawer
+              title="Title styles"
+              open={openSub === "title"}
+              onToggle={() => setOpenSub((c) => (c === "title" ? null : "title"))}
+            >
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-muted-foreground" htmlFor="popup-title-text">
+                  Header text
+                </label>
+                <input
+                  id="popup-title-text"
+                  type="text"
+                  value={config.titleText ?? ""}
+                  placeholder="Defaults to collection name"
+                  onChange={(e) => set("titleText", e.target.value || undefined)}
+                  className="h-8 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button type="button" aria-pressed={!!config.titleBold} aria-label="Bold"
+                  onClick={() => set("titleBold", !config.titleBold)}
+                  className={cn("inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs font-bold", config.titleBold && "bg-foreground text-background")}>B</button>
+                <button type="button" aria-pressed={!!config.titleItalic} aria-label="Italic"
+                  onClick={() => set("titleItalic", !config.titleItalic)}
+                  className={cn("inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs italic", config.titleItalic && "bg-foreground text-background")}>I</button>
+                <button type="button" aria-pressed={!!config.titleUnderline} aria-label="Underline"
+                  onClick={() => set("titleUnderline", !config.titleUnderline)}
+                  className={cn("inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs underline", config.titleUnderline && "bg-foreground text-background")}>U</button>
+                {(["left", "center", "right"] as const).map((a) => (
+                  <button key={a} type="button" aria-pressed={config.titleAlign === a} aria-label={`Align ${a}`}
+                    onClick={() => set("titleAlign", config.titleAlign === a ? undefined : a)}
+                    className={cn("inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs", config.titleAlign === a && "bg-foreground text-background")}>
+                    {a === "left" ? "L" : a === "center" ? "C" : "R"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+                <select
+                  value={config.titleFontFamily ?? ""}
+                  onChange={(e) => set("titleFontFamily", (e.target.value || undefined) as PortfolioFontKey | undefined)}
+                  className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Theme font</option>
+                  {PORTFOLIO_FONT_KEYS.map((key) => (
+                    <option key={key} value={key}>{PORTFOLIO_FONTS[key].label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <NumberInputRow
+                label="Font size"
+                value={config.titleFontSize}
+                min={10}
+                max={120}
+                suffix="px"
+                onChange={(v) => set("titleFontSize", v)}
+              />
+
+              <ColorSwatchRow
+                label="Title color"
+                active={config.titleColorToken}
+                brandKit={brandKit}
+                onToggle={(c) => set("titleColorToken", c)}
+              />
+            </DesignDrawer>
+
+            <DesignDrawer
+              title="Button styles"
+              open={openSub === "button"}
+              onToggle={() => setOpenSub((c) => (c === "button" ? null : "button"))}
+            >
+              <NumberInputRow
+                label="Button size"
+                value={config.closeButtonSize}
+                min={24}
+                max={72}
+                suffix="px"
+                onChange={(v) => set("closeButtonSize", v)}
+              />
+              <RadiusRow
+                label="Corners"
+                active={config.closeButtonRadius}
+                onToggle={(r) => set("closeButtonRadius", r)}
+              />
+              <BorderRow
+                widthLabel="Border"
+                colorLabel="Border color"
+                width={config.closeButtonBorderWidth}
+                color={config.closeButtonBorderColorToken}
+                brandKit={brandKit}
+                onWidthChange={(v) => set("closeButtonBorderWidth", v)}
+                onColorChange={(v) => set("closeButtonBorderColorToken", v)}
+              />
+              <NumberInputRow
+                label="Opacity"
+                value={config.closeButtonOpacity}
+                min={0}
+                max={100}
+                suffix="%"
+                onChange={(v) => set("closeButtonOpacity", v)}
+              />
+              <ColorSwatchRow
+                label="Background"
+                active={config.closeButtonBgColorToken}
+                brandKit={brandKit}
+                onToggle={(c) => set("closeButtonBgColorToken", c)}
+              />
+            </DesignDrawer>
           </DesignDrawer>
         </div>
       </div>

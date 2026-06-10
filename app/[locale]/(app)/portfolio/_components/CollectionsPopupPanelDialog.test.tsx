@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import React from "react";
 import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import type {
   PortfolioCollectionsPopupConfig,
@@ -100,43 +101,16 @@ describe("CollectionsPopupPanelDialog", () => {
     expect(onChange).toHaveBeenCalledWith({ ...baseConfig, borderWidth: 3 });
   });
 
-  it("renders a live preview element that reflects the borderWidth config", () => {
-    const config: PortfolioCollectionsPopupConfig = {
-      ...baseConfig,
-      borderWidth: 4,
-      borderColor: "primary",
-    };
+  // The tiny inline preview has been removed; live preview lives in the left pane.
+  it("does not render the inline preview swatch", () => {
     render(
       <CollectionsPopupPanelDialog
-        config={config}
+        config={baseConfig}
         onChange={vi.fn()}
         brandKit={stubBrandKit}
       />,
     );
-
-    const preview = screen.getByTestId("collections-popup-preview");
-    expect(preview).toBeInTheDocument();
-    // Preview border reflects the configured width
-    expect(preview.style.borderWidth).toBe("4px");
-  });
-
-  it("preview border-radius is non-empty when radius is 'rounded'", () => {
-    const config: PortfolioCollectionsPopupConfig = {
-      ...baseConfig,
-      radius: "rounded",
-    };
-    render(
-      <CollectionsPopupPanelDialog
-        config={config}
-        onChange={vi.fn()}
-        brandKit={stubBrandKit}
-      />,
-    );
-
-    const preview = screen.getByTestId("collections-popup-preview");
-    // Should have some non-zero border-radius
-    expect(preview.style.borderRadius).toBeTruthy();
-    expect(preview.style.borderRadius).not.toBe("0px");
+    expect(screen.queryByTestId("collections-popup-preview")).not.toBeInTheDocument();
   });
 
   it("accepts onSaved and onCancel callbacks without error", () => {
@@ -153,5 +127,42 @@ describe("CollectionsPopupPanelDialog", () => {
         />,
       ),
     ).not.toThrow();
+  });
+});
+
+describe("CollectionsPopupPanelDialog header styles", () => {
+  function setup(config: Partial<PortfolioCollectionsPopupConfig> = {}) {
+    const onChange = vi.fn();
+    render(
+      <CollectionsPopupPanelDialog
+        config={config as PortfolioCollectionsPopupConfig}
+        onChange={onChange}
+        brandKit={stubBrandKit}
+      />,
+    );
+    return { onChange };
+  }
+
+  it("exposes a Header styles drawer with Title and Button sub-sections", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
+    expect(screen.getByRole("button", { name: /title styles/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /button styles/i })).toBeInTheDocument();
+  });
+
+  it("writes a title text override", () => {
+    const { onChange } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    const input = screen.getByLabelText(/header text/i);
+    fireEvent.change(input, { target: { value: "Galleries" } });
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ titleText: "Galleries" }));
+  });
+
+  it("writes a close button size", () => {
+    const { onChange } = setup();
+    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    expect(screen.getByText(/button size/i)).toBeInTheDocument();
   });
 });
