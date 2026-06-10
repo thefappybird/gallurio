@@ -16,6 +16,7 @@ import {
   buildButtonStyle,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
+import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
   tabClient: string;
@@ -109,6 +110,53 @@ const DEFAULT_ADD_SESSION_APPEARANCE: ButtonAppearance = {
   border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
 };
 
+const TAB_FONT_SIZE_MAP: Record<string, string> = {
+  sm: "0.8125rem",
+  md: "0.9375rem",
+  lg: "1.0625rem",
+};
+
+const TAB_RADIUS_MAP: Record<string, string> = {
+  sharp: "0",
+  subtle: "0.25rem",
+  rounded: "0.5rem",
+};
+
+function resolveTabColor(token: string | undefined, fallback: string): string {
+  if (!token) return fallback;
+  if (token.startsWith("#")) return token;
+  return `var(--pf-color-${token}, ${fallback})`;
+}
+
+function buildTabColorWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
+}
+
+export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | undefined): CSSProperties {
+  const style: CSSProperties = {};
+  const activeColor = resolveTabColor(config?.activeTabColor, "var(--pf-color-fg)");
+  style.color = activeColor;
+  if (config?.activeTabScale) {
+    (style as CSSProperties & Record<string, string>)["transform"] = "scale(1.08)";
+    (style as CSSProperties & Record<string, string>)["fontWeight"] = "700";
+  }
+  if (config?.activeTabHighlight) {
+    const highlightColor = resolveTabColor(
+      config.tabHighlightColor,
+      "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+    );
+    style.backgroundColor = buildTabColorWithOpacity(highlightColor, config.tabHighlightOpacity ?? 100);
+    style.borderRadius = config.activeTabRadius
+      ? (TAB_RADIUS_MAP[config.activeTabRadius] ?? "var(--pf-radius)")
+      : "var(--pf-radius)";
+  }
+  if (config?.activeTabUnderline) {
+    style.borderBottom = `3px solid ${resolveTabColor(config.tabUnderlineColor, "var(--pf-color-accent)")}`;
+  }
+  return style;
+}
+
 export function ContactForm({
   workspaceSlug,
   labels,
@@ -118,6 +166,7 @@ export function ContactForm({
   preview = false,
   compactLocationPicker = false,
   scrollable = false,
+  contactConfig,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
@@ -127,6 +176,7 @@ export function ContactForm({
   preview?: boolean;
   compactLocationPicker?: boolean;
   scrollable?: boolean;
+  contactConfig?: PortfolioContactConfig | null;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -265,9 +315,23 @@ export function ContactForm({
       `}</style>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "event" | "location")}>
         <TabsList>
-          <TabsTab value="client">{labels.tabClient}</TabsTab>
-          <TabsTab value="event">{labels.tabEvent}</TabsTab>
-          <TabsTab value="location">{labels.tabLocation}</TabsTab>
+          {(["client", "event", "location"] as const).map((tabValue) => {
+            const isActive = activeTab === tabValue;
+            const label = tabValue === "client" ? labels.tabClient : tabValue === "event" ? labels.tabEvent : labels.tabLocation;
+            const tabFontSize = contactConfig?.tabFontSize
+              ? (TAB_FONT_SIZE_MAP[contactConfig.tabFontSize] ?? "0.9375rem")
+              : "0.9375rem";
+            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "");
+            const activeExtraStyle = getActiveTabExtraStyle(contactConfig);
+            const tabStyle: CSSProperties = isActive
+              ? { fontSize: tabFontSize, ...activeExtraStyle }
+              : { fontSize: tabFontSize, ...(inactiveColor ? { color: inactiveColor } : {}) };
+            return (
+              <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
+                {label}
+              </TabsTab>
+            );
+          })}
         </TabsList>
 
         <TabsPanel value="client">

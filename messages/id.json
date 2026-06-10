@@ -1136,7 +1136,25 @@
             "setup": "Pengaturan",
             "design": "Desain"
           },
-          "errorColorLabel": "Warna pesan error"
+          "errorColorLabel": "Warna pesan error",
+          "sectionTabs": "Tab",
+          "inactiveTabsSection": "Tab tidak aktif",
+          "activeTabSection": "Tab aktif",
+          "tabFontSizeLabel": "Ukuran tab",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Warna teks tab",
+          "activeTabColorLabel": "Warna teks tab aktif",
+          "activeTabStyleLabel": "Gaya",
+          "activeTabStyleScale": "Perbesar",
+          "activeTabStyleHighlight": "Sorot",
+          "activeTabStyleUnderline": "Garis bawah",
+          "tabHighlightColorLabel": "Warna sorotan",
+          "tabHighlightOpacityLabel": "Opacity sorotan",
+          "tabUnderlineColorLabel": "Warna garis bawah"
         },
         "headerDialog": {
           "title": "Navigasi",

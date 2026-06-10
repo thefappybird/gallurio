@@ -1136,7 +1136,25 @@
             "setup": "Setup",
             "design": "Disenyo"
           },
-          "errorColorLabel": "Kulay ng mensahe ng error"
+          "errorColorLabel": "Kulay ng mensahe ng error",
+          "sectionTabs": "Mga Tab",
+          "inactiveTabsSection": "Mga hindi aktibong tab",
+          "activeTabSection": "Aktibong tab",
+          "tabFontSizeLabel": "Laki ng tab",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Kulay ng teksto ng tab",
+          "activeTabColorLabel": "Kulay ng teksto ng aktibong tab",
+          "activeTabStyleLabel": "Estilo",
+          "activeTabStyleScale": "Palakihin",
+          "activeTabStyleHighlight": "I-highlight",
+          "activeTabStyleUnderline": "Salungguhit",
+          "tabHighlightColorLabel": "Kulay ng highlight",
+          "tabHighlightOpacityLabel": "Opacity ng highlight",
+          "tabUnderlineColorLabel": "Kulay ng salungguhit"
         },
         "headerDialog": {
           "title": "Navigation",

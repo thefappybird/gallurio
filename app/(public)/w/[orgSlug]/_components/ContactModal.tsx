@@ -178,6 +178,7 @@ export function ContactModal({
                 labels={labels.form}
                 submitAppearance={submitAppearance}
                 addSessionAppearance={addSessionAppearance}
+                contactConfig={contact}
                 onSuccess={() => setSubmitted(true)}
               />
             )}

@@ -1136,7 +1136,25 @@
             "ms": "Bahasa Melayu",
             "id": "Bahasa Indonesia"
           },
-          "errorColorLabel": "Error message color"
+          "errorColorLabel": "Error message color",
+          "sectionTabs": "Tabs",
+          "inactiveTabsSection": "Inactive tabs",
+          "activeTabSection": "Active tab",
+          "tabFontSizeLabel": "Tab size",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Tab text color",
+          "activeTabColorLabel": "Active tab text color",
+          "activeTabStyleLabel": "Style",
+          "activeTabStyleScale": "Scale",
+          "activeTabStyleHighlight": "Highlight",
+          "activeTabStyleUnderline": "Underline",
+          "tabHighlightColorLabel": "Highlight color",
+          "tabHighlightOpacityLabel": "Highlight opacity",
+          "tabUnderlineColorLabel": "Underline color"
         },
         "headerDialog": {
           "title": "Navigation",

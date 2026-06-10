@@ -112,6 +112,27 @@ export type PortfolioContactConfig = {
   popupBorderWidth?: number;
   /** @deprecated Kept for DB compat — UI now uses individual color/radius fields. */
   popupStyle?: BrandKitButtonStyle;
+  // Tab styling — mirrors header link/active-link conventions
+  /** Tab text font size. Empty = default (md). */
+  tabFontSize?: HeaderFontSize | "";
+  /** Inactive tab text color. Token or hex. */
+  tabColor?: string;
+  /** Active tab text color. Token or hex. */
+  activeTabColor?: string;
+  /** Slightly scales up the active tab. */
+  activeTabScale?: boolean;
+  /** Adds a background highlight behind the active tab. */
+  activeTabHighlight?: boolean;
+  /** Background color for the active tab highlight chip. Token or hex. */
+  tabHighlightColor?: string;
+  /** 0-100 opacity applied to the active-tab highlight fill. */
+  tabHighlightOpacity?: number;
+  /** Radius for the active-tab highlight chip. */
+  activeTabRadius?: BrandKitRadius | "";
+  /** Adds a bottom border to the active tab. */
+  activeTabUnderline?: boolean;
+  /** Border color for active-tab underline mode. Token or hex. */
+  tabUnderlineColor?: string;
 };
 
 // ---------------------------------------------------------------------------

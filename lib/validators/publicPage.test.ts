@@ -109,6 +109,86 @@ describe("portfolioContactConfigSchema", () => {
 });
 
 // ---------------------------------------------------------------------------
+// portfolioContactConfigSchema — tab styling fields
+// ---------------------------------------------------------------------------
+
+describe("portfolioContactConfigSchema — tab styling fields", () => {
+  it("accepts all new tab fields in a valid config", () => {
+    const result = portfolioContactConfigSchema.safeParse({
+      tabFontSize: "sm",
+      tabColor: "primary",
+      activeTabColor: "accent",
+      activeTabScale: true,
+      activeTabHighlight: true,
+      tabHighlightColor: "secondary",
+      tabHighlightOpacity: 80,
+      activeTabRadius: "subtle",
+      activeTabUnderline: true,
+      tabUnderlineColor: "#112233",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty string for tabFontSize (reset to default)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabFontSize: "" }).success).toBe(true);
+  });
+
+  it("rejects an out-of-set tabFontSize", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabFontSize: "xl" }).success).toBe(false);
+  });
+
+  it("accepts empty string for activeTabRadius (reset to default)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ activeTabRadius: "" }).success).toBe(true);
+  });
+
+  it("rejects an out-of-set activeTabRadius", () => {
+    expect(portfolioContactConfigSchema.safeParse({ activeTabRadius: "pill" }).success).toBe(false);
+  });
+
+  it("rejects tabHighlightOpacity out of range", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 150 }).success).toBe(false);
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: -1 }).success).toBe(false);
+  });
+
+  it("accepts tabHighlightOpacity at boundaries (0 and 100)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 0 }).success).toBe(true);
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 100 }).success).toBe(true);
+  });
+
+  it("accepts a hex tabColor (spectrum picker output)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabColor: "#ff0000" }).success).toBe(true);
+  });
+
+  it("accepts a hex tabUnderlineColor", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabUnderlineColor: "#abcdef" }).success).toBe(true);
+  });
+
+  it("rejects a tabColor exceeding max length", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabColor: "#" + "a".repeat(32) }).success).toBe(false);
+  });
+
+  it("tab fields round-trip through parse", () => {
+    const input = {
+      tabFontSize: "lg" as const,
+      tabColor: "foreground",
+      activeTabColor: "accent",
+      activeTabScale: false,
+      activeTabHighlight: true,
+      tabHighlightColor: "#ff0000",
+      tabHighlightOpacity: 60,
+      activeTabRadius: "rounded" as const,
+      activeTabUnderline: false,
+      tabUnderlineColor: "",
+    };
+    const parsed = portfolioContactConfigSchema.parse(input);
+    expect(parsed.tabFontSize).toBe("lg");
+    expect(parsed.tabColor).toBe("foreground");
+    expect(parsed.tabHighlightOpacity).toBe(60);
+    expect(parsed.activeTabRadius).toBe("rounded");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // brandKitSchema
 // ---------------------------------------------------------------------------
 

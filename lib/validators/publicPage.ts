@@ -115,6 +115,17 @@ export const portfolioContactConfigSchema = z.object({
   popupBorderColor: z.string().max(32).optional().or(z.literal("")),
   popupBorderWidth: z.number().int().min(0).max(12).optional(),
   popupStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
+  // Tab styling — mirrors header link/active-link conventions
+  tabFontSize: z.enum(HEADER_FONT_SIZES).optional().or(z.literal("")),
+  tabColor: z.string().max(32).optional().or(z.literal("")),
+  activeTabColor: z.string().max(32).optional().or(z.literal("")),
+  activeTabScale: z.boolean().optional(),
+  activeTabHighlight: z.boolean().optional(),
+  tabHighlightColor: z.string().max(32).optional().or(z.literal("")),
+  tabHighlightOpacity: z.number().int().min(0).max(100).optional(),
+  activeTabRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  activeTabUnderline: z.boolean().optional(),
+  tabUnderlineColor: z.string().max(32).optional().or(z.literal("")),
 });
 
 export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigSchema>;

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ContactForm, type InquiryFormLabels } from "./ContactForm";
+import { ContactForm, getActiveTabExtraStyle, type InquiryFormLabels } from "./ContactForm";
 
 vi.mock("@/components/ui/phone-input", () => ({
   PhoneInput: ({ value, onChange, ...props }: { value?: string; onChange?: (value?: string) => void }) => (
@@ -305,5 +305,111 @@ describe("ContactForm", () => {
 
     const alerts = await screen.findAllByRole("alert");
     expect(alerts[0]).toHaveStyle({ color: "#ff3355" });
+  });
+
+  it("applies inactive tab color when tabColor is set in contactConfig", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        contactConfig={{ tabColor: "#334455" }}
+        onSuccess={() => {}}
+      />
+    );
+    // All tabs start inactive except "client" (the first active tab).
+    // "event" and "location" should get the tabColor style.
+    const eventTab = screen.getByRole("tab", { name: "Event details" });
+    expect(eventTab.getAttribute("style")).toContain("color: #334455");
+  });
+
+  it("applies tabFontSize to all tabs", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        contactConfig={{ tabFontSize: "sm" }}
+        onSuccess={() => {}}
+      />
+    );
+    const clientTab = screen.getByRole("tab", { name: "Your details" });
+    expect(clientTab.getAttribute("style")).toContain("font-size: 0.8125rem");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getActiveTabExtraStyle — unit tests
+// ---------------------------------------------------------------------------
+
+describe("getActiveTabExtraStyle", () => {
+  it("returns an empty-ish style with default activeTabColor when config is null", () => {
+    const style = getActiveTabExtraStyle(null);
+    expect(style.color).toBe("var(--pf-color-fg)");
+    expect(style.transform).toBeUndefined();
+    expect(style.backgroundColor).toBeUndefined();
+    expect(style.borderBottom).toBeUndefined();
+  });
+
+  it("includes transform when activeTabScale is true", () => {
+    const style = getActiveTabExtraStyle({ activeTabScale: true });
+    expect(style.transform).toBe("scale(1.08)");
+    expect((style as Record<string, string>)["fontWeight"]).toBe("700");
+  });
+
+  it("does not include transform when activeTabScale is false", () => {
+    const style = getActiveTabExtraStyle({ activeTabScale: false });
+    expect(style.transform).toBeUndefined();
+  });
+
+  it("includes backgroundColor when activeTabHighlight is true", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      tabHighlightColor: "#ffcc00",
+      tabHighlightOpacity: 100,
+    });
+    expect(style.backgroundColor).toBe("#ffcc00");
+  });
+
+  it("mixes color with opacity when tabHighlightOpacity < 100", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      tabHighlightColor: "#ff0000",
+      tabHighlightOpacity: 50,
+    });
+    expect(style.backgroundColor).toContain("color-mix");
+    expect(style.backgroundColor).toContain("50%");
+  });
+
+  it("applies activeTabRadius to borderRadius when highlighting", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      activeTabRadius: "rounded",
+    });
+    expect(style.borderRadius).toBe("0.5rem");
+  });
+
+  it("includes borderBottom when activeTabUnderline is true", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabUnderline: true,
+      tabUnderlineColor: "#0000ff",
+    });
+    expect(style.borderBottom).toBe("3px solid #0000ff");
+  });
+
+  it("uses token resolution for tabUnderlineColor", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabUnderline: true,
+      tabUnderlineColor: "accent",
+    });
+    expect(style.borderBottom).toContain("var(--pf-color-accent");
+  });
+
+  it("does not include borderBottom when activeTabUnderline is false", () => {
+    const style = getActiveTabExtraStyle({ activeTabUnderline: false });
+    expect(style.borderBottom).toBeUndefined();
+  });
+
+  it("uses token resolution for activeTabColor", () => {
+    const style = getActiveTabExtraStyle({ activeTabColor: "primary" });
+    expect(style.color).toBe("var(--pf-color-primary, var(--pf-color-fg))");
   });
 });

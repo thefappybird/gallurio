@@ -185,6 +185,38 @@ describe("updateContactConfigAction", () => {
     const res = await updateContactConfigAction({ title: "x" });
     expect(res).toEqual({ error: "owner_only" });
   });
+
+  it("persists tab styling fields (round-trip)", async () => {
+    const res = await updateContactConfigAction({
+      tabFontSize: "lg",
+      tabColor: "foreground",
+      activeTabColor: "accent",
+      activeTabScale: true,
+      activeTabHighlight: true,
+      tabHighlightColor: "primary",
+      tabHighlightOpacity: 75,
+      activeTabRadius: "subtle",
+      activeTabUnderline: false,
+      tabUnderlineColor: "",
+    });
+    expect(res).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.contact!.tabFontSize).toBe("lg");
+    expect(ws!.publicPage!.contact!.activeTabColor).toBe("accent");
+    expect(ws!.publicPage!.contact!.tabHighlightOpacity).toBe(75);
+    expect(ws!.publicPage!.contact!.activeTabRadius).toBe("subtle");
+    expect(ws!.publicPage!.contact!.activeTabScale).toBe(true);
+  });
+
+  it("rejects an invalid tabFontSize", async () => {
+    const res = await updateContactConfigAction({ tabFontSize: "xl" as never });
+    expect("error" in res).toBe(true);
+  });
+
+  it("rejects tabHighlightOpacity out of range", async () => {
+    const res = await updateContactConfigAction({ tabHighlightOpacity: 150 });
+    expect("error" in res).toBe(true);
+  });
 });
 
 describe("switchTemplateAction", () => {

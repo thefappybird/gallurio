@@ -161,6 +161,17 @@ const workspaceSchema = new Schema(
         popupBorderColor: { type: String, default: "" },
         popupBorderWidth: { type: Number, default: 0 },
         popupStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
+        // Tab styling
+        tabFontSize: { type: String, enum: [...HEADER_FONT_SIZES, ""], default: "" },
+        tabColor: { type: String, default: "" },
+        activeTabColor: { type: String, default: "" },
+        activeTabScale: { type: Boolean, default: false },
+        activeTabHighlight: { type: Boolean, default: false },
+        tabHighlightColor: { type: String, default: "" },
+        tabHighlightOpacity: { type: Number, default: 100 },
+        activeTabRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        activeTabUnderline: { type: Boolean, default: false },
+        tabUnderlineColor: { type: String, default: "" },
       },
       // Configurable chrome for the collections popup surface.
       // All fields optional — popup falls back to brand-kit values.
