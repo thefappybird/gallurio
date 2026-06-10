@@ -16,12 +16,18 @@ export function CollectionPopupChrome({
   onClose,
   children,
   preview = false,
+  closeDataAttr,
+  noShell = false,
 }: {
   collectionName: string;
   config: PortfolioCollectionsPopupConfig;
   onClose: () => void;
   children: React.ReactNode;
   preview?: boolean;
+  /** When true, skips the outer shell <div> and renders chrome content directly. */
+  noShell?: boolean;
+  /** When provided, spread as a data-attribute (e.g. "data-popup-close") on the close button. */
+  closeDataAttr?: string;
 }) {
   const bg = config.backgroundColor ? colorTokenToVar(config.backgroundColor) : undefined;
   const borderWidth = config.borderWidth ?? 0;
@@ -69,12 +75,15 @@ export function CollectionPopupChrome({
         ...commonShell,
       };
 
-  return (
-    <div style={shellStyle}>
+  const closeDataProps = closeDataAttr ? { [closeDataAttr]: "" } : {};
+
+  const chromeContent = (
+    <>
       <button
         type="button"
         aria-label="Close"
         onClick={onClose}
+        {...closeDataProps}
         style={{
           position: "absolute",
           top: "10px",
@@ -129,6 +138,10 @@ export function CollectionPopupChrome({
       </div>
 
       {children}
-    </div>
+    </>
   );
+
+  if (noShell) return chromeContent;
+
+  return <div style={shellStyle}>{chromeContent}</div>;
 }

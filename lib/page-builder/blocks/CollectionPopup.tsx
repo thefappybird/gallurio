@@ -5,6 +5,7 @@ import { XIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
+import { CollectionPopupChrome } from "./CollectionPopupChrome";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -400,33 +401,13 @@ export function CollectionPopup({
             {/* Scoped focus-visible styles for inline-styled interactive controls */}
             <style>{FOCUS_VISIBLE_STYLES}</style>
 
-            {/* Floating close button — absolutely positioned so always reachable */}
-            <FloatingCloseButton onClick={onClose} label="Close" dataAttr="data-popup-close" />
-
-            {/* Sticky header */}
-            <div
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 5,
-                backgroundColor: bg ?? "var(--pf-color-surface, #fff)",
-                padding: "16px 56px 12px 16px",
-                borderBottom: "1px solid var(--pf-color-border, rgba(0,0,0,0.1))",
-              }}
+            <CollectionPopupChrome
+              collectionName={collectionName}
+              config={popupConfig}
+              onClose={onClose}
+              closeDataAttr="data-popup-close"
+              noShell
             >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "1.125rem",
-                  fontWeight: 600,
-                  lineHeight: 1.3,
-                  color: "var(--pf-color-foreground, #111)",
-                }}
-              >
-                {collectionName}
-              </h2>
-            </div>
-
             {/* Scrollable body */}
             <div
               style={{
@@ -672,6 +653,7 @@ export function CollectionPopup({
                 </>
               )}
             </div>
+            </CollectionPopupChrome>
           </DialogPrimitive.Popup>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>

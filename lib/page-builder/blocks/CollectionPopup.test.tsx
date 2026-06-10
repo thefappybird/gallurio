@@ -565,3 +565,41 @@ describe("CollectionPopup", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// CollectionPopup title override (via CollectionPopupChrome)
+// ---------------------------------------------------------------------------
+
+describe("CollectionPopup title override", () => {
+  it("renders the configured title override instead of the collection name", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        collectionId="c1"
+        collectionName="Weddings"
+        mode="owner"
+        popupConfig={{ titleText: "Galleries" }}
+        open
+        onClose={() => {}}
+      />,
+    );
+    const heading = await screen.findByRole("heading", { level: 2 });
+    expect(heading).toHaveTextContent("Galleries");
+  });
+
+  it("falls back to collectionName when titleText is absent", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        collectionId="c2"
+        collectionName="Portraits"
+        mode="owner"
+        popupConfig={{}}
+        open
+        onClose={() => {}}
+      />,
+    );
+    const heading = await screen.findByRole("heading", { level: 2 });
+    expect(heading).toHaveTextContent("Portraits");
+  });
+});
