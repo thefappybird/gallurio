@@ -8,6 +8,7 @@ const tile: ThemeTileModel = {
   key: "saved:a",
   name: "My Wedding",
   brandKit: { ...DEFAULT_BRAND_KIT, primaryColor: "#112233", accentColor: "#445566" },
+  variant: "saved",
   savedThemeId: "a",
 };
 
@@ -69,5 +70,48 @@ describe("ThemeTile", () => {
   it("omits the delete control when no deleteLabel is given (presets)", () => {
     renderTile({ deleteLabel: undefined, onDelete: undefined });
     expect(screen.queryByRole("button", { name: /Delete theme/ })).toBeNull();
+  });
+});
+
+describe("ThemeTile variants", () => {
+  const savedTile: ThemeTileModel = { ...tile, variant: "saved" };
+  const currentTile: ThemeTileModel = {
+    key: "current", name: "Current Theme", brandKit: tile.brandKit, variant: "current",
+  };
+
+  it("renders an edit button on saved tiles that calls onEdit", () => {
+    const onEdit = vi.fn();
+    render(
+      <ThemeTile tile={savedTile} selected={false} applyLabel="Apply theme: My Wedding"
+        editLabel="Edit theme: My Wedding" onApply={() => {}} onEdit={onEdit} />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Edit theme: My Wedding" }));
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("omits the edit button when editLabel/onEdit are absent (presets)", () => {
+    render(
+      <ThemeTile tile={{ ...tile, variant: "preset" }} selected={false}
+        applyLabel="Apply theme: Minimal" onApply={() => {}} />
+    );
+    expect(screen.queryByRole("button", { name: /Edit theme/ })).toBeNull();
+  });
+
+  it("renders the current tile with a badge and no edit/delete controls", () => {
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"
+        currentBadge="Unsaved" onApply={() => {}} />
+    );
+    expect(screen.getByText("Unsaved")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Edit theme/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Delete theme/ })).toBeNull();
+  });
+
+  it("marks the tile being edited via data-editing", () => {
+    render(
+      <ThemeTile tile={savedTile} selected editing applyLabel="Apply theme: My Wedding"
+        onApply={() => {}} />
+    );
+    expect(document.querySelector('[data-editing="true"]')).not.toBeNull();
   });
 });
