@@ -28,6 +28,7 @@ import {
   switchTemplateAction,
   dismissPortfolioGuideAction,
   saveThemeAction,
+  updateThemeAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -332,5 +333,68 @@ describe("saveThemeAction", () => {
     expect(res).toMatchObject({ ok: true, theme: { name: "Spring 26" } });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.savedThemes).toHaveLength(1);
+  });
+});
+
+describe("updateThemeAction", () => {
+  beforeEach(async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { "publicPage.savedThemes": [
+        { id: "a", name: "Sunset", brandKit: DEFAULT_BRAND_KIT },
+        { id: "b", name: "Moody", brandKit: DEFAULT_BRAND_KIT },
+      ] } }
+    );
+  });
+
+  it("updates name + brandKit in place, preserving id and order", async () => {
+    const kit = { ...DEFAULT_BRAND_KIT, accentColor: "#123456" };
+    const res = await updateThemeAction("a", "Sunset Bright", kit);
+    expect(res).toMatchObject({ ok: true, theme: { id: "a", name: "Sunset Bright" } });
+    const doc = await Workspace.findById(workspaceId).lean();
+    expect(doc!.publicPage!.savedThemes!.map((t: { id: string }) => t.id)).toEqual(["a", "b"]);
+    expect(doc!.publicPage!.savedThemes![0].name).toBe("Sunset Bright");
+    expect(doc!.publicPage!.savedThemes![0].brandKit.accentColor).toBe("#123456");
+  });
+
+  it("allows a theme to keep its own name", async () => {
+    const res = await updateThemeAction("a", "Sunset", DEFAULT_BRAND_KIT);
+    expect(res).toMatchObject({ ok: true });
+  });
+
+  it("rejects a name owned by a different theme (case-insensitive)", async () => {
+    const res = await updateThemeAction("a", "moody", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_name_exists" });
+  });
+
+  it("returns theme_not_found for an unknown id", async () => {
+    const res = await updateThemeAction("zzz", "X", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_not_found" });
+  });
+
+  it("is owner-only", async () => {
+    mockCtx.role = "staff";
+    const res = await updateThemeAction("a", "Whatever", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("cannot edit another workspace's theme (tenant isolation)", async () => {
+    const otherWs = await Workspace.create({
+      slug: "other-studio",
+      name: "Other Studio",
+      ownerUserId: "user_other",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      publicPage: {
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        latestVersion: 0,
+        savedThemes: [{ id: "a", name: "Theirs", brandKit: DEFAULT_BRAND_KIT }],
+      },
+    });
+    // mockCtx still points at workspaceId (owner A); updating id "a" must only
+    // touch A's theme, never B's same-id theme.
+    await updateThemeAction("a", "Hijacked", DEFAULT_BRAND_KIT);
+    const theirs = await Workspace.findById(otherWs._id).lean();
+    expect(theirs!.publicPage!.savedThemes![0].name).toBe("Theirs");
   });
 });

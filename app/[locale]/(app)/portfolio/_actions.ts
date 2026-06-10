@@ -332,6 +332,63 @@ export async function saveThemeAction(
 }
 
 /**
+ * Edit a saved theme in place — same id, same array position. Owner-only.
+ * Name uniqueness is enforced case-insensitively, excluding the theme being
+ * updated so it can keep its own name. Scoped to the caller's workspace so it
+ * can never mutate another tenant's themes.
+ */
+export async function updateThemeAction(
+  id: unknown,
+  name: unknown,
+  brandKit: unknown
+): Promise<SaveThemeResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const idParsed = z.string().min(1).max(64).safeParse(id);
+  if (!idParsed.success) return { error: "invalid_id" };
+  const nameParsed = saveThemeNameSchema.safeParse(name);
+  if (!nameParsed.success) {
+    return { error: nameParsed.error.errors[0]?.message ?? "invalid_name" };
+  }
+  const kitParsed = brandKitSchema.safeParse(brandKit);
+  if (!kitParsed.success) {
+    return { error: kitParsed.error.errors[0]?.message ?? "invalid_brand_kit" };
+  }
+
+  await connectDB();
+
+  const current = await Workspace.findOne({ _id: ctx.workspace._id })
+    .select({ "publicPage.savedThemes": 1 })
+    .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
+  const savedThemes = current?.publicPage?.savedThemes ?? [];
+  if (!savedThemes.some((t) => t.id === idParsed.data)) {
+    return { error: "theme_not_found" };
+  }
+  if (isThemeNameTaken(nameParsed.data, savedThemes, idParsed.data)) {
+    return { error: "theme_name_exists" };
+  }
+
+  const updated: PortfolioSavedTheme = {
+    id: idParsed.data,
+    name: nameParsed.data,
+    brandKit: kitParsed.data,
+  };
+  // Positional update keeps the element's id and array position intact, and is
+  // scoped to this workspace's _id so it can never touch another tenant.
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id, "publicPage.savedThemes.id": idParsed.data },
+    {
+      $set: {
+        "publicPage.savedThemes.$.name": updated.name,
+        "publicPage.savedThemes.$.brandKit": updated.brandKit,
+      },
+    }
+  );
+  return { ok: true, theme: updated };
+}
+
+/**
  * Delete a saved theme by id. Owner-only. Silently no-ops if the id is absent
  * (idempotent so retries after a network blip are safe).
  */
