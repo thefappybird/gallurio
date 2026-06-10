@@ -6,17 +6,29 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { SaveIcon, Loader2Icon } from "lucide-react";
 import { SAVED_THEMES_MAX } from "@/lib/page-builder/types";
+import { normalizeThemeName } from "@/lib/page-builder/themeNames";
 
 type Props = {
   /** Persist the current brand kit under `name`. Rejects on failure. */
   onSave: (name: string) => Promise<void>;
   /** True when the workspace is at `SAVED_THEMES_MAX` saved themes. */
   atLimit: boolean;
+  /** Existing names (any case) to reject as duplicates before saving. */
+  takenNames?: string[];
+  /** Optional controlled open state (used by the close-guard). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function SaveThemePopover({ onSave, atLimit }: Props) {
+export function SaveThemePopover({ onSave, atLimit, takenNames, open, onOpenChange }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open ?? internalOpen;
+  const setOpen = (o: boolean) => {
+    onOpenChange?.(o);
+    if (open === undefined) setInternalOpen(o);
+    if (!o) setError(null);
+  };
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +41,10 @@ export function SaveThemePopover({ onSave, atLimit }: Props) {
     }
     if (trimmed.length > 60) {
       setError(t("nameTooLong"));
+      return;
+    }
+    if ((takenNames ?? []).some((n) => normalizeThemeName(n) === normalizeThemeName(trimmed))) {
+      setError(t("themeNameExists"));
       return;
     }
     setError(null);
@@ -45,7 +61,7 @@ export function SaveThemePopover({ onSave, atLimit }: Props) {
   }
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setError(null); }}>
+    <Popover open={isOpen} onOpenChange={setOpen}>
       <PopoverTrigger
         type="button"
         disabled={atLimit}

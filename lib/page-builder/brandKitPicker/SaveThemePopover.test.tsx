@@ -19,6 +19,7 @@ const messages = {
         nameTooLong: "Theme name must be 60 characters or fewer.",
         saveThemeError: "Could not save theme. Please try again.",
         themeLimitReached: "You've reached the maximum of {max} saved themes.",
+        themeNameExists: "A theme already exists with this name.",
       },
     },
   },
@@ -93,5 +94,19 @@ describe("SaveThemePopover", () => {
       expect(screen.getByText("Could not save theme. Please try again.")).toBeInTheDocument()
     );
     expect(screen.getByPlaceholderText("Theme name")).toHaveValue("Retry me");
+  });
+
+  it("blocks a duplicate name with an inline error before saving", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    renderWithProviders(
+      <SaveThemePopover onSave={onSave} atLimit={false} takenNames={["Sunset"]} />,
+      { messages }
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save current as theme" }));
+    const input = await screen.findByPlaceholderText("Theme name");
+    fireEvent.change(input, { target: { value: "  SUNSET " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("A theme already exists with this name.")).toBeInTheDocument();
   });
 });
