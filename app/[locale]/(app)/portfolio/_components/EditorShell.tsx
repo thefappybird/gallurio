@@ -48,6 +48,7 @@ import {
   resolveAddSessionAppearance,
   resolveSubmitAppearance,
 } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
+import { RootCanvasStyle } from "@/lib/page-builder/RootCanvasStyle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -705,6 +706,14 @@ export function EditorShell({
                 >
                   {topBar(<EditCanvasControls />, actions)}
                 </header>
+              ),
+              // Injects a scoped <style> tag that mirrors the page root style onto
+              // the Puck canvas surface without DOM wrapping (which would break DnD).
+              puck: ({ children }) => (
+                <>
+                  {children}
+                  <RootCanvasStyle />
+                </>
               ),
             }}
           />

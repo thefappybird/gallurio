@@ -70,6 +70,7 @@ const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1",
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
 const updateCollectionsPopupConfigAction = vi.fn().mockResolvedValue({ ok: true });
+const updateThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
@@ -80,6 +81,7 @@ vi.mock("../_actions", () => ({
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
+  updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
   updateHeaderConfigAction: (...a: unknown[]) => updateHeaderConfigAction(...a),
   updateCollectionsPopupConfigAction: (...a: unknown[]) => updateCollectionsPopupConfigAction(...a),
 }));
