@@ -20,6 +20,19 @@ const REQUIRED_KEYS = [
   "nameTooLong",
   "saveThemeError",
   "themeLimitReached",
+  "currentTheme",
+  "currentThemeBadge",
+  "editTheme",
+  "editThemeName",
+  "overrideCurrentTitle",
+  "overrideCurrentBody",
+  "continueAction",
+  "cancelAction",
+  "unsavedChangesTitle",
+  "unsavedChangesBody",
+  "discardAction",
+  "saveAndCloseAction",
+  "themeNameExists",
 ] as const;
 
 const locales = { en, fil, ms, id } as const;
@@ -46,5 +59,7 @@ describe("brandKit locale keys", () => {
     expect(bk.pageIndicator).toContain("{current}");
     expect(bk.pageIndicator).toContain("{total}");
     expect(bk.themeLimitReached).toContain("{max}");
+    expect(bk.editTheme).toContain("{name}");
+    expect(bk.overrideCurrentBody).toContain("{name}");
   });
 });

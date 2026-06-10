@@ -1035,7 +1035,20 @@
         "enterThemeName": "Masukkan nama untuk tema ini.",
         "nameTooLong": "Nama tema harus 60 karakter atau kurang.",
         "saveThemeError": "Tidak dapat menyimpan tema. Silakan coba lagi.",
-        "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan."
+        "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan.",
+        "currentTheme": "Tema Saat Ini",
+        "currentThemeBadge": "Belum disimpan",
+        "editTheme": "Edit tema: {name}",
+        "editThemeName": "Nama tema",
+        "overrideCurrentTitle": "Ganti tema saat ini Anda?",
+        "overrideCurrentBody": "Membangun di atas \"{name}\" akan mengganti Tema Saat Ini Anda yang belum disimpan.",
+        "continueAction": "Lanjutkan",
+        "cancelAction": "Batal",
+        "unsavedChangesTitle": "Anda memiliki perubahan yang belum disimpan",
+        "unsavedChangesBody": "Simpan perubahan Anda sebelum menutup, atau buang perubahan tersebut.",
+        "discardAction": "Buang",
+        "saveAndCloseAction": "Simpan & tutup",
+        "themeNameExists": "Sudah ada tema dengan nama ini."
       },
       "editor": {
         "zone": {

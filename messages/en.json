@@ -1035,7 +1035,20 @@
         "enterThemeName": "Enter a name for this theme.",
         "nameTooLong": "Theme name must be 60 characters or fewer.",
         "saveThemeError": "Could not save theme. Please try again.",
-        "themeLimitReached": "You've reached the maximum of {max} saved themes."
+        "themeLimitReached": "You've reached the maximum of {max} saved themes.",
+        "currentTheme": "Current Theme",
+        "currentThemeBadge": "Unsaved",
+        "editTheme": "Edit theme: {name}",
+        "editThemeName": "Theme name",
+        "overrideCurrentTitle": "Replace your current theme?",
+        "overrideCurrentBody": "Building on \"{name}\" will replace your unsaved Current Theme.",
+        "continueAction": "Continue",
+        "cancelAction": "Cancel",
+        "unsavedChangesTitle": "You have unsaved changes",
+        "unsavedChangesBody": "Save your changes before closing, or discard them.",
+        "discardAction": "Discard",
+        "saveAndCloseAction": "Save & close",
+        "themeNameExists": "A theme already exists with this name."
       },
       "editor": {
         "zone": {

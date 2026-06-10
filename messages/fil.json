@@ -1035,7 +1035,20 @@
         "enterThemeName": "Maglagay ng pangalan para sa temang ito.",
         "nameTooLong": "Ang pangalan ng tema ay dapat 60 character o mas kaunti.",
         "saveThemeError": "Hindi ma-save ang tema. Pakisubukan muli.",
-        "themeLimitReached": "Naabot mo na ang maximum na {max} na naka-save na tema."
+        "themeLimitReached": "Naabot mo na ang maximum na {max} na naka-save na tema.",
+        "currentTheme": "Kasalukuyang Tema",
+        "currentThemeBadge": "Hindi naka-save",
+        "editTheme": "I-edit ang tema: {name}",
+        "editThemeName": "Pangalan ng tema",
+        "overrideCurrentTitle": "Palitan ang kasalukuyang tema?",
+        "overrideCurrentBody": "Ang pagbuo sa \"{name}\" ay papalit sa hindi naka-save mong Kasalukuyang Tema.",
+        "continueAction": "Magpatuloy",
+        "cancelAction": "Kanselahin",
+        "unsavedChangesTitle": "May hindi naka-save na mga pagbabago",
+        "unsavedChangesBody": "I-save ang mga pagbabago bago isara, o itapon ang mga ito.",
+        "discardAction": "Itapon",
+        "saveAndCloseAction": "I-save at isara",
+        "themeNameExists": "May tema nang umiiral na may ganitong pangalan."
       },
       "editor": {
         "zone": {
