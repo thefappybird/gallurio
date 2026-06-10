@@ -5,6 +5,8 @@ import {
   paginate,
   brandKitsEqualForSelection,
   THEMES_PER_PAGE,
+  buildCurrentTile,
+  paginateWithCurrent,
 } from "./themeTiles";
 import { THEME_PRESET_DEFINITIONS } from "./themePresetDefinitions";
 import { BRAND_KIT_THEME_PRESETS, DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
@@ -84,5 +86,56 @@ describe("brandKitsEqualForSelection", () => {
   it("normalizes missing fonts via the legacy pair", () => {
     const legacy = { ...DEFAULT_BRAND_KIT, headingFont: undefined, bodyFont: undefined };
     expect(brandKitsEqualForSelection(legacy, DEFAULT_BRAND_KIT)).toBe(true);
+  });
+});
+
+describe("tile variants", () => {
+  it("tags presets and saved themes with a variant", () => {
+    const tiles = buildThemeTiles({ presetName, savedThemes });
+    expect(tiles[0].variant).toBe("preset");
+    expect(tiles.find((t) => t.savedThemeId === "a")?.variant).toBe("saved");
+  });
+});
+
+describe("buildCurrentTile", () => {
+  it("builds a current-variant tile with a fixed key", () => {
+    const tile = buildCurrentTile(DEFAULT_BRAND_KIT, "Current Theme");
+    expect(tile.variant).toBe("current");
+    expect(tile.key).toBe("current");
+    expect(tile.name).toBe("Current Theme");
+    expect(tile.savedThemeId).toBeUndefined();
+  });
+});
+
+describe("paginateWithCurrent", () => {
+  const reals = (n: number) =>
+    Array.from({ length: n }, (_, i) => buildCurrentTile(DEFAULT_BRAND_KIT, `T${i}`));
+  const current = buildCurrentTile(DEFAULT_BRAND_KIT, "Current Theme");
+
+  it("uses 9 real tiles per page when there is no current tile", () => {
+    const r = paginateWithCurrent(reals(12), null, 0);
+    expect(r.pageItems).toHaveLength(9);
+    expect(r.pageCount).toBe(2);
+  });
+
+  it("reserves the last cell so 8 reals + current fill a page", () => {
+    const r = paginateWithCurrent(reals(10), current, 0);
+    expect(r.pageItems).toHaveLength(9); // 8 reals + current
+    expect(r.pageItems[8].variant).toBe("current");
+    expect(r.pageCount).toBe(2); // 10 reals / 8 per page
+  });
+
+  it("pins the current tile to the last cell of every page", () => {
+    const r2 = paginateWithCurrent(reals(10), current, 1);
+    expect(r2.page).toBe(1);
+    expect(r2.pageItems).toHaveLength(3); // 2 reals + current
+    expect(r2.pageItems.at(-1)?.variant).toBe("current");
+  });
+
+  it("places the current tile right after a short list (7 reals -> cell 8)", () => {
+    const r = paginateWithCurrent(reals(7), current, 0);
+    expect(r.pageItems).toHaveLength(8);
+    expect(r.pageCount).toBe(1);
+    expect(r.pageItems[7].variant).toBe("current");
   });
 });
