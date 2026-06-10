@@ -114,4 +114,65 @@ describe("ThemeTile variants", () => {
     );
     expect(document.querySelector('[data-editing="true"]')).not.toBeNull();
   });
+
+  it("shows edit and delete buttons clustered together (both present in the controls group)", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    render(
+      <ThemeTile tile={savedTile} selected={false}
+        applyLabel="Apply theme: My Wedding"
+        editLabel="Edit theme: My Wedding"
+        deleteLabel="Delete theme: My Wedding"
+        onApply={() => {}} onEdit={onEdit} onDelete={onDelete} />
+    );
+    const editBtn = screen.getByRole("button", { name: "Edit theme: My Wedding" });
+    const deleteBtn = screen.getByRole("button", { name: "Delete theme: My Wedding" });
+    // Both buttons should share the same parent container (the cluster div)
+    expect(editBtn.parentElement).toBe(deleteBtn.parentElement);
+  });
+});
+
+describe("ThemeTile name editing", () => {
+  const currentTile: ThemeTileModel = {
+    key: "current", name: "Current Theme", brandKit: tile.brandKit, variant: "current",
+  };
+
+  it("renders an inline name input + save icon and fires callbacks", () => {
+    const onNameChange = vi.fn();
+    const onSaveName = vi.fn();
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"
+        nameEditing nameValue="Spring" saveNameLabel="Save theme"
+        onNameChange={onNameChange} onSaveName={onSaveName} onApply={() => {}} />
+    );
+    const input = screen.getByRole("textbox", { name: "Save theme" });
+    expect(input).toHaveValue("Spring");
+    fireEvent.change(input, { target: { value: "Summer" } });
+    expect(onNameChange).toHaveBeenCalledWith("Summer");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSaveName).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save theme" }));
+    expect(onSaveName).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("button", { name: "Apply theme: Current Theme" })).toBeNull();
+  });
+
+  it("shows an inline error with role=alert", () => {
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="x" nameEditing
+        saveNameLabel="Save theme" nameError="A theme already exists with this name."
+        onApply={() => {}} />
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("A theme already exists with this name.");
+  });
+
+  it("omits edit and delete buttons in name-editing mode", () => {
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"
+        nameEditing nameValue="" saveNameLabel="Save theme"
+        editLabel="Edit theme: Current Theme" deleteLabel="Delete theme: Current Theme"
+        onApply={() => {}} onEdit={() => {}} onDelete={() => {}} />
+    );
+    expect(screen.queryByRole("button", { name: "Edit theme: Current Theme" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete theme: Current Theme" })).toBeNull();
+  });
 });
