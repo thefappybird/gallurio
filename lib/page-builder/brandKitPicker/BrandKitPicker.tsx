@@ -17,8 +17,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CheckIcon } from "lucide-react";
 import { ThemeGrid } from "./ThemeGrid";
-import { useThemeEditor, type ThemeEditorController } from "./useThemeEditor";
-import { EditThemeBar } from "./EditThemeBar";
+import { useThemeEditor, type ThemeEditorController, type ThemeNameError } from "./useThemeEditor";
 import { UnsavedEditDialog } from "./UnsavedEditDialog";
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
@@ -58,8 +57,8 @@ type Props = {
   workspaceBranding?: { primaryColor?: string; secondaryColor?: string } | null;
   /** Owner's saved named themes, shown in the unified theme grid. */
   savedThemes?: PortfolioSavedTheme[];
-  /** Called when user saves the current kit as a named theme. */
-  onSaveTheme?: (name: string) => Promise<void>;
+  /** Called when user saves the current kit as a named theme. Returns structured result. */
+  onSaveTheme?: (name: string) => Promise<{ ok: true; theme: PortfolioSavedTheme } | { error: string }>;
   /** Called when user deletes a saved theme by id. */
   onDeleteTheme?: (id: string) => Promise<void>;
   /** Optional shared controller (provided by ThemePanelDialog for the close-guard). */
@@ -146,6 +145,7 @@ export function BrandKitPicker({
     value: workingValue,
     onChange: emitChange,
     savedThemes,
+    onSaveTheme,
     onUpdateTheme,
   });
   const ctrl = controller ?? ownController;
@@ -175,6 +175,9 @@ export function BrandKitPicker({
     ctrl.changeControl(next);
   }
 
+  const nameErrMsg = (c: ThemeNameError | null): string | null =>
+    c ? t(({ required: "enterThemeName", tooLong: "nameTooLong", duplicate: "themeNameExists", saveFailed: "saveThemeError" } as Record<ThemeNameError, string>)[c]) : null;
+
   return (
     <div className="flex flex-col gap-6">
       {/* Unified theme grid (presets + saved) */}
@@ -184,18 +187,9 @@ export function BrandKitPicker({
           value={workingValue}
           savedThemes={savedThemes}
           controller={ctrl}
-          onSaveTheme={onSaveTheme}
           onDeleteTheme={onDeleteTheme}
         />
       </fieldset>
-
-      {ctrl.editing && (
-        <EditThemeBar
-          name={ctrl.editName}
-          onNameChange={ctrl.changeEditName}
-          onExit={() => ctrl.requestExit(() => {})}
-        />
-      )}
 
       {/* Independent font selectors */}
       <div className="flex flex-col gap-4">
@@ -266,7 +260,7 @@ export function BrandKitPicker({
         discardLabel={t("discardAction")}
         saveLabel={t("saveAndCloseAction")}
         saving={ctrl.editSaving}
-        error={ctrl.editGuardError ? t("themeNameExists") : null}
+        error={nameErrMsg(ctrl.editGuardError)}
         onDiscard={ctrl.discardEdit}
         onSaveAndClose={() => void ctrl.saveAndExitEdit()}
         onOpenChange={(o) => {

@@ -26,8 +26,10 @@ type Props = {
   nameValue?: string;
   onNameChange?: (v: string) => void;
   onSaveName?: () => void;
-  /** Localized label for the inline name input + save icon. */
+  /** Localized label for the inline name input + save icon (button aria-label). */
   saveNameLabel?: string;
+  /** Placeholder and aria-label for the inline name input. Falls back to saveNameLabel. */
+  namePlaceholder?: string;
   savingName?: boolean;
   /** Inline error message (already localized) shown under the input. */
   nameError?: string | null;
@@ -55,6 +57,7 @@ export function ThemeTile({
   onNameChange,
   onSaveName,
   saveNameLabel,
+  namePlaceholder,
   savingName = false,
   nameError,
 }: Props) {
@@ -91,8 +94,8 @@ export function ThemeTile({
                 onSaveName?.();
               }
             }}
-            placeholder={saveNameLabel}
-            aria-label={saveNameLabel}
+            placeholder={namePlaceholder ?? saveNameLabel}
+            aria-label={namePlaceholder ?? saveNameLabel}
             className="h-7 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
           <button

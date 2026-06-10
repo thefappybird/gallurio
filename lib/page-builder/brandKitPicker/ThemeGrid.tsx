@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import {
-  SAVED_THEMES_MAX,
   type PortfolioBrandKit,
   type PortfolioSavedTheme,
   type BrandKitThemePreset,
@@ -18,19 +17,18 @@ import {
   type ThemeTileModel,
 } from "./themeTiles";
 import { ThemeTile } from "./ThemeTile";
-import { SaveThemePopover } from "./SaveThemePopover";
 import { ConfirmDialog } from "./ConfirmDialog";
 import type { ThemeEditorController } from "./useThemeEditor";
+import type { ThemeNameError } from "./useThemeEditor";
 
 type Props = {
   value: PortfolioBrandKit;
   savedThemes: PortfolioSavedTheme[];
   controller: ThemeEditorController;
-  onSaveTheme?: (name: string) => Promise<void>;
   onDeleteTheme?: (id: string) => Promise<void>;
 };
 
-export function ThemeGrid({ value, savedThemes, controller, onSaveTheme, onDeleteTheme }: Props) {
+export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -73,6 +71,9 @@ export function ThemeGrid({ value, savedThemes, controller, onSaveTheme, onDelet
     }
   }
 
+  const nameErrMsg = (c: ThemeNameError | null): string | null =>
+    c ? t(({ required: "enterThemeName", tooLong: "nameTooLong", duplicate: "themeNameExists", saveFailed: "saveThemeError" } as Record<ThemeNameError, string>)[c]) : null;
+
   return (
     <section aria-label={t("themes")} className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -87,27 +88,62 @@ export function ThemeGrid({ value, savedThemes, controller, onSaveTheme, onDelet
           aria-label={t("searchPlaceholder")}
           className="h-9 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
-        {onSaveTheme && (
-          <SaveThemePopover
-            onSave={onSaveTheme}
-            atLimit={savedThemes.length >= SAVED_THEMES_MAX}
-            takenNames={savedThemes.map((s) => s.name)}
-          />
-        )}
       </div>
 
       {pageItems.length > 0 ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {pageItems.map((tile) => {
             const saved = tile.savedThemeId ? savedById.get(tile.savedThemeId) : undefined;
+            const isEditingThisTile = !!saved && controller.editing?.id === saved.id;
+
+            if (tile.variant === "current") {
+              return (
+                <ThemeTile
+                  key={tile.key}
+                  tile={tile}
+                  selected={isSelected(tile)}
+                  applyLabel={t("applyTheme", { name: tile.name })}
+                  nameEditing={true}
+                  nameValue={controller.currentThemeName}
+                  onNameChange={controller.setCurrentThemeName}
+                  onSaveName={() => void controller.saveCurrentTheme()}
+                  saveNameLabel={t("saveThemeName")}
+                  namePlaceholder={t("themeNamePlaceholder")}
+                  savingName={controller.savingCurrentTheme}
+                  nameError={nameErrMsg(controller.currentThemeNameError)}
+                  onApply={() => applyWithGuard(tile)}
+                />
+              );
+            }
+
+            if (isEditingThisTile && saved) {
+              return (
+                <ThemeTile
+                  key={tile.key}
+                  tile={tile}
+                  selected={isSelected(tile)}
+                  editing={true}
+                  applyLabel={t("applyTheme", { name: tile.name })}
+                  nameEditing={true}
+                  nameValue={controller.editName}
+                  onNameChange={controller.changeEditName}
+                  onSaveName={() => void controller.saveAndExitEdit()}
+                  saveNameLabel={t("saveThemeName")}
+                  namePlaceholder={t("themeNamePlaceholder")}
+                  savingName={controller.editSaving}
+                  nameError={nameErrMsg(controller.editGuardError)}
+                  onApply={() => applyWithGuard(tile)}
+                />
+              );
+            }
+
             return (
               <ThemeTile
                 key={tile.key}
                 tile={tile}
                 selected={isSelected(tile)}
-                editing={!!saved && controller.editing?.id === saved.id}
+                editing={isEditingThisTile}
                 applyLabel={t("applyTheme", { name: tile.name })}
-                currentBadge={tile.variant === "current" ? t("currentThemeBadge") : undefined}
                 editLabel={saved ? t("editTheme", { name: tile.name }) : undefined}
                 deleteLabel={saved && onDeleteTheme ? t("deleteTheme", { name: tile.name }) : undefined}
                 deleting={deletingId === tile.savedThemeId}

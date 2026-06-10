@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { PortfolioBrandKit, PortfolioSavedTheme } from "@/lib/page-builder/types";
+import { isThemeNameTaken } from "@/lib/page-builder/themeNames";
 import type { ThemeTileModel } from "./themeTiles";
 import {
   type ThemeSelection,
@@ -10,28 +11,46 @@ import {
   editHasDiff,
 } from "./themeEditorState";
 
-type UpdateResult = { ok: true; theme: PortfolioSavedTheme } | { error: string };
+type SaveResult = { ok: true; theme: PortfolioSavedTheme } | { error: string };
+
+/** Error codes for the inline name inputs; components map these to messages. */
+export type ThemeNameError = "required" | "tooLong" | "duplicate" | "saveFailed";
 
 type Options = {
   value: PortfolioBrandKit;
   onChange: (next: PortfolioBrandKit) => void;
   savedThemes: PortfolioSavedTheme[];
-  onUpdateTheme?: (id: string, name: string, brandKit: PortfolioBrandKit) => Promise<UpdateResult>;
+  onSaveTheme?: (name: string) => Promise<SaveResult>;
+  onUpdateTheme?: (id: string, name: string, brandKit: PortfolioBrandKit) => Promise<SaveResult>;
 };
 
-export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
+function validateName(
+  name: string,
+  savedThemes: PortfolioSavedTheme[],
+  excludeId?: string
+): ThemeNameError | null {
+  const trimmed = name.trim();
+  if (!trimmed) return "required";
+  if (trimmed.length > 60) return "tooLong";
+  if (isThemeNameTaken(trimmed, savedThemes, excludeId)) return "duplicate";
+  return null;
+}
+
+export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUpdateTheme }: Options) {
   const [currentTheme, setCurrentTheme] = useState<PortfolioBrandKit | null>(null);
   const [selection, setSelection] = useState<ThemeSelection>({ kind: "none" });
   const [editing, setEditing] = useState<EditSession | null>(null);
 
+  const [currentThemeName, setCurrentThemeNameState] = useState("");
+  const [currentThemeNameError, setCurrentThemeNameError] = useState<ThemeNameError | null>(null);
+  const [savingCurrentTheme, setSavingCurrentTheme] = useState(false);
+
   const [pendingOverride, setPendingOverride] = useState<{ nextKit: PortfolioBrandKit; activeKit: PortfolioBrandKit } | null>(null);
-  // Tracks the most recently applied tile's kit so cancelOverride can revert correctly
-  // even when `value` is a stale controlled prop.
-  const lastTileKit = useRef<PortfolioBrandKit | null>(null);
   const [editGuardOpen, setEditGuardOpen] = useState(false);
-  const [editGuardError, setEditGuardError] = useState<string | null>(null);
+  const [editGuardError, setEditGuardError] = useState<ThemeNameError | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const pendingExit = useRef<(() => void) | null>(null);
+  const lastTileKit = useRef<PortfolioBrandKit>(value);
 
   const editDiff = editHasDiff(editing);
   const hasUnsavedCurrent = currentTheme !== null;
@@ -50,16 +69,13 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
       return;
     }
     if (needsOverrideConfirm(selection, currentTheme)) {
-      // Revert target is the last tile applied (more reliable than `value` which
-      // may be stale in a controlled component whose parent hasn't re-rendered yet).
-      const activeKit = lastTileKit.current ?? value;
-      setPendingOverride({ nextKit, activeKit });
+      setPendingOverride({ nextKit, activeKit: lastTileKit.current });
       return;
     }
     onChange(nextKit);
     setCurrentTheme(nextKit);
     setSelection({ kind: "current" });
-  }, [editing, selection, currentTheme, value, onChange]); // value kept for fallback activeKit
+  }, [editing, selection, currentTheme, onChange]);
 
   const confirmOverride = useCallback(() => {
     if (!pendingOverride) return;
@@ -74,25 +90,41 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
     setPendingOverride(null);
   }, [pendingOverride, onChange]);
 
-  const onCurrentThemeSaved = useCallback((theme: PortfolioSavedTheme) => {
-    setCurrentTheme(null);
-    setSelection({ kind: "tile", key: `saved:${theme.id}` });
+  const setCurrentThemeName = useCallback((name: string) => {
+    setCurrentThemeNameState(name);
+    setCurrentThemeNameError(null);
   }, []);
+
+  const saveCurrentTheme = useCallback(async (): Promise<boolean> => {
+    if (!onSaveTheme || currentTheme === null) return false;
+    const err = validateName(currentThemeName, savedThemes);
+    if (err) { setCurrentThemeNameError(err); return false; }
+    setSavingCurrentTheme(true);
+    setCurrentThemeNameError(null);
+    try {
+      const res = await onSaveTheme(currentThemeName.trim());
+      if ("error" in res) {
+        setCurrentThemeNameError(res.error === "theme_name_exists" ? "duplicate" : "saveFailed");
+        return false;
+      }
+      setCurrentTheme(null);
+      setSelection({ kind: "tile", key: `saved:${res.theme.id}` });
+      setCurrentThemeNameState("");
+      return true;
+    } finally {
+      setSavingCurrentTheme(false);
+    }
+  }, [onSaveTheme, currentTheme, currentThemeName, savedThemes]);
 
   const enterEdit = useCallback((theme: PortfolioSavedTheme) => {
     lastTileKit.current = theme.brandKit;
-    setEditing({
-      id: theme.id,
-      baseTheme: theme,
-      baseWorkingKit: value,
-      draftKit: theme.brandKit,
-      draftName: theme.name,
-    });
+    setEditing({ id: theme.id, baseTheme: theme, baseWorkingKit: value, draftKit: theme.brandKit, draftName: theme.name });
     onChange(theme.brandKit);
     setSelection({ kind: "tile", key: `saved:${theme.id}` });
   }, [value, onChange]);
 
   const changeEditName = useCallback((name: string) => {
+    setEditGuardError(null);
     setEditing((e) => (e ? { ...e, draftName: name } : e));
   }, []);
 
@@ -122,12 +154,14 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
 
   const saveAndExitEdit = useCallback(async () => {
     if (!editing || !onUpdateTheme) return;
+    const err = validateName(editing.draftName, savedThemes, editing.id);
+    if (err) { setEditGuardError(err); return; }
     setEditSaving(true);
     setEditGuardError(null);
     try {
       const res = await onUpdateTheme(editing.id, editing.draftName.trim(), editing.draftKit);
       if ("error" in res) {
-        setEditGuardError(res.error);
+        setEditGuardError(res.error === "theme_name_exists" ? "duplicate" : "saveFailed");
         return;
       }
       lastTileKit.current = res.theme.brandKit;
@@ -136,7 +170,7 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
     } finally {
       setEditSaving(false);
     }
-  }, [editing, onUpdateTheme, onChange, exitEditNow]);
+  }, [editing, onUpdateTheme, savedThemes, onChange, exitEditNow]);
 
   const cancelEditGuard = useCallback(() => {
     pendingExit.current = null;
@@ -145,32 +179,17 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
   }, []);
 
   return useMemo(() => ({
-    currentTheme,
-    selection,
-    editing,
-    hasUnsavedCurrent,
-    editDiff,
-    applyTile,
-    changeControl,
-    overrideOpen: pendingOverride !== null,
-    confirmOverride,
-    cancelOverride,
-    enterEdit,
-    editName: editing?.draftName ?? "",
-    changeEditName,
-    requestExit,
-    editGuardOpen,
-    editGuardError,
-    editSaving,
-    discardEdit,
-    saveAndExitEdit,
-    cancelEditGuard,
-    onCurrentThemeSaved,
+    currentTheme, selection, editing, hasUnsavedCurrent, editDiff,
+    applyTile, changeControl,
+    overrideOpen: pendingOverride !== null, confirmOverride, cancelOverride,
+    currentThemeName, setCurrentThemeName, currentThemeNameError, savingCurrentTheme, saveCurrentTheme,
+    enterEdit, editName: editing?.draftName ?? "", changeEditName,
+    requestExit, editGuardOpen, editGuardError, editSaving, discardEdit, saveAndExitEdit, cancelEditGuard,
   }), [
-    currentTheme, selection, editing, hasUnsavedCurrent, editDiff, applyTile,
-    changeControl, pendingOverride, confirmOverride, cancelOverride, enterEdit,
-    changeEditName, requestExit, editGuardOpen, editGuardError, editSaving,
-    discardEdit, saveAndExitEdit, cancelEditGuard, onCurrentThemeSaved,
+    currentTheme, selection, editing, hasUnsavedCurrent, editDiff, applyTile, changeControl,
+    pendingOverride, confirmOverride, cancelOverride,
+    currentThemeName, setCurrentThemeName, currentThemeNameError, savingCurrentTheme, saveCurrentTheme,
+    enterEdit, changeEditName, requestExit, editGuardOpen, editGuardError, editSaving, discardEdit, saveAndExitEdit, cancelEditGuard,
   ]);
 }
 

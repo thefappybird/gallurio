@@ -14,9 +14,7 @@ import { Button } from "@/components/ui/button";
 import { BrandKitPicker } from "@/lib/page-builder/brandKitPicker/BrandKitPicker";
 import { useThemeEditor } from "@/lib/page-builder/brandKitPicker/useThemeEditor";
 import { ConfirmDialog } from "@/lib/page-builder/brandKitPicker/ConfirmDialog";
-import { SaveThemePopover } from "@/lib/page-builder/brandKitPicker/SaveThemePopover";
 import {
-  SAVED_THEMES_MAX,
   type PortfolioBrandKit,
   type PortfolioSavedTheme,
 } from "@/lib/page-builder/types";
@@ -55,12 +53,18 @@ export function ThemePanelDialog({
   const tk = useTranslations("app.pageBuilder.brandKit");
   const [saving, setSaving] = useState(false);
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
-  const [savePopoverOpen, setSavePopoverOpen] = useState(false);
+
+  const onSaveTheme = async (name: string) => {
+    const res = await saveThemeAction(name, brandKit);
+    if ("ok" in res) onSavedThemesChange([...savedThemes, res.theme]);
+    return res;
+  };
 
   const controller = useThemeEditor({
     value: brandKit,
     onChange: onBrandKitChange,
     savedThemes,
+    onSaveTheme,
     onUpdateTheme: async (id, name, kit) => {
       const res = await updateThemeAction(id, name, kit);
       if ("ok" in res) {
@@ -70,7 +74,7 @@ export function ThemePanelDialog({
     },
   });
 
-  async function persistPage() {
+  async function persistPage(): Promise<boolean> {
     setSaving(true);
     try {
       const res = await updateBrandKitAction(brandKit);
@@ -86,11 +90,12 @@ export function ThemePanelDialog({
     }
   }
 
-  async function handleSaveTheme(name: string) {
-    const res = await saveThemeAction(name, brandKit);
-    if ("error" in res) throw new Error(res.error);
-    onSavedThemesChange([...savedThemes, res.theme]);
-    controller.onCurrentThemeSaved(res.theme);
+  async function apply() {
+    if (controller.hasUnsavedCurrent) {
+      const ok = await controller.saveCurrentTheme();
+      if (!ok) return;
+    }
+    await persistPage();
   }
 
   async function handleDeleteTheme(id: string) {
@@ -131,7 +136,7 @@ export function ThemePanelDialog({
               onChange={onBrandKitChange}
               controller={controller}
               savedThemes={savedThemes}
-              onSaveTheme={handleSaveTheme}
+              onSaveTheme={onSaveTheme}
               onDeleteTheme={handleDeleteTheme}
               onUpdateTheme={updateThemeAction}
             />
@@ -140,8 +145,8 @@ export function ThemePanelDialog({
             <Button type="button" variant="outline" onClick={attemptClose} disabled={saving}>
               {t("publishDialog.cancel")}
             </Button>
-            <Button type="button" onClick={() => void persistPage()} loading={saving}>
-              {saving ? t("save.saving") : t("contactDialog.save")}
+            <Button type="button" onClick={() => void apply()} loading={saving}>
+              {saving ? t("save.saving") : tk("applyAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -153,25 +158,13 @@ export function ThemePanelDialog({
         body={tk("unsavedChangesBody")}
         confirmLabel={tk("saveAndCloseAction")}
         cancelLabel={tk("discardAction")}
-        onConfirm={() => { setCloseGuardOpen(false); setSavePopoverOpen(true); }}
+        onConfirm={async () => {
+          setCloseGuardOpen(false);
+          const ok = await controller.saveCurrentTheme();
+          if (ok) await persistPage();
+        }}
         onCancel={() => { setCloseGuardOpen(false); onCancel(); }}
       />
-
-      {savePopoverOpen && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <SaveThemePopover
-            open={savePopoverOpen}
-            onOpenChange={setSavePopoverOpen}
-            atLimit={savedThemes.length >= SAVED_THEMES_MAX}
-            takenNames={savedThemes.map((s) => s.name)}
-            onSave={async (name) => {
-              await handleSaveTheme(name);
-              setSavePopoverOpen(false);
-              await persistPage();
-            }}
-          />
-        </div>
-      )}
     </>
   );
 }

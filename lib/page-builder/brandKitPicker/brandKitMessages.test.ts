@@ -33,6 +33,8 @@ const REQUIRED_KEYS = [
   "discardAction",
   "saveAndCloseAction",
   "themeNameExists",
+  "applyAction",
+  "saveThemeName",
 ] as const;
 
 const locales = { en, fil, ms, id } as const;

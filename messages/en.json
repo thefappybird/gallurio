@@ -1048,7 +1048,9 @@
         "unsavedChangesBody": "Save your changes before closing, or discard them.",
         "discardAction": "Discard",
         "saveAndCloseAction": "Save & close",
-        "themeNameExists": "A theme already exists with this name."
+        "themeNameExists": "A theme already exists with this name.",
+        "applyAction": "Apply",
+        "saveThemeName": "Save theme"
       },
       "editor": {
         "zone": {

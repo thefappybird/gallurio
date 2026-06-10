@@ -7,12 +7,15 @@ import { DEFAULT_BRAND_KIT, type PortfolioBrandKit, type PortfolioSavedTheme } f
 const editorialKit = THEME_PRESET_DEFINITIONS.editorial.brandKit;
 const editorialTile = { key: "preset:editorial", name: "Editorial", brandKit: editorialKit, variant: "preset" as const };
 
+const savedTheme = (id: string, name: string, kit: PortfolioBrandKit = DEFAULT_BRAND_KIT): PortfolioSavedTheme => ({ id, name, brandKit: kit });
+
 function harness(initial: PortfolioBrandKit = DEFAULT_BRAND_KIT, saved: PortfolioSavedTheme[] = []) {
   const onChange = vi.fn();
-  const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true, theme: { id: "s1", name: "x", brandKit: initial } });
+  const onSaveTheme = vi.fn().mockResolvedValue({ ok: true as const, theme: { id: "n1", name: "New", brandKit: initial } });
+  const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true as const, theme: { id: "s1", name: "x", brandKit: initial } });
   const { result } = renderHook(() =>
-    useThemeEditor({ value: initial, onChange, savedThemes: saved, onUpdateTheme }));
-  return { result, onChange, onUpdateTheme };
+    useThemeEditor({ value: initial, onChange, savedThemes: saved, onSaveTheme, onUpdateTheme }));
+  return { result, onChange, onSaveTheme, onUpdateTheme };
 }
 
 describe("useThemeEditor", () => {
@@ -57,12 +60,38 @@ describe("useThemeEditor", () => {
     expect(h.onChange).toHaveBeenCalledWith(editorialKit);
   });
 
-  it("clears the Current Theme when it is saved", () => {
-    const h = harness();
-    act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
-    act(() => h.result.current.onCurrentThemeSaved({ id: "n", name: "New", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" } }));
-    expect(h.result.current.hasUnsavedCurrent).toBe(false);
-    expect(h.result.current.selection).toEqual({ kind: "tile", key: "saved:n" });
+  describe("saveCurrentTheme", () => {
+    it("calls onSaveTheme, clears currentTheme, and sets selection to saved", async () => {
+      const h = harness();
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.setCurrentThemeName("My Theme"));
+      await act(async () => { await h.result.current.saveCurrentTheme(); });
+      expect(h.onSaveTheme).toHaveBeenCalledWith("My Theme");
+      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      expect(h.result.current.selection).toEqual({ kind: "tile", key: "saved:n1" });
+    });
+
+    it("returns false and sets error 'required' when name is empty", async () => {
+      const h = harness();
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      let result = false;
+      await act(async () => { result = await h.result.current.saveCurrentTheme(); });
+      expect(result).toBe(false);
+      expect(h.result.current.currentThemeNameError).toBe("required");
+      expect(h.onSaveTheme).not.toHaveBeenCalled();
+    });
+
+    it("returns false and sets error 'duplicate' when name already exists", async () => {
+      const existing = savedTheme("e1", "Taken");
+      const h = harness(DEFAULT_BRAND_KIT, [existing]);
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.setCurrentThemeName("Taken"));
+      let result = true;
+      await act(async () => { result = await h.result.current.saveCurrentTheme(); });
+      expect(result).toBe(false);
+      expect(h.result.current.currentThemeNameError).toBe("duplicate");
+      expect(h.onSaveTheme).not.toHaveBeenCalled();
+    });
   });
 
   describe("edit mode", () => {
@@ -128,15 +157,16 @@ describe("useThemeEditor", () => {
       expect(proceed).toHaveBeenCalledTimes(1);
     });
 
-    it("surfaces a duplicate-name error and stays in edit mode", async () => {
+    it("saveAndExitEdit sets editGuardError 'duplicate' on name collision (excluding self allowed)", async () => {
+      const other = savedTheme("s2", "Dupe");
       const onUpdateTheme = vi.fn().mockResolvedValue({ error: "theme_name_exists" });
       const { result } = renderHook(() =>
-        useThemeEditor({ value: DEFAULT_BRAND_KIT, onChange: vi.fn(), savedThemes: [saved], onUpdateTheme }));
+        useThemeEditor({ value: DEFAULT_BRAND_KIT, onChange: vi.fn(), savedThemes: [saved, other], onUpdateTheme }));
       act(() => result.current.enterEdit(saved));
       act(() => result.current.changeEditName("Dupe"));
       act(() => result.current.requestExit(vi.fn()));
       await act(async () => { await result.current.saveAndExitEdit(); });
-      expect(result.current.editGuardError).toBe("theme_name_exists");
+      expect(result.current.editGuardError).toBe("duplicate");
       expect(result.current.editing?.id).toBe("s1");
     });
   });
@@ -144,13 +174,13 @@ describe("useThemeEditor", () => {
   it("cancelOverride after editing then exiting edit mode reverts to the active (saved) tile's kit", async () => {
     const savedNine: PortfolioSavedTheme = { id: "s9", name: "Saved Nine", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#aa00aa" } };
     const onChange = vi.fn();
-    const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true, theme: savedNine });
+    const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true as const, theme: savedNine });
     const { result } = renderHook(() =>
       useThemeEditor({ value: DEFAULT_BRAND_KIT, onChange, savedThemes: [savedNine], onUpdateTheme }));
 
     // create a Current Theme so needsOverrideConfirm will be true later
     act(() => result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
-    // enter edit mode on the saved tile (lastTileKit is still null / DEFAULT from init, not savedNine.brandKit)
+    // enter edit mode on the saved tile
     act(() => result.current.enterEdit(savedNine));
     // requestExit with no diff exits immediately
     act(() => result.current.requestExit(() => {}));

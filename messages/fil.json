@@ -1048,7 +1048,9 @@
         "unsavedChangesBody": "I-save ang mga pagbabago bago isara, o itapon ang mga ito.",
         "discardAction": "Itapon",
         "saveAndCloseAction": "I-save at isara",
-        "themeNameExists": "May tema nang umiiral na may ganitong pangalan."
+        "themeNameExists": "May tema nang umiiral na may ganitong pangalan.",
+        "applyAction": "Ilapat",
+        "saveThemeName": "I-save ang tema"
       },
       "editor": {
         "zone": {

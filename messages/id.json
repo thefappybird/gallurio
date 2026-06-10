@@ -1048,7 +1048,9 @@
         "unsavedChangesBody": "Simpan perubahan Anda sebelum menutup, atau buang perubahan tersebut.",
         "discardAction": "Buang",
         "saveAndCloseAction": "Simpan & tutup",
-        "themeNameExists": "Sudah ada tema dengan nama ini."
+        "themeNameExists": "Sudah ada tema dengan nama ini.",
+        "applyAction": "Terapkan",
+        "saveThemeName": "Simpan tema"
       },
       "editor": {
         "zone": {

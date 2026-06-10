@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ThemePanelDialog } from "./ThemePanelDialog";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
@@ -58,5 +58,52 @@ describe("ThemePanelDialog close guard", () => {
     expect(onCancel).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Discard" }));
     expect(onCancel).toHaveBeenCalled();
+  });
+});
+
+describe("ThemePanelDialog Apply button", () => {
+  it("footer button is labeled Apply", () => {
+    setup();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
+  });
+
+  it("Apply with no unsaved Current Theme persists page directly", async () => {
+    const { updateBrandKitAction } = await import("../_actions");
+    const props = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(updateBrandKitAction).toHaveBeenCalled());
+    expect(props.onSaved).toHaveBeenCalled();
+  });
+
+  it("Apply with an unsaved Current Theme but no name shows inline error and does NOT call onSaved", async () => {
+    const { updateBrandKitAction } = await import("../_actions");
+    const props = setup();
+    // create a current theme by editing the accent color
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    (updateBrandKitAction as ReturnType<typeof vi.fn>).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toBeInTheDocument()
+    );
+    expect(updateBrandKitAction).not.toHaveBeenCalled();
+    expect(props.onSaved).not.toHaveBeenCalled();
+  });
+
+  it("Apply with an unsaved Current Theme after typing a name saves + persists", async () => {
+    const { updateBrandKitAction, saveThemeAction } = await import("../_actions");
+    const props = setup();
+    // create a current theme
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    // type a name into the inline tile input
+    const nameInput = screen.getByRole("textbox", { name: "Theme name" });
+    fireEvent.change(nameInput, { target: { value: "My Theme" } });
+    (updateBrandKitAction as ReturnType<typeof vi.fn>).mockClear();
+    (saveThemeAction as ReturnType<typeof vi.fn>).mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(saveThemeAction).toHaveBeenCalledWith("My Theme", expect.anything()));
+    await waitFor(() => expect(updateBrandKitAction).toHaveBeenCalled());
+    expect(props.onSaved).toHaveBeenCalled();
   });
 });
