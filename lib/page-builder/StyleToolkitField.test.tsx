@@ -241,7 +241,7 @@ describe("StyleToolkitField — carousel Layout tab", () => {
   });
 });
 
-import { CarouselTextPadding } from "./StyleToolkitField";
+import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS } from "./StyleToolkitField";
 
 describe("CarouselTextPadding heading gap control", () => {
   it("renders a heading gap input and writes _style.headingGap", () => {
@@ -256,5 +256,19 @@ describe("CarouselTextPadding heading gap control", () => {
     const headingGapInput = spinbuttons[spinbuttons.length - 1];
     fireEvent.change(headingGapInput, { target: { value: "20" } });
     expect(set).toHaveBeenCalledWith(expect.objectContaining({ headingGap: 20 }));
+  });
+});
+
+describe("gallery section presets are container-typed", () => {
+  for (const t of ["GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset"]) {
+    it(`${t} is a CONTAINER_TYPE`, () => {
+      expect(CONTAINER_TYPES.has(t)).toBe(true);
+    });
+    it(`${t} is a FLEX_CONTAINER_BLOCK`, () => {
+      expect(FLEX_CONTAINER_BLOCKS.has(t)).toBe(true);
+    });
+  }
+  it("does not treat the standalone GalleryCarousel as a container", () => {
+    expect(CONTAINER_TYPES.has("GalleryCarousel")).toBe(false);
   });
 });

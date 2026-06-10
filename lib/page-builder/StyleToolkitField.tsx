@@ -71,13 +71,16 @@ import {
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 
 // Block types that are containers (no text/video inputs in Content tab)
-const CONTAINER_TYPES = new Set([
+export const CONTAINER_TYPES = new Set([
   "Container",
   "HeroPreset",
   "AboutPreset",
   "ServicesPreset",
   "CtaPreset",
   "ContactPreset",
+  "GalleryGridPreset",
+  "GalleryMasonryPreset",
+  "FeaturedWorkPreset",
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
@@ -92,9 +95,10 @@ const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarouse
 // text-align controls are hidden since there is nothing to style. The carousel
 // is excluded: it still renders a heading + description.
 const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
-const FLEX_CONTAINER_BLOCKS = new Set([
+export const FLEX_CONTAINER_BLOCKS = new Set([
   "Container",
   "HeroPreset", "AboutPreset", "ServicesPreset", "CtaPreset", "ContactPreset",
+  "GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset",
 ]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
