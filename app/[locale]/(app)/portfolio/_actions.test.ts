@@ -27,6 +27,7 @@ import {
   updateCollectionsPopupConfigAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
+  saveThemeAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -313,5 +314,23 @@ describe("publishPortfolioAction — reconcile + publish", () => {
     ]);
     expect(fresh!.publicPage!.publishedAt).toBeTruthy();
     expect(fresh!.publicPage!.lastPublishedAt).toBeTruthy();
+  });
+});
+
+describe("saveThemeAction", () => {
+  it("rejects a duplicate theme name case-insensitively", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { "publicPage.savedThemes": [{ id: "a", name: "Sunset", brandKit: DEFAULT_BRAND_KIT }] } }
+    );
+    const res = await saveThemeAction("  sUnSeT ", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_name_exists" });
+  });
+
+  it("saves a uniquely-named theme", async () => {
+    const res = await saveThemeAction("Spring 26", DEFAULT_BRAND_KIT);
+    expect(res).toMatchObject({ ok: true, theme: { name: "Spring 26" } });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.savedThemes).toHaveLength(1);
   });
 });

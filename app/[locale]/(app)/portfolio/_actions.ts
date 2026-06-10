@@ -14,6 +14,7 @@ import {
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
+import { isThemeNameTaken } from "@/lib/page-builder/themeNames";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import type { PuckData } from "@/lib/page-builder/types";
 import { z } from "zod";
@@ -299,6 +300,13 @@ export async function saveThemeAction(
   }
 
   await connectDB();
+
+  const current = await Workspace.findOne({ _id: ctx.workspace._id })
+    .select({ "publicPage.savedThemes": 1 })
+    .lean<{ publicPage?: { savedThemes?: PortfolioSavedTheme[] } }>();
+  if (isThemeNameTaken(nameParsed.data, current?.publicPage?.savedThemes ?? [])) {
+    return { error: "theme_name_exists" };
+  }
 
   const newTheme: PortfolioSavedTheme = {
     id: crypto.randomUUID(),
