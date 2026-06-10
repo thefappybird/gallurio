@@ -76,6 +76,7 @@ export function GalleryHeader({
   description,
   align = "center",
   overlay = false,
+  gap,
   headingStyle = {},
   descriptionStyle = {},
 }: {
@@ -83,6 +84,7 @@ export function GalleryHeader({
   description?: string;
   align?: TextAlign;
   overlay?: boolean;
+  gap?: number;
   headingStyle?: GalleryTextTargetStyle & { level?: HeadingLevel };
   descriptionStyle?: GalleryTextTargetStyle & { fontSize?: number };
 }) {
@@ -105,8 +107,9 @@ export function GalleryHeader({
     ? colorTokenToVar(descriptionStyle.colorToken) ?? defaultColor
     : defaultColor;
   const dMaxWidth = dAlign === "center" ? "40rem" : "36rem";
+  const gapTop = gap !== undefined ? `${gap}px` : "0.5rem";
   const dMargin =
-    dAlign === "center" ? "0.5rem auto 0" : dAlign === "right" ? "0.5rem 0 0 auto" : "0.5rem 0 0";
+    dAlign === "center" ? `${gapTop} auto 0` : dAlign === "right" ? `${gapTop} 0 0 auto` : `${gapTop} 0 0`;
 
   return (
     <div style={{ marginBottom: "1.5rem" }}>

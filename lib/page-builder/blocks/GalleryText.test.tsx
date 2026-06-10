@@ -88,3 +88,21 @@ describe("GalleryHeader — per-target text styling", () => {
     expect(screen.getByText("Yo")).toBeInTheDocument();
   });
 });
+
+describe("GalleryHeader gap", () => {
+  it("defaults the description top margin to 0.5rem when no gap given", () => {
+    const { container } = render(
+      <GalleryHeader heading="Title" description="Desc" align="center" />,
+    );
+    const p = container.querySelector("p")!;
+    expect(p.style.margin).toContain("0.5rem");
+  });
+
+  it("uses the provided gap (px) for the description top margin", () => {
+    const { container } = render(
+      <GalleryHeader heading="Title" description="Desc" align="center" gap={24} />,
+    );
+    const p = container.querySelector("p")!;
+    expect(p.style.margin).toContain("24px");
+  });
+});

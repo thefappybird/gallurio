@@ -105,6 +105,8 @@ export type BlockStyle = {
   // shared carousel typography (same branch, unreleased) so no migration needed.
   textPaddingX?: CssLength;
   textPaddingY?: CssLength;
+  // Carousel-only: gap (px) between the heading and the description.
+  headingGap?: number;
   // Heading target
   headingBold?: boolean;
   headingItalic?: boolean;
