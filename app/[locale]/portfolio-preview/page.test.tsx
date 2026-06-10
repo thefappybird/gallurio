@@ -35,7 +35,6 @@ vi.mock("@/lib/i18n/localeForCountry", () => ({
 
 vi.mock("@/lib/page-builder/serverContext", () => ({
   buildRenderWorkspace: vi.fn((workspace) => ({ slug: workspace.slug })),
-  runWithRenderWorkspace: vi.fn((_workspace, renderFn: () => React.ReactNode) => renderFn()),
 }));
 
 vi.mock("@/app/(public)/w/[orgSlug]/_components/buildContactLabels", () => ({

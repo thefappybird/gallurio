@@ -33,6 +33,7 @@ export function PreviewClient({
       const draft = JSON.parse(raw) as DraftShape;
       if (draft.version !== LOCAL_DRAFT_VERSION) return;
       const zoneData = draft.data?.[zone];
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs the localStorage draft (external store) into React state on mount; server fallbackData is already the initial state
       if (zoneData && Array.isArray(zoneData.content)) setData(zoneData);
     } catch {
       // ignore malformed draft; keep server fallback

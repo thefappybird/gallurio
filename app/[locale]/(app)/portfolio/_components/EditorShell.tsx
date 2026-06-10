@@ -229,7 +229,7 @@ export function EditorShell({
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
-  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>({
+  const [, setRenderDraftData] = useState<Record<Zone, PuckData>>({
     home: initialData.home ?? EMPTY_ZONE,
     gallery: initialData.gallery ?? EMPTY_ZONE,
   });
