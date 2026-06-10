@@ -105,7 +105,10 @@ export function ThemePanelDialog({
 
   function attemptClose() {
     if (controller.editDiff) {
-      controller.requestExit(() => onCancel());
+      controller.requestExit(() => {
+        if (controller.hasUnsavedCurrent) setCloseGuardOpen(true);
+        else onCancel();
+      });
       return;
     }
     if (controller.hasUnsavedCurrent) {

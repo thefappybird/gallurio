@@ -166,7 +166,6 @@ export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
     saveAndExitEdit,
     cancelEditGuard,
     onCurrentThemeSaved,
-    needsCloseGuard: hasUnsavedCurrent || editDiff,
   }), [
     currentTheme, selection, editing, hasUnsavedCurrent, editDiff, applyTile,
     changeControl, pendingOverride, confirmOverride, cancelOverride, enterEdit,
