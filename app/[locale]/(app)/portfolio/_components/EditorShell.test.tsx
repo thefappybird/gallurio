@@ -267,4 +267,10 @@ describe("EditorShell", () => {
     });
     await waitFor(() => expect(publishPortfolioAction).toHaveBeenCalled());
   });
+
+  it("renders the collections popup preview when the popup tab is open", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
+  });
 });

@@ -39,6 +39,7 @@ import { ContactFormPreview } from "./ContactFormPreview";
 import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { HeaderFormPreview } from "./HeaderFormPreview";
 import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
+import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
@@ -758,7 +759,9 @@ export function EditorShell({
                 </div>
               ) : collectionsPopupOpen ? (
                 <div className="flex h-full overflow-hidden">
-                  <div className="flex-1 overflow-auto bg-muted/40" />
+                  <div className="flex-1 overflow-auto bg-muted/40">
+                    <CollectionsPopupPreview config={collectionsPopup} brandKit={brandKit} />
+                  </div>
                   <CollectionsPopupPanelDialog
                     config={collectionsPopup}
                     onChange={setCollectionsPopup}
