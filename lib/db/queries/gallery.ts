@@ -177,8 +177,9 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
 
 /**
  * Returns the most recent gallery items (capped) for a workspace — used by the
- * FeaturedItemsPicker. Backed by the existing { workspaceId, collectionId, order }
- * compound index (no collectionId filter = workspaceId leading field scan).
+ * MediaPicker (single/multi-image modes). Backed by the existing
+ * { workspaceId, collectionId, order } compound index (no collectionId filter =
+ * workspaceId leading field scan).
  *
  * Logs a warning if items were capped so the operator can tune.
  */

@@ -180,13 +180,6 @@ export function MultiCollectionControl({
     onChange(cols);
   }
 
-  const pickerValue: MediaPickerCollectionSelection[] = selection.map((c) => ({
-    id: c.id,
-    name: c.name,
-    coverPublicId: c.coverPublicId,
-    itemCount: c.itemCount,
-  }));
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
@@ -207,7 +200,7 @@ export function MultiCollectionControl({
 
       <MediaPicker
         mode="collections"
-        value={pickerValue}
+        value={selection as MediaPickerCollectionSelection[]}
         onChange={handleChange}
         open={open}
         onOpenChange={setOpen}

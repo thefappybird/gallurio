@@ -20,7 +20,6 @@ export type PortfolioSeed = {
 // Build a template's seed data.
 async function buildSeed(
   template: PortfolioTemplate,
-  _workspaceId: Types.ObjectId,
   ctx: { name: string; branding?: { tagline?: string | null; description?: string | null } | null }
 ): Promise<PortfolioSeed> {
   const data = template.seedData({ workspace: { name: ctx.name, branding: ctx.branding ?? null } });
@@ -50,7 +49,7 @@ export async function seedDefaultPortfolio(workspaceId: Types.ObjectId): Promise
   if (ws.publicPage?.data?.home) return null; // already seeded
 
   const template = getTemplateForBusinessType(ws.businessType);
-  const seed = await buildSeed(template, workspaceId, {
+  const seed = await buildSeed(template, {
     name: ws.name,
     branding: ws.branding,
   });
@@ -107,7 +106,7 @@ export async function reseedPortfolioFromTemplate(
     .lean();
   if (!ws) return null;
 
-  const seed = await buildSeed(template, workspaceId, {
+  const seed = await buildSeed(template, {
     name: ws.name,
     branding: ws.branding,
   });
