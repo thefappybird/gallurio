@@ -51,11 +51,30 @@ export type BrandKitButtonStyle = (typeof BRAND_KIT_BUTTON_STYLES)[number];
 // PortfolioCollectionsPopupConfig
 // ---------------------------------------------------------------------------
 
+/** Horizontal text alignment for popup title. */
+export type PopupTitleAlign = "left" | "center" | "right";
+
 export type PortfolioCollectionsPopupConfig = {
   backgroundColor?: string; // token name or hex
   borderColor?: string;     // token name or hex
   borderWidth?: number;     // px, 0 = none
   radius?: BrandKitRadius | "";
+  // Title styles (global override + typography). Empty titleText -> collection name.
+  titleText?: string;
+  titleFontFamily?: PortfolioFontKey;
+  titleFontSize?: number; // px
+  titleColorToken?: string; // token name or hex
+  titleBold?: boolean;
+  titleItalic?: boolean;
+  titleUnderline?: boolean;
+  titleAlign?: PopupTitleAlign; // moves the title across the full popup header width
+  // Close-button styles
+  closeButtonSize?: number; // px (button width/height)
+  closeButtonRadius?: BrandKitRadius | "";
+  closeButtonBorderWidth?: number; // px
+  closeButtonBorderColorToken?: string;
+  closeButtonOpacity?: number; // 0-100
+  closeButtonBgColorToken?: string;
 };
 
 // ---------------------------------------------------------------------------
