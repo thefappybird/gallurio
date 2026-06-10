@@ -69,6 +69,7 @@ const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
+const updateCollectionsPopupConfigAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
   publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
@@ -80,6 +81,7 @@ vi.mock("../_actions", () => ({
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateHeaderConfigAction: (...a: unknown[]) => updateHeaderConfigAction(...a),
+  updateCollectionsPopupConfigAction: (...a: unknown[]) => updateCollectionsPopupConfigAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -98,6 +100,7 @@ const baseProps = {
   initialContact: { title: "Hi" },
   initialFormLocale: "",
   initialHeaderConfig: {},
+  initialCollectionsPopup: {},
   publicOrigin: "https://app.test",
   previewBasePath: "/portfolio-preview",
   templates: [
@@ -133,8 +136,17 @@ describe("EditorShell", () => {
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Collections Popup" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
+  });
+
+  it("opens the Collections Popup panel when the Collections Popup tab is clicked", async () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collections Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
@@ -230,6 +242,7 @@ describe("EditorShell", () => {
     expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Contact Form" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Collections Popup" })).not.toBeInTheDocument();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
     expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute("aria-pressed", "true");

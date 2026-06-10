@@ -15,6 +15,7 @@ import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 import type {
   PortfolioBrandKit,
+  PortfolioCollectionsPopupConfig,
   PortfolioContactConfig,
   PortfolioHeaderConfig,
   PortfolioSavedTheme,
@@ -29,6 +30,7 @@ import {
   updateContactConfigAction,
   updateFormLocaleAction,
   updateHeaderConfigAction,
+  updateCollectionsPopupConfigAction,
 } from "../_actions";
 import { PublishDialog } from "./PublishDialog";
 import { ThemePanelDialog } from "./ThemePanelDialog";
@@ -36,6 +38,7 @@ import { ContactPanelDialog } from "./ContactPanelDialog";
 import { ContactFormPreview } from "./ContactFormPreview";
 import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { HeaderFormPreview } from "./HeaderFormPreview";
+import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
@@ -51,7 +54,7 @@ import { cn } from "@/lib/utils";
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
 type Zone = "home" | "gallery";
-type EditorSection = Zone | "header" | "contact";
+type EditorSection = Zone | "collectionsPopup" | "header" | "contact";
 type SaveStatus = "idle" | "saving" | "saved";
 
 /** Serializable starter-template summary for the in-editor switcher. */
@@ -69,6 +72,7 @@ type Props = {
   initialBrandKit: PortfolioBrandKit;
   initialContact: PortfolioContactConfig;
   initialHeaderConfig: PortfolioHeaderConfig;
+  initialCollectionsPopup: PortfolioCollectionsPopupConfig;
   /** Per-page public chrome language ("" = auto from workspace country). */
   initialFormLocale: string;
   publicOrigin: string;
@@ -85,7 +89,7 @@ type Props = {
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
-const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "header", "contact"] as const;
+const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
 const LOCAL_DRAFT_VERSION = 1;
 
 type PortfolioBrowserDraft = {
@@ -95,6 +99,7 @@ type PortfolioBrowserDraft = {
   contact: PortfolioContactConfig;
   formLocale: string;
   headerConfig: PortfolioHeaderConfig;
+  collectionsPopup: PortfolioCollectionsPopupConfig;
 };
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
@@ -198,6 +203,7 @@ export function EditorShell({
   initialContact,
   initialFormLocale,
   initialHeaderConfig,
+  initialCollectionsPopup,
   publicOrigin,
   previewBasePath,
   templates,
@@ -230,6 +236,8 @@ export function EditorShell({
   const [contactOpen, setContactOpen] = useState(false);
   const [headerConfig, setHeaderConfig] = useState<PortfolioHeaderConfig>(initialHeaderConfig ?? DEFAULT_HEADER_CONFIG);
   const [headerOpen, setHeaderOpen] = useState(false);
+  const [collectionsPopup, setCollectionsPopup] = useState<PortfolioCollectionsPopupConfig>(initialCollectionsPopup ?? {});
+  const [collectionsPopupOpen, setCollectionsPopupOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templateId, setTemplateId] = useState(currentTemplateId);
@@ -239,8 +247,8 @@ export function EditorShell({
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
 
-  const sidePanelOpen = headerOpen || contactOpen;
-  const activeSection: EditorSection = headerOpen ? "header" : contactOpen ? "contact" : activeZone;
+  const sidePanelOpen = headerOpen || contactOpen || collectionsPopupOpen;
+  const activeSection: EditorSection = headerOpen ? "header" : contactOpen ? "contact" : collectionsPopupOpen ? "collectionsPopup" : activeZone;
   const showPuck = !previewMode && !sidePanelOpen;
 
   // Source of truth for each zone's latest data, updated by Puck's onChange.
@@ -261,6 +269,8 @@ export function EditorShell({
   const headerSnapshot = useRef<PortfolioHeaderConfig | null>(null);
   const contactHasSaved = useRef(false);
   const headerHasSaved = useRef(false);
+  const collectionsPopupSnapshot = useRef<PortfolioCollectionsPopupConfig | null>(null);
+  const collectionsPopupHasSaved = useRef(false);
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
@@ -280,6 +290,7 @@ export function EditorShell({
       contact,
       formLocale,
       headerConfig,
+      collectionsPopup,
     };
     try {
       window.localStorage.setItem(draftKey, JSON.stringify(draft));
@@ -287,7 +298,7 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, contact, draftKey, formLocale, headerConfig]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, headerConfig]);
 
   const writeLocalDraft = useCallback(() => {
     setSaveStatus(persistLocalDraft() ? "saved" : "idle");
@@ -310,6 +321,7 @@ export function EditorShell({
         if (draft.contact) setContact(draft.contact);
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
         if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
+        if (draft.collectionsPopup) setCollectionsPopup(draft.collectionsPopup);
         ignoreNextChange.current = true;
         setPuckSeed(ensureIds(zoneDataRef.current.home));
         setSaveStatus("saved");
@@ -321,7 +333,7 @@ export function EditorShell({
 
   useEffect(() => {
     persistLocalDraft();
-  }, [contact, formLocale, headerConfig, persistLocalDraft]);
+  }, [collectionsPopup, contact, formLocale, headerConfig, persistLocalDraft]);
 
   // Puck/contact/navigation drafts are browser-local until Publish.
   const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
@@ -347,6 +359,7 @@ export function EditorShell({
   function hideEditorPanels() {
     setContactOpen(false);
     setHeaderOpen(false);
+    setCollectionsPopupOpen(false);
   }
 
   async function selectZone(zone: Zone) {
@@ -394,6 +407,7 @@ export function EditorShell({
       updateContactConfigAction(contact),
       updateFormLocaleAction(formLocale),
       updateHeaderConfigAction(headerConfig),
+      updateCollectionsPopupConfigAction(collectionsPopup),
     ]);
     if (saveResults.some((res) => "error" in res)) {
       setSaveStatus("idle");
@@ -463,6 +477,24 @@ export function EditorShell({
     headerHasSaved.current = true;
   }
 
+  async function openCollectionsPopup() {
+    if (contactOpen) setContactOpen(false);
+    if (headerOpen) setHeaderOpen(false);
+    if (!previewMode) await flushPendingSave(activeZone);
+    collectionsPopupSnapshot.current = collectionsPopup;
+    collectionsPopupHasSaved.current = false;
+    setCollectionsPopupOpen(true);
+  }
+  function closeCollectionsPopup(saved: boolean) {
+    if (!saved && collectionsPopupSnapshot.current) setCollectionsPopup(collectionsPopupSnapshot.current);
+    setCollectionsPopupOpen(false);
+    if (collectionsPopupHasSaved.current) setPreviewNonce((n) => n + 1);
+  }
+  function saveCollectionsPopupSnapshot() {
+    collectionsPopupSnapshot.current = collectionsPopup;
+    collectionsPopupHasSaved.current = true;
+  }
+
   async function handleSwitchTemplate(nextTemplateId: string) {
     setSwitching(true);
     setSwitchError(null);
@@ -514,7 +546,9 @@ export function EditorShell({
       ? t("headerSettings")
       : activeSection === "contact"
         ? t("contactSettingsShort")
-        : t(`zone.${activeSection}`);
+        : activeSection === "collectionsPopup"
+          ? "Collections Popup"
+          : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
   const contactLabels = buildContactLabels(
     (key, values) => tPublicForm(key, values),
@@ -528,6 +562,7 @@ export function EditorShell({
       contact,
       formLocale,
       headerConfig,
+      collectionsPopup,
     } satisfies PortfolioBrowserDraft)
   );
   const previewSrc =
@@ -539,13 +574,15 @@ export function EditorShell({
     return (
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact")).map((section) => {
+          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
             const label =
               section === "header"
                 ? t("headerSettings")
                 : section === "contact"
                   ? t("contactSettingsShort")
-                  : t(`zone.${section}`);
+                  : section === "collectionsPopup"
+                    ? "Collections Popup"
+                    : t(`zone.${section}`);
             return (
               <Button
                 key={section}
@@ -556,6 +593,7 @@ export function EditorShell({
                 onClick={() => {
                   if (section === "header") void openHeader();
                   else if (section === "contact") openContact();
+                  else if (section === "collectionsPopup") void openCollectionsPopup();
                   else void selectZone(section);
                 }}
               >
@@ -637,6 +675,15 @@ export function EditorShell({
             onPublish={() => setPublishOpen(true)}
             iframe={{ enabled: false }}
             headerTitle={headerTitle}
+            metadata={{
+              workspace: {
+                _id: "",
+                name: workspaceName,
+                slug,
+                editorPreview: true,
+                publicPage: { collectionsPopup },
+              },
+            }}
             viewports={[
               { width: 1280, label: "Desktop", icon: "Monitor" },
               { width: 768, label: "Tablet", icon: "Tablet" },
@@ -696,6 +743,17 @@ export function EditorShell({
                     brandKit={brandKit}
                     onSaved={saveContactSnapshot}
                     onCancel={() => closeContact(false)}
+                  />
+                </div>
+              ) : collectionsPopupOpen ? (
+                <div className="flex h-full overflow-hidden">
+                  <div className="flex-1 overflow-auto bg-muted/40" />
+                  <CollectionsPopupPanelDialog
+                    config={collectionsPopup}
+                    onChange={setCollectionsPopup}
+                    brandKit={brandKit}
+                    onSaved={saveCollectionsPopupSnapshot}
+                    onCancel={() => closeCollectionsPopup(false)}
                   />
                 </div>
               ) : headerOpen ? (
