@@ -439,6 +439,7 @@ export function EditorShell({
   }
   function openContact() {
     if (headerOpen) setHeaderOpen(false);
+    if (collectionsPopupOpen) setCollectionsPopupOpen(false);
     contactSnapshot.current = contact;
     formLocaleSnapshot.current = formLocale;
     contactHasSaved.current = false;
@@ -462,6 +463,7 @@ export function EditorShell({
 
   async function openHeader() {
     if (contactOpen) setContactOpen(false);
+    if (collectionsPopupOpen) setCollectionsPopupOpen(false);
     if (!previewMode) await flushPendingSave(activeZone);
     headerSnapshot.current = headerConfig;
     headerHasSaved.current = false;
