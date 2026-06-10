@@ -171,7 +171,7 @@ export const SECTION_PRESETS = {
   CtaPreset: { label: "Call to action", defaultProps: CTA_PRESET },
   ContactPreset: { label: "Contact", defaultProps: CONTACT_PRESET },
   GalleryGridPreset: { label: "Gallery Grid", defaultProps: GALLERY_GRID_PRESET },
-  GalleryMasonryPreset: { label: "Masonry", defaultProps: GALLERY_MASONRY_PRESET },
+  GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
   FeaturedWorkPreset: { label: "Featured Work", defaultProps: FEATURED_WORK_PRESET },
 } as const;
 
