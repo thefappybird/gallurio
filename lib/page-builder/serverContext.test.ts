@@ -119,7 +119,7 @@ describe("buildRenderWorkspace", () => {
       tagline: "Capture moments",
       description: "A studio.",
     });
-    expect(result.publicPage).toEqual({ inquiryRecipientEmail: "owner@luminos.ph" });
+    expect(result.publicPage).toEqual({ inquiryRecipientEmail: "owner@luminos.ph", collectionsPopup: null });
     expect(result.contact).toEqual({
       email: "hello@luminos.ph",
       phone: "+63 912 345 6789",
@@ -203,7 +203,22 @@ describe("buildRenderWorkspace", () => {
       name: "Missing Email",
       publicPage: {}, // inquiryRecipientEmail absent
     });
-    expect(result.publicPage).toEqual({ inquiryRecipientEmail: null });
+    expect(result.publicPage).toEqual({ inquiryRecipientEmail: null, collectionsPopup: null });
+  });
+
+  it("maps publicPage.collectionsPopup when present", () => {
+    const result = buildRenderWorkspace({
+      _id: "ws-popup",
+      name: "Popup",
+      publicPage: {
+        inquiryRecipientEmail: "owner@popup.ph",
+        collectionsPopup: { backgroundColor: "surface", borderColor: "#1a1a1a", borderWidth: 2, radius: "subtle" },
+      },
+    });
+    expect(result.publicPage).toEqual({
+      inquiryRecipientEmail: "owner@popup.ph",
+      collectionsPopup: { backgroundColor: "surface", borderColor: "#1a1a1a", borderWidth: 2, radius: "subtle" },
+    });
   });
 
   it("does NOT set locale or chrome (they are undefined)", () => {
