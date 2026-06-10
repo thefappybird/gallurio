@@ -2,7 +2,7 @@
 
 import "@measured/puck/puck.css";
 import "./editor.css";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Puck, usePuck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -562,6 +562,21 @@ export function EditorShell({
     `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
     `&v=${previewNonce}`;
 
+  // Stable reference for the Puck canvas override: prevents Puck from re-rendering
+  // the canvas container on every EditorShell re-render (e.g. keystroke → onChange
+  // → setRenderDraftData), which would otherwise trigger a canvas scroll-to-top.
+  const puckCanvasOverride = useMemo(
+    () => ({
+      puck: ({ children }: { children: ReactNode }) => (
+        <>
+          {children}
+          <RootCanvasStyle />
+        </>
+      ),
+    }),
+    []
+  );
+
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
@@ -697,14 +712,11 @@ export function EditorShell({
                   {topBar(<EditCanvasControls />, actions)}
                 </header>
               ),
-              // Injects a scoped <style> tag that mirrors the page root style onto
-              // the Puck canvas surface without DOM wrapping (which would break DnD).
-              puck: ({ children }) => (
-                <>
-                  {children}
-                  <RootCanvasStyle />
-                </>
-              ),
+              // Stable memoized override: prevents Puck from re-rendering the
+              // canvas wrapper on every EditorShell re-render (keystroke → onChange).
+              // Defined above with useMemo([]); RootCanvasStyle reads from Puck
+              // context directly so needs no props passed here.
+              ...puckCanvasOverride,
             }}
           />
         ) : (

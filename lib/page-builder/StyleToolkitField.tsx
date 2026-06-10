@@ -14,6 +14,7 @@
  */
 
 import { useState } from "react";
+import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import type { LucideIcon } from "lucide-react";
 import {
   Bold,
@@ -1602,15 +1603,27 @@ function ContactDetailsPanel({ p, setProp }: { p: Record<string, unknown> | unde
 function BlockAwarePanel({
   s,
   set,
-  tab,
-  onTabChange,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
-  tab: "content" | "design" | "layout";
-  onTabChange: (t: "content" | "design" | "layout") => void;
+  /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
+  tab?: "content" | "design" | "layout";
+  /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
+  onTabChange?: (t: "content" | "design" | "layout") => void;
 }) {
   const { selectedItem, dispatch, getSelectorForId, getItemById } = usePuck();
+
+  const blockId = (selectedItem?.props?.id as string | undefined) ?? "";
+
+  // Store-backed tab: survives StyleToolkitField remounts (Puck re-invokes the
+  // field render on every value change). Using blockId as key means selecting a
+  // different block starts at "content" while edits on the same block preserve
+  // whichever tab the user navigated to.
+  const [activeTab, setActiveTabState] = useState<BlockTab>(() => getBlockTab(blockId));
+  function setActiveTab(t: BlockTab) {
+    setActiveTabState(t);
+    if (blockId) setBlockTab(blockId, t);
+  }
 
   const type = (selectedItem?.type ?? "") as string;
   const isGallery = GALLERY_BLOCKS.has(type);
@@ -1618,7 +1631,6 @@ function BlockAwarePanel({
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
   const availableTabs = ["content", "design", "layout"] as const;
-  const activeTab = (availableTabs as readonly string[]).includes(tab) ? tab : "content";
 
   const isGridChild = (() => {
     if (!selectedItem) return false;
@@ -1666,7 +1678,7 @@ function BlockAwarePanel({
 
   return (
     <div className="flex flex-col">
-      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={onTabChange} />
+      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
       {activeTab === "content" && (
         <ContentTabBody
           s={s}
