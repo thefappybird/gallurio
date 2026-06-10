@@ -1037,7 +1037,6 @@
         "saveThemeError": "Hindi ma-save ang tema. Pakisubukan muli.",
         "themeLimitReached": "Naabot mo na ang maximum na {max} na naka-save na tema.",
         "currentTheme": "Kasalukuyang Tema",
-        "currentThemeBadge": "Hindi naka-save",
         "editTheme": "I-edit ang tema: {name}",
         "editThemeName": "Pangalan ng tema",
         "overrideCurrentTitle": "Palitan ang kasalukuyang tema?",

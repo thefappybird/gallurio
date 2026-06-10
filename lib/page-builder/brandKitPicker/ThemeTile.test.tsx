@@ -97,12 +97,11 @@ describe("ThemeTile variants", () => {
     expect(screen.queryByRole("button", { name: /Edit theme/ })).toBeNull();
   });
 
-  it("renders the current tile with a badge and no edit/delete controls", () => {
+  it("renders the current tile without edit/delete controls", () => {
     render(
       <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"
-        currentBadge="Unsaved" onApply={() => {}} />
+        onApply={() => {}} />
     );
-    expect(screen.getByText("Unsaved")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Edit theme/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Delete theme/ })).toBeNull();
   });

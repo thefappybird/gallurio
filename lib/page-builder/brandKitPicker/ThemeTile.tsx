@@ -15,8 +15,6 @@ type Props = {
   deleteLabel?: string;
   /** Localized label for the edit button; presence (saved tiles) enables editing. */
   editLabel?: string;
-  /** Short localized "Unsaved" badge for the current tile (when not name-editing). */
-  currentBadge?: string;
   deleting?: boolean;
   onApply: () => void;
   onDelete?: () => void;
@@ -47,7 +45,6 @@ export function ThemeTile({
   applyLabel,
   deleteLabel,
   editLabel,
-  currentBadge,
   deleting = false,
   onApply,
   onDelete,
@@ -140,11 +137,6 @@ export function ThemeTile({
             <span className="min-w-0 truncate" title={tile.name}>
               {tile.name}
             </span>
-            {isCurrent && currentBadge && (
-              <span className="truncate text-[10px] uppercase tracking-wide text-muted-foreground">
-                {currentBadge}
-              </span>
-            )}
           </span>
         </button>
 

@@ -1037,7 +1037,6 @@
         "saveThemeError": "Could not save theme. Please try again.",
         "themeLimitReached": "You've reached the maximum of {max} saved themes.",
         "currentTheme": "Current Theme",
-        "currentThemeBadge": "Unsaved",
         "editTheme": "Edit theme: {name}",
         "editThemeName": "Theme name",
         "overrideCurrentTitle": "Replace your current theme?",

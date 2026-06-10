@@ -104,26 +104,6 @@ describe("ThemeGrid", () => {
     );
   });
 
-  it("when a current theme exists, the current tile shows an inline name input and save button", async () => {
-    const { onChangeSpy } = setup();
-    // trigger a color change to create the current theme
-    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
-    // Now simulate a control edit to create current theme (we need a color change in the full BrandKitPicker
-    // but ThemeGrid test drives via controller's changeControl — simulate via editorialKit divergence)
-    // Instead we verify directly: after applyTile then a control change triggers current tile via the controller
-    // The Harness exposes the controller via useThemeEditor; we can't call changeControl here directly.
-    // So let's check: if onSaveTheme is provided and a current tile appears after editing, the name input is there.
-    // We do this by rendering with a controlled scenario: set initial kit different from DEFAULT so tile is selected,
-    // then the current tile appears after changeControl.
-    // Since we can't call controller directly in setup(), let's check the edit flow instead:
-    // a saved tile in edit mode shows a name input.
-    const saved = [{ id: "t1", name: "Sunset", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#e87a4f" } }];
-    const { onSaveTheme } = setup({ savedThemes: saved });
-    fireEvent.click(screen.getByRole("button", { name: "Edit theme: Sunset" }));
-    expect(screen.getByRole("textbox", { name: "Theme name" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Theme name" })).toHaveValue("Sunset");
-  });
-
   it("editing a saved tile shows inline name input; saving calls onUpdateTheme and exits edit mode", async () => {
     const saved = [{ id: "t1", name: "Ocean", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#5fb3a8" } }];
     setup({ savedThemes: saved });

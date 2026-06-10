@@ -1037,7 +1037,6 @@
         "saveThemeError": "Tidak dapat menyimpan tema. Silakan coba lagi.",
         "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan.",
         "currentTheme": "Tema Saat Ini",
-        "currentThemeBadge": "Belum disimpan",
         "editTheme": "Edit tema: {name}",
         "editThemeName": "Nama tema",
         "overrideCurrentTitle": "Ganti tema saat ini Anda?",

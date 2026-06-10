@@ -21,7 +21,6 @@ const REQUIRED_KEYS = [
   "saveThemeError",
   "themeLimitReached",
   "currentTheme",
-  "currentThemeBadge",
   "editTheme",
   "editThemeName",
   "overrideCurrentTitle",
