@@ -135,7 +135,7 @@ describe("block label renames", () => {
 
   it("renames the gallery/featured preset labels", () => {
     expect(SECTION_PRESETS.GalleryGridPreset.label).toBe("Gallery Grid");
-    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Masonry");
+    expect(SECTION_PRESETS.GalleryMasonryPreset.label).toBe("Gallery Masonry");
     expect(SECTION_PRESETS.FeaturedWorkPreset.label).toBe("Featured Work");
   });
 
