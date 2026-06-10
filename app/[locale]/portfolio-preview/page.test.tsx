@@ -86,8 +86,10 @@ vi.mock("./_components/PreviewContactCard", () => ({
   ),
 }));
 
-vi.mock("@measured/puck/rsc", () => ({
-  Render: ({ data }: { data: unknown }) => <pre data-testid="render-data">{JSON.stringify(data)}</pre>,
+vi.mock("./_components/PreviewClient", () => ({
+  PreviewClient: ({ zone, slug }: { zone: string; slug: string }) => (
+    <div data-testid="preview-client">{zone}:{slug}</div>
+  ),
 }));
 
 import PortfolioPreviewPage from "./page";
@@ -113,54 +115,51 @@ describe("PortfolioPreviewPage", () => {
     });
   });
 
-  it("prefers local draft contact and locale state over DB values", async () => {
+  it("renders PreviewClient for home zone with workspace slug", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({
-        zone: "contact",
-        draft: JSON.stringify({
-          contact: { title: "Draft title", description: "Draft description" },
-          headerConfig: { brandText: "Draft brand" },
-          formLocale: "fil",
-        }),
-      }),
+      searchParams: Promise.resolve({ zone: "home" }),
     });
 
     render(page);
 
-    expect(screen.getByText("Draft title")).toBeInTheDocument();
-    expect(screen.getByText("Draft description")).toBeInTheDocument();
-    expect(screen.getByTestId("contact-label")).toHaveTextContent("fil:publicPage.inquiryForm:name");
-    expect(screen.getByTestId("header-home")).toHaveTextContent("fil:publicPage.nav:home");
-    expect(screen.getByTestId("header-brand")).toHaveTextContent("Draft brand");
+    const client = screen.getByTestId("preview-client");
+    expect(client).toHaveTextContent("home:studio-aurora");
+    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora");
   });
 
-  it("prefers local draft zone content over DB draft content", async () => {
+  it("renders PreviewClient for gallery zone with correct active path", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({
-        zone: "home",
-        draft: JSON.stringify({
-          data: {
-            home: { content: [{ type: "Hero", props: { headline: "Draft Hero" } }], root: {} },
-          },
-        }),
-      }),
+      searchParams: Promise.resolve({ zone: "gallery" }),
     });
 
     render(page);
 
-    expect(screen.getByTestId("render-data")).toHaveTextContent("Draft Hero");
-    expect(screen.getByTestId("render-data")).not.toHaveTextContent("DB Hero");
-    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora");
+    const client = screen.getByTestId("preview-client");
+    expect(client).toHaveTextContent("gallery:studio-aurora");
+    expect(screen.getByTestId("header-active-path")).toHaveTextContent("/w/studio-aurora/gallery");
+  });
+
+  it("renders contact zone from DB values (no draft param)", async () => {
+    const page = await PortfolioPreviewPage({
+      params: Promise.resolve({ locale: "en" }),
+      searchParams: Promise.resolve({ zone: "contact" }),
+    });
+
+    render(page);
+
+    expect(screen.getByText("DB title")).toBeInTheDocument();
+    expect(screen.getByText("DB description")).toBeInTheDocument();
+    expect(screen.getByTestId("contact-label")).toHaveTextContent("en:publicPage.inquiryForm:name");
+    expect(screen.getByTestId("header-home")).toHaveTextContent("en:publicPage.nav:home");
+    expect(screen.getByTestId("header-brand")).toHaveTextContent("DB brand");
   });
 
   it("maps gallery preview tabs to the gallery active nav path", async () => {
     const page = await PortfolioPreviewPage({
       params: Promise.resolve({ locale: "en" }),
-      searchParams: Promise.resolve({
-        zone: "gallery",
-      }),
+      searchParams: Promise.resolve({ zone: "gallery" }),
     });
 
     render(page);
