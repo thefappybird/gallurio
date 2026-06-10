@@ -123,12 +123,12 @@ export const puckConfig: Config<Components> = {
   },
   root: {
     fields: {},
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     render: (({ _rootStyle, children }: { _rootStyle?: RootPageStyle; children?: React.ReactNode }) =>
       React.createElement(
         "div",
         { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%" } },
         children,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       )) as any,
   },
 };
