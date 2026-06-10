@@ -80,6 +80,7 @@ export function useThemeEditor({ value, onChange, savedThemes, onUpdateTheme }: 
   }, []);
 
   const enterEdit = useCallback((theme: PortfolioSavedTheme) => {
+    lastTileKit.current = theme.brandKit;
     setEditing({
       id: theme.id,
       baseTheme: theme,
@@ -129,6 +130,7 @@ export function useThemeEditor({ value, onChange, savedThemes, onUpdateTheme }: 
         setEditGuardError(res.error);
         return;
       }
+      lastTileKit.current = res.theme.brandKit;
       onChange(res.theme.brandKit);
       exitEditNow();
     } finally {

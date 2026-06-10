@@ -140,4 +140,30 @@ describe("useThemeEditor", () => {
       expect(result.current.editing?.id).toBe("s1");
     });
   });
+
+  it("cancelOverride after editing then exiting edit mode reverts to the active (saved) tile's kit", async () => {
+    const savedNine: PortfolioSavedTheme = { id: "s9", name: "Saved Nine", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#aa00aa" } };
+    const onChange = vi.fn();
+    const onUpdateTheme = vi.fn().mockResolvedValue({ ok: true, theme: savedNine });
+    const { result } = renderHook(() =>
+      useThemeEditor({ value: DEFAULT_BRAND_KIT, onChange, savedThemes: [savedNine], onUpdateTheme }));
+
+    // create a Current Theme so needsOverrideConfirm will be true later
+    act(() => result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+    // enter edit mode on the saved tile (lastTileKit is still null / DEFAULT from init, not savedNine.brandKit)
+    act(() => result.current.enterEdit(savedNine));
+    // requestExit with no diff exits immediately
+    act(() => result.current.requestExit(() => {}));
+    // now selection is tile:saved:s9, currentTheme still non-null, editing is null
+    expect(result.current.editing).toBeNull();
+    expect(result.current.selection).toEqual({ kind: "tile", key: "saved:s9" });
+    expect(result.current.hasUnsavedCurrent).toBe(true);
+    // edit a base control -> override confirm pends
+    act(() => result.current.changeControl({ ...savedNine.brandKit, primaryColor: "#020202" }));
+    expect(result.current.overrideOpen).toBe(true);
+    onChange.mockClear();
+    act(() => result.current.cancelOverride());
+    // must revert to the active saved tile's kit, NOT the stale DEFAULT/earlier kit
+    expect(onChange).toHaveBeenCalledWith(savedNine.brandKit);
+  });
 });
