@@ -19,7 +19,7 @@ type Options = {
   onUpdateTheme?: (id: string, name: string, brandKit: PortfolioBrandKit) => Promise<UpdateResult>;
 };
 
-export function useThemeEditor({ value, onChange, savedThemes, onUpdateTheme }: Options) {
+export function useThemeEditor({ value, onChange, onUpdateTheme }: Options) {
   const [currentTheme, setCurrentTheme] = useState<PortfolioBrandKit | null>(null);
   const [selection, setSelection] = useState<ThemeSelection>({ kind: "none" });
   const [editing, setEditing] = useState<EditSession | null>(null);
