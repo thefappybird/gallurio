@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { GalleryCarouselBlock, galleryCarouselDefaultProps } from "./GalleryCarouselBlock";
 import type { GalleryCarouselProps } from "./GalleryCarouselBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -109,5 +110,21 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
       GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", floatX: "center", _style: { headingAlign: "left" } })
     );
     expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("text-align: left");
+  });
+});
+
+describe("GalleryCarouselBlock heading gap", () => {
+  it("passes _style.headingGap to the rendered description margin", () => {
+    const { container } = render(
+      <GalleryCarouselBlock
+        {...galleryCarouselDefaultProps}
+        images={[{ id: "1", publicId: "demo/x", alt: "" }]}
+        heading="Title"
+        description="Desc"
+        _style={{ headingGap: 32 }}
+      />,
+    );
+    const p = container.querySelector("[data-gallery-overlay] p")!;
+    expect(p.getAttribute("style") ?? "").toContain("32px");
   });
 });

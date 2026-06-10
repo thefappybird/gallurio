@@ -128,6 +128,7 @@ export function GalleryCarouselBlock({
               description={description}
               align={horizontal}
               overlay
+              gap={_style?.headingGap}
               headingStyle={{
                 bold: _style?.headingBold,
                 italic: _style?.headingItalic,
