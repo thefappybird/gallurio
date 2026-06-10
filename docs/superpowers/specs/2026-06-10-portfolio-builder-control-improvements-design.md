@@ -51,10 +51,31 @@ Root-level styling editable when no section is selected.
   - `FLEX_CONTAINER_BLOCKS` — unlocks padding (now in the Layout tab per #4).
 - They are already Container-based with editable content slots; they were simply absent from these type sets. The carousel stays excluded (leaf `<section>`).
 
+### 6. Collections Popup tab — live preview + header/button styling
+
+Bring the Collections Popup editor tab in line with the Header/Contact tabs (live preview pane + right control sidebar), and add title/close-button styling.
+
+- **Layout parity:** Replace the empty left placeholder (`EditorShell.tsx`, the `<div className="flex-1 ... bg-muted/40" />` rendered when `collectionsPopupOpen`) with a real `CollectionsPopupPreview` component, mirroring the `HeaderFormPreview` / `ContactFormPreview` pattern: preview left, `CollectionsPopupPanelDialog` right, updating in realtime via `onChange` → parent `collectionsPopup` state → preview re-render.
+- **Preview content:** The preview renders the published popup chrome — the sticky title header (`<h2>`) + the floating circular close button — matching `lib/page-builder/blocks/CollectionPopup.tsx`. Extract the popup chrome (shell + title header + close button) into a shared presentational component so the editor preview and the public render stay in sync (single source of truth). Preview uses a placeholder collection name (e.g. the first/sample collection) so the title is visible.
+- **New controls — a collapsible "Header styles" accordion section** in `CollectionsPopupPanelDialog`, with two nested collapsible sub-sections:
+  - **Title styles:**
+    - **Header text** — text input. Empty/reset → the title defaults to the live collection name. Non-empty → a **global** static override applied to every collection popup.
+    - **Text options** — typography kit reused from the Heading block: font family, font size, text color token, bold / italic / underline, and **alignment**. Alignment must position the `<h2>` across the **full width** of the popup header (left / center / right), so the sticky-header layout must let the title justify across the full header width (the asymmetric right padding that clears the close button still applies). **No** highlight controls.
+  - **Button styles** (the close button): button size, corner radius, border (width + color), opacity, background color.
+- **Config:** Extend the global `collectionsPopup` config object with the additive title fields (`titleText?`, `titleFontFamily?`, `titleFontSize?`, `titleColorToken?`, `titleBold?`, `titleItalic?`, `titleUnderline?`, `titleAlign?`) and close-button fields (`closeButtonSize?`, `closeButtonRadius?`, `closeButtonBorderWidth?`, `closeButtonBorderColorToken?`, `closeButtonOpacity?`, `closeButtonBgColorToken?`). The existing popup shell styling (bg / border / corners) is unchanged.
+- **Public render:** `CollectionPopup.tsx` (via the shared chrome component) applies the title override + title typography (with full-width align) and the close-button style fields. When `titleText` is empty it renders the collection name as today.
+
+### 7. Fix preview HTTP 431 (Request Header Fields Too Large)
+
+- **Root cause:** `togglePreview` (`EditorShell.tsx` ~line 559) JSON-stringifies the **entire** draft (`renderDraftData` for all zones + `brandKit` + `contact` + `formLocale` + `headerConfig` + `collectionsPopup`) and `encodeURIComponent`s it into the iframe URL as `?draft=...`. The oversized URL rides in the request headers (alongside Clerk cookies) and trips the server's header-size limit → 431.
+- **Fix (client storage):** Stop passing the draft in the URL. Write the draft object to `localStorage` under a stable key (versioned via the existing `LOCAL_DRAFT_VERSION` / `PortfolioBrowserDraft` infra), and pass only a tiny URL: `?zone=...&v=<nonce>` (no `draft` param). The same-origin preview iframe reads the draft from `localStorage` by key.
+- **Consequence:** The preview page (`app/[locale]/portfolio-preview/page.tsx`) converts from server-rendered (reading `searchParams.draft`) to **client-rendered** — a client component that reads the draft from `localStorage` and renders via the production Puck `<Render>`/config. The `v` nonce forces a fresh read on each preview. Any data the popup/render needs that isn't already in the draft (e.g. collection images) must be available to the client render — confirm the draft carries everything the preview needs, or fetch the remainder client-side from the existing public endpoint.
+
 ## Data model / compatibility
 
-- `headingGap` (carousel) and `_rootStyle` (root) are additive and optional; existing saved `publicPage` data renders unchanged via defaults.
+- `headingGap` (carousel), `_rootStyle` (root), and the new `collectionsPopup` title/close-button fields are additive and optional; existing saved data renders unchanged via defaults.
 - No migration. No change to `Workspace.publicPage` shape beyond additive Puck props.
+- #7 changes only the preview transport (URL param → localStorage); no persisted-data shape change.
 
 ## Testing
 
@@ -63,6 +84,8 @@ Root-level styling editable when no section is selected.
 - Root: `_rootStyle` serializes; production wrapper renders bg color (with opacity) + padding + margin.
 - Padding control renders under **Layout**, not Design, for container/preset blocks.
 - Gallery presets (`GalleryGridPreset`, `GalleryMasonryPreset`, `FeaturedWorkPreset`) now expose banner + padding controls.
+- Collections Popup: title text override (default → collection name; non-empty → global override), title typography incl. full-width align, and close-button style fields apply in both the editor preview and the public `CollectionPopup` render; shared chrome component keeps them in sync.
+- Preview: building the preview URL no longer includes the draft payload; the draft round-trips through `localStorage`; preview renders correctly with no 431.
 - `pnpm typecheck` and `pnpm lint` pass.
 
 ## Non-goals
@@ -71,6 +94,8 @@ Root-level styling editable when no section is selected.
 - Localizing editor chrome (remains English-only).
 - Any change to standalone gallery block (`GalleryGrid` / `GalleryMasonry` / `GalleryCarousel`) labels or to carousel container-ness.
 - Horizontal/section-gap semantics for root spacing — root spacing is plain Margin X/Y.
+- Per-collection popup title overrides (title override is global) and highlight controls on the popup title.
+- Server-side/ephemeral preview draft store (preview transport is client-side localStorage).
 
 ## Locales
 
@@ -78,4 +103,4 @@ No new translatable strings (editor chrome is English-only; root styling is stru
 
 ## Mobile (375px)
 
-Verify root padding/margin and carousel heading gap behave at small width.
+Verify root padding/margin and carousel heading gap behave at small width. Verify the Collections Popup live preview (title header + close button) and its controls are usable at 375px, matching the Header/Contact tabs.
