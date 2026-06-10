@@ -226,6 +226,23 @@ describe("buildRenderWorkspace", () => {
     expect(result.locale).toBeUndefined();
     expect(result.chrome).toBeUndefined();
   });
+
+  it("carries title + close-button fields through to the render workspace", () => {
+    const result = buildRenderWorkspace({
+      _id: "ws-popup-ext",
+      name: "Extended Popup",
+      publicPage: {
+        collectionsPopup: {
+          titleText: "Galleries",
+          titleAlign: "center",
+          closeButtonSize: 44,
+        } as never,
+      },
+    });
+    expect(result.publicPage?.collectionsPopup?.titleText).toBe("Galleries");
+    expect(result.publicPage?.collectionsPopup?.titleAlign).toBe("center");
+    expect(result.publicPage?.collectionsPopup?.closeButtonSize).toBe(44);
+  });
 });
 
 // ---------------------------------------------------------------------------

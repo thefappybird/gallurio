@@ -26,7 +26,7 @@ import {
   type PortfolioRenderMetadata,
   type BlockPuck,
 } from "./blockContext";
-import type { BrandKitRadius } from "@/lib/page-builder/types";
+import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 
 export type { RenderWorkspace, GalleryChromeLabels, PortfolioRenderMetadata, BlockPuck };
 export { getGalleryChromeLabelsFrom } from "./blockContext";
@@ -52,12 +52,7 @@ export function buildRenderWorkspace(workspace: {
   branding?: { logoUrl?: string | null; tagline?: string | null; description?: string | null } | null;
   publicPage?: {
     inquiryRecipientEmail?: string | null;
-    collectionsPopup?: {
-      backgroundColor?: string | null;
-      borderColor?: string | null;
-      borderWidth?: number | null;
-      radius?: string | null;
-    } | null;
+    collectionsPopup?: PortfolioCollectionsPopupConfig | null;
   } | null;
   contact?: {
     email?: string | null;
@@ -85,17 +80,7 @@ export function buildRenderWorkspace(workspace: {
     publicPage: workspace.publicPage
       ? {
           inquiryRecipientEmail: workspace.publicPage.inquiryRecipientEmail ?? null,
-          collectionsPopup: workspace.publicPage.collectionsPopup
-            ? {
-                backgroundColor: workspace.publicPage.collectionsPopup.backgroundColor ?? undefined,
-                borderColor: workspace.publicPage.collectionsPopup.borderColor ?? undefined,
-                borderWidth: workspace.publicPage.collectionsPopup.borderWidth ?? undefined,
-                radius: (workspace.publicPage.collectionsPopup.radius ?? undefined) as
-                  | BrandKitRadius
-                  | ""
-                  | undefined,
-              }
-            : null,
+          collectionsPopup: (workspace.publicPage.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null,
         }
       : null,
     contact: workspace.contact
