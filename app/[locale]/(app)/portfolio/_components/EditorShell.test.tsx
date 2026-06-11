@@ -59,31 +59,30 @@ vi.mock("@measured/puck", () => ({
   }),
 }));
 
-const savePortfolioDraftAction = vi.fn().mockResolvedValue({ ok: true });
-const publishPortfolioAction = vi.fn().mockResolvedValue({ ok: true });
-const updateBrandKitAction = vi.fn().mockResolvedValue({ ok: true });
-const updateContactConfigAction = vi.fn().mockResolvedValue({ ok: true });
-const updateFormLocaleAction = vi.fn().mockResolvedValue({ ok: true });
-const switchTemplateAction = vi.fn().mockResolvedValue({ ok: true });
 const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
-const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
-const updateCollectionsPopupConfigAction = vi.fn().mockResolvedValue({ ok: true });
 const updateThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 vi.mock("../_actions", () => ({
-  savePortfolioDraftAction: (...a: unknown[]) => savePortfolioDraftAction(...a),
-  publishPortfolioAction: (...a: unknown[]) => publishPortfolioAction(...a),
-  updateBrandKitAction: (...a: unknown[]) => updateBrandKitAction(...a),
-  updateContactConfigAction: (...a: unknown[]) => updateContactConfigAction(...a),
-  updateFormLocaleAction: (...a: unknown[]) => updateFormLocaleAction(...a),
-  switchTemplateAction: (...a: unknown[]) => switchTemplateAction(...a),
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
-  updateHeaderConfigAction: (...a: unknown[]) => updateHeaderConfigAction(...a),
-  updateCollectionsPopupConfigAction: (...a: unknown[]) => updateCollectionsPopupConfigAction(...a),
+}));
+
+const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
+const updateDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
+const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
+const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
+const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
+const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null } });
+vi.mock("../_draftActions", () => ({
+  createDraftAction: (...a: unknown[]) => createDraftAction(...a),
+  updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
+  deleteDraftAction: (...a: unknown[]) => deleteDraftAction(...a),
+  getDraftAction: (...a: unknown[]) => getDraftAction(...a),
+  publishDraftAction: (...a: unknown[]) => publishDraftAction(...a),
+  seedTemplateAction: (...a: unknown[]) => seedTemplateAction(...a),
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
@@ -113,7 +112,15 @@ const baseProps = {
   // sit over the editor controls.
   guideDismissed: true,
   initialSavedThemes: [],
+  // Provide an active draft so entry dialog doesn't block the editor and
+  // the editor starts in a clean (non-dirty) state.
+  initialActiveDraftId: "d1",
+  initialActiveDraftName: "Test Draft",
+  initialDrafts: [{ id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() }],
 };
+
+// basePro alias mirrors the existing test usage pattern.
+const basePro = baseProps;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -175,7 +182,7 @@ describe("EditorShell", () => {
   });
 
   it("opens the publish dialog when Puck's publish fires", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    renderWithProviders(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "PuckPublish" }));
     expect(screen.getByText("Publish your portfolio?")).toBeInTheDocument();
@@ -216,14 +223,12 @@ describe("EditorShell", () => {
     ).toBeInTheDocument();
   });
 
-  it("publishes from the contact tab without a lingering 'Saving…' status", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("publishes the active draft and clears localStorage", async () => {
+    renderWithProviders(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
-    expect(await screen.findByText("Saved")).toBeInTheDocument();
-    expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
-    await waitFor(() => expect(publishPortfolioAction).toHaveBeenCalled());
+    await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
   });
 
   it("shows the mobile banner notice", () => {
@@ -250,22 +255,13 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("keeps Puck edits local until Publish", async () => {
+  it("keeps Puck edits local — does NOT call server on Puck change", async () => {
     renderWithProviders(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
-    expect(savePortfolioDraftAction).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "PuckPublish" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
-
-    expect(savePortfolioDraftAction).toHaveBeenCalledWith({
-      zone: "home",
-      data: {
-        content: [{ type: "Hero", props: { id: "hero-1", headline: "Changed" } }],
-        root: {},
-      },
-    });
-    await waitFor(() => expect(publishPortfolioAction).toHaveBeenCalled());
+    // No server action called on Puck change; data stays in localStorage until
+    // the owner explicitly clicks "Save changes".
+    expect(createDraftAction).not.toHaveBeenCalled();
+    expect(updateDraftAction).not.toHaveBeenCalled();
   });
 
   it("renders the collections popup preview when the popup tab is open", async () => {
@@ -275,7 +271,7 @@ describe("EditorShell", () => {
   });
 
   it("builds a preview src without inlining the draft", async () => {
-    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    const { container } = renderWithProviders(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
     const iframe = container.querySelector("iframe");
@@ -283,5 +279,23 @@ describe("EditorShell", () => {
     expect(src).not.toContain("draft=");
     expect(src).toContain("zone=");
     expect(src).toContain("v=");
+  });
+
+  it("shows the Drafts button and draft name editor in the toolbar", () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    expect(screen.getByRole("button", { name: "Drafts" })).toBeInTheDocument();
+    // Draft name is shown as a span with a rename button.
+    expect(screen.getByTitle("Test Draft")).toBeInTheDocument();
+  });
+
+  it("shows the Save changes button disabled when not dirty", () => {
+    renderWithProviders(<EditorShell {...baseProps} />);
+    const saveBtn = screen.getByRole("button", { name: "Save changes" });
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it("entry dialog shows on first render when no active draft", async () => {
+    renderWithProviders(<EditorShell {...baseProps} initialActiveDraftId={null} initialActiveDraftName={undefined} initialDrafts={[]} />);
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
 });

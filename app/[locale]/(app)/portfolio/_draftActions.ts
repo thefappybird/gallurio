@@ -12,6 +12,7 @@ import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
+import { getTemplate } from "@/lib/page-builder/templates";
 
 export type DraftSummary = {
   id: string;
@@ -205,6 +206,50 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
       header: doc.header ?? null,
       collectionsPopup: doc.collectionsPopup ?? null,
       formLocale: doc.formLocale ?? "",
+    },
+  };
+}
+
+export type SeedTemplateResult =
+  | {
+      ok: true;
+      seed: {
+        templateId: string;
+        data: { home: PuckData; gallery: PuckData };
+        brandKit: unknown;
+        contact: unknown;
+      };
+    }
+  | { error: string };
+
+/**
+ * Return the seeded data for a template without writing to the DB.
+ * Used by the editor to apply a template as a new unsaved draft.
+ */
+export async function seedTemplateAction(templateId: unknown): Promise<SeedTemplateResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = z.enum(PORTFOLIO_TEMPLATE_IDS).safeParse(templateId);
+  if (!parsed.success) return { error: "invalid_template" };
+
+  const template = getTemplate(parsed.data);
+  if (!template) return { error: "unknown_template" };
+
+  const data = template.seedData({
+    workspace: { name: ctx.workspace.name as string },
+  });
+
+  return {
+    ok: true,
+    seed: {
+      templateId: template.id,
+      data: {
+        home: (data.home as PuckData) ?? { content: [], root: {} },
+        gallery: (data.gallery as PuckData) ?? { content: [], root: {} },
+      },
+      brandKit: template.defaultBrandKit,
+      contact: template.defaultContact,
     },
   };
 }

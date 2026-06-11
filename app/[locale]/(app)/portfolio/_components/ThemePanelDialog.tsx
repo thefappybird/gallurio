@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { toast } from "sonner"; // still used by handleDeleteTheme
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,6 @@ import {
   type PortfolioSavedTheme,
 } from "@/lib/page-builder/types";
 import {
-  updateBrandKitAction,
   saveThemeAction,
   deleteThemeAction,
   updateThemeAction,
@@ -51,7 +50,6 @@ export function ThemePanelDialog({
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tk = useTranslations("app.pageBuilder.brandKit");
-  const [saving, setSaving] = useState(false);
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
 
   const onSaveTheme = async (name: string) => {
@@ -74,20 +72,11 @@ export function ThemePanelDialog({
     },
   });
 
-  async function persistPage(): Promise<boolean> {
-    setSaving(true);
-    try {
-      const res = await updateBrandKitAction(brandKit);
-      if ("error" in res) {
-        toast.error(t("errorToast"));
-        return false;
-      }
-      toast.success(t("savedToast"));
-      onSaved();
-      return true;
-    } finally {
-      setSaving(false);
-    }
+  // Brand-kit changes are kept in local state + the localStorage buffer;
+  // the DB write happens only when the owner explicitly saves or publishes.
+  function persistPage(): boolean {
+    onSaved();
+    return true;
   }
 
   async function apply() {
@@ -95,7 +84,7 @@ export function ThemePanelDialog({
       const ok = await controller.saveCurrentTheme();
       if (!ok) return;
     }
-    await persistPage();
+    persistPage();
   }
 
   async function handleDeleteTheme(id: string) {
@@ -142,11 +131,11 @@ export function ThemePanelDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={attemptClose} disabled={saving}>
+            <Button type="button" variant="outline" onClick={attemptClose}>
               {t("publishDialog.cancel")}
             </Button>
-            <Button type="button" onClick={() => void apply()} loading={saving}>
-              {saving ? t("save.saving") : tk("applyAction")}
+            <Button type="button" onClick={() => void apply()}>
+              {tk("applyAction")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -161,7 +150,7 @@ export function ThemePanelDialog({
         onConfirm={async () => {
           setCloseGuardOpen(false);
           const ok = await controller.saveCurrentTheme();
-          if (ok) await persistPage();
+          if (ok) persistPage();
         }}
         onCancel={() => { setCloseGuardOpen(false); onCancel(); }}
       />

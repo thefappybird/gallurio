@@ -21,17 +21,20 @@ import type {
   PortfolioSavedTheme,
   PuckData,
 } from "@/lib/page-builder/types";
-import { DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
+import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import {
-  savePortfolioDraftAction,
-  publishPortfolioAction,
-  switchTemplateAction,
   dismissPortfolioGuideAction,
-  updateContactConfigAction,
-  updateFormLocaleAction,
-  updateHeaderConfigAction,
-  updateCollectionsPopupConfigAction,
 } from "../_actions";
+import {
+  createDraftAction,
+  updateDraftAction,
+  deleteDraftAction,
+  getDraftAction,
+  publishDraftAction,
+  seedTemplateAction,
+  type DraftSummary,
+} from "../_draftActions";
 import { PublishDialog } from "./PublishDialog";
 import { ThemePanelDialog } from "./ThemePanelDialog";
 import { ContactPanelDialog } from "./ContactPanelDialog";
@@ -52,12 +55,15 @@ import {
 import { RootCanvasStyle } from "@/lib/page-builder/RootCanvasStyle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DraftNameEditor } from "./DraftNameEditor";
+import { DraftsDialog } from "./DraftsDialog";
+import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
+import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
 type Zone = "home" | "gallery";
 type EditorSection = Zone | "collectionsPopup" | "header" | "contact";
-type SaveStatus = "idle" | "saving" | "saved";
 
 /** Serializable starter-template summary for the in-editor switcher. */
 export type EditorTemplateSummary = {
@@ -88,11 +94,15 @@ type Props = {
   guideDismissed: boolean;
   /** Owner's saved named themes (server-loaded). */
   initialSavedThemes: PortfolioSavedTheme[];
+  // ---- Draft-system props (all optional; page.tsx wired in Task 13) ----
+  initialDrafts?: DraftSummary[];
+  initialActiveDraftId?: string | null;
+  initialActiveDraftName?: string;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
-const LOCAL_DRAFT_VERSION = 1;
+const LOCAL_DRAFT_VERSION = 2;
 
 type PortfolioBrowserDraft = {
   version: typeof LOCAL_DRAFT_VERSION;
@@ -102,6 +112,8 @@ type PortfolioBrowserDraft = {
   formLocale: string;
   headerConfig: PortfolioHeaderConfig;
   collectionsPopup: PortfolioCollectionsPopupConfig;
+  draftId: string | null;
+  draftName: string;
 };
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
@@ -212,6 +224,9 @@ export function EditorShell({
   currentTemplateId,
   guideDismissed,
   initialSavedThemes,
+  initialDrafts = [],
+  initialActiveDraftId = null,
+  initialActiveDraftName,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
@@ -224,7 +239,6 @@ export function EditorShell({
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("desktop");
   // Bumped to force the preview iframe to reload with the freshest draft.
   const [previewNonce, setPreviewNonce] = useState(0);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [brandKit, setBrandKit] = useState(initialBrandKit);
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
@@ -248,6 +262,21 @@ export function EditorShell({
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
+
+  // ---- Draft state ----
+  const [drafts, setDrafts] = useState<DraftSummary[]>(initialDrafts);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(initialActiveDraftId);
+  const [draftName, setDraftName] = useState(initialActiveDraftName || DEFAULT_DRAFT_NAME);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingChanges, setSavingChanges] = useState(false);
+  const [draftsOpen, setDraftsOpen] = useState(false);
+  // If there's already an active draft loaded by the server, skip the entry dialog.
+  const [entryOpen, setEntryOpen] = useState(initialActiveDraftId === null);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // JSON string of last-saved snapshot; null = never saved (always dirty).
+  const savedSnapshotRef = useRef<string | null>(null);
 
   const sidePanelOpen = headerOpen || contactOpen || collectionsPopupOpen;
   const activeSection: EditorSection = headerOpen ? "header" : contactOpen ? "contact" : collectionsPopupOpen ? "collectionsPopup" : activeZone;
@@ -283,6 +312,51 @@ export function EditorShell({
   );
   const draftKey = `gallurio:portfolio-draft:${slug}`;
 
+  // ---- Snapshot helpers ----
+  function buildDraftSnapshot() {
+    return {
+      templateId,
+      data: {
+        home: zoneDataRef.current.home,
+        gallery: zoneDataRef.current.gallery,
+      },
+      brandKit,
+      contact,
+      header: headerConfig,
+      collectionsPopup,
+      formLocale,
+    };
+  }
+
+  function recomputeDirty() {
+    if (savedSnapshotRef.current === null) {
+      setIsDirty(true);
+      return;
+    }
+    const current = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+    setIsDirty(current !== savedSnapshotRef.current);
+  }
+
+  // On mount: set clean if we have an active draft (server-loaded); else dirty.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (activeDraftId) {
+      savedSnapshotRef.current = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+      setIsDirty(false);
+    } else {
+      savedSnapshotRef.current = null;
+      setIsDirty(true);
+    }
+    // Intentionally runs once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Recompute dirty whenever any tracked dep changes.
+  useEffect(() => {
+    recomputeDirty();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftName, brandKit, contact, headerConfig, collectionsPopup, formLocale, templateId]);
+
   const persistLocalDraft = useCallback(() => {
     if (typeof window === "undefined") return;
     const draft: PortfolioBrowserDraft = {
@@ -293,6 +367,8 @@ export function EditorShell({
       formLocale,
       headerConfig,
       collectionsPopup,
+      draftId: activeDraftId,
+      draftName,
     };
     try {
       window.localStorage.setItem(draftKey, JSON.stringify(draft));
@@ -300,11 +376,20 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, headerConfig]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, headerConfig, activeDraftId, draftName]);
 
-  const writeLocalDraft = useCallback(() => {
-    setSaveStatus(persistLocalDraft() ? "saved" : "idle");
-  }, [persistLocalDraft]);
+  // Compute on mount whether a recoverable localStorage buffer exists.
+  const [hasRecoverableBuffer] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+      return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -324,9 +409,10 @@ export function EditorShell({
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
         if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
         if (draft.collectionsPopup) setCollectionsPopup(draft.collectionsPopup);
+        if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
+        if (draft.draftName) setDraftName(draft.draftName);
         ignoreNextChange.current = true;
         setPuckSeed(ensureIds(zoneDataRef.current.home));
-        setSaveStatus("saved");
       });
     } catch {
       window.localStorage.removeItem(draftKey);
@@ -337,12 +423,22 @@ export function EditorShell({
     persistLocalDraft();
   }, [collectionsPopup, contact, formLocale, headerConfig, persistLocalDraft]);
 
-  // Puck/contact/navigation drafts are browser-local until Publish.
+  // beforeunload guard while dirty.
+  useEffect(() => {
+    if (!isDirty) return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Puck/contact/navigation drafts are browser-local until Save changes.
   const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
     void zone;
-    writeLocalDraft();
+    persistLocalDraft();
     return true;
-  }, [writeLocalDraft]);
+  }, [persistLocalDraft]);
 
   const handleChange = useCallback(
     (data: Data) => {
@@ -353,10 +449,119 @@ export function EditorShell({
         ignoreNextChange.current = false;
         return; // mount/remount echo - capture data, but don't autosave.
       }
-      writeLocalDraft();
+      persistLocalDraft();
+      // Zone data changed — recompute dirty against the saved snapshot.
+      if (savedSnapshotRef.current === null) {
+        setIsDirty(true);
+      } else {
+        const snap = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+        setIsDirty(snap !== savedSnapshotRef.current);
+      }
     },
-    [activeZone, writeLocalDraft]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeZone, persistLocalDraft, draftName]
   );
+
+  // ---- Save changes ----
+  async function handleSaveChanges(): Promise<boolean> {
+    setSavingChanges(true);
+    const payload = { name: draftName, ...buildDraftSnapshot() };
+    try {
+      let res;
+      if (activeDraftId) {
+        res = await updateDraftAction({ id: activeDraftId, ...payload });
+      } else {
+        res = await createDraftAction(payload);
+      }
+      if ("error" in res) {
+        const err = res.error;
+        if (err === "name_required") {
+          setNameError("This field is required");
+        } else if (err === "name_taken") {
+          setNameError("A draft with this name already exists");
+        } else if (err.startsWith("draft_limit_reached")) {
+          toast.error("You've reached your draft limit.");
+        } else {
+          toast.error("Could not save draft. Please try again.");
+        }
+        return false;
+      }
+      const saved = res.draft;
+      setActiveDraftId(saved.id);
+      setDrafts((prev) => {
+        const without = prev.filter((d) => d.id !== saved.id);
+        return [saved, ...without];
+      });
+      const snapshotStr = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+      savedSnapshotRef.current = snapshotStr;
+      setIsDirty(false);
+      persistLocalDraft();
+      toast.success("Draft saved.");
+      return true;
+    } finally {
+      setSavingChanges(false);
+    }
+  }
+
+  // ---- Unsaved-changes guard ----
+  function guardThenRun(run: () => void) {
+    if (activeDraftId === null || isDirty) {
+      setPendingAction(() => run);
+    } else {
+      run();
+    }
+  }
+
+  // ---- Apply draft ----
+  async function applyDraft(id: string) {
+    const res = await getDraftAction(id);
+    if ("error" in res) {
+      toast.error("Could not load draft. Please try again.");
+      return;
+    }
+    const d = res.draft;
+    const homeData = (d.data.home as PuckData) ?? EMPTY_ZONE;
+    const galleryData = (d.data.gallery as PuckData) ?? EMPTY_ZONE;
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
+    setRenderDraftData(zoneDataRef.current);
+    if (d.brandKit) setBrandKit(d.brandKit as PortfolioBrandKit);
+    if (d.contact) setContact(d.contact as PortfolioContactConfig);
+    if (d.header) setHeaderConfig(d.header as PortfolioHeaderConfig);
+    if (d.collectionsPopup) setCollectionsPopup(d.collectionsPopup as PortfolioCollectionsPopupConfig);
+    if (typeof d.formLocale === "string") setFormLocale(d.formLocale);
+    setTemplateId(d.templateId || templateId);
+    setActiveDraftId(d.id);
+    setDraftName(d.name);
+    setNameError(null);
+    ignoreNextChange.current = true;
+    setPuckSeed(ensureIds(homeData));
+    setActiveZone("home");
+    const snapshotStr = JSON.stringify({
+      name: d.name,
+      templateId: d.templateId || templateId,
+      data: { home: homeData, gallery: galleryData },
+      brandKit: d.brandKit,
+      contact: d.contact,
+      header: d.header,
+      collectionsPopup: d.collectionsPopup,
+      formLocale: d.formLocale,
+    });
+    savedSnapshotRef.current = snapshotStr;
+    setIsDirty(false);
+    persistLocalDraft();
+    setDraftsOpen(false);
+  }
+
+  // ---- Delete draft ----
+  async function handleDeleteDraft(id: string) {
+    await deleteDraftAction(id);
+    setDrafts((prev) => prev.filter((d) => d.id !== id));
+    if (id === activeDraftId) {
+      setActiveDraftId(null);
+      savedSnapshotRef.current = null;
+      setIsDirty(true);
+    }
+  }
 
   function hideEditorPanels() {
     setContactOpen(false);
@@ -401,33 +606,33 @@ export function EditorShell({
     setPreviewMode(true);
   }
 
-  async function handlePublish() {
-    setSaveStatus("saving");
-    const saveResults = await Promise.all([
-      savePortfolioDraftAction({ zone: "home", data: zoneDataRef.current.home }),
-      savePortfolioDraftAction({ zone: "gallery", data: zoneDataRef.current.gallery }),
-      updateContactConfigAction(contact),
-      updateFormLocaleAction(formLocale),
-      updateHeaderConfigAction(headerConfig),
-      updateCollectionsPopupConfigAction(collectionsPopup),
-    ]);
-    if (saveResults.some((res) => "error" in res)) {
-      setSaveStatus("idle");
-      toast.error(t("errorToast"));
-      return;
+  // ---- Publish from draft ----
+  async function doPublish() {
+    if (!activeDraftId) return;
+    setSavingChanges(true);
+    try {
+      const res = await publishDraftAction(activeDraftId);
+      if ("error" in res) {
+        toast.error(t("errorToast"));
+        return;
+      }
+      setPublishOpen(false);
+      if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
+      toast.success(t("publishedToast"));
+      if (!showPuck) setPreviewNonce((n) => n + 1);
+    } finally {
+      setSavingChanges(false);
     }
-    const res = await publishPortfolioAction();
-    if ("error" in res) {
-      setSaveStatus("idle");
-      toast.error(t("errorToast"));
-      return;
+  }
+
+  function handlePublish() {
+    if (activeDraftId === null || isDirty) {
+      // Must save first — route through the unsaved-changes guard so the user
+      // saves before we publish.
+      setPendingAction(() => () => setPublishOpen(true));
+    } else {
+      setPublishOpen(true);
     }
-    // Leave the indicator on "saved" — never a lingering "Saving…" after publish.
-    setSaveStatus("saved");
-    setPublishOpen(false);
-    if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
-    toast.success(t("publishedToast"));
-    if (!showPuck) setPreviewNonce((n) => n + 1);
   }
 
   function openTheme() {
@@ -499,32 +704,37 @@ export function EditorShell({
     collectionsPopupHasSaved.current = true;
   }
 
-  async function handleSwitchTemplate(nextTemplateId: string) {
+  // ---- Apply template as a new unsaved draft ----
+  async function applyTemplate(nextTemplateId: string) {
     setSwitching(true);
     setSwitchError(null);
-    const res = await switchTemplateAction({ templateId: nextTemplateId });
+    const res = await seedTemplateAction(nextTemplateId);
     if ("error" in res) {
       setSwitching(false);
       setSwitchError(t("errorToast"));
       return;
     }
     const { seed } = res;
-    // Replace both zones with the freshly seeded data; the active zone remounts.
     zoneDataRef.current = {
-      home: (seed.data.home as PuckData) ?? EMPTY_ZONE,
-      gallery: (seed.data.gallery as PuckData) ?? EMPTY_ZONE,
+      home: seed.data.home as PuckData,
+      gallery: seed.data.gallery as PuckData,
     };
     setRenderDraftData(zoneDataRef.current);
-    setBrandKit(seed.brandKit);
-    setContact(seed.contact);
+    setBrandKit(seed.brandKit as PortfolioBrandKit);
+    setContact(seed.contact as PortfolioContactConfig);
+    setHeaderConfig(DEFAULT_HEADER_CONFIG);
+    setCollectionsPopup({});
     setTemplateId(seed.templateId);
+    setActiveDraftId(null);
+    setDraftName(DEFAULT_DRAFT_NAME);
+    setNameError(null);
+    savedSnapshotRef.current = null;
+    setIsDirty(true);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
     setSwitching(false);
     setTemplatesOpen(false);
-    setSaveStatus("saved");
     if (!showPuck) setPreviewNonce((n) => n + 1);
-    toast.success(t("templateSwitchedToast"));
   }
 
   // The guide's "Don't show again" persists the dismissal; closing/skipping is
@@ -623,28 +833,37 @@ export function EditorShell({
     );
   }
 
-  // Right cluster: tools + the save indicator + the Publish slot.
+  // Right cluster: tools + draft name + the Publish slot.
   function toolsCluster(publishSlot: ReactNode) {
+    const saveDisabled = !isDirty && activeDraftId !== null;
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <span className="text-xs text-muted-foreground" aria-live="polite">
-          {saveStatus === "saving"
-            ? t("save.saving")
-            : saveStatus === "saved"
-              ? t("save.saved")
-              : t("save.idle")}
-        </span>
+        <DraftNameEditor
+          name={draftName}
+          error={nameError}
+          onCommit={(n) => { setDraftName(n); setNameError(null); }}
+        />
         <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
           {t("photos")}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={openTheme}>
           {t("theme")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setTemplatesOpen(true)}>
-          {t("templates")}
+        <Button type="button" size="sm" variant="outline" onClick={() => setDraftsOpen(true)}>
+          Drafts
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
           {t("guide")}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={saveDisabled}
+          loading={savingChanges}
+          onClick={() => void handleSaveChanges()}
+        >
+          Save changes
         </Button>
         {publishSlot}
       </div>
@@ -680,7 +899,7 @@ export function EditorShell({
             config={editorPuckConfig as unknown as Config}
             data={puckSeed}
             onChange={handleChange}
-            onPublish={() => setPublishOpen(true)}
+            onPublish={() => void handlePublish()}
             iframe={{ enabled: false }}
             headerTitle={headerTitle}
             metadata={{
@@ -727,7 +946,7 @@ export function EditorShell({
                 sidePanelOpen ? null : (
                   <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
                 ),
-                <Button type="button" size="sm" onClick={() => setPublishOpen(true)}>
+                <Button type="button" size="sm" onClick={() => void handlePublish()}>
                   {t("publish")}
                 </Button>
               )}
@@ -819,7 +1038,7 @@ export function EditorShell({
       <PublishDialog
         open={publishOpen}
         onOpenChange={setPublishOpen}
-        onConfirm={handlePublish}
+        onConfirm={doPublish}
         publicUrl={`${publicOrigin}/w/${slug}`}
       />
       <ThemePanelDialog
@@ -842,16 +1061,52 @@ export function EditorShell({
         currentTemplateId={templateId}
         switching={switching}
         error={switchError}
-        onConfirm={(id) => void handleSwitchTemplate(id)}
+        onConfirm={(id) => guardThenRun(() => void applyTemplate(id))}
       />
       <PortfolioGuideOverlay
         open={guideOpen}
         onClose={() => setGuideOpen(false)}
         onDontShowAgain={dismissGuideForever}
       />
+
+      {/* Draft system dialogs */}
+      <DraftsDialog
+        open={draftsOpen}
+        onOpenChange={setDraftsOpen}
+        drafts={drafts}
+        activeDraftId={activeDraftId}
+        onApply={(id) => guardThenRun(() => void applyDraft(id))}
+        onDelete={(id) => void handleDeleteDraft(id)}
+        onAddNew={() => { setDraftsOpen(false); setTemplatesOpen(true); }}
+      />
+      <PortfolioEntryDialog
+        open={entryOpen}
+        canContinue={hasRecoverableBuffer}
+        hasDrafts={drafts.length > 0}
+        onContinue={() => setEntryOpen(false)}
+        onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
+        onStartScratch={() => { setEntryOpen(false); setTemplatesOpen(true); }}
+      />
+      <UnsavedChangesDialog
+        open={pendingAction !== null}
+        saving={savingChanges}
+        onSave={async () => {
+          const ok = await handleSaveChanges();
+          if (ok) {
+            const run = pendingAction;
+            setPendingAction(null);
+            run?.();
+          }
+        }}
+        onDiscard={() => {
+          window.localStorage.removeItem(draftKey);
+          const run = pendingAction;
+          setPendingAction(null);
+          run?.();
+        }}
+        onCancel={() => setPendingAction(null)}
+      />
     </>
   );
 }
-
-
 

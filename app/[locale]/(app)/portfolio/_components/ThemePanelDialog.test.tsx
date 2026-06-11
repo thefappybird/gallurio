@@ -67,31 +67,26 @@ describe("ThemePanelDialog Apply button", () => {
     expect(screen.getByRole("button", { name: "Apply" })).toBeInTheDocument();
   });
 
-  it("Apply with no unsaved Current Theme persists page directly", async () => {
-    const { updateBrandKitAction } = await import("../_actions");
+  it("Apply with no unsaved Current Theme calls onSaved (no DB write — brand kit is kept in local buffer)", async () => {
     const props = setup();
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    await waitFor(() => expect(updateBrandKitAction).toHaveBeenCalled());
-    expect(props.onSaved).toHaveBeenCalled();
+    await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
   });
 
   it("Apply with an unsaved Current Theme but no name shows inline error and does NOT call onSaved", async () => {
-    const { updateBrandKitAction } = await import("../_actions");
     const props = setup();
     // create a current theme by editing the accent color
     fireEvent.click(screen.getByRole("button", { name: /accent/i }));
     fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
-    (updateBrandKitAction as ReturnType<typeof vi.fn>).mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toBeInTheDocument()
     );
-    expect(updateBrandKitAction).not.toHaveBeenCalled();
     expect(props.onSaved).not.toHaveBeenCalled();
   });
 
-  it("Apply with an unsaved Current Theme after typing a name saves + persists", async () => {
-    const { updateBrandKitAction, saveThemeAction } = await import("../_actions");
+  it("Apply with an unsaved Current Theme after typing a name saves the named theme + calls onSaved", async () => {
+    const { saveThemeAction } = await import("../_actions");
     const props = setup();
     // create a current theme
     fireEvent.click(screen.getByRole("button", { name: /accent/i }));
@@ -99,11 +94,9 @@ describe("ThemePanelDialog Apply button", () => {
     // type a name into the inline tile input
     const nameInput = screen.getByRole("textbox", { name: "Theme name" });
     fireEvent.change(nameInput, { target: { value: "My Theme" } });
-    (updateBrandKitAction as ReturnType<typeof vi.fn>).mockClear();
     (saveThemeAction as ReturnType<typeof vi.fn>).mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     await waitFor(() => expect(saveThemeAction).toHaveBeenCalledWith("My Theme", expect.anything()));
-    await waitFor(() => expect(updateBrandKitAction).toHaveBeenCalled());
-    expect(props.onSaved).toHaveBeenCalled();
+    await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
   });
 });
