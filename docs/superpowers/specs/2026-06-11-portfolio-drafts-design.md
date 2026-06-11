@@ -145,6 +145,20 @@ Behavior:
   draft no longer exists (deleted), fall back to unsaved-new.
 - **No server autosave.** Remove/neutralize any existing onChange → server save so
   the DB mutates only on Save changes or Publish.
+- **Style panels route into the active draft.** The Theme/brandKit, Contact, Header,
+  and Collections-popup panels currently persist straight to `publicPage` via
+  `updateBrandKitAction` / `updateContactConfigAction` / `updateHeaderConfigAction` /
+  `updateCollectionsPopupConfigAction` (plus `updateFormLocaleAction`). Under the
+  drafts model their "Save" updates **in-memory state + the localStorage working
+  buffer only** — they no longer call those server actions. The full snapshot
+  (`brandKit`, `contact`, `header`, `collectionsPopup`, `formLocale`) persists to the
+  draft on **Save changes** and goes live only on **Publish**. This keeps a published
+  page from mutating without a Publish, and makes a draft faithfully restore its
+  styling. The buffer is extended to carry `brandKit` and `collectionsPopup` (it
+  currently omits them). The four `update*Action`s plus `updateFormLocaleAction`
+  become unused by the editor and are removed (or left only if used elsewhere —
+  verify). The named-theme library (`saveThemeAction` / `updateThemeAction` /
+  `deleteThemeAction` on `publicPage.savedThemes`) is independent and stays.
 - `beforeunload` guard while dirty, in addition to the in-app warning modal.
 
 State machine (in `EditorShell`):
@@ -206,9 +220,14 @@ matching the right cluster's `flex-wrap` behavior. Verify at 375px.
 
 ## i18n
 
-Add message keys for the drafts board, entry popup, unsaved-changes modal, draft
-name editor, Save changes button, and validation messages across **en, fil, ms, id**.
-Use ICU formatting. (th has been removed.)
+The portfolio **editor chrome is English-only** (RELEASE-CHECKLIST §4f): the sibling
+`TemplatePickerDialog` hardcodes its copy in a local `L` constant rather than using
+`next-intl`. All new draft UI (drafts board, entry popup, unsaved-changes modal,
+draft name editor, Save-changes button) follows that precedent — **plain-English
+string constants, no new message keys**. This avoids churn/mojibake across the four
+locale catalogs for chrome that is intentionally not translated. (Locale set is
+`en/fil/ms/id`; th removed. Public-facing portfolio content is unaffected by this
+feature.)
 
 ## Testing
 
