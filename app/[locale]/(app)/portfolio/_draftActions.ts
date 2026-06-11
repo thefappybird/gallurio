@@ -31,6 +31,10 @@ export type DraftMutationResult = { ok: true; draft: DraftSummary } | { error: s
 export type DraftLoadResult = { ok: true; draft: FullDraft } | { error: string };
 export type DraftActionResult = { ok: true } | { error: string };
 
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
+}
+
 function toSummary(doc: PortfolioDraftDoc): DraftSummary {
   return {
     id: String(doc._id),
@@ -54,40 +58,45 @@ export async function createDraftAction(input: unknown): Promise<DraftMutationRe
   const session = await mongoose.startSession();
   try {
     let result: DraftMutationResult = { error: "invalid_data" };
-    await session.withTransaction(async () => {
-      const dupe = await PortfolioDraft.findOne({ workspaceId, name: parsed.data.name })
-        .select({ _id: 1 })
-        .session(session)
-        .lean();
-      if (dupe) {
-        result = { error: "name_taken" };
-        return;
-      }
-      if (Number.isFinite(cap)) {
-        const count = await PortfolioDraft.countDocuments({ workspaceId }).session(session);
-        if (count >= cap) {
-          result = { error: `draft_limit_reached:${cap}` };
+    try {
+      await session.withTransaction(async () => {
+        const dupe = await PortfolioDraft.findOne({ workspaceId, name: parsed.data.name })
+          .select({ _id: 1 })
+          .session(session)
+          .lean();
+        if (dupe) {
+          result = { error: "name_taken" };
           return;
         }
-      }
-      const [doc] = await PortfolioDraft.create(
-        [
-          {
-            workspaceId,
-            name: parsed.data.name,
-            templateId: parsed.data.templateId || "",
-            data: parsed.data.data,
-            brandKit: parsed.data.brandKit,
-            contact: parsed.data.contact,
-            header: parsed.data.header,
-            collectionsPopup: parsed.data.collectionsPopup,
-            formLocale: parsed.data.formLocale || "",
-          },
-        ],
-        { session }
-      );
-      result = { ok: true, draft: toSummary(doc) };
-    });
+        if (Number.isFinite(cap)) {
+          const count = await PortfolioDraft.countDocuments({ workspaceId }).session(session);
+          if (count >= cap) {
+            result = { error: `draft_limit_reached:${cap}` };
+            return;
+          }
+        }
+        const [doc] = await PortfolioDraft.create(
+          [
+            {
+              workspaceId,
+              name: parsed.data.name,
+              templateId: parsed.data.templateId || "",
+              data: parsed.data.data,
+              brandKit: parsed.data.brandKit,
+              contact: parsed.data.contact,
+              header: parsed.data.header,
+              collectionsPopup: parsed.data.collectionsPopup,
+              formLocale: parsed.data.formLocale || "",
+            },
+          ],
+          { session }
+        );
+        result = { ok: true, draft: toSummary(doc) };
+      });
+    } catch (err) {
+      if (isDuplicateKeyError(err)) return { error: "name_taken" };
+      throw err;
+    }
     if ("ok" in result) revalidatePath("/portfolio");
     return result;
   } finally {
@@ -114,22 +123,28 @@ export async function updateDraftAction(input: unknown): Promise<DraftMutationRe
     .lean();
   if (dupe) return { error: "name_taken" };
 
-  const doc = await PortfolioDraft.findOneAndUpdate(
-    { _id: parsed.data.id, workspaceId },
-    {
-      $set: {
-        name: parsed.data.name,
-        templateId: parsed.data.templateId || "",
-        data: parsed.data.data,
-        brandKit: parsed.data.brandKit,
-        contact: parsed.data.contact,
-        header: parsed.data.header,
-        collectionsPopup: parsed.data.collectionsPopup,
-        formLocale: parsed.data.formLocale || "",
+  let doc;
+  try {
+    doc = await PortfolioDraft.findOneAndUpdate(
+      { _id: parsed.data.id, workspaceId },
+      {
+        $set: {
+          name: parsed.data.name,
+          templateId: parsed.data.templateId || "",
+          data: parsed.data.data,
+          brandKit: parsed.data.brandKit,
+          contact: parsed.data.contact,
+          header: parsed.data.header,
+          collectionsPopup: parsed.data.collectionsPopup,
+          formLocale: parsed.data.formLocale || "",
+        },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return { error: "name_taken" };
+    throw err;
+  }
   if (!doc) return { error: "draft_not_found" };
   revalidatePath("/portfolio");
   return { ok: true, draft: toSummary(doc) };
@@ -178,6 +193,7 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
       id: String(doc._id),
       name: doc.name,
       templateId: doc.templateId ?? "",
+      updatedAt: (doc.updatedAt instanceof Date ? doc.updatedAt : new Date()).toISOString(),
       data: {
         home: (doc.data?.home as PuckData | null) ?? null,
         gallery: (doc.data?.gallery as PuckData | null) ?? null,

@@ -24,6 +24,9 @@ const portfolioDraftSchema = new Schema(
 
 // Lists the drafts board newest-first, scoped to one tenant.
 portfolioDraftSchema.index({ workspaceId: 1, updatedAt: -1 });
+// Draft names are unique within a workspace (create + rename). DB-level backstop
+// against the check-then-write race in the create/update actions.
+portfolioDraftSchema.index({ workspaceId: 1, name: 1 }, { unique: true });
 
 export type PortfolioDraftDoc = InferSchemaType<typeof portfolioDraftSchema> & {
   _id: mongoose.Types.ObjectId;
