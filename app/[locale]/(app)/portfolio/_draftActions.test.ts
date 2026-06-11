@@ -4,6 +4,10 @@ import { Types } from "mongoose";
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
+vi.mock("@/lib/page-builder/reconcile", () => ({
+  reconcileGalleryImages: async (_wsId: string, data: unknown) => data,
+  reconcileFeaturedCollections: async (_wsId: string, data: unknown) => data,
+}));
 
 let mockCtx: {
   userId: string;
@@ -20,7 +24,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { PortfolioDraft } from "@/lib/db/models";
+import { PortfolioDraft, Workspace } from "@/lib/db/models";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import {
   createDraftAction,
@@ -28,6 +32,7 @@ import {
   deleteDraftAction,
   listDraftsAction,
   getDraftAction,
+  publishDraftAction,
 } from "./_draftActions";
 
 const snapshot = {
@@ -162,5 +167,39 @@ describe("listDraftsAction / getDraftAction", () => {
     const full = await getDraftAction(second.draft.id);
     expect("ok" in full && full.ok).toBe(true);
     if ("ok" in full) expect(full.draft.brandKit).toBeTruthy();
+  });
+});
+
+describe("publishDraftAction", () => {
+  it("copies the draft into publicPage and stamps publishedAt", async () => {
+    await Workspace.create({
+      _id: mockCtx.workspace._id,
+      slug: "studio-aurora",
+      name: "Studio Aurora",
+      ownerUserId: "user_owner",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      plan: "free",
+      publicPage: { data: { home: null, gallery: null }, latestVersion: 0 },
+    });
+    const created = await createDraftAction({
+      name: "Live",
+      ...snapshot,
+      data: { home: { content: [{ type: "HeroPreset", props: { id: "h" } }], root: {} }, gallery: { content: [], root: {} } },
+    });
+    if (!("ok" in created)) throw new Error("setup failed");
+
+    const res = await publishDraftAction(created.draft.id);
+    expect(res).toEqual({ ok: true });
+
+    const ws = await Workspace.findById(mockCtx.workspace._id).lean();
+    expect(ws!.publicPage!.publishedAt).toBeInstanceOf(Date);
+    expect((ws!.publicPage!.data!.home as { content: unknown[] }).content.length).toBe(1);
+  });
+
+  it("rejects a draft from another workspace (tenant isolation)", async () => {
+    const foreign = await PortfolioDraft.create({ workspaceId: new Types.ObjectId(), name: "F", ...snapshot });
+    const res = await publishDraftAction(String(foreign._id));
+    expect(res).toEqual({ error: "draft_not_found" });
   });
 });

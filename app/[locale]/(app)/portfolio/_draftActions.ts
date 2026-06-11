@@ -5,11 +5,13 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { PortfolioDraft, type PortfolioDraftDoc } from "@/lib/db/models";
+import { PortfolioDraft, Workspace, type PortfolioDraftDoc } from "@/lib/db/models";
 import type { PlanTier } from "@/lib/db/models/Workspace";
 import { createDraftSchema, updateDraftSchema } from "@/lib/validators/portfolioDraft";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
 import type { PuckData } from "@/lib/page-builder/types";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
+import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 
 export type DraftSummary = {
   id: string;
@@ -205,4 +207,49 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
       formLocale: doc.formLocale ?? "",
     },
   };
+}
+
+export async function publishDraftAction(id: unknown): Promise<DraftActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+  const idParsed = z.string().min(1).max(64).safeParse(id);
+  if (!idParsed.success) return { error: "invalid_id" };
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+  const doc = await PortfolioDraft.findOne({ _id: idParsed.data, workspaceId }).lean();
+  if (!doc) return { error: "draft_not_found" };
+
+  const wsIdStr = String(workspaceId);
+  const home = (doc.data?.home as PuckData | null) ?? null;
+  const gallery = (doc.data?.gallery as PuckData | null) ?? null;
+
+  const set: Record<string, unknown> = {};
+  set["publicPage.data.home"] = home
+    ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, home))
+    : null;
+  set["publicPage.data.gallery"] = gallery
+    ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, gallery))
+    : null;
+  if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
+  if (doc.contact) set["publicPage.contact"] = doc.contact;
+  if (doc.header) set["publicPage.header"] = doc.header;
+  if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
+  set["publicPage.formLocale"] = doc.formLocale ?? "";
+  set["publicPage.templateId"] = PORTFOLIO_TEMPLATE_IDS.includes(
+    (doc.templateId ?? "") as (typeof PORTFOLIO_TEMPLATE_IDS)[number]
+  )
+    ? doc.templateId
+    : "minimal";
+
+  const now = new Date();
+  set["publicPage.publishedAt"] = now;
+  set["publicPage.lastPublishedAt"] = now;
+
+  await Workspace.updateOne({ _id: workspaceId }, { $set: set });
+
+  revalidatePath(`/w/${ctx.workspace.slug}`);
+  revalidatePath(`/w/${ctx.workspace.slug}/gallery`);
+  revalidatePath("/sitemap.xml");
+  return { ok: true };
 }
