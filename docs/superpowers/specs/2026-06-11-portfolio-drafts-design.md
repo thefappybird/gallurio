@@ -24,16 +24,19 @@ deletes — with guard rails against losing unsaved work.
 - **Publish source:** Publish publishes the **active draft's saved content**.
   `publicPage.data` becomes the published mirror. There is **no server autosave**;
   the DB changes only on **Save changes** or **Publish**.
-- **Publish while dirty:** block and show the Save-changes warning (Option A).
-  Publish only ever publishes saved content.
+- **Publish while dirty:** block and show the Save-changes warning (Option A) **only
+  when the active draft has unsaved changes or is a new unsaved draft**. If the
+  active draft is clean and already persisted, Publish proceeds directly. Publish
+  only ever publishes saved content.
 - **Scratch template:** add a 6th template "I'll start from scratch" in the reserved
   last slot; existing 5 templates unchanged.
 - **Draft cap by plan:** `free 5 / starter 15 / pro ∞`.
 - **Entry popup:** shown on every load; options gated by state.
 - **Existing content:** migrate current `publicPage.data` into one "New Draft" on
   first post-ship entry (idempotent).
-- **Name uniqueness:** enforced **only when creating a new draft**. Renaming an
-  existing draft is allowed to collide (per explicit product instruction).
+- **Name uniqueness:** enforced on **create and rename**, against the workspace's
+  *other* drafts (a draft excludes itself, so you can save an edit without changing
+  the name). Collision with another draft's name is rejected.
 - **Locales:** `en`, `fil`, `ms`, `id` (th removed).
 
 ## Data model
@@ -93,7 +96,8 @@ owner-only and tenant-scoped via `requireOrg()` → `{ _id: ctx.workspace._id }`
   - Insert; return the created draft id + payload.
 - `updateDraftAction(id, input)`
   - Update by `{ _id: id, workspaceId }`. Validate `name` non-empty
-    (`name_required`). **No** uniqueness check on update.
+    (`name_required`) and unique among the workspace's **other** drafts — exclude
+    this draft's own id, so an unchanged name passes — else `name_taken`.
 - `deleteDraftAction(id)`
   - Delete by `{ _id: id, workspaceId }`. Idempotent.
 - `listDraftsAction()` (or load directly in the page Server Component)
@@ -103,8 +107,9 @@ owner-only and tenant-scoped via `requireOrg()` → `{ _id: ctx.workspace._id }`
   - Load the draft by `{ _id, workspaceId }`, reconcile gallery/featured images,
     copy its snapshot into `publicPage.data` + `brandKit` + `contact` + `header` +
     `collectionsPopup`, stamp `publishedAt`/`lastPublishedAt`, revalidate public
-    routes. Caller guarantees the active draft is saved (UI blocks publish while
-    dirty — Option A). The old `publishPortfolioAction` (which published the
+    routes. The UI only invokes this once the active draft is clean+persisted; if it
+    is dirty or a new unsaved draft, the Save-changes warning fires first (Option A).
+    The old `publishPortfolioAction` (which published the
     implicit `publicPage.data` working copy) is replaced by this draft-sourced flow;
     keep its image-reconcile/revalidate internals, change only the source.
 - `migrateLegacyPortfolioToDraftAction()`
@@ -163,8 +168,9 @@ State machine (in `EditorShell`):
   update).
 - **`DraftsDialog.tsx`** (2.4): grid mirroring the templates modal. Empty-state
   fallback copy when the board is empty. Footer **Add new draft** button opens the
-  templates modal. Each card supports Apply (load into canvas) and Delete. Applying
-  sets `activeDraftId` + name and resets dirty baseline.
+  templates modal. Each card supports Apply (load into canvas) and Delete. The card
+  for the currently-active draft shows an **"Active" pill**. Applying sets
+  `activeDraftId` + name and resets dirty baseline.
 - **Templates modal** — reuse the existing `TemplatePickerDialog`, now listing **6**
   templates. Apply loads the chosen template into the canvas as a **new unsaved
   draft** (`draftId = null`, name "New Draft").
@@ -179,7 +185,8 @@ State machine (in `EditorShell`):
   buffer and loads the target.
 - **Save rejection (2.7):** inline error beneath the name input with a nudge/shake.
   `name_required` ("This field is required") always; `name_taken` ("A draft with
-  this name already exists") only when creating a new draft.
+  this name already exists") whenever the name collides with another draft (on
+  create or rename; a draft excludes its own current name).
 
 ## New template — "I'll start from scratch" (2.5)
 
@@ -209,9 +216,10 @@ Use ICU formatting. (th has been removed.)
   `workspaceId`; cross-tenant access denied).
 - Plan-cap enforcement: free 5 / starter 15 / pro uncapped; `draft_limit_reached`.
 - `createDraftAction`: empty name rejected (`name_required`); duplicate name
-  rejected **only on create** (`name_taken`).
-- `updateDraftAction`: updates by id+workspace; no uniqueness check; rename collision
-  allowed.
+  rejected (`name_taken`).
+- `updateDraftAction`: updates by id+workspace; empty name rejected; rename to
+  another draft's name rejected (`name_taken`); saving with the draft's own
+  unchanged name passes.
 - `deleteDraftAction`: idempotent, tenant-scoped.
 - `publishDraftAction`: publishes active draft content; reconciles images; stamps
   `publishedAt`; tenant isolation.
@@ -222,6 +230,9 @@ Use ICU formatting. (th has been removed.)
 - Dirty-diff logic: matching buffer/DB ⇒ clean; differing ⇒ dirty; deleted draft ⇒
   fallback unsaved-new.
 - Entry-popup option gating by state.
+- Drafts board shows the "Active" pill on the active draft only.
+- Publish gating: clean+persisted active draft publishes directly; dirty or new
+  unsaved active draft triggers the Save-changes warning first.
 - Left-cluster wraps at 375px (component/snapshot check).
 
 Gate before done: affected tests, `pnpm typecheck`, `pnpm lint`. Check mobile at
