@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
+// Passthrough stub — this suite tests publish plumbing, not reconcile correctness (reconcile has its own tests).
 vi.mock("@/lib/page-builder/reconcile", () => ({
   reconcileGalleryImages: async (_wsId: string, data: unknown) => data,
   reconcileFeaturedCollections: async (_wsId: string, data: unknown) => data,
@@ -194,6 +195,7 @@ describe("publishDraftAction", () => {
 
     const ws = await Workspace.findById(mockCtx.workspace._id).lean();
     expect(ws!.publicPage!.publishedAt).toBeInstanceOf(Date);
+    expect(ws!.publicPage!.lastPublishedAt).toBeInstanceOf(Date);
     expect((ws!.publicPage!.data!.home as { content: unknown[] }).content.length).toBe(1);
   });
 

@@ -231,16 +231,19 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   set["publicPage.data.gallery"] = gallery
     ? await reconcileFeaturedCollections(wsIdStr, await reconcileGalleryImages(wsIdStr, gallery))
     : null;
+  // A fully-saved draft always carries these (brandKit required, the rest default
+  // to {}). The guards only skip a null left by a migrated/legacy draft, so we
+  // never overwrite live published config with null.
   if (doc.brandKit) set["publicPage.brandKit"] = doc.brandKit;
   if (doc.contact) set["publicPage.contact"] = doc.contact;
   if (doc.header) set["publicPage.header"] = doc.header;
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
-  set["publicPage.templateId"] = PORTFOLIO_TEMPLATE_IDS.includes(
-    (doc.templateId ?? "") as (typeof PORTFOLIO_TEMPLATE_IDS)[number]
-  )
-    ? doc.templateId
-    : "minimal";
+  set["publicPage.templateId"] =
+    doc.templateId &&
+    PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])
+      ? doc.templateId
+      : "minimal";
 
   const now = new Date();
   set["publicPage.publishedAt"] = now;
