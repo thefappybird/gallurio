@@ -27,6 +27,8 @@ portfolioDraftSchema.index({ workspaceId: 1, updatedAt: -1 });
 
 export type PortfolioDraftDoc = InferSchemaType<typeof portfolioDraftSchema> & {
   _id: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 export const PortfolioDraft: Model<PortfolioDraftDoc> =

@@ -24,10 +24,6 @@ describe("PortfolioDraft", () => {
       templateId: "minimal",
       data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
       brandKit: { themePreset: "minimal" },
-      contact: {},
-      header: {},
-      collectionsPopup: {},
-      formLocale: "",
     });
     expect(d.name).toBe("New Draft");
     expect(d.createdAt).toBeInstanceOf(Date);
