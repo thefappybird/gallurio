@@ -4,7 +4,7 @@ import {
   portfolioContactConfigSchema,
   portfolioHeaderConfigSchema,
   portfolioCollectionsPopupConfigSchema,
-  puckDataSchema,
+  portfolioPuckDataSchema,
 } from "./publicPage";
 import { DRAFT_NAME_MAX } from "@/lib/page-builder/drafts";
 
@@ -17,10 +17,7 @@ export const draftNameSchema = z
 
 export const draftSnapshotSchema = z.object({
   templateId: z.string().max(64).optional().or(z.literal("")),
-  data: z.object({
-    home: puckDataSchema.nullable(),
-    gallery: puckDataSchema.nullable(),
-  }),
+  data: portfolioPuckDataSchema,
   brandKit: brandKitSchema,
   contact: portfolioContactConfigSchema,
   header: portfolioHeaderConfigSchema,
