@@ -562,8 +562,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
@@ -923,14 +922,14 @@
         "all": "Semua",
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Dikonversi",
+        "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
         "new": "Baru",
         "contacted": "Dihubungi",
-        "converted": "Dikonversi",
-        "archived": "Diarsipkan"
+        "archived": "Diarsipkan",
+        "booked": "Dipesan"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -958,8 +957,10 @@
           "eventDate": "Tanggal acara",
           "eventType": "Jenis",
           "submitted": "Dikirim",
-          "source": "Sumber"
-        }
+          "source": "Sumber",
+          "eventTitle": "Judul acara"
+        },
+        "noTitle": "Acara tanpa judul"
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1014,7 +1015,7 @@
         "history": {
           "title": "Riwayat",
           "submitted": "Pertanyaan dikirim",
-          "converted": "Disetujui menjadi pemesanan"
+          "booked": "Disetujui menjadi pemesanan"
         }
       }
     },
@@ -1044,7 +1045,36 @@
           "accentColor": "Aksen",
           "backgroundColor": "Latar belakang",
           "foregroundColor": "Teks"
-        }
+        },
+        "themes": "Tema",
+        "searchPlaceholder": "Cari tema",
+        "noThemesMatch": "Tidak ada tema yang cocok dengan pencarian Anda.",
+        "prevPage": "Tema sebelumnya",
+        "nextPage": "Tema berikutnya",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Terapkan tema: {name}",
+        "deleteTheme": "Hapus tema: {name}",
+        "saveCurrentAsTheme": "Simpan saat ini sebagai tema",
+        "themeNamePlaceholder": "Nama tema",
+        "saveAction": "Simpan",
+        "enterThemeName": "Masukkan nama untuk tema ini.",
+        "nameTooLong": "Nama tema harus 60 karakter atau kurang.",
+        "saveThemeError": "Tidak dapat menyimpan tema. Silakan coba lagi.",
+        "themeLimitReached": "Anda telah mencapai maksimum {max} tema tersimpan.",
+        "currentTheme": "Tema Saat Ini",
+        "editTheme": "Edit tema: {name}",
+        "editThemeName": "Nama tema",
+        "overrideCurrentTitle": "Ganti tema saat ini Anda?",
+        "overrideCurrentBody": "Membangun di atas \"{name}\" akan mengganti Tema Saat Ini Anda yang belum disimpan.",
+        "continueAction": "Lanjutkan",
+        "cancelAction": "Batal",
+        "unsavedChangesTitle": "Anda memiliki perubahan yang belum disimpan",
+        "unsavedChangesBody": "Simpan perubahan Anda sebelum menutup, atau buang perubahan tersebut.",
+        "discardAction": "Buang",
+        "saveAndCloseAction": "Simpan & tutup",
+        "themeNameExists": "Sudah ada tema dengan nama ini.",
+        "applyAction": "Terapkan",
+        "saveThemeName": "Simpan tema"
       },
       "editor": {
         "zone": {
@@ -1109,8 +1139,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
@@ -1119,6 +1148,8 @@
           "borderColorLabel": "Warna batas",
           "sectionPopup": "Popup",
           "sectionButton": "Tombol",
+          "submitButtonSection": "Tombol kirim",
+          "addSessionButtonSection": "Tombol tanggal baru",
           "radius": {
             "sharp": "Tajam",
             "subtle": "Halus",
@@ -1129,7 +1160,26 @@
           "tabs": {
             "setup": "Pengaturan",
             "design": "Desain"
-          }
+          },
+          "errorColorLabel": "Warna pesan error",
+          "sectionTabs": "Tab",
+          "inactiveTabsSection": "Tab tidak aktif",
+          "activeTabSection": "Tab aktif",
+          "tabFontSizeLabel": "Ukuran tab",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Warna teks tab",
+          "activeTabColorLabel": "Warna teks tab aktif",
+          "activeTabStyleLabel": "Gaya",
+          "activeTabStyleScale": "Perbesar",
+          "activeTabStyleHighlight": "Sorot",
+          "activeTabStyleUnderline": "Garis bawah",
+          "tabHighlightColorLabel": "Warna sorotan",
+          "tabHighlightOpacityLabel": "Opacity sorotan",
+          "tabUnderlineColorLabel": "Warna garis bawah"
         },
         "headerDialog": {
           "title": "Navigasi",
@@ -1162,10 +1212,12 @@
           "bgColorLabel": "Warna latar belakang",
           "bgOpacityLabel": "Opasitas latar belakang",
           "linkColorLabel": "Warna teks tautan",
+          "brandTextColorLabel": "Warna heading",
           "activeLinkColorLabel": "Warna teks tautan aktif",
           "borderBottomLabel": "Batas bawah",
           "borderColorLabel": "Warna batas",
           "shadowLabel": "Bayangan",
+          "navbarSizeLabel": "Ukuran navbar",
           "fontSizeLabel": "Ukuran tautan",
           "activeStyleLabel": "Gaya",
           "activeStyleScale": "Skala",
@@ -1188,6 +1240,11 @@
             "sm": "Kecil",
             "md": "Sedang",
             "lg": "Besar"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1468,7 +1525,8 @@
       "confirmBody": "Pertanyaan Anda telah terkirim. Kami akan menghubungi melalui metode pilihan Anda segera.",
       "confirmClose": "Selesai",
       "tabClient": "Detail Anda",
-      "tabBooking": "Detail acara",
+      "tabEvent": "Detail acara",
+      "tabLocation": "Lokasi & catatan",
       "name": "Nama",
       "email": "Email",
       "phone": "Telepon (opsional)",
@@ -1495,14 +1553,15 @@
         "anniversary": "Hari jadi",
         "other": "Lainnya"
       },
-      "guestCount": "Tamu (opsional)",
       "location": "Lokasi (opsional)",
       "message": "Ceritakan lebih lanjut",
       "messagePlaceholder": "Bagikan detail acara Anda…",
       "submit": "Kirim pertanyaan",
       "submitting": "Mengirim…",
       "errorGeneric": "Tidak dapat dikirim — silakan coba lagi nanti.",
-      "requiredHint": "Wajib"
+      "requiredHint": "Wajib",
+      "eventTitle": "Judul acara",
+      "continue": "Dipesan"
     }
   },
   "notFound": {

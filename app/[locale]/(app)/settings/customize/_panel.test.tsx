@@ -54,7 +54,7 @@ describe("CustomizePanel", () => {
     expect(screen.getByText("Language")).toBeInTheDocument();
   });
 
-  it("renders buttons for all 5 locales", () => {
+  it("renders buttons for the four active locales only", () => {
     renderWithProviders(
       <Wrapper>
         <CustomizePanel />
@@ -64,7 +64,6 @@ describe("CustomizePanel", () => {
     expect(screen.getByText("Filipino")).toBeInTheDocument();
     expect(screen.getByText("Bahasa Melayu")).toBeInTheDocument();
     expect(screen.getByText("Bahasa Indonesia")).toBeInTheDocument();
-    // Thai text
-    expect(screen.getByText("ภาษาไทย")).toBeInTheDocument();
+    expect(screen.queryByText("ภาษาไทย")).not.toBeInTheDocument();
   });
 });

@@ -14,6 +14,7 @@
  */
 
 import { useState } from "react";
+import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import type { LucideIcon } from "lucide-react";
 import {
   Bold,
@@ -39,14 +40,13 @@ import {
   Layers2,
   Layers,
   Minus,
-  RotateCcw,
 } from "lucide-react";
 import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
-import { CollectionPicker } from "./galleryPicker/CollectionPicker";
-import { FeaturedItemsPicker } from "./galleryPicker/FeaturedItemsPicker";
-import type { FeaturedWorkItemId } from "./blocks/FeaturedWorkBlock";
+import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
+import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
+import type { CollectionRef } from "./galleryPicker/MediaField";
 import {
   ToolbarToggle,
   ColorSwatchRow,
@@ -65,31 +65,44 @@ import {
   type AnimationType,
   type HoverEffect,
   type SelfAlign,
+  type TextAlign,
+  type HighlightShape,
+  type HighlightSize,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 
 // Block types that are containers (no text/video inputs in Content tab)
-const CONTAINER_TYPES = new Set([
+export const CONTAINER_TYPES = new Set([
   "Container",
   "HeroPreset",
   "AboutPreset",
   "ServicesPreset",
   "CtaPreset",
   "ContactPreset",
+  "GalleryGridPreset",
+  "GalleryMasonryPreset",
+  "FeaturedWorkPreset",
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
-const NO_FRAME_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer"]);
+// Frame (border/radius/shadow) is hidden for text/spacer leaf blocks and for all
+// gallery blocks (the gallery frame chrome was removed).
+const NO_FRAME_BLOCKS = new Set([
+  "Heading", "Text", "Divider", "Spacer",
+  "GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork",
+]);
 const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
-const FLEX_CONTAINER_BLOCKS = new Set([
+// Gallery blocks that render images only (no on-page text) — their typography /
+// text-align controls are hidden since there is nothing to style. The carousel
+// is excluded: it still renders a heading + description.
+const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
+export const FLEX_CONTAINER_BLOCKS = new Set([
   "Container",
   "HeroPreset", "AboutPreset", "ServicesPreset", "CtaPreset", "ContactPreset",
+  "GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset",
 ]);
 
 const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
-
-// Blocks that bypass the tab system and get a minimal inline panel.
-const SIMPLIFIED_BLOCKS = new Set(["Image", "Video", "ContactDetails", "Divider"]);
 
 const ANIMATION_LABEL: Record<AnimationType, string> = {
   none: "None",
@@ -233,14 +246,103 @@ function HeadingLevelButtons({
 // Content tab
 // ---------------------------------------------------------------------------
 
+const BG_ANIMATION_OPTIONS = [
+  { value: "crossfade", label: "Crossfade" },
+  { value: "kenburns", label: "Ken Burns" },
+  { value: "slide", label: "Slide" },
+] as const;
+
+const BG_SPEED_OPTIONS = [
+  { value: "slow", label: "Slow (7s)" },
+  { value: "medium", label: "Medium (5s)" },
+  { value: "fast", label: "Fast (3s)" },
+] as const;
+
+const HIGHLIGHT_SHAPE_OPTIONS = [
+  { value: "sharp", label: "Sharp" },
+  { value: "subtle", label: "Subtle" },
+  { value: "rounded", label: "Rounded" },
+] as const;
+
+const HIGHLIGHT_SIZE_OPTIONS = [
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+] as const;
+
+export function ContainerBackgroundControls({
+  images,
+  onImagesChange,
+  animation,
+  speed,
+  onAnimationChange,
+  onSpeedChange,
+}: {
+  images: MediaPickerSelection[];
+  onImagesChange: (v: MediaPickerSelection[]) => void;
+  animation: string;
+  speed: string;
+  onAnimationChange: (v: string) => void;
+  onSpeedChange: (v: string) => void;
+}) {
+  const showAnimation = images.length >= 2;
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs text-muted-foreground">Background images</span>
+        <MultiImageControl value={images} onChange={onImagesChange} max={12} />
+      </div>
+      {showAnimation && (
+        <>
+          <label className="flex items-center justify-between gap-2">
+            <span className="shrink-0 text-xs text-muted-foreground">Background animation</span>
+            <select
+              aria-label="Background animation"
+              value={animation}
+              onChange={(e) => onAnimationChange(e.target.value)}
+              className="h-7 flex-1 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {BG_ANIMATION_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center justify-between gap-2">
+            <span className="shrink-0 text-xs text-muted-foreground">Animation speed</span>
+            <select
+              aria-label="Animation speed"
+              value={speed}
+              onChange={(e) => onSpeedChange(e.target.value)}
+              className="h-7 flex-1 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              {BG_SPEED_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+        </>
+      )}
+    </div>
+  );
+}
+
+type ContainerBgControls = {
+  images: MediaPickerSelection[];
+  onImagesChange: (v: MediaPickerSelection[]) => void;
+  animation: string;
+  speed: string;
+  onAnimationChange: (v: string) => void;
+  onSpeedChange: (v: string) => void;
+};
+
 function BannerSection({
   s,
   set,
-  onImageChange,
+  container,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
-  onImageChange?: (pid: string) => void;
+  container?: ContainerBgControls | null;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -251,19 +353,17 @@ function BannerSection({
         <span className="text-xs text-muted-foreground">Color</span>
         <ColorSwatchRow value={s.bgColorToken} onChange={(t) => set({ bgColorToken: t })} />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <span className="text-xs text-muted-foreground">Image</span>
-        <SingleImagePicker
-          value={s.bgImagePublicId ?? ""}
-          onChange={(pid) => {
-            if (onImageChange) {
-              onImageChange(pid);
-            } else {
-              set({ bgImagePublicId: pid || undefined });
-            }
-          }}
-        />
-      </div>
+      {container ? (
+        <ContainerBackgroundControls {...container} />
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground">Image</span>
+          <SingleImagePicker
+            value={s.bgImagePublicId ?? ""}
+            onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -336,42 +436,41 @@ function ContentInputs({
     );
   }
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
+    // Only the carousel renders on-page text — grid/masonry are images only, so
+    // they expose just the Photos (multi-image) picker (heading/description only on carousel).
+    const isCarousel = type === "GalleryCarousel";
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Collection</span>
-          <CollectionPicker
-            value={(props.collectionId as string) ?? ""}
-            onChange={(v) => setProp("collectionId", v)}
+          <span className="text-xs text-muted-foreground">Photos</span>
+          <MultiImageControl
+            value={(props.images as MediaPickerSelection[]) ?? []}
+            onChange={(v) => setProp("images", v)}
+            max={60}
           />
         </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Heading</span>
-          <input
-            type="text"
-            value={(props.heading as string) ?? ""}
-            onChange={(e) => setProp("heading", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Description</span>
-          <textarea
-            rows={2}
-            value={(props.description as string) ?? ""}
-            onChange={(e) => setProp("description", e.target.value)}
-            className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Footer</span>
-          <input
-            type="text"
-            value={(props.footer as string) ?? ""}
-            onChange={(e) => setProp("footer", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
+        {isCarousel && (
+          <>
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Heading</span>
+              <input
+                type="text"
+                value={(props.heading as string) ?? ""}
+                onChange={(e) => setProp("heading", e.target.value)}
+                className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              <span>Description</span>
+              <textarea
+                rows={2}
+                value={(props.description as string) ?? ""}
+                onChange={(e) => setProp("description", e.target.value)}
+                className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              />
+            </label>
+          </>
+        )}
       </div>
     );
   }
@@ -379,30 +478,12 @@ function ContentInputs({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Photos (max 3)</span>
-          <FeaturedItemsPicker
-            value={(props.itemIds as FeaturedWorkItemId[]) ?? []}
-            onChange={(v) => setProp("itemIds", v)}
+          <span className="text-xs text-muted-foreground">Collections</span>
+          <MultiCollectionControl
+            value={(props.collections as CollectionRef[]) ?? []}
+            onChange={(v) => setProp("collections", v)}
           />
         </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Heading</span>
-          <input
-            type="text"
-            value={(props.heading as string) ?? ""}
-            onChange={(e) => setProp("heading", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span>Subheading</span>
-          <input
-            type="text"
-            value={(props.subheading as string) ?? ""}
-            onChange={(e) => setProp("subheading", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-        </label>
       </div>
     );
   }
@@ -450,18 +531,330 @@ function ContentTabBody({
   showBanner: boolean;
   isContainer: boolean;
 }) {
+  const container: ContainerBgControls | null =
+    isContainer && p
+      ? {
+          images: (p.backgroundImages as MediaPickerSelection[]) ?? [],
+          onImagesChange: (v) => setProp("backgroundImages", v),
+          animation: (p.bgAnimation as string) ?? "crossfade",
+          speed: (p.bgSpeed as string) ?? "medium",
+          onAnimationChange: (v) => setProp("bgAnimation", v),
+          onSpeedChange: (v) => setProp("bgSpeed", v),
+        }
+      : null;
   return (
     <div className="flex flex-col gap-4 p-3">
-      {showBanner && (
-        <BannerSection
-          s={s}
-          set={set}
-          onImageChange={
-            isContainer ? (pid) => setProp("backgroundImagePublicId", pid) : undefined
-          }
+      {showBanner && <BannerSection s={s} set={set} container={container} />}
+      {!isContainer && p && <ContentInputs type={type} props={p} setProp={setProp} />}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Carousel text controls — Text Padding + independent heading/description
+// highlight bands. Carousel-only; stored on `_style` (BlockStyle), threaded into
+// GalleryHeader by GalleryCarouselBlock.
+// ---------------------------------------------------------------------------
+
+function Drawer({ title, children }: { title: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-border">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {title}
+        {open ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
+      </button>
+      {open && <div className="flex flex-col gap-3 border-t border-border p-3">{children}</div>}
+    </div>
+  );
+}
+
+function ChoiceRow<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T | undefined;
+  options: readonly { value: T; label: string }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {options.map(({ value: v, label: l }) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={value === v}
+            onClick={() => onChange(v)}
+            className={cn(
+              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === v && "bg-foreground text-background hover:bg-foreground"
+            )}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HighlightToggle({
+  label,
+  on,
+  onToggle,
+}: {
+  label: string;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        onClick={onToggle}
+        className={cn(
+          "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          on ? "bg-foreground" : "bg-muted"
+        )}
+      >
+        <span
+          className={cn(
+            "inline-block h-3 w-3 translate-x-1 transition-transform bg-background",
+            on && "translate-x-5"
+          )}
+        />
+      </button>
+    </div>
+  );
+}
+
+function CarouselTargetControls({
+  target,
+  s,
+  set,
+}: {
+  target: "heading" | "description";
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+}) {
+  const isHeading = target === "heading";
+  const bold = isHeading ? s.headingBold : s.descriptionBold;
+  const italic = isHeading ? s.headingItalic : s.descriptionItalic;
+  const underline = isHeading ? s.headingUnderline : s.descriptionUnderline;
+  const align = isHeading ? s.headingAlign : s.descriptionAlign;
+  const colorToken = isHeading ? s.headingColorToken : s.descriptionColorToken;
+  const fontFamily = isHeading ? s.headingFontFamily : s.descriptionFontFamily;
+  const highlight = isHeading ? s.headingHighlight : s.descriptionHighlight;
+  const highlightToken = isHeading ? s.headingHighlightToken : s.descriptionHighlightToken;
+  const highlightShape = isHeading ? s.headingHighlightShape : s.descriptionHighlightShape;
+  const highlightSize = isHeading ? s.headingHighlightSize : s.descriptionHighlightSize;
+
+  const setAlign = (a: TextAlign) => {
+    const next = align === a ? undefined : a;
+    set(isHeading ? { headingAlign: next } : { descriptionAlign: next });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ToolbarToggle
+          active={!!bold}
+          title="Bold"
+          Icon={Bold}
+          onClick={() => set(isHeading ? { headingBold: !bold } : { descriptionBold: !bold })}
+        />
+        <ToolbarToggle
+          active={!!italic}
+          title="Italic"
+          Icon={Italic}
+          onClick={() => set(isHeading ? { headingItalic: !italic } : { descriptionItalic: !italic })}
+        />
+        <ToolbarToggle
+          active={!!underline}
+          title="Underline"
+          Icon={Underline}
+          onClick={() => set(isHeading ? { headingUnderline: !underline } : { descriptionUnderline: !underline })}
+        />
+        <ToolbarToggle active={align === "left"} title="Align left" Icon={AlignLeft} onClick={() => setAlign("left")} />
+        <ToolbarToggle active={align === "center"} title="Align center" Icon={AlignCenter} onClick={() => setAlign("center")} />
+        <ToolbarToggle active={align === "right"} title="Align right" Icon={AlignRight} onClick={() => setAlign("right")} />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="text-xs text-muted-foreground">Text color</span>
+        </div>
+        <ColorSwatchRow
+          value={colorToken}
+          onChange={(t) => set(isHeading ? { headingColorToken: t } : { descriptionColorToken: t })}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+        <div className="flex items-center gap-1">
+          <select
+            value={fontFamily ?? ""}
+            onChange={(e) => {
+              const f = e.target.value ? (e.target.value as PortfolioFontKey) : undefined;
+              set(isHeading ? { headingFontFamily: f } : { descriptionFontFamily: f });
+            }}
+            className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">Theme font</option>
+            {PORTFOLIO_FONT_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {PORTFOLIO_FONTS[key].label}
+              </option>
+            ))}
+          </select>
+          <ResetButton
+            onClick={() => set(isHeading ? { headingFontFamily: undefined } : { descriptionFontFamily: undefined })}
+            label="Font"
+          />
+        </div>
+      </div>
+
+      {isHeading ? (
+        <HeadingLevelButtons value={s.headingLevel} onChange={(v) => set({ headingLevel: v })} />
+      ) : (
+        <NumberInputRow
+          label="Font size"
+          value={s.descriptionFontSize}
+          min={STYLE_LIMITS.fontSize.min}
+          max={STYLE_LIMITS.fontSize.max}
+          onChange={(v) => set({ descriptionFontSize: v })}
         />
       )}
-      {!isContainer && p && <ContentInputs type={type} props={p} setProp={setProp} />}
+
+      <div className="flex flex-col gap-1.5">
+        <HighlightToggle
+          label={isHeading ? "Heading highlight" : "Description highlight"}
+          on={!!highlight}
+          onToggle={() => set(isHeading ? { headingHighlight: !highlight } : { descriptionHighlight: !highlight })}
+        />
+        {highlight && (
+          <div className="flex flex-col gap-2">
+            <ColorSwatchRow
+              value={highlightToken}
+              onChange={(t) => set(isHeading ? { headingHighlightToken: t } : { descriptionHighlightToken: t })}
+              allowNone={false}
+            />
+            <ChoiceRow
+              label="Shape"
+              value={(highlightShape ?? "subtle") as HighlightShape}
+              options={HIGHLIGHT_SHAPE_OPTIONS}
+              onChange={(v) => set(isHeading ? { headingHighlightShape: v } : { descriptionHighlightShape: v })}
+            />
+            <ChoiceRow
+              label="Size"
+              value={(highlightSize ?? "md") as HighlightSize}
+              options={HIGHLIGHT_SIZE_OPTIONS}
+              onChange={(v) => set(isHeading ? { headingHighlightSize: v } : { descriptionHighlightSize: v })}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CarouselTextPadding({
+  s,
+  set,
+}: {
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Text padding</span>
+      <DimensionInput label="Horizontal (X)" value={s.textPaddingX} onChange={(v) => set({ textPaddingX: v })} />
+      <DimensionInput label="Vertical (Y)" value={s.textPaddingY} onChange={(v) => set({ textPaddingY: v })} />
+      <NumberInputRow
+        label="Heading gap"
+        value={s.headingGap}
+        min={0}
+        max={96}
+        suffix="px"
+        onChange={(v) => set({ headingGap: v })}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Padding controls — shared by LayoutTabBody (flex containers only)
+// ---------------------------------------------------------------------------
+
+function PaddingControls({
+  s,
+  set,
+}: {
+  s: BlockStyle;
+  set: (p: Partial<BlockStyle>) => void;
+}) {
+  const [paddingAdvanced, setPaddingAdvanced] = useState(false);
+  const paddingX =
+    s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight ? s.paddingLeft : undefined;
+  const paddingY =
+    s.paddingTop !== undefined && s.paddingTop === s.paddingBottom ? s.paddingTop : undefined;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Padding
+        </span>
+        <button
+          type="button"
+          aria-label="Padding advanced options"
+          onClick={() => setPaddingAdvanced((a) => !a)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        >
+          Advanced
+          {paddingAdvanced ? (
+            <ChevronUp className="size-3" aria-hidden />
+          ) : (
+            <ChevronDown className="size-3" aria-hidden />
+          )}
+        </button>
+      </div>
+      {paddingAdvanced ? (
+        <div className="flex flex-col gap-2">
+          <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
+          <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
+          <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
+          <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <DimensionInput
+            label="Horizontal (X)"
+            value={paddingX}
+            onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
+          />
+          <DimensionInput
+            label="Vertical (Y)"
+            value={paddingY}
+            onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -470,7 +863,7 @@ function ContentTabBody({
 // Design tab
 // ---------------------------------------------------------------------------
 
-function DesignTab({
+export function DesignTab({
   s,
   set,
   blockType = "",
@@ -479,29 +872,24 @@ function DesignTab({
   set: (p: Partial<BlockStyle>) => void;
   blockType?: string;
 }) {
-  const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
-  const showPadding = FLEX_CONTAINER_BLOCKS.has(blockType);
-
-  const paddingX =
-    s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight
-      ? s.paddingLeft
-      : undefined;
-  const paddingY =
-    s.paddingTop !== undefined && s.paddingTop === s.paddingBottom
-      ? s.paddingTop
-      : undefined;
+  const isCarousel = blockType === "GalleryCarousel";
+  // Image-only gallery blocks have no on-page text; the carousel uses per-target drawers.
+  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
 
   return (
     <div className="flex flex-col gap-4 p-3">
       {/* Typography — Bold/Italic/Underline + text align as one 6-icon row */}
+      {showTypography && (
       <div className="flex flex-col gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Typography
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
-          <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
+          {blockType !== "Heading" && (
+            <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
+          )}
           <ToolbarToggle active={!!s.italic} title="Italic" Icon={Italic} onClick={() => set({ italic: !s.italic })} />
           <ToolbarToggle active={!!s.underline} title="Underline" Icon={Underline} onClick={() => set({ underline: !s.underline })} />
           {!isButton && (
@@ -584,8 +972,20 @@ function DesignTab({
           />
         )}
       </div>
+      )}
 
-      {/* Frame — hidden for text/button leaf blocks */}
+      {isCarousel && (
+        <div className="flex flex-col gap-2">
+          <Drawer title="Heading">
+            <CarouselTargetControls target="heading" s={s} set={set} />
+          </Drawer>
+          <Drawer title="Description">
+            <CarouselTargetControls target="description" s={s} set={set} />
+          </Drawer>
+        </div>
+      )}
+
+      {/* Frame — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -621,52 +1021,6 @@ function DesignTab({
           />
         </div>
       )}
-
-      {/* Padding — containers only */}
-      {showPadding && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Padding
-            </span>
-            <button
-              type="button"
-              aria-label="Padding advanced options"
-              onClick={() => setPaddingAdvanced((a) => !a)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              Advanced
-              {paddingAdvanced ? (
-                <ChevronUp className="size-3" aria-hidden />
-              ) : (
-                <ChevronDown className="size-3" aria-hidden />
-              )}
-            </button>
-          </div>
-          {paddingAdvanced ? (
-            <div className="flex flex-col gap-2">
-              <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
-              <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
-              <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
-              <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <DimensionInput
-                label="Horizontal (X)"
-                value={paddingX}
-                onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
-              />
-              <DimensionInput
-                label="Vertical (Y)"
-                value={paddingY}
-                onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
 
       {/* Animations */}
       <div className="flex flex-col gap-2">
@@ -775,9 +1129,17 @@ const ASPECT_OPTIONS = [
   { value: "portrait",  label: "Portrait" },
 ] as const;
 
-const FEATURED_LAYOUT_OPTIONS = [
-  { value: "row",     label: "Row" },
-  { value: "stagger", label: "Stagger" },
+// Floating-header position for the carousel: horizontal (X) + vertical (Y).
+const CAROUSEL_FLOAT_X_OPTIONS = [
+  { value: "left",   label: "Left" },
+  { value: "center", label: "Center" },
+  { value: "right",  label: "Right" },
+] as const;
+
+const CAROUSEL_FLOAT_Y_OPTIONS = [
+  { value: "top",    label: "Top" },
+  { value: "center", label: "Middle" },
+  { value: "bottom", label: "Bottom" },
 ] as const;
 
 function GalleryLayoutControls({
@@ -857,33 +1219,75 @@ function GalleryLayoutControls({
             </button>
           </div>
         )}
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Image spacing</span>
-          <div className="flex items-center gap-1.5">
-            {GAP_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={(p.gap as string) === value}
-                onClick={() => setProp("gap", value)}
-                className={cn(
-                  "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.gap as string) === value && "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+        {isCarousel && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Floating header — horizontal</span>
+            <div className="flex items-center gap-1.5">
+              {CAROUSEL_FLOAT_X_OPTIONS.map(({ value, label }) => {
+                const current = (p.floatX as string) ?? "center";
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={current === value}
+                    onClick={() => setProp("floatX", value)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      current === value && "bg-foreground text-background hover:bg-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <NumberInputRow
-          label="Max items"
-          value={p.maxItems as number | undefined}
-          min={1}
-          max={100}
-          suffix=""
-          onChange={(v) => setProp("maxItems", v)}
-        />
+        )}
+        {isCarousel && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Floating header — vertical</span>
+            <div className="flex items-center gap-1.5">
+              {CAROUSEL_FLOAT_Y_OPTIONS.map(({ value, label }) => {
+                const current = (p.floatY as string) ?? "center";
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={current === value}
+                    onClick={() => setProp("floatY", value)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      current === value && "bg-foreground text-background hover:bg-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {!isCarousel && (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs text-muted-foreground">Image spacing</span>
+            <div className="flex items-center gap-1.5">
+              {GAP_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={(p.gap as string) === value}
+                  onClick={() => setProp("gap", value)}
+                  className={cn(
+                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    (p.gap as string) === value && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -892,20 +1296,21 @@ function GalleryLayoutControls({
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">Layout</span>
+          <span className="text-xs text-muted-foreground">Columns</span>
           <div className="flex items-center gap-1.5">
-            {FEATURED_LAYOUT_OPTIONS.map(({ value, label }) => (
+            {([2, 3, 4] as const).map((v) => (
               <button
-                key={value}
+                key={v}
                 type="button"
-                aria-pressed={(p.layout as string) === value}
-                onClick={() => setProp("layout", value)}
+                aria-pressed={(p.columns as number) === v}
+                onClick={() => setProp("columns", v)}
                 className={cn(
-                  "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.layout as string) === value && "bg-foreground text-background hover:bg-foreground"
+                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  (p.columns as number) === v &&
+                    "bg-foreground text-background hover:bg-foreground"
                 )}
               >
-                {label}
+                {v}
               </button>
             ))}
           </div>
@@ -917,7 +1322,7 @@ function GalleryLayoutControls({
   return null;
 }
 
-function LayoutTabBody({
+export function LayoutTabBody({
   s,
   set,
   isGridChild,
@@ -939,12 +1344,18 @@ function LayoutTabBody({
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
 
+  const isCarousel = blockType === "GalleryCarousel";
   if (isGalleryLayout && p && setProp) {
     return (
       <div className="flex flex-col gap-4 p-3">
         <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
+        {isCarousel && <CarouselTextPadding s={s} set={set} />}
       </div>
     );
+  }
+  // Standalone (no Puck provider — tests): the carousel still exposes Text padding.
+  if (isGalleryLayout) {
+    return <div className="flex flex-col gap-4 p-3">{isCarousel && <CarouselTextPadding s={s} set={set} />}</div>;
   }
 
   // For text-only and button leaf blocks: position/size + spacing controls.
@@ -1018,6 +1429,7 @@ function LayoutTabBody({
   // Container / generic block layout
   return (
     <div className="flex flex-col gap-4 p-3">
+      {isFlexContainer && <PaddingControls s={s} set={set} />}
       <NumberInputRow
         label="Gap"
         value={s.gap}
@@ -1084,7 +1496,7 @@ function LayoutTabBody({
 function ImagePanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
   return (
     <div className="flex flex-col gap-3 p-3">
-      <SingleImagePicker
+      <SingleImageControl
         value={(p?.imagePublicId as string) ?? ""}
         onChange={(v) => setProp("imagePublicId", v)}
       />
@@ -1191,15 +1603,27 @@ function ContactDetailsPanel({ p, setProp }: { p: Record<string, unknown> | unde
 function BlockAwarePanel({
   s,
   set,
-  tab,
-  onTabChange,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
-  tab: "content" | "design" | "layout";
-  onTabChange: (t: "content" | "design" | "layout") => void;
+  /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
+  tab?: "content" | "design" | "layout";
+  /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
+  onTabChange?: (t: "content" | "design" | "layout") => void;
 }) {
   const { selectedItem, dispatch, getSelectorForId, getItemById } = usePuck();
+
+  const blockId = (selectedItem?.props?.id as string | undefined) ?? "";
+
+  // Store-backed tab: survives StyleToolkitField remounts (Puck re-invokes the
+  // field render on every value change). Using blockId as key means selecting a
+  // different block starts at "content" while edits on the same block preserve
+  // whichever tab the user navigated to.
+  const [activeTab, setActiveTabState] = useState<BlockTab>(() => getBlockTab(blockId));
+  function setActiveTab(t: BlockTab) {
+    setActiveTabState(t);
+    if (blockId) setBlockTab(blockId, t);
+  }
 
   const type = (selectedItem?.type ?? "") as string;
   const isGallery = GALLERY_BLOCKS.has(type);
@@ -1207,7 +1631,6 @@ function BlockAwarePanel({
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
   const availableTabs = ["content", "design", "layout"] as const;
-  const activeTab = (availableTabs as readonly string[]).includes(tab) ? tab : "content";
 
   const isGridChild = (() => {
     if (!selectedItem) return false;
@@ -1255,7 +1678,7 @@ function BlockAwarePanel({
 
   return (
     <div className="flex flex-col">
-      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={onTabChange} />
+      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
       {activeTab === "content" && (
         <ContentTabBody
           s={s}
@@ -1292,10 +1715,12 @@ export function StyleToolkitField({
   value,
   onChange,
   fieldId,
+  blockType = "",
 }: {
   value: BlockStyle | undefined;
   onChange: (next: BlockStyle) => void;
   fieldId?: string;
+  blockType?: string;
 }) {
   const [tab, setTab] = useState<"content" | "design" | "layout">("content");
   const s = value ?? {};
@@ -1311,11 +1736,19 @@ export function StyleToolkitField({
     <div className="flex flex-col">
       <TabHeader tab={tab} tabs={allTabs} onTabChange={setTab} />
       {tab === "content" && (
-        <ContentTabBody s={s} set={set} type="" p={undefined} setProp={() => {}} showBanner={true} isContainer={false} />
+        <ContentTabBody
+          s={s}
+          set={set}
+          type={blockType}
+          p={undefined}
+          setProp={() => {}}
+          showBanner={true}
+          isContainer={false}
+        />
       )}
-      {tab === "design" && <DesignTab s={s} set={set} />}
+      {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}
       {tab === "layout" && (
-        <LayoutTabBody s={s} set={set} isGridChild={false} showJustify={true} />
+        <LayoutTabBody s={s} set={set} isGridChild={false} showJustify={true} blockType={blockType} />
       )}
     </div>
   );

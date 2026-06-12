@@ -34,6 +34,6 @@ export const eventPhotographerTemplate: PortfolioTemplate = {
       aboutPreset("ep-home-about"),
       ctaPreset("ep-home-cta"),
     ]),
-    gallery: zone([galleryGrid("ep-gallery-grid", { columns: 3, maxItems: 18 })]),
+    gallery: zone([galleryGrid("ep-gallery-grid", { columns: 3 })]),
   }),
 };

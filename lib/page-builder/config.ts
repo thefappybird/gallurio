@@ -14,7 +14,9 @@
  * - the editor mirrors this via lib/page-builder/editorConfig.tsx (parity-tested)
  */
 
+import React from "react";
 import type { Config } from "@measured/puck";
+import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
@@ -63,6 +65,9 @@ type Components = {
   ServicesPreset: ContainerBlockProps;
   CtaPreset: ContainerBlockProps;
   ContactPreset: ContainerBlockProps;
+  GalleryGridPreset: ContainerBlockProps;
+  GalleryMasonryPreset: ContainerBlockProps;
+  FeaturedWorkPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
@@ -98,6 +103,9 @@ export const puckConfig: Config<Components> = {
     ServicesPreset: presetConfig(SECTION_PRESETS.ServicesPreset.label, SECTION_PRESETS.ServicesPreset.defaultProps),
     CtaPreset: presetConfig(SECTION_PRESETS.CtaPreset.label, SECTION_PRESETS.CtaPreset.defaultProps),
     ContactPreset: presetConfig(SECTION_PRESETS.ContactPreset.label, SECTION_PRESETS.ContactPreset.defaultProps),
+    GalleryGridPreset: presetConfig(SECTION_PRESETS.GalleryGridPreset.label, SECTION_PRESETS.GalleryGridPreset.defaultProps),
+    GalleryMasonryPreset: presetConfig(SECTION_PRESETS.GalleryMasonryPreset.label, SECTION_PRESETS.GalleryMasonryPreset.defaultProps),
+    FeaturedWorkPreset: presetConfig(SECTION_PRESETS.FeaturedWorkPreset.label, SECTION_PRESETS.FeaturedWorkPreset.defaultProps),
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     GalleryCarousel: galleryCarouselBlockConfig,
@@ -113,5 +121,14 @@ export const puckConfig: Config<Components> = {
     Columns: columnsBlockConfig,
     Container: containerBlockConfig,
   },
-  root: { fields: {} },
+  root: {
+    fields: {},
+    render: (({ _rootStyle, children }: { _rootStyle?: RootPageStyle; children?: React.ReactNode }) =>
+      React.createElement(
+        "div",
+        { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%" } },
+        children,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      )) as any,
+  },
 };

@@ -19,61 +19,17 @@
  */
 
 import { AsyncLocalStorage } from "node:async_hooks";
+import {
+  applyGalleryChromeDefaults,
+  type RenderWorkspace,
+  type GalleryChromeLabels,
+  type PortfolioRenderMetadata,
+  type BlockPuck,
+} from "./blockContext";
+import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 
-// ---------------------------------------------------------------------------
-// Minimal workspace shape needed by server-rendered blocks
-// ---------------------------------------------------------------------------
-
-export type RenderWorkspace = {
-  _id: string | { toString(): string };
-  name: string;
-  /** Workspace slug — used to build public links (e.g. the Gallery page) inside blocks. */
-  slug?: string;
-  branding?: {
-    logoUrl?: string | null;
-    tagline?: string | null;
-    description?: string | null;
-  } | null;
-  publicPage?: {
-    inquiryRecipientEmail?: string | null;
-  } | null;
-  /** Workspace contact details used by ContactCardBlock */
-  contact?: {
-    email?: string | null;
-    phone?: string | null;
-    address?: string | null;
-    socials?: {
-      instagram?: string | null;
-      facebook?: string | null;
-      tiktok?: string | null;
-      website?: string | null;
-    } | null;
-  } | null;
-  /** BCP-47 locale derived from workspace.country (en|fil|ms|id|th). Set by the page boundary, not the helper. */
-  locale?: string;
-  /**
-   * Pre-resolved chrome strings for the public page. Set by the page boundary after
-   * calling getTranslations(). The `startingFrom` value is an ICU template with the
-   * literal "{price}" token preserved for per-item substitution in ServicesListBlock.
-   * `gallery` holds the localized empty/error/carousel strings for the gallery blocks.
-   */
-  chrome?: {
-    startingFrom?: string;
-    gallery?: GalleryChromeLabels;
-  } | null;
-};
-
-/** Localized strings consumed by the gallery blocks (resolved at the page boundary). */
-export type GalleryChromeLabels = {
-  empty?: string;
-  noCollection?: string;
-  unavailable?: string;
-  error?: string;
-  featuredEmpty?: string;
-  carouselHint?: string;
-  carouselPrev?: string;
-  carouselNext?: string;
-};
+export type { RenderWorkspace, GalleryChromeLabels, PortfolioRenderMetadata, BlockPuck };
+export { getGalleryChromeLabelsFrom } from "./blockContext";
 
 // ---------------------------------------------------------------------------
 // Workspace mapping helper
@@ -94,7 +50,10 @@ export function buildRenderWorkspace(workspace: {
   name: string;
   slug?: string | null;
   branding?: { logoUrl?: string | null; tagline?: string | null; description?: string | null } | null;
-  publicPage?: { inquiryRecipientEmail?: string | null } | null;
+  publicPage?: {
+    inquiryRecipientEmail?: string | null;
+    collectionsPopup?: PortfolioCollectionsPopupConfig | null;
+  } | null;
   contact?: {
     email?: string | null;
     phone?: string | null;
@@ -119,7 +78,10 @@ export function buildRenderWorkspace(workspace: {
         }
       : null,
     publicPage: workspace.publicPage
-      ? { inquiryRecipientEmail: workspace.publicPage.inquiryRecipientEmail ?? null }
+      ? {
+          inquiryRecipientEmail: workspace.publicPage.inquiryRecipientEmail ?? null,
+          collectionsPopup: (workspace.publicPage.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null,
+        }
       : null,
     contact: workspace.contact
       ? {
@@ -150,44 +112,19 @@ const storage = new AsyncLocalStorage<RenderWorkspace>();
 // ---------------------------------------------------------------------------
 
 /**
- * Shape of the `metadata` object passed to `<Render metadata={...}>` (and
- * `<Puck>`), which Puck forwards to every block as `props.puck.metadata`.
- *
- * WHY this exists alongside AsyncLocalStorage: with React Server Components,
- * `runWithRenderWorkspace(ws, () => <Render/>)` only holds the ALS store during
- * the *synchronous* creation of the element — the async block components run
- * later, OUTSIDE that store, so `getRenderWorkspace()` returns null at the point
- * a block actually queries. Puck's `metadata` prop threads context through React
- * props instead, which is the reliable RSC mechanism. Blocks read it via
- * `getRenderWorkspaceFrom(puck)`. The ALS path is kept as a fallback so unit
- * tests that render a block directly inside `runWithRenderWorkspace` still work.
- */
-export type PortfolioRenderMetadata = { workspace?: RenderWorkspace };
-
-/** The `puck` prop Puck injects into every rendered component. */
-export type BlockPuck = { metadata?: PortfolioRenderMetadata };
-
-/**
  * Resolves the active workspace for a block: prefers Puck `metadata` (RSC-safe),
  * falling back to the AsyncLocalStorage store (used by direct-render unit tests).
+ *
+ * WHY the ALS fallback exists: with React Server Components,
+ * `runWithRenderWorkspace(ws, () => <Render/>)` only holds the ALS store during
+ * the *synchronous* creation of the element — the async block components run
+ * later, OUTSIDE that store. Puck's `metadata` prop threads context through React
+ * props instead, which is the reliable RSC mechanism. The ALS path is kept as a
+ * fallback so unit tests that render a block directly inside `runWithRenderWorkspace`
+ * still work.
  */
 export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace | null {
   return puck?.metadata?.workspace ?? storage.getStore() ?? null;
-}
-
-/** Like getGalleryChromeLabels, but sourced from Puck metadata first. */
-export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<GalleryChromeLabels> {
-  const g = getRenderWorkspaceFrom(puck)?.chrome?.gallery ?? {};
-  return {
-    empty: g.empty ?? "No photos in this collection yet.",
-    noCollection: g.noCollection ?? "No collection selected.",
-    unavailable: g.unavailable ?? "Gallery not available.",
-    error: g.error ?? "Gallery temporarily unavailable.",
-    featuredEmpty: g.featuredEmpty ?? "No featured photos selected yet.",
-    carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
-    carouselPrev: g.carouselPrev ?? "Previous image",
-    carouselNext: g.carouselNext ?? "Next image",
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -217,29 +154,13 @@ export function getRenderWorkspace(): RenderWorkspace | null {
 }
 
 /**
- * Returns the `_id` of the active workspace as a plain string.
- *
- * Throws if called outside a workspace render context (i.e., without first
- * wrapping the render in `runWithRenderWorkspace`). This is a programming error.
- */
-/**
  * Returns the localized gallery chrome strings from the active render context,
  * filling any missing value with an English default. Centralizes the fallbacks
  * so blocks never hardcode user-visible copy, and so unit tests that render a
  * block without setting `chrome` still get sensible English text.
  */
 export function getGalleryChromeLabels(): Required<GalleryChromeLabels> {
-  const g = getRenderWorkspace()?.chrome?.gallery ?? {};
-  return {
-    empty: g.empty ?? "No photos in this collection yet.",
-    noCollection: g.noCollection ?? "No collection selected.",
-    unavailable: g.unavailable ?? "Gallery not available.",
-    error: g.error ?? "Gallery temporarily unavailable.",
-    featuredEmpty: g.featuredEmpty ?? "No featured photos selected yet.",
-    carouselHint: g.carouselHint ?? "Swipe or use the arrows to browse",
-    carouselPrev: g.carouselPrev ?? "Previous image",
-    carouselNext: g.carouselNext ?? "Next image",
-  };
+  return applyGalleryChromeDefaults(getRenderWorkspace()?.chrome?.gallery ?? {});
 }
 
 export function getRenderWorkspaceIdOrThrow(): string {

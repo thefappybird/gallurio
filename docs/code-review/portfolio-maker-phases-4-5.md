@@ -14,7 +14,7 @@
 - `lib/hooks/useGlobalContactTrigger.ts`
 - `lib/validators/{inquiry,publicPage}.ts` + tests
 - `lib/db/models/Workspace.ts`
-- `messages/{en,fil,ms,id,th}.json`
+- `messages/{en,fil,ms,id}.json`
 
 **Verification run:** `pnpm typecheck` passes clean; full `pnpm test` passes (1102 tests, 100 files).
 
@@ -49,7 +49,7 @@ Add a test that feeds the **exact** shape Puck persists (`itemIds: [{ id }]`) an
 ### H2 — New gallery-block UI strings are hardcoded English, not localized
 **Files:** `GalleryMasonryBlock.tsx:59,63,75,79,144` (empty/error states); `GalleryCarouselBlock.tsx:46,50,62,66` (empty/error states); `GalleryCarouselClient.tsx:133` ("Swipe or use the arrows to browse"), `:145` (`aria-label` "Previous/Next image"); `PortfolioHeader.tsx:57` (`aria-label="Portfolio"`).
 
-CLAUDE.md is explicit: *"All five locales update together. A feature with English-only strings is unfinished."* The contact modal/form correctly resolve every string through `publicPage.inquiryForm`/`publicPage.nav` (verified consistent across all 5 catalogs), but the Phase 4 gallery blocks bake English directly into JSX — including user-visible empty states and screen-reader `aria-label`s. On a `fil`/`th`/`id`/`ms` portfolio these render English.
+CLAUDE.md is explicit: *"All active locales update together. A feature with English-only strings is unfinished."* The contact modal/form correctly resolve every string through `publicPage.inquiryForm`/`publicPage.nav` (verified consistent across all 4 active catalogs), but the Phase 4 gallery blocks bake English directly into JSX — including user-visible empty states and screen-reader `aria-label`s. On a `fil`/`id`/`ms` portfolio these render English.
 
 The established pattern is in place to follow: server blocks read pre-resolved strings off the render context (`serverContext.tsx` already carries `chrome`). The carousel/caption strings and aria-labels should be threaded the same way (extend the `chrome` payload or pass labels as props from the page boundary).
 

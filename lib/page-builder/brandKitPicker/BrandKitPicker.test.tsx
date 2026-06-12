@@ -13,12 +13,20 @@ function setup(overrides: Partial<Parameters<typeof BrandKitPicker>[0]> = {}) {
 }
 
 describe("BrandKitPicker", () => {
-  it("selecting a theme preset emits the updated kit", () => {
+  it("applies the full brand kit (colors + fonts) when a preset is selected", () => {
     const { onChange } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Editorial" }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ themePreset: "editorial" })
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Apply theme: Editorial" }));
+    const applied = onChange.mock.calls.at(-1)![0];
+    expect(applied.themePreset).toBe("editorial");
+    expect(applied.accentColor).toBe("#7e6a52");
+    expect(applied.headingFont).toBe("playfair");
+  });
+
+  it("still renders the color and font editors", () => {
+    setup();
+    expect(screen.getByRole("group", { name: /heading font/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /body font/i })).toBeInTheDocument();
+    expect(screen.getByText("Colors")).toBeInTheDocument();
   });
 
   it("selecting a heading font emits headingFont without touching bodyFont", () => {
@@ -44,8 +52,6 @@ describe("BrandKitPicker", () => {
   });
 
   it("falls back to the legacy fontPair when headingFont/bodyFont are absent", () => {
-    // A pre-independent-fonts kit: only fontPair set. The picker should mark the
-    // mapped families active without the caller needing to migrate the data.
     const { ...legacy } = DEFAULT_BRAND_KIT;
     delete (legacy as Record<string, unknown>).headingFont;
     delete (legacy as Record<string, unknown>).bodyFont;
@@ -66,7 +72,6 @@ describe("BrandKitPicker", () => {
 
   it("propagates a color picked from the accent spectrum popover", () => {
     const { onChange } = setup();
-    // Open the Accent color popover, then pick a preset swatch.
     fireEvent.click(screen.getByRole("button", { name: /accent/i }));
     fireEvent.click(screen.getByRole("button", { name: "#7c5cff" }));
     expect(onChange).toHaveBeenCalledWith(
@@ -98,6 +103,27 @@ describe("BrandKitPicker", () => {
     expect(screen.queryByRole("button", { name: /use workspace branding/i })).toBeNull();
   });
 
+  it("shows a Current Theme tile with inline name input after a divergent color edit", () => {
+    setup({ onSaveTheme: vi.fn().mockResolvedValue({ ok: true, theme: { id: "n", name: "X", brandKit: DEFAULT_BRAND_KIT } }) });
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    // Current Theme tile appears with inline name input
+    expect(screen.getByRole("textbox", { name: "Theme name" })).toBeInTheDocument();
+    // The "Unsaved" badge is gone (replaced by the inline input)
+    expect(screen.queryByText("Unsaved")).toBeNull();
+  });
+
+  it("enters edit mode from a saved tile and shows inline name input on the tile", () => {
+    const themes = [
+      { id: "t1", name: "Sunset", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#e87a4f" } },
+    ];
+    setup({ savedThemes: themes, onSaveTheme: vi.fn().mockResolvedValue({ ok: true, theme: { id: "n", name: "X", brandKit: DEFAULT_BRAND_KIT } }) });
+    fireEvent.click(screen.getByRole("button", { name: "Edit theme: Sunset" }));
+    const input = screen.getByRole("textbox", { name: "Theme name" });
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveValue("Sunset");
+  });
+
   describe("saved themes", () => {
     const themes: PortfolioSavedTheme[] = [
       {
@@ -107,51 +133,19 @@ describe("BrandKitPicker", () => {
       },
     ];
 
-    it("renders an empty-state message when there are no saved themes", () => {
-      setup({ onSaveTheme: vi.fn() });
-      expect(screen.getByText(/no saved themes yet/i)).toBeInTheDocument();
-    });
-
-    it("applies a saved theme's brand kit when its swatch is clicked", () => {
-      const { onChange } = setup({ savedThemes: themes, onSaveTheme: vi.fn() });
+    it("applies a saved theme's brand kit when its tile is clicked", () => {
+      const { onChange } = setup({ savedThemes: themes, onSaveTheme: vi.fn().mockResolvedValue({ ok: true, theme: { id: "n", name: "X", brandKit: DEFAULT_BRAND_KIT } }) });
       fireEvent.click(screen.getByRole("button", { name: /apply theme: sunset/i }));
       expect(onChange).toHaveBeenCalledWith(
         expect.objectContaining({ accentColor: "#e87a4f" })
       );
     });
 
-    it("saves the current kit under a trimmed name", async () => {
-      const onSaveTheme = vi.fn().mockResolvedValue(undefined);
-      setup({ onSaveTheme });
-      fireEvent.change(screen.getByLabelText(/new theme name/i), {
-        target: { value: "  Moody  " },
-      });
-      fireEvent.click(screen.getByRole("button", { name: /save current/i }));
-      await waitFor(() => expect(onSaveTheme).toHaveBeenCalledWith("Moody"));
-    });
-
-    it("blocks saving a blank name and shows an inline error", async () => {
-      const onSaveTheme = vi.fn().mockResolvedValue(undefined);
-      setup({ onSaveTheme });
-      // A space-only value: the trim guard must reject before calling onSaveTheme.
-      // The button is disabled for empty input, so drive the Enter-key path.
-      const input = screen.getByLabelText(/new theme name/i);
-      fireEvent.change(input, { target: { value: "   " } });
-      fireEvent.keyDown(input, { key: "Enter" });
-      await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
-      expect(onSaveTheme).not.toHaveBeenCalled();
-    });
-
     it("deletes a saved theme by id", async () => {
       const onDeleteTheme = vi.fn().mockResolvedValue(undefined);
-      setup({ savedThemes: themes, onSaveTheme: vi.fn(), onDeleteTheme });
+      setup({ savedThemes: themes, onSaveTheme: vi.fn().mockResolvedValue({ ok: true, theme: { id: "n", name: "X", brandKit: DEFAULT_BRAND_KIT } }), onDeleteTheme });
       fireEvent.click(screen.getByRole("button", { name: /delete theme: sunset/i }));
       await waitFor(() => expect(onDeleteTheme).toHaveBeenCalledWith("t1"));
-    });
-
-    it("hides the save form when no onSaveTheme handler is provided", () => {
-      setup();
-      expect(screen.queryByLabelText(/new theme name/i)).toBeNull();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 import {
@@ -700,5 +700,77 @@ describe("ContainerBlock flex defaults", () => {
     render(<ContainerBlock content={MockSlot} _style={{ gap: 32 }} />);
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.gap).toBe("32px");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ContainerBlock — background slideshow branch
+// ---------------------------------------------------------------------------
+
+describe("ContainerBlock background images", () => {
+  const Slot: SlotComponent = (props) => <div data-testid="slot-inner" style={props?.style} />;
+
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", "demo");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders no background layer when backgroundImages is empty", () => {
+    const { container } = render(<ContainerBlock content={Slot} backgroundImages={[]} />);
+    expect(container.querySelector("[data-bg-slideshow]")).toBeNull();
+    // No absolutely-positioned background <img> either.
+    expect(container.querySelector('section > img')).toBeNull();
+  });
+
+  it("renders a single static <img> (no slideshow island) for exactly one image", () => {
+    const { container } = render(
+      <ContainerBlock content={Slot} backgroundImages={[{ id: "a", publicId: "ws/a" }]} />
+    );
+    expect(container.querySelector("[data-bg-slideshow]")).toBeNull();
+    const img = container.querySelector("section > img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.getAttribute("aria-hidden")).toBe("true");
+    expect(img!.src).toContain("ws/a");
+  });
+
+  it("renders the slideshow island for two or more images", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        bgAnimation="slide"
+        bgSpeed="fast"
+      />
+    );
+    const island = container.querySelector("[data-bg-slideshow]");
+    expect(island).not.toBeNull();
+    expect(island?.getAttribute("data-animation")).toBe("slide");
+    expect(container.querySelectorAll("[data-bg-layer]").length).toBe(2);
+  });
+
+  it("layers the dark scrim above the slideshow when overlayOpacity > 0", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+        overlayOpacity={50}
+      />
+    );
+    const scrim = container.querySelector('section > div[aria-hidden="true"]:not([data-bg-slideshow])') as HTMLElement | null;
+    expect(scrim).not.toBeNull();
+    expect(scrim!.style.backgroundColor).toBe("rgba(0, 0, 0, 0.5)");
+  });
+
+  it("keeps the content slot rendered above the background (z-index 1)", () => {
+    render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }, { id: "b", publicId: "ws/b" }]}
+      />
+    );
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.zIndex).toBe("1");
   });
 });

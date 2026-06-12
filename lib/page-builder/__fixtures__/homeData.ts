@@ -78,7 +78,6 @@ export const homeDataFixture: PuckData = {
       props: {
         id: "fixture-featured-1",
         ...featuredWorkDefaultProps,
-        itemIds: [],
       },
     },
   ],

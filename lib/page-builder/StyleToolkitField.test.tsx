@@ -102,4 +102,195 @@ describe("StyleToolkitField — 3-tab panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.queryByText("Margin")).toBeNull();
   });
+
+  it("hides the Bold control for Heading blocks", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Heading" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
+  });
+
+  it("hides Frame and Typography for image-only gallery blocks (GalleryGrid)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.queryByText("Typography")).toBeNull();
+    // Animations remain available.
+    expect(screen.getByText("Animations")).toBeTruthy();
+  });
+
+  it("hides Frame and the shared Typography for the GalleryCarousel (uses drawers)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.queryByText("Typography")).toBeNull();
+    expect(screen.getByRole("button", { name: "Heading" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Description" })).toBeTruthy();
+  });
+});
+
+import { ContainerBackgroundControls } from "./StyleToolkitField";
+
+describe("ContainerBackgroundControls — animation gating", () => {
+  const noop = () => {};
+
+  it("hides animation + speed selects with fewer than 2 images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+      />
+    );
+    expect(screen.getByText("Background images")).toBeTruthy();
+    expect(screen.queryByLabelText("Background animation")).toBeNull();
+    expect(screen.queryByLabelText("Animation speed")).toBeNull();
+  });
+
+  it("shows animation + speed selects at 2 or more images", () => {
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }, { id: "b", publicId: "q" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={noop}
+        onSpeedChange={noop}
+      />
+    );
+    expect(screen.getByLabelText("Background animation")).toBeTruthy();
+    expect(screen.getByLabelText("Animation speed")).toBeTruthy();
+  });
+
+  it("fires onAnimationChange when the animation select changes", () => {
+    const onAnimationChange = vi.fn();
+    render(
+      <ContainerBackgroundControls
+        images={[{ id: "a", publicId: "p" }, { id: "b", publicId: "q" }]}
+        onImagesChange={noop}
+        animation="crossfade"
+        speed="medium"
+        onAnimationChange={onAnimationChange}
+        onSpeedChange={noop}
+      />
+    );
+    fireEvent.change(screen.getByLabelText("Background animation"), { target: { value: "slide" } });
+    expect(onAnimationChange).toHaveBeenCalledWith("slide");
+  });
+});
+
+describe("StyleToolkitField — carousel per-target drawers", () => {
+  it("keeps both drawers collapsed by default (inner controls hidden)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
+  });
+
+  it("expanding the Heading drawer reveals B/I/U, Level and the heading highlight", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
+    expect(screen.getByText("Level")).toBeTruthy();
+    expect(screen.getByLabelText("Heading highlight")).toBeTruthy();
+  });
+
+  it("expanding the Description drawer reveals a Font size control", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Description" }));
+    expect(screen.getByText("Font size")).toBeTruthy();
+    expect(screen.getByLabelText("Description highlight")).toBeTruthy();
+  });
+
+  it("toggling the heading highlight writes headingHighlight: true", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    fireEvent.click(screen.getByLabelText("Heading highlight"));
+    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlight).toBe(true);
+  });
+
+  it("shows Shape and Size rows once a highlight is on and writes the picked shape", () => {
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={{ headingHighlight: true }} onChange={onChange} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    expect(screen.getByText("Shape")).toBeTruthy();
+    expect(screen.getByText("Size")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Rounded" }));
+    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlightShape).toBe("rounded");
+  });
+});
+
+describe("StyleToolkitField — carousel Layout tab", () => {
+  it("shows the shared Text padding control on the Layout tab", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.getByText("Text padding")).toBeTruthy();
+  });
+
+  it("does not show Text padding on the Design tab for the carousel", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.queryByText("Text padding")).toBeNull();
+  });
+});
+
+import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab } from "./StyleToolkitField";
+
+describe("CarouselTextPadding heading gap control", () => {
+  it("renders a heading gap input and writes _style.headingGap", () => {
+    const set = vi.fn();
+    render(<CarouselTextPadding s={{}} set={set} />);
+    // NumberInputRow uses a <span> for the label (no htmlFor/aria-label on the input),
+    // so getByLabelText is not available. We verify the label text is present, then
+    // fire change on the last spinbutton (X and Y DimensionInputs come first; the
+    // new Heading gap NumberInputRow is last in the DOM).
+    expect(screen.getByText(/heading gap/i)).toBeTruthy();
+    const spinbuttons = screen.getAllByRole("spinbutton");
+    const headingGapInput = spinbuttons[spinbuttons.length - 1];
+    fireEvent.change(headingGapInput, { target: { value: "20" } });
+    expect(set).toHaveBeenCalledWith(expect.objectContaining({ headingGap: 20 }));
+  });
+});
+
+describe("padding lives in the Layout tab", () => {
+  it("LayoutTabBody shows Padding for a Container", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.getByText("Padding")).toBeInTheDocument();
+  });
+
+  it("DesignTab no longer shows Padding for a Container", () => {
+    render(<DesignTab s={{}} set={() => {}} blockType="Container" />);
+    expect(screen.queryByText("Padding")).not.toBeInTheDocument();
+  });
+});
+
+describe("gallery section presets are container-typed", () => {
+  for (const t of ["GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset"]) {
+    it(`${t} is a CONTAINER_TYPE`, () => {
+      expect(CONTAINER_TYPES.has(t)).toBe(true);
+    });
+    it(`${t} is a FLEX_CONTAINER_BLOCK`, () => {
+      expect(FLEX_CONTAINER_BLOCKS.has(t)).toBe(true);
+    });
+  }
+  it("does not treat the standalone GalleryCarousel as a container", () => {
+    expect(CONTAINER_TYPES.has("GalleryCarousel")).toBe(false);
+  });
 });

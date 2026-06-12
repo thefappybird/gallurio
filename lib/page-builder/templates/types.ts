@@ -14,6 +14,7 @@ export const PORTFOLIO_TEMPLATE_IDS = [
   "planner",
   "venue-stylist",
   "minimal",
+  "scratch",
 ] as const;
 
 export type PortfolioTemplateId = (typeof PORTFOLIO_TEMPLATE_IDS)[number];

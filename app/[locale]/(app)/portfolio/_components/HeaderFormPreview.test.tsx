@@ -316,6 +316,12 @@ describe("HeaderFormPreview", () => {
     expect(screen.getByText(/"Home" shown as active to preview link styles/)).toBeTruthy();
   });
 
+  it("uses the configured heading and body font variables", () => {
+    render(<HeaderFormPreview header={mockHeader} brandKit={mockBrandKit} workspaceName="Studio" />);
+    expect(screen.getByText("Studio").style.fontFamily).toBe("var(--pf-font-heading)");
+    expect(screen.getByText("Gallery").style.fontFamily).toBe("var(--pf-font-body)");
+  });
+
   it("uses fallback foreground color for linkColor when not set", () => {
     render(
       <HeaderFormPreview
@@ -386,5 +392,18 @@ describe("HeaderFormPreview", () => {
       />,
     );
     expect(screen.queryByText("Fallback Name")).toBeNull();
+  });
+
+  it("supports flashy navbar sizing in the inline preview", () => {
+    render(
+      <HeaderFormPreview
+        header={{ ...mockHeader, navbarSize: "flashy" }}
+        brandKit={mockBrandKit}
+        workspaceName="Studio"
+      />
+    );
+
+    expect(screen.getByText("Studio").style.fontSize).toBe("1.375rem");
+    expect(screen.getByText("Contact").style.minHeight).toBe("52px");
   });
 });

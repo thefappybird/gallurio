@@ -84,6 +84,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // into the render context — preventing silent omissions at this boundary.
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
+    editorPreview: false,
     locale,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.

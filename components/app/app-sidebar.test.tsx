@@ -111,12 +111,21 @@ describe("AppSidebar nav items", () => {
 });
 
 describe("AppSidebar SidebarTrigger", () => {
-  it("renders zero SidebarTrigger elements inside the sidebar itself", () => {
-    // The single collapse trigger lives in layout.tsx's header (outside this
-    // component). The sidebar must not render its own trigger.
-    // data-sidebar="trigger" is the attribute set by shadcn's SidebarTrigger.
+  it("renders the collapse trigger inside the sidebar header", () => {
     renderSidebar("owner");
     const triggers = document.querySelectorAll('[data-sidebar="trigger"]');
-    expect(triggers).toHaveLength(0);
+    expect(triggers).toHaveLength(1);
+  });
+
+  it("truncates the workspace name with a hover title when expanded", () => {
+    renderSidebar("owner");
+    expect(screen.getByTitle("Test Workspace")).toBeInTheDocument();
+  });
+
+  it("uses the collapsed header stack classes so the toggle can sit above the workspace icon", () => {
+    renderSidebar("owner");
+    const headerChrome = screen.getByTestId("sidebar-workspace-header");
+    expect(headerChrome.className).toContain("group-data-[collapsible=icon]:flex-col-reverse");
+    expect(headerChrome.className).toContain("group-data-[collapsible=icon]:items-center");
   });
 });

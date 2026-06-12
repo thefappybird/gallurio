@@ -7,6 +7,7 @@ import {
   SAVED_THEMES_MAX,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  HEADER_NAVBAR_SIZES,
 } from "@/lib/page-builder/types";
 import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
 
@@ -54,6 +55,37 @@ export const savedThemesSchema = z.array(savedThemeSchema).max(SAVED_THEMES_MAX)
 export type SavedThemeInput = z.infer<typeof savedThemeSchema>;
 
 // ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema
+//
+// Workspace-wide style config for the collections popup surface.
+// All fields optional → falls back to brand-kit values.
+// ---------------------------------------------------------------------------
+
+export const portfolioCollectionsPopupConfigSchema = z.object({
+  backgroundColor: z.string().max(32).optional().or(z.literal("")),
+  borderColor: z.string().max(32).optional().or(z.literal("")),
+  borderWidth: z.number().int().min(0).max(12).optional(),
+  radius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  // Title styling
+  titleText: z.string().optional(),
+  titleFontFamily: z.enum(PORTFOLIO_FONT_KEYS).optional().or(z.literal("")),
+  titleFontSize: z.number().optional(),
+  titleColorToken: z.string().optional(),
+  titleBold: z.boolean().optional(),
+  titleItalic: z.boolean().optional(),
+  titleUnderline: z.boolean().optional(),
+  titleAlign: z.enum(["left", "center", "right"]).optional().or(z.literal("")),
+  // Close button styling
+  closeButtonSize: z.number().optional(),
+  closeButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  closeButtonBorderWidth: z.number().optional(),
+  closeButtonBorderColorToken: z.string().optional(),
+  closeButtonOpacity: z.number().optional(),
+  closeButtonBgColorToken: z.string().optional(),
+});
+export type PortfolioCollectionsPopupConfigInput = z.infer<typeof portfolioCollectionsPopupConfigSchema>;
+
+// ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
 //
 // The only editable surface of the prebuilt contact modal: title/description
@@ -67,15 +99,33 @@ export const portfolioContactConfigSchema = z.object({
   buttonStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
   buttonColor: z.string().max(32).optional().or(z.literal("")),
   buttonTextColor: z.string().max(32).optional().or(z.literal("")),
+  errorMessageColor: z.string().max(32).optional().or(z.literal("")),
   buttonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   buttonBorderColor: z.string().max(32).optional().or(z.literal("")),
   buttonBorderWidth: z.number().int().min(0).max(12).optional(),
+  addSessionButtonStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
+  addSessionButtonColor: z.string().max(32).optional().or(z.literal("")),
+  addSessionButtonTextColor: z.string().max(32).optional().or(z.literal("")),
+  addSessionButtonRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  addSessionButtonBorderColor: z.string().max(32).optional().or(z.literal("")),
+  addSessionButtonBorderWidth: z.number().int().min(0).max(12).optional(),
   backgroundColor: z.string().max(32).optional().or(z.literal("")),
   textColor: z.string().max(32).optional().or(z.literal("")),
   popupRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
   popupBorderColor: z.string().max(32).optional().or(z.literal("")),
   popupBorderWidth: z.number().int().min(0).max(12).optional(),
   popupStyle: z.enum(BRAND_KIT_BUTTON_STYLES).optional().or(z.literal("")),
+  // Tab styling — mirrors header link/active-link conventions
+  tabFontSize: z.enum(HEADER_FONT_SIZES).optional().or(z.literal("")),
+  tabColor: z.string().max(32).optional().or(z.literal("")),
+  activeTabColor: z.string().max(32).optional().or(z.literal("")),
+  activeTabScale: z.boolean().optional(),
+  activeTabHighlight: z.boolean().optional(),
+  tabHighlightColor: z.string().max(32).optional().or(z.literal("")),
+  tabHighlightOpacity: z.number().int().min(0).max(100).optional(),
+  activeTabRadius: z.enum(BRAND_KIT_RADII).optional().or(z.literal("")),
+  activeTabUnderline: z.boolean().optional(),
+  tabUnderlineColor: z.string().max(32).optional().or(z.literal("")),
 });
 
 export type PortfolioContactConfigInput = z.infer<typeof portfolioContactConfigSchema>;
@@ -91,11 +141,13 @@ export const portfolioHeaderConfigSchema = z.object({
   backgroundColor: z.string().max(32).optional().or(z.literal("")),
   backgroundOpacity: z.number().int().min(0).max(100).optional(),
   linkColor: z.string().max(32).optional().or(z.literal("")),
+  brandTextColor: z.string().max(32).optional().or(z.literal("")),
   activeLinkColor: z.string().max(32).optional().or(z.literal("")),
   borderBottomWidth: z.number().int().min(0).max(8).optional(),
   borderBottomColor: z.string().max(32).optional().or(z.literal("")),
   shadowSize: z.enum(HEADER_SHADOW_SIZES).optional().or(z.literal("")),
   fontSize: z.enum(HEADER_FONT_SIZES).optional().or(z.literal("")),
+  navbarSize: z.enum(HEADER_NAVBAR_SIZES).optional().or(z.literal("")),
   activeLinkScale: z.boolean().optional(),
   activeLinkHighlight: z.boolean().optional(),
   highlightColor: z.string().max(32).optional().or(z.literal("")),

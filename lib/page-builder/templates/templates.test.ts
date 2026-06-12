@@ -40,6 +40,8 @@ describe("portfolio template registry", () => {
       });
 
       it("seeds non-empty home and gallery zones", () => {
+        // scratch is an intentionally empty canvas — exempt from this check.
+        if (template.id === "scratch") return;
         expect(data.home?.content.length ?? 0).toBeGreaterThan(0);
         expect(data.gallery?.content.length ?? 0).toBeGreaterThan(0);
       });
@@ -54,10 +56,12 @@ describe("portfolio template registry", () => {
         }
       });
 
-      it("seeds gallery blocks with an empty collectionId (filled at save time)", () => {
+      it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         for (const block of data.gallery?.content ?? []) {
           if (block.type.startsWith("Gallery")) {
-            expect(block.props.collectionId).toBe("");
+            expect(block.props.images).toEqual([]);
+            expect(block.props).not.toHaveProperty("collectionId");
+            expect(block.props).not.toHaveProperty("maxItems");
           }
         }
       });
@@ -71,6 +75,8 @@ describe("portfolio template registry", () => {
       });
 
       it("starts the home zone with a HeroPreset block", () => {
+        // scratch is an intentionally empty canvas — exempt from this check.
+        if (template.id === "scratch") return;
         // Templates use the new preset block model. The first home block is a
         // HeroPreset (a composed Container) — no longer a monolithic 'Hero' block.
         const firstBlock = data.home?.content[0];
@@ -94,6 +100,8 @@ describe("portfolio template registry", () => {
     for (const template of PORTFOLIO_TEMPLATES) {
       const data = template.seedData(bare);
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
+      // scratch is an intentionally empty canvas — no first block expected.
+      if (template.id === "scratch") continue;
       // The first home block must still be a HeroPreset in all templates.
       expect(data.home?.content[0]?.type).toBe("HeroPreset");
     }

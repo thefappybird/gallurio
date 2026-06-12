@@ -17,9 +17,9 @@ describe("localeForCountry", () => {
     expect(localeForCountry("id")).toBe("id");
   });
 
-  it("returns th for TH", () => {
-    expect(localeForCountry("TH")).toBe("th");
-    expect(localeForCountry("th")).toBe("th");
+  it("returns en for TH (Thai locale removed)", () => {
+    expect(localeForCountry("TH")).toBe("en");
+    expect(localeForCountry("th")).toBe("en");
   });
 
   it("returns en for SG", () => {

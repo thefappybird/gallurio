@@ -6,11 +6,9 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace, GalleryCollection, GalleryItem } from "@/lib/db/models";
 import {
-  injectGalleryRefs,
   seedDefaultPortfolio,
   reseedPortfolioFromTemplate,
 } from "./seedPortfolio";
-import type { PortfolioPuckData } from "@/lib/page-builder/types";
 
 let workspaceId: Types.ObjectId;
 
@@ -38,38 +36,6 @@ beforeEach(async () => {
   await clearCollections();
 });
 
-describe("injectGalleryRefs", () => {
-  it("fills empty gallery collectionIds and seeds FeaturedWork itemIds as {id} rows", () => {
-    const data: PortfolioPuckData = {
-      home: {
-        content: [
-          { type: "FeaturedWork", props: { id: "f1", itemIds: [] } },
-          { type: "HeroPreset", props: { id: "h1" } },
-        ],
-        root: {},
-      },
-      gallery: {
-        content: [{ type: "GalleryGrid", props: { id: "g1", collectionId: "" } }],
-        root: {},
-      },
-    };
-
-    injectGalleryRefs(data, "col-123", ["a", "b", "c", "d"]);
-
-    expect(data.gallery!.content[0].props.collectionId).toBe("col-123");
-    expect(data.home!.content[0].props.itemIds).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }]);
-  });
-
-  it("leaves an already-set collectionId untouched", () => {
-    const data: PortfolioPuckData = {
-      home: null,
-      gallery: { content: [{ type: "GalleryGrid", props: { id: "g1", collectionId: "kept" } }], root: {} },
-    };
-    injectGalleryRefs(data, "col-999", []);
-    expect(data.gallery!.content[0].props.collectionId).toBe("kept");
-  });
-});
-
 describe("seedDefaultPortfolio", () => {
   it("seeds the businessType-matched template when home is empty", async () => {
     await makeWorkspace();
@@ -95,9 +61,12 @@ describe("seedDefaultPortfolio", () => {
     expect(home.content).toHaveLength(1); // unchanged
   });
 
-  it("wires an existing featured-work collection's photos into the seed", async () => {
+  it("seeded gallery blocks have empty images[] even when collections exist", async () => {
+    // Gallery blocks bake images[] directly (no collectionId pointer).
+    // FeaturedWork blocks are seeded with empty collections[]; the owner populates them
+    // via the editor's collections picker.
     await makeWorkspace();
-    const col = await GalleryCollection.create({
+    await GalleryCollection.create({
       workspaceId,
       name: "Featured work",
       slug: "featured-work",
@@ -105,14 +74,27 @@ describe("seedDefaultPortfolio", () => {
       order: 0,
     });
     await GalleryItem.create([
-      { workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
-      { workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/p/2.jpg`, url: "u2", order: 1 },
+      { workspaceId, cloudinaryPublicId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
     ]);
 
     const seed = await seedDefaultPortfolio(workspaceId);
-    // A gallery block in the seeded data should now reference the real collection.
+    // Gallery blocks bake images[] directly — no collectionId pointer is injected.
     const galleryBlocks = (seed!.data.gallery?.content ?? []).filter((b) => b.type.startsWith("Gallery"));
-    expect(galleryBlocks.some((b) => b.props.collectionId === String(col._id))).toBe(true);
+    expect(galleryBlocks.length).toBeGreaterThan(0);
+    for (const b of galleryBlocks) {
+      expect(b.props.images).toEqual([]);
+      expect(b.props).not.toHaveProperty("collectionId");
+    }
+    // FeaturedWork blocks are seeded with empty collections[]
+    const allContent = [
+      ...(seed!.data.home?.content ?? []),
+      ...(seed!.data.gallery?.content ?? []),
+    ];
+    const featuredBlocks = allContent.filter((b) => b.type === "FeaturedWork");
+    for (const b of featuredBlocks) {
+      expect(b.props.collections).toEqual([]);
+      expect(b.props).not.toHaveProperty("itemIds");
+    }
   });
 });
 

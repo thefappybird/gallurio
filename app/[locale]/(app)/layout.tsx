@@ -1,7 +1,6 @@
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app/app-sidebar";
-import { Separator } from "@/components/ui/separator";
 import { cookies } from "next/headers";
 import { TimeFormatProvider } from "@/lib/time-format/context";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
@@ -28,13 +27,7 @@ export default async function AppLayout({
         workspaceName={workspace.name}
         workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
       />
-      <div className="flex flex-1 flex-col min-w-0">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1 size-9 md:size-7" />
-          <Separator orientation="vertical" className="h-6" />
-        </header>
-        <main className="flex flex-1 flex-col gap-6 p-6">{children}</main>
-      </div>
+      <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-auto p-6">{children}</main>
     </SidebarProvider>
     </TimeFormatProvider>
   );

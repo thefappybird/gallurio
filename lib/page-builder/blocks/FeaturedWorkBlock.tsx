@@ -1,87 +1,81 @@
 /**
- * FeaturedWorkBlock — server component spotlighting up to 3 specific gallery
- * items by id, with an optional heading/subheading.
+ * FeaturedWorkBlock — isomorphic (client-safe) collections showcase.
  *
- * Multi-tenant safety: `workspaceId` comes from the server render context.
- * `getItemsByIds` only returns items owned by that workspace, so itemIds that
- * reference another workspace (or no longer exist) are silently dropped.
+ * Renders a tile grid of curated gallery collections from its own `collections[]`
+ * prop (baked by the editor's MediaPicker collections mode and refreshed by
+ * reconcileFeaturedCollections on editor-load / publish). No DB access, no
+ * server-only imports — the SAME component renders in the editor canvas AND on the
+ * public page (WYSIWYG, fetch-free).
+ *
+ * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
-import { getRenderWorkspaceFrom, getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
-import { getItemsByIds } from "@/lib/db/queries/gallery";
+import type { ComponentConfig, Field, Fields } from "@measured/puck";
+import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
-  asText,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
+import {
+  getGalleryChromeLabelsFrom,
+  type BlockPuck,
+} from "@/lib/page-builder/blockContext";
+import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
 
-// Puck `array` fields persist an array of objects, so `itemIds` round-trips as
-// `Array<{ id }>` from the editor. Tests/fixtures may pass a plain `string[]`.
-// `normalizeItemIds` accepts both shapes.
-export type FeaturedWorkItemId = string | { id?: string | null };
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+export type FeaturedCollectionRef = {
+  id: string;
+  name: string;
+  coverPublicId: string;
+  itemCount: number;
+};
 
 export type FeaturedWorkProps = {
   _style?: BlockStyle;
-  heading: string;
-  subheading: string;
-  itemIds: FeaturedWorkItemId[];
-  layout: "row" | "stagger";
+  collections: FeaturedCollectionRef[];
+  columns: 2 | 3 | 4;
 };
-
-function normalizeItemIds(itemIds: FeaturedWorkItemId[]): string[] {
-  return (Array.isArray(itemIds) ? itemIds : [])
-    .map((x) => (typeof x === "string" ? x : x?.id))
-    .filter((x): x is string => typeof x === "string" && x.length > 0);
-}
 
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
-  heading: "Featured work",
-  subheading: "",
-  itemIds: [],
-  layout: "row",
+  collections: [],
+  columns: 3,
 };
 
-const MAX_FEATURED = 3;
+// ---------------------------------------------------------------------------
+// Component (sync — isomorphic)
+// ---------------------------------------------------------------------------
 
-export async function FeaturedWorkBlock({
+export function FeaturedWorkBlock({
   _style,
-  heading,
-  subheading,
-  itemIds,
-  layout,
+  collections,
+  columns,
   puck,
 }: FeaturedWorkProps & { puck?: BlockPuck }) {
-  const workspace = getRenderWorkspaceFrom(puck);
-
-  let items: Awaited<ReturnType<typeof getItemsByIds>> = [];
-  if (workspace && String(workspace._id)) {
-    const ids = normalizeItemIds(itemIds).slice(0, MAX_FEATURED);
-    if (ids.length > 0) {
-      try {
-        items = await getItemsByIds({ workspaceId: String(workspace._id), itemIds: ids });
-      } catch (err) {
-        console.error("FeaturedWorkBlock query failed", {
-          workspaceId: String(workspace._id),
-          itemIds: ids,
-          err,
-        });
-        items = [];
-      }
-    }
-  }
+  const ws = puck?.metadata?.workspace;
+  const slug = ws?.slug;
+  const editorPreview = ws?.editorPreview ?? false;
+  const mode = editorPreview ? "owner" : "public";
+  const popupConfig = ws?.publicPage?.collectionsPopup ?? {};
 
   const labels = getGalleryChromeLabelsFrom(puck);
-  const headingText = asText(heading);
-  const subheadingText = asText(subheading);
+  const list = Array.isArray(collections) ? collections : [];
+
+  const tiles = list.map((c) => ({
+    id: c.id,
+    name: c.name,
+    count: c.itemCount ?? 0,
+    coverUrl: cloudinaryImageUrl(c.coverPublicId, { width: 700, height: 900, crop: "fill" }),
+  }));
 
   return (
     <section
       data-block="featured-work"
-      data-empty={items.length === 0 ? "true" : undefined}
+      data-empty={list.length === 0 ? "true" : undefined}
       style={{
         backgroundColor: "var(--pf-color-bg)",
         padding: "4rem 1.5rem",
@@ -95,35 +89,7 @@ export async function FeaturedWorkBlock({
         @media (max-width: 639px) { .pf-featured-grid { grid-template-columns: 1fr !important; } }
       `}</style>
       <div style={{ maxWidth: "72rem", margin: "0 auto" }}>
-        {headingText && (
-          <h2
-            style={{
-              fontFamily: "var(--pf-font-heading)",
-              color: "var(--pf-color-fg)",
-              fontSize: "1.875rem",
-              fontWeight: 700,
-              margin: 0,
-              textAlign: "center",
-            }}
-          >
-            {headingText}
-          </h2>
-        )}
-        {subheadingText && (
-          <p
-            style={{
-              color: "var(--pf-color-fg)",
-              opacity: 0.7,
-              textAlign: "center",
-              margin: "0.5rem 0 0",
-              fontSize: "1.0625rem",
-            }}
-          >
-            {subheadingText}
-          </p>
-        )}
-
-        {items.length === 0 ? (
+        {list.length === 0 ? (
           <p
             style={{
               color: "var(--pf-color-fg)",
@@ -136,92 +102,40 @@ export async function FeaturedWorkBlock({
             {labels.featuredEmpty}
           </p>
         ) : (
-          <div
-            className="pf-featured-grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${items.length}, 1fr)`,
-              gap: "1.5rem",
-              marginTop: headingText || subheadingText ? "2.5rem" : 0,
-              alignItems: "start",
-            }}
-          >
-            {items.map((item, i) => {
-              const src =
-                cloudinaryThumbnailUrl(item.cloudinaryPublicId, {
-                  width: 700,
-                  height: 900,
-                  crop: "fill",
-                }) || item.url;
-              const alt = item.altText || item.caption || "";
-              const staggerOffset =
-                layout === "stagger" && i % 2 === 1 ? "2.5rem" : "0";
-              return (
-                <figure
-                  key={String(item._id)}
-                  style={{ margin: 0, padding: 0, marginTop: staggerOffset }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt={alt}
-                    loading="lazy"
-                    decoding="async"
-                    style={{
-                      width: "100%",
-                      aspectRatio: "7 / 9",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                  {item.caption && (
-                    <figcaption
-                      style={{
-                        fontSize: "0.8125rem",
-                        color: "var(--pf-color-fg)",
-                        opacity: 0.65,
-                        padding: "0.5rem 0",
-                      }}
-                    >
-                      {item.caption}
-                    </figcaption>
-                  )}
-                </figure>
-              );
-            })}
-          </div>
+          <FeaturedCollectionsClient
+            tiles={tiles}
+            columns={columns}
+            mode={mode}
+            slug={slug}
+            popupConfig={popupConfig}
+          />
         )}
       </div>
     </section>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Config
+// ---------------------------------------------------------------------------
+
 export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
-  label: "Featured Work",
+  label: "Highlights",
   defaultProps: featuredWorkDefaultProps,
+  // `collections` is intentionally absent from the sidebar fields — the editor drives
+  // it via StyleToolkitField Content tab. Production <Render> reads collections straight
+  // from saved props; no sidebar field is needed there either.
   fields: {
     _style: productionStyleField,
-    heading: { type: "text", label: "Heading" },
-    subheading: { type: "text", label: "Sub-heading" },
-    itemIds: {
-      type: "array",
-      label: "Gallery item IDs (max 3)",
-      // Puck persists each row as `{ id }`; the component's normalizeItemIds
-      // flattens these objects back to id strings at render time.
-      arrayFields: {
-        id: { type: "text", label: "Item ID" },
-      },
-    } as unknown as Field<FeaturedWorkItemId[]>,
-    layout: {
+    columns: {
       type: "select",
-      label: "Layout",
+      label: "Columns",
       options: [
-        { label: "Row", value: "row" },
-        { label: "Stagger", value: "stagger" },
+        { label: "2 columns", value: 2 },
+        { label: "3 columns", value: 3 },
+        { label: "4 columns", value: 4 },
       ],
-    },
-  },
-  // Async server component — Puck's PuckComponent type expects sync JSX.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  render: FeaturedWorkBlock as any,
+    } as Field<2 | 3 | 4>,
+  } as unknown as Fields<FeaturedWorkProps>,
+  render: FeaturedWorkBlock,
 };

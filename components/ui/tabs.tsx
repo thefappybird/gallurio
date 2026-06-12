@@ -28,10 +28,15 @@ function TabsList({ className, ...props }: TabsPrimitive.List.Props) {
   );
 }
 
-function TabsTab({ className, ...props }: TabsPrimitive.Tab.Props) {
+function TabsTab({
+  className,
+  type,
+  ...props
+}: TabsPrimitive.Tab.Props & { type?: "button" | "submit" | "reset" }) {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-tab"
+      type={type ?? "button"}
       className={cn(
         "relative inline-flex h-9 items-center justify-center whitespace-nowrap border-b-2 border-transparent px-3 text-sm font-medium transition-colors outline-none hover:text-foreground focus-visible:text-foreground data-active:border-brand data-active:text-foreground data-disabled:pointer-events-none data-disabled:opacity-50",
         className

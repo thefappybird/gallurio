@@ -1,125 +1,61 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Types } from "mongoose";
-import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem } from "@/lib/db/models/GalleryItem";
-import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
-import { puckConfig } from "@/lib/page-builder/config";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
+import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
+import type { GalleryImage } from "./GalleryGridBlock";
+import { puckConfig } from "@/lib/page-builder/config";
 
-vi.mock("@/lib/storage/cloudinary", () => ({
-  cloudinaryThumbnailUrl: vi.fn(
-    (publicId: string, opts: { width?: number }) =>
-      `https://res.cloudinary.com/test/${opts?.width ?? 400}/${publicId}`
-  ),
-}));
-
-beforeAll(async () => {
-  await startInMemoryMongo();
+const OLD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+beforeEach(() => {
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
 });
-afterAll(async () => {
-  await stopInMemoryMongo();
-});
-afterEach(async () => {
-  await clearCollections();
+afterEach(() => {
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = OLD;
 });
 
-async function makeCollection(workspaceId: Types.ObjectId, isPublic = true) {
-  return GalleryCollection.create({
-    workspaceId,
-    name: "C",
-    slug: `c-${new Types.ObjectId().toString()}`,
-    isPublic,
-  });
-}
-async function seed(workspaceId: Types.ObjectId, collectionId: Types.ObjectId, n: number) {
-  return GalleryItem.insertMany(
-    Array.from({ length: n }, (_, i) => ({
-      workspaceId,
-      collectionId,
-      cloudinaryPublicId: `${workspaceId}/item${i}`,
-      url: `u${i}`,
-      caption: `Photo ${i + 1}`,
-      altText: `Alt ${i + 1}`,
-      order: i,
-    }))
-  );
+function imgs(n: number): GalleryImage[] {
+  return Array.from({ length: n }, (_, i) => ({ id: `id${i}`, publicId: `pid${i}`, alt: `Alt ${i}` }));
 }
 
-const base = { ...galleryMasonryDefaultProps };
+const base: GalleryMasonryProps = { ...galleryMasonryDefaultProps };
 
-it("is registered in puckConfig", () => {
-  expect(puckConfig.components.GalleryMasonry).toBeDefined();
-});
-
-describe("GalleryMasonryBlock", () => {
-  it("renders empty state with no workspace context", async () => {
-    render(await GalleryMasonryBlock({ ...base, collectionId: new Types.ObjectId().toString() }));
-    expect(screen.getByText(/gallery not available/i)).toBeInTheDocument();
+describe("GalleryMasonryBlock — isomorphic render", () => {
+  it("is synchronous", () => {
+    expect(GalleryMasonryBlock({ ...base, images: imgs(1) })).not.toBeInstanceOf(Promise);
   });
 
-  it("renders 'no collection selected' for blank id", async () => {
-    const ws = new Types.ObjectId();
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: "" })
-    );
-    render(el);
-    expect(screen.getByText(/no collection selected/i)).toBeInTheDocument();
+  it("renders one <img> per image", () => {
+    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(4) }));
+    expect(container.querySelectorAll("img").length).toBe(4);
   });
 
-  it("renders empty state for collection with no items", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: col._id.toString() })
-    );
-    render(el);
+  it("sets columnCount from the columns prop", () => {
+    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2), columns: 4 }));
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.columnCount).toBe("4");
+  });
+
+  it("renders the empty state (default English label) when images is empty", () => {
+    render(GalleryMasonryBlock({ ...base, images: [] }));
     expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
+    expect(document.querySelector("[data-block='gallery-masonry'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it("renders images for a populated public collection", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 4);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: col._id.toString() })
+  it("uses a localized empty label from puck.metadata chrome when present", () => {
+    render(
+      GalleryMasonryBlock({
+        ...base,
+        images: [],
+        puck: { metadata: { workspace: { _id: "x", name: "x", chrome: { gallery: { empty: "Walang larawan" } } } } },
+      })
     );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(4);
+    expect(screen.getByText(/walang larawan/i)).toBeInTheDocument();
   });
 
-  it("hides items from a private collection", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws, false);
-    await seed(ws, col._id, 4);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: col._id.toString() })
-    );
-    render(el);
-    expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
-  });
-
-  it("respects maxItems cap", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 20);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: col._id.toString(), maxItems: 6 })
-    );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(6);
-  });
-
-  it("applies column-count from columns prop", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 3);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryMasonryBlock({ ...base, collectionId: col._id.toString(), columns: 4 })
-    );
-    const { container } = render(el);
-    const grid = container.querySelector("[data-block='gallery-masonry'] .pf-masonry") as HTMLElement;
-    expect(grid.style.columnCount).toBe("4");
+  it("registers default props with images:[] and no collectionId/maxItems", () => {
+    expect(galleryMasonryDefaultProps.images).toEqual([]);
+    expect(galleryMasonryDefaultProps).not.toHaveProperty("collectionId");
+    expect(galleryMasonryDefaultProps).not.toHaveProperty("maxItems");
+    expect(puckConfig.components.GalleryMasonry.defaultProps).toHaveProperty("images");
   });
 });

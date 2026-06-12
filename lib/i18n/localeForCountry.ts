@@ -13,8 +13,6 @@ export function localeForCountry(country: string | null | undefined): Locale {
       return "ms";
     case "ID":
       return "id";
-    case "TH":
-      return "th";
     // Gulf markets fall back to English chrome until the Arabic locale ships —
     // see docs/paddle-integration/arabic-rtl.md. When ready, change these
     // cases to return "ar".

@@ -12,13 +12,20 @@ function makeData(overrides: Partial<InquiryNotificationData> = {}): InquiryNoti
     workspaceName: "Studio Aurora",
     recipientEmail: "owner@studio.test",
     inquiryId: "inq_1",
+    ownerEmail: "owner@studio.test",
     clientName: "Emma Carter",
     clientEmail: "emma@example.com",
     clientPhone: "+63 900 000 0000",
     preferredContact: "email",
+    eventTitle: "Emma & Noah Wedding",
     eventType: "wedding",
-    guestCount: 120,
-    location: "Tagaytay",
+    location: {
+      label: "Tagaytay Highlands",
+      address: "Tagaytay, Cavite, Philippines",
+      placeId: "place_tagaytay",
+      lat: 14.1154,
+      lng: 120.9621,
+    },
     description: "Looking for full-day coverage.",
     sessions: [{ startDate: "2026-08-15", startTime: "10:00", endTime: "18:00" }],
     ...overrides,
@@ -45,21 +52,24 @@ describe("sendInquiryNotification", () => {
     expect(arg.subject).toContain("Studio Aurora");
   });
 
-  it("includes session, guest, and location details in the body", async () => {
+  it("includes the event title and structured location in the body", async () => {
     await sendInquiryNotification(makeData());
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.text).toContain("2026-08-15 · 10:00–18:00");
-    expect(arg.text).toContain("120");
-    expect(arg.text).toContain("Tagaytay");
-    expect(arg.html).toContain("Tagaytay");
+    expect(arg.text).toContain("Emma & Noah Wedding");
+    expect(arg.text).toContain("Tagaytay, Cavite, Philippines");
+    expect(arg.html).toContain("Tagaytay, Cavite, Philippines");
   });
 
-  it("renders em-dashes for missing optional fields", async () => {
-    await sendInquiryNotification(makeData({ clientPhone: null, guestCount: null, location: null }));
+  it("renders em dashes for missing optional fields", async () => {
+    await sendInquiryNotification(
+      makeData({
+        clientPhone: null,
+        location: { label: null, address: null, placeId: null, lat: null, lng: null },
+      })
+    );
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.text).toContain("Phone: —");
-    expect(arg.text).toContain("Guests: —");
-    expect(arg.text).toContain("Location: —");
+    expect(arg.text).toContain("Phone: ");
+    expect(arg.text).toContain("Location: ");
   });
 
   it("escapes HTML in user-supplied content", async () => {
@@ -72,11 +82,15 @@ describe("sendInquiryNotification", () => {
     expect(arg.html).toContain("a &amp; b &lt; c");
   });
 
-  it("adds a review link when NEXT_PUBLIC_APP_URL is set", async () => {
+  it("adds a post-auth review link when NEXT_PUBLIC_APP_URL is set", async () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test/";
     await sendInquiryNotification(makeData({ inquiryId: "inq_42" }));
     const arg = sendEmail.mock.calls[0][0];
-    expect(arg.text).toContain("https://app.gallurio.test/inquiries/inq_42");
-    expect(arg.html).toContain("https://app.gallurio.test/inquiries/inq_42");
+    expect(arg.text).toContain(
+      "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_42"
+    );
+    expect(arg.html).toContain(
+      "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_42"
+    );
   });
 });

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,18 +12,21 @@ import {
   BRAND_KIT_BUTTON_STYLES,
   BRAND_KIT_RADII,
   CONTACT_BUTTON_COLORS,
+  HEADER_FONT_SIZES,
   type BrandKitRadius,
   type PortfolioBrandKit,
   type PortfolioContactConfig,
 } from "@/lib/page-builder/types";
 
-const FORM_LOCALES = ["", "en", "fil", "ms", "id", "th"] as const;
+const FORM_LOCALES = ["", "en", "fil", "ms", "id"] as const;
 
 const selectClass =
   "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 type Tab = "setup" | "design";
-type DrawerId = "popup" | "button";
+type DrawerId = "popup" | "button" | "tabs";
+type ButtonDrawerId = "submit" | "addSession";
+type TabDrawerId = "inactiveTabs" | "activeTab";
 
 type Props = {
   open: boolean;
@@ -220,6 +222,68 @@ function RadiusRow({
   );
 }
 
+function ToggleButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        active && "bg-foreground text-background hover:bg-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function ActiveTabRadiusRow({
+  label,
+  active,
+  onToggle,
+  getLabel,
+}: {
+  label: string;
+  active: BrandKitRadius | "" | undefined;
+  onToggle: (radius: BrandKitRadius | "") => void;
+  getLabel: (radius: BrandKitRadius) => string;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex">
+        {BRAND_KIT_RADII.map((radius) => {
+          const isActive = active === radius;
+          return (
+            <button
+              key={radius}
+              type="button"
+              aria-label={getLabel(radius)}
+              aria-pressed={isActive}
+              onClick={() => onToggle(isActive ? "" : radius)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isActive && "bg-foreground text-background hover:bg-foreground",
+              )}
+            >
+              {getLabel(radius)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DesignDrawer({
   title,
   open,
@@ -254,14 +318,12 @@ export function ContactPanelDialog({
   formLocale,
   onFormLocaleChange,
   brandKit,
-  onSaved,
-  onCancel,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
-  const te = useTranslations("app.pageBuilder.editor");
-  const [saving, setSaving] = useState(false);
   const [tab, setTab] = useState<Tab>("setup");
   const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
+  const [openButtonDrawer, setOpenButtonDrawer] = useState<ButtonDrawerId | null>(null);
+  const [openTabDrawer, setOpenTabDrawer] = useState<TabDrawerId | null>(null);
 
   if (!open) return null;
 
@@ -279,19 +341,19 @@ export function ContactPanelDialog({
     set(key, contact[key] === color ? undefined : color);
   }
 
-  function toggleRadius<K extends "popupRadius" | "buttonRadius">(
+  function toggleRadius<K extends "popupRadius" | "buttonRadius" | "addSessionButtonRadius">(
     key: K,
     radius: BrandKitRadius,
   ) {
     set(key, contact[key] === radius ? undefined : radius);
   }
 
-  function save() {
-    setSaving(true);
-    queueMicrotask(() => {
-      onSaved();
-      setSaving(false);
-    });
+  function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight" | "activeTabUnderline">(key: K) {
+    set(key, !contact[key]);
+  }
+
+  function toggleTabRadius(radius: BrandKitRadius | "") {
+    set("activeTabRadius", radius);
   }
 
   return (
@@ -397,6 +459,14 @@ export function ContactPanelDialog({
                 getLabel={(c) => t(`buttonColors.${c}`)}
               />
 
+              <ColorSwatchRow
+                label={t("errorColorLabel")}
+                active={contact.errorMessageColor}
+                brandKit={brandKit}
+                onToggle={(c) => toggleColor("errorMessageColor", c)}
+                getLabel={(c) => t(`buttonColors.${c}`)}
+              />
+
               <RadiusRow
                 label={t("cornerRadiusLabel")}
                 active={contact.popupRadius}
@@ -424,79 +494,270 @@ export function ContactPanelDialog({
               open={openDrawer === "button"}
               onToggle={() => setOpenDrawer((current) => current === "button" ? null : "button")}
             >
+              <ButtonControlsSection
+                title={t("submitButtonSection")}
+                open={openButtonDrawer === "submit"}
+                onToggle={() => setOpenButtonDrawer((current) => current === "submit" ? null : "submit")}
+                styleValue={contact.buttonStyle}
+                onStyleToggle={(style) => toggleColor("buttonStyle", style)}
+                textColorValue={contact.buttonTextColor}
+                onTextColorToggle={(c) => toggleColor("buttonTextColor", c)}
+                buttonColorValue={contact.buttonColor}
+                onButtonColorToggle={(c) => toggleColor("buttonColor", c)}
+                radiusValue={contact.buttonRadius}
+                onRadiusToggle={(r) => toggleRadius("buttonRadius", r)}
+                borderWidthValue={contact.buttonBorderWidth}
+                onBorderWidthChange={(v) => set("buttonBorderWidth", v)}
+                borderColorValue={contact.buttonBorderColor}
+                onBorderColorChange={(v) => set("buttonBorderColor", v)}
+                brandKit={brandKit}
+                t={t}
+              />
 
-              {/* Button style toggle */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
-                <div className="flex">
-                  {BRAND_KIT_BUTTON_STYLES.map((style) => {
-                    const active = contact.buttonStyle === style;
-                    return (
-                      <button
-                        key={style}
-                        type="button"
-                        aria-label={t(`buttonStyles.${style}`)}
-                        aria-pressed={active}
-                        onClick={() => toggleColor("buttonStyle", style)}
-                        className={cn(
-                          "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                          active && "bg-foreground text-background hover:bg-foreground",
-                        )}
-                      >
-                        {t(`buttonStyles.${style}`)}
-                      </button>
-                    );
-                  })}
+              <ButtonControlsSection
+                title={t("addSessionButtonSection")}
+                open={openButtonDrawer === "addSession"}
+                onToggle={() => setOpenButtonDrawer((current) => current === "addSession" ? null : "addSession")}
+                styleValue={contact.addSessionButtonStyle}
+                onStyleToggle={(style) => toggleColor("addSessionButtonStyle", style)}
+                textColorValue={contact.addSessionButtonTextColor}
+                onTextColorToggle={(c) => toggleColor("addSessionButtonTextColor", c)}
+                buttonColorValue={contact.addSessionButtonColor}
+                onButtonColorToggle={(c) => toggleColor("addSessionButtonColor", c)}
+                radiusValue={contact.addSessionButtonRadius}
+                onRadiusToggle={(r) => toggleRadius("addSessionButtonRadius", r)}
+                borderWidthValue={contact.addSessionButtonBorderWidth}
+                onBorderWidthChange={(v) => set("addSessionButtonBorderWidth", v)}
+                borderColorValue={contact.addSessionButtonBorderColor}
+                onBorderColorChange={(v) => set("addSessionButtonBorderColor", v)}
+                brandKit={brandKit}
+                t={t}
+              />
+            </DesignDrawer>
+
+            <div className="border-t border-border" />
+
+            {/* ── Tabs section ──────────────────────────── */}
+            <DesignDrawer
+              title={t("sectionTabs")}
+              open={openDrawer === "tabs"}
+              onToggle={() => setOpenDrawer((current) => current === "tabs" ? null : "tabs")}
+            >
+              {/* Inactive tabs sub-drawer */}
+              <DesignDrawer
+                title={t("inactiveTabsSection")}
+                open={openTabDrawer === "inactiveTabs"}
+                onToggle={() => setOpenTabDrawer((current) => current === "inactiveTabs" ? null : "inactiveTabs")}
+              >
+                {/* Font size */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
+                  <div className="flex">
+                    {HEADER_FONT_SIZES.map((s) => {
+                      const isActive = (contact.tabFontSize || "md") === s;
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          aria-label={t(`tabFontSize.${s}`)}
+                          aria-pressed={isActive}
+                          onClick={() => set("tabFontSize", s === "md" ? "" : s)}
+                          className={cn(
+                            "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                            isActive && "bg-foreground text-background hover:bg-foreground",
+                          )}
+                        >
+                          {t(`tabFontSize.${s}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              <ColorSwatchRow
-                label={t("textColorLabel")}
-                active={contact.buttonTextColor}
-                brandKit={brandKit}
-                onToggle={(c) => toggleColor("buttonTextColor", c)}
-                getLabel={(c) => t(`buttonColors.${c}`)}
-              />
+                <ColorSwatchRow
+                  label={t("tabColorLabel")}
+                  active={contact.tabColor}
+                  brandKit={brandKit}
+                  onToggle={(c) => set("tabColor", c)}
+                  getLabel={(c) => t(`buttonColors.${c}`)}
+                />
+              </DesignDrawer>
 
-              <ColorSwatchRow
-                label={t("buttonColorLabel")}
-                active={contact.buttonColor}
-                brandKit={brandKit}
-                onToggle={(c) => toggleColor("buttonColor", c)}
-                getLabel={(c) => t(`buttonColors.${c}`)}
-              />
+              {/* Active tab sub-drawer */}
+              <DesignDrawer
+                title={t("activeTabSection")}
+                open={openTabDrawer === "activeTab"}
+                onToggle={() => setOpenTabDrawer((current) => current === "activeTab" ? null : "activeTab")}
+              >
+                <ColorSwatchRow
+                  label={t("activeTabColorLabel")}
+                  active={contact.activeTabColor}
+                  brandKit={brandKit}
+                  onToggle={(c) => set("activeTabColor", c)}
+                  getLabel={(c) => t(`buttonColors.${c}`)}
+                />
 
-              <RadiusRow
-                label={t("cornerRadiusLabel")}
-                active={contact.buttonRadius}
-                onToggle={(r) => toggleRadius("buttonRadius", r)}
-                getLabel={(r) => t(`radius.${r}`)}
-              />
+                {/* Scale / Highlight / Underline toggles */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("activeTabStyleLabel")}</span>
+                  <div className="flex">
+                    <ToggleButton active={!!contact.activeTabScale} onClick={() => toggleTabBool("activeTabScale")}>
+                      {t("activeTabStyleScale")}
+                    </ToggleButton>
+                    <ToggleButton active={!!contact.activeTabHighlight} onClick={() => toggleTabBool("activeTabHighlight")}>
+                      {t("activeTabStyleHighlight")}
+                    </ToggleButton>
+                    <ToggleButton active={!!contact.activeTabUnderline} onClick={() => toggleTabBool("activeTabUnderline")}>
+                      {t("activeTabStyleUnderline")}
+                    </ToggleButton>
+                  </div>
+                </div>
 
-              <BorderRow
-                widthLabel={t("borderWidthLabel")}
-                colorLabel={t("borderColorLabel")}
-                width={contact.buttonBorderWidth}
-                color={contact.buttonBorderColor}
-                brandKit={brandKit}
-                onWidthChange={(v) => set("buttonBorderWidth", v)}
-                onColorChange={(v) => set("buttonBorderColor", v)}
-                getColorLabel={(c) => t(`buttonColors.${c}`)}
-              />
+                {/* Conditional: highlight controls */}
+                {contact.activeTabHighlight && (
+                  <ColorSwatchRow
+                    label={t("tabHighlightColorLabel")}
+                    active={contact.tabHighlightColor}
+                    brandKit={brandKit}
+                    onToggle={(c) => set("tabHighlightColor", c)}
+                    getLabel={(c) => t(`buttonColors.${c}`)}
+                  />
+                )}
+                {contact.activeTabHighlight && (
+                  <NumberInputRow
+                    label={t("tabHighlightOpacityLabel")}
+                    value={contact.tabHighlightOpacity ?? 100}
+                    min={0}
+                    max={100}
+                    suffix="%"
+                    onChange={(v) => set("tabHighlightOpacity", v ?? 100)}
+                  />
+                )}
+                {contact.activeTabHighlight && (
+                  <ActiveTabRadiusRow
+                    label={t("cornerRadiusLabel")}
+                    active={contact.activeTabRadius}
+                    onToggle={toggleTabRadius}
+                    getLabel={(r) => t(`radius.${r}`)}
+                  />
+                )}
+
+                {/* Conditional: underline color */}
+                {contact.activeTabUnderline && (
+                  <ColorSwatchRow
+                    label={t("tabUnderlineColorLabel")}
+                    active={contact.tabUnderlineColor}
+                    brandKit={brandKit}
+                    onToggle={(c) => set("tabUnderlineColor", c)}
+                    getLabel={(c) => t(`buttonColors.${c}`)}
+                  />
+                )}
+              </DesignDrawer>
             </DesignDrawer>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex gap-2 border-t border-border px-4 py-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
-          {te("publishDialog.cancel")}
-        </Button>
-        <Button type="button" onClick={save} loading={saving} className="flex-1">
-          {saving ? t("saving") : te("done")}
-        </Button>
-      </div>
     </div>
+  );
+}
+
+function ButtonControlsSection({
+  title,
+  open,
+  onToggle,
+  styleValue,
+  onStyleToggle,
+  textColorValue,
+  onTextColorToggle,
+  buttonColorValue,
+  onButtonColorToggle,
+  radiusValue,
+  onRadiusToggle,
+  borderWidthValue,
+  onBorderWidthChange,
+  borderColorValue,
+  onBorderColorChange,
+  brandKit,
+  t,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  styleValue: PortfolioContactConfig["buttonStyle"] | PortfolioContactConfig["addSessionButtonStyle"];
+  onStyleToggle: (style: (typeof BRAND_KIT_BUTTON_STYLES)[number]) => void;
+  textColorValue: string | undefined;
+  onTextColorToggle: (color: string | undefined) => void;
+  buttonColorValue: string | undefined;
+  onButtonColorToggle: (color: string | undefined) => void;
+  radiusValue: BrandKitRadius | undefined;
+  onRadiusToggle: (radius: BrandKitRadius) => void;
+  borderWidthValue: number | undefined;
+  onBorderWidthChange: (width: number | undefined) => void;
+  borderColorValue: string | undefined;
+  onBorderColorChange: (color: string | undefined) => void;
+  brandKit: PortfolioBrandKit;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <DesignDrawer title={title} open={open} onToggle={onToggle}>
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
+        <div className="flex">
+          {BRAND_KIT_BUTTON_STYLES.map((style) => {
+            const active = styleValue === style;
+            return (
+              <button
+                key={style}
+                type="button"
+                aria-label={t(`buttonStyles.${style}`)}
+                aria-pressed={active}
+                onClick={() => onStyleToggle(style)}
+                className={cn(
+                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  active && "bg-foreground text-background hover:bg-foreground",
+                )}
+              >
+                {t(`buttonStyles.${style}`)}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <ColorSwatchRow
+        label={t("textColorLabel")}
+        active={textColorValue}
+        brandKit={brandKit}
+        onToggle={onTextColorToggle}
+        getLabel={(c) => t(`buttonColors.${c}`)}
+      />
+
+      <ColorSwatchRow
+        label={t("buttonColorLabel")}
+        active={buttonColorValue}
+        brandKit={brandKit}
+        onToggle={onButtonColorToggle}
+        getLabel={(c) => t(`buttonColors.${c}`)}
+      />
+
+      <RadiusRow
+        label={t("cornerRadiusLabel")}
+        active={radiusValue}
+        onToggle={onRadiusToggle}
+        getLabel={(r) => t(`radius.${r}`)}
+      />
+
+      <BorderRow
+        widthLabel={t("borderWidthLabel")}
+        colorLabel={t("borderColorLabel")}
+        width={borderWidthValue}
+        color={borderColorValue}
+        brandKit={brandKit}
+        onWidthChange={onBorderWidthChange}
+        onColorChange={onBorderColorChange}
+        getColorLabel={(c) => t(`buttonColors.${c}`)}
+      />
+    </DesignDrawer>
   );
 }

@@ -7,12 +7,11 @@ import { defineRouting } from "next-intl/routing";
 //   fil — Philippines (Filipino / Tagalog)
 //   ms — Malaysia (and Singapore Malay speakers)
 //   id — Indonesia
-//   th — Thailand
 //
-// Non-English catalogs at messages/{fil,ms,id,th}.json were machine-translated
-// at launch and tagged in-source — see CLAUDE.md "Internationalization" section.
+// Non-English catalogs at messages/{fil,ms,id}.json were machine-translated at
+// launch and tagged in-source - see CLAUDE.md "Internationalization" section.
 export const routing = defineRouting({
-  locales: ["en", "fil", "ms", "id", "th"] as const,
+  locales: ["en", "fil", "ms", "id"] as const,
   defaultLocale: "en",
   // English URLs have no /en/ prefix; non-English locales are prefixed
   // (e.g. /fil/dashboard). Keeps SEO clean for the primary market while

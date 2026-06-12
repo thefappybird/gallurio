@@ -3,12 +3,10 @@
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getInquiryStatusLabelKey, isBookedInquiryStatus } from "@/lib/inquiries/status";
 
-// Status → presentation. `new` is the attention-grabbing default (primary
-// pole); `converted` uses the brand accent so a won lead pops; the rest sit on
-// the neutral scale so the eye rests on actionable rows.
 const STATUS_CLASS: Record<string, string> = {
-  converted: "border-transparent bg-brand text-brand-foreground",
+  booked: "border-transparent bg-brand text-brand-foreground",
   archived: "text-muted-foreground",
 };
 
@@ -20,18 +18,20 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
 
 export function InquiryStatusBadge({ status }: { status: string }) {
   const t = useTranslations("app.inquiries.statusValues");
+  const normalizedStatus = isBookedInquiryStatus(status) ? "booked" : status;
+  const labelKey = getInquiryStatusLabelKey(status);
   const label = (() => {
     try {
-      return t(status);
+      return t(labelKey);
     } catch {
-      return status;
+      return labelKey;
     }
   })();
 
   return (
     <Badge
-      variant={STATUS_VARIANT[status] ?? "outline"}
-      className={cn("font-normal", STATUS_CLASS[status])}
+      variant={STATUS_VARIANT[normalizedStatus] ?? "outline"}
+      className={cn("font-normal", STATUS_CLASS[normalizedStatus])}
     >
       {label}
     </Badge>

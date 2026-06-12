@@ -34,6 +34,6 @@ export const plannerTemplate: PortfolioTemplate = {
       aboutPreset("pl-home-about"),
       ctaPreset("pl-home-cta"),
     ]),
-    gallery: zone([galleryMasonry("pl-gallery-masonry", { columns: 3, maxItems: 24 })]),
+    gallery: zone([galleryMasonry("pl-gallery-masonry", { columns: 3 })]),
   }),
 };

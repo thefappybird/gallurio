@@ -562,8 +562,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
@@ -923,14 +922,14 @@
         "all": "All",
         "new": "New",
         "contacted": "Contacted",
-        "converted": "Converted",
+        "booked": "Booked",
         "archived": "Archived"
       },
       "statusValues": {
         "new": "New",
         "contacted": "Contacted",
-        "converted": "Converted",
-        "archived": "Archived"
+        "archived": "Archived",
+        "booked": "Booked"
       },
       "eventTypes": {
         "wedding": "Wedding",
@@ -958,8 +957,10 @@
           "eventDate": "Event date",
           "eventType": "Type",
           "submitted": "Submitted",
-          "source": "Source"
-        }
+          "source": "Source",
+          "eventTitle": "Event title"
+        },
+        "noTitle": "Untitled event"
       },
       "detail": {
         "back": "Back to inquiries",
@@ -1014,7 +1015,7 @@
         "history": {
           "title": "History",
           "submitted": "Inquiry submitted",
-          "converted": "Approved to booking"
+          "booked": "Approved to booking"
         }
       }
     },
@@ -1044,7 +1045,36 @@
           "accentColor": "Accent",
           "backgroundColor": "Background",
           "foregroundColor": "Text"
-        }
+        },
+        "themes": "Themes",
+        "searchPlaceholder": "Search themes",
+        "noThemesMatch": "No themes match your search.",
+        "prevPage": "Previous themes",
+        "nextPage": "More themes",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Apply theme: {name}",
+        "deleteTheme": "Delete theme: {name}",
+        "saveCurrentAsTheme": "Save current as theme",
+        "themeNamePlaceholder": "Theme name",
+        "saveAction": "Save",
+        "enterThemeName": "Enter a name for this theme.",
+        "nameTooLong": "Theme name must be 60 characters or fewer.",
+        "saveThemeError": "Could not save theme. Please try again.",
+        "themeLimitReached": "You've reached the maximum of {max} saved themes.",
+        "currentTheme": "Current Theme",
+        "editTheme": "Edit theme: {name}",
+        "editThemeName": "Theme name",
+        "overrideCurrentTitle": "Replace your current theme?",
+        "overrideCurrentBody": "Building on \"{name}\" will replace your unsaved Current Theme.",
+        "continueAction": "Continue",
+        "cancelAction": "Cancel",
+        "unsavedChangesTitle": "You have unsaved changes",
+        "unsavedChangesBody": "Save your changes before closing, or discard them.",
+        "discardAction": "Discard",
+        "saveAndCloseAction": "Save & close",
+        "themeNameExists": "A theme already exists with this name.",
+        "applyAction": "Apply",
+        "saveThemeName": "Save theme"
       },
       "editor": {
         "zone": {
@@ -1099,6 +1129,8 @@
           "borderColorLabel": "Border color",
           "sectionPopup": "Popup",
           "sectionButton": "Button",
+          "submitButtonSection": "Submit button",
+          "addSessionButtonSection": "New dates button",
           "buttonStyles": {
             "solid": "Solid",
             "outline": "Outline",
@@ -1127,9 +1159,27 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
-          }
+            "id": "Bahasa Indonesia"
+          },
+          "errorColorLabel": "Error message color",
+          "sectionTabs": "Tabs",
+          "inactiveTabsSection": "Inactive tabs",
+          "activeTabSection": "Active tab",
+          "tabFontSizeLabel": "Tab size",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Tab text color",
+          "activeTabColorLabel": "Active tab text color",
+          "activeTabStyleLabel": "Style",
+          "activeTabStyleScale": "Scale",
+          "activeTabStyleHighlight": "Highlight",
+          "activeTabStyleUnderline": "Underline",
+          "tabHighlightColorLabel": "Highlight color",
+          "tabHighlightOpacityLabel": "Highlight opacity",
+          "tabUnderlineColorLabel": "Underline color"
         },
         "headerDialog": {
           "title": "Navigation",
@@ -1162,10 +1212,12 @@
           "bgColorLabel": "Background color",
           "bgOpacityLabel": "Background opacity",
           "linkColorLabel": "Link text color",
+          "brandTextColorLabel": "Heading color",
           "activeLinkColorLabel": "Active link text color",
           "borderBottomLabel": "Border bottom",
           "borderColorLabel": "Border color",
           "shadowLabel": "Drop shadow",
+          "navbarSizeLabel": "Navbar size",
           "fontSizeLabel": "Link size",
           "activeStyleLabel": "Style",
           "activeStyleScale": "Scale",
@@ -1188,6 +1240,11 @@
             "sm": "Small",
             "md": "Medium",
             "lg": "Large"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1468,7 +1525,8 @@
       "confirmBody": "Your inquiry has been sent. We'll reach out via your preferred contact method soon.",
       "confirmClose": "Done",
       "tabClient": "Your details",
-      "tabBooking": "Event details",
+      "tabEvent": "Event details",
+      "tabLocation": "Location & notes",
       "name": "Name",
       "email": "Email",
       "phone": "Phone (optional)",
@@ -1495,14 +1553,15 @@
         "anniversary": "Anniversary",
         "other": "Other"
       },
-      "guestCount": "Guests (optional)",
       "location": "Location (optional)",
       "message": "Tell us more",
       "messagePlaceholder": "Share details about your event…",
       "submit": "Send inquiry",
       "submitting": "Sending…",
       "errorGeneric": "Could not submit — please try again later.",
-      "requiredHint": "Required"
+      "requiredHint": "Required",
+      "eventTitle": "Event title",
+      "continue": "Continue"
     }
   },
   "notFound": {

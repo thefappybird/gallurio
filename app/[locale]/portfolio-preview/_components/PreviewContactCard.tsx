@@ -1,6 +1,7 @@
 "use client";
 
 import { ContactForm, type InquiryFormLabels, type SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
+import type { ButtonAppearance } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 
 /**
  * Client wrapper so the server preview page can render the (interactive but
@@ -14,12 +15,14 @@ export function PreviewContactCard({
   description,
   labels,
   submitAppearance,
+  addSessionAppearance,
 }: {
   workspaceSlug: string;
   title: string;
   description?: string;
   labels: InquiryFormLabels;
   submitAppearance: SubmitAppearance;
+  addSessionAppearance: ButtonAppearance;
 }) {
   return (
     <div
@@ -50,6 +53,7 @@ export function PreviewContactCard({
         workspaceSlug={workspaceSlug}
         labels={labels}
         submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
         onSuccess={() => {}}
       />
     </div>

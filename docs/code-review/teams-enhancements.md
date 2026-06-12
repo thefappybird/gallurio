@@ -77,7 +77,7 @@ but **called from nowhere** in this branch — confirmed via repo-wide grep. The
 teams page never offers "remove from workspace"; that lived only in the deleted
 `settings/teams/_components/member-list.tsx`.
 
-Correspondingly, a block of `app.teams.members.*` keys is now unused in all five locales:
+Correspondingly, a block of `app.teams.members.*` keys is now unused in all four active locales:
 `members.heading`, `members.empty`, `members.leadBadge`, `members.manageTeams`,
 `members.removeFromWorkspace`, `members.rowActionsLabel`, `members.removeDialog.{title,description,confirm}`,
 `members.errors.cannotRemoveOwner`, `members.toasts.removed`. Only `members.ownerBadge`,
@@ -91,11 +91,11 @@ it without re-checking), and stale i18n inflates five catalogs.
 **Fix:** delete `removeMemberFromWorkspaceAction` + `removeMemberFromWorkspaceSchema`, or
 explicitly note it is intentionally retained for an upcoming member-management view (and add
 a test exercising it so it isn't bit-rotting untested). Prune the unused `members.*` keys
-from all five locales. (Note: `removeMemberFromWorkspaceSchema` still has no colocated test
+from all four active locales. (Note: `removeMemberFromWorkspaceSchema` still has no colocated test
 either way.)
 
-#### M3 — Unused `app.settings.tabs.teams` key in all five locales
-`messages/{en,fil,ms,id,th}.json` → `app.settings.tabs.teams`
+#### M3 — Unused `app.settings.tabs.teams` key in all four active locales
+`messages/{en,fil,ms,id}.json` → `app.settings.tabs.teams`
 
 The settings catchall (`settings/[[...catchall]]/page.tsx`) no longer registers a `teams`
 page slug, and no `t("teams")` / `tabs.teams` lookup exists under `settings/` (grep clean).
@@ -150,7 +150,7 @@ if you want to keep the model defensive.
 #### N2 — `assignment.errors` only uses `alreadyOnTeam`
 The drawer references `assignment.errors.alreadyOnTeam` and `assignment.toasts.{added,removed,promoted,demoted}`.
 If the broader `assignment.*` namespace carried more keys from the old modal, audit it for the
-same dead-key pruning as M2/M3 (the active keys are correctly present in all five locales).
+same dead-key pruning as M2/M3 (the active keys are correctly present in all four active locales).
 
 ---
 
@@ -193,7 +193,7 @@ same dead-key pruning as M2/M3 (the active keys are correctly present in all fiv
 - **`teams-table.tsx` correctly suppresses the React-Compiler `incompatible-library` rule** for
   TanStack (the sibling `clients-table.tsx` still emits the warning — teams handled it better).
 - **i18n parity holds:** `app.teams.*` (117 keys) and `app.sidebar.teams` present and translated
-  in all five locales; ICU plural/select blocks (`upsell.atCapBody`, `team.memberCount`,
+  in all four active locales; ICU plural/select blocks (`upsell.atCapBody`, `team.memberCount`,
   `drawer.memberCount`, `downgradeBlock.description`) intact with matching variables.
 
 ---
@@ -207,7 +207,7 @@ gating, and delete/seat semantics are all correct and well-tested. Before merge,
 
 1. **M1** — keyboard access / focus-visible for the clickable table rows (or remove row-click).
 2. **M2 / M3 / N2** — prune the dead `removeMemberFromWorkspaceAction` (+ schema) and the
-   orphaned `members.*` / `settings.tabs.teams` i18n keys across all five locales.
+   orphaned `members.*` / `settings.tabs.teams` i18n keys across all four active locales.
 3. **L1** — wire `#teams-list` (add the id) or swap the anchor for a dismiss-only button.
 
 L2 and N1 are optional polish. None of these gate functionality; they are cleanup and an a11y

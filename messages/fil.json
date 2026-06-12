@@ -562,8 +562,7 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia",
-          "th": "ภาษาไทย"
+          "id": "Bahasa Indonesia"
         },
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
@@ -923,14 +922,14 @@
         "all": "Lahat",
         "new": "Bago",
         "contacted": "Nakausap na",
-        "converted": "Na-convert",
+        "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
         "new": "Bago",
         "contacted": "Nakausap na",
-        "converted": "Na-convert",
-        "archived": "Naka-archive"
+        "archived": "Naka-archive",
+        "booked": "Na-book"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -958,8 +957,10 @@
           "eventDate": "Petsa ng kaganapan",
           "eventType": "Uri",
           "submitted": "Isinumite",
-          "source": "Pinagmulan"
-        }
+          "source": "Pinagmulan",
+          "eventTitle": "Pamagat ng event"
+        },
+        "noTitle": "Walang pamagat na event"
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
@@ -1014,7 +1015,7 @@
         "history": {
           "title": "Kasaysayan",
           "submitted": "Isinumite ang katanungan",
-          "converted": "Naaprubahan bilang booking"
+          "booked": "Naaprubahan bilang booking"
         }
       }
     },
@@ -1044,7 +1045,36 @@
           "accentColor": "Accent",
           "backgroundColor": "Background",
           "foregroundColor": "Teksto"
-        }
+        },
+        "themes": "Mga tema",
+        "searchPlaceholder": "Maghanap ng tema",
+        "noThemesMatch": "Walang temang tumugma sa iyong paghahanap.",
+        "prevPage": "Mga nakaraang tema",
+        "nextPage": "Higit pang tema",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "Ilapat ang tema: {name}",
+        "deleteTheme": "Burahin ang tema: {name}",
+        "saveCurrentAsTheme": "I-save ang kasalukuyan bilang tema",
+        "themeNamePlaceholder": "Pangalan ng tema",
+        "saveAction": "I-save",
+        "enterThemeName": "Maglagay ng pangalan para sa temang ito.",
+        "nameTooLong": "Ang pangalan ng tema ay dapat 60 character o mas kaunti.",
+        "saveThemeError": "Hindi ma-save ang tema. Pakisubukan muli.",
+        "themeLimitReached": "Naabot mo na ang maximum na {max} na naka-save na tema.",
+        "currentTheme": "Kasalukuyang Tema",
+        "editTheme": "I-edit ang tema: {name}",
+        "editThemeName": "Pangalan ng tema",
+        "overrideCurrentTitle": "Palitan ang kasalukuyang tema?",
+        "overrideCurrentBody": "Ang pagbuo sa \"{name}\" ay papalit sa hindi naka-save mong Kasalukuyang Tema.",
+        "continueAction": "Magpatuloy",
+        "cancelAction": "Kanselahin",
+        "unsavedChangesTitle": "May hindi naka-save na mga pagbabago",
+        "unsavedChangesBody": "I-save ang mga pagbabago bago isara, o itapon ang mga ito.",
+        "discardAction": "Itapon",
+        "saveAndCloseAction": "I-save at isara",
+        "themeNameExists": "May tema nang umiiral na may ganitong pangalan.",
+        "applyAction": "Ilapat",
+        "saveThemeName": "I-save ang tema"
       },
       "editor": {
         "zone": {
@@ -1109,8 +1139,7 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "th": "ไทย"
+            "id": "Bahasa Indonesia"
           },
           "bgColorLabel": "Kulay ng background",
           "textColorLabel": "Kulay ng teksto",
@@ -1119,6 +1148,8 @@
           "borderColorLabel": "Kulay ng hangganan",
           "sectionPopup": "Popup",
           "sectionButton": "Button",
+          "submitButtonSection": "Submit button",
+          "addSessionButtonSection": "Button ng bagong petsa",
           "radius": {
             "sharp": "Matalas",
             "subtle": "Banayad",
@@ -1129,7 +1160,26 @@
           "tabs": {
             "setup": "Setup",
             "design": "Disenyo"
-          }
+          },
+          "errorColorLabel": "Kulay ng mensahe ng error",
+          "sectionTabs": "Mga Tab",
+          "inactiveTabsSection": "Mga hindi aktibong tab",
+          "activeTabSection": "Aktibong tab",
+          "tabFontSizeLabel": "Laki ng tab",
+          "tabFontSize": {
+            "sm": "S",
+            "md": "M",
+            "lg": "L"
+          },
+          "tabColorLabel": "Kulay ng teksto ng tab",
+          "activeTabColorLabel": "Kulay ng teksto ng aktibong tab",
+          "activeTabStyleLabel": "Estilo",
+          "activeTabStyleScale": "Palakihin",
+          "activeTabStyleHighlight": "I-highlight",
+          "activeTabStyleUnderline": "Salungguhit",
+          "tabHighlightColorLabel": "Kulay ng highlight",
+          "tabHighlightOpacityLabel": "Opacity ng highlight",
+          "tabUnderlineColorLabel": "Kulay ng salungguhit"
         },
         "headerDialog": {
           "title": "Navigation",
@@ -1162,10 +1212,12 @@
           "bgColorLabel": "Kulay ng background",
           "bgOpacityLabel": "Opacity ng background",
           "linkColorLabel": "Kulay ng teksto ng link",
+          "brandTextColorLabel": "Kulay ng heading",
           "activeLinkColorLabel": "Kulay ng teksto ng aktibong link",
           "borderBottomLabel": "Border sa ibaba",
           "borderColorLabel": "Kulay ng border",
           "shadowLabel": "Drop shadow",
+          "navbarSizeLabel": "Navbar size",
           "fontSizeLabel": "Laki ng link",
           "activeStyleLabel": "Estilo",
           "activeStyleScale": "Palakihin",
@@ -1188,6 +1240,11 @@
             "sm": "Maliit",
             "md": "Katamtaman",
             "lg": "Malaki"
+          },
+          "navbarSize": {
+            "sleek": "Sleek",
+            "balanced": "Balanced",
+            "flashy": "Flashy"
           },
           "fontSize": {
             "sm": "S",
@@ -1468,7 +1525,8 @@
       "confirmBody": "Naipadala na ang iyong katanungan. Makikipag-ugnayan kami sa pamamagitan ng iyong piniling paraan sa lalong madaling panahon.",
       "confirmClose": "Tapos",
       "tabClient": "Iyong detalye",
-      "tabBooking": "Detalye ng kaganapan",
+      "tabEvent": "Detalye ng kaganapan",
+      "tabLocation": "Lokasyon at mga tala",
       "name": "Pangalan",
       "email": "Email",
       "phone": "Telepono (opsyonal)",
@@ -1495,14 +1553,15 @@
         "anniversary": "Anibersaryo",
         "other": "Iba pa"
       },
-      "guestCount": "Mga bisita (opsyonal)",
       "location": "Lokasyon (opsyonal)",
       "message": "Sabihin pa sa amin",
       "messagePlaceholder": "Ibahagi ang mga detalye ng iyong kaganapan…",
       "submit": "Ipadala ang katanungan",
       "submitting": "Ipinapadala…",
       "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
-      "requiredHint": "Kinakailangan"
+      "requiredHint": "Kinakailangan",
+      "eventTitle": "Pamagat ng event",
+      "continue": "Na-book"
     }
   },
   "notFound": {

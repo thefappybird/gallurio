@@ -11,6 +11,7 @@ import { ClientInfoCard } from "./_components/client-info-card";
 import { EventRequestCard, type InquirySessionView } from "./_components/event-request-card";
 import { BookingDraftCard } from "./_components/booking-draft-card";
 import { InquiryActions } from "./_components/inquiry-actions";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 export default async function InquiryDetailPage({
   params,
@@ -37,6 +38,7 @@ export default async function InquiryDetailPage({
   });
 
   const sessions = (inquiry.sessions ?? []) as InquirySessionView[];
+  const isBooked = isBookedInquiryStatus(inquiry.status);
 
   return (
     <div className="flex flex-col gap-5">
@@ -85,7 +87,7 @@ export default async function InquiryDetailPage({
           <BookingDraftCard
             inquiryId={String(inquiry._id)}
             isOwner={role === "owner"}
-            isConverted={inquiry.status === "converted"}
+            isConverted={isBooked}
             bookingMissing={booking === null}
             bookingId={booking ? String(booking._id) : null}
             currency={booking?.amount?.currency ?? workspace.currency ?? "PHP"}
@@ -104,9 +106,9 @@ export default async function InquiryDetailPage({
                   <span>{t("history.submitted")}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">{submittedLabel}</span>
                 </li>
-                {inquiry.status === "converted" && (
+                {isBooked && (
                   <li className="flex items-baseline justify-between gap-3 text-sm">
-                    <span>{t("history.converted")}</span>
+                    <span>{t("history.booked")}</span>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {new Date(inquiry.updatedAt).toLocaleDateString(locale, {
                         month: "long",

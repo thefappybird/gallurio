@@ -33,7 +33,7 @@ zod boundary validation were verified correct. One High-severity isolation gap
   metadata cross the boundary, all zod-validated (hex colors, enums, bounded lengths,
   `starterImages` capped at 50).
 - `ordered: true` on the multi-doc `GalleryItem.create` in the session.
-- All five locales carry the new `app.pageBuilder` keys.
+- All four active locales carry the new `app.pageBuilder` keys.
 
 ## Deferred (RELEASE-CHECKLIST §4d)
 

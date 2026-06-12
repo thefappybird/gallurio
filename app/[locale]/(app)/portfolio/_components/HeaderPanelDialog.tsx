@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronDown, RotateCcw, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
@@ -14,6 +13,7 @@ import {
   CONTACT_BUTTON_COLORS,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
+  HEADER_NAVBAR_SIZES,
   BRAND_KIT_RADII,
   type BrandKitRadius,
   type PortfolioBrandKit,
@@ -270,14 +270,11 @@ export function HeaderPanelDialog({
   onHeaderChange,
   brandKit,
   workspaceName,
-  onSaved,
-  onCancel,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.headerDialog");
-  const te = useTranslations("app.pageBuilder.editor");
-  const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoDragActive, setLogoDragActive] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("setup");
   const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -292,18 +289,19 @@ export function HeaderPanelDialog({
 
   async function uploadLogo(file: File) {
     setLogoUploading(true);
+    setLogoError(null);
     try {
       if (!(LOGO_TYPES as readonly string[]).includes(file.type)) {
-        toast.error(t("logoErrors.type"));
+        setLogoError(t("logoErrors.type"));
         return;
       }
       if (file.size > LOGO_MAX_BYTES) {
-        toast.error(t("logoErrors.size"));
+        setLogoError(t("logoErrors.size"));
         return;
       }
       const { width, height } = await getImageSize(file);
       if (width > LOGO_MAX_WIDTH || height > LOGO_MAX_HEIGHT) {
-        toast.error(t("logoErrors.dimensions"));
+        setLogoError(t("logoErrors.dimensions"));
         return;
       }
       const uploaded = await uploadImageToCloudinary(file, {
@@ -322,14 +320,6 @@ export function HeaderPanelDialog({
     }
   }
 
-  function save() {
-    setSaving(true);
-    queueMicrotask(() => {
-      onSaved();
-      setSaving(false);
-    });
-  }
-
   const shadowLabels: Record<string, string> = {
     none: t("shadow.none"),
     sm: t("shadow.sm"),
@@ -340,6 +330,11 @@ export function HeaderPanelDialog({
     sm: t("fontSize.sm"),
     md: t("fontSize.md"),
     lg: t("fontSize.lg"),
+  };
+  const navbarSizeLabels: Record<string, string> = {
+    sleek: t("navbarSize.sleek"),
+    balanced: t("navbarSize.balanced"),
+    flashy: t("navbarSize.flashy"),
   };
 
   return (
@@ -387,6 +382,30 @@ export function HeaderPanelDialog({
               <p className="text-xs text-muted-foreground">{t("brandTextHelp")}</p>
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted-foreground">{t("navbarSizeLabel")}</span>
+              <div className="flex">
+                {HEADER_NAVBAR_SIZES.map((s) => {
+                  const isActive = (header.navbarSize || "balanced") === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      aria-label={navbarSizeLabels[s]}
+                      aria-pressed={isActive}
+                      onClick={() => set("navbarSize", s === "balanced" ? "" : s)}
+                      className={cn(
+                        "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        isActive && "bg-foreground text-background hover:bg-foreground",
+                      )}
+                    >
+                      {navbarSizeLabels[s]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Logo upload */}
             <div className="flex flex-col gap-1.5">
               <Label>{t("logoLabel")}</Label>
@@ -401,7 +420,10 @@ export function HeaderPanelDialog({
                   />
                   <button
                     type="button"
-                    onClick={() => onHeaderChange({ ...header, logoUrl: "", logoPublicId: "" })}
+                    onClick={() => {
+                      setLogoError(null);
+                      onHeaderChange({ ...header, logoUrl: "", logoPublicId: "" });
+                    }}
                     className="text-xs text-muted-foreground underline hover:text-foreground"
                   >
                     {t("logoRemove")}
@@ -437,6 +459,7 @@ export function HeaderPanelDialog({
                   <span>{t("logoRequirements")}</span>
                 </button>
               )}
+              {logoError ? <p className="text-xs text-destructive">{logoError}</p> : null}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -444,6 +467,7 @@ export function HeaderPanelDialog({
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
+                  setLogoError(null);
                   if (file) void uploadLogo(file);
                   e.target.value = "";
                 }}
@@ -473,6 +497,7 @@ export function HeaderPanelDialog({
                 value={header.backgroundOpacity ?? 100}
                 min={0}
                 max={100}
+                suffix="%"
                 onChange={(v) => set("backgroundOpacity", v ?? 100)}
               />
 
@@ -519,7 +544,6 @@ export function HeaderPanelDialog({
               onToggle={() => setOpenDrawer((current) => current === "links" ? null : "links")}
             >
 
-              {/* Font size */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("fontSizeLabel")}</span>
                 <div className="flex">
@@ -549,6 +573,13 @@ export function HeaderPanelDialog({
                 active={header.linkColor}
                 brandKit={brandKit}
                 onToggle={(c) => set("linkColor", c)}
+              />
+
+              <ColorSwatchRow
+                label={t("brandTextColorLabel")}
+                active={header.brandTextColor}
+                brandKit={brandKit}
+                onToggle={(c) => set("brandTextColor", c)}
               />
 
               <ColorSwatchRow
@@ -597,6 +628,7 @@ export function HeaderPanelDialog({
                   value={header.highlightOpacity ?? 100}
                   min={0}
                   max={100}
+                  suffix="%"
                   onChange={(v) => set("highlightOpacity", v ?? 100)}
                 />
               )}
@@ -637,6 +669,7 @@ export function HeaderPanelDialog({
                 value={header.contactButtonOpacity ?? 100}
                 min={0}
                 max={100}
+                suffix="%"
                 onChange={(v) => set("contactButtonOpacity", v ?? 100)}
               />
               <ColorSwatchRow
@@ -656,15 +689,6 @@ export function HeaderPanelDialog({
         )}
       </div>
 
-      {/* Footer */}
-      <div className="flex gap-2 border-t border-border px-4 py-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={saving} className="flex-1">
-          {te("publishDialog.cancel")}
-        </Button>
-        <Button type="button" onClick={save} disabled={saving} className="flex-1">
-          {saving ? t("saving") : te("done")}
-        </Button>
-      </div>
     </div>
   );
 }

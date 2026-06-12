@@ -2,10 +2,14 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { routing } from "@/lib/i18n/routing";
-import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG, type PortfolioBrandKit, type PortfolioCollectionsPopupConfig, type PortfolioContactConfig, type PortfolioHeaderConfig, type PortfolioSavedTheme, type PuckData } from "@/lib/page-builder/types";
 import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
+import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
+import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
+import { listDraftsAction } from "./_draftActions";
+import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 
 export async function generateMetadata({
   params,
@@ -71,16 +75,29 @@ export default async function PageBuilderEntry({
     }
   }
 
+  const workspaceId = String(workspace._id);
+  const reconcileZone = async (raw: unknown) =>
+    reconcileFeaturedCollections(workspaceId, await reconcileGalleryImages(workspaceId, toPlain<PuckData>(raw, EMPTY_ZONE)));
   const initialData = {
-    home: toPlain<PuckData>(homeData, EMPTY_ZONE),
-    gallery: toPlain<PuckData>(galleryData, EMPTY_ZONE),
+    home: await reconcileZone(homeData),
+    gallery: await reconcileZone(galleryData),
   };
   const initialBrandKit = toPlain<PortfolioBrandKit>(brandKitData, DEFAULT_BRAND_KIT);
   const initialContact = toPlain<PortfolioContactConfig>(contactData, {});
   const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
+  const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
+
+  // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
+  await ensureLegacyDraftMigrated(workspace._id);
+  const initialDrafts = await listDraftsAction();
+  // First-paint active draft = newest (migrated/most recent). The client entry
+  // chooser lets the owner pick differently.
+  const activeDraft = initialDrafts[0] ?? null;
+  const initialActiveDraftId = activeDraft?.id ?? null;
+  const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
 
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
@@ -95,21 +112,30 @@ export default async function PageBuilderEntry({
   const previewBasePath =
     locale === routing.defaultLocale ? "/portfolio-preview" : `/${locale}/portfolio-preview`;
 
+  // Full-bleed editor: `-m-6` cancels the app shell's `<main>` padding so the
+  // editor fills the whole content area, and `h-svh` pins it to the viewport so
+  // only Puck's internal regions scroll (no outer page scroll).
   return (
-    <EditorShell
-      slug={workspace.slug}
-      workspaceName={workspace.name}
-      initialData={initialData}
-      initialBrandKit={initialBrandKit}
-      initialContact={initialContact}
-      initialFormLocale={initialFormLocale}
-      initialHeaderConfig={initialHeaderConfig}
-      publicOrigin={publicOrigin}
-      previewBasePath={previewBasePath}
-      templates={templates}
-      currentTemplateId={templateId}
-      guideDismissed={guideDismissed}
-      initialSavedThemes={initialSavedThemes}
-    />
+    <div className="-m-6 h-svh">
+      <EditorShell
+        slug={workspace.slug}
+        workspaceName={workspace.name}
+        initialData={initialData}
+        initialBrandKit={initialBrandKit}
+        initialContact={initialContact}
+        initialFormLocale={initialFormLocale}
+        initialHeaderConfig={initialHeaderConfig}
+        initialCollectionsPopup={initialCollectionsPopup}
+        publicOrigin={publicOrigin}
+        previewBasePath={previewBasePath}
+        templates={templates}
+        currentTemplateId={templateId}
+        guideDismissed={guideDismissed}
+        initialSavedThemes={initialSavedThemes}
+        initialDrafts={initialDrafts}
+        initialActiveDraftId={initialActiveDraftId}
+        initialActiveDraftName={initialActiveDraftName}
+      />
+    </div>
   );
 }

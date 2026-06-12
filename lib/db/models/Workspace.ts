@@ -129,7 +129,7 @@ const workspaceSchema = new Schema(
       // Per-page language for the Gallurio chrome (inquiry form, nav, footer,
       // gallery labels) on the public portfolio — isolated from the owner's own
       // app locale. "" → fall back to the locale derived from workspace.country.
-      formLocale: { type: String, enum: ["en", "fil", "ms", "id", "th", ""], default: "" },
+      formLocale: { type: String, enum: ["en", "fil", "ms", "id", ""], default: "" },
       // Customizable chrome for the prebuilt contact modal. The form fields are
       // fixed; only this copy + button presentation can be edited. Editing UI
       // lands with the page-builder editor (Phase 9); seeded defaults in Phase 8.
@@ -139,15 +139,57 @@ const workspaceSchema = new Schema(
         buttonStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
         buttonColor: { type: String, default: "" },
         buttonTextColor: { type: String, default: "" },
+        errorMessageColor: { type: String, default: "" },
         buttonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
         buttonBorderColor: { type: String, default: "" },
         buttonBorderWidth: { type: Number, default: 0 },
+        addSessionButtonStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
+        addSessionButtonColor: { type: String, default: "" },
+        addSessionButtonTextColor: { type: String, default: "" },
+        addSessionButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        addSessionButtonBorderColor: { type: String, default: "" },
+        addSessionButtonBorderWidth: { type: Number, default: 0 },
         backgroundColor: { type: String, default: "" },
         textColor: { type: String, default: "" },
         popupRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
         popupBorderColor: { type: String, default: "" },
         popupBorderWidth: { type: Number, default: 0 },
         popupStyle: { type: String, enum: [...BRAND_KIT_BUTTON_STYLES, ""], default: "" },
+        // Tab styling
+        tabFontSize: { type: String, enum: [...HEADER_FONT_SIZES, ""], default: "" },
+        tabColor: { type: String, default: "" },
+        activeTabColor: { type: String, default: "" },
+        activeTabScale: { type: Boolean, default: false },
+        activeTabHighlight: { type: Boolean, default: false },
+        tabHighlightColor: { type: String, default: "" },
+        tabHighlightOpacity: { type: Number, default: 100 },
+        activeTabRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        activeTabUnderline: { type: Boolean, default: false },
+        tabUnderlineColor: { type: String, default: "" },
+      },
+      // Configurable chrome for the collections popup surface.
+      // All fields optional — popup falls back to brand-kit values.
+      collectionsPopup: {
+        backgroundColor: { type: String, default: "" },
+        borderColor: { type: String, default: "" },
+        borderWidth: { type: Number, default: 0 },
+        radius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        // Title styling
+        titleText: { type: String, default: "" },
+        titleFontFamily: { type: String, enum: [...PORTFOLIO_FONT_KEYS, ""], default: "" },
+        titleFontSize: { type: Number, default: 0 },
+        titleColorToken: { type: String, default: "" },
+        titleBold: { type: Boolean, default: false },
+        titleItalic: { type: Boolean, default: false },
+        titleUnderline: { type: Boolean, default: false },
+        titleAlign: { type: String, enum: ["left", "center", "right", ""], default: "" },
+        // Close button styling
+        closeButtonSize: { type: Number, default: 0 },
+        closeButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
+        closeButtonBorderWidth: { type: Number, default: 0 },
+        closeButtonBorderColorToken: { type: String, default: "" },
+        closeButtonOpacity: { type: Number, default: 0 },
+        closeButtonBgColorToken: { type: String, default: "" },
       },
       // Configurable chrome for the public portfolio navigation header.
       // All fields optional — header falls back to brand-kit values.

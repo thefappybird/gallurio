@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Types } from "mongoose";
+import { GalleryItem } from "@/lib/db/models";
 
 const revalidatePath = vi.fn();
 vi.mock("next/cache", () => ({ revalidatePath: (...a: unknown[]) => revalidatePath(...a) }));
@@ -23,8 +24,11 @@ import {
   publishPortfolioAction,
   updateBrandKitAction,
   updateContactConfigAction,
+  updateCollectionsPopupConfigAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
+  saveThemeAction,
+  updateThemeAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -162,10 +166,13 @@ describe("updateContactConfigAction", () => {
       description: "We reply fast",
       buttonStyle: "solid",
       buttonColor: "accent",
+      addSessionButtonStyle: "outline",
+      addSessionButtonColor: "secondary",
     });
     expect(res).toEqual({ ok: true });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.contact!.title).toBe("Say hi");
+    expect(ws!.publicPage!.contact!.addSessionButtonColor).toBe("secondary");
   });
 
   it("rejects an over-long title", async () => {
@@ -177,6 +184,38 @@ describe("updateContactConfigAction", () => {
     mockCtx.role = "staff";
     const res = await updateContactConfigAction({ title: "x" });
     expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("persists tab styling fields (round-trip)", async () => {
+    const res = await updateContactConfigAction({
+      tabFontSize: "lg",
+      tabColor: "foreground",
+      activeTabColor: "accent",
+      activeTabScale: true,
+      activeTabHighlight: true,
+      tabHighlightColor: "primary",
+      tabHighlightOpacity: 75,
+      activeTabRadius: "subtle",
+      activeTabUnderline: false,
+      tabUnderlineColor: "",
+    });
+    expect(res).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.contact!.tabFontSize).toBe("lg");
+    expect(ws!.publicPage!.contact!.activeTabColor).toBe("accent");
+    expect(ws!.publicPage!.contact!.tabHighlightOpacity).toBe(75);
+    expect(ws!.publicPage!.contact!.activeTabRadius).toBe("subtle");
+    expect(ws!.publicPage!.contact!.activeTabScale).toBe(true);
+  });
+
+  it("rejects an invalid tabFontSize", async () => {
+    const res = await updateContactConfigAction({ tabFontSize: "xl" as never });
+    expect("error" in res).toBe(true);
+  });
+
+  it("rejects tabHighlightOpacity out of range", async () => {
+    const res = await updateContactConfigAction({ tabHighlightOpacity: 150 });
+    expect("error" in res).toBe(true);
   });
 });
 
@@ -228,5 +267,166 @@ describe("dismissPortfolioGuideAction", () => {
     expect(res).toEqual({ error: "owner_only" });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.guideDismissedAt ?? null).toBeNull();
+  });
+});
+
+describe("updateCollectionsPopupConfigAction", () => {
+  it("owner-only (403/error for staff)", async () => {
+    mockCtx.role = "staff";
+    expect(await updateCollectionsPopupConfigAction({})).toEqual({ error: "owner_only" });
+  });
+  it("persists to publicPage.collectionsPopup + revalidates", async () => {
+    const res = await updateCollectionsPopupConfigAction({ borderWidth: 2, radius: "subtle" });
+    expect(res).toMatchObject({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.collectionsPopup).toMatchObject({ borderWidth: 2, radius: "subtle" });
+    expect(revalidatePath).toHaveBeenCalledWith("/w/studio-aurora");
+  });
+  it("rejects invalid input", async () => {
+    expect(await updateCollectionsPopupConfigAction({ borderWidth: 999 })).toHaveProperty("error");
+  });
+});
+
+describe("publishPortfolioAction — reconcile + publish", () => {
+  it("rejects a non-owner", async () => {
+    mockCtx.role = "staff";
+    expect(await publishPortfolioAction()).toEqual({ error: "owner_only" });
+  });
+
+  it("persists reconciled images (refresh + prune) AND sets publishedAt", async () => {
+    const wsId = mockCtx.workspace._id;
+    const live = await GalleryItem.create({
+      workspaceId: wsId,
+      collectionId: null,
+      cloudinaryPublicId: `ws/${wsId}/live`,
+      url: "https://x/l.jpg",
+      altText: "Live alt",
+      order: 0,
+    });
+    const missing = new Types.ObjectId().toString();
+
+    // Patch the existing workspace (created by seedWorkspace in beforeEach)
+    // with a GalleryGrid block containing stale + missing image references.
+    await Workspace.updateOne(
+      { _id: wsId },
+      {
+        $set: {
+          "publicPage.data.home": {
+            root: {},
+            content: [
+              {
+                type: "GalleryGrid",
+                props: {
+                  id: "g1",
+                  images: [
+                    { id: String(live._id), publicId: "STALE", alt: "stale" },
+                    { id: missing, publicId: "x" },
+                  ],
+                  columns: 3,
+                  gap: "normal",
+                },
+              },
+            ],
+          },
+          "publicPage.data.gallery": { root: {}, content: [] },
+        },
+      }
+    );
+
+    const res = await publishPortfolioAction();
+    expect(res).toEqual({ ok: true });
+
+    const fresh = await Workspace.findById(wsId).lean();
+    const images = (
+      fresh!.publicPage!.data!.home as {
+        content: Array<{ props: { images: Array<{ id: string; publicId: string; alt: string }> } }>;
+      }
+    ).content[0].props.images;
+    expect(images).toEqual([
+      { id: String(live._id), publicId: `ws/${wsId}/live`, alt: "Live alt" },
+    ]);
+    expect(fresh!.publicPage!.publishedAt).toBeTruthy();
+    expect(fresh!.publicPage!.lastPublishedAt).toBeTruthy();
+  });
+});
+
+describe("saveThemeAction", () => {
+  it("rejects a duplicate theme name case-insensitively", async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { "publicPage.savedThemes": [{ id: "a", name: "Sunset", brandKit: DEFAULT_BRAND_KIT }] } }
+    );
+    const res = await saveThemeAction("  sUnSeT ", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_name_exists" });
+  });
+
+  it("saves a uniquely-named theme", async () => {
+    const res = await saveThemeAction("Spring 26", DEFAULT_BRAND_KIT);
+    expect(res).toMatchObject({ ok: true, theme: { name: "Spring 26" } });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.savedThemes).toHaveLength(1);
+  });
+});
+
+describe("updateThemeAction", () => {
+  beforeEach(async () => {
+    await Workspace.updateOne(
+      { _id: workspaceId },
+      { $set: { "publicPage.savedThemes": [
+        { id: "a", name: "Sunset", brandKit: DEFAULT_BRAND_KIT },
+        { id: "b", name: "Moody", brandKit: DEFAULT_BRAND_KIT },
+      ] } }
+    );
+  });
+
+  it("updates name + brandKit in place, preserving id and order", async () => {
+    const kit = { ...DEFAULT_BRAND_KIT, accentColor: "#123456" };
+    const res = await updateThemeAction("a", "Sunset Bright", kit);
+    expect(res).toMatchObject({ ok: true, theme: { id: "a", name: "Sunset Bright" } });
+    const doc = await Workspace.findById(workspaceId).lean();
+    expect(doc!.publicPage!.savedThemes!.map((t: { id: string }) => t.id)).toEqual(["a", "b"]);
+    expect(doc!.publicPage!.savedThemes![0].name).toBe("Sunset Bright");
+    expect(doc!.publicPage!.savedThemes![0].brandKit!.accentColor).toBe("#123456");
+  });
+
+  it("allows a theme to keep its own name", async () => {
+    const res = await updateThemeAction("a", "Sunset", DEFAULT_BRAND_KIT);
+    expect(res).toMatchObject({ ok: true });
+  });
+
+  it("rejects a name owned by a different theme (case-insensitive)", async () => {
+    const res = await updateThemeAction("a", "moody", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_name_exists" });
+  });
+
+  it("returns theme_not_found for an unknown id", async () => {
+    const res = await updateThemeAction("zzz", "X", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "theme_not_found" });
+  });
+
+  it("is owner-only", async () => {
+    mockCtx.role = "staff";
+    const res = await updateThemeAction("a", "Whatever", DEFAULT_BRAND_KIT);
+    expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("cannot edit another workspace's theme (tenant isolation)", async () => {
+    const otherWs = await Workspace.create({
+      slug: "other-studio",
+      name: "Other Studio",
+      ownerUserId: "user_other",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      publicPage: {
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        latestVersion: 0,
+        savedThemes: [{ id: "a", name: "Theirs", brandKit: DEFAULT_BRAND_KIT }],
+      },
+    });
+    // mockCtx still points at workspaceId (owner A); updating id "a" must only
+    // touch A's theme, never B's same-id theme.
+    await updateThemeAction("a", "Hijacked", DEFAULT_BRAND_KIT);
+    const theirs = await Workspace.findById(otherWs._id).lean();
+    expect(theirs!.publicPage!.savedThemes![0].name).toBe("Theirs");
   });
 });

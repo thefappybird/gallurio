@@ -3,10 +3,60 @@ import {
   brandKitSchema,
   portfolioPuckDataSchema,
   portfolioContactConfigSchema,
+  portfolioCollectionsPopupConfigSchema,
   savedThemeSchema,
   savedThemesSchema,
 } from "./publicPage";
 import { DEFAULT_BRAND_KIT, SAVED_THEMES_MAX } from "@/lib/page-builder/types";
+
+// ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema
+// ---------------------------------------------------------------------------
+
+describe("portfolioCollectionsPopupConfigSchema", () => {
+  it("accepts an empty object (all optional → flat sharp defaults)", () => {
+    expect(portfolioCollectionsPopupConfigSchema.parse({})).toEqual({});
+  });
+  it("accepts valid border/background/radius", () => {
+    const v = { backgroundColor: "surface", borderColor: "#1a1a1a", borderWidth: 2, radius: "subtle" as const };
+    expect(portfolioCollectionsPopupConfigSchema.parse(v)).toEqual(v);
+  });
+  it("rejects borderWidth out of range", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ borderWidth: 999 }).success).toBe(false);
+  });
+  it("rejects an unknown radius", () => {
+    expect(portfolioCollectionsPopupConfigSchema.safeParse({ radius: "huge" }).success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// portfolioCollectionsPopupConfigSchema — new title + close-button fields
+// ---------------------------------------------------------------------------
+
+describe("portfolioCollectionsPopupConfigSchema new fields", () => {
+  it("keeps title + close-button fields through parse", () => {
+    const input = {
+      backgroundColor: "primary",
+      titleText: "Galleries",
+      titleFontSize: 24,
+      titleColorToken: "foreground",
+      titleBold: true,
+      titleAlign: "center",
+      closeButtonSize: 44,
+      closeButtonRadius: "rounded",
+      closeButtonBorderWidth: 2,
+      closeButtonBorderColorToken: "foreground",
+      closeButtonOpacity: 80,
+      closeButtonBgColorToken: "background",
+    };
+    const parsed = portfolioCollectionsPopupConfigSchema.parse(input);
+    expect(parsed.titleText).toBe("Galleries");
+    expect(parsed.titleAlign).toBe("center");
+    expect(parsed.closeButtonSize).toBe(44);
+    expect(parsed.closeButtonRadius).toBe("rounded");
+    expect(parsed.closeButtonBgColorToken).toBe("background");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // portfolioContactConfigSchema
@@ -55,6 +105,86 @@ describe("portfolioContactConfigSchema", () => {
   it("rejects an over-long title", () => {
     const result = portfolioContactConfigSchema.safeParse({ title: "x".repeat(81) });
     expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// portfolioContactConfigSchema — tab styling fields
+// ---------------------------------------------------------------------------
+
+describe("portfolioContactConfigSchema — tab styling fields", () => {
+  it("accepts all new tab fields in a valid config", () => {
+    const result = portfolioContactConfigSchema.safeParse({
+      tabFontSize: "sm",
+      tabColor: "primary",
+      activeTabColor: "accent",
+      activeTabScale: true,
+      activeTabHighlight: true,
+      tabHighlightColor: "secondary",
+      tabHighlightOpacity: 80,
+      activeTabRadius: "subtle",
+      activeTabUnderline: true,
+      tabUnderlineColor: "#112233",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts empty string for tabFontSize (reset to default)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabFontSize: "" }).success).toBe(true);
+  });
+
+  it("rejects an out-of-set tabFontSize", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabFontSize: "xl" }).success).toBe(false);
+  });
+
+  it("accepts empty string for activeTabRadius (reset to default)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ activeTabRadius: "" }).success).toBe(true);
+  });
+
+  it("rejects an out-of-set activeTabRadius", () => {
+    expect(portfolioContactConfigSchema.safeParse({ activeTabRadius: "pill" }).success).toBe(false);
+  });
+
+  it("rejects tabHighlightOpacity out of range", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 150 }).success).toBe(false);
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: -1 }).success).toBe(false);
+  });
+
+  it("accepts tabHighlightOpacity at boundaries (0 and 100)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 0 }).success).toBe(true);
+    expect(portfolioContactConfigSchema.safeParse({ tabHighlightOpacity: 100 }).success).toBe(true);
+  });
+
+  it("accepts a hex tabColor (spectrum picker output)", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabColor: "#ff0000" }).success).toBe(true);
+  });
+
+  it("accepts a hex tabUnderlineColor", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabUnderlineColor: "#abcdef" }).success).toBe(true);
+  });
+
+  it("rejects a tabColor exceeding max length", () => {
+    expect(portfolioContactConfigSchema.safeParse({ tabColor: "#" + "a".repeat(32) }).success).toBe(false);
+  });
+
+  it("tab fields round-trip through parse", () => {
+    const input = {
+      tabFontSize: "lg" as const,
+      tabColor: "foreground",
+      activeTabColor: "accent",
+      activeTabScale: false,
+      activeTabHighlight: true,
+      tabHighlightColor: "#ff0000",
+      tabHighlightOpacity: 60,
+      activeTabRadius: "rounded" as const,
+      activeTabUnderline: false,
+      tabUnderlineColor: "",
+    };
+    const parsed = portfolioContactConfigSchema.parse(input);
+    expect(parsed.tabFontSize).toBe("lg");
+    expect(parsed.tabColor).toBe("foreground");
+    expect(parsed.tabHighlightOpacity).toBe(60);
+    expect(parsed.activeTabRadius).toBe("rounded");
   });
 });
 

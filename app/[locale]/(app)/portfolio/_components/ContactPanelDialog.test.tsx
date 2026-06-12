@@ -37,4 +37,20 @@ describe("ContactPanelDialog", () => {
     expect(popup).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Background color")).toBeInTheDocument();
   });
+
+  it("splits button controls into submit and new-dates subsections", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+
+    expect(screen.getByRole("button", { name: "Submit button" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "New dates button" })).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("does not render Done or Cancel footer buttons", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+
+    expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+  });
 });

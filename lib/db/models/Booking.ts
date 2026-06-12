@@ -50,7 +50,9 @@ const bookingSchema = new Schema(
     firstSessionStart: { type: Date, required: true },
     lastSessionEnd: { type: Date, required: true },
     location: {
+      label: { type: String, default: null },
       address: { type: String, default: "" },
+      placeId: { type: String, default: null },
       lat: { type: Number, default: null },
       lng: { type: Number, default: null },
     },

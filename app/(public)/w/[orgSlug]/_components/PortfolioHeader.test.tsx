@@ -76,6 +76,55 @@ describe("PortfolioHeader", () => {
     expect(home.style.borderRadius).toBe("0.5rem");
   });
 
+  it("respects an explicit active path override for preview surfaces", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        activePath="/w/luna-studio/gallery"
+        config={{ activeLinkColor: "accent" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
+    expect(screen.getByRole("link", { name: "Home" }).style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("supports flashy navbar sizing", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ navbarSize: "flashy" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.fontSize).toBe("1.375rem");
+    expect(screen.getByRole("button", { name: "Contact" }).style.minHeight).toBe("52px");
+  });
+
+  it("uses a dedicated heading color when configured", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ linkColor: "foreground", brandTextColor: "accent" }}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.color).toBe("var(--pf-color-accent)");
+    expect(screen.getByRole("link", { name: "Home" }).style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("opens contact directly from the header button", () => {
+    window.__gallurioOpenContact = vi.fn();
+
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByRole("button", { name: "Contact" }));
+
+    expect(window.__gallurioOpenContact).toHaveBeenCalledTimes(1);
+  });
+
   it("exposes an accessible menu toggle that flips aria-expanded", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const toggle = screen.getByLabelText("Open menu");

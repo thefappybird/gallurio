@@ -52,48 +52,31 @@ export function contactPreset(id: string): PuckBlockEntry {
 
 export function galleryGrid(
   id: string,
-  props?: { columns?: 2 | 3 | 4; gap?: "tight" | "normal" | "loose"; maxItems?: number }
+  props?: { columns?: 2 | 3 | 4; gap?: "tight" | "normal" | "loose" }
 ): PuckBlockEntry {
   return {
     type: "GalleryGrid",
-    props: {
-      id,
-      ...galleryGridDefaultProps,
-      columns: props?.columns ?? 3,
-      gap: props?.gap ?? "normal",
-      maxItems: props?.maxItems ?? 12,
-    },
+    props: { id, ...galleryGridDefaultProps, columns: props?.columns ?? 3, gap: props?.gap ?? "normal" },
   };
 }
 
 export function galleryMasonry(
   id: string,
-  props?: { columns?: 2 | 3 | 4; gap?: "tight" | "normal" | "loose"; maxItems?: number }
+  props?: { columns?: 2 | 3 | 4; gap?: "tight" | "normal" | "loose" }
 ): PuckBlockEntry {
   return {
     type: "GalleryMasonry",
-    props: {
-      id,
-      ...galleryMasonryDefaultProps,
-      columns: props?.columns ?? 3,
-      gap: props?.gap ?? "normal",
-      maxItems: props?.maxItems ?? 18,
-    },
+    props: { id, ...galleryMasonryDefaultProps, columns: props?.columns ?? 3, gap: props?.gap ?? "normal" },
   };
 }
 
 export function galleryCarousel(
   id: string,
-  props?: { aspect?: "square" | "landscape" | "portrait"; maxItems?: number }
+  props?: { aspect?: "square" | "landscape" | "portrait" }
 ): PuckBlockEntry {
   return {
     type: "GalleryCarousel",
-    props: {
-      id,
-      ...galleryCarouselDefaultProps,
-      aspect: props?.aspect ?? "landscape",
-      maxItems: props?.maxItems ?? 12,
-    },
+    props: { id, ...galleryCarouselDefaultProps, aspect: props?.aspect ?? "landscape" },
   };
 }
 

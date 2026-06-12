@@ -4,10 +4,6 @@
  * Multi-tenant safety:
  * - `workspaceId` is ALWAYS supplied by the caller from server render context
  *   (never from Puck props). Every query filters by `workspaceId`.
- * - `listItemsForBlock` resolves the collection scoped to `{ _id, workspaceId,
- *   isPublic: true }` first. A private collection (`isPublic: false`) or a
- *   collection from another workspace resolves to nothing → items come back `[]`
- *   (blocks render their empty state).
  * - `getItemsByIds` only returns items whose `workspaceId` matches; IDs from
  *   another workspace or missing IDs are silently dropped.
  */
@@ -18,7 +14,6 @@ import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
 import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
 
-const DEFAULT_LIMIT = 24;
 const MAX_LIMIT = 100;
 
 export type GalleryBlockItem = {
@@ -41,46 +36,6 @@ const ITEM_PROJECTION = {
   width: 1,
   height: 1,
 } as const;
-
-/**
- * Returns the public gallery items for a collection, scoped to a workspace.
- *
- * Returns `[]` when: collectionId is null/blank/malformed, the collection does
- * not exist, belongs to another workspace, or is not public.
- */
-export async function listItemsForBlock(opts: {
-  workspaceId: string;
-  collectionId: string | null;
-  limit?: number;
-}): Promise<GalleryBlockItem[]> {
-  const { workspaceId, collectionId } = opts;
-  if (!workspaceId) return [];
-  if (!collectionId || !collectionId.trim()) return [];
-  if (!Types.ObjectId.isValid(collectionId)) return [];
-
-  const limit = Math.min(Math.max(1, opts.limit ?? DEFAULT_LIMIT), MAX_LIMIT);
-
-  await connectDB();
-
-  // Resolve the collection first so private/foreign collections render empty.
-  const collection = await GalleryCollection.findOne({
-    _id: collectionId,
-    workspaceId,
-    isPublic: true,
-  })
-    .select("_id")
-    .lean();
-
-  if (!collection) return [];
-
-  const items = (await GalleryItem.find({ workspaceId, collectionId })
-    .select(ITEM_PROJECTION)
-    .sort({ order: 1, createdAt: 1 })
-    .limit(limit)
-    .lean()) as unknown as GalleryBlockItem[];
-
-  return items;
-}
 
 /**
  * Returns gallery items by id, scoped to a workspace, preserving the order of
@@ -124,6 +79,7 @@ export type PickerCollection = {
   id: string;
   name: string;
   coverUrl: string | null;
+  coverPublicId: string;
   itemCount: number;
 };
 
@@ -150,18 +106,23 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
 
   const collectionIds = collections.map((c) => c._id);
 
-  // Batch-fetch item counts and cover items in parallel to avoid N+1.
-  const [countsByColId, coversByColId] = await Promise.all([
+  // Separate collections with an explicit cover from those without.
+  const withCover = collections.filter((c) => Boolean(c.coverItemId));
+  const withoutCover = collections.filter((c) => !c.coverItemId);
+  const withoutCoverIds = withoutCover.map((c) => c._id);
+
+  // Batch-fetch item counts, explicit cover items, and newest-item fallbacks in parallel.
+  const [countsByColId, explicitCoverMap, newestByColId] = await Promise.all([
     GalleryItem.aggregate<{ _id: Types.ObjectId; count: number }>([
       { $match: { workspaceId: new Types.ObjectId(workspaceId), collectionId: { $in: collectionIds } } },
       { $group: { _id: "$collectionId", count: { $sum: 1 } } },
     ]),
     // For each collection that has a coverItemId, fetch the cloudinaryPublicId.
-    (async () => {
-      const coverIds = collections
+    (async (): Promise<Map<string, string>> => {
+      const coverIds = withCover
         .map((c) => c.coverItemId)
         .filter((id): id is Types.ObjectId => Boolean(id));
-      if (coverIds.length === 0) return new Map<string, string>();
+      if (coverIds.length === 0) return new Map();
       const coverItems = await GalleryItem.find({
         workspaceId,
         _id: { $in: coverIds },
@@ -170,28 +131,55 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
         .lean();
       return new Map(coverItems.map((ci) => [String(ci._id), ci.cloudinaryPublicId as string]));
     })(),
+    // For cover-less collections, fetch the newest item per collection in a single aggregate.
+    (async (): Promise<Map<string, string>> => {
+      if (withoutCoverIds.length === 0) return new Map();
+      const rows = await GalleryItem.aggregate<{ _id: Types.ObjectId; cloudinaryPublicId: string }>([
+        {
+          $match: {
+            workspaceId: new Types.ObjectId(workspaceId),
+            collectionId: { $in: withoutCoverIds },
+          },
+        },
+        { $sort: { createdAt: -1, _id: -1 } },
+        {
+          $group: {
+            _id: "$collectionId",
+            cloudinaryPublicId: { $first: "$cloudinaryPublicId" },
+          },
+        },
+      ]);
+      return new Map(rows.map((r) => [String(r._id), r.cloudinaryPublicId]));
+    })(),
   ]);
 
   const countMap = new Map(countsByColId.map((r) => [String(r._id), r.count]));
 
   return collections.map((c) => {
-    const coverId = c.coverItemId ? String(c.coverItemId) : null;
-    const coverPublicId = coverId ? (coversByColId as Map<string, string>).get(coverId) : undefined;
+    const colId = String(c._id);
+    let coverPublicId: string;
+    if (c.coverItemId) {
+      coverPublicId = explicitCoverMap.get(String(c.coverItemId)) ?? "";
+    } else {
+      coverPublicId = newestByColId.get(colId) ?? "";
+    }
     return {
-      id: String(c._id),
+      id: colId,
       name: c.name,
       coverUrl: coverPublicId
         ? cloudinaryThumbnailUrl(coverPublicId, { width: 240, height: 240 })
         : null,
-      itemCount: countMap.get(String(c._id)) ?? 0,
+      coverPublicId,
+      itemCount: countMap.get(colId) ?? 0,
     };
   });
 }
 
 /**
  * Returns the most recent gallery items (capped) for a workspace — used by the
- * FeaturedItemsPicker. Backed by the existing { workspaceId, collectionId, order }
- * compound index (no collectionId filter = workspaceId leading field scan).
+ * MediaPicker (single/multi-image modes). Backed by the existing
+ * { workspaceId, collectionId, order } compound index (no collectionId filter =
+ * workspaceId leading field scan).
  *
  * Logs a warning if items were capped so the operator can tune.
  */
@@ -222,4 +210,219 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
     }),
     caption: (it.caption as string) || null,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Paginated picker feeds (owner editor only — back the MediaPicker drill-in)
+// ---------------------------------------------------------------------------
+
+const PAGE_DEFAULT = 16;
+const PAGE_MAX = 50;
+
+function clampLimit(limit: number | undefined): number {
+  const n = Number.isFinite(limit) ? (limit as number) : PAGE_DEFAULT;
+  return Math.min(Math.max(1, Math.trunc(n)), PAGE_MAX);
+}
+
+// Opaque cursor = base64url of "<sortValue>|<_id>". sortValue is `order` for a
+// collection feed (ascending) or createdAt-ms for the "all" feed (descending).
+function encodeCursor(sortValue: string | number, id: string): string {
+  return Buffer.from(`${sortValue}|${id}`, "utf8").toString("base64url");
+}
+function decodeCursor(cursor: string): { sortValue: string; id: string } | null {
+  try {
+    const [sortValue, id] = Buffer.from(cursor, "base64url").toString("utf8").split("|");
+    if (!sortValue || !id || !Types.ObjectId.isValid(id)) return null;
+    return { sortValue, id };
+  } catch {
+    return null;
+  }
+}
+
+function toPickerItem(it: { _id: unknown; cloudinaryPublicId?: unknown; caption?: unknown }): PickerItem {
+  const publicId = (it.cloudinaryPublicId as string) ?? "";
+  return {
+    id: String(it._id),
+    publicId,
+    thumbUrl: cloudinaryThumbnailUrl(publicId, { width: 200, height: 200 }),
+    caption: (it.caption as string) || null,
+  };
+}
+
+/**
+ * One page of a collection's items, ordered by the existing
+ * { workspaceId, collectionId, order } index. Cursor pagination on (order,_id)
+ * ascending. Foreign/missing collections return an empty page (tenant-safe).
+ */
+export async function listCollectionItemsPage(opts: {
+  workspaceId: string;
+  collectionId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PickerItem[]; nextCursor: string | null }> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  await connectDB();
+
+  const filter: Record<string, unknown> = { workspaceId, collectionId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const order = Number(c.sortValue);
+      if (Number.isFinite(order)) {
+        filter.$or = [
+          { order: { $gt: order } },
+          { order, _id: { $gt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ order: 1, _id: 1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, caption: 1, order: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
+  return { items: page.map(toPickerItem), nextCursor };
+}
+
+/**
+ * One page of ALL workspace items, newest-first, paginated. Backs the virtual
+ * "All photos" collection (covers standalone collectionId:null items too).
+ * Cursor pagination on (createdAt,_id) descending. Backed by the
+ * { workspaceId, createdAt } index (added alongside this feed).
+ */
+export async function listAllItemsPage(opts: {
+  workspaceId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PickerItem[]; nextCursor: string | null }> {
+  const { workspaceId } = opts;
+  if (!workspaceId) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  await connectDB();
+
+  const filter: Record<string, unknown> = { workspaceId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const ms = Number(c.sortValue);
+      if (Number.isFinite(ms)) {
+        const d = new Date(ms);
+        filter.$or = [
+          { createdAt: { $lt: d } },
+          { createdAt: d, _id: { $lt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, caption: 1, createdAt: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor =
+    hasMore && last ? encodeCursor(new Date(last.createdAt as Date).getTime(), String(last._id)) : null;
+  return { items: page.map(toPickerItem), nextCursor };
+}
+
+// ---------------------------------------------------------------------------
+// Public read helpers — gated on GalleryCollection.isPublic
+// ---------------------------------------------------------------------------
+
+export type PublicCollectionImage = { id: string; publicId: string; alt: string };
+
+/**
+ * One page of a PUBLIC collection's images for the live portfolio page.
+ * Gates on the collection's `isPublic` flag (tenant-scoped). Returns
+ * `{ id, publicId, alt }` where alt = altText || caption || "".
+ * Foreign workspace, private, or missing collection → empty page (never throws).
+ */
+export async function listPublicCollectionItemsPage(opts: {
+  workspaceId: string;
+  collectionId: string;
+  cursor?: string | null;
+  limit?: number;
+}): Promise<{ items: PublicCollectionImage[]; nextCursor: string | null }> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return { items: [], nextCursor: null };
+
+  await connectDB();
+
+  const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId, isPublic: true })
+    .select({ _id: 1 })
+    .lean();
+  if (!col) return { items: [], nextCursor: null };
+
+  const limit = clampLimit(opts.limit);
+  const filter: Record<string, unknown> = { workspaceId, collectionId };
+  if (opts.cursor) {
+    const c = decodeCursor(opts.cursor);
+    if (c) {
+      const order = Number(c.sortValue);
+      if (Number.isFinite(order)) {
+        filter.$or = [
+          { order: { $gt: order } },
+          { order, _id: { $gt: new Types.ObjectId(c.id) } },
+        ];
+      }
+    }
+  }
+
+  const docs = await GalleryItem.find(filter)
+    .sort({ order: 1, _id: 1 })
+    .limit(limit + 1)
+    .select({ cloudinaryPublicId: 1, altText: 1, caption: 1, order: 1 })
+    .lean();
+
+  const hasMore = docs.length > limit;
+  const page = hasMore ? docs.slice(0, limit) : docs;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? encodeCursor(last.order as number, String(last._id)) : null;
+  return {
+    items: page.map((d) => ({
+      id: String(d._id),
+      publicId: (d.cloudinaryPublicId as string) ?? "",
+      alt: (d.altText as string) || (d.caption as string) || "",
+    })),
+    nextCursor,
+  };
+}
+
+/**
+ * The newest `limit` items of one collection, newest-first — backs the
+ * "Select all in collection" bulk action (owner wants the latest N). Tenant-safe;
+ * foreign/missing collections return []. `limit` is clamped to the safety cap.
+ */
+export async function listCollectionNewest(opts: {
+  workspaceId: string;
+  collectionId: string;
+  limit: number;
+}): Promise<PickerItem[]> {
+  const { workspaceId, collectionId } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return [];
+
+  const limit = Math.min(Math.max(1, Math.trunc(Number.isFinite(opts.limit) ? opts.limit : 1)), PICKER_ITEMS_CAP);
+  await connectDB();
+
+  const docs = await GalleryItem.find({ workspaceId, collectionId })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .select({ cloudinaryPublicId: 1, caption: 1 })
+    .lean();
+
+  return docs.map(toPickerItem);
 }

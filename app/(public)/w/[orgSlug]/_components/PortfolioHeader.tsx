@@ -1,15 +1,5 @@
 "use client";
 
-/**
- * Sticky public-portfolio navigation shown on both Home and Gallery.
- *
- * - Home / Gallery are real links; Contact is a `<button data-cta="contact">`
- *   that the layout's click-delegate wires to the contact modal.
- * - Brand-kit styled via the `--pf-*` CSS variables set by the public layout.
- * - Optional `headerConfig` overrides colors, shadow, border, and active link styles.
- * - Mobile: a hamburger toggles a slide-out panel that closes on link tap.
- */
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -44,22 +34,55 @@ const RADIUS_MAP: Record<string, string> = {
   rounded: "0.5rem",
 };
 
-/** Resolve a color token or hex to a CSS value usable in inline style. */
+const NAVBAR_SIZE_MAP = {
+  sleek: {
+    navPadding: "0.625rem 1.25rem",
+    brandFontSize: "1rem",
+    logoHeight: "1.5rem",
+    navGap: "0.375rem",
+    linkMinHeight: "40px",
+    linkPaddingX: "0.625rem",
+    contactMinHeight: "44px",
+  },
+  balanced: {
+    navPadding: "0.75rem 1.5rem",
+    brandFontSize: "1.125rem",
+    logoHeight: "1.75rem",
+    navGap: "0.5rem",
+    linkMinHeight: "44px",
+    linkPaddingX: "0.75rem",
+    contactMinHeight: "44px",
+  },
+  flashy: {
+    navPadding: "1rem 1.5rem",
+    brandFontSize: "1.375rem",
+    logoHeight: "2.125rem",
+    navGap: "0.75rem",
+    linkMinHeight: "48px",
+    linkPaddingX: "0.9rem",
+    contactMinHeight: "52px",
+  },
+} as const;
+
 function resolveColor(token: string | undefined, fallback: string): string {
   if (!token) return fallback;
   if (token.startsWith("#")) return token;
-  // Map token names to CSS custom properties set by the public layout.
   switch (token) {
-    case "primary":    return "var(--pf-color-primary)";
-    case "secondary":  return "var(--pf-color-secondary)";
-    case "accent":     return "var(--pf-color-accent)";
-    case "background": return "var(--pf-color-bg)";
-    case "foreground": return "var(--pf-color-fg)";
-    default:           return fallback;
+    case "primary":
+      return "var(--pf-color-primary)";
+    case "secondary":
+      return "var(--pf-color-secondary)";
+    case "accent":
+      return "var(--pf-color-accent)";
+    case "background":
+      return "var(--pf-color-bg)";
+    case "foreground":
+      return "var(--pf-color-fg)";
+    default:
+      return fallback;
   }
 }
 
-/** Build `color-mix(...)` for opacity < 100, plain color otherwise. */
 function buildBg(config: PortfolioHeaderConfig | null | undefined): string {
   const bgColor = resolveColor(config?.backgroundColor, "var(--pf-color-bg)");
   const opacity = config?.backgroundOpacity ?? 100;
@@ -76,10 +99,12 @@ export function PortfolioHeader({
   slug,
   labels,
   config,
+  activePath,
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
   config?: PortfolioHeaderConfig | null;
+  activePath?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -94,12 +119,15 @@ export function PortfolioHeader({
 
   const homeHref = `/w/${slug}`;
   const galleryHref = `/w/${slug}/gallery`;
+  const currentPath = activePath ?? pathname;
+  const navbarSize = NAVBAR_SIZE_MAP[config?.navbarSize || "balanced"];
 
-  const isHomeActive = pathname === homeHref || pathname === `/w/${slug}/`;
-  const isGalleryActive = pathname === galleryHref;
+  const isHomeActive = currentPath === homeHref || currentPath === `/w/${slug}/`;
+  const isGalleryActive = currentPath === galleryHref;
 
   const fontSize = config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem";
   const linkColor = resolveColor(config?.linkColor, "var(--pf-color-fg)");
+  const brandTextColor = resolveColor(config?.brandTextColor, linkColor);
   const activeLinkColor = resolveColor(config?.activeLinkColor, "var(--pf-color-fg)");
   const shadow = config?.shadowSize ? (SHADOW_MAP[config.shadowSize] ?? "none") : "none";
 
@@ -135,7 +163,6 @@ export function PortfolioHeader({
   }
 
   const activeLinkExtra = getActiveLinkExtraStyle();
-
   const brandText = config && "brandText" in config ? config.brandText?.trim() ?? "" : labels.brand;
 
   return (
@@ -155,7 +182,7 @@ export function PortfolioHeader({
         style={{
           maxWidth: "80rem",
           margin: "0 auto",
-          padding: "0.75rem 1.5rem",
+          padding: navbarSize.navPadding,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -166,8 +193,8 @@ export function PortfolioHeader({
           href={homeHref}
           style={{
             fontFamily: "var(--pf-font-heading)",
-            color: linkColor,
-            fontSize: "1.125rem",
+            color: brandTextColor,
+            fontSize: navbarSize.brandFontSize,
             fontWeight: 700,
             textDecoration: "none",
             display: "flex",
@@ -181,20 +208,21 @@ export function PortfolioHeader({
               src={config.logoUrl}
               alt=""
               aria-hidden="true"
-              style={{ height: "1.75rem", width: "auto", objectFit: "contain" }}
+              style={{ height: navbarSize.logoHeight, width: "auto", objectFit: "contain" }}
             />
           )}
           {brandText}
         </Link>
 
-        {/* Desktop links */}
-        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: "0.5rem" }}>
+        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: navbarSize.navGap }}>
           <HeaderLink
             href={homeHref}
             isActive={isHomeActive}
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
           >
             {labels.home}
           </HeaderLink>
@@ -204,13 +232,14 @@ export function PortfolioHeader({
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
           >
             {labels.gallery}
           </HeaderLink>
-          <ContactButton label={labels.contact} config={config} />
+          <ContactButton label={labels.contact} config={config} minHeight={navbarSize.contactMinHeight} />
         </div>
 
-        {/* Mobile hamburger */}
         <button
           type="button"
           className="pf-nav-toggle"
@@ -232,11 +261,10 @@ export function PortfolioHeader({
             lineHeight: 1,
           }}
         >
-          <span aria-hidden="true">{menuOpen ? "✕" : "☰"}</span>
+          <span aria-hidden="true">{menuOpen ? "x" : "="}</span>
         </button>
       </nav>
 
-      {/* Mobile slide-out panel */}
       {menuOpen && (
         <div
           className="pf-nav-mobile"
@@ -256,6 +284,8 @@ export function PortfolioHeader({
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
           >
             {labels.home}
           </HeaderLink>
@@ -267,10 +297,18 @@ export function PortfolioHeader({
             linkColor={linkColor}
             fontSize={fontSize}
             activeStyle={activeLinkExtra}
+            minHeight={navbarSize.linkMinHeight}
+            paddingX={navbarSize.linkPaddingX}
           >
             {labels.gallery}
           </HeaderLink>
-          <ContactButton label={labels.contact} block config={config} onActivate={() => setMenuOpen(false)} />
+          <ContactButton
+            label={labels.contact}
+            block
+            config={config}
+            onActivate={() => setMenuOpen(false)}
+            minHeight={navbarSize.contactMinHeight}
+          />
         </div>
       )}
 
@@ -304,6 +342,8 @@ function HeaderLink({
   linkColor,
   fontSize,
   activeStyle,
+  minHeight,
+  paddingX,
 }: {
   href: string;
   children: React.ReactNode;
@@ -313,26 +353,24 @@ function HeaderLink({
   linkColor: string;
   fontSize: string;
   activeStyle: React.CSSProperties;
+  minHeight: string;
+  paddingX: string;
 }) {
   const baseStyle: React.CSSProperties = {
     display: block ? "block" : "inline-flex",
     alignItems: "center",
-    minHeight: "44px",
-    padding: "0 0.75rem",
+    minHeight,
+    padding: `0 ${paddingX}`,
     color: linkColor,
     textDecoration: "none",
     fontSize,
+    fontFamily: "var(--pf-font-body)",
     borderRadius: "var(--pf-radius)",
-    borderBottom: "3px solid transparent", // reserve space for underline
+    borderBottom: "3px solid transparent",
     transition: "background-color 0.15s",
   };
   return (
-    <Link
-      href={href}
-      onClick={onNavigate}
-      className="pf-nav-link"
-      style={isActive ? { ...baseStyle, ...activeStyle } : baseStyle}
-    >
+    <Link href={href} onClick={onNavigate} className="pf-nav-link" style={isActive ? { ...baseStyle, ...activeStyle } : baseStyle}>
       {children}
     </Link>
   );
@@ -343,12 +381,21 @@ function ContactButton({
   block,
   onActivate,
   config,
+  minHeight,
 }: {
   label: string;
   block?: boolean;
   onActivate?: () => void;
   config?: PortfolioHeaderConfig | null;
+  minHeight: string;
 }) {
+  function handleClick() {
+    onActivate?.();
+    if (typeof window !== "undefined") {
+      window.__gallurioOpenContact?.();
+    }
+  }
+
   const contactButtonFill = resolveColor(config?.contactButtonColor, "var(--pf-color-primary)");
   const contactButtonStyle: React.CSSProperties & Record<string, string | number | undefined> = {
     "--pf-contact-button-fill": contactButtonFill,
@@ -357,7 +404,7 @@ function ContactButton({
     width: block ? "100%" : undefined,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "44px",
+    minHeight,
     padding: "0 1rem",
     marginTop: block ? "0.25rem" : 0,
     backgroundColor: buildColorWithOpacity(contactButtonFill, config?.contactButtonOpacity ?? 100),
@@ -376,7 +423,7 @@ function ContactButton({
       type="button"
       data-cta="contact"
       className="pf-nav-contact"
-      onClick={onActivate}
+      onClick={handleClick}
       style={contactButtonStyle}
     >
       {label}

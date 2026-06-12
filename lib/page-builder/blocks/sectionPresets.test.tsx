@@ -2,9 +2,16 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Render } from "@measured/puck";
 import { puckConfig } from "../config";
-import { HERO_PRESET, SERVICES_PRESET } from "./sectionPresets";
+import {
+  FEATURED_WORK_PRESET,
+  GALLERY_GRID_PRESET,
+  GALLERY_MASONRY_PRESET,
+  HERO_PRESET,
+  SECTION_PRESETS,
+  SERVICES_PRESET,
+} from "./sectionPresets";
 
-// Gallery blocks (imported transitively via config) touch the Cloudinary SDK.
+// Gallery blocks (imported transitively via config) use the client-safe cloudinary URL builder.
 vi.mock("@/lib/storage/cloudinary", () => ({
   cloudinaryThumbnailUrl: vi.fn((id: string) => `https://res.cloudinary.com/test/${id}`),
 }));
@@ -32,5 +39,27 @@ describe("section presets render through Puck", () => {
     expect(screen.getByText("Wedding Photography")).toBeInTheDocument();
     expect(screen.getByText("Portrait Sessions")).toBeInTheDocument();
     expect(screen.getByText(/From ₱30,000/)).toBeInTheDocument();
+  });
+});
+
+describe("gallery section presets", () => {
+  it.each([
+    ["GalleryGridPreset", GALLERY_GRID_PRESET, "GalleryGrid"],
+    ["GalleryMasonryPreset", GALLERY_MASONRY_PRESET, "GalleryMasonry"],
+    ["FeaturedWorkPreset", FEATURED_WORK_PRESET, "FeaturedWork"],
+  ] as const)("%s composes Container -> Heading -> Text -> %s", (_label, preset, leafType) => {
+    const children = preset.content as Array<{ type: string }>;
+    expect(children.map((child) => child.type)).toEqual(["Heading", "Text", leafType]);
+  });
+});
+
+describe("section preset background shape", () => {
+  it("every preset uses backgroundImages: [] (not the legacy backgroundImagePublicId)", () => {
+    for (const [key, preset] of Object.entries(SECTION_PRESETS)) {
+      const props = preset.defaultProps as Record<string, unknown>;
+      expect(props, `${key} should expose backgroundImages`).toHaveProperty("backgroundImages");
+      expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
+      expect(props, `${key} should drop backgroundImagePublicId`).not.toHaveProperty("backgroundImagePublicId");
+    }
   });
 });

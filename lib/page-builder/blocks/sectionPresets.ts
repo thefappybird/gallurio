@@ -30,7 +30,7 @@ const slot = (items: ReturnType<typeof child>[]): Slot => items as unknown as Sl
 const onDark = { textColorToken: "background" } as const;
 
 export const HERO_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 50,
   minHeight: "tall",
   alignX: "center",
@@ -44,7 +44,7 @@ export const HERO_PRESET: ContainerBlockProps = {
 };
 
 export const ABOUT_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
@@ -58,7 +58,7 @@ export const ABOUT_PRESET: ContainerBlockProps = {
 };
 
 export const CTA_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "medium",
   alignX: "center",
@@ -72,7 +72,7 @@ export const CTA_PRESET: ContainerBlockProps = {
 };
 
 export const SERVICES_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "center",
@@ -112,7 +112,7 @@ export const SERVICES_PRESET: ContainerBlockProps = {
 };
 
 export const CONTACT_PRESET: ContainerBlockProps = {
-  backgroundImagePublicId: "",
+  backgroundImages: [],
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "center",
@@ -125,12 +125,54 @@ export const CONTACT_PRESET: ContainerBlockProps = {
   ]),
 };
 
+export const GALLERY_GRID_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Gallery highlights" }),
+    child("Text", { text: "A curated selection from one collection." }),
+    child("GalleryGrid", { collectionId: "", columns: 3, gap: "normal", maxItems: 12 }),
+  ]),
+};
+
+export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Story gallery" }),
+    child("Text", { text: "A more editorial layout for one collection." }),
+    child("GalleryMasonry", { collectionId: "", columns: 3, gap: "normal", maxItems: 18 }),
+  ]),
+};
+
+export const FEATURED_WORK_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "left",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Featured work" }),
+    child("Text", { text: "Spotlight a few signature images." }),
+    child("FeaturedWork", { collections: [], columns: 3 }),
+  ]),
+};
+
 export const SECTION_PRESETS = {
   HeroPreset: { label: "Hero", defaultProps: HERO_PRESET },
   AboutPreset: { label: "About", defaultProps: ABOUT_PRESET },
   ServicesPreset: { label: "Services", defaultProps: SERVICES_PRESET },
   CtaPreset: { label: "Call to action", defaultProps: CTA_PRESET },
   ContactPreset: { label: "Contact", defaultProps: CONTACT_PRESET },
+  GalleryGridPreset: { label: "Gallery Grid", defaultProps: GALLERY_GRID_PRESET },
+  GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
+  FeaturedWorkPreset: { label: "Featured Work", defaultProps: FEATURED_WORK_PRESET },
 } as const;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

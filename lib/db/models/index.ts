@@ -23,3 +23,4 @@ export {
   PENDING_INVITE_TTL_SECONDS,
   type PendingTeamAssignmentDoc,
 } from "./pendingTeamAssignment";
+export { PortfolioDraft, type PortfolioDraftDoc } from "./PortfolioDraft";

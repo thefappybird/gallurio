@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
+import { useForm, useFieldArray, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   inquirySubmissionSchema,
@@ -10,17 +10,25 @@ import {
 } from "@/lib/validators/inquiry";
 import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { LocationPicker } from "@/components/ui/location-picker";
+import {
+  buildButtonStyle,
+  type ButtonAppearance,
+} from "./contactButtonAppearance";
+import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
   tabClient: string;
-  tabBooking: string;
+  tabEvent: string;
+  tabLocation: string;
   name: string;
   email: string;
   phone: string;
   preferredContact: string;
   preferred: Record<(typeof PREFERRED_CONTACT_METHODS)[number], string>;
+  eventTitle: string;
   sessionsLabel: string;
-  /** Contains a literal "{n}" token replaced per row. */
   sessionLabel: string;
   startDate: string;
   startTime: string;
@@ -30,41 +38,46 @@ export type InquiryFormLabels = {
   shiftHint: string;
   eventType: string;
   eventTypes: Record<EventType, string>;
-  guestCount: string;
   location: string;
   message: string;
   messagePlaceholder: string;
+  continue: string;
   submit: string;
   submitting: string;
   errorGeneric: string;
   requiredHint: string;
+  locationPicker: {
+    searchPlaceholder: string;
+    searching: string;
+    noResults: string;
+    dragHint: string;
+    clear: string;
+  };
 };
 
-const fieldStyle: CSSProperties = {
-  width: "100%",
-  minHeight: "44px",
-  padding: "0 0.75rem",
-  backgroundColor: "var(--pf-color-bg)",
-  color: "var(--pf-color-fg)",
-  border: "1px solid color-mix(in srgb, var(--pf-color-fg) 28%, transparent)",
-  borderRadius: "var(--pf-radius)",
-  fontSize: "0.9375rem",
-  fontFamily: "var(--pf-font-body)",
-};
+function createFieldStyle(): CSSProperties {
+  return {
+    width: "100%",
+    minHeight: "44px",
+    padding: "0 0.75rem",
+    backgroundColor: "var(--pf-color-bg)",
+    color: "currentColor",
+    border: "1px solid color-mix(in srgb, currentColor 28%, transparent)",
+    borderRadius: "var(--pf-radius)",
+    fontSize: "0.9375rem",
+    fontFamily: "var(--pf-font-body)",
+  };
+}
 
-const labelStyle: CSSProperties = {
-  display: "block",
-  fontSize: "0.8125rem",
-  fontWeight: 600,
-  color: "var(--pf-color-fg)",
-  marginBottom: "0.25rem",
-};
-
-const errorStyle: CSSProperties = {
-  fontSize: "0.75rem",
-  color: "var(--pf-color-accent)",
-  marginTop: "0.25rem",
-};
+function createLabelStyle(): CSSProperties {
+  return {
+    display: "block",
+    fontSize: "0.8125rem",
+    fontWeight: 600,
+    color: "currentColor",
+    marginBottom: "0.25rem",
+  };
+}
 
 function todayIso(): string {
   const d = new Date();
@@ -84,66 +97,86 @@ function readTracking() {
   };
 }
 
-/** Configurable submit-button appearance, derived from publicPage.contact. */
-export type SubmitAppearance = {
-  /** Resolved CSS color for the button — e.g. "var(--pf-color-primary)" or "#ff0000". */
-  color: string;
-  style: "solid" | "outline" | "soft";
-  /** Override the button's border-radius (e.g. "0.5rem"). Falls back to var(--pf-radius). */
-  borderRadius?: string;
-  /** Resolved CSS color for button text. Overrides the style-derived default. */
-  textColor?: string;
-  /** Explicit border string — e.g. "2px solid #ff0000". Overrides the style-derived border. */
-  border?: string;
-};
+export type SubmitAppearance = ButtonAppearance;
 
-function submitButtonStyle(appearance: SubmitAppearance, disabled: boolean): CSSProperties {
-  const color = appearance.color;
-  const base: CSSProperties = {
-    marginTop: "1rem",
-    width: "100%",
-    minHeight: "48px",
-    borderRadius: appearance.borderRadius ?? "var(--pf-radius)",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.7 : 1,
-    fontSize: "1rem",
-    fontFamily: "var(--pf-font-body)",
-  };
-  let style: CSSProperties;
-  if (appearance.style === "outline") {
-    style = { ...base, backgroundColor: "transparent", color: appearance.textColor ?? color, border: `1px solid ${color}` };
-  } else if (appearance.style === "soft") {
-    style = {
-      ...base,
-      backgroundColor: `color-mix(in srgb, ${color} 16%, var(--pf-color-bg))`,
-      color: appearance.textColor ?? color,
-      border: "none",
-    };
-  } else {
-    style = { ...base, backgroundColor: color, color: appearance.textColor ?? "var(--pf-color-bg)", border: "none" };
-  }
-  if (appearance.border) style = { ...style, border: appearance.border };
-  return style;
-}
-
-const DEFAULT_SUBMIT_APPEARANCE: SubmitAppearance = {
+const DEFAULT_SUBMIT_APPEARANCE: ButtonAppearance = {
   color: "var(--pf-color-primary)",
   style: "solid",
 };
+
+const DEFAULT_ADD_SESSION_APPEARANCE: ButtonAppearance = {
+  color: "var(--pf-color-fg)",
+  style: "outline",
+  border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
+};
+
+const TAB_FONT_SIZE_MAP: Record<string, string> = {
+  sm: "0.8125rem",
+  md: "0.9375rem",
+  lg: "1.0625rem",
+};
+
+const TAB_RADIUS_MAP: Record<string, string> = {
+  sharp: "0",
+  subtle: "0.25rem",
+  rounded: "0.5rem",
+};
+
+function resolveTabColor(token: string | undefined, fallback: string): string {
+  if (!token) return fallback;
+  if (token.startsWith("#")) return token;
+  return `var(--pf-color-${token}, ${fallback})`;
+}
+
+function buildTabColorWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
+}
+
+export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | undefined): CSSProperties {
+  const style: CSSProperties = {};
+  const activeColor = resolveTabColor(config?.activeTabColor, "var(--pf-color-fg)");
+  style.color = activeColor;
+  if (config?.activeTabScale) {
+    (style as CSSProperties & Record<string, string>)["transform"] = "scale(1.08)";
+    (style as CSSProperties & Record<string, string>)["fontWeight"] = "700";
+  }
+  if (config?.activeTabHighlight) {
+    const highlightColor = resolveTabColor(
+      config.tabHighlightColor,
+      "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+    );
+    style.backgroundColor = buildTabColorWithOpacity(highlightColor, config.tabHighlightOpacity ?? 100);
+    style.borderRadius = config.activeTabRadius
+      ? (TAB_RADIUS_MAP[config.activeTabRadius] ?? "var(--pf-radius)")
+      : "var(--pf-radius)";
+  }
+  if (config?.activeTabUnderline) {
+    style.borderBottom = `3px solid ${resolveTabColor(config.tabUnderlineColor, "var(--pf-color-accent)")}`;
+  }
+  return style;
+}
 
 export function ContactForm({
   workspaceSlug,
   labels,
   onSuccess,
   submitAppearance = DEFAULT_SUBMIT_APPEARANCE,
+  addSessionAppearance = DEFAULT_ADD_SESSION_APPEARANCE,
   preview = false,
+  compactLocationPicker = false,
+  scrollable = false,
+  contactConfig,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
   onSuccess: () => void;
   submitAppearance?: SubmitAppearance;
-  /** Editor preview — never POST a real inquiry; submitting is a no-op. */
+  addSessionAppearance?: ButtonAppearance;
   preview?: boolean;
+  compactLocationPicker?: boolean;
+  scrollable?: boolean;
+  contactConfig?: PortfolioContactConfig | null;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -152,10 +185,10 @@ export function ContactForm({
       email: "",
       phone: "",
       preferredContact: "email",
+      eventTitle: "",
       sessions: [{ startDate: "", startTime: "10:00", endTime: "17:00" }],
       eventType: "other",
-      guestCount: undefined,
-      location: "",
+      location: { label: null, address: null, placeId: null, lat: null, lng: null },
       description: "",
       company_name: "",
     },
@@ -166,21 +199,34 @@ export function ContactForm({
     control,
     handleSubmit,
     setError,
+    trigger,
     formState: { errors, isSubmitting },
   } = form;
 
+  const errorStyle: CSSProperties = {
+    fontSize: "0.75rem",
+    color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
+    marginTop: "0.25rem",
+  };
+  const fieldStyle = createFieldStyle();
+  const labelStyle = createLabelStyle();
+
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
   const minDate = todayIso();
-  const [activeTab, setActiveTab] = useState<"client" | "booking">("client");
+  const [activeTab, setActiveTab] = useState<"client" | "event" | "location">("client");
 
-  // On a failed client-side validation, surface the first tab that has an error
-  // so the user isn't left staring at a submit button that "does nothing".
   function onInvalid(errs: FieldErrors<InquirySubmissionInput>) {
-    const tab1HasError = Boolean(errs.name || errs.email || errs.phone || errs.preferredContact);
-    setActiveTab(tab1HasError ? "client" : "booking");
+    if (errs.name || errs.email || errs.phone || errs.preferredContact) {
+      setActiveTab("client");
+      return;
+    }
+    if (errs.eventTitle || errs.sessions || errs.eventType) {
+      setActiveTab("event");
+      return;
+    }
+    setActiveTab("location");
   }
 
-  // Attach tracking params once on mount.
   useEffect(() => {
     const t = readTracking();
     if (t.utm_source) form.setValue("utm_source", t.utm_source);
@@ -189,9 +235,17 @@ export function ContactForm({
     if (t.referrer) form.setValue("referrer", t.referrer);
   }, [form]);
 
+  async function handleContinue() {
+    const ok = await trigger(["name", "email", "phone", "preferredContact"]);
+    if (ok) setActiveTab("event");
+  }
+
+  async function handleEventContinue() {
+    const ok = await trigger(["eventTitle", "sessions", "eventType"]);
+    if (ok) setActiveTab("location");
+  }
+
   async function onSubmit(data: InquirySubmissionInput) {
-    // In the owner's editor preview the form is fully interactive but inert —
-    // submitting must not create a real inquiry/booking against the workspace.
     if (preview) return;
     try {
       const res = await fetch("/api/inquiries", {
@@ -213,75 +267,131 @@ export function ContactForm({
     <form
       onSubmit={handleSubmit(onSubmit, onInvalid)}
       noValidate
-      style={{ fontFamily: "var(--pf-font-body)" }}
+      className="pf-contact-form"
+      style={{
+        fontFamily: "var(--pf-font-body)",
+        color: "inherit",
+        maxHeight: scrollable ? "100%" : undefined,
+        overflowY: scrollable ? "auto" : undefined,
+        paddingRight: scrollable ? "0.25rem" : undefined,
+      }}
     >
       <style>{`
         .pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+        .pf-contact-form,
+        .pf-contact-form label,
+        .pf-contact-form legend,
+        .pf-contact-form span,
+        .pf-contact-form p {
+          color: inherit;
+        }
+        .pf-contact-form input,
+        .pf-contact-form select,
+        .pf-contact-form textarea,
+        .pf-contact-form [data-slot="input"] {
+          color: inherit;
+          border-color: color-mix(in srgb, currentColor 28%, transparent);
+        }
+        .pf-contact-form input::placeholder,
+        .pf-contact-form textarea::placeholder,
+        .pf-contact-form [data-slot="input"]::placeholder {
+          color: color-mix(in srgb, currentColor 62%, transparent);
+        }
+        .pf-contact-form .pf-contact-phone,
+        .pf-contact-form .pf-contact-location {
+          color: inherit;
+        }
+        .pf-contact-form .pf-contact-phone input,
+        .pf-contact-form .pf-contact-location input,
+        .pf-contact-form .pf-contact-location button,
+        .pf-contact-form .pf-contact-location [data-slot="input"] {
+          color: inherit;
+        }
+        .pf-contact-form .pf-contact-location .text-muted-foreground,
+        .pf-contact-form .pf-contact-location svg,
+        .pf-contact-form .pf-contact-phone .PhoneInputCountrySelectArrow {
+          color: color-mix(in srgb, currentColor 62%, transparent);
+        }
       `}</style>
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "booking")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "client" | "event" | "location")}>
         <TabsList>
-          <TabsTab value="client">{labels.tabClient}</TabsTab>
-          <TabsTab value="booking">{labels.tabBooking}</TabsTab>
+          {(["client", "event", "location"] as const).map((tabValue) => {
+            const isActive = activeTab === tabValue;
+            const label = tabValue === "client" ? labels.tabClient : tabValue === "event" ? labels.tabEvent : labels.tabLocation;
+            const tabFontSize = contactConfig?.tabFontSize
+              ? (TAB_FONT_SIZE_MAP[contactConfig.tabFontSize] ?? "0.9375rem")
+              : "0.9375rem";
+            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "");
+            const activeExtraStyle = getActiveTabExtraStyle(contactConfig);
+            const tabStyle: CSSProperties = isActive
+              ? { fontSize: tabFontSize, ...activeExtraStyle }
+              : { fontSize: tabFontSize, ...(inactiveColor ? { color: inactiveColor } : {}) };
+            return (
+              <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
+                {label}
+              </TabsTab>
+            );
+          })}
         </TabsList>
 
-        {/* Tab 1 — client info */}
         <TabsPanel value="client">
           <div>
-            <label htmlFor="cf-name" style={labelStyle}>
-              {labels.name}
-            </label>
-            <input
-              id="cf-name"
-              style={fieldStyle}
-              aria-invalid={errors.name ? "true" : undefined}
-              {...register("name")}
-            />
+            <label htmlFor="cf-name" style={labelStyle}>{labels.name}</label>
+            <input id="cf-name" style={fieldStyle} aria-invalid={errors.name ? "true" : undefined} {...register("name")} />
             {errors.name && <p style={errorStyle} role="alert">{errors.name.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="cf-email" style={labelStyle}>
-              {labels.email}
-            </label>
-            <input
-              id="cf-email"
-              type="email"
-              style={fieldStyle}
-              aria-invalid={errors.email ? "true" : undefined}
-              {...register("email")}
-            />
+            <label htmlFor="cf-email" style={labelStyle}>{labels.email}</label>
+            <input id="cf-email" type="email" style={fieldStyle} aria-invalid={errors.email ? "true" : undefined} {...register("email")} />
             {errors.email && <p style={errorStyle} role="alert">{errors.email.message}</p>}
           </div>
 
           <div>
-            <label htmlFor="cf-phone" style={labelStyle}>
-              {labels.phone}
-            </label>
-            <input id="cf-phone" type="tel" style={fieldStyle} {...register("phone")} />
+            <label htmlFor="cf-phone" style={labelStyle}>{labels.phone}</label>
+            <Controller
+              control={control}
+              name="phone"
+              render={({ field }) => (
+                <PhoneInput
+                  id="cf-phone"
+                  className="pf-contact-phone"
+                  value={field.value || undefined}
+                  onChange={(value) => field.onChange(value ?? "")}
+                />
+              )}
+            />
           </div>
 
           <div>
-            <label htmlFor="cf-preferred" style={labelStyle}>
-              {labels.preferredContact}
-            </label>
+            <label htmlFor="cf-preferred" style={labelStyle}>{labels.preferredContact}</label>
             <select id="cf-preferred" style={fieldStyle} {...register("preferredContact")}>
               {PREFERRED_CONTACT_METHODS.map((m) => (
-                <option key={m} value={m}>
-                  {labels.preferred[m]}
-                </option>
+                <option key={m} value={m}>{labels.preferred[m]}</option>
               ))}
             </select>
           </div>
+
+          <button
+            type="button"
+            className="pf-cf-btn"
+            onClick={() => void handleContinue()}
+            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
+          >
+            {labels.continue}
+          </button>
         </TabsPanel>
 
-        {/* Tab 2 — booking request */}
-        <TabsPanel value="booking">
+        <TabsPanel value="event">
+          <div>
+            <label htmlFor="cf-eventTitle" style={labelStyle}>{labels.eventTitle}</label>
+            <input id="cf-eventTitle" style={fieldStyle} aria-invalid={errors.eventTitle ? "true" : undefined} {...register("eventTitle")} />
+            {errors.eventTitle && <p style={errorStyle} role="alert">{errors.eventTitle.message}</p>}
+          </div>
+
           <fieldset style={{ border: "none", margin: 0, padding: 0 }}>
             <legend style={{ ...labelStyle, marginBottom: "0.5rem" }}>{labels.sessionsLabel}</legend>
-            <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>
-              {labels.shiftHint}
-            </p>
-
+            <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>{labels.shiftHint}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {fields.map((field, index) => (
                 <div
@@ -295,13 +405,7 @@ export function ContactForm({
                     gap: "0.5rem",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
                       {labels.sessionLabel.replace("{n}", String(index + 1))}
                     </span>
@@ -328,9 +432,7 @@ export function ContactForm({
                   </div>
 
                   <div>
-                    <label htmlFor={`cf-start-${index}`} style={labelStyle}>
-                      {labels.startDate}
-                    </label>
+                    <label htmlFor={`cf-start-${index}`} style={labelStyle}>{labels.startDate}</label>
                     <input
                       id={`cf-start-${index}`}
                       type="date"
@@ -339,29 +441,16 @@ export function ContactForm({
                       aria-invalid={errors.sessions?.[index]?.startDate ? "true" : undefined}
                       {...register(`sessions.${index}.startDate` as const)}
                     />
-                    {errors.sessions?.[index]?.startDate && (
-                      <p style={errorStyle} role="alert">
-                        {errors.sessions[index]?.startDate?.message}
-                      </p>
-                    )}
+                    {errors.sessions?.[index]?.startDate && <p style={errorStyle} role="alert">{errors.sessions[index]?.startDate?.message}</p>}
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
-                      <label htmlFor={`cf-stime-${index}`} style={labelStyle}>
-                        {labels.startTime}
-                      </label>
-                      <input
-                        id={`cf-stime-${index}`}
-                        type="time"
-                        style={fieldStyle}
-                        {...register(`sessions.${index}.startTime` as const)}
-                      />
+                      <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
+                      <input id={`cf-stime-${index}`} type="time" style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
                     </div>
                     <div>
-                      <label htmlFor={`cf-etime-${index}`} style={labelStyle}>
-                        {labels.endTime}
-                      </label>
+                      <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
                       <input
                         id={`cf-etime-${index}`}
                         type="time"
@@ -369,11 +458,7 @@ export function ContactForm({
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
                         {...register(`sessions.${index}.endTime` as const)}
                       />
-                      {errors.sessions?.[index]?.endTime && (
-                        <p style={errorStyle} role="alert">
-                          {errors.sessions[index]?.endTime?.message}
-                        </p>
-                      )}
+                      {errors.sessions?.[index]?.endTime && <p style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
                     </div>
                   </div>
                 </div>
@@ -384,61 +469,70 @@ export function ContactForm({
               type="button"
               className="pf-cf-btn"
               onClick={() => append({ startDate: "", startTime: "10:00", endTime: "17:00" })}
-              style={{
+              style={buildButtonStyle(addSessionAppearance, false, {
                 marginTop: "0.5rem",
                 minHeight: "44px",
                 padding: "0 0.75rem",
-                background: "transparent",
-                color: "var(--pf-color-fg)",
-                border: "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)",
-                borderRadius: "var(--pf-radius)",
-                cursor: "pointer",
                 fontSize: "0.875rem",
-              }}
+              })}
             >
               + {labels.addSession}
             </button>
           </fieldset>
 
           <div>
-            <label htmlFor="cf-eventType" style={labelStyle}>
-              {labels.eventType}
-            </label>
+            <label htmlFor="cf-eventType" style={labelStyle}>{labels.eventType}</label>
             <select id="cf-eventType" style={fieldStyle} {...register("eventType")}>
               {EVENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {labels.eventTypes[t]}
-                </option>
+                <option key={t} value={t}>{labels.eventTypes[t]}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-            <div>
-              <label htmlFor="cf-guests" style={labelStyle}>
-                {labels.guestCount}
-              </label>
-              <input
-                id="cf-guests"
-                type="number"
-                min={0}
-                inputMode="numeric"
-                style={fieldStyle}
-                {...register("guestCount")}
-              />
-            </div>
-            <div>
-              <label htmlFor="cf-location" style={labelStyle}>
-                {labels.location}
-              </label>
-              <input id="cf-location" style={fieldStyle} {...register("location")} />
-            </div>
+          <button
+            type="button"
+            className="pf-cf-btn"
+            onClick={() => void handleEventContinue()}
+            style={buildButtonStyle(submitAppearance, false, { marginTop: "1rem" })}
+          >
+            {labels.continue}
+          </button>
+        </TabsPanel>
+
+        <TabsPanel value="location">
+          <div>
+            <label htmlFor="cf-location" style={labelStyle}>{labels.location}</label>
+            <Controller
+              control={control}
+              name="location"
+              render={({ field }) => (
+                <LocationPicker
+                  id="cf-location"
+                  className="pf-contact-location"
+                  labels={labels.locationPicker}
+                  searchEnabled={!preview}
+                  value={{
+                    address: field.value.address ?? "",
+                    lat: field.value.lat ?? null,
+                    lng: field.value.lng ?? null,
+                  }}
+                  compact={compactLocationPicker}
+                  onChange={(value) =>
+                    field.onChange({
+                      label: value.address || null,
+                      address: value.address || null,
+                      placeId: null,
+                      lat: value.lat ?? null,
+                      lng: value.lng ?? null,
+                    })
+                  }
+                />
+              )}
+            />
           </div>
 
           <div>
-            <label htmlFor="cf-description" style={labelStyle}>
-              {labels.message}
-            </label>
+            <label htmlFor="cf-description" style={labelStyle}>{labels.message}</label>
             <textarea
               id="cf-description"
               rows={4}
@@ -447,16 +541,11 @@ export function ContactForm({
               aria-invalid={errors.description ? "true" : undefined}
               {...register("description")}
             />
-            {errors.description && (
-              <p style={errorStyle} role="alert">
-                {errors.description.message}
-              </p>
-            )}
+            {errors.description && <p style={errorStyle} role="alert">{errors.description.message}</p>}
           </div>
         </TabsPanel>
       </Tabs>
 
-      {/* Honeypot — visually hidden, off the tab order */}
       <input
         type="text"
         tabIndex={-1}
@@ -466,7 +555,6 @@ export function ContactForm({
         {...register("company_name")}
       />
 
-      {/* Live region for the top-level submit error */}
       <div aria-live="polite">
         {errors.root && (
           <p style={{ ...errorStyle, fontSize: "0.8125rem" }} role="alert">
@@ -475,14 +563,16 @@ export function ContactForm({
         )}
       </div>
 
-      <button
-        type="submit"
-        className="pf-cf-btn"
-        disabled={isSubmitting}
-        style={submitButtonStyle(submitAppearance, isSubmitting)}
-      >
-        {isSubmitting ? labels.submitting : labels.submit}
-      </button>
+      {activeTab === "location" ? (
+        <button
+          type="submit"
+          className="pf-cf-btn"
+          disabled={isSubmitting}
+          style={buildButtonStyle(submitAppearance, isSubmitting, { marginTop: "1rem" })}
+        >
+          {isSubmitting ? labels.submitting : labels.submit}
+        </button>
+      ) : null}
     </form>
   );
 }

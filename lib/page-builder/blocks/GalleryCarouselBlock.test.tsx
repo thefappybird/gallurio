@@ -1,117 +1,130 @@
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Types } from "mongoose";
-import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem } from "@/lib/db/models/GalleryItem";
-import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
-import { puckConfig } from "@/lib/page-builder/config";
+import React from "react";
 import { GalleryCarouselBlock, galleryCarouselDefaultProps } from "./GalleryCarouselBlock";
+import type { GalleryCarouselProps } from "./GalleryCarouselBlock";
+import type { GalleryImage } from "./GalleryGridBlock";
+import { puckConfig } from "@/lib/page-builder/config";
 
-vi.mock("@/lib/storage/cloudinary", () => ({
-  cloudinaryThumbnailUrl: vi.fn(
-    (publicId: string, opts: { width?: number }) =>
-      `https://res.cloudinary.com/test/${opts?.width ?? 400}/${publicId}`
-  ),
-}));
-
-beforeAll(async () => {
-  await startInMemoryMongo();
+const OLD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+beforeEach(() => {
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
 });
-afterAll(async () => {
-  await stopInMemoryMongo();
-});
-afterEach(async () => {
-  await clearCollections();
+afterEach(() => {
+  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = OLD;
 });
 
-async function makeCollection(workspaceId: Types.ObjectId, isPublic = true) {
-  return GalleryCollection.create({
-    workspaceId,
-    name: "C",
-    slug: `c-${new Types.ObjectId().toString()}`,
-    isPublic,
-  });
-}
-async function seed(workspaceId: Types.ObjectId, collectionId: Types.ObjectId, n: number) {
-  return GalleryItem.insertMany(
-    Array.from({ length: n }, (_, i) => ({
-      workspaceId,
-      collectionId,
-      cloudinaryPublicId: `${workspaceId}/item${i}`,
-      url: `u${i}`,
-      caption: `Photo ${i + 1}`,
-      altText: `Alt ${i + 1}`,
-      order: i,
-    }))
-  );
+function imgs(n: number): GalleryImage[] {
+  return Array.from({ length: n }, (_, i) => ({ id: `id${i}`, publicId: `pid${i}`, alt: `Alt ${i}` }));
 }
 
-const base = { ...galleryCarouselDefaultProps };
+const base: GalleryCarouselProps = { ...galleryCarouselDefaultProps };
 
-it("is registered in puckConfig", () => {
-  expect(puckConfig.components.GalleryCarousel).toBeDefined();
+describe("GalleryCarouselBlock — isomorphic render", () => {
+  it("is synchronous", () => {
+    expect(GalleryCarouselBlock({ ...base, images: imgs(2) })).not.toBeInstanceOf(Promise);
+  });
+
+  it("maps images[] to carousel slides (one <img> per image)", () => {
+    const { container } = render(GalleryCarouselBlock({ ...base, images: imgs(3) }));
+    expect(container.querySelectorAll("[data-slide] img").length).toBe(3);
+    expect(container.querySelector("[data-block='gallery-carousel']")).toBeInTheDocument();
+  });
+
+  it("renders the floating header heading/description", () => {
+    render(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Our Work", description: "Recent shoots" }));
+    expect(screen.getByText("Our Work")).toBeInTheDocument();
+    expect(screen.getByText("Recent shoots")).toBeInTheDocument();
+  });
+
+  it("renders the empty state when images is empty", () => {
+    render(GalleryCarouselBlock({ ...base, images: [] }));
+    expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
+    expect(document.querySelector("[data-block='gallery-carousel'][data-empty='true']")).toBeInTheDocument();
+  });
+
+  it("registers default props with images:[] and no collectionId/maxItems/overlayAlign", () => {
+    expect(galleryCarouselDefaultProps.images).toEqual([]);
+    expect(galleryCarouselDefaultProps).not.toHaveProperty("collectionId");
+    expect(galleryCarouselDefaultProps).not.toHaveProperty("maxItems");
+    expect(galleryCarouselDefaultProps).not.toHaveProperty("overlayAlign");
+    expect(puckConfig.components.GalleryCarousel.defaultProps).toHaveProperty("images");
+  });
+
+  it("threads heading and description colors independently", () => {
+    const { container } = render(
+      GalleryCarouselBlock({
+        ...base,
+        images: imgs(2),
+        heading: "Hi",
+        description: "Yo",
+        _style: { headingColorToken: "primary", descriptionColorToken: "secondary" },
+      })
+    );
+    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("var(--pf-color-primary)");
+    expect(container.querySelector("[data-gallery-overlay] p")!.getAttribute("style") ?? "").toContain("var(--pf-color-secondary)");
+  });
+
+  it("renders the heading at the chosen level", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { headingLevel: "h1" } })
+    );
+    expect(container.querySelector("h1")).not.toBeNull();
+  });
+
+  it("applies the description font size", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), description: "Yo", _style: { descriptionFontSize: 22 } })
+    );
+    expect(container.querySelector("[data-gallery-overlay] p")!.getAttribute("style") ?? "").toContain("font-size: 22px");
+  });
+
+  it("renders a heading highlight band with the chosen shape and size", () => {
+    const { container } = render(
+      GalleryCarouselBlock({
+        ...base,
+        images: imgs(2),
+        heading: "Hi",
+        _style: { headingHighlight: true, headingHighlightToken: "accent", headingHighlightShape: "rounded", headingHighlightSize: "lg" },
+      })
+    );
+    const mark = container.querySelector("[data-gallery-overlay] h2 mark");
+    expect(mark).not.toBeNull();
+    expect(mark!.getAttribute("style") ?? "").toContain("border-radius: 0.6em");
+    expect(mark!.getAttribute("style") ?? "").toContain("padding: 0.2em 0.45em");
+  });
+
+  it("applies Text Padding to the overlay layer (default 1.5rem, overridable)", () => {
+    const def = render(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
+    expect(def.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "").toContain("padding: 1.5rem");
+
+    const custom = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
+    );
+    const style = custom.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "";
+    expect(style).toContain("padding: 3rem 2rem");
+  });
+
+  it("lets _style.headingAlign override the float-derived heading alignment", () => {
+    const { container } = render(
+      GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", floatX: "center", _style: { headingAlign: "left" } })
+    );
+    expect(container.querySelector("h2")!.getAttribute("style") ?? "").toContain("text-align: left");
+  });
 });
 
-describe("GalleryCarouselBlock", () => {
-  it("renders empty state with no workspace context", async () => {
-    render(await GalleryCarouselBlock({ ...base, collectionId: new Types.ObjectId().toString() }));
-    expect(screen.getByText(/gallery not available/i)).toBeInTheDocument();
-  });
-
-  it("renders empty state for collection with no items", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryCarouselBlock({ ...base, collectionId: col._id.toString() })
+describe("GalleryCarouselBlock heading gap", () => {
+  it("passes _style.headingGap to the rendered description margin", () => {
+    const { container } = render(
+      <GalleryCarouselBlock
+        {...galleryCarouselDefaultProps}
+        images={[{ id: "1", publicId: "demo/x", alt: "" }]}
+        heading="Title"
+        description="Desc"
+        _style={{ headingGap: 32 }}
+      />,
     );
-    render(el);
-    expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
-  });
-
-  it("renders slides + accessible prev/next controls for a populated collection", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 3);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryCarouselBlock({ ...base, collectionId: col._id.toString() })
-    );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(3);
-    expect(screen.getByRole("button", { name: /previous image/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /next image/i })).toBeInTheDocument();
-  });
-
-  it("hides nav buttons when only one slide", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 1);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryCarouselBlock({ ...base, collectionId: col._id.toString() })
-    );
-    render(el);
-    expect(screen.queryByRole("button", { name: /next image/i })).toBeNull();
-  });
-
-  it("respects maxItems cap", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws);
-    await seed(ws, col._id, 15);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryCarouselBlock({ ...base, collectionId: col._id.toString(), maxItems: 4 })
-    );
-    const { container } = render(el);
-    expect(container.querySelectorAll("img")).toHaveLength(4);
-  });
-
-  it("hides items from a private collection", async () => {
-    const ws = new Types.ObjectId();
-    const col = await makeCollection(ws, false);
-    await seed(ws, col._id, 5);
-    const el = await runWithRenderWorkspace({ _id: ws.toString(), name: "A" }, () =>
-      GalleryCarouselBlock({ ...base, collectionId: col._id.toString() })
-    );
-    render(el);
-    expect(screen.getByText(/no photos in this collection yet/i)).toBeInTheDocument();
+    const p = container.querySelector("[data-gallery-overlay] p")!;
+    expect(p.getAttribute("style") ?? "").toContain("32px");
   });
 });

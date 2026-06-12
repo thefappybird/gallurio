@@ -1,15 +1,61 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { ContactForm, type InquiryFormLabels } from "./ContactForm";
+import { ContactForm, getActiveTabExtraStyle, type InquiryFormLabels } from "./ContactForm";
+
+vi.mock("@/components/ui/phone-input", () => ({
+  PhoneInput: ({ value, onChange, ...props }: { value?: string; onChange?: (value?: string) => void }) => (
+    <input
+      aria-label="Phone"
+      value={value ?? ""}
+      onChange={(event) => onChange?.(event.target.value || undefined)}
+      {...props}
+    />
+  ),
+}));
+
+vi.mock("@/components/ui/location-picker", () => ({
+  LocationPicker: ({
+    value,
+    onChange,
+    id,
+  }: {
+    value: { address: string; lat: number | null; lng: number | null; label?: string | null; placeId?: string | null };
+    onChange: (value: {
+      address: string;
+      lat: number | null;
+      lng: number | null;
+      label?: string | null;
+      placeId?: string | null;
+    }) => void;
+    id?: string;
+  }) => (
+    <input
+      id={id}
+      aria-label="Location"
+      value={value.address}
+      onChange={(event) =>
+        onChange({
+          address: event.target.value,
+          label: event.target.value,
+          placeId: null,
+          lat: value.lat,
+          lng: value.lng,
+        })
+      }
+    />
+  ),
+}));
 
 const labels: InquiryFormLabels = {
   tabClient: "Your details",
-  tabBooking: "Event details",
+  tabEvent: "Event details",
+  tabLocation: "Location & notes",
   name: "Name",
   email: "Email",
   phone: "Phone",
   preferredContact: "Preferred contact",
   preferred: { email: "Email", phone: "Phone", either: "Either" },
+  eventTitle: "Event title",
   sessionsLabel: "Event dates",
   sessionLabel: "Day {n}",
   startDate: "Date",
@@ -27,14 +73,21 @@ const labels: InquiryFormLabels = {
     anniversary: "Anniversary",
     other: "Other",
   },
-  guestCount: "Guests",
   location: "Location",
   message: "Tell us more",
   messagePlaceholder: "Details…",
+  continue: "Continue",
   submit: "Send inquiry",
   submitting: "Sending…",
   errorGeneric: "Could not submit — please try again later.",
   requiredHint: "Required",
+  locationPicker: {
+    searchPlaceholder: "Search venue or address",
+    searching: "Searching",
+    noResults: "No matches",
+    dragHint: "Drag the pin to fine-tune the exact spot.",
+    clear: "Clear location",
+  },
 };
 
 function futureDate(days = 30): string {
@@ -45,19 +98,22 @@ function futureDate(days = 30): string {
   ).padStart(2, "0")}`;
 }
 
-function goToBooking() {
-  // base-ui unmounts inactive tab panels, so booking fields only exist once
-  // the Event details tab is active.
+function goToEventDetails() {
   fireEvent.click(screen.getByRole("tab", { name: "Event details" }));
 }
 
-function fillValidForm() {
-  // Tab 1 (active by default).
+async function fillValidForm() {
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
-  // Tab 2.
-  goToBooking();
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Event title");
+  fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
   fireEvent.change(screen.getByLabelText("Date"), { target: { value: futureDate() } });
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByLabelText("Location");
+  fireEvent.change(screen.getByLabelText("Location"), {
+    target: { value: "Manila, Metro Manila, Philippines" },
+  });
   fireEvent.change(screen.getByLabelText("Tell us more"), {
     target: { value: "A lovely garden wedding, two days." },
   });
@@ -78,6 +134,7 @@ describe("ContactForm", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     expect(screen.getByRole("tab", { name: "Your details" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Event details" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Location & notes" })).toBeInTheDocument();
 
     const honeypot = document.querySelector('input[name="company_name"]') as HTMLInputElement;
     expect(honeypot).toBeTruthy();
@@ -87,7 +144,7 @@ describe("ContactForm", () => {
 
   it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
-    goToBooking();
+    goToEventDetails();
     expect(screen.getAllByLabelText("Date")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /Add another day/i }));
     expect(screen.getAllByLabelText("Date")).toHaveLength(2);
@@ -103,7 +160,7 @@ describe("ContactForm", () => {
     const onSuccess = vi.fn();
 
     render(<ContactForm workspaceSlug="luna-studio" labels={labels} onSuccess={onSuccess} />);
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
@@ -114,8 +171,11 @@ describe("ContactForm", () => {
     const body = JSON.parse((init as RequestInit).body as string);
     expect(body.workspaceSlug).toBe("luna-studio");
     expect(body.email).toBe("ada@example.com");
+    expect(body.eventTitle).toBe("Ada & Charles Wedding");
     expect(Array.isArray(body.sessions)).toBe(true);
     expect(body.sessions[0].startDate).toBe(futureDate());
+    expect(body.location.address).toBe("Manila, Metro Manila, Philippines");
+    expect(body.guestCount).toBeUndefined();
   });
 
   it("surfaces a recoverable inline error when the API responds non-ok (e.g. 404)", async () => {
@@ -123,7 +183,7 @@ describe("ContactForm", () => {
     const onSuccess = vi.fn();
 
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={onSuccess} />);
-    fillValidForm();
+    await fillValidForm();
     fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
 
     await waitFor(() =>
@@ -139,7 +199,7 @@ describe("ContactForm", () => {
     ) as unknown as typeof fetch;
 
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
-    fillValidForm();
+    await fillValidForm();
     const submit = screen.getByRole("button", { name: "Send inquiry" });
     fireEvent.click(submit);
 
@@ -147,17 +207,42 @@ describe("ContactForm", () => {
     resolveFetch({ ok: true });
   });
 
-  it("switches to the booking tab when submit fails validation there", async () => {
+  it("switches to the event tab when first-step continue fails validation there", async () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
-    // Fill Tab 1 validly; leave Tab 2 (date + description) empty.
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
-    // Booking fields are not mounted while the client tab is active.
+    expect(screen.queryByLabelText("Event title")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(screen.getByLabelText("Event title")).toBeInTheDocument());
+  });
+
+  it("advances from event details to location and notes only when the second tab is valid", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Event title");
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: futureDate() } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(screen.getByLabelText("Location")).toBeInTheDocument());
     expect(screen.queryByLabelText("Date")).toBeNull();
+  });
 
-    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+  it("stays on event details when the second-step continue is invalid", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Event title");
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
 
-    // Invalid submit should reveal the booking tab so its errors are visible.
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
     await waitFor(() => expect(screen.getByLabelText("Date")).toBeInTheDocument());
   });
 
@@ -165,8 +250,166 @@ describe("ContactForm", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada" } });
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "nope" } });
-    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     await waitFor(() => expect(screen.getByText(/valid email/i)).toBeInTheDocument());
+  });
+
+  it("requires event title before advancing to location and notes", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() => expect(screen.getByText(/event title/i)).toBeInTheDocument());
+    expect(screen.queryByLabelText("Location")).toBeNull();
+  });
+
+  it("uses the alternate button appearance for add-another-day controls", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        submitAppearance={{ color: "#111111", style: "solid" }}
+        addSessionAppearance={{
+          color: "#224466",
+          style: "outline",
+          textColor: "#224466",
+          border: "2px solid #224466",
+          borderRadius: "0.5rem",
+        }}
+        onSuccess={() => {}}
+      />
+    );
+
+    goToEventDetails();
+
+    const addDay = screen.getByRole("button", { name: /Add another day/i });
+    expect(addDay.style.color).toBe("#224466");
+    expect(addDay.getAttribute("style")).toContain("border: 2px solid #224466");
+    expect(addDay.getAttribute("style")).toContain("border-radius: 0.5rem");
+  });
+
+  it("applies a custom error color to validation messages", async () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        submitAppearance={{ color: "#111111", style: "solid", errorColor: "#ff3355" }}
+        onSuccess={() => {}}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts[0]).toHaveStyle({ color: "#ff3355" });
+  });
+
+  it("applies inactive tab color when tabColor is set in contactConfig", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        contactConfig={{ tabColor: "#334455" }}
+        onSuccess={() => {}}
+      />
+    );
+    // All tabs start inactive except "client" (the first active tab).
+    // "event" and "location" should get the tabColor style.
+    const eventTab = screen.getByRole("tab", { name: "Event details" });
+    expect(eventTab.getAttribute("style")).toContain("color: #334455");
+  });
+
+  it("applies tabFontSize to all tabs", () => {
+    render(
+      <ContactForm
+        workspaceSlug="luna"
+        labels={labels}
+        contactConfig={{ tabFontSize: "sm" }}
+        onSuccess={() => {}}
+      />
+    );
+    const clientTab = screen.getByRole("tab", { name: "Your details" });
+    expect(clientTab.getAttribute("style")).toContain("font-size: 0.8125rem");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getActiveTabExtraStyle — unit tests
+// ---------------------------------------------------------------------------
+
+describe("getActiveTabExtraStyle", () => {
+  it("returns an empty-ish style with default activeTabColor when config is null", () => {
+    const style = getActiveTabExtraStyle(null);
+    expect(style.color).toBe("var(--pf-color-fg)");
+    expect(style.transform).toBeUndefined();
+    expect(style.backgroundColor).toBeUndefined();
+    expect(style.borderBottom).toBeUndefined();
+  });
+
+  it("includes transform when activeTabScale is true", () => {
+    const style = getActiveTabExtraStyle({ activeTabScale: true });
+    expect(style.transform).toBe("scale(1.08)");
+    expect((style as Record<string, string>)["fontWeight"]).toBe("700");
+  });
+
+  it("does not include transform when activeTabScale is false", () => {
+    const style = getActiveTabExtraStyle({ activeTabScale: false });
+    expect(style.transform).toBeUndefined();
+  });
+
+  it("includes backgroundColor when activeTabHighlight is true", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      tabHighlightColor: "#ffcc00",
+      tabHighlightOpacity: 100,
+    });
+    expect(style.backgroundColor).toBe("#ffcc00");
+  });
+
+  it("mixes color with opacity when tabHighlightOpacity < 100", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      tabHighlightColor: "#ff0000",
+      tabHighlightOpacity: 50,
+    });
+    expect(style.backgroundColor).toContain("color-mix");
+    expect(style.backgroundColor).toContain("50%");
+  });
+
+  it("applies activeTabRadius to borderRadius when highlighting", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabHighlight: true,
+      activeTabRadius: "rounded",
+    });
+    expect(style.borderRadius).toBe("0.5rem");
+  });
+
+  it("includes borderBottom when activeTabUnderline is true", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabUnderline: true,
+      tabUnderlineColor: "#0000ff",
+    });
+    expect(style.borderBottom).toBe("3px solid #0000ff");
+  });
+
+  it("uses token resolution for tabUnderlineColor", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabUnderline: true,
+      tabUnderlineColor: "accent",
+    });
+    expect(style.borderBottom).toContain("var(--pf-color-accent");
+  });
+
+  it("does not include borderBottom when activeTabUnderline is false", () => {
+    const style = getActiveTabExtraStyle({ activeTabUnderline: false });
+    expect(style.borderBottom).toBeUndefined();
+  });
+
+  it("uses token resolution for activeTabColor", () => {
+    const style = getActiveTabExtraStyle({ activeTabColor: "primary" });
+    expect(style.color).toBe("var(--pf-color-primary, var(--pf-color-fg))");
   });
 });

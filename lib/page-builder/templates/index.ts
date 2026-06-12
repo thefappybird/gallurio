@@ -4,6 +4,7 @@ import { eventPhotographerTemplate } from "./event-photographer";
 import { plannerTemplate } from "./planner";
 import { venueStylistTemplate } from "./venue-stylist";
 import { minimalTemplate } from "./minimal";
+import { scratchTemplate } from "./scratch";
 
 export { PORTFOLIO_TEMPLATE_IDS } from "./types";
 export type {
@@ -20,6 +21,7 @@ export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
   plannerTemplate,
   venueStylistTemplate,
   minimalTemplate,
+  scratchTemplate,
 ];
 
 const BY_ID = new Map<PortfolioTemplateId, PortfolioTemplate>(

@@ -1,7 +1,8 @@
 import mongoose, { Schema, type InferSchemaType, type Model } from "mongoose";
 import { PREFERRED_CONTACT_METHODS } from "@/lib/validators/inquiry";
+import { INQUIRY_STATUS_VALUES } from "@/lib/inquiries/status";
 
-export const INQUIRY_STATUSES = ["new", "contacted", "converted", "archived"] as const;
+export const INQUIRY_STATUSES = INQUIRY_STATUS_VALUES;
 
 // A single requested shift. Stored as wall-clock strings (not Date instants) so
 // the inbox can display exactly what the visitor entered without re-deriving the
@@ -32,11 +33,19 @@ const inquirySchema = new Schema(
     // first session's date for the existing dashboard/list sort + display paths.
     sessions: { type: [inquirySessionSchema], default: [] },
     eventDate: { type: Date, default: null },
+    eventTitle: { type: String, default: "", trim: true },
     eventType: { type: String, default: "other" },
     guestCount: { type: Number, default: null },
-    location: { type: String, default: null },
+    location: {
+      label: { type: String, default: null },
+      address: { type: String, default: null },
+      placeId: { type: String, default: null },
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+    },
     budgetRange: { type: String, default: null },
     source: {
+      kind: { type: String, default: "portfolio" },
       utm_source: { type: String, default: null },
       utm_medium: { type: String, default: null },
       utm_campaign: { type: String, default: null },

@@ -15,8 +15,6 @@ vi.mock("@/lib/storage/uploadToCloudinary.client", () => ({
   uploadImageToCloudinary: vi.fn(),
 }));
 
-import { toast } from "sonner";
-
 const baseProps = {
   header: {} satisfies PortfolioHeaderConfig,
   onHeaderChange: vi.fn(),
@@ -87,7 +85,7 @@ describe("HeaderPanelDialog", () => {
     const file = new File([new Uint8Array(251 * 1024)], "logo.png", { type: "image/png" });
     fireEvent.change(input, { target: { files: [file] } });
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Logo must be 250 KB or smaller."));
+    expect(await screen.findByText("Logo must be 250 KB or smaller.")).toBeInTheDocument();
   });
 
   it("renders design groups as collapsed drawers", () => {
@@ -101,5 +99,49 @@ describe("HeaderPanelDialog", () => {
     fireEvent.click(banner);
     expect(banner).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Background color")).toBeInTheDocument();
+  });
+
+  it("does not render Done or Cancel footer buttons", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+
+    expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
+  });
+
+  it("keeps navbar size on Setup and heading color on Design", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+
+    expect(screen.getByText("Navbar size")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+
+    expect(screen.getByText("Heading color")).toBeInTheDocument();
+    expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
+  });
+
+  it("shows percent suffixes for opacity controls", () => {
+    renderWithProviders(
+      <HeaderPanelDialog
+        {...baseProps}
+        header={{ activeLinkHighlight: true } satisfies PortfolioHeaderConfig}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Banner" }));
+    let spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
+
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+    spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact button" }));
+    spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
+    expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
   });
 });

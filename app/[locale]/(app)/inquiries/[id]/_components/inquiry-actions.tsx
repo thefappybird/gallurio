@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { markContactedAction, archiveInquiryAction } from "../../_actions";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 type Props = {
   inquiryId: string;
@@ -18,7 +19,7 @@ export function InquiryActions({ inquiryId, status }: Props) {
   const [working, setWorking] = useState(false);
 
   const canMarkContacted = status === "new";
-  const canArchive = status !== "converted" && status !== "archived";
+  const canArchive = !isBookedInquiryStatus(status) && status !== "archived";
 
   if (!canMarkContacted && !canArchive) return null;
 

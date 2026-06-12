@@ -62,7 +62,7 @@ No `Client` or `Booking` schema changes. No new indexes (lookup is on `{_id, wor
 
 ### i18n
 
-Add keys to all five catalogs (`en`, `fil`, `ms`, `id`, `th`) under `app.bookings.detail`:
+Add keys to all four active catalogs (`en`, `fil`, `ms`, `id`) under `app.bookings.detail`:
 - `fields.email`, `fields.phone`, `fields.openClient`, `fields.changeClient`, `fields.changeClientSearch`, `fields.noEmail`, `fields.noPhone`
 - `history.actions.{created,updated,status_changed,client_changed,deleted}`, `history.changeArrow` (or ICU), `history.by`, `history.groupToday`, `history.groupYesterday`
 - Reuse existing `eventTypes.*`, `statusValues.*`.
@@ -81,4 +81,4 @@ Add keys to all five catalogs (`en`, `fil`, `ms`, `id`, `th`) under `app.booking
 
 - `pnpm typecheck`, `pnpm lint`, targeted `pnpm test --run` on touched files, then full `pnpm test`, then `pnpm build`.
 - Manual at 375px: header title/pill edit, tab pills, client tab + reassign, history timeline scroll-containment, all four async states.
-- All five locales present for new keys.
+- All four active locales present for new keys.

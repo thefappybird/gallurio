@@ -34,7 +34,7 @@ write time so it survives team rename/deactivate, and surface it on the dashboar
 - **Migration** ([2026-06-transactions-team-backfill.ts](../../lib/db/migrations/2026-06-transactions-team-backfill.ts)):
   backfills `Transaction.teamId` from `booking.teamId` for transactions with a booking. Idempotent,
   `--dry-run`, batched, per-booking team cache.
-- **i18n:** `app.dashboard.sections.transactionsByTeam` across all five locales.
+- **i18n:** `app.dashboard.sections.transactionsByTeam` across all four active locales.
 
 ## Tests
 

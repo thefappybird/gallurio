@@ -38,7 +38,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { GalleryItem, Workspace } from "@/lib/db/models";
+import { GalleryCollection, GalleryItem, Workspace } from "@/lib/db/models";
 import { POST } from "./route";
 import { PHOTO_SPEC } from "@/lib/page-builder/photoSpec";
 
@@ -239,5 +239,68 @@ describe("POST /api/portfolio/gallery/items", () => {
     // Items query scoped to B returns nothing.
     const itemsForB = await GalleryItem.find({ workspaceId: wsBId }).lean();
     expect(itemsForB).toHaveLength(0);
+  });
+});
+
+function validBody(wsId: Types.ObjectId, extra: Record<string, unknown> = {}) {
+  return {
+    cloudinaryPublicId: `gallurio/${wsId}/portfolio/x.jpg`,
+    url: "https://res.cloudinary.com/x/x.jpg",
+    width: 1200, height: 900, format: "jpg", sizeBytes: 1000,
+    ...extra,
+  };
+}
+
+describe("POST /api/portfolio/gallery/items — collectionId", () => {
+  it("creates the item inside a workspace-owned collection with the next order", async () => {
+    const col = await GalleryCollection.create({
+      workspaceId, name: "C", slug: `c-${Math.round(Math.random() * 1e9)}`, isPublic: true, order: 0,
+    });
+    await GalleryItem.create({
+      workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/portfolio/a.jpg`,
+      url: "https://x/a.jpg", order: 0,
+    });
+
+    const req = new Request("http://t", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(validBody(workspaceId, { collectionId: String(col._id) })),
+    });
+    const res = (await POST(req)) as unknown as MockResp;
+    expect(res.status).toBe(201);
+
+    const items = await GalleryItem.find({ workspaceId, collectionId: col._id }).sort({ order: 1 }).lean();
+    expect(items).toHaveLength(2);
+    expect(items[1].order).toBe(1);
+  });
+
+  it("rejects a collectionId from another workspace with 400", async () => {
+    const otherWs = await Workspace.create({
+      slug: "ws-z", name: "Z", ownerUserId: "user_z",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`, currency: "PHP",
+    });
+    const foreign = await GalleryCollection.create({
+      workspaceId: otherWs._id, name: "F", slug: `f-${Math.round(Math.random() * 1e9)}`, isPublic: true, order: 0,
+    });
+    const req = new Request("http://t", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(validBody(workspaceId, { collectionId: String(foreign._id) })),
+    });
+    const res = (await POST(req)) as unknown as MockResp;
+    expect(res.status).toBe(400);
+    expect(await GalleryItem.countDocuments({ collectionId: foreign._id })).toBe(0);
+  });
+
+  it("still creates a standalone item (collectionId:null) when omitted", async () => {
+    const req = new Request("http://t", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(validBody(workspaceId)),
+    });
+    const res = (await POST(req)) as unknown as MockResp;
+    expect(res.status).toBe(201);
+    const item = await GalleryItem.findOne({ workspaceId }).lean();
+    expect(item?.collectionId).toBeNull();
   });
 });
