@@ -545,7 +545,11 @@ export function EditorShell({
 
   // ---- Delete draft ----
   async function handleDeleteDraft(id: string) {
-    await deleteDraftAction(id);
+    const res = await deleteDraftAction(id);
+    if ("error" in res) {
+      toast.error("Could not delete draft. Please try again.");
+      return;
+    }
     setDrafts((prev) => prev.filter((d) => d.id !== id));
     if (id === activeDraftId) {
       setActiveDraftId(null);

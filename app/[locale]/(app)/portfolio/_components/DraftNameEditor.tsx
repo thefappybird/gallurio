@@ -18,7 +18,12 @@ export function DraftNameEditor({
   const [value, setValue] = useState(name);
 
   function commit() {
-    onCommit(value);
+    const next = value.trim();
+    if (!next) {
+      cancel();
+      return;
+    }
+    onCommit(next);
     setEditing(false);
   }
   function cancel() {

@@ -154,6 +154,14 @@ describe("deleteDraftAction", () => {
     expect(res).toEqual({ ok: true });
     expect(await PortfolioDraft.countDocuments({})).toBe(0);
   });
+
+  it("cannot delete another workspace's draft (tenant isolation)", async () => {
+    const otherWs = new Types.ObjectId();
+    const foreign = await PortfolioDraft.create({ workspaceId: otherWs, name: "Foreign", ...snapshot });
+    const res = await deleteDraftAction(String(foreign._id));
+    expect(res).toEqual({ ok: true });
+    expect(await PortfolioDraft.findById(foreign._id).lean()).not.toBeNull();
+  });
 });
 
 describe("listDraftsAction / getDraftAction", () => {
