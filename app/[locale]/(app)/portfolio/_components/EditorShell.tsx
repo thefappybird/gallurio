@@ -779,8 +779,8 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
           {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
             const label =
               section === "header"
