@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,6 @@ export function DraftNameEditor({
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
-
-  // Keep the field in sync when the active draft changes from outside.
-  useEffect(() => {
-    if (!editing) setValue(name);
-  }, [name, editing]);
 
   function commit() {
     onCommit(value);
@@ -78,7 +73,7 @@ export function DraftNameEditor({
             size="icon-xs"
             variant="ghost"
             aria-label="Rename draft"
-            onClick={() => setEditing(true)}
+            onClick={() => { setValue(name); setEditing(true); }}
           >
             <Pencil />
           </Button>
