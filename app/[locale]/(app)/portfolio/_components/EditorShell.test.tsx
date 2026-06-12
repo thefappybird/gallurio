@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type ReactNode, type ReactElement } from "react";
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
@@ -90,6 +90,18 @@ vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 import { EditorShell } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
+const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
+// Buffer matches baseProps initial data so restoring it keeps isDirty=false.
+const LOCAL_DRAFT_V2 = {
+  version: 2,
+  data: {
+    home: { content: [{ type: "Hero", props: { headline: "Hi" } }], root: {} },
+    gallery: { content: [], root: {} },
+  },
+  draftId: "d1",
+  draftName: "Test Draft",
+};
+
 const baseProps = {
   slug: "studio-aurora",
   workspaceName: "Studio Aurora",
@@ -112,8 +124,7 @@ const baseProps = {
   // sit over the editor controls.
   guideDismissed: true,
   initialSavedThemes: [],
-  // Provide an active draft so entry dialog doesn't block the editor and
-  // the editor starts in a clean (non-dirty) state.
+  // Provide an active draft so the editor starts in a clean (non-dirty) state.
   initialActiveDraftId: "d1",
   initialActiveDraftName: "Test Draft",
   initialDrafts: [{ id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() }],
@@ -122,26 +133,41 @@ const baseProps = {
 // basePro alias mirrors the existing test usage pattern.
 const basePro = baseProps;
 
+/**
+ * Seed localStorage so `hasRecoverableBuffer` is true, enabling the
+ * "Continue where you left off" option in the entry dialog. Then render and
+ * dismiss the entry dialog so toolbar controls are accessible.
+ */
+async function renderAndDismissEntry(ui: ReactElement) {
+  window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
+  const result = renderWithProviders(ui);
+  // "Continue where you left off" is now enabled; clicking it closes the dialog
+  // without opening any secondary dialog, keeping the test environment clean.
+  const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
+  fireEvent.click(continueBtn);
+  return result;
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
 });
 
 describe("EditorShell", () => {
-  it("renders the editor with the workspace name + active zone in the title", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("renders the editor with the workspace name + active zone in the title", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByTestId("puck-title")).toHaveTextContent("Studio Aurora · Home");
     expect(screen.getByTestId("portfolio-editor-shell")).toHaveClass("min-h-svh");
   });
 
   it("renders the zone switcher and switches the active zone", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
-  it("places Navigation and Contact Form beside the page tabs", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("places Navigation and Contact Form beside the page tabs", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
@@ -151,7 +177,7 @@ describe("EditorShell", () => {
   });
 
   it("opens the Collections Popup panel when the Collections Popup tab is clicked", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
     expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
@@ -159,7 +185,7 @@ describe("EditorShell", () => {
   });
 
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(await screen.findByLabelText("Contact form")).toBeInTheDocument();
@@ -172,8 +198,8 @@ describe("EditorShell", () => {
     expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
   });
 
-  it("removes viewport buttons from edit mode but keeps sidebar toggles", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("removes viewport buttons from edit mode but keeps sidebar toggles", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toggle properties panel" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Mobile" })).not.toBeInTheDocument();
@@ -181,21 +207,21 @@ describe("EditorShell", () => {
     expect(screen.queryByRole("button", { name: "Desktop" })).not.toBeInTheDocument();
   });
 
-  it("opens the publish dialog when Puck's publish fires", () => {
-    renderWithProviders(<EditorShell {...basePro} />);
+  it("opens the publish dialog when Puck's publish fires", async () => {
+    await renderAndDismissEntry(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "PuckPublish" }));
     expect(screen.getByText("Publish your portfolio?")).toBeInTheDocument();
   });
 
-  it("opens the theme panel", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("opens the theme panel", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Theme" }));
     expect(screen.getByText("Theme & brand")).toBeInTheDocument();
   });
 
   it("toggles into live preview (Puck unmounts, iframe shown) and back", async () => {
-    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByTestId("puck")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     // Puck gone, preview iframe mounted pointing at the home zone.
@@ -211,7 +237,7 @@ describe("EditorShell", () => {
   });
 
   it("treats Contact as a tab — auto-opens the inline settings panel", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Contact Form" }).getAttribute("aria-pressed")).toBe("true");
@@ -224,14 +250,15 @@ describe("EditorShell", () => {
   });
 
   it("publishes the active draft and clears localStorage", async () => {
-    renderWithProviders(<EditorShell {...basePro} />);
+    await renderAndDismissEntry(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish" }));
     fireEvent.click(await screen.findByRole("button", { name: "Publish now" }));
     await waitFor(() => expect(publishDraftAction).toHaveBeenCalledWith("d1"));
   });
 
-  it("shows the mobile banner notice", () => {
+  it("shows the mobile banner notice", async () => {
+    // MobileBanner is outside the entry dialog overlay, so no dismissal needed.
     renderWithProviders(<EditorShell {...baseProps} />);
     expect(
       screen.getByText("The editor works best on a larger screen")
@@ -239,7 +266,7 @@ describe("EditorShell", () => {
   });
 
   it("entering preview from the contact panel closes edit-only tabs and returns to home", async () => {
-    const { container } = renderWithProviders(<EditorShell {...baseProps} />);
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Contact Form" }));
     expect(await screen.findByLabelText("Contact form preview")).toBeInTheDocument();
@@ -256,7 +283,7 @@ describe("EditorShell", () => {
   });
 
   it("keeps Puck edits local — does NOT call server on Puck change", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
     // No server action called on Puck change; data stays in localStorage until
     // the owner explicitly clicks "Save changes".
@@ -265,13 +292,13 @@ describe("EditorShell", () => {
   });
 
   it("renders the collections popup preview when the popup tab is open", async () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
     expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 
   it("builds a preview src without inlining the draft", async () => {
-    const { container } = renderWithProviders(<EditorShell {...basePro} />);
+    const { container } = await renderAndDismissEntry(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(await screen.findByTitle("Live preview")).toBeInTheDocument();
     const iframe = container.querySelector("iframe");
@@ -281,17 +308,24 @@ describe("EditorShell", () => {
     expect(src).toContain("v=");
   });
 
-  it("shows the Drafts button and draft name editor in the toolbar", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("shows the Drafts button and draft name editor in the toolbar", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Drafts" })).toBeInTheDocument();
     // Draft name is shown as a span with a rename button.
     expect(screen.getByTitle("Test Draft")).toBeInTheDocument();
   });
 
-  it("shows the Save changes button disabled when not dirty", () => {
-    renderWithProviders(<EditorShell {...baseProps} />);
+  it("shows the Save changes button disabled when not dirty", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const saveBtn = screen.getByRole("button", { name: "Save changes" });
     expect(saveBtn).toBeDisabled();
+  });
+
+  it("entry dialog shows on every load, including when a draft is already loaded", async () => {
+    // baseProps includes initialActiveDraftId: "d1" — a server-loaded draft.
+    // The entry dialog must still appear (spec: shown on every load).
+    renderWithProviders(<EditorShell {...baseProps} />);
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
 
   it("entry dialog shows on first render when no active draft", async () => {

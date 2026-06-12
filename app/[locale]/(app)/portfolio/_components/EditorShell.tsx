@@ -243,7 +243,7 @@ export function EditorShell({
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
-  const [, setRenderDraftData] = useState<Record<Zone, PuckData>>({
+  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>({
     home: initialData.home ?? EMPTY_ZONE,
     gallery: initialData.gallery ?? EMPTY_ZONE,
   });
@@ -270,13 +270,28 @@ export function EditorShell({
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingChanges, setSavingChanges] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
-  // If there's already an active draft loaded by the server, skip the entry dialog.
-  const [entryOpen, setEntryOpen] = useState(initialActiveDraftId === null);
+  // Entry dialog shown on every load; options are gated by canContinue / hasDrafts.
+  const [entryOpen, setEntryOpen] = useState(true);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [isDirty, setIsDirty] = useState(false);
 
   // JSON string of last-saved snapshot; null = never saved (always dirty).
-  const savedSnapshotRef = useRef<string | null>(null);
+  // Stored as state so it can be read during render for the derived isDirty check.
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(() => {
+    if (initialActiveDraftId === null) return null;
+    return JSON.stringify({
+      name: initialActiveDraftName || DEFAULT_DRAFT_NAME,
+      templateId: currentTemplateId,
+      data: {
+        home: initialData.home ?? EMPTY_ZONE,
+        gallery: initialData.gallery ?? EMPTY_ZONE,
+      },
+      brandKit: initialBrandKit,
+      contact: initialContact,
+      header: initialHeaderConfig ?? DEFAULT_HEADER_CONFIG,
+      collectionsPopup: initialCollectionsPopup ?? {},
+      formLocale: initialFormLocale,
+    });
+  });
 
   const sidePanelOpen = headerOpen || contactOpen || collectionsPopupOpen;
   const activeSection: EditorSection = headerOpen ? "header" : contactOpen ? "contact" : collectionsPopupOpen ? "collectionsPopup" : activeZone;
@@ -328,34 +343,12 @@ export function EditorShell({
     };
   }
 
-  function recomputeDirty() {
-    if (savedSnapshotRef.current === null) {
-      setIsDirty(true);
-      return;
-    }
-    const current = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
-    setIsDirty(current !== savedSnapshotRef.current);
-  }
-
-  // On mount: set clean if we have an active draft (server-loaded); else dirty.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (activeDraftId) {
-      savedSnapshotRef.current = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
-      setIsDirty(false);
-    } else {
-      savedSnapshotRef.current = null;
-      setIsDirty(true);
-    }
-    // Intentionally runs once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Recompute dirty whenever any tracked dep changes.
-  useEffect(() => {
-    recomputeDirty();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftName, brandKit, contact, headerConfig, collectionsPopup, formLocale, templateId]);
+  // Derived: isDirty is computed from savedSnapshot state + current render state so it
+  // stays in sync without any effects. renderDraftData drives re-renders on Puck edits.
+  const isDirty =
+    savedSnapshot === null ||
+    JSON.stringify({ name: draftName, templateId, data: renderDraftData, brandKit, contact, header: headerConfig, collectionsPopup, formLocale }) !==
+      savedSnapshot;
 
   const persistLocalDraft = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -450,16 +443,9 @@ export function EditorShell({
         return; // mount/remount echo - capture data, but don't autosave.
       }
       persistLocalDraft();
-      // Zone data changed — recompute dirty against the saved snapshot.
-      if (savedSnapshotRef.current === null) {
-        setIsDirty(true);
-      } else {
-        const snap = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
-        setIsDirty(snap !== savedSnapshotRef.current);
-      }
+      // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeZone, persistLocalDraft, draftName]
+    [activeZone, persistLocalDraft]
   );
 
   // ---- Save changes ----
@@ -493,8 +479,7 @@ export function EditorShell({
         return [saved, ...without];
       });
       const snapshotStr = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
-      savedSnapshotRef.current = snapshotStr;
-      setIsDirty(false);
+      setSavedSnapshot(snapshotStr);
       persistLocalDraft();
       toast.success("Draft saved.");
       return true;
@@ -522,32 +507,38 @@ export function EditorShell({
     const d = res.draft;
     const homeData = (d.data.home as PuckData) ?? EMPTY_ZONE;
     const galleryData = (d.data.gallery as PuckData) ?? EMPTY_ZONE;
+    // Resolve each field to the value that will be committed to state, so the
+    // saved snapshot always matches post-apply render state.
+    const resolvedBrandKit = (d.brandKit as PortfolioBrandKit) ?? DEFAULT_BRAND_KIT;
+    const resolvedContact = (d.contact as PortfolioContactConfig) ?? contact;
+    const resolvedHeader = (d.header as PortfolioHeaderConfig) ?? headerConfig;
+    const resolvedCollectionsPopup = (d.collectionsPopup as PortfolioCollectionsPopupConfig) ?? collectionsPopup;
+    const resolvedFormLocale = typeof d.formLocale === "string" ? d.formLocale : formLocale;
+    const resolvedTemplateId = d.templateId || templateId;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
-    if (d.brandKit) setBrandKit(d.brandKit as PortfolioBrandKit);
-    if (d.contact) setContact(d.contact as PortfolioContactConfig);
-    if (d.header) setHeaderConfig(d.header as PortfolioHeaderConfig);
-    if (d.collectionsPopup) setCollectionsPopup(d.collectionsPopup as PortfolioCollectionsPopupConfig);
-    if (typeof d.formLocale === "string") setFormLocale(d.formLocale);
-    setTemplateId(d.templateId || templateId);
+    setBrandKit(resolvedBrandKit);
+    setContact(resolvedContact);
+    setHeaderConfig(resolvedHeader);
+    setCollectionsPopup(resolvedCollectionsPopup);
+    setFormLocale(resolvedFormLocale);
+    setTemplateId(resolvedTemplateId);
     setActiveDraftId(d.id);
     setDraftName(d.name);
     setNameError(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(homeData));
     setActiveZone("home");
-    const snapshotStr = JSON.stringify({
+    setSavedSnapshot(JSON.stringify({
       name: d.name,
-      templateId: d.templateId || templateId,
+      templateId: resolvedTemplateId,
       data: { home: homeData, gallery: galleryData },
-      brandKit: d.brandKit,
-      contact: d.contact,
-      header: d.header,
-      collectionsPopup: d.collectionsPopup,
-      formLocale: d.formLocale,
-    });
-    savedSnapshotRef.current = snapshotStr;
-    setIsDirty(false);
+      brandKit: resolvedBrandKit,
+      contact: resolvedContact,
+      header: resolvedHeader,
+      collectionsPopup: resolvedCollectionsPopup,
+      formLocale: resolvedFormLocale,
+    }));
     persistLocalDraft();
     setDraftsOpen(false);
   }
@@ -558,8 +549,7 @@ export function EditorShell({
     setDrafts((prev) => prev.filter((d) => d.id !== id));
     if (id === activeDraftId) {
       setActiveDraftId(null);
-      savedSnapshotRef.current = null;
-      setIsDirty(true);
+      setSavedSnapshot(null);
     }
   }
 
@@ -728,8 +718,7 @@ export function EditorShell({
     setActiveDraftId(null);
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
-    savedSnapshotRef.current = null;
-    setIsDirty(true);
+    setSavedSnapshot(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
     setSwitching(false);
