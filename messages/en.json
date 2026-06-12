@@ -503,12 +503,37 @@
         "teams": "Teams",
         "publicPage": "Public page",
         "danger": "Danger zone",
+        "billing": "Billing",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Current workspace"
       },
+      "billing": {
+        "currentPlanLabel": "Current plan",
+        "renewsOn": "Renews on {date}",
+        "availablePlans": "Available plans",
+        "perMonth": "/ month",
+        "upgradeTo": "Upgrade to {plan}",
+        "upgradeToAriaLabel": "Upgrade to the {plan} plan",
+        "opening": "Opening…",
+        "upgradeSuccess": "Subscription activated! Your plan has been updated.",
+        "checkoutFailed": "Checkout failed. Please try again.",
+        "paddleNotReady": "Payment system not ready. Please refresh and try again.",
+        "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment.",
+        "subscriptionIssue": "There is an issue with your subscription. Please check your payment method or contact support.",
+        "subscriptionStatus": {
+          "active": "Active",
+          "canceled": "Canceled",
+          "past_due": "Past due",
+          "paused": "Paused",
+          "trialing": "Trialing"
+        },
+        "manageSection": "Manage subscription",
+        "manageDescription": "Your subscription is managed through Paddle. To update your payment method or view invoices, please contact support.",
+        "cancelNote": "To cancel your subscription, contact support or delete your workspace."
+      },
       "devPlan": {
         "title": "Dev plan switcher",
-        "description": "Flip workspace.plan without round-tripping HitPay. Hard-blocked in production. Replace this tab with a real HitPay-driven subscription manager when payments are wired in.",
+        "description": "Flip workspace.plan without round-tripping Paddle. Hard-blocked in production. Use the Billing tab for real subscription management.",
         "currentLabel": "Current plan",
         "teamsSuffix": "teams",
         "perTeamSuffix": "members/team",
@@ -1404,14 +1429,17 @@
         "forever": "forever",
         "monthly": "/ month"
       },
-      "checkoutNote": "You'll be redirected to HitPay to enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
+      "checkoutNote": "A secure Paddle checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
       "ctaFree": "Continue with Free",
       "ctaPaid": "Subscribe — {price} / month",
       "settingUp": "Setting up…",
-      "opening": "Opening HitPay…",
+      "opening": "Opening checkout…",
+      "checkoutFailed": "Checkout failed. Please try again.",
+      "paddleNotReady": "Payment system not ready. Please refresh and try again.",
+      "paddleTokenMissingDev": "NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not set — overlay unavailable in this dev environment. Use the dev shortcut below.",
       "dev": {
         "label": "Dev shortcut",
-        "description": "Skip HitPay and mark {planName} as active. Dev-only.",
+        "description": "Skip Paddle and mark {planName} as active. Dev-only.",
         "activate": "Activate {planName} (dev)"
       }
     },

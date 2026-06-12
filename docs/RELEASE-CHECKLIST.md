@@ -9,9 +9,9 @@ Last updated: 2026-05-28 (post teams-enhancements: standalone /teams page)
 These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "production"` today, but the long-term plan is to replace them with real production flows. Before shipping:
 
 - [ ] **`lib/actions/dev.ts → devActivatePlanAction`**
-  - Currently flips `Workspace.plan` directly without touching HitPay.
-  - Replacement plan: drive `Workspace.plan` from the HitPay webhook only. Owner-initiated upgrades go through `/api/billing/checkout` (already implemented). Owner-initiated downgrades go through a HitPay portal session that the webhook then reconciles back into our `Workspace.plan` field.
-  - When real subscription management lands: keep the team-cap downgrade guard logic — it already mirrors the one in `app/api/webhooks/hitpay/route.ts`. The `DEV plan` settings tab should be removed (or moved behind a `?dev=1` query param).
+  - Currently flips `Workspace.plan` directly without touching Paddle (dev-only bypass).
+  - Replacement plan: drive `Workspace.plan` from the Paddle webhook only. Owner-initiated upgrades go through `/api/billing/checkout` + the Paddle.js overlay (already implemented). Owner-initiated downgrades are handled via the Paddle customer portal or a future in-app cancel/downgrade flow; the webhook then reconciles `Workspace.plan`.
+  - When real subscription management lands: keep the team-cap downgrade guard logic — it already mirrors the one in `app/api/webhooks/paddle/route.ts`. The `DEV plan` settings tab should be removed (or moved behind a `?dev=1` query param).
 - [ ] **`lib/actions/dev.ts → devSeedMemberAction`**
   - Bypasses the `assertCanAddTeamMember` seat reservation and the `PendingTeamAssignment` row that the real invite flow creates.
   - Replacement plan: the real owner flow is `inviteMemberAction`. Remove this action — it predates the real one.
@@ -20,14 +20,14 @@ These exist to unblock local iteration. Each one is gated by `NODE_ENV !== "prod
 
 Search to confirm everything dev-only is gated: `rg "NODE_ENV !== \"production\"" -t ts -t tsx`.
 
-## 2. HitPay subscription wiring
+## 2. Paddle subscription wiring
 
-The Phase 3 branch added one piece of real billing behavior (cancellation always drops to free; see `app/api/webhooks/hitpay/route.ts:127-160`) and one dev shim. Before ship:
+Billing has been migrated from HitPay to Paddle. The items below supersede the old HitPay section. See `docs/paddle-integration/paddle-setup.md` for the full dashboard setup guide.
 
-- [ ] **Owner-initiated downgrades** must be flow-tested end-to-end through HitPay sandbox: create subscription → owner downgrades from Pro to Starter while over the Starter team cap → confirm the webhook refuses the plan change AND the user sees the downgrade-block-modal pointing at teams to delete.
-- [ ] **Cancellation while over-cap** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` flips to `free`, `hitpayRecurringStatus` flips to `cancelled`, and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
-- [ ] **Webhook signature** must use a real `HITPAY_WEBHOOK_SALT` in production env vars. Confirm `verifyHitpayCallback` returns false for unsigned bodies.
-- [ ] **Real prices** in `lib/hitpay/plans.ts` match the HitPay dashboard side (free 0, starter 499 PHP, pro 1199 PHP). Currency code is `PHP`.
+- [ ] **Owner-initiated downgrades** must be flow-tested end-to-end: create a live subscription → owner downgrades from Pro to Starter while over the Starter team cap → confirm the webhook refuses the plan change AND the user sees the downgrade-block-modal pointing at teams to delete.
+- [ ] **Cancellation while over-cap** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` flips to `free`, `paddleSubscriptionStatus` flips to `"canceled"`, and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
+- [ ] **Webhook signature** must use a real `PADDLE_WEBHOOK_SECRET` (destination secret from live Paddle Notifications). Confirm `verifyAndParsePaddleEvent` returns `null` for unsigned/tampered bodies.
+- [ ] **Real prices** in `lib/paddle/plans.ts` match the live Paddle dashboard (free 0, Starter ₱250, Pro ₱500). The `priceId` fields must reference live `pri_…` IDs, not sandbox ones. See §12 above for the full Paddle pre-launch checklist.
 
 ## 3. Pending-invite seat lifecycle
 
@@ -132,14 +132,14 @@ Confirm these are set in the production Vercel project:
 - [ ] `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY`
 - [ ] `CLERK_WEBHOOK_SECRET`
 - [ ] `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- [ ] `HITPAY_API_KEY`, `HITPAY_WEBHOOK_SALT`, `HITPAY_API_BASE` (production base, not sandbox)
+- [ ] `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV=production`, `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID` (all live values — see §12)
 - [ ] `CRON_SECRET`
 
 `NODE_ENV=production` is set automatically by Vercel.
 
 ## 10. Smoke after deploy
 
-In production with a real HitPay account on test mode (or sandbox-redirected to the prod app):
+In production with live Paddle credentials (see §12 for Paddle-specific billing smoke tests):
 
 - [ ] Sign up a new workspace — gets a Main team.
 - [ ] Owner invites a teammate (from the `/teams` toolbar, a team's 3-dot menu, or its Details drawer) — they get an email (requires §8a), accept, and land at `/bookings` with the reduced sidebar.
@@ -167,6 +167,23 @@ The portfolio brand kit supports **independent heading + body font selection** f
   ```js
   db.bookings.updateMany({ status: "quoted" }, { $set: { status: "inquiry" } })
   ```
-  Target is **`inquiry`** (a `quoted` record was an unconfirmed deal â€” demoting it to an active lead is safer than fabricating a confirmed `booked`). Confirm the desired target before running. Dev/staging databases are cleaned by `pnpm seed`, so this only matters for any DB that holds real data.
+  Target is **`inquiry`** (a `quoted` record was an unconfirmed deal — demoting it to an active lead is safer than fabricating a confirmed `booked`). Confirm the desired target before running. Dev/staging databases are cleaned by `pnpm seed`, so this only matters for any DB that holds real data.
+
+## 14. Paddle billing (cannot test fully in dev)
+
+The following items require live Paddle credentials and a real card. None can be verified in sandbox or dev mode.
+
+- [ ] **Live API key set**: `PADDLE_API_KEY` starts with `pdl_live_` (not `pdl_sdbx_`).
+- [ ] **Live webhook secret set**: `PADDLE_WEBHOOK_SECRET` is the destination secret from the live Notifications destination (`pdl_ntfset_…`).
+- [ ] **Live client token set**: `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN` starts with `live_`.
+- [ ] **Environment set to production**: `NEXT_PUBLIC_PADDLE_ENV=production`.
+- [ ] **Production Price IDs set**: `PADDLE_PRICE_STARTER_ID` and `PADDLE_PRICE_PRO_ID` are `pri_…` IDs from the **live** Paddle account (not the sandbox account — they are different).
+- [ ] **Production webhook destination registered**: destination URL is `https://[domain]/api/webhooks/paddle` in the live Paddle account, subscribed to `subscription.*` and `transaction.completed`.
+- [ ] **PHP payout bank account linked**: Settings → Payouts in the live Paddle account. Paddle remits net proceeds in PHP via SWIFT. Without a linked account, payouts accumulate and are not disbursed.
+- [ ] **Paddle MoR coverage confirmed**: verify Paddle's Merchant of Record service covers the Philippines (PH — RA 12023 / 12% VAT on digital services) and UAE (5% VAT) before marketing in those markets. Paddle handles these taxes automatically as MoR.
+- [ ] **Live Starter checkout**: run one real-card Starter checkout end-to-end — plan upgrades → `subscription.activated` webhook fires → workflow run completes → `/onboarding/done` shows Starter plan. Confirm via Paddle dashboard that the subscription is active and `Workspace.paddleSubscriptionStatus === "active"`.
+- [ ] **Cancellation tested**: run `pnpm paddle:sim subscription-canceled <workspaceId>` (or cancel via the live dashboard) → confirm `Workspace.plan` drops to `free` and `paddleSubscriptionStatus` = `"canceled"`.
+- [ ] **Per-country price overrides configured** (optional but recommended before Gulf launch): add `unit_price_overrides` for AE/SA/QA/KW/OM/BH on the live Starter and Pro prices. See `docs/paddle-integration/paddle-setup.md` Step 2 for instructions. No code change required — this is dashboard-only config.
+- [ ] **Arabic/RTL locale shipped** (see `docs/paddle-integration/deferred-scope/arabic-rtl.md`) before marketing Gallurio in Arabic-primary Gulf markets. Gulf countries currently receive English chrome as an interim measure.
 
 When everything in this file is checked, ship it.

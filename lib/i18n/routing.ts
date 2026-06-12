@@ -1,10 +1,12 @@
 import { defineRouting } from "next-intl/routing";
 
 // SEA-core locales for MVP. Markets covered:
-//   en - default; all unsupported markets fall through to this.
-//   fil - Philippines (Filipino / Tagalog)
-//   ms - Malaysia (and Singapore Malay speakers)
-//   id - Indonesia
+//   en — default; all non-SEA markets fall through to this (incl. SG/AU/CA/NZ/GB/US
+//        and the Gulf states until the Arabic locale ships — see
+//        docs/paddle-integration/deferred-scope/arabic-rtl.md).
+//   fil — Philippines (Filipino / Tagalog)
+//   ms — Malaysia (and Singapore Malay speakers)
+//   id — Indonesia
 //
 // Non-English catalogs at messages/{fil,ms,id}.json were machine-translated at
 // launch and tagged in-source - see CLAUDE.md "Internationalization" section.

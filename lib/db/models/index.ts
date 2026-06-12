@@ -2,10 +2,10 @@ export {
   Workspace,
   PLAN_TIERS,
   PUBLIC_PAGE_TEMPLATES,
-  HITPAY_RECURRING_STATUSES,
+  PADDLE_SUBSCRIPTION_STATUSES,
   type PlanTier,
   type PublicPageTemplate,
-  type HitpayRecurringStatus,
+  type PaddleSubscriptionStatus,
   type WorkspaceDoc,
 } from "./Workspace";
 export { User, ONBOARDING_STEPS, type OnboardingStep, type UserDoc } from "./User";

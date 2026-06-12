@@ -1,23 +1,23 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { loadOnboardingContext, requireStep } from "@/lib/auth/onboardingStep";
 import {
-  HITPAY_COUNTRY_VALUES,
+  BILLING_COUNTRY_VALUES,
   SUPPORTED_CURRENCIES,
   COUNTRY_TO_CURRENCY,
-  type HitpayCountry,
+  type SupportedCountry,
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { BusinessStepForm } from "./business-form";
 
-function coerceCountry(value: string | null | undefined): HitpayCountry {
-  return (HITPAY_COUNTRY_VALUES as readonly string[]).includes(value ?? "")
-    ? (value as HitpayCountry)
+function coerceCountry(value: string | null | undefined): SupportedCountry {
+  return (BILLING_COUNTRY_VALUES as readonly string[]).includes(value ?? "")
+    ? (value as SupportedCountry)
     : "PH";
 }
 
 function coerceCurrency(
   value: string | null | undefined,
-  country: HitpayCountry
+  country: SupportedCountry
 ): SupportedCurrency {
   if ((SUPPORTED_CURRENCIES as readonly string[]).includes(value ?? "")) {
     return value as SupportedCurrency;
