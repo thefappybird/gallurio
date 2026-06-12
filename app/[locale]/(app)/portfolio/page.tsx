@@ -7,6 +7,9 @@ import { PORTFOLIO_TEMPLATES } from "@/lib/page-builder/templates";
 import { seedDefaultPortfolio } from "@/lib/page-builder/seedPortfolio";
 import { reconcileGalleryImages, reconcileFeaturedCollections } from "@/lib/page-builder/reconcile";
 import { EditorShell, type EditorTemplateSummary } from "./_components/EditorShell";
+import { ensureLegacyDraftMigrated } from "@/lib/page-builder/migrateDraft";
+import { listDraftsAction } from "./_draftActions";
+import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 
 export async function generateMetadata({
   params,
@@ -87,6 +90,15 @@ export default async function PageBuilderEntry({
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
 
+  // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
+  await ensureLegacyDraftMigrated(workspace._id);
+  const initialDrafts = await listDraftsAction();
+  // First-paint active draft = newest (migrated/most recent). The client entry
+  // chooser lets the owner pick differently.
+  const activeDraft = initialDrafts[0] ?? null;
+  const initialActiveDraftId = activeDraft?.id ?? null;
+  const initialActiveDraftName = activeDraft?.name ?? DEFAULT_DRAFT_NAME;
+
   // Serializable starter-template summaries for the in-editor switcher.
   const templates: EditorTemplateSummary[] = PORTFOLIO_TEMPLATES.map((tpl) => ({
     id: tpl.id,
@@ -120,6 +132,9 @@ export default async function PageBuilderEntry({
         currentTemplateId={templateId}
         guideDismissed={guideDismissed}
         initialSavedThemes={initialSavedThemes}
+        initialDrafts={initialDrafts}
+        initialActiveDraftId={initialActiveDraftId}
+        initialActiveDraftName={initialActiveDraftName}
       />
     </div>
   );
