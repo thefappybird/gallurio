@@ -5,8 +5,6 @@ import { routing, type Locale } from "./routing";
 // Accept-Language is intentionally ignored — tenant-authored content is the
 // source of truth, and the chrome should match the locale the tenant set up
 // in their workspace.
-//
-// HitPay-only markets currently. Falls back to English for anything else.
 export function localeForCountry(country: string | null | undefined): Locale {
   switch ((country ?? "").toUpperCase()) {
     case "PH":
@@ -17,6 +15,16 @@ export function localeForCountry(country: string | null | undefined): Locale {
       return "id";
     case "TH":
       return "th";
+    // Gulf markets fall back to English chrome until the Arabic locale ships —
+    // see docs/paddle-integration/arabic-rtl.md. When ready, change these
+    // cases to return "ar".
+    case "AE":
+    case "SA":
+    case "QA":
+    case "KW":
+    case "OM":
+    case "BH":
+      return "en";
     default:
       return "en";
   }

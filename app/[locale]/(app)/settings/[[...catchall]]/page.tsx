@@ -7,7 +7,9 @@ import {
   Globe,
   AlertTriangle,
   Wrench,
+  CreditCard,
 } from "lucide-react";
+import { currentUser } from "@clerk/nextjs/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { routing } from "@/lib/i18n/routing";
@@ -18,17 +20,19 @@ import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DangerPanel } from "../danger/_panel";
 import { DevPlanPanel } from "../dev-plan/_panel";
+import { BillingPanel } from "../billing/_panel";
 import type {
   UpdateWorkspaceBusinessInput,
   UpdateWorkspaceBrandingInput,
   PublicPageSettingsInput,
-  HitpayCountry,
+  SupportedCountry,
   SupportedCurrency,
 } from "@/lib/validators/workspace";
 
 const OWNER_ONLY_SLUGS = new Set([
   "workspace",
   "public-page",
+  "billing",
   "danger",
   "dev-plan",
 ]);
@@ -53,9 +57,10 @@ export default async function SettingsCatchallPage({
   const { locale, catchall } = await params;
   setRequestLocale(locale);
 
-  const [{ role, workspace }, initialTimeFormat] = await Promise.all([
+  const [{ role, workspace }, initialTimeFormat, clerkUser] = await Promise.all([
     requireOrg(),
     getUserTimeFormat(),
+    currentUser(),
   ]);
 
   const slug = catchall?.[0];
@@ -67,7 +72,7 @@ export default async function SettingsCatchallPage({
     name: workspace.name,
     slug: workspace.slug,
     businessType: workspace.businessType as UpdateWorkspaceBusinessInput["businessType"],
-    country: (workspace.country ?? "PH") as HitpayCountry,
+    country: (workspace.country ?? "PH") as SupportedCountry,
     currency: workspace.currency as SupportedCurrency,
     timezone: workspace.timezone ?? "Asia/Manila",
   };
@@ -126,6 +131,31 @@ export default async function SettingsCatchallPage({
               publishedAt={workspace.publicPage?.publishedAt ?? null}
               defaults={publicPageDefaults}
               locale={locale}
+            />
+          ),
+        },
+        {
+          slug: "billing",
+          label: t("billing"),
+          icon: <CreditCard className="size-4" />,
+          ownerOnly: true,
+          body: (
+            <BillingPanel
+              currentPlan={workspace.plan as "free" | "starter" | "pro"}
+              paddleSubscriptionStatus={
+                (workspace.paddleSubscriptionStatus as
+                  | "active"
+                  | "canceled"
+                  | "past_due"
+                  | "paused"
+                  | "trialing"
+                  | null) ?? null
+              }
+              paddleCurrentPeriodEnd={workspace.paddleCurrentPeriodEnd ?? null}
+              workspaceId={String(workspace._id)}
+              customerEmail={
+                clerkUser?.emailAddresses?.[0]?.emailAddress ?? ""
+              }
             />
           ),
         },
