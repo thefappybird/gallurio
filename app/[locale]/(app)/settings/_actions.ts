@@ -27,6 +27,7 @@ import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
+import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
 import { serializeCsv } from "@/lib/utils/csv-serialize";
@@ -467,7 +468,7 @@ export async function enrollMfaAction(): Promise<EnrollMfaResult> {
       }),
       {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: authCookieSecure(),
         sameSite: "lax",
         path: "/",
         maxAge: 600,

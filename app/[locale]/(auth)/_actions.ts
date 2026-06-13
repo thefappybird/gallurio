@@ -14,6 +14,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { verifyTurnstileToken } from "@/lib/server/turnstile";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
+import { authCookieSecure } from "@/lib/auth/cookies";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -57,11 +58,10 @@ async function setMfaPendingCookie(
   challengeId: string,
 ): Promise<void> {
   const jar = await cookies();
-  const isProd = process.env.NODE_ENV === "production";
   // Store both tokens as JSON — they expire after 10 min
   jar.set(MFA_PENDING_COOKIE, JSON.stringify({ pendingToken, challengeId }), {
     httpOnly: true,
-    secure: isProd,
+    secure: authCookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 600,
@@ -153,7 +153,7 @@ export async function signInAction(
     const jar = await cookies();
     jar.set(SESSION_COOKIE, response.sealedSession!, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 34_560_000,
@@ -211,7 +211,7 @@ export async function signInAction(
           const jar = await cookies();
           jar.set("wos-email-verify-pending", pendingToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: authCookieSecure(),
             sameSite: "lax",
             path: "/",
             maxAge: 600,
@@ -304,7 +304,7 @@ export async function signUpAction(
     const jar = await cookies();
     jar.set(SESSION_COOKIE, response.sealedSession!, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 34_560_000,
@@ -326,7 +326,7 @@ export async function signUpAction(
           const jar = await cookies();
           jar.set("wos-email-verify-pending", pendingToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: authCookieSecure(),
             sameSite: "lax",
             path: "/",
             maxAge: 600,
@@ -502,7 +502,7 @@ export async function verifyEmailAction(
 
     jar.set(SESSION_COOKIE, response.sealedSession!, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 34_560_000,
@@ -614,7 +614,7 @@ export async function mfaChallengeAction(
 
     jar.set(SESSION_COOKIE, response.sealedSession!, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 34_560_000,
@@ -660,7 +660,7 @@ export async function googleSignInAction(
     const jar = await cookies();
     jar.set("oauth_csrf", nonce, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 600,

@@ -16,6 +16,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import { ensureUser } from "@/lib/auth/ensureUser";
 import { verifyOAuthState } from "@/lib/auth/oauthState";
+import { authCookieSecure } from "@/lib/auth/cookies";
 import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
 
@@ -33,7 +34,7 @@ function localizedSignIn(locale: string): string {
 function clearCsrfCookie(res: NextResponse): NextResponse {
   res.cookies.set(CSRF_COOKIE, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: authCookieSecure(),
     sameSite: "lax",
     path: "/",
     maxAge: 0,

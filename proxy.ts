@@ -97,6 +97,10 @@ function isPublicRoute(req: NextRequest): boolean {
 //   - For public pages: skip authkit, run intl only.
 // ---------------------------------------------------------------------------
 const authMiddleware: NextMiddleware = authkitMiddleware({
+  // Set AUTHKIT_DEBUG=true to log the session branch taken per request
+  // ("No session found from cookie" / "Session invalid" / "Failed to refresh.
+  // Deleting cookie." / "Session successfully refreshed") to the server console.
+  debug: process.env.AUTHKIT_DEBUG === "true",
   middlewareAuth: {
     enabled: true,
     unauthenticatedPaths: UNAUTHENTICATED_PATHS,

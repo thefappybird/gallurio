@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
 import { connectDB } from "@/lib/db/mongoose";
 import { User } from "@/lib/db/models";
+import { authCookieSecure } from "@/lib/auth/cookies";
 import mongoose from "mongoose";
 
 const COOKIE_NAME = "gw_active_ws";
@@ -120,7 +121,7 @@ export async function setActiveWorkspace(
 
   jar.set(COOKIE_NAME, value, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: authCookieSecure(),
     sameSite: "lax",
     path: "/",
     // 90-day shelf-life; the session itself is controlled by wos-session.

@@ -9,6 +9,7 @@ import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { signOAuthState } from "@/lib/auth/oauthState";
+import { authCookieSecure } from "@/lib/auth/cookies";
 import mongoose from "mongoose";
 
 // Runtime must be Node — uses crypto + Mongoose transactions.
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // ensures the cookie survives the top-level redirect back from WorkOS.
     res.cookies.set("gw_invite_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 900,
@@ -214,7 +215,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (clearInviteCookie) {
     successRes.cookies.set("gw_invite_token", "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 0,
