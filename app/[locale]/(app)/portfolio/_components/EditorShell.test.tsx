@@ -370,4 +370,10 @@ describe("EditorShell", () => {
     expect(screen.queryByText("Save your changes?")).not.toBeInTheDocument();
     expect(screen.getByText("A draft with this name already exists")).toBeInTheDocument();
   });
+
+  it("styles Save changes with the brand variant and Preview with the secondary variant", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(screen.getByRole("button", { name: "Save changes" }).className).toContain("bg-brand");
+    expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
+  });
 });

@@ -837,7 +837,7 @@ export function EditorShell({
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="secondary"
           aria-pressed={previewMode}
           onClick={() => void togglePreview()}
         >
@@ -849,7 +849,7 @@ export function EditorShell({
 
   // Right cluster: tools + draft name + the Publish slot.
   function toolsCluster(publishSlot: ReactNode) {
-    const saveDisabled = !isDirty && activeDraftId !== null;
+    const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
         <DraftNameEditor
@@ -872,7 +872,7 @@ export function EditorShell({
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="brand"
           disabled={saveDisabled}
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
