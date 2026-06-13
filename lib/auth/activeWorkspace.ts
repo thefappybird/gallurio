@@ -121,7 +121,7 @@ export async function setActiveWorkspace(
 
   jar.set(COOKIE_NAME, value, {
     httpOnly: true,
-    secure: authCookieSecure(),
+    secure: await authCookieSecure(),
     sameSite: "lax",
     path: "/",
     // 90-day shelf-life; the session itself is controlled by wos-session.

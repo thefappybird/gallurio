@@ -92,7 +92,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // ensures the cookie survives the top-level redirect back from WorkOS.
     res.cookies.set("gw_invite_token", token, {
       httpOnly: true,
-      secure: authCookieSecure(),
+      secure: await authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 900,
@@ -215,7 +215,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (clearInviteCookie) {
     successRes.cookies.set("gw_invite_token", "", {
       httpOnly: true,
-      secure: authCookieSecure(),
+      secure: await authCookieSecure(),
       sameSite: "lax",
       path: "/",
       maxAge: 0,

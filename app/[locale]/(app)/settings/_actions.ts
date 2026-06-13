@@ -468,7 +468,7 @@ export async function enrollMfaAction(): Promise<EnrollMfaResult> {
       }),
       {
         httpOnly: true,
-        secure: authCookieSecure(),
+        secure: await authCookieSecure(),
         sameSite: "lax",
         path: "/",
         maxAge: 600,

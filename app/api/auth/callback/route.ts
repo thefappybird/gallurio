@@ -31,10 +31,10 @@ function localizedSignIn(locale: string): string {
 }
 
 /** Expires the single-use CSRF nonce cookie on the given response. */
-function clearCsrfCookie(res: NextResponse): NextResponse {
+function clearCsrfCookie(res: NextResponse, secure: boolean): NextResponse {
   res.cookies.set(CSRF_COOKIE, "", {
     httpOnly: true,
-    secure: authCookieSecure(),
+    secure,
     sameSite: "lax",
     path: "/",
     maxAge: 0,
@@ -57,6 +57,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const statePayload = verifyOAuthState(rawState);
   const locale = statePayload?.locale ?? routing.defaultLocale;
   const returnTo = statePayload?.returnTo;
+  const secure = await authCookieSecure();
 
   // The invite token is never placed in the OAuth state — it travels via a
   // short-lived httpOnly cookie set by the accept route before the OAuth
@@ -78,6 +79,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!nonceMatches(request.cookies.get(CSRF_COOKIE)?.value, statePayload?.nonce)) {
     return clearCsrfCookie(
       NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
+      secure,
     );
   }
 
@@ -132,11 +134,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Single-use: clear the CSRF nonce cookie now that the flow completed.
-    return clearCsrfCookie(NextResponse.redirect(destination));
+    return clearCsrfCookie(NextResponse.redirect(destination), secure);
   } catch {
     // Authentication failure — redirect to localized sign-in.
     return clearCsrfCookie(
       NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
+      secure,
     );
   }
 }
