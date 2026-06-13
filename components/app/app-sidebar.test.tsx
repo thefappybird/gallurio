@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -125,5 +125,75 @@ describe("AppSidebar SidebarTrigger", () => {
     const headerChrome = screen.getByTestId("sidebar-workspace-header");
     expect(headerChrome.className).toContain("group-data-[collapsible=icon]:flex-col-reverse");
     expect(headerChrome.className).toContain("group-data-[collapsible=icon]:items-center");
+  });
+});
+
+// ── Mobile sidebar close on nav click ─────────────────────────────────────────
+// The sidebar UI components (Sidebar, SidebarMenuButton) call the module-local
+// useSidebar() and rely on a real SidebarProvider for context.  AppSidebar
+// itself imports and calls the exported useSidebar() — after the fix that's
+// the only call we need to intercept for isMobile/setOpenMobile.
+// Strategy: wrap with SidebarProvider (satisfies UI internals), then spy on
+// the exported useSidebar so AppSidebar's own call gets the mobile fixture
+// with a captured setOpenMobile spy.
+describe("AppSidebar mobile close on nav", () => {
+  const setOpenMobileSpy = vi.fn();
+
+  function renderMobileSidebar() {
+    return renderWithProviders(
+      <SidebarProvider>
+        <AppSidebar
+          role="owner"
+          workspaceName="Studio"
+          userName="A"
+          userEmail="a@b.c"
+          userAvatarUrl={null}
+        />
+      </SidebarProvider>
+    );
+  }
+
+  async function spyMobile(isMobile: boolean) {
+    const sidebarModule = await import("@/components/ui/sidebar");
+    return vi.spyOn(sidebarModule, "useSidebar").mockReturnValue({
+      state: "expanded",
+      open: true,
+      setOpen: vi.fn(),
+      openMobile: isMobile,
+      setOpenMobile: setOpenMobileSpy,
+      isMobile,
+      toggleSidebar: vi.fn(),
+    });
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setOpenMobileSpy.mockClear();
+  });
+
+  it("calls setOpenMobile(false) when a nav link is clicked on mobile", async () => {
+    await spyMobile(true);
+    renderMobileSidebar();
+
+    fireEvent.click(screen.getByRole("link", { name: /bookings/i }));
+    expect(setOpenMobileSpy).toHaveBeenCalledWith(false);
+  });
+
+  it("calls setOpenMobile(false) when the footer Settings link is clicked on mobile", async () => {
+    await spyMobile(true);
+    renderMobileSidebar();
+
+    // The footer Settings link is the last "settings"-labelled link.
+    const settingsLinks = screen.getAllByRole("link", { name: /settings/i });
+    fireEvent.click(settingsLinks[settingsLinks.length - 1]);
+    expect(setOpenMobileSpy).toHaveBeenCalledWith(false);
+  });
+
+  it("does NOT call setOpenMobile when a nav link is clicked on desktop", async () => {
+    await spyMobile(false);
+    renderMobileSidebar();
+
+    fireEvent.click(screen.getByRole("link", { name: /bookings/i }));
+    expect(setOpenMobileSpy).not.toHaveBeenCalled();
   });
 });

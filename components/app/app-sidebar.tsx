@@ -25,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 
@@ -61,6 +62,8 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
@@ -107,7 +110,7 @@ export function AppSidebar({
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
-                      render={<Link href={href} />}
+                      render={<Link href={href} onClick={closeOnNav} />}
                       isActive={pathname === href || pathname.startsWith(href + "/")}
                       tooltip={label}
                       className="group-data-[collapsible=icon]:mx-auto"
@@ -131,7 +134,7 @@ export function AppSidebar({
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              render={<Link href="/settings" />}
+              render={<Link href="/settings" onClick={closeOnNav} />}
               tooltip={t("settings")}
               className="group-data-[collapsible=icon]:mx-auto"
             >
