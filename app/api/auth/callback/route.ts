@@ -110,6 +110,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Exchange the authorization code for a session.
     const workos = getWorkOS();
     const authResponse = await workos.userManagement.authenticateWithCode({
+      clientId: process.env.WORKOS_CLIENT_ID!,
       code,
       session: {
         sealSession: true,
