@@ -8,7 +8,77 @@
   },
   "auth": {
     "signInTitle": "Sign in",
-    "signUpTitle": "Create account"
+    "signUpTitle": "Create account",
+    "signIn": {
+      "title": "Sign in",
+      "continueWithGoogle": "Continue with Google",
+      "or": "or",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one"
+    },
+    "signUp": {
+      "title": "Create account",
+      "continueWithGoogle": "Continue with Google",
+      "submit": "Create account",
+      "passwordHint": "At least 8 characters",
+      "hasAccount": "Already have an account?"
+    },
+    "mfa": {
+      "title": "Two-factor verification",
+      "description": "Enter the 6-digit code from your authenticator app.",
+      "codeLabel": "Verification code",
+      "submit": "Verify",
+      "backToSignIn": "Back to sign in"
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "description": "Enter your email and we'll send you a reset link.",
+      "submit": "Send reset link",
+      "successMessage": "If that email is registered, a reset link is on its way. Check your inbox.",
+      "backToSignIn": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "Set new password",
+      "description": "Choose a strong password for your account.",
+      "passwordLabel": "New password",
+      "submit": "Set new password",
+      "successMessage": "Your password has been updated. You can now sign in.",
+      "signIn": "Sign in",
+      "invalidToken": "This reset link is invalid or has expired.",
+      "requestNewLink": "Request a new reset link"
+    },
+    "verifyEmail": {
+      "title": "Verify your email",
+      "description": "Enter the 6-digit code we sent to your email address.",
+      "codeLabel": "Verification code",
+      "submit": "Verify email",
+      "resend": "Resend code",
+      "resending": "Sending…",
+      "resendSent": "Code resent — check your inbox."
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "optional": "optional",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "errors": {
+      "invalidInput": "Please check your input and try again.",
+      "invalidCredentials": "Invalid email or password.",
+      "passwordMismatch": "Passwords do not match.",
+      "botCheck": "Bot check failed. Please try again.",
+      "tooManyAttempts": "Too many attempts. Try again in {seconds} seconds.",
+      "generic": "Something went wrong. Please try again.",
+      "invalidCode": "Invalid or expired code. Please try again.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "resetTokenInvalid": "This link is invalid or has expired. Please request a new one."
+    }
   },
   "app": {
     "dashboard": {
@@ -484,7 +554,8 @@
       "settings": "Settings",
       "account": "Account",
       "logOut": "Log out",
-      "portfolio": "Portfolio"
+      "portfolio": "Portfolio",
+      "accountMenu": "Account menu"
     },
     "theme": {
       "label": "Theme",
@@ -495,6 +566,48 @@
     "settings": {
       "title": "Settings",
       "description": "Manage your account, workspace, and preferences.",
+      "navigationLabel": "Settings navigation",
+      "selectPage": "Select a page from the sidebar.",
+      "workspaceSwitcher": {
+        "switchWorkspace": "Switch workspace",
+        "yourWorkspaces": "Your workspaces",
+        "noWorkspace": "No workspace"
+      },
+      "account": {
+        "profileSection": "Profile",
+        "profileHint": "Your name and avatar as shown to teammates.",
+        "avatarHint": "Avatar is managed through your WorkOS profile.",
+        "nameSection": "Display name",
+        "nameLabel": "Full name",
+        "emailLabel": "Email address",
+        "emailReadOnly": "Email changes are not supported yet. Contact support.",
+        "saving": "Saving…",
+        "saveName": "Save name",
+        "nameSaved": "Name updated."
+      },
+      "security": {
+        "mfaSection": "Two-factor authentication",
+        "mfaHint": "Add a second layer of security to your account using an authenticator app.",
+        "mfaEnabledLabel": "Authenticator app",
+        "mfaNotEnabledLabel": "Two-factor authentication is not enabled.",
+        "enabled": "Enabled",
+        "mfaSetup": "Set up authenticator",
+        "mfaStarting": "Starting…",
+        "mfaDisable": "Disable two-factor authentication",
+        "mfaDisableAriaLabel": "Disable two-factor authentication for your account",
+        "disabling": "Disabling…",
+        "mfaEnabled": "Two-factor authentication enabled.",
+        "mfaDisabled": "Two-factor authentication disabled.",
+        "mfaScanHeading": "Scan this QR code",
+        "mfaScanHint": "Open your authenticator app and scan the code below. If you can't scan, enter the secret key manually.",
+        "mfaQrAlt": "QR code for authenticator app setup",
+        "mfaSecretLabel": "Secret key",
+        "mfaSecretHint": "Store this key somewhere safe. You'll need it to recover access if you lose your device.",
+        "mfaCodeLabel": "Verification code",
+        "verifyCode": "Verify and enable",
+        "verifying": "Verifying…",
+        "cancel": "Cancel"
+      },
       "tabs": {
         "account": "Account",
         "security": "Security",
@@ -1568,5 +1681,33 @@
     "title": "Page not found",
     "description": "The page you're looking for doesn't exist or has been moved.",
     "backToDashboard": "Back to dashboard"
+  },
+  "inviteAccept": {
+    "pageTitle": "Accept invitation",
+    "signIn": "Sign in",
+    "goToDashboard": "Go to dashboard",
+    "errors": {
+      "invalid": {
+        "title": "Invite link not found",
+        "description": "This invite link is invalid or has already been used. Ask your workspace owner to send a new one."
+      },
+      "expired": {
+        "title": "Invite link expired",
+        "description": "This invite link has expired. Ask your workspace owner to send a new invitation."
+      },
+      "already_accepted": {
+        "title": "Already a member",
+        "description": "You have already accepted this invitation and joined the workspace."
+      },
+      "email_mismatch": {
+        "title": "Wrong account",
+        "description": "This invitation was sent to a different email address. Sign in with the invited address to accept it.",
+        "signedInAs": "You are currently signed in as {email}."
+      },
+      "failed": {
+        "title": "Something went wrong",
+        "description": "We could not complete your invitation. Please try again or contact support."
+      }
+    }
   }
 }

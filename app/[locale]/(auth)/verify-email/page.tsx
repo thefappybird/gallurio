@@ -1,7 +1,6 @@
-import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { clerkAppearance } from "@/lib/auth/clerkAppearance";
+import { VerifyEmailForm } from "./_verify-email-form";
 
 export async function generateMetadata({
   params,
@@ -11,15 +10,15 @@ export async function generateMetadata({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("auth");
-  return { title: t("signInTitle") };
+  return { title: t("verifyEmail.title") };
 }
 
-export default async function SignInPage({
+export default async function VerifyEmailPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <SignIn appearance={clerkAppearance} />;
+  return <VerifyEmailForm />;
 }

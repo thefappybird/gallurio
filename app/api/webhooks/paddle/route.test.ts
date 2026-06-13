@@ -85,7 +85,6 @@ async function seedWorkspace(opts: {
   teamCount?: number;
 }): Promise<Types.ObjectId> {
   const ws = await Workspace.create({
-    clerkOrgId: `org_${Math.random().toString(36).slice(2, 10)}`,
     ownerUserId: "user_owner",
     name: "Test WS",
     slug: `t-${Math.random().toString(36).slice(2, 8)}`,
@@ -105,7 +104,7 @@ async function seedWorkspace(opts: {
       color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
       isDefault: i === 0,
       memberCount: 0,
-      createdByClerkUserId: "user_owner",
+      createdByWorkosUserId: "user_owner",
     });
   }
   return ws._id;

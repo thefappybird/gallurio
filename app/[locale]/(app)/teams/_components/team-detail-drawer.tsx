@@ -38,7 +38,7 @@ type Props = {
   members: MemberSummary[];
   pendingInvites: PendingInviteRow[];
   maxMembersPerTeam: number;
-  ownerClerkUserId: string;
+  ownerWorkosUserId: string;
   onInvite: (team: TeamRow) => void;
 };
 
@@ -53,7 +53,7 @@ export function TeamDetailDrawer({
   members,
   pendingInvites,
   maxMembersPerTeam,
-  ownerClerkUserId,
+  ownerWorkosUserId,
   onInvite,
 }: Props) {
   const t = useTranslations("app.teams");
@@ -76,7 +76,7 @@ export function TeamDetailDrawer({
   );
   const assignable = members.filter(
     (m) =>
-      m.clerkUserId !== ownerClerkUserId &&
+      m.workosUserId !== ownerWorkosUserId &&
       !m.teams.some((tm) => tm.teamId === teamId),
   );
   const teamPending = pendingInvites.filter((p) => p.teamIds.includes(teamId));
@@ -86,11 +86,11 @@ export function TeamDetailDrawer({
     return m.teams.find((tm) => tm.teamId === teamId)?.role ?? "member";
   }
 
-  function handleAdd(clerkUserId: string) {
-    if (!clerkUserId) return;
-    setBusyId(clerkUserId);
+  function handleAdd(workosUserId: string) {
+    if (!workosUserId) return;
+    setBusyId(workosUserId);
     startTransition(async () => {
-      const result = await assignMemberToTeamAction({ clerkUserId, teamId, role: "member" });
+      const result = await assignMemberToTeamAction({ workosUserId, teamId, role: "member" });
       setBusyId(null);
       setAddValue("");
       if (result.error) {
@@ -108,10 +108,10 @@ export function TeamDetailDrawer({
     });
   }
 
-  function handleRemove(clerkUserId: string) {
-    setBusyId(clerkUserId);
+  function handleRemove(workosUserId: string) {
+    setBusyId(workosUserId);
     startTransition(async () => {
-      const result = await removeMemberFromTeamAction({ clerkUserId, teamId });
+      const result = await removeMemberFromTeamAction({ workosUserId, teamId });
       setBusyId(null);
       if (result.error) {
         toast.error(t("errors.generic"));
@@ -122,10 +122,10 @@ export function TeamDetailDrawer({
     });
   }
 
-  function handleSetLead(clerkUserId: string, isLead: boolean) {
-    setBusyId(clerkUserId);
+  function handleSetLead(workosUserId: string, isLead: boolean) {
+    setBusyId(workosUserId);
     startTransition(async () => {
-      const result = await setLeadFlagAction({ clerkUserId, teamId, isLead });
+      const result = await setLeadFlagAction({ workosUserId, teamId, isLead });
       setBusyId(null);
       if (result.error) {
         toast.error(t("errors.generic"));
@@ -138,10 +138,10 @@ export function TeamDetailDrawer({
     });
   }
 
-  function handleRevoke(email: string) {
-    setBusyId(email);
+  function handleRevoke(invitationId: string) {
+    setBusyId(invitationId);
     startTransition(async () => {
-      const result = await revokeInviteAction({ email });
+      const result = await revokeInviteAction({ invitationId });
       setBusyId(null);
       if (result.error) {
         toast.error(t("errors.generic"));
@@ -185,12 +185,12 @@ export function TeamDetailDrawer({
             ) : (
               <ul className="flex flex-col border border-border bg-card">
                 {teamMembers.map((m) => {
-                  const isOwner = m.clerkUserId === ownerClerkUserId;
+                  const isOwner = m.workosUserId === ownerWorkosUserId;
                   const isLead = roleOf(m) === "lead";
-                  const busy = busyId === m.clerkUserId;
+                  const busy = busyId === m.workosUserId;
                   return (
                     <li
-                      key={m.clerkUserId}
+                      key={m.workosUserId}
                       className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-0"
                     >
                       <div className="flex min-w-0 flex-1 flex-col">
@@ -209,22 +209,22 @@ export function TeamDetailDrawer({
                       {!isOwner && (
                         <div className="flex shrink-0 items-center gap-3">
                           <Label
-                            htmlFor={`lead-${m.clerkUserId}`}
+                            htmlFor={`lead-${m.workosUserId}`}
                             className="flex items-center gap-1.5 text-xs text-muted-foreground"
                           >
                             {t("drawer.leadToggleLabel")}
                             <Switch
-                              id={`lead-${m.clerkUserId}`}
+                              id={`lead-${m.workosUserId}`}
                               checked={isLead}
                               disabled={busy}
-                              onCheckedChange={(v) => handleSetLead(m.clerkUserId, v)}
+                              onCheckedChange={(v) => handleSetLead(m.workosUserId, v)}
                             />
                           </Label>
                           <Button
                             size="sm"
                             variant="outline"
                             disabled={busy}
-                            onClick={() => handleRemove(m.clerkUserId)}
+                            onClick={() => handleRemove(m.workosUserId)}
                           >
                             {busy ? (
                               <Loader2 className="size-4 animate-spin" />
@@ -261,7 +261,7 @@ export function TeamDetailDrawer({
                   <SelectTrigger id="add-member-select" className="flex-1">
                     <SelectValue>
                       {(value: string) => {
-                        const m = assignable.find((x) => x.clerkUserId === value);
+                        const m = assignable.find((x) => x.workosUserId === value);
                         return m ? (
                           <span className="truncate">{displayName(m)}</span>
                         ) : (
@@ -274,7 +274,7 @@ export function TeamDetailDrawer({
                   </SelectTrigger>
                   <SelectContent>
                     {assignable.map((m) => (
-                      <SelectItem key={m.clerkUserId} value={m.clerkUserId}>
+                      <SelectItem key={m.workosUserId} value={m.workosUserId}>
                         <span className="flex flex-col">
                           <span className="text-sm">{displayName(m)}</span>
                           <span className="text-xs text-muted-foreground">{m.email}</span>
@@ -301,10 +301,10 @@ export function TeamDetailDrawer({
             ) : (
               <ul className="flex flex-col border border-border bg-card">
                 {teamPending.map((p) => {
-                  const busy = busyId === p.email;
+                  const busy = busyId === p.invitationId;
                   return (
                     <li
-                      key={p.email}
+                      key={p.invitationId}
                       className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-0"
                     >
                       <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -321,7 +321,7 @@ export function TeamDetailDrawer({
                         className="shrink-0"
                         disabled={busy}
                         aria-label={t("members.revokeInvite")}
-                        onClick={() => handleRevoke(p.email)}
+                        onClick={() => handleRevoke(p.invitationId)}
                       >
                         {busy ? (
                           <Loader2 className="size-4 animate-spin" />

@@ -19,7 +19,6 @@ vi.mock("@/lib/db/mongoose", () => ({
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
-    clerkOrgId: "org_test",
     role: "owner",
     // timezone is "UTC" so HH:MM assertions match UTC-stored Date values directly.
     workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", timezone: "UTC" },

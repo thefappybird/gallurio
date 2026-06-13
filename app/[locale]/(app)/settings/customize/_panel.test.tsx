@@ -11,6 +11,35 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { renderWithProviders } from "@/test-utils/render";
 import { CustomizePanel } from "./_panel";
 
+// authkit-nextjs and WorkOS SDK import next/cache which is not resolvable in the
+// test environment. Mock the entire auth/WorkOS surface so nothing is loaded.
+vi.mock("@workos-inc/authkit-nextjs", () => ({
+  withAuth: vi.fn(async () => ({ user: null })),
+  saveSession: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/lib/workos", () => ({
+  workos: { userManagement: {}, multiFactorAuth: {} },
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  getAuthUser: vi.fn(),
+}));
+
+vi.mock("@/lib/auth/activeWorkspace", () => ({
+  getActiveWorkspaceId: vi.fn(),
+  setActiveWorkspace: vi.fn(),
+  clearActiveWorkspace: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockResolvedValue({ get: vi.fn(), set: vi.fn() }),
+}));
+
+vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undefined) }));
+
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
   return {

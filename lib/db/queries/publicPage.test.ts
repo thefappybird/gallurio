@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models/Workspace";
 import { findPublishedWorkspaceBySlug } from "./publicPage";
-import { Types } from "mongoose";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -13,7 +12,6 @@ function makeWorkspaceBase(overrides: Record<string, unknown> = {}) {
     slug: "test-workspace",
     name: "Test Workspace",
     ownerUserId: "user_001",
-    clerkOrgId: `org_${new Types.ObjectId().toHexString()}`,
     currency: "PHP",
     publicPage: {
       publishedAt: new Date(),
@@ -114,7 +112,6 @@ describe("findPublishedWorkspaceBySlug", () => {
       makeWorkspaceBase({
         slug: slugA,
         name: "Alpha Studio",
-        clerkOrgId: `org_alpha_${new Types.ObjectId().toHexString()}`,
         ownerUserId: "user_alpha",
       })
     );
@@ -123,7 +120,6 @@ describe("findPublishedWorkspaceBySlug", () => {
       makeWorkspaceBase({
         slug: slugB,
         name: "Beta Studio",
-        clerkOrgId: `org_beta_${new Types.ObjectId().toHexString()}`,
         ownerUserId: "user_beta",
       })
     );
@@ -152,7 +148,7 @@ describe("findPublishedWorkspaceBySlug", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Projection / response shaping (Finding #6)
+  // Projection / response shaping
   // ---------------------------------------------------------------------------
 
   it("projection: sensitive billing and identity fields are stripped from the returned doc", async () => {
@@ -161,7 +157,6 @@ describe("findPublishedWorkspaceBySlug", () => {
         slug: "sensitive-ws",
         name: "Sensitive Studio",
         ownerUserId: "user_sensitive",
-        clerkOrgId: "org_sensitive_abc123",
         plan: "starter",
         currency: "PHP",
         paddleSubscriptionId: "sub_secret_001",
@@ -181,7 +176,6 @@ describe("findPublishedWorkspaceBySlug", () => {
     expect(doc.paddleSubscriptionStatus).toBeUndefined();
     expect(doc.paddleCurrentPeriodEnd).toBeUndefined();
     expect(doc.paddleCheckoutWorkflowRunId).toBeUndefined();
-    expect(doc.clerkOrgId).toBeUndefined();
     expect(doc.ownerUserId).toBeUndefined();
     expect(doc.plan).toBeUndefined();
   });

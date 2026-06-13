@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import "server-only";
 import { redirect } from "next/navigation";
 import { connectDB } from "@/lib/db/mongoose";
 import {
@@ -9,6 +9,8 @@ import {
   type WorkspaceDoc,
   type UserDoc,
 } from "@/lib/db/models";
+import { getAuthUser } from "./session";
+import { getActiveWorkspaceId } from "./activeWorkspace";
 
 export type OnboardingContext = {
   userId: string;
@@ -36,18 +38,29 @@ export function nextStep(step: OnboardingStep): OnboardingStep | null {
   return STEP_ORDER[idx + 1];
 }
 
+/**
+ * Loads the current onboarding context for the authenticated user.
+ *
+ * The workspace is resolved leniently: the user may have no workspace yet
+ * (e.g. mid-onboarding), so workspace is null when none can be resolved.
+ * Redirects unauthenticated users to /sign-in.
+ */
 export async function loadOnboardingContext(): Promise<OnboardingContext> {
-  const session = await auth();
-  if (!session.userId) redirect("/sign-in");
+  const authUser = await getAuthUser();
+  if (!authUser) redirect("/sign-in");
 
   await connectDB();
 
-  const [user, workspace] = await Promise.all([
-    User.findOne({ clerkUserId: session.userId }).lean<UserDoc>(),
-    session.orgId
-      ? Workspace.findOne({ clerkOrgId: session.orgId }).lean<WorkspaceDoc>()
-      : Promise.resolve(null),
-  ]);
+  const user = await User.findOne({ workosUserId: authUser.workosUserId }).lean<UserDoc>();
+
+  // Resolve workspace leniently — may be null during early onboarding steps.
+  let workspace: WorkspaceDoc | null = null;
+  if (user && user.memberships.length > 0) {
+    const workspaceId = await getActiveWorkspaceId(user.memberships);
+    if (workspaceId) {
+      workspace = await Workspace.findById(workspaceId).lean<WorkspaceDoc>();
+    }
+  }
 
   let currentStep: OnboardingStep = user?.onboardingStep ?? "business";
 
@@ -56,12 +69,15 @@ export async function loadOnboardingContext(): Promise<OnboardingContext> {
   if ((currentStep as string) === "template") {
     currentStep = "plan";
     if (user) {
-      await User.updateOne({ clerkUserId: session.userId }, { $set: { onboardingStep: "plan" } });
+      await User.updateOne(
+        { workosUserId: authUser.workosUserId },
+        { $set: { onboardingStep: "plan" } },
+      );
     }
   }
 
   return {
-    userId: session.userId,
+    userId: authUser.workosUserId,
     user: user ?? null,
     workspace: workspace ?? null,
     currentStep,

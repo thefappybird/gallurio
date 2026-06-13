@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
   LayoutDashboardIcon,
-  LogOutIcon,
   SettingsIcon,
   UsersIcon,
   UsersRound,
@@ -13,7 +12,6 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
-import { SignOutButton } from "@clerk/nextjs";
 import { ClientUserButton } from "@/components/app/client-user-button";
 import {
   Sidebar,
@@ -48,9 +46,19 @@ type AppSidebarProps = {
   role: "owner" | "staff";
   workspaceName: string;
   workspaceLogoUrl?: string | null;
+  userName: string | null;
+  userEmail: string;
+  userAvatarUrl: string | null;
 };
 
-export function AppSidebar({ role, workspaceName, workspaceLogoUrl }: AppSidebarProps) {
+export function AppSidebar({
+  role,
+  workspaceName,
+  workspaceLogoUrl,
+  userName,
+  userEmail,
+  userAvatarUrl,
+}: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
   const isOwner = role === "owner";
@@ -134,23 +142,16 @@ export function AppSidebar({ role, workspaceName, workspaceLogoUrl }: AppSidebar
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <div className="grid size-7 shrink-0 place-items-center">
-                <ClientUserButton />
+                <ClientUserButton
+                  name={userName}
+                  email={userEmail}
+                  avatarUrl={userAvatarUrl}
+                />
               </div>
               <span className="text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
                 {t("account")}
               </span>
             </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SignOutButton redirectUrl="/sign-in">
-              <SidebarMenuButton
-                tooltip={t("logOut")}
-                className="group-data-[collapsible=icon]:mx-auto"
-              >
-                <LogOutIcon className="size-5 shrink-0" />
-                <span>{t("logOut")}</span>
-              </SidebarMenuButton>
-            </SignOutButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

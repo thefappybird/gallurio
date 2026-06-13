@@ -3,7 +3,6 @@
 import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useOrganizationList } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
@@ -92,7 +91,6 @@ export function BusinessStepForm({
   const t = useTranslations("onboarding.business");
   const tShell = useTranslations("onboarding.shell");
   const router = useRouter();
-  const { setActive } = useOrganizationList();
   const [, startTransition] = useTransition();
 
   const {
@@ -117,9 +115,6 @@ export function BusinessStepForm({
     if (result?.error) {
       toast.error(result.error);
       return;
-    }
-    if (result.orgIdToActivate && setActive) {
-      await setActive({ organization: result.orgIdToActivate });
     }
     startTransition(() => router.push("/onboarding/branding"));
   }

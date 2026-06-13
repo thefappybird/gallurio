@@ -27,7 +27,6 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 function makeOrgCtx(wsId: Types.ObjectId) {
   return {
     userId: "user_test",
-    clerkOrgId: `org_${wsId.toHexString()}`,
     role: "owner" as const,
     workspace: { _id: wsId, currency: "PHP", name: "Test", slug: "t" },
   };
@@ -47,9 +46,9 @@ beforeEach(async () => {
   // Team.findOne({ workspaceId, isDefault: true }) succeeds.
   const ownerUserId = "user_test";
   await Team.create([
-    { workspaceId: WS_ID, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
-    { workspaceId: WS_A, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
-    { workspaceId: WS_B, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByClerkUserId: ownerUserId },
+    { workspaceId: WS_ID, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: ownerUserId },
+    { workspaceId: WS_A, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: ownerUserId },
+    { workspaceId: WS_B, name: "Main", color: TEAM_COLOR_PALETTE[0], isDefault: true, isActive: true, memberCount: 0, createdByWorkosUserId: ownerUserId },
   ]);
 });
 

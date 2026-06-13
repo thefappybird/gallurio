@@ -8,7 +8,7 @@
  */
 
 import type { ComponentConfig, Field } from "@measured/puck";
-import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/serverContext";
+import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import { resolveBlockStyle, resolveBlockAttrs, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 export type ContactDetailsProps = {

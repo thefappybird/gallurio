@@ -41,7 +41,7 @@ type Props = {
   maxMembersPerTeam: number;
   members: MemberSummary[];
   pendingInvites: PendingInviteRow[];
-  ownerClerkUserId: string;
+  ownerWorkosUserId: string;
 };
 
 type OptimisticAction =
@@ -73,7 +73,7 @@ export function TeamsPageClient({
   maxMembersPerTeam,
   members,
   pendingInvites,
-  ownerClerkUserId,
+  ownerWorkosUserId,
 }: Props) {
   const t = useTranslations("app.teams");
   const router = useRouter();
@@ -242,7 +242,7 @@ export function TeamsPageClient({
         members={members}
         pendingInvites={pendingInvites}
         maxMembersPerTeam={maxMembersPerTeam}
-        ownerClerkUserId={ownerClerkUserId}
+        ownerWorkosUserId={ownerWorkosUserId}
         onInvite={(team) => {
           setDrawerOpen(false);
           openInvite([team.id]);

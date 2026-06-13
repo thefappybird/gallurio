@@ -51,7 +51,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     slug: "luna-studio",
     name: "Luna Studio",
     ownerUserId: "user_001",
-    clerkOrgId: "org_001",
     businessType: "photographer",
     country: "PH",
     currency: "PHP",

@@ -8,7 +8,77 @@
   },
   "auth": {
     "signInTitle": "Masuk",
-    "signUpTitle": "Buat akun"
+    "signUpTitle": "Buat akun",
+    "signIn": {
+      "title": "Masuk",
+      "continueWithGoogle": "Lanjutkan dengan Google",
+      "or": "atau",
+      "submit": "Masuk",
+      "forgotPassword": "Lupa kata sandi?",
+      "noAccount": "Belum punya akun?",
+      "createAccount": "Buat satu"
+    },
+    "signUp": {
+      "title": "Buat akun",
+      "continueWithGoogle": "Lanjutkan dengan Google",
+      "submit": "Buat akun",
+      "passwordHint": "Minimal 8 karakter",
+      "hasAccount": "Sudah punya akun?"
+    },
+    "mfa": {
+      "title": "Verifikasi dua faktor",
+      "description": "Masukkan kode 6 digit dari aplikasi autentikator Anda.",
+      "codeLabel": "Kode verifikasi",
+      "submit": "Verifikasi",
+      "backToSignIn": "Kembali ke halaman masuk"
+    },
+    "forgotPassword": {
+      "title": "Atur ulang kata sandi",
+      "description": "Masukkan email Anda dan kami akan mengirimkan tautan pengaturan ulang.",
+      "submit": "Kirim tautan pengaturan ulang",
+      "successMessage": "Jika email tersebut terdaftar, tautan pengaturan ulang sedang dikirim. Periksa kotak masuk Anda.",
+      "backToSignIn": "Kembali ke halaman masuk"
+    },
+    "resetPassword": {
+      "title": "Atur kata sandi baru",
+      "description": "Pilih kata sandi yang kuat untuk akun Anda.",
+      "passwordLabel": "Kata sandi baru",
+      "submit": "Atur kata sandi baru",
+      "successMessage": "Kata sandi Anda telah diperbarui. Anda sekarang dapat masuk.",
+      "signIn": "Masuk",
+      "invalidToken": "Tautan pengaturan ulang ini tidak valid atau telah kedaluwarsa.",
+      "requestNewLink": "Minta tautan pengaturan ulang baru"
+    },
+    "verifyEmail": {
+      "title": "Verifikasi email Anda",
+      "description": "Masukkan kode 6 digit yang kami kirimkan ke alamat email Anda.",
+      "codeLabel": "Kode verifikasi",
+      "submit": "Verifikasi email",
+      "resend": "Kirim ulang kode",
+      "resending": "Mengirim…",
+      "resendSent": "Kode dikirim ulang — periksa kotak masuk Anda."
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Kata sandi",
+      "confirmPassword": "Konfirmasi kata sandi",
+      "firstName": "Nama depan",
+      "lastName": "Nama belakang",
+      "optional": "opsional",
+      "showPassword": "Tampilkan kata sandi",
+      "hidePassword": "Sembunyikan kata sandi"
+    },
+    "errors": {
+      "invalidInput": "Harap periksa input Anda dan coba lagi.",
+      "invalidCredentials": "Email atau kata sandi tidak valid.",
+      "passwordMismatch": "Kata sandi tidak cocok.",
+      "botCheck": "Pemeriksaan bot gagal. Silakan coba lagi.",
+      "tooManyAttempts": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
+      "generic": "Terjadi kesalahan. Silakan coba lagi.",
+      "invalidCode": "Kode tidak valid atau telah kedaluwarsa. Silakan coba lagi.",
+      "sessionExpired": "Sesi Anda telah kedaluwarsa. Silakan masuk kembali.",
+      "resetTokenInvalid": "Tautan ini tidak valid atau telah kedaluwarsa. Silakan minta yang baru."
+    }
   },
   "app": {
     "dashboard": {
@@ -484,7 +554,8 @@
       "settings": "Pengaturan",
       "account": "Akun",
       "logOut": "Keluar",
-      "portfolio": "Portfolio"
+      "portfolio": "Portfolio",
+      "accountMenu": "Menu akun"
     },
     "theme": {
       "label": "Tema",
@@ -495,6 +566,48 @@
     "settings": {
       "title": "Pengaturan",
       "description": "Kelola akun, ruang kerja, dan preferensi Anda.",
+      "navigationLabel": "Navigasi pengaturan",
+      "selectPage": "Pilih halaman dari bilah sisi.",
+      "workspaceSwitcher": {
+        "switchWorkspace": "Ganti ruang kerja",
+        "yourWorkspaces": "Ruang kerja Anda",
+        "noWorkspace": "Tidak ada ruang kerja"
+      },
+      "account": {
+        "profileSection": "Profil",
+        "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
+        "avatarHint": "Avatar dikelola melalui profil WorkOS Anda.",
+        "nameSection": "Nama tampilan",
+        "nameLabel": "Nama lengkap",
+        "emailLabel": "Alamat email",
+        "emailReadOnly": "Perubahan email belum didukung. Hubungi dukungan.",
+        "saving": "Menyimpan…",
+        "saveName": "Simpan nama",
+        "nameSaved": "Nama diperbarui."
+      },
+      "security": {
+        "mfaSection": "Autentikasi dua faktor",
+        "mfaHint": "Tambahkan lapisan keamanan kedua ke akun Anda menggunakan aplikasi autentikator.",
+        "mfaEnabledLabel": "Aplikasi autentikator",
+        "mfaNotEnabledLabel": "Autentikasi dua faktor tidak diaktifkan.",
+        "enabled": "Diaktifkan",
+        "mfaSetup": "Siapkan autentikator",
+        "mfaStarting": "Memulai…",
+        "mfaDisable": "Nonaktifkan autentikasi dua faktor",
+        "mfaDisableAriaLabel": "Nonaktifkan autentikasi dua faktor untuk akun Anda",
+        "disabling": "Menonaktifkan…",
+        "mfaEnabled": "Autentikasi dua faktor diaktifkan.",
+        "mfaDisabled": "Autentikasi dua faktor dinonaktifkan.",
+        "mfaScanHeading": "Pindai kode QR ini",
+        "mfaScanHint": "Buka aplikasi autentikator Anda dan pindai kode di bawah. Jika Anda tidak dapat memindai, masukkan kunci rahasia secara manual.",
+        "mfaQrAlt": "Kode QR untuk penyiapan aplikasi autentikator",
+        "mfaSecretLabel": "Kunci rahasia",
+        "mfaSecretHint": "Simpan kunci ini di tempat yang aman. Anda membutuhkannya untuk memulihkan akses jika kehilangan perangkat Anda.",
+        "mfaCodeLabel": "Kode verifikasi",
+        "verifyCode": "Verifikasi dan aktifkan",
+        "verifying": "Memverifikasi…",
+        "cancel": "Batal"
+      },
       "tabs": {
         "account": "Akun",
         "security": "Keamanan",
@@ -1568,5 +1681,33 @@
     "title": "Halaman tidak ditemukan",
     "description": "Halaman yang Anda cari tidak ada atau telah dipindahkan.",
     "backToDashboard": "Kembali ke dasbor"
+  },
+  "inviteAccept": {
+    "pageTitle": "Terima undangan",
+    "signIn": "Masuk",
+    "goToDashboard": "Pergi ke dasbor",
+    "errors": {
+      "invalid": {
+        "title": "Tautan undangan tidak ditemukan",
+        "description": "Tautan undangan ini tidak valid atau sudah digunakan. Minta pemilik workspace untuk mengirim tautan baru."
+      },
+      "expired": {
+        "title": "Tautan undangan telah kedaluwarsa",
+        "description": "Tautan undangan ini telah kedaluwarsa. Minta pemilik workspace untuk mengirim undangan baru."
+      },
+      "already_accepted": {
+        "title": "Sudah menjadi anggota",
+        "description": "Anda telah menerima undangan ini dan telah bergabung dengan workspace."
+      },
+      "email_mismatch": {
+        "title": "Akun yang salah",
+        "description": "Undangan ini dikirim ke alamat email yang berbeda. Masuk dengan alamat yang diundang untuk menerimanya.",
+        "signedInAs": "Anda saat ini masuk sebagai {email}."
+      },
+      "failed": {
+        "title": "Terjadi kesalahan",
+        "description": "Kami tidak dapat menyelesaikan undangan Anda. Silakan coba lagi atau hubungi dukungan."
+      }
+    }
   }
 }

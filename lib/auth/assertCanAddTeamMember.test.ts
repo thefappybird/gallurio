@@ -32,7 +32,7 @@ async function makeTeam(memberCount = 0) {
     color: "#112233",
     isDefault: false,
     memberCount,
-    createdByClerkUserId: "user_test",
+    createdByWorkosUserId: "user_test",
   });
 }
 

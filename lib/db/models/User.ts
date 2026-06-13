@@ -4,6 +4,7 @@ const membershipSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true },
     role: { type: String, enum: ["owner", "staff"], required: true },
+    lastAccessedAt: { type: Date, default: null },
   },
   { _id: false }
 );
@@ -21,11 +22,12 @@ export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
 const userSchema = new Schema(
   {
-    clerkUserId: { type: String, required: true, unique: true, index: true },
+    workosUserId: { type: String, required: true, unique: true, index: true },
     email: { type: String, required: true, lowercase: true, trim: true, index: true },
     name: { type: String, default: "" },
     avatarUrl: { type: String, default: null },
     avatarCloudinaryPublicId: { type: String, default: null },
+    mfaEnabled: { type: Boolean, default: false },
     memberships: { type: [membershipSchema], default: [] },
     onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: "business" },
     onboardingCompletedAt: { type: Date, default: null },

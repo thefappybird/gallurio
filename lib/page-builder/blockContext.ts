@@ -113,3 +113,16 @@ export function applyGalleryChromeDefaults(g: GalleryChromeLabels = {}): Require
 export function getGalleryChromeLabelsFrom(puck?: BlockPuck | null): Required<GalleryChromeLabels> {
   return applyGalleryChromeDefaults(puck?.metadata?.workspace?.chrome?.gallery ?? {});
 }
+
+/**
+ * Client-safe: the active workspace from Puck `metadata` (no ALS).
+ *
+ * Every real render path threads the workspace through Puck `metadata.workspace`
+ * (see app/(public)/w/[orgSlug]/page.tsx, the gallery page, and the portfolio
+ * preview), so data blocks can read it without importing the server-only
+ * AsyncLocalStorage store from serverContext.tsx. Returns null when no workspace
+ * is present (e.g. an isolated unit render without metadata).
+ */
+export function getRenderWorkspaceFrom(puck?: BlockPuck | null): RenderWorkspace | null {
+  return puck?.metadata?.workspace ?? null;
+}

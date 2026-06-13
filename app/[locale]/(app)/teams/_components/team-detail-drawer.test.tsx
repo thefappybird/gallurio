@@ -27,17 +27,17 @@ const TEAM: TeamRow = {
   memberCount: 1,
 };
 
-const OWNER = "user_owner";
+const OWNER = "user_owner_workos";
 
 const MEMBERS: MemberSummary[] = [
-  { clerkUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
+  { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
   {
-    clerkUserId: "u_on",
+    workosUserId: "u_on",
     email: "on@test.com",
     name: "On The Team",
     teams: [{ teamId: "t1", role: "member" }],
   },
-  { clerkUserId: "u_free", email: "free@test.com", name: "Teamless Tom", teams: [] },
+  { workosUserId: "u_free", email: "free@test.com", name: "Teamless Tom", teams: [] },
 ];
 
 function renderDrawer() {
@@ -49,7 +49,7 @@ function renderDrawer() {
       members={MEMBERS}
       pendingInvites={[]}
       maxMembersPerTeam={10}
-      ownerClerkUserId={OWNER}
+      ownerWorkosUserId={OWNER}
       onInvite={vi.fn()}
     />,
   );

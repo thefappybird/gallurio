@@ -5,141 +5,111 @@ import { renderWithProviders } from "@/test-utils/render";
 import { SettingsUserProfile } from "./settings-user-profile";
 import type { SettingsPage } from "./settings-user-profile";
 
-// Stub SettingsOrgSwitcher so it doesn't pull in Clerk's OrganizationSwitcher.
+// Stub SettingsOrgSwitcher so it doesn't pull in server actions.
 vi.mock("./settings-org-switcher", () => ({
   SettingsOrgSwitcher: () => <div data-testid="org-switcher" />,
 }));
 
-// Stub next-intl — override useTranslations while keeping all other exports intact.
+// Stub next-intl.
 vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
   return {
     ...actual,
     useTranslations: () => (key: string) => {
       const map: Record<string, string> = {
-        currentWorkspace: "Current workspace",
+        navigationLabel: "Settings navigation",
+        selectPage: "Select a page from the sidebar.",
       };
       return map[key] ?? key;
     },
+    usePathname: () => "/settings",
   };
 });
-
-// Stub Clerk's UserProfile so the test doesn't try to boot the full component.
-vi.mock("@clerk/nextjs", () => {
-  function UserProfile({ children }: { children: React.ReactNode }) {
-    return <div data-testid="user-profile">{children}</div>;
-  }
-  function UserProfilePage({
-    url,
-    label,
-    children,
-  }: {
-    url: string;
-    label: string;
-    children?: React.ReactNode;
-  }) {
-    return (
-      <div data-testid="up-page" data-url={url} data-label={label}>
-        {children}
-      </div>
-    );
-  }
-  UserProfile.Page = UserProfilePage;
-  return { UserProfile };
-});
-
-// Stub next-themes — we don't need a real theme provider here.
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ resolvedTheme: "light" }),
-}));
-
-// Stub @clerk/themes — buildUserProfileAppearance only reads it for baseTheme.
-vi.mock("@clerk/themes", () => ({
-  dark: {},
-}));
 
 const dummyIcon = <span data-testid="dummy-icon" />;
 
 const allPages: SettingsPage[] = [
   {
+    slug: "account",
+    label: "Account",
+    icon: dummyIcon,
+    body: <div data-testid="body-account">account content</div>,
+  },
+  {
     slug: "customize",
     label: "Customize",
     icon: dummyIcon,
-    body: <div>customize content</div>,
+    body: <div data-testid="body-customize">customize content</div>,
   },
   {
     slug: "workspace",
     label: "Workspace",
     icon: dummyIcon,
     ownerOnly: true,
-    body: <div>workspace content</div>,
-  },
-  {
-    slug: "public-page",
-    label: "Public page",
-    icon: dummyIcon,
-    ownerOnly: true,
-    body: <div>public page content</div>,
+    body: <div data-testid="body-workspace">workspace content</div>,
   },
   {
     slug: "danger",
     label: "Danger zone",
     icon: dummyIcon,
     ownerOnly: true,
-    body: <div>danger content</div>,
+    body: <div data-testid="body-danger">danger content</div>,
   },
 ];
 
-function renderSettings(role: "owner" | "staff") {
+const mockWorkspaces = [
+  { id: "ws_aaa", name: "Workspace A" },
+  { id: "ws_bbb", name: "Workspace B" },
+];
+
+function renderSettings(
+  role: "owner" | "staff",
+  activeSlug: string | null = "account",
+) {
   return renderWithProviders(
-    <SettingsUserProfile path="/settings" role={role} pages={allPages} />
+    <SettingsUserProfile
+      role={role}
+      pages={allPages}
+      activeSlug={activeSlug}
+      workspaces={mockWorkspaces}
+      currentWorkspaceId="ws_aaa"
+    />,
   );
 }
 
 describe("SettingsUserProfile", () => {
   describe("role=owner", () => {
-    it("renders all four custom page slugs", () => {
+    it("renders nav links for all pages including ownerOnly ones", () => {
       renderSettings("owner");
-      const pages = screen.getAllByTestId("up-page");
-      const urls = pages.map((p) => p.getAttribute("data-url"));
-      expect(urls).toContain("customize");
-      expect(urls).toContain("workspace");
-      expect(urls).toContain("public-page");
-      expect(urls).toContain("danger");
+      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /workspace/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /danger/i })).toBeInTheDocument();
     });
 
-    it("renders correct labels for each page", () => {
+    it("renders the active page body", () => {
+      renderSettings("owner", "account");
+      expect(screen.getByTestId("body-account")).toBeInTheDocument();
+    });
+
+    it("renders org-switcher bar", () => {
       renderSettings("owner");
-      const pages = screen.getAllByTestId("up-page");
-      const labels = pages.map((p) => p.getAttribute("data-label"));
-      expect(labels).toContain("Customize");
-      expect(labels).toContain("Workspace");
-      expect(labels).toContain("Public page");
-      expect(labels).toContain("Danger zone");
+      expect(screen.getByTestId("org-switcher")).toBeInTheDocument();
     });
   });
 
   describe("role=staff", () => {
-    it("renders only the customize page (non-ownerOnly)", () => {
+    it("renders only non-ownerOnly nav links", () => {
       renderSettings("staff");
-      const pages = screen.getAllByTestId("up-page");
-      expect(pages).toHaveLength(1);
-      expect(pages[0].getAttribute("data-url")).toBe("customize");
+      expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /workspace/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /danger/i })).not.toBeInTheDocument();
     });
 
-    it("does not render ownerOnly pages", () => {
-      renderSettings("staff");
-      const pages = screen.getAllByTestId("up-page");
-      const urls = pages.map((p) => p.getAttribute("data-url"));
-      expect(urls).not.toContain("workspace");
-      expect(urls).not.toContain("public-page");
-      expect(urls).not.toContain("danger");
-    });
-
-    it("renders the Customize label", () => {
-      renderSettings("staff");
-      const page = screen.getByTestId("up-page");
-      expect(page.getAttribute("data-label")).toBe("Customize");
+    it("renders the active page body for visible page", () => {
+      renderSettings("staff", "account");
+      expect(screen.getByTestId("body-account")).toBeInTheDocument();
     });
   });
 });

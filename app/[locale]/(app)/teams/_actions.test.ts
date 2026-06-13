@@ -23,7 +23,7 @@ vi.mock("next/cache", () => ({
 vi.mock("@/lib/auth/ownerContext", () => ({
   ownerContext: vi.fn(async () => ({
     userId: OWNER_USER_ID,
-    clerkOrgId: "org_test",
+    workspaceId: String(WORKSPACE_ID),
     workspace: {
       _id: WORKSPACE_ID,
       ownerUserId: OWNER_USER_ID,
@@ -60,7 +60,7 @@ function makeTeam(
     isActive: overrides.isActive ?? true,
     deactivatedAt: overrides.deactivatedAt ?? null,
     memberCount: 0,
-    createdByClerkUserId: OWNER_USER_ID,
+    createdByWorkosUserId: OWNER_USER_ID,
   });
 }
 
@@ -108,8 +108,8 @@ describe("deactivateTeamAction", () => {
   it("soft-deletes: sets isActive false + deactivatedAt, KEEPING the row and memberships", async () => {
     const team = await makeTeam();
     await TeamMembership.create([
-      { workspaceId: WORKSPACE_ID, teamId: team._id, clerkUserId: "u1", role: "member" },
-      { workspaceId: WORKSPACE_ID, teamId: team._id, clerkUserId: "u2", role: "lead" },
+      { workspaceId: WORKSPACE_ID, teamId: team._id, workosUserId: "u1", role: "member" },
+      { workspaceId: WORKSPACE_ID, teamId: team._id, workosUserId: "u2", role: "lead" },
     ]);
 
     const { deactivateTeamAction } = await import("./_actions");

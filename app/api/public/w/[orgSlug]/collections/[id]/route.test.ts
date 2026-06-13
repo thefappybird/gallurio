@@ -21,7 +21,7 @@ let ws: { _id: Types.ObjectId; slug: string };
 let publicCol: Types.ObjectId;
 
 async function seed() {
-  const w = await Workspace.create({ slug: "studio", name: "Studio", ownerUserId: "u", clerkOrgId: `org_${Math.round(Math.random()*1e9)}`, currency: "PHP", publicPage: { publishedAt: new Date() } });
+  const w = await Workspace.create({ slug: "studio", name: "Studio", ownerUserId: "u",currency: "PHP", publicPage: { publishedAt: new Date() } });
   ws = { _id: w._id, slug: "studio" };
   const col = await GalleryCollection.create({ workspaceId: w._id, name: "Weddings", slug: "weddings", isPublic: true });
   publicCol = col._id;
@@ -50,7 +50,7 @@ describe("GET /api/public/w/[orgSlug]/collections/[id]", () => {
     expect((await call("studio", "not-an-id")).status).toBe(400);
   });
   it("tenant isolation: cannot read another workspace's collection via this slug", async () => {
-    const other = await Workspace.create({ slug: "other", name: "O", ownerUserId: "u2", clerkOrgId: `org_${Math.round(Math.random()*1e9)}`, currency: "PHP", publicPage: { publishedAt: new Date() } });
+    const other = await Workspace.create({ slug: "other", name: "O", ownerUserId: "u2",currency: "PHP", publicPage: { publishedAt: new Date() } });
     const colO = await GalleryCollection.create({ workspaceId: other._id, name: "X", slug: "x", isPublic: true });
     await GalleryItem.create({ workspaceId: other._id, collectionId: colO._id, cloudinaryPublicId: "z", url: "u", order: 0 });
     const res = await call("studio", colO._id.toString());

@@ -8,7 +8,77 @@
   },
   "auth": {
     "signInTitle": "Log masuk",
-    "signUpTitle": "Cipta akaun"
+    "signUpTitle": "Cipta akaun",
+    "signIn": {
+      "title": "Log masuk",
+      "continueWithGoogle": "Teruskan dengan Google",
+      "or": "atau",
+      "submit": "Log masuk",
+      "forgotPassword": "Terlupa kata laluan?",
+      "noAccount": "Tiada akaun?",
+      "createAccount": "Cipta satu"
+    },
+    "signUp": {
+      "title": "Cipta akaun",
+      "continueWithGoogle": "Teruskan dengan Google",
+      "submit": "Cipta akaun",
+      "passwordHint": "Sekurang-kurangnya 8 aksara",
+      "hasAccount": "Sudah ada akaun?"
+    },
+    "mfa": {
+      "title": "Pengesahan dua faktor",
+      "description": "Masukkan kod 6 digit daripada aplikasi pengesah anda.",
+      "codeLabel": "Kod pengesahan",
+      "submit": "Sahkan",
+      "backToSignIn": "Kembali ke log masuk"
+    },
+    "forgotPassword": {
+      "title": "Tetapkan semula kata laluan",
+      "description": "Masukkan e-mel anda dan kami akan menghantar pautan penetapan semula.",
+      "submit": "Hantar pautan tetapan semula",
+      "successMessage": "Jika e-mel itu berdaftar, pautan tetapan semula sedang dalam perjalanan. Semak peti masuk anda.",
+      "backToSignIn": "Kembali ke log masuk"
+    },
+    "resetPassword": {
+      "title": "Tetapkan kata laluan baru",
+      "description": "Pilih kata laluan yang kukuh untuk akaun anda.",
+      "passwordLabel": "Kata laluan baru",
+      "submit": "Tetapkan kata laluan baru",
+      "successMessage": "Kata laluan anda telah dikemas kini. Anda boleh log masuk sekarang.",
+      "signIn": "Log masuk",
+      "invalidToken": "Pautan tetapan semula ini tidak sah atau telah tamat tempoh.",
+      "requestNewLink": "Minta pautan tetapan semula baharu"
+    },
+    "verifyEmail": {
+      "title": "Sahkan e-mel anda",
+      "description": "Masukkan kod 6 digit yang kami hantar ke alamat e-mel anda.",
+      "codeLabel": "Kod pengesahan",
+      "submit": "Sahkan e-mel",
+      "resend": "Hantar semula kod",
+      "resending": "Menghantar…",
+      "resendSent": "Kod dihantar semula — semak peti masuk anda."
+    },
+    "fields": {
+      "email": "E-mel",
+      "password": "Kata laluan",
+      "confirmPassword": "Sahkan kata laluan",
+      "firstName": "Nama pertama",
+      "lastName": "Nama keluarga",
+      "optional": "pilihan",
+      "showPassword": "Tunjukkan kata laluan",
+      "hidePassword": "Sembunyikan kata laluan"
+    },
+    "errors": {
+      "invalidInput": "Sila semak input anda dan cuba lagi.",
+      "invalidCredentials": "E-mel atau kata laluan tidak sah.",
+      "passwordMismatch": "Kata laluan tidak sepadan.",
+      "botCheck": "Semakan bot gagal. Sila cuba lagi.",
+      "tooManyAttempts": "Terlalu banyak percubaan. Cuba lagi dalam {seconds} saat.",
+      "generic": "Sesuatu telah berlaku. Sila cuba lagi.",
+      "invalidCode": "Kod tidak sah atau telah tamat tempoh. Sila cuba lagi.",
+      "sessionExpired": "Sesi anda telah tamat tempoh. Sila log masuk semula.",
+      "resetTokenInvalid": "Pautan ini tidak sah atau telah tamat tempoh. Sila minta yang baru."
+    }
   },
   "app": {
     "dashboard": {
@@ -484,7 +554,8 @@
       "settings": "Tetapan",
       "account": "Akaun",
       "logOut": "Log keluar",
-      "portfolio": "Portfolio"
+      "portfolio": "Portfolio",
+      "accountMenu": "Menu akaun"
     },
     "theme": {
       "label": "Tema",
@@ -495,6 +566,48 @@
     "settings": {
       "title": "Tetapan",
       "description": "Urus akaun, ruang kerja, dan keutamaan anda.",
+      "navigationLabel": "Navigasi tetapan",
+      "selectPage": "Pilih halaman dari bar sisi.",
+      "workspaceSwitcher": {
+        "switchWorkspace": "Tukar ruang kerja",
+        "yourWorkspaces": "Ruang kerja anda",
+        "noWorkspace": "Tiada ruang kerja"
+      },
+      "account": {
+        "profileSection": "Profil",
+        "profileHint": "Nama dan avatar anda seperti yang dilihat oleh rakan sepasukan.",
+        "avatarHint": "Avatar diurus melalui profil WorkOS anda.",
+        "nameSection": "Nama paparan",
+        "nameLabel": "Nama penuh",
+        "emailLabel": "Alamat e-mel",
+        "emailReadOnly": "Perubahan e-mel belum disokong. Hubungi sokongan.",
+        "saving": "Menyimpan…",
+        "saveName": "Simpan nama",
+        "nameSaved": "Nama dikemas kini."
+      },
+      "security": {
+        "mfaSection": "Pengesahan dua faktor",
+        "mfaHint": "Tambah lapisan keselamatan kedua pada akaun anda menggunakan aplikasi pengesah.",
+        "mfaEnabledLabel": "Aplikasi pengesah",
+        "mfaNotEnabledLabel": "Pengesahan dua faktor tidak diaktifkan.",
+        "enabled": "Diaktifkan",
+        "mfaSetup": "Sediakan pengesah",
+        "mfaStarting": "Memulakan…",
+        "mfaDisable": "Nyahaktifkan pengesahan dua faktor",
+        "mfaDisableAriaLabel": "Nyahaktifkan pengesahan dua faktor untuk akaun anda",
+        "disabling": "Menyahaktifkan…",
+        "mfaEnabled": "Pengesahan dua faktor diaktifkan.",
+        "mfaDisabled": "Pengesahan dua faktor dinyahaktifkan.",
+        "mfaScanHeading": "Imbas kod QR ini",
+        "mfaScanHint": "Buka aplikasi pengesah anda dan imbas kod di bawah. Jika anda tidak boleh mengimbas, masukkan kunci rahsia secara manual.",
+        "mfaQrAlt": "Kod QR untuk persediaan aplikasi pengesah",
+        "mfaSecretLabel": "Kunci rahsia",
+        "mfaSecretHint": "Simpan kunci ini di tempat yang selamat. Anda memerlukannya untuk memulihkan akses jika anda kehilangan peranti anda.",
+        "mfaCodeLabel": "Kod pengesahan",
+        "verifyCode": "Sahkan dan aktifkan",
+        "verifying": "Mengesahkan…",
+        "cancel": "Batal"
+      },
       "tabs": {
         "account": "Akaun",
         "security": "Keselamatan",
@@ -1568,5 +1681,33 @@
     "title": "Halaman tidak dijumpai",
     "description": "Halaman yang anda cari tidak wujud atau telah dipindahkan.",
     "backToDashboard": "Kembali ke papan pemuka"
+  },
+  "inviteAccept": {
+    "pageTitle": "Terima jemputan",
+    "signIn": "Log masuk",
+    "goToDashboard": "Pergi ke papan pemuka",
+    "errors": {
+      "invalid": {
+        "title": "Pautan jemputan tidak dijumpai",
+        "description": "Pautan jemputan ini tidak sah atau telah digunakan. Minta pemilik ruang kerja menghantar pautan baru."
+      },
+      "expired": {
+        "title": "Pautan jemputan telah tamat tempoh",
+        "description": "Pautan jemputan ini telah tamat tempoh. Minta pemilik ruang kerja menghantar jemputan baru."
+      },
+      "already_accepted": {
+        "title": "Sudah menjadi ahli",
+        "description": "Anda telah menerima jemputan ini dan telah menyertai ruang kerja."
+      },
+      "email_mismatch": {
+        "title": "Akaun yang salah",
+        "description": "Jemputan ini telah dihantar ke alamat e-mel yang berbeza. Log masuk dengan alamat yang dijemput untuk menerimanya.",
+        "signedInAs": "Anda kini log masuk sebagai {email}."
+      },
+      "failed": {
+        "title": "Sesuatu tidak kena",
+        "description": "Kami tidak dapat melengkapkan jemputan anda. Sila cuba lagi atau hubungi sokongan."
+      }
+    }
   }
 }

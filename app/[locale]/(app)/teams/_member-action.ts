@@ -2,7 +2,6 @@
 
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
-import { clerkClient } from "@clerk/nextjs/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import {
   assertCanAddTeamMember,
@@ -13,6 +12,7 @@ import {
 import { Team } from "@/lib/db/models/team";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { User } from "@/lib/db/models/User";
+import { connectDB } from "@/lib/db/mongoose";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -42,7 +42,7 @@ export async function assignMemberToTeamAction(
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { clerkUserId, teamId, role } = parsed.data;
+  const { workosUserId, teamId, role } = parsed.data;
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
 
@@ -54,13 +54,12 @@ export async function assignMemberToTeamAction(
     .lean();
   if (!team) return { error: "TEAM_NOT_FOUND" };
 
-  // Verify the clerkUserId belongs to THIS workspace. The UI only surfaces
+  // Verify the workosUserId belongs to THIS workspace. The UI only surfaces
   // real members, but a direct server-action call could otherwise consume
-  // team seats for an arbitrary Clerk user. The Clerk webhook keeps
-  // User.memberships in sync with org membership, so this query is the
-  // authoritative check.
+  // team seats for an arbitrary user. User.memberships is the authoritative
+  // source of workspace access.
   const userInWorkspace = await User.findOne({
-    clerkUserId,
+    workosUserId,
     "memberships.workspaceId": ctx.workspace._id,
   })
     .select({ _id: 1 })
@@ -69,7 +68,7 @@ export async function assignMemberToTeamAction(
 
   const existing = await TeamMembership.findOne({
     teamId: teamObjectId,
-    clerkUserId,
+    workosUserId,
   })
     .select({ _id: 1 })
     .lean();
@@ -91,7 +90,7 @@ export async function assignMemberToTeamAction(
     await TeamMembership.create({
       workspaceId: ctx.workspace._id,
       teamId: teamObjectId,
-      clerkUserId,
+      workosUserId,
       role,
     });
   } catch (err) {
@@ -121,14 +120,14 @@ export async function removeMemberFromTeamAction(
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { clerkUserId, teamId } = parsed.data;
+  const { workosUserId, teamId } = parsed.data;
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
 
   const result = await TeamMembership.deleteOne({
     workspaceId: ctx.workspace._id,
     teamId: teamObjectId,
-    clerkUserId,
+    workosUserId,
   });
 
   if (result.deletedCount === 0) return { error: "MEMBERSHIP_NOT_FOUND" };
@@ -149,12 +148,12 @@ export async function setLeadFlagAction(
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { clerkUserId, teamId, isLead } = parsed.data;
+  const { workosUserId, teamId, isLead } = parsed.data;
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
 
   const updated = await TeamMembership.findOneAndUpdate(
-    { workspaceId: ctx.workspace._id, teamId: teamObjectId, clerkUserId },
+    { workspaceId: ctx.workspace._id, teamId: teamObjectId, workosUserId },
     { $set: { role: isLead ? "lead" : "member" } },
     { new: true },
   )
@@ -166,11 +165,8 @@ export async function setLeadFlagAction(
   return { ok: true };
 }
 
-// Retained intentionally: workspace-level member removal (vs. the per-team
-// removal the Details drawer exposes) has no UI yet — it belongs to the
-// deferred members page. Kept here so that page can wire to a tested,
-// owner-gated action rather than re-implementing the Clerk org-membership +
-// seat-release cascade. See docs/RELEASE-CHECKLIST.md.
+// Workspace-level member removal. Removes workspace membership, all team
+// memberships, and releases the occupied team seats — in a single transaction.
 export async function removeMemberFromWorkspaceAction(
   input: RemoveMemberFromWorkspaceInput,
 ): Promise<ActionResult> {
@@ -181,38 +177,44 @@ export async function removeMemberFromWorkspaceAction(
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { clerkUserId } = parsed.data;
+  const { workosUserId } = parsed.data;
 
-  if (clerkUserId === ctx.workspace.ownerUserId) {
+  if (workosUserId === ctx.workspace.ownerUserId) {
     return { error: "CANNOT_REMOVE_OWNER" };
   }
 
   const memberships = await TeamMembership.find({
     workspaceId: ctx.workspace._id,
-    clerkUserId,
+    workosUserId,
   })
     .select({ teamId: 1 })
     .lean();
 
+  await connectDB();
+  const session = await mongoose.startSession();
   try {
-    const clerk = await clerkClient();
-    await clerk.organizations.deleteOrganizationMembership({
-      organizationId: ctx.clerkOrgId,
-      userId: clerkUserId,
+    await session.withTransaction(async () => {
+      // Remove workspace membership from User.
+      await User.updateOne(
+        { workosUserId },
+        { $pull: { memberships: { workspaceId: ctx.workspace._id } } },
+        { session },
+      );
+
+      // Delete all team memberships for this user in this workspace.
+      await TeamMembership.deleteMany(
+        { workspaceId: ctx.workspace._id, workosUserId },
+        { session },
+      );
     });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Failed to remove member";
-    return { error: msg };
+  } finally {
+    await session.endSession();
   }
 
-  await TeamMembership.deleteMany({
-    workspaceId: ctx.workspace._id,
-    clerkUserId,
-  });
-
-  for (const m of memberships) {
-    await releaseTeamSeat(m.teamId, ctx.workspace._id);
-  }
+  // Release team seats outside the transaction (idempotent decrements).
+  await Promise.all(
+    memberships.map((m) => releaseTeamSeat(m.teamId, ctx.workspace._id)),
+  );
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };

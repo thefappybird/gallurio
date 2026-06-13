@@ -8,7 +8,77 @@
   },
   "auth": {
     "signInTitle": "Mag-sign in",
-    "signUpTitle": "Gumawa ng account"
+    "signUpTitle": "Gumawa ng account",
+    "signIn": {
+      "title": "Mag-sign in",
+      "continueWithGoogle": "Magpatuloy sa Google",
+      "or": "o",
+      "submit": "Mag-sign in",
+      "forgotPassword": "Nakalimutan ang password?",
+      "noAccount": "Wala pang account?",
+      "createAccount": "Gumawa ng isa"
+    },
+    "signUp": {
+      "title": "Gumawa ng account",
+      "continueWithGoogle": "Magpatuloy sa Google",
+      "submit": "Gumawa ng account",
+      "passwordHint": "Hindi bababa sa 8 character",
+      "hasAccount": "Mayroon nang account?"
+    },
+    "mfa": {
+      "title": "Two-factor verification",
+      "description": "Ilagay ang 6-digit na code mula sa iyong authenticator app.",
+      "codeLabel": "Verification code",
+      "submit": "I-verify",
+      "backToSignIn": "Bumalik sa sign in"
+    },
+    "forgotPassword": {
+      "title": "I-reset ang password",
+      "description": "Ilagay ang iyong email at magpapadala kami ng reset link.",
+      "submit": "Magpadala ng reset link",
+      "successMessage": "Kung ang email na iyon ay nakarehistro, may reset link na papunta sa iyo. Tingnan ang iyong inbox.",
+      "backToSignIn": "Bumalik sa sign in"
+    },
+    "resetPassword": {
+      "title": "Magtakda ng bagong password",
+      "description": "Pumili ng matibay na password para sa iyong account.",
+      "passwordLabel": "Bagong password",
+      "submit": "Itakda ang bagong password",
+      "successMessage": "Na-update na ang iyong password. Maaari ka nang mag-sign in.",
+      "signIn": "Mag-sign in",
+      "invalidToken": "Ang reset link na ito ay invalid o nag-expire na.",
+      "requestNewLink": "Humingi ng bagong reset link"
+    },
+    "verifyEmail": {
+      "title": "I-verify ang iyong email",
+      "description": "Ilagay ang 6-digit na code na ipinadala namin sa iyong email address.",
+      "codeLabel": "Verification code",
+      "submit": "I-verify ang email",
+      "resend": "Muling ipadala ang code",
+      "resending": "Nagpapadala…",
+      "resendSent": "Naipadala na ang code — tingnan ang iyong inbox."
+    },
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Kumpirmahin ang password",
+      "firstName": "Pangalan",
+      "lastName": "Apelyido",
+      "optional": "opsyonal",
+      "showPassword": "Ipakita ang password",
+      "hidePassword": "Itago ang password"
+    },
+    "errors": {
+      "invalidInput": "Pakitingnan ang iyong input at subukan muli.",
+      "invalidCredentials": "Hindi tamang email o password.",
+      "passwordMismatch": "Hindi magkatugma ang mga password.",
+      "botCheck": "Nabigo ang bot check. Pakisubukan muli.",
+      "tooManyAttempts": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
+      "generic": "May nangyaring mali. Pakisubukan muli.",
+      "invalidCode": "Hindi tamang code o nag-expire na. Pakisubukan muli.",
+      "sessionExpired": "Nag-expire na ang iyong session. Mangyaring mag-sign in muli.",
+      "resetTokenInvalid": "Ang link na ito ay invalid o nag-expire na. Mangyaring humingi ng bago."
+    }
   },
   "app": {
     "dashboard": {
@@ -484,7 +554,8 @@
       "settings": "Mga setting",
       "account": "Account",
       "logOut": "Mag-log out",
-      "portfolio": "Portfolio"
+      "portfolio": "Portfolio",
+      "accountMenu": "Menu ng account"
     },
     "theme": {
       "label": "Tema",
@@ -495,6 +566,48 @@
     "settings": {
       "title": "Mga Setting",
       "description": "Pamahalaan ang iyong account, workspace, at mga kagustuhan.",
+      "navigationLabel": "Nabigasyon ng mga setting",
+      "selectPage": "Pumili ng pahina mula sa sidebar.",
+      "workspaceSwitcher": {
+        "switchWorkspace": "Lumipat ng workspace",
+        "yourWorkspaces": "Ang iyong mga workspace",
+        "noWorkspace": "Walang workspace"
+      },
+      "account": {
+        "profileSection": "Profile",
+        "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
+        "avatarHint": "Ang avatar ay pinamamahalaan sa pamamagitan ng iyong WorkOS profile.",
+        "nameSection": "Display na pangalan",
+        "nameLabel": "Buong pangalan",
+        "emailLabel": "Email address",
+        "emailReadOnly": "Hindi pa sinusuportahan ang pagbabago ng email. Makipag-ugnayan sa suporta.",
+        "saving": "Sine-save…",
+        "saveName": "I-save ang pangalan",
+        "nameSaved": "Na-update ang pangalan."
+      },
+      "security": {
+        "mfaSection": "Two-factor authentication",
+        "mfaHint": "Magdagdag ng pangalawang layer ng seguridad sa iyong account gamit ang isang authenticator app.",
+        "mfaEnabledLabel": "Authenticator app",
+        "mfaNotEnabledLabel": "Hindi pinagana ang two-factor authentication.",
+        "enabled": "Pinagana",
+        "mfaSetup": "I-set up ang authenticator",
+        "mfaStarting": "Nagsisimula…",
+        "mfaDisable": "I-disable ang two-factor authentication",
+        "mfaDisableAriaLabel": "I-disable ang two-factor authentication para sa iyong account",
+        "disabling": "Dine-disable…",
+        "mfaEnabled": "Pinagana ang two-factor authentication.",
+        "mfaDisabled": "Na-disable ang two-factor authentication.",
+        "mfaScanHeading": "I-scan ang QR code na ito",
+        "mfaScanHint": "Buksan ang iyong authenticator app at i-scan ang code sa ibaba. Kung hindi mo ma-scan, manu-manong ipasok ang secret key.",
+        "mfaQrAlt": "QR code para sa pag-set up ng authenticator app",
+        "mfaSecretLabel": "Secret key",
+        "mfaSecretHint": "Itago ang key na ito sa ligtas na lugar. Kakailanganin mo ito para mabawi ang access kung mawala ang iyong device.",
+        "mfaCodeLabel": "Verification code",
+        "verifyCode": "I-verify at paganahin",
+        "verifying": "Bine-verify…",
+        "cancel": "Kanselahin"
+      },
       "tabs": {
         "account": "Account",
         "security": "Seguridad",
@@ -1568,5 +1681,33 @@
     "title": "Hindi nahanap ang pahina",
     "description": "Ang pahinang hinahanap mo ay hindi umiiral o inilipat na.",
     "backToDashboard": "Bumalik sa dashboard"
+  },
+  "inviteAccept": {
+    "pageTitle": "Tanggapin ang imbitasyon",
+    "signIn": "Mag-sign in",
+    "goToDashboard": "Pumunta sa dashboard",
+    "errors": {
+      "invalid": {
+        "title": "Hindi nahanap ang link ng imbitasyon",
+        "description": "Ang link ng imbitasyong ito ay hindi wasto o nagamit na. Hilingin sa may-ari ng workspace na magpadala ng bago."
+      },
+      "expired": {
+        "title": "Nag-expire na ang link ng imbitasyon",
+        "description": "Nag-expire na ang link ng imbitasyong ito. Hilingin sa may-ari ng workspace na magpadala ng bagong imbitasyon."
+      },
+      "already_accepted": {
+        "title": "Miyembro na",
+        "description": "Tinanggap mo na ang imbitasyong ito at sumali ka na sa workspace."
+      },
+      "email_mismatch": {
+        "title": "Maling account",
+        "description": "Ang imbitasyong ito ay ipinadala sa ibang email address. Mag-sign in gamit ang iniimbitahang address upang tanggapin ito.",
+        "signedInAs": "Kasalukuyan kang naka-sign in bilang {email}."
+      },
+      "failed": {
+        "title": "May naganap na error",
+        "description": "Hindi namin makumpleto ang iyong imbitasyon. Pakisubukan muli o makipag-ugnayan sa suporta."
+      }
+    }
   }
 }

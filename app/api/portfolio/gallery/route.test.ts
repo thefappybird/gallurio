@@ -26,7 +26,6 @@ let mockCtx: {
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId: mockCtx.userId,
-    clerkOrgId: "org_test",
     role: mockCtx.role,
     workspace: mockCtx.workspace,
   }),
@@ -46,14 +45,12 @@ async function seedData() {
     slug: "workspace-a",
     name: "Workspace A",
     ownerUserId: "user_a",
-    clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
     currency: "PHP",
   });
   const wsB = await Workspace.create({
     slug: "workspace-b",
     name: "Workspace B",
     ownerUserId: "user_b",
-    clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
     currency: "PHP",
   });
   workspaceIdA = wsA._id;

@@ -31,7 +31,6 @@ let mockCtx: {
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId: mockCtx.userId,
-    clerkOrgId: "org_test",
     role: mockCtx.role,
     workspace: mockCtx.workspace,
   }),
@@ -74,7 +73,6 @@ beforeEach(async () => {
     slug: "ws-items",
     name: "Workspace Items",
     ownerUserId: "user_a",
-    clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
     currency: "PHP",
   });
   workspaceId = ws._id;
@@ -277,7 +275,7 @@ describe("POST /api/portfolio/gallery/items — collectionId", () => {
   it("rejects a collectionId from another workspace with 400", async () => {
     const otherWs = await Workspace.create({
       slug: "ws-z", name: "Z", ownerUserId: "user_z",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`, currency: "PHP",
+      currency: "PHP",
     });
     const foreign = await GalleryCollection.create({
       workspaceId: otherWs._id, name: "F", slug: `f-${Math.round(Math.random() * 1e9)}`, isPublic: true, order: 0,

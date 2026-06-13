@@ -19,8 +19,9 @@ export { ActivityLog, type ActivityLogDoc } from "./ActivityLog";
 export { Team, TEAM_COLOR_PALETTE, ensureDefaultTeam, type TeamDoc } from "./team";
 export { TeamMembership, TEAM_MEMBERSHIP_ROLES, type TeamMembershipDoc } from "./teamMembership";
 export {
-  PendingTeamAssignment,
-  PENDING_INVITE_TTL_SECONDS,
-  type PendingTeamAssignmentDoc,
-} from "./pendingTeamAssignment";
+  Invitation,
+  INVITATION_STATUSES,
+  type InvitationDoc,
+  type InvitationStatus,
+} from "./Invitation";
 export { PortfolioDraft, type PortfolioDraftDoc } from "./PortfolioDraft";

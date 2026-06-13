@@ -25,6 +25,11 @@ class NotFoundError extends Error {
 // Module mocks — must be declared before any imports of the modules they mock.
 // ---------------------------------------------------------------------------
 
+vi.mock("@workos-inc/authkit-nextjs", () => ({
+  withAuth: vi.fn(async () => ({ user: null })),
+  saveSession: vi.fn(async () => undefined),
+}));
+
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => {
     throw new NotFoundError();
@@ -75,6 +80,15 @@ vi.mock("../danger/_panel", () => ({
 vi.mock("../dev-plan/_panel", () => ({
   DevPlanPanel: () => null,
 }));
+vi.mock("../account/_panel", () => ({
+  AccountPanel: () => null,
+}));
+vi.mock("../security/_panel", () => ({
+  SecurityPanel: () => null,
+}));
+vi.mock("../billing/_panel", () => ({
+  BillingPanel: () => null,
+}));
 
 // Stub Lucide icons — they are just React components and would need a DOM.
 vi.mock("lucide-react", () => ({
@@ -83,6 +97,9 @@ vi.mock("lucide-react", () => ({
   Globe: () => null,
   AlertTriangle: () => null,
   Wrench: () => null,
+  CreditCard: () => null,
+  UserIcon: () => null,
+  ShieldIcon: () => null,
 }));
 
 // ---------------------------------------------------------------------------
@@ -92,6 +109,41 @@ const requireOrgMock = vi.fn();
 
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: (...args: unknown[]) => requireOrgMock(...args),
+}));
+
+vi.mock("@/lib/auth/session", () => ({
+  getAuthUser: vi.fn().mockResolvedValue({
+    workosUserId: "user_owner",
+    email: "owner@test.com",
+    name: "Owner User",
+    avatarUrl: null,
+  }),
+}));
+
+vi.mock("@/lib/auth/activeWorkspace", () => ({
+  getActiveWorkspaceId: vi.fn().mockResolvedValue("ws_1"),
+  setActiveWorkspace: vi.fn().mockResolvedValue(undefined),
+  clearActiveWorkspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+// Stub User and Workspace Mongoose queries used by the page to load member workspaces.
+vi.mock("@/lib/db/models", () => ({
+  User: {
+    findOne: vi.fn().mockReturnValue({
+      lean: vi.fn().mockResolvedValue({
+        workosUserId: "user_owner",
+        mfaEnabled: false,
+        memberships: [{ workspaceId: "ws_1", role: "owner" }],
+      }),
+    }),
+  },
+  Workspace: {
+    find: vi.fn().mockReturnValue({
+      lean: vi.fn().mockResolvedValue([
+        { _id: "ws_1", name: "Sarah Photography", branding: null },
+      ]),
+    }),
+  },
 }));
 
 // ---------------------------------------------------------------------------
@@ -121,7 +173,7 @@ const WORKSPACE_STUB = {
 function mockAsOwner() {
   requireOrgMock.mockResolvedValue({
     userId: "user_owner",
-    clerkOrgId: "org_1",
+    workspaceId: "ws_1",
     role: "owner",
     workspace: WORKSPACE_STUB,
   });
@@ -130,7 +182,7 @@ function mockAsOwner() {
 function mockAsStaff() {
   requireOrgMock.mockResolvedValue({
     userId: "user_staff",
-    clerkOrgId: "org_1",
+    workspaceId: "ws_1",
     role: "staff",
     workspace: WORKSPACE_STUB,
   });

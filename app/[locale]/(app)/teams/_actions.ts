@@ -68,7 +68,7 @@ export async function createTeamAction(input: CreateTeamInput): Promise<CreateTe
         color,
         isDefault: false,
         memberCount: 0,
-        createdByClerkUserId: ctx.userId,
+        createdByWorkosUserId: ctx.userId,
       },
       ctx.workspace.plan,
     );

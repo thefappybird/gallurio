@@ -1,17 +1,18 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { UserProfile } from "@clerk/nextjs";
-import { useTheme } from "next-themes";
 import { useTranslations } from "next-intl";
-import { resolveScheme } from "@/lib/theme/themes";
-import { buildUserProfileAppearance } from "@/lib/auth/userProfileAppearance";
+import { Link } from "@/lib/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { SettingsOrgSwitcher } from "./settings-org-switcher";
+import type { WorkspaceSwitcherItem } from "./settings-org-switcher";
 
-type Role = "owner" | "staff";
+export type Role = "owner" | "staff";
 
 export type SettingsPage = {
   slug:
+    | "account"
+    | "security"
     | "customize"
     | "workspace"
     | "public-page"
@@ -25,105 +26,84 @@ export type SettingsPage = {
   ownerOnly?: boolean;
 };
 
-export function SettingsUserProfile({
-  path,
-  role,
-  pages,
-}: {
-  path: string;
+type Props = {
   role: Role;
   pages: SettingsPage[];
-}) {
-  const { resolvedTheme } = useTheme();
-  const scheme = resolveScheme(resolvedTheme);
-  const t = useTranslations("app.settings.tabs");
+  activeSlug: string | null;
+  workspaces: WorkspaceSwitcherItem[];
+  currentWorkspaceId: string;
+};
 
-  const customize = pages.find((p) => p.slug === "customize");
-  const workspace = pages.find((p) => p.slug === "workspace");
-  const teams = pages.find((p) => p.slug === "teams");
-  const publicPage = pages.find((p) => p.slug === "public-page");
-  const billing = pages.find((p) => p.slug === "billing");
-  const devPlan = pages.find((p) => p.slug === "dev-plan");
-  const danger = pages.find((p) => p.slug === "danger");
+export function SettingsUserProfile({
+  role,
+  pages,
+  activeSlug,
+  workspaces,
+  currentWorkspaceId,
+}: Props) {
+  const t = useTranslations("app.settings");
+
+  const visiblePages = pages.filter(
+    (p) => !p.ownerOnly || role === "owner",
+  );
+
+  const currentPage = visiblePages.find((p) => p.slug === activeSlug);
 
   return (
     <div className="flex w-full flex-col gap-0">
-      {/* Persistent workspace switcher bar — always visible above the Clerk card */}
+      {/* Workspace switcher bar */}
       <div className="flex w-full items-center justify-between border border-b-0 border-border bg-card px-4 py-3">
-        <SettingsOrgSwitcher />
+        <SettingsOrgSwitcher
+          workspaces={workspaces}
+          currentWorkspaceId={currentWorkspaceId}
+        />
       </div>
 
-      {/* Clerk UserProfile card — fills available width */}
-      <UserProfile
-        path={path}
-        routing="path"
-        appearance={buildUserProfileAppearance({ scheme })}
-        apiKeysProps={{ hide: true }}
-      >
-        {customize && (
-          <UserProfile.Page
-            label={customize.label}
-            url={customize.slug}
-            labelIcon={customize.icon}
-          >
-            {customize.body}
-          </UserProfile.Page>
-        )}
-        {workspace && (role === "owner" || !workspace.ownerOnly) && (
-          <UserProfile.Page
-            label={workspace.label}
-            url={workspace.slug}
-            labelIcon={workspace.icon}
-          >
-            {workspace.body}
-          </UserProfile.Page>
-        )}
-        {teams && (role === "owner" || !teams.ownerOnly) && (
-          <UserProfile.Page
-            label={teams.label}
-            url={teams.slug}
-            labelIcon={teams.icon}
-          >
-            {teams.body}
-          </UserProfile.Page>
-        )}
-        {publicPage && (role === "owner" || !publicPage.ownerOnly) && (
-          <UserProfile.Page
-            label={publicPage.label}
-            url={publicPage.slug}
-            labelIcon={publicPage.icon}
-          >
-            {publicPage.body}
-          </UserProfile.Page>
-        )}
-        {billing && (role === "owner" || !billing.ownerOnly) && (
-          <UserProfile.Page
-            label={billing.label}
-            url={billing.slug}
-            labelIcon={billing.icon}
-          >
-            {billing.body}
-          </UserProfile.Page>
-        )}
-        {devPlan && (role === "owner" || !devPlan.ownerOnly) && (
-          <UserProfile.Page
-            label={devPlan.label}
-            url={devPlan.slug}
-            labelIcon={devPlan.icon}
-          >
-            {devPlan.body}
-          </UserProfile.Page>
-        )}
-        {danger && (role === "owner" || !danger.ownerOnly) && (
-          <UserProfile.Page
-            label={danger.label}
-            url={danger.slug}
-            labelIcon={danger.icon}
-          >
-            {danger.body}
-          </UserProfile.Page>
-        )}
-      </UserProfile>
+      {/* Two-column layout: nav sidebar + panel */}
+      <div className="flex w-full border border-border">
+        {/* Nav */}
+        <nav
+          aria-label={t("navigationLabel")}
+          className="flex w-48 shrink-0 flex-col border-r border-border bg-card"
+        >
+          {visiblePages.map((page) => {
+            const isActive = page.slug === activeSlug;
+            const href =
+              page.slug === "account"
+                ? "/settings"
+                : `/settings/${page.slug}`;
+            return (
+              <Link
+                key={page.slug}
+                href={href as never}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm transition-colors",
+                  "hover:bg-accent hover:text-accent-foreground",
+                  "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
+                  isActive
+                    ? "bg-accent font-medium text-accent-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                <span className="shrink-0 [&_svg]:size-4" aria-hidden>
+                  {page.icon}
+                </span>
+                <span>{page.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Panel */}
+        <div className="min-w-0 flex-1 p-6">
+          {currentPage ? (
+            currentPage.body
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("selectPage")}</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

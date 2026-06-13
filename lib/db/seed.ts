@@ -7,9 +7,8 @@
  * bookings, inquiries, gallery_collections, gallery_items, transactions, activity_logs).
  * Never run against production.
  *
- * The two seeded workspaces use fake clerkOrgId / clerkUserId values so the app
- * can render their data when you point requireOrg() at them via Clerk impersonation
- * or by manually editing the active org in the Clerk dashboard during dev.
+ * The two seeded workspaces use fake workosUserId values so the app
+ * can render their data when you point auth helpers at them during dev.
  *
  * Fixtures are deterministic — a seeded PRNG (mulberry32) means re-running gives
  * identical data, which keeps screenshots and dashboard widgets stable.
@@ -41,7 +40,6 @@ const DEMO_WORKSPACES = [
     slug: "sarah-bell-photo",
     name: "Sarah Bell Photography",
     businessType: "photographer" as const,
-    clerkOrgId: "org_demo_sarah",
     ownerUserId: "user_demo_sarah",
     ownerEmail: "sarah@example.com",
     ownerName: "Sarah Bell",
@@ -51,7 +49,6 @@ const DEMO_WORKSPACES = [
     slug: "rosewood-venue",
     name: "Rosewood Venue",
     businessType: "venue" as const,
-    clerkOrgId: "org_demo_rosewood",
     ownerUserId: "user_demo_rosewood",
     ownerEmail: "owner@rosewood.example",
     ownerName: "Marcus Hale",
@@ -108,7 +105,7 @@ async function dropTenantCollections() {
     "activitylogs",
     "teams",
     "teammemberships",
-    "pendingteamassignments",
+    "invitations",
   ];
   for (const c of collections) {
     if (tenantNames.includes(c.collectionName)) {
@@ -131,7 +128,6 @@ async function seedWorkspace(
     slug: w.slug,
     name: w.name,
     ownerUserId: w.ownerUserId,
-    clerkOrgId: w.clerkOrgId,
     businessType: w.businessType,
     country: "PH",
     currency: "PHP",
@@ -154,11 +150,11 @@ async function seedWorkspace(
     isDefault: true,
     isActive: true,
     memberCount: 0,
-    createdByClerkUserId: w.ownerUserId,
+    createdByWorkosUserId: w.ownerUserId,
   });
 
   await User.create({
-    clerkUserId: w.ownerUserId,
+    workosUserId: w.ownerUserId,
     email: w.ownerEmail,
     name: w.ownerName,
     memberships: [{ workspaceId: workspace._id, role: "owner" }],
@@ -464,10 +460,10 @@ async function main() {
   }
 
   console.log("\n✓ Seed complete.");
-  console.log("\nNote: Clerk org IDs are fake placeholders (org_demo_*). To actually");
-  console.log("sign in as one of these workspaces, either:");
-  console.log("  a) Update the Workspace.clerkOrgId in MongoDB to a real Clerk org ID, or");
-  console.log("  b) Create a Clerk org in the dashboard and run pnpm seed:link <slug> <orgId>");
+  console.log("\nNote: WorkOS user IDs are fake placeholders (user_demo_*). To sign in");
+  console.log("as one of these workspaces, update the User.workosUserId in MongoDB to a");
+  console.log("real WorkOS user ID after authenticating via AuthKit.");
+  console.log("  Also update the dropTenantCollections list to include 'invitations'.");
 
   await mongoose.disconnect();
   process.exit(0);
