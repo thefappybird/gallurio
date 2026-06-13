@@ -7,7 +7,7 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
 - React 19.2
 - Tailwind v4
 - Mongoose 8 + MongoDB Atlas
-- Clerk auth + Organizations
+- WorkOS AuthKit (`@workos-inc/authkit-nextjs`) for identity only; organizations/workspaces and memberships are managed in MongoDB (WorkOS Organizations are NOT used)
 - Zod
 - react-hook-form
 - Puck
@@ -61,6 +61,21 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
 - Prompt polishing lives in `.claude/`
 - Never use Sonnet with 1M context.
 
+## Codebase memory (codebase-memory-mcp)
+- Maintain a knowledge-graph index of the codebase via the `codebase-memory-mcp` server and prefer it over re-crawling files.
+- Index every new branch/worktree as its own project: right after `git worktree add ... .claude/worktrees/<slug>`, run `index_repository { repo_path: "<absolute worktree path>" }` (`mode: "full"` for the first index; `fast`/`moderate` for refreshes).
+- Keep the index fresh: re-run `index_repository` (or `detect_changes`) after significant edits, after pulling, and when switching branches. The graph is only as accurate as its last index.
+- Before querying, confirm the project exists/its name with `list_projects`, and check `index_status { project }`. Pass `base_branch: "dev"` to `detect_changes` (default is `main`, which this repo does not use).
+- Default to the graph instead of broad file reads when locating or understanding code:
+  - `search_code` — graph-augmented code search (signatures, ranked by importance)
+  - `get_architecture` / `search_graph` / `query_graph` (Cypher) — structure, dependencies, multi-hop and complexity/hot-path analysis
+  - `trace_path` — how two symbols connect; `get_code_snippet` — exact source for a node
+  - `detect_changes` — branch impact analysis (base `dev`)
+- Use it every time it is needed — ESPECIALLY when coordinating multiple subagents:
+  - Index the worktree once up front, then have every subagent (and the main loop) query the SAME shared project index rather than each re-reading files. Pass the project name to each subagent.
+  - This keeps fan-out agents consistent, avoids duplicated crawling, and saves tokens. Haiku readers should query the graph first and only open files the graph points them to.
+- Record durable architecture decisions with `manage_adr`. Set `persistence: true` on `index_repository` to write `.codebase-memory/graph.db.zst` when an index is worth sharing across the team/agents.
+
 ## Engineering bar
 Every executor/planner operates as a senior full-stack engineer with strong mobile-first UI and backend/API design judgment.
 
@@ -72,7 +87,7 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 - Drag interactions need visible affordances
 - Large mobile flows should use steps/tabs, not tall scroll-heavy modals
 - Accessibility is required: semantic HTML, labels, keyboard support, focus management, color not sole signal
-- Update all 5 locales together: `en`, `fil`, `ms`, `id`, `th`
+- Update all 4 locales together: `en`, `fil`, `ms`, `id` (Thai `th` was phased out — do not add it)
 - Prefer optimistic UI for high-confidence mutations
 
 ### Backend
@@ -91,7 +106,7 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 
 ## Multi-tenant rules
 - Never trust client-supplied `workspaceId`
-- Resolve tenant scope from Clerk session/org
+- Resolve tenant scope from the WorkOS session + MongoDB memberships (never from WorkOS Organizations — they are not used); see Auth & tenancy
 - Every tenant-scoped query must include `workspaceId`
 - Every mutation by `_id` must also filter by `workspaceId`
 - Public routes must resolve `orgSlug -> workspaceId` before reading tenant data
@@ -107,8 +122,29 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 ## Architecture
 - Monolith Next.js app
 - Shared DB multi-tenancy via `workspaceId`
-- Clerk Organizations map 1:1 to Workspaces
+- Organizations/workspaces are MongoDB `Workspace` docs, not WorkOS Organizations (see Auth & tenancy)
 - Public pages live at `/w/[orgSlug]`
+
+## Auth & tenancy
+- WorkOS AuthKit is identity-only: sign-in/up, password, Google OAuth, MFA, email verification. WorkOS Organizations are NOT used; all org/workspace and membership state lives in MongoDB.
+- Identity: `getAuthUser()` (`lib/auth/session.ts`) is the single authoritative reader — it wraps `withAuth()`; never call `withAuth()` anywhere else. Users are JIT-provisioned by `ensureUser()` (upsert keyed on `workosUserId`) at every authenticated entry point.
+- Tenancy: `Workspace` docs own tenancy. A user's workspace memberships are embedded in `User.memberships[]` (`{ workspaceId, role: "owner" | "staff", lastAccessedAt }`). Team-level membership is the separate `TeamMembership` collection (`{ workspaceId, teamId, workosUserId, role: "member" | "lead" }`).
+- Active workspace = signed HMAC cookie `gw_active_ws` (`lib/auth/activeWorkspace.ts`), ALWAYS re-validated against the DB memberships list — never trusted as an authz input on its own. Resolution: valid cookie -> most-recent `lastAccessedAt` -> sole membership -> null (-> onboarding).
+- Resolve request context via `requireOrg()` (page-level, redirects) or `ownerContext()` (server action, returns `{ error }`). Both derive role as `workspace.ownerUserId === workosUserId` OR `membership.role === "owner"`. Use `requireRole("owner")` to hard-gate owner-only work.
+- A user owns at most one workspace: onboarding (`lib/actions/onboarding.ts`) upserts the `Workspace` keyed on `ownerUserId`, so re-running edits the same workspace rather than creating another. This is NOT backed by a unique index — add a unique index on `Workspace.ownerUserId` if hard enforcement is required. Staff may belong to multiple workspaces.
+- Invites are email-bound with a single-use SHA-256 token hash (`Invitation` model); acceptance is transactional and writes `User.memberships` + `TeamMembership`. No WorkOS org calls.
+- Request gating: `proxy.ts` runs `authkitMiddleware` (explicit public-path allowlist) then next-intl, and localizes `/sign-in` redirects. OAuth lands at `/api/auth/callback` (verifies signed state + CSRF nonce, exchanges code, sets the sealed `wos-session` cookie, JIT-provisions, redirects).
+- Sign-out: `signOutAction()` (`lib/auth/signOut.ts`) clears `gw_active_ws`, then WorkOS `signOut()` clears `wos-session` and redirects to `/sign-in`.
+- User-facing copy must never name the auth provider ("WorkOS"); keep it generic.
+
+## Auth env
+- `WORKOS_API_KEY`
+- `WORKOS_CLIENT_ID`
+- `WORKOS_COOKIE_PASSWORD` (>=32 chars; seals `wos-session`)
+- `ACTIVE_WORKSPACE_COOKIE_SECRET` (signs `gw_active_ws` and the OAuth `state` param)
+- `NEXT_PUBLIC_WORKOS_REDIRECT_URI`
+- `WORKOS_COOKIE_NAME` (optional; defaults to `wos-session`)
+- `AUTHKIT_DEBUG` (optional; `"true"` enables middleware session logging)
 
 ## Portfolio builder
 - Public portfolio has exactly 3 pages: Home, Gallery, Contact
@@ -171,7 +207,8 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 - Prefer ASCII in code/config unless Unicode is intentionally required
 
 ## i18n
-- Locales: `en`, `fil`, `ms`, `id`, `th`
+- Locales: `en`, `fil`, `ms`, `id`
+- Thai (`th`) is phased out (removed 2026-06-11): no `th` message file, routes, or strings — do not reintroduce it
 - Routes under `app/[locale]/...`
 - Use ICU message formatting
 - Public workspace chrome uses workspace country locale, not visitor locale
@@ -232,5 +269,6 @@ A task is done only when:
 - `docs/booking-inquiry-lifecycle.md`
 - `docs/notifications-scope.md`
 - `node_modules/next/dist/docs/01-app/`
-- `node_modules/@clerk/nextjs/dist/types/`
+- `node_modules/@workos-inc/authkit-nextjs/`
+- `node_modules/@workos-inc/node/`
 - `@C:\Users\alexb\.codex\RTK.md`
