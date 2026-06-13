@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,6 +11,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updatePasswordAction, sendSetPasswordEmailAction } from "../_actions";
+
+function makeChangePasswordSchema(t: (key: string) => string) {
+  return z
+    .object({
+      currentPassword: z.string().min(1, t("passwordRequired")),
+      newPassword: z.string().min(8, t("passwordTooShort")).max(128),
+      confirmPassword: z.string().min(1),
+    })
+    .refine((v) => v.newPassword === v.confirmPassword, {
+      message: t("passwordMismatch"),
+      path: ["confirmPassword"],
+    });
+}
 
 type Props = { hasOAuth: boolean };
 
@@ -29,17 +42,8 @@ function ChangePasswordForm() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const schema = z
-    .object({
-      currentPassword: z.string().min(1, t("passwordRequired")),
-      newPassword: z.string().min(8, t("passwordTooShort")).max(128),
-      confirmPassword: z.string().min(1),
-    })
-    .refine((v) => v.newPassword === v.confirmPassword, {
-      message: t("passwordMismatch"),
-      path: ["confirmPassword"],
-    });
-  type FormValues = z.infer<typeof schema>;
+  const schema = useMemo(() => makeChangePasswordSchema(t), [t]);
+  type FormValues = z.infer<ReturnType<typeof makeChangePasswordSchema>>;
 
   const {
     register,
