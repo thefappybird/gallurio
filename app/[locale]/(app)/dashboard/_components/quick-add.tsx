@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/lib/i18n/navigation";
-import { BookOpenIcon, MessageSquareIcon, UserPlusIcon } from "lucide-react";
+import { CalendarCheck2Icon, MessageSquareIcon, UserPlusIcon } from "lucide-react";
 
 type Props = {
   title: string;
@@ -9,7 +9,7 @@ type Props = {
 
 export function QuickAdd({ title, labels }: Props) {
   const actions = [
-    { href: "/bookings/new" as const, label: labels.booking, icon: BookOpenIcon },
+    { href: "/bookings/new" as const, label: labels.booking, icon: CalendarCheck2Icon },
     { href: "/clients/new" as const, label: labels.client, icon: UserPlusIcon },
     { href: "/inquiries/new" as const, label: labels.inquiry, icon: MessageSquareIcon },
   ];

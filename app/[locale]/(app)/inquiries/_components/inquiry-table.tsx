@@ -1,7 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Link } from "@/lib/i18n/navigation";
+import { Link, useRouter } from "@/lib/i18n/navigation";
+import { EyeIcon, MoreHorizontalIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
@@ -26,6 +34,7 @@ type Props = {
 
 export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
   const t = useTranslations("app.inquiries");
+  const router = useRouter();
 
   function eventTypeLabel(type: string): string {
     try {
@@ -73,7 +82,34 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-semibold leading-snug">{row.name}</span>
-                <InquiryStatusBadge status={row.status} />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <InquiryStatusBadge status={row.status} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t("table.actions.menuLabel")}
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <MoreHorizontalIcon className="size-4" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          router.push(buildInquiryModalPath(row.id));
+                        }}
+                      >
+                        <EyeIcon className="size-4" />
+                        {t("table.actions.view")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
               <span className="truncate text-xs text-muted-foreground">{row.email}</span>
               {row.eventTitle ? <span className="text-xs">{row.eventTitle}</span> : null}
@@ -98,6 +134,9 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventDate")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.submitted")}</th>
               <th scope="col" className="px-3 py-2 font-medium">{t("table.col.source")}</th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                <span className="sr-only">{t("table.col.actions")}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -123,8 +162,36 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                 <td className="px-3 py-2.5 align-middle">{eventTypeLabel(row.eventType)}</td>
                 <td className="px-3 py-2.5 align-middle">{fmtDate(row.eventDate)}</td>
                 <td className="px-3 py-2.5 align-middle text-muted-foreground">{fmtDateTime(row.submittedAt)}</td>
-                <td className="px-3 py-2.5 align-middle text-muted-foreground">
+                <td className="px-3 py-2.5 align-middle capitalize text-muted-foreground">
                   {row.source ?? t("table.directSource")}
+                </td>
+                <td
+                  className="px-3 py-2.5 align-middle"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-end">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={t("table.actions.menuLabel")}
+                          >
+                            <MoreHorizontalIcon className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => router.push(buildInquiryModalPath(row.id))}
+                        >
+                          <EyeIcon className="size-4" />
+                          {t("table.actions.view")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </td>
               </tr>
             ))}

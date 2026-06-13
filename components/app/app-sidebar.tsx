@@ -5,10 +5,10 @@ import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
   LayoutDashboardIcon,
   SettingsIcon,
-  UsersIcon,
-  UsersRound,
-  BookOpenIcon,
-  CameraIcon,
+  ContactIcon,
+  UsersRoundIcon,
+  CalendarCheck2Icon,
+  ImageIcon,
   MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
@@ -30,16 +30,16 @@ import { ThemeToggle } from "@/components/app/theme-toggle";
 
 const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
-  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
-  { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
+  { href: "/bookings" as const, labelKey: "bookings", icon: CalendarCheck2Icon },
+  { href: "/clients" as const, labelKey: "clients", icon: ContactIcon },
   { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
-  { href: "/portfolio" as const, labelKey: "portfolio", icon: CameraIcon },
-  { href: "/teams" as const, labelKey: "teams", icon: UsersRound },
+  { href: "/portfolio" as const, labelKey: "portfolio", icon: ImageIcon },
+  { href: "/teams" as const, labelKey: "teams", icon: UsersRoundIcon },
 ];
 
 const MEMBER_NAV = [
-  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
-  { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
+  { href: "/bookings" as const, labelKey: "bookings", icon: CalendarCheck2Icon },
+  { href: "/clients" as const, labelKey: "clients", icon: ContactIcon },
 ];
 
 type AppSidebarProps = {

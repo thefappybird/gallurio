@@ -14,7 +14,8 @@
     "seed": "tsx lib/db/seed.ts",
     "seed:portfolio": "tsx lib/db/seed-portfolio.ts",
     "reindex": "tsx lib/db/reindex.ts",
-    "paddle:sim": "tsx scripts/paddle-sim.ts"
+    "paddle:sim": "tsx scripts/paddle-sim.ts",
+    "backfill:inquiries": "tsx scripts/backfill-inquiries.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

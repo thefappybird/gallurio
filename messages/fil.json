@@ -262,7 +262,8 @@
       },
       "row": {
         "openMenu": "Buksan ang mga aksyon sa booking",
-        "view": "Tingnan"
+        "view": "Tingnan",
+        "edit": "I-edit"
       },
       "statusValues": {
         "inquiry": "Inquiry",
@@ -946,6 +947,7 @@
         "noBookings": "Wala pang booking",
         "openMenu": "Buksan ang mga aksyon ng kliyente",
         "openClient": "Buksan ang {name}",
+        "view": "Tingnan",
         "edit": "I-edit",
         "deactivate": "I-deaktibo",
         "reactivate": "Buhayin muli"
@@ -1034,15 +1036,16 @@
       "tabs": {
         "all": "Lahat",
         "new": "Bago",
-        "contacted": "Nakausap na",
+        "approved": "Naaprubahan",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
         "new": "Bago",
-        "contacted": "Nakausap na",
+        "approved": "Naaprubahan",
         "archived": "Naka-archive",
-        "booked": "Na-book"
+        "booked": "Na-book",
+        "converted": "Na-convert sa Booking"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -1071,9 +1074,14 @@
           "eventType": "Uri",
           "submitted": "Isinumite",
           "source": "Pinagmulan",
-          "eventTitle": "Pamagat ng event"
+          "eventTitle": "Pamagat ng event",
+          "actions": "Mga Aksyon"
         },
-        "noTitle": "Walang pamagat na event"
+        "noTitle": "Walang pamagat na event",
+        "actions": {
+          "view": "Tingnan",
+          "menuLabel": "Buksan ang mga aksyon ng katanungan"
+        }
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
@@ -1098,31 +1106,31 @@
         },
         "bookingDraft": {
           "title": "Draft na booking",
-          "description": "Kapag na-aprubahan ito, malilikha ang isang booking sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
+          "description": "Kapag na-convert ito, malilikha ang isang booking sa iyong kalendaryo. Itakda ang presyo ngayon o mamaya.",
           "total": "Kabuuan",
           "deposit": "Deposito",
           "notes": "Mga panloob na tala",
           "notesPlaceholder": "Mga tala na ikaw lang ang makakakita…",
           "save": "I-save ang mga pagbabago",
           "saving": "Sino-save…",
-          "approve": "Aprubahan ang booking",
-          "approving": "Inaprubahan…",
-          "approved": "Naaprubahan na",
+          "approve": "I-convert sa booking",
+          "approving": "Kino-convert…",
+          "approved": "Na-convert na",
           "missing": "Walang naka-link na draft na booking para sa katanungang ito.",
           "alreadyConverted": "Ang katanungang ito ay naaprubahan na.",
           "viewBooking": "Tingnan ang booking",
-          "approveError": "Hindi ma-aprubahan. Pakisubukang muli.",
+          "approveError": "Hindi ma-convert. Pakisubukang muli.",
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
-          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-apruba ng mga booking."
+          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking."
         },
         "actions": {
-          "markContacted": "Markahan bilang nakausap na",
+          "approve": "Aprubahan",
           "archive": "I-archive",
           "working": "Sino-save…",
-          "contactedToast": "Minarkahan bilang nakausap na.",
+          "approveStatusToast": "Naaprubahan ang katanungan.",
           "archivedToast": "Naka-archive na ang katanungan.",
-          "approvedToast": "Naaprubahan ang booking.",
+          "approvedToast": "Na-convert sa booking.",
           "errorToast": "May nangyaring mali. Pakisubukang muli."
         },
         "history": {

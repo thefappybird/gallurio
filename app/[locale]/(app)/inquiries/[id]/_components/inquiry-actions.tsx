@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { markContactedAction, archiveInquiryAction } from "../../_actions";
+import { approveInquiryAction, archiveInquiryAction } from "../../_actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 type Props = {
@@ -18,10 +18,10 @@ export function InquiryActions({ inquiryId, status }: Props) {
   const router = useRouter();
   const [working, setWorking] = useState(false);
 
-  const canMarkContacted = status === "new";
+  const canApprove = status === "new";
   const canArchive = !isBookedInquiryStatus(status) && status !== "archived";
 
-  if (!canMarkContacted && !canArchive) return null;
+  if (!canApprove && !canArchive) return null;
 
   async function run(action: () => Promise<{ ok: true } | { error: string }>, successMsg: string) {
     setWorking(true);
@@ -42,14 +42,14 @@ export function InquiryActions({ inquiryId, status }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {canMarkContacted && (
+      {canApprove && (
         <Button
           variant="outline"
           size="sm"
           disabled={working}
-          onClick={() => run(() => markContactedAction(inquiryId), t("contactedToast"))}
+          onClick={() => run(() => approveInquiryAction(inquiryId), t("approveStatusToast"))}
         >
-          {t("markContacted")}
+          {t("approve")}
         </Button>
       )}
       {canArchive && (

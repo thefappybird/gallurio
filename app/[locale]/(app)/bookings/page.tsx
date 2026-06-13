@@ -128,12 +128,15 @@ export default async function BookingsPage({
   const parsedLimit = Number.parseInt(sp.limit ?? "10", 10);
   const tableLimit = PAGE_SIZE_OPTIONS.includes(parsedLimit) ? parsedLimit : 10;
 
+  const showPastParam = sp.showPast === "1";
   const filters = {
     status: sp.status ?? null,
     q: sp.q ?? null,
     from: sp.from ? new Date(sp.from) : null,
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
+    includePast: showPastParam,
+    workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? "UTC",
     // A team selection narrows within the caller's visibility scope; an empty
     // selection falls back to the full visibility scope (owner: undefined = all).
     teamIds: selectedTeamIds.length > 0 ? selectedTeamIds : allowedTeamIds,
@@ -161,7 +164,10 @@ export default async function BookingsPage({
   // If the requested table page lies past the end of a non-empty result set
   // (stale bookmark, post-filter narrowing), redirect to the last valid page
   // rather than render an empty table whose footer claims rows exist.
-  if (view === "table" && bookingsTotal > 0 && tablePage > 1) {
+  // NOTE: check applies regardless of tablePage value — including page 1 —
+  // so a freshly filtered result set whose first page would be empty also
+  // redirects to the correct last page.
+  if (view === "table" && bookingsTotal > 0) {
     const totalPages = Math.ceil(bookingsTotal / tableLimit);
     if (tablePage > totalPages) {
       const next = new URLSearchParams(
@@ -341,7 +347,6 @@ export default async function BookingsPage({
           limit={tableLimit}
           locale={locale}
           empty={t("table.empty")}
-          showPast={sp.showPast === "1"}
           workspaceTimezone={(workspace as { timezone?: string | null }).timezone ?? undefined}
         />
       )}

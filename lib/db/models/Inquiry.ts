@@ -29,10 +29,10 @@ const inquirySchema = new Schema(
       default: "email",
     },
     message: { type: String, default: "" },
-    // Requested shifts. `eventDate` is kept as a denormalized pointer to the
-    // first session's date for the existing dashboard/list sort + display paths.
+    // Requested shifts. `eventDate` is the earliest session.startDate (UTC),
+    // kept as a denormalized pointer for dashboard/list sort + display paths.
     sessions: { type: [inquirySessionSchema], default: [] },
-    eventDate: { type: Date, default: null },
+    eventDate: { type: Date, required: true },
     eventTitle: { type: String, default: "", trim: true },
     eventType: { type: String, default: "other" },
     guestCount: { type: Number, default: null },

@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
-import { Loader2, MailPlus, MailX, UserPlus } from "lucide-react";
+import { Loader2Icon, MailPlusIcon, MailXIcon, UserPlusIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -227,7 +227,7 @@ export function TeamDetailDrawer({
                             onClick={() => handleRemove(m.workosUserId)}
                           >
                             {busy ? (
-                              <Loader2 className="size-4 animate-spin" />
+                              <Loader2Icon className="size-4 animate-spin" />
                             ) : (
                               t("drawer.removeFromTeam")
                             )}
@@ -283,7 +283,7 @@ export function TeamDetailDrawer({
                     ))}
                   </SelectContent>
                 </Select>
-                <UserPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <UserPlusIcon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               </div>
             )}
             {atCap && (
@@ -324,9 +324,9 @@ export function TeamDetailDrawer({
                         onClick={() => handleRevoke(p.invitationId)}
                       >
                         {busy ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          <MailX className="size-4" />
+                          <MailXIcon className="size-4" />
                         )}
                       </Button>
                     </li>
@@ -339,7 +339,7 @@ export function TeamDetailDrawer({
               className="self-start"
               onClick={() => onInvite(team)}
             >
-              <MailPlus className="mr-2 size-4" />
+              <MailPlusIcon className="mr-2 size-4" />
               {t("drawer.inviteToTeam")}
             </Button>
           </section>

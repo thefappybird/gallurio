@@ -15,6 +15,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
+  EyeIcon,
   Loader2Icon,
   MoreHorizontalIcon,
 } from "lucide-react";
@@ -56,6 +57,7 @@ type Props = {
   locale: string;
   empty: string;
   onClickClient: (row: ClientRow) => void;
+  onView: (row: ClientRow) => void;
   onEdit: (row: ClientRow) => void;
   onDeactivate: (row: ClientRow) => void;
   onReactivate: (row: ClientRow) => void;
@@ -68,6 +70,7 @@ export function ClientsTable({
   locale,
   empty,
   onClickClient,
+  onView,
   onEdit,
   onDeactivate,
   onReactivate,
@@ -155,6 +158,10 @@ export function ClientsTable({
                   }
                 />
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onView(row)}>
+                    <EyeIcon className="size-3" />
+                    {t("table.view")}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEdit(row)}>
                     {t("table.edit")}
                   </DropdownMenuItem>
@@ -181,7 +188,7 @@ export function ClientsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, onEdit, onDeactivate, onReactivate, reactivatingId]
+    [locale, t, onView, onEdit, onDeactivate, onReactivate, reactivatingId]
   );
 
   const table = useReactTable({

@@ -109,13 +109,22 @@ describe("getInquiryStatusCounts", () => {
   it("counts per status and totals only real statuses", async () => {
     await seedInquiry(workspaceId, { status: "new" });
     await seedInquiry(workspaceId, { status: "new" });
-    await seedInquiry(workspaceId, { status: "contacted" });
+    await seedInquiry(workspaceId, { status: "approved" });
     await seedInquiry(workspaceId, { status: "booked" });
     await seedInquiry(workspaceId, { status: "converted" });
     await seedInquiry(otherWorkspaceId, { status: "new" });
 
     const counts = await getInquiryStatusCounts(workspaceId);
-    expect(counts).toEqual({ new: 2, contacted: 1, booked: 2, archived: 0, all: 5 });
+    expect(counts).toEqual({ new: 2, approved: 1, booked: 2, archived: 0, all: 5 });
+  });
+
+  it("merges legacy contacted count into approved during backfill window", async () => {
+    await seedInquiry(workspaceId, { status: "approved" });
+    await seedInquiry(workspaceId, { status: "contacted" });
+
+    const counts = await getInquiryStatusCounts(workspaceId);
+    // Both "approved" and legacy "contacted" are summed under the approved tab.
+    expect(counts.approved).toBe(2);
   });
 });
 
@@ -153,6 +162,7 @@ describe("getInquiryWithDraft", () => {
       name: "Emma",
       email: "emma@example.com",
       status: "new",
+      eventDate: new Date("2030-08-15T00:00:00Z"),
       clientId: client._id,
       draftBookingId: booking._id,
     });

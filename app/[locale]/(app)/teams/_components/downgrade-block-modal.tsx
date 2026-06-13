@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangleIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,7 +39,7 @@ export function DowngradeBlockModal({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="size-5 text-destructive" />
+            <AlertTriangleIcon className="size-5 text-destructive" />
             {t("downgradeBlock.title")}
           </DialogTitle>
           <DialogDescription>

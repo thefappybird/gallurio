@@ -18,6 +18,7 @@ import {
   ArrowUpDownIcon,
   EyeIcon,
   MoreHorizontalIcon,
+  PencilIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,7 +50,6 @@ type Props = {
   rows: BookingRow[];
   locale: string;
   empty: string;
-  showPast?: boolean;
   workspaceTimezone?: string;
 };
 
@@ -70,7 +70,6 @@ export function BookingsTable({
   rows,
   locale,
   empty,
-  showPast = false,
   workspaceTimezone = "UTC",
 }: Props) {
   const router = useRouter();
@@ -83,15 +82,26 @@ export function BookingsTable({
     { id: "sessions", desc: false },
   ]);
 
-  // Client-side filter: hide fully-past bookings unless showPast is enabled.
-  const visibleRows = showPast
-    ? rows
-    : rows.filter((r) => !computeIsPast(r.lastSessionEnd, workspaceTimezone));
+  // Rows are pre-filtered server-side by the includePast filter in listBookings.
+  // showPast is kept as a prop so the visual decoration (opacity, Past pill,
+  // line-through) still works correctly when showPast is true. No client-side
+  // row filtering is done here — doing it here would hide paginated rows that
+  // the server has already included in the page.
+  const visibleRows = rows;
 
   const openDetail = useCallback(
     (id: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("detail", id);
+      router.push(`${pathname}?${params.toString()}`);
+    },
+    [searchParams, router, pathname]
+  );
+
+  const openEdit = useCallback(
+    (id: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("edit", id);
       router.push(`${pathname}?${params.toString()}`);
     },
     [searchParams, router, pathname]
@@ -201,6 +211,12 @@ export function BookingsTable({
                   <EyeIcon className="size-4" />
                   {tActions("view")}
                 </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => openEdit(info.row.original.id)}
+                >
+                  <PencilIcon className="size-4" />
+                  {tActions("edit")}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -208,7 +224,7 @@ export function BookingsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, tActions, tStatus, openDetail, workspaceTimezone]
+    [locale, t, tActions, tStatus, openDetail, openEdit, workspaceTimezone]
   );
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table's useReactTable returns non-memoizable functions; React Compiler skips this component intentionally
