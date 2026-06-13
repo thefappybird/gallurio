@@ -7,8 +7,11 @@
  * bookings, inquiries, gallery_collections, gallery_items, transactions, activity_logs).
  * Never run against production.
  *
- * The two seeded workspaces use fake workosUserId values so the app
- * can render their data when you point auth helpers at them during dev.
+ * By default the two seeded workspaces use placeholder workosUserId values
+ * (user_demo_*). For a one-step reset you can sign in as them: set
+ * SEED_OWNER_WORKOS_USER_ID (your real WorkOS user_... id) in .env.local and
+ * both demo workspaces are owned by you, so AuthKit sign-in lands straight in a
+ * populated workspace. Optional: SEED_OWNER_EMAIL, SEED_OWNER_NAME.
  *
  * Fixtures are deterministic — a seeded PRNG (mulberry32) means re-running gives
  * identical data, which keeps screenshots and dashboard widgets stable.
@@ -116,7 +119,8 @@ async function dropTenantCollections() {
 
 async function seedWorkspace(
   w: (typeof DEMO_WORKSPACES)[number],
-  seedNumber: number
+  seedNumber: number,
+  ownerUserId: string
 ) {
   const now = new Date();
   const rand = mulberry32(0xc0ffee + seedNumber);
@@ -127,7 +131,7 @@ async function seedWorkspace(
   const workspace = await Workspace.create({
     slug: w.slug,
     name: w.name,
-    ownerUserId: w.ownerUserId,
+    ownerUserId,
     businessType: w.businessType,
     country: "PH",
     currency: "PHP",
@@ -150,17 +154,12 @@ async function seedWorkspace(
     isDefault: true,
     isActive: true,
     memberCount: 0,
-    createdByWorkosUserId: w.ownerUserId,
+    createdByWorkosUserId: ownerUserId,
   });
 
-  await User.create({
-    workosUserId: w.ownerUserId,
-    email: w.ownerEmail,
-    name: w.ownerName,
-    memberships: [{ workspaceId: workspace._id, role: "owner" }],
-    onboardingStep: "done",
-    onboardingCompletedAt: now,
-  });
+  // The owner User is created once in main() after all workspaces are seeded,
+  // so a shared (env-driven) owner gets a single User doc with a membership for
+  // every workspace instead of colliding on the unique workosUserId index.
 
   // 12 clients with varied totalSpent so "Top clients" has signal.
   const clients = await Client.insertMany(
@@ -401,7 +400,7 @@ async function seedWorkspace(
   }> = [
     {
       workspaceId: workspace._id,
-      actorUserId: w.ownerUserId,
+      actorUserId: ownerUserId,
       entity: "workspace",
       entityId: null,
       action: "created",
@@ -411,7 +410,7 @@ async function seedWorkspace(
     const kind = pick(["booking", "client", "inquiry", "transaction"] as const);
     activityPayloads.push({
       workspaceId: workspace._id,
-      actorUserId: w.ownerUserId,
+      actorUserId: ownerUserId,
       entity: kind,
       entityId:
         kind === "booking"
@@ -440,10 +439,32 @@ async function syncAllIndexes() {
   }
 }
 
+type OwnerInfo = {
+  email: string;
+  name: string;
+  memberships: Array<{
+    workspaceId: mongoose.Types.ObjectId;
+    role: "owner";
+    lastAccessedAt: Date | null;
+  }>;
+};
+
 async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Refusing to seed in NODE_ENV=production");
   }
+
+  // Optional: wire the demo data to your real WorkOS identity so you can sign in
+  // and immediately own the seeded workspaces. Set these in .env.local:
+  //   SEED_OWNER_WORKOS_USER_ID  (your real user_... id from WorkOS / AuthKit)
+  //   SEED_OWNER_EMAIL           (optional; re-synced from WorkOS on first sign-in)
+  //   SEED_OWNER_NAME            (optional display name)
+  // When SEED_OWNER_WORKOS_USER_ID is set, ALL demo workspaces are owned by you.
+  // When unset, the per-workspace placeholder ids (user_demo_*) are used.
+  const sharedOwnerId = process.env.SEED_OWNER_WORKOS_USER_ID?.trim() || null;
+  const sharedOwnerEmail = process.env.SEED_OWNER_EMAIL?.trim() || null;
+  const sharedOwnerName = process.env.SEED_OWNER_NAME?.trim() || null;
+  const now = new Date();
 
   console.log("→ Connecting to MongoDB…");
   await connectDB();
@@ -455,15 +476,55 @@ async function main() {
   await dropTenantCollections();
 
   console.log("→ Seeding demo workspaces…");
+  const owners = new Map<string, OwnerInfo>();
+
   for (let i = 0; i < DEMO_WORKSPACES.length; i += 1) {
-    await seedWorkspace(DEMO_WORKSPACES[i], i);
+    const w = DEMO_WORKSPACES[i];
+    const ownerUserId = sharedOwnerId ?? w.ownerUserId;
+    const workspace = await seedWorkspace(w, i, ownerUserId);
+
+    let owner = owners.get(ownerUserId);
+    if (!owner) {
+      owner = {
+        email: sharedOwnerId ? sharedOwnerEmail ?? w.ownerEmail : w.ownerEmail,
+        name: sharedOwnerId ? sharedOwnerName ?? w.ownerName : w.ownerName,
+        memberships: [],
+      };
+      owners.set(ownerUserId, owner);
+    }
+    owner.memberships.push({
+      workspaceId: workspace._id,
+      role: "owner",
+      // Stamp the FIRST workspace as most-recently-accessed so getActiveWorkspaceId
+      // lands the owner there on sign-in instead of showing a workspace chooser.
+      lastAccessedAt: owner.memberships.length === 0 ? now : null,
+    });
+  }
+
+  console.log("→ Creating owner users…");
+  for (const [ownerUserId, info] of owners) {
+    await User.create({
+      workosUserId: ownerUserId,
+      email: info.email,
+      name: info.name,
+      memberships: info.memberships,
+      onboardingStep: "done",
+      onboardingCompletedAt: now,
+    });
   }
 
   console.log("\n✓ Seed complete.");
-  console.log("\nNote: WorkOS user IDs are fake placeholders (user_demo_*). To sign in");
-  console.log("as one of these workspaces, update the User.workosUserId in MongoDB to a");
-  console.log("real WorkOS user ID after authenticating via AuthKit.");
-  console.log("  Also update the dropTenantCollections list to include 'invitations'.");
+  if (sharedOwnerId) {
+    console.log(
+      `\nBoth demo workspaces are owned by SEED_OWNER_WORKOS_USER_ID=${sharedOwnerId}.`
+    );
+    console.log("Sign in via AuthKit as that user to land in Sarah Bell Photography;");
+    console.log("use the workspace switcher to reach Rosewood Venue.");
+  } else {
+    console.log("\nNote: owner WorkOS user IDs are placeholders (user_demo_*), so you");
+    console.log("cannot sign in as these workspaces yet. For a one-step reset, set");
+    console.log("SEED_OWNER_WORKOS_USER_ID (your real user_... id) in .env.local, then re-run.");
+  }
 
   await mongoose.disconnect();
   process.exit(0);
