@@ -6,6 +6,19 @@
 
 ---
 
+## Addendum — Finding 8 (post-commit review)
+
+| # | Finding | Severity | Status |
+|---|---------|----------|--------|
+| 8 | OAuth `state` was HMAC-signed but not bound to the initiating browser (login-CSRF / session-fixation) | **Medium** | **Fixed** |
+
+A follow-up automated review flagged that `verifyOAuthState` proves the state was issued by our server but not that it was issued for *this* browser. An attacker could obtain a legitimately-signed `state` plus their own authorization `code` and replay the pair into a victim's browser, logging the victim into the attacker's account. HMAC integrity does not prevent this.
+
+**Fix:** session-bound CSRF nonce.
+- `googleSignInAction` (`app/[locale]/(auth)/_actions.ts`) generates a 32-byte nonce, stores it in a short-lived httpOnly `oauth_csrf` cookie (sameSite=lax, secure in prod, maxAge 600), and embeds the same nonce in the signed state (`nonce` added to `OAuthStatePayload`).
+- The callback (`app/api/auth/callback/route.ts`) rejects (redirect to sign-in, **before** exchanging the code) whenever the state nonce is absent or does not `timingSafeEqual` the cookie nonce, and clears the cookie on every exit path (single-use).
+- Tests cover: nonce round-trips through the signed state; the action sets the cookie bound to the state nonce; the callback rejects on absent cookie, mismatched nonce, and missing-nonce state, without exchanging the code; and the cookie is cleared on success.
+
 ## Verification (2026-06-13)
 
 All gates green after fixes:

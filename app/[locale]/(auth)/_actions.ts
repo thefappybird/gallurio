@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
@@ -650,9 +651,25 @@ export async function googleSignInAction(
   const safeReturn = await buildReturnCookie(returnTo);
 
   try {
+    // CSRF: bind the OAuth state to THIS browser. The nonce is stored in a
+    // short-lived httpOnly cookie and embedded in the signed state; the callback
+    // rejects any request whose cookie nonce does not match the state's. Without
+    // this, a valid (code, state) pair could be replayed into a victim's browser
+    // to log them into the attacker's account (login CSRF / session fixation).
+    const nonce = randomBytes(32).toString("base64url");
+    const jar = await cookies();
+    jar.set("oauth_csrf", nonce, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+
     const state = signOAuthState({
       locale,
       returnTo: safeReturn,
+      nonce,
     });
 
     const url = workos.userManagement.getAuthorizationUrl({

@@ -22,6 +22,15 @@ export type OAuthStatePayload = {
   locale: string;
   /** Optional return path after authentication (must be a local pathname). */
   returnTo?: string;
+  /**
+   * CSRF nonce bound to the initiating browser. The same value is stored in a
+   * short-lived httpOnly cookie when the OAuth flow starts; the callback rejects
+   * any request whose cookie nonce does not match this one. Prevents login-CSRF
+   * / session-fixation where an attacker replays a valid (code, state) pair into
+   * a victim's browser. Optional only because non-callback states (e.g. the
+   * invite redirect to /sign-up) never reach the callback.
+   */
+  nonce?: string;
   /** Unix timestamp (ms) when the state was created. Used for TTL checks. */
   issuedAt: number;
 };

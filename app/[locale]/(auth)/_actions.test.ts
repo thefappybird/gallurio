@@ -131,6 +131,7 @@ import {
   mfaChallengeAction,
   googleSignInAction,
 } from "@/app/[locale]/(auth)/_actions";
+import { signOAuthState } from "@/lib/auth/oauthState";
 import { AuthenticationException } from "@workos-inc/node";
 
 // Helper: build FormData
@@ -562,6 +563,23 @@ describe("googleSignInAction", () => {
         provider: "GoogleOAuth",
         state: "signed-state-token",
       }),
+    );
+  });
+
+  it("sets a CSRF nonce cookie bound to the signed state", async () => {
+    mockWorkos.userManagement.getAuthorizationUrl.mockReturnValue(
+      "https://api.workos.com/sso/authorize?...",
+    );
+    await googleSignInAction();
+
+    // A high-entropy nonce is stored in the oauth_csrf cookie...
+    const nonce = mockCookieJar["oauth_csrf"];
+    expect(typeof nonce).toBe("string");
+    expect(nonce.length).toBeGreaterThan(20);
+
+    // ...and the SAME nonce is embedded in the signed OAuth state.
+    expect(vi.mocked(signOAuthState)).toHaveBeenCalledWith(
+      expect.objectContaining({ nonce }),
     );
   });
 });

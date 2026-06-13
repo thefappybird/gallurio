@@ -5,10 +5,11 @@ process.env.ACTIVE_WORKSPACE_COOKIE_SECRET = "test-secret-oauth-state";
 const { signOAuthState, verifyOAuthState } = await import("./oauthState");
 
 describe("oauthState — sign and verify", () => {
-  it("round-trips a full payload", () => {
+  it("round-trips a full payload including the CSRF nonce", () => {
     const payload = {
       locale: "en",
       returnTo: "/dashboard",
+      nonce: "csrf-nonce-abc123",
     };
     const state = signOAuthState(payload);
     const result = verifyOAuthState(state);
@@ -16,6 +17,7 @@ describe("oauthState — sign and verify", () => {
     expect(result).not.toBeNull();
     expect(result?.locale).toBe("en");
     expect(result?.returnTo).toBe("/dashboard");
+    expect(result?.nonce).toBe("csrf-nonce-abc123");
   });
 
   it("round-trips a minimal payload (locale only)", () => {

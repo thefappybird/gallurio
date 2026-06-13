@@ -11,6 +11,7 @@
  */
 export const runtime = "nodejs";
 
+import { timingSafeEqual } from "crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import { ensureUser } from "@/lib/auth/ensureUser";
@@ -18,12 +19,32 @@ import { verifyOAuthState } from "@/lib/auth/oauthState";
 import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
 
+const CSRF_COOKIE = "oauth_csrf";
+
 function localizedDashboard(locale: string): string {
   return locale === routing.defaultLocale ? "/dashboard" : `/${locale}/dashboard`;
 }
 
 function localizedSignIn(locale: string): string {
   return locale === routing.defaultLocale ? "/sign-in" : `/${locale}/sign-in`;
+}
+
+/** Expires the single-use CSRF nonce cookie on the given response. */
+function clearCsrfCookie(res: NextResponse): NextResponse {
+  res.cookies.set(CSRF_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+  return res;
+}
+
+/** Timing-safe equality for the state nonce vs the cookie nonce. */
+function nonceMatches(a: string | undefined, b: string | undefined): boolean {
+  if (!a || !b || a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -45,6 +66,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!code) {
     // WorkOS returned an error or the code is missing — redirect to sign-in.
     return NextResponse.redirect(new URL(localizedSignIn(locale), origin));
+  }
+
+  // CSRF: the OAuth state must be bound to the browser that initiated the flow.
+  // googleSignInAction set the oauth_csrf cookie and embedded the same nonce in
+  // the signed state. Reject (without exchanging the code) when the nonce is
+  // missing or does not match — this blocks login-CSRF / session-fixation via a
+  // replayed (code, state) pair. The state itself is already integrity-checked
+  // by verifyOAuthState (HMAC + TTL); the nonce adds the browser binding.
+  if (!nonceMatches(request.cookies.get(CSRF_COOKIE)?.value, statePayload?.nonce)) {
+    return clearCsrfCookie(
+      NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
+    );
   }
 
   try {
@@ -97,9 +130,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       destination = new URL(localizedDashboard(locale), origin).toString();
     }
 
-    return NextResponse.redirect(destination);
+    // Single-use: clear the CSRF nonce cookie now that the flow completed.
+    return clearCsrfCookie(NextResponse.redirect(destination));
   } catch {
     // Authentication failure — redirect to localized sign-in.
-    return NextResponse.redirect(new URL(localizedSignIn(locale), origin));
+    return clearCsrfCookie(
+      NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
+    );
   }
 }
