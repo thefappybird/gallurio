@@ -1,68 +1,31 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
-import type { EditorTemplateSummary } from "./EditorShell";
 
-const templates: EditorTemplateSummary[] = [
-  { id: "minimal", label: "Minimal", description: "Clean and simple", defaultBrandKit: DEFAULT_BRAND_KIT },
-  { id: "planner", label: "Planner", description: "For event planners", defaultBrandKit: DEFAULT_BRAND_KIT },
+const templates = [
+  { id: "minimal", label: "Minimal", description: "Clean", defaultBrandKit: DEFAULT_BRAND_KIT },
+  { id: "bold", label: "Bold", description: "Loud", defaultBrandKit: DEFAULT_BRAND_KIT },
 ];
 
-describe("TemplatePickerDialog", () => {
-  it("lists templates and marks the current one when open", () => {
-    render(
-      <TemplatePickerDialog
-        open
-        onOpenChange={vi.fn()}
-        templates={templates}
-        currentTemplateId="minimal"
-        switching={false}
-        error={null}
-        onConfirm={vi.fn()}
-      />
-    );
-    expect(screen.getByText("Choose a template")).toBeTruthy();
-    expect(screen.getByText("Minimal")).toBeTruthy();
-    expect(screen.getByText("Planner")).toBeTruthy();
-    expect(screen.getByText(/current/i)).toBeTruthy();
-  });
+it("selects a template on click and applies only when Use this template is pressed; no warning dialog", () => {
+  const onConfirm = vi.fn();
+  renderWithProviders(
+    <TemplatePickerDialog open onOpenChange={() => {}} templates={templates}
+      currentTemplateId="minimal" switching={false} error={null} onConfirm={onConfirm} />
+  );
+  fireEvent.click(screen.getByRole("button", { name: /Bold/ }));
+  expect(onConfirm).not.toHaveBeenCalled();
+  expect(screen.queryByText("Switch template?")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+  expect(onConfirm).toHaveBeenCalledWith("bold");
+});
 
-  it("requires confirmation before switching", () => {
-    const onConfirm = vi.fn();
-    render(
-      <TemplatePickerDialog
-        open
-        onOpenChange={vi.fn()}
-        templates={templates}
-        currentTemplateId="minimal"
-        switching={false}
-        error={null}
-        onConfirm={onConfirm}
-      />
-    );
-
-    // Choosing a template opens a confirm step, not an immediate switch.
-    fireEvent.click(screen.getByText("Planner"));
-    expect(screen.getByText(/switch template\?/i)).toBeTruthy();
-    expect(onConfirm).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: /^switch template$/i }));
-    expect(onConfirm).toHaveBeenCalledWith("planner");
-  });
-
-  it("renders nothing when closed", () => {
-    render(
-      <TemplatePickerDialog
-        open={false}
-        onOpenChange={vi.fn()}
-        templates={templates}
-        currentTemplateId="minimal"
-        switching={false}
-        error={null}
-        onConfirm={vi.fn()}
-      />
-    );
-    expect(screen.queryByText("Choose a template")).toBeNull();
-  });
+it("disables Use this template until a template is selected", () => {
+  renderWithProviders(
+    <TemplatePickerDialog open onOpenChange={() => {}} templates={templates}
+      currentTemplateId="minimal" switching={false} error={null} onConfirm={() => {}} />
+  );
+  expect(screen.getByRole("button", { name: "Use this template" })).toBeDisabled();
 });

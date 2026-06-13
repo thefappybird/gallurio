@@ -466,15 +466,15 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
 
-    // Select the "Minimal" template card — opens the confirmation AlertDialog.
+    // Select the "Minimal" template card — highlights it without opening a dialog.
     // Card button accessible name includes label + description ("Minimal Clean").
     fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
 
-    // Snapshot mount count before the destructive apply so we can detect a remount.
+    // Snapshot mount count before the apply so we can detect a remount.
     const mountCountBefore = __puckMountCount;
 
-    // Confirm the switch in the AlertDialog.
-    fireEvent.click(await screen.findByRole("button", { name: "Switch template" }));
+    // Commit the selection via the footer "Use this template" button.
+    fireEvent.click(await screen.findByRole("button", { name: "Use this template" }));
 
     // After applyTemplate, the seedNonce fix bumps the Puck key → remount.
     // The mount counter (incremented in useEffect[]) is the authoritative signal:
