@@ -220,6 +220,8 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 - Never create worktrees outside `.claude/worktrees/`
 - Create with:
   `git worktree add .claude/worktrees/<slug> -b <branch> dev`
+- Immediately after creating a branch/worktree, index it with codebase-memory-mcp as its own project:
+  `index_repository { repo_path: "<absolute worktree path>", mode: "full", persistence: true }` (use `fast`/`moderate` for later refreshes). This is a required step for every new branch/worktree — see Codebase memory.
 
 ## Testing
 - Every code change ships with tests
