@@ -328,6 +328,18 @@ describe("EditorShell", () => {
     expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 
+  it("shows the collections popup preview on the canvas when the Collections Popup tab is opened", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    // Wait for the async openCollectionsPopup state update to settle.
+    // The style panel (right rail) must be present.
+    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    // Puck canvas must be gone — the preview branch replaces it.
+    expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
+    // CollectionsPopupPreview must render the sample chrome with its title.
+    expect(screen.getByText("Sample Collection")).toBeInTheDocument();
+  });
+
   it("builds a preview src without inlining the draft", async () => {
     const { container } = await renderAndDismissEntry(<EditorShell {...basePro} />);
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));

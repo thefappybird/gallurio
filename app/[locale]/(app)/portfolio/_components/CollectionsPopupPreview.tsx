@@ -14,7 +14,7 @@ export function CollectionsPopupPreview({
 }) {
   const { cssVars, className } = resolveBrandKit(brandKit);
   return (
-    <div className={className} style={{ ...(cssVars as React.CSSProperties) }}>
+    <div className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>
       <div className="relative h-full w-full overflow-hidden bg-black/45">
         <CollectionPopupChrome
           collectionName="Sample Collection"
