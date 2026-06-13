@@ -137,7 +137,9 @@ import {
   disableMfaAction,
   setActiveWorkspaceAction,
   updatePasswordAction,
+  sendSetPasswordEmailAction,
 } from "./_actions";
+import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
 import { resend } from "@/lib/email/resend";
 import type { Attachment } from "resend";
@@ -1031,6 +1033,54 @@ describe("updatePasswordAction", () => {
   it("rejects an unauthenticated caller", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+});
+
+// ---- sendSetPasswordEmailAction ---------------------------------------------
+
+describe("sendSetPasswordEmailAction", () => {
+  it("creates a reset token and emails the link to the user", async () => {
+    mockWorkos.userManagement.createPasswordReset.mockResolvedValue({
+      passwordResetToken: "tok_xyz",
+      passwordResetUrl: "https://workos/x",
+    });
+
+    const result = await sendSetPasswordEmailAction();
+    expect(result).toEqual({ ok: true });
+
+    expect(
+      mockWorkos.userManagement.createPasswordReset,
+    ).toHaveBeenCalledWith({ email: "owner@test.com" });
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+      "owner@test.com",
+      "tok_xyz",
+    );
+  });
+
+  it("returns an error when rate limited", async () => {
+    vi.mocked(checkAuthRateLimit).mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 60,
+    });
+    const result = await sendSetPasswordEmailAction();
+    expect("error" in result).toBe(true);
+    expect(
+      mockWorkos.userManagement.createPasswordReset,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when WorkOS createPasswordReset throws", async () => {
+    mockWorkos.userManagement.createPasswordReset.mockRejectedValueOnce(
+      new Error("workos down"),
+    );
+    const result = await sendSetPasswordEmailAction();
+    expect("error" in result).toBe(true);
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    const result = await sendSetPasswordEmailAction();
     expect(result).toEqual({ error: "Not authenticated" });
   });
 });

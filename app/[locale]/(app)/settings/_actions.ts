@@ -25,6 +25,7 @@ import {
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
 import { cancelSubscription } from "@/lib/paddle/client";
+import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -709,6 +710,35 @@ export async function updatePasswordAction(input: {
   } catch (err) {
     console.error("[settings] updateUser(password) failed", err);
     return { error: "Failed to update password. Please try again." };
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Profile: send "set a password" email for OAuth-only users
+// Mints a WorkOS password-reset token and emails the link via the shared
+// sendPasswordResetEmail helper. Authenticated + rate-limited.
+// ---------------------------------------------------------------------------
+
+export async function sendSetPasswordEmailAction(): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  const rl = await checkAuthRateLimit({ email: authUser.email });
+  if (!rl.ok)
+    return {
+      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
+    };
+
+  try {
+    const reset = await workos.userManagement.createPasswordReset({
+      email: authUser.email,
+    });
+    await sendPasswordResetEmail(authUser.email, reset.passwordResetToken);
+  } catch (err) {
+    console.error("[settings] sendSetPasswordEmail failed", err);
+    return { error: "Could not send the email. Please try again." };
   }
 
   return { ok: true };
