@@ -19,6 +19,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DraftSummary } from "../_draftActions";
 
@@ -30,8 +31,6 @@ const L = {
   empty:
     "No drafts yet. Save your current work, or start a new one from a template.",
   active: "Active",
-  apply: "Apply",
-  delete: "Delete",
   addNew: "Add new draft",
   close: "Close",
   confirmTitle: "Delete this draft?",
@@ -103,25 +102,24 @@ export function DraftsDialog({
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="mt-1 flex items-center justify-end gap-1">
                       <Button
                         type="button"
-                        size="sm"
+                        size="icon-sm"
                         variant="outline"
-                        className="flex-1"
                         aria-label={`Apply ${d.name}`}
                         onClick={() => onApply(d.id)}
                       >
-                        {L.apply}
+                        <Check />
                       </Button>
                       <Button
                         type="button"
-                        size="sm"
+                        size="icon-sm"
                         variant="ghost"
                         aria-label={`Delete ${d.name}`}
                         onClick={() => setPendingDelete(d)}
                       >
-                        {L.delete}
+                        <Trash2 />
                       </Button>
                     </div>
                   </li>

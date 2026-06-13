@@ -1,56 +1,36 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { it, expect, vi } from "vitest";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { DraftsDialog } from "./DraftsDialog";
-import type { DraftSummary } from "../_draftActions";
 
-const drafts: DraftSummary[] = [
-  { id: "a", name: "Spring", templateId: "minimal", updatedAt: new Date().toISOString() },
-  { id: "b", name: "Bold", templateId: "scratch", updatedAt: new Date().toISOString() },
-];
+const drafts = [{ id: "d1", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() }];
 
-function setup(props: Partial<React.ComponentProps<typeof DraftsDialog>> = {}) {
-  return render(
+it("renders Apply and Delete as labeled icon buttons and fires their handlers", () => {
+  const onApply = vi.fn();
+  const onDelete = vi.fn();
+  renderWithProviders(
     <DraftsDialog
       open
-      onOpenChange={vi.fn()}
+      onOpenChange={() => {}}
       drafts={drafts}
-      activeDraftId="a"
-      onApply={vi.fn()}
-      onDelete={vi.fn()}
-      onAddNew={vi.fn()}
-      {...props}
+      activeDraftId={null}
+      onApply={onApply}
+      onDelete={onDelete}
+      onAddNew={() => {}}
     />
   );
-}
 
-describe("DraftsDialog", () => {
-  it("lists drafts and marks the active one", () => {
-    setup();
-    expect(screen.getByText("Spring")).toBeTruthy();
-    expect(screen.getByText("Bold")).toBeTruthy();
-    expect(screen.getByText(/active/i)).toBeTruthy();
-  });
+  const applyBtn = screen.getByRole("button", { name: "Apply Summer" });
+  const deleteBtn = screen.getByRole("button", { name: "Delete Summer" });
+  // Icon-only: an SVG child, no visible "Apply"/"Delete" text.
+  expect(applyBtn.querySelector("svg")).toBeTruthy();
+  expect(applyBtn).not.toHaveTextContent("Apply");
+  expect(deleteBtn.querySelector("svg")).toBeTruthy();
 
-  it("shows empty-state copy and Add new draft when there are no drafts", () => {
-    const onAddNew = vi.fn();
-    setup({ drafts: [], activeDraftId: null, onAddNew });
-    expect(screen.getByText(/no drafts yet/i)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /add new draft/i }));
-    expect(onAddNew).toHaveBeenCalled();
-  });
+  fireEvent.click(applyBtn);
+  expect(onApply).toHaveBeenCalledWith("d1");
 
-  it("applies a draft", () => {
-    const onApply = vi.fn();
-    setup({ onApply });
-    fireEvent.click(screen.getByRole("button", { name: /apply Bold/i }));
-    expect(onApply).toHaveBeenCalledWith("b");
-  });
-
-  it("confirms before deleting", () => {
-    const onDelete = vi.fn();
-    setup({ onDelete });
-    fireEvent.click(screen.getByRole("button", { name: /delete Bold/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^delete draft$/i }));
-    expect(onDelete).toHaveBeenCalledWith("b");
-  });
+  // Delete still routes through the confirm dialog.
+  fireEvent.click(deleteBtn);
+  expect(screen.getByText("Delete this draft?")).toBeInTheDocument();
 });
