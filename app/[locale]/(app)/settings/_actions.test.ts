@@ -1010,7 +1010,7 @@ describe("updatePasswordAction", () => {
       newPassword: "short",
       confirmPassword: "short",
     });
-    expect("error" in result).toBe(true);
+    expect(result).toEqual({ error: expect.stringContaining("8") });
     expect(
       mockWorkos.userManagement.authenticateWithPassword,
     ).not.toHaveBeenCalled();

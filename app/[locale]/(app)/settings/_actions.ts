@@ -643,12 +643,17 @@ const updatePasswordSchema = z.object({
   confirmPassword: z.string().min(1),
 });
 
-// AuthenticationException codes that mean the PASSWORD was accepted but a
-// further step (MFA, email verification, org selection) is pending. For
-// password verification purposes these count as success.
+// AuthenticationException codes that fire only AFTER WorkOS has accepted the
+// password (a further step — MFA, Radar bot check, email verification, org
+// selection — is pending). For current-password verification these all mean the
+// password was correct. `sso_required` is intentionally excluded: it means the
+// account has no usable password, which should not count as a successful check.
 const PASSWORD_OK_CODES = new Set([
   "mfa_challenge",
   "mfa_enrollment",
+  "mfa_verification",
+  "radar_email_challenge",
+  "radar_sms_challenge",
   "email_verification_required",
   "organization_selection_required",
 ]);
