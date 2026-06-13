@@ -332,4 +332,42 @@ describe("EditorShell", () => {
     renderWithProviders(<EditorShell {...baseProps} initialActiveDraftId={null} initialActiveDraftName={undefined} initialDrafts={[]} />);
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
+
+  it("does not call the save API when the draft name duplicates another draft", async () => {
+    const props = {
+      ...baseProps,
+      initialActiveDraftId: "d1",
+      initialActiveDraftName: "Test Draft",
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    const input = screen.getByLabelText("Draft name");
+    fireEvent.change(input, { target: { value: "Summer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
+    expect(updateDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("does not open the unsaved-changes modal when the name is invalid; shows the error instead", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Summer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
+    expect(screen.queryByText("Save your changes?")).not.toBeInTheDocument();
+    expect(screen.getByText("A draft with this name already exists")).toBeInTheDocument();
+  });
 });

@@ -448,8 +448,24 @@ export function EditorShell({
     [activeZone, persistLocalDraft]
   );
 
+  // ---- Draft name validation ----
+  function validateDraftName(name: string): string | null {
+    const trimmed = name.trim();
+    if (!trimmed) return "This field is required";
+    const clash = drafts.some(
+      (d) => d.id !== activeDraftId && d.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (clash) return "A draft with this name already exists";
+    return null;
+  }
+
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
+    const validationError = validateDraftName(draftName);
+    if (validationError) {
+      setNameError(validationError);
+      return false;
+    }
     setSavingChanges(true);
     const payload = { name: draftName, ...buildDraftSnapshot() };
     try {
@@ -490,6 +506,11 @@ export function EditorShell({
 
   // ---- Unsaved-changes guard ----
   function guardThenRun(run: () => void) {
+    const validationError = validateDraftName(draftName);
+    if (validationError) {
+      setNameError(validationError);
+      return;
+    }
     if (activeDraftId === null || isDirty) {
       setPendingAction(() => run);
     } else {
