@@ -22,6 +22,13 @@ import { routing } from "@/lib/i18n/routing";
 
 const CSRF_COOKIE = "oauth_csrf";
 
+/** Gated debug logging for the OAuth callback. Enable with AUTHKIT_DEBUG=true. */
+function debug(...args: unknown[]): void {
+  if (process.env.AUTHKIT_DEBUG === "true") {
+    console.log("[auth/callback]", ...args);
+  }
+}
+
 function localizedDashboard(locale: string): string {
   return locale === routing.defaultLocale ? "/dashboard" : `/${locale}/dashboard`;
 }
@@ -65,8 +72,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const hasInviteCookie =
     request.cookies.get("gw_invite_token")?.value != null;
 
+  debug("incoming", {
+    hasCode: Boolean(code),
+    stateVerified: Boolean(statePayload),
+    statHasNonce: Boolean(statePayload?.nonce),
+    hasCsrfCookie: Boolean(request.cookies.get(CSRF_COOKIE)?.value),
+    secure,
+    origin,
+    error: searchParams.get("error"),
+    errorDescription: searchParams.get("error_description"),
+  });
+
   if (!code) {
     // WorkOS returned an error or the code is missing — redirect to sign-in.
+    debug("redirect -> sign-in: missing code");
     return NextResponse.redirect(new URL(localizedSignIn(locale), origin));
   }
 
@@ -77,6 +96,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // replayed (code, state) pair. The state itself is already integrity-checked
   // by verifyOAuthState (HMAC + TTL); the nonce adds the browser binding.
   if (!nonceMatches(request.cookies.get(CSRF_COOKIE)?.value, statePayload?.nonce)) {
+    debug("redirect -> sign-in: CSRF nonce mismatch", {
+      hasCsrfCookie: Boolean(request.cookies.get(CSRF_COOKIE)?.value),
+      hasStateNonce: Boolean(statePayload?.nonce),
+    });
     return clearCsrfCookie(
       NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
       secure,
@@ -110,6 +133,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     };
 
     await ensureUser(authUser);
+    debug("code exchanged + session saved", {
+      userId: authResponse.user.id,
+      hasSealedSession: Boolean(
+        (authResponse as { sealedSession?: string }).sealedSession,
+      ),
+    });
 
     // Determine redirect destination.
     // Priority: invite cookie > returnTo > localized /dashboard
@@ -134,9 +163,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Single-use: clear the CSRF nonce cookie now that the flow completed.
+    debug("redirect -> destination", { destination });
     return clearCsrfCookie(NextResponse.redirect(destination), secure);
-  } catch {
+  } catch (err) {
     // Authentication failure — redirect to localized sign-in.
+    debug("redirect -> sign-in: exchange/ensureUser threw", {
+      message: err instanceof Error ? err.message : String(err),
+    });
     return clearCsrfCookie(
       NextResponse.redirect(new URL(localizedSignIn(locale), origin)),
       secure,
