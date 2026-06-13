@@ -338,6 +338,7 @@ describe("EditorShell", () => {
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     // CollectionsPopupPreview must render the sample chrome with its title.
     expect(screen.getByText("Sample Collection")).toBeInTheDocument();
+    expect(screen.getByTestId("collections-popup-preview-root")).toHaveClass("h-full");
   });
 
   it("builds a preview src without inlining the draft", async () => {
