@@ -576,7 +576,7 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
-        "avatarHint": "Avatar is managed through your WorkOS profile.",
+        "avatarHint": "Avatar is managed through your account profile.",
         "nameSection": "Display name",
         "nameLabel": "Full name",
         "emailLabel": "Email address",

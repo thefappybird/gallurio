@@ -576,7 +576,7 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
-        "avatarHint": "Ang avatar ay pinamamahalaan sa pamamagitan ng iyong WorkOS profile.",
+        "avatarHint": "Ang avatar ay pinamamahalaan sa pamamagitan ng iyong account profile.",
         "nameSection": "Display na pangalan",
         "nameLabel": "Buong pangalan",
         "emailLabel": "Email address",
