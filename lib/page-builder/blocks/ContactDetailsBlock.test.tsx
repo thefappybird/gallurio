@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
-import { ContactDetailsBlock, contactDetailsDefaultProps } from "./ContactDetailsBlock";
-import { runWithRenderWorkspace, buildRenderWorkspace } from "@/lib/page-builder/serverContext";
-import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
+import {
+  ContactDetailsBlock,
+  contactDetailsDefaultProps,
+  type ContactDetailsProps,
+} from "./ContactDetailsBlock";
+import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
+import type { RenderWorkspace } from "@/lib/page-builder/blockContext";
 
 // ---------------------------------------------------------------------------
 // Test workspace helpers
@@ -28,6 +32,14 @@ function makeWorkspace(overrides: Partial<RenderWorkspace> = {}): RenderWorkspac
   };
 }
 
+// The render path threads the workspace through Puck `metadata` (RSC-safe).
+// Tests mirror that by passing the workspace via the `puck` prop rather than
+// the server-only AsyncLocalStorage store.
+function renderBlock(ws: RenderWorkspace | null, props: ContactDetailsProps) {
+  const puck = ws ? { metadata: { workspace: ws } } : undefined;
+  return render(<ContactDetailsBlock {...props} puck={puck} />);
+}
+
 // ---------------------------------------------------------------------------
 // Smoke test — renders without crashing
 // ---------------------------------------------------------------------------
@@ -35,18 +47,12 @@ function makeWorkspace(overrides: Partial<RenderWorkspace> = {}): RenderWorkspac
 describe("ContactDetailsBlock — smoke test", () => {
   it("renders without crashing inside a workspace context", () => {
     const ws = makeWorkspace();
-    expect(() =>
-      runWithRenderWorkspace(ws, () =>
-        render(React.createElement(ContactDetailsBlock, contactDetailsDefaultProps))
-      )
-    ).not.toThrow();
+    expect(() => renderBlock(ws, contactDetailsDefaultProps)).not.toThrow();
   });
 
   it("renders a <dl> element with data-block='contact-details'", () => {
     const ws = makeWorkspace();
-    const { container } = runWithRenderWorkspace(ws, () =>
-      render(React.createElement(ContactDetailsBlock, contactDetailsDefaultProps))
-    );
+    const { container } = renderBlock(ws, contactDetailsDefaultProps);
     expect(container.querySelector("[data-block='contact-details']")).not.toBeNull();
   });
 });
@@ -57,26 +63,18 @@ describe("ContactDetailsBlock — smoke test", () => {
 
 describe("ContactDetailsBlock — showEmail", () => {
   it("renders the email when showEmail=true and workspace has an email", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={true} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: true, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.getByText("hello@teststudio.com")).toBeTruthy();
   });
 
   it("does NOT render the email when showEmail=false", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.queryByText("hello@teststudio.com")).toBeNull();
   });
 
   it("does NOT render the email when workspace has no email", () => {
     const ws = makeWorkspace({ contact: { email: null, phone: "+63 912 345 6789", address: null, socials: null } });
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={true} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(ws, { showEmail: true, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.queryByText(/hello@/)).toBeNull();
   });
 });
@@ -87,26 +85,18 @@ describe("ContactDetailsBlock — showEmail", () => {
 
 describe("ContactDetailsBlock — showPhone", () => {
   it("renders the phone when showPhone=true and workspace has a phone", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={true} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: true, showAddress: false, showSocials: false });
     expect(screen.getByText("+63 912 345 6789")).toBeTruthy();
   });
 
   it("does NOT render the phone when showPhone=false", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.queryByText("+63 912 345 6789")).toBeNull();
   });
 
   it("does NOT render the phone when workspace has no phone", () => {
     const ws = makeWorkspace({ contact: { email: "a@b.com", phone: null, address: null, socials: null } });
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={true} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(ws, { showEmail: false, showPhone: true, showAddress: false, showSocials: false });
     expect(screen.queryByText(/\+63/)).toBeNull();
   });
 });
@@ -117,18 +107,12 @@ describe("ContactDetailsBlock — showPhone", () => {
 
 describe("ContactDetailsBlock — showAddress", () => {
   it("renders the address when showAddress=true", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={true} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: true, showSocials: false });
     expect(screen.getByText("Taguig City, Metro Manila")).toBeTruthy();
   });
 
   it("does NOT render the address when showAddress=false", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.queryByText("Taguig City, Metro Manila")).toBeNull();
   });
 });
@@ -139,36 +123,25 @@ describe("ContactDetailsBlock — showAddress", () => {
 
 describe("ContactDetailsBlock — showSocials", () => {
   it("renders social links when showSocials=true", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={true} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
     expect(screen.getByText("Instagram")).toBeTruthy();
     expect(screen.getByText("Facebook")).toBeTruthy();
     expect(screen.getByText("Website")).toBeTruthy();
   });
 
   it("does NOT render social links when showSocials=false", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={false} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
     expect(screen.queryByText("Instagram")).toBeNull();
   });
 
   it("does NOT render the socials row when workspace has no socials", () => {
     const ws = makeWorkspace({ contact: { email: "a@b.com", phone: null, address: null, socials: null } });
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={true} />)
-    );
+    renderBlock(ws, { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
     expect(screen.queryByTestId("socials-row")).toBeNull();
   });
 
   it("skips a social link for null values (TikTok null in fixture)", () => {
-    const ws = makeWorkspace();
-    runWithRenderWorkspace(ws, () =>
-      render(<ContactDetailsBlock showEmail={false} showPhone={false} showAddress={false} showSocials={true} />)
-    );
+    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
     // tiktok is null in the fixture, so TikTok link should not appear
     expect(screen.queryByText("TikTok")).toBeNull();
   });
@@ -181,7 +154,7 @@ describe("ContactDetailsBlock — showSocials", () => {
 describe("ContactDetailsBlock — no workspace context", () => {
   it("renders an empty <dl> without crashing when no workspace context is provided", () => {
     // ContactDetailsBlock calls getRenderWorkspaceFrom(puck) — when puck is
-    // undefined AND we're outside runWithRenderWorkspace, it returns null.
+    // undefined it returns null, so the block renders an empty <dl>.
     const { container } = render(
       React.createElement(ContactDetailsBlock, contactDetailsDefaultProps)
     );
@@ -209,11 +182,7 @@ describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
       },
     };
     const rw = buildRenderWorkspace(doc);
-    runWithRenderWorkspace(rw, () => {
-      render(
-        <ContactDetailsBlock showEmail={true} showPhone={true} showAddress={true} showSocials={true} />
-      );
-    });
+    renderBlock(rw, { showEmail: true, showPhone: true, showAddress: true, showSocials: true });
     expect(screen.getByText("doc@studio.com")).toBeTruthy();
     expect(screen.getByText("+63 917 000 1111")).toBeTruthy();
     expect(screen.getByText("Makati")).toBeTruthy();
@@ -223,9 +192,7 @@ describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
   it("does not render any rows when workspace doc has no contact field", () => {
     const doc = { _id: "doc-id-2", name: "No Contact Studio" };
     const rw = buildRenderWorkspace(doc);
-    const { container } = runWithRenderWorkspace(rw, () =>
-      render(<ContactDetailsBlock showEmail={true} showPhone={true} showAddress={true} showSocials={true} />)
-    );
+    const { container } = renderBlock(rw, { showEmail: true, showPhone: true, showAddress: true, showSocials: true });
     // The <dl> renders but is empty (no child rows)
     const dl = container.querySelector("[data-block='contact-details']") as HTMLElement;
     expect(dl).not.toBeNull();

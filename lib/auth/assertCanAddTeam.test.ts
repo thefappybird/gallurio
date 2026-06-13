@@ -30,7 +30,7 @@ async function seedTeams(workspaceId: mongoose.Types.ObjectId, count: number) {
       workspaceId,
       name: `Team ${i + 1}`,
       color: TEAM_COLOR_PALETTE[i % TEAM_COLOR_PALETTE.length],
-      createdByClerkUserId: "user_seed",
+      createdByWorkosUserId: "user_seed",
     });
   }
 }
@@ -121,7 +121,7 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
         color: TEAM_COLOR_PALETTE[0],
         isDefault: false,
         memberCount: 0,
-        createdByClerkUserId: "user_test",
+        createdByWorkosUserId: "user_test",
       },
       "starter",
     );
@@ -145,7 +145,7 @@ describe("createTeamWithCapEnforcement — atomic cap guard", () => {
           color: TEAM_COLOR_PALETTE[0],
           isDefault: false,
           memberCount: 0,
-          createdByClerkUserId: "user_test",
+          createdByWorkosUserId: "user_test",
         },
         "free",
       );

@@ -22,7 +22,6 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 function makeOrgCtx(wsId: Types.ObjectId) {
   return {
     userId: "user_test",
-    clerkOrgId: `org_${wsId.toHexString()}`,
     role: "owner" as const,
     workspace: { _id: wsId, currency: "PHP", name: "Test", slug: "t" },
   };

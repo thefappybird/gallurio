@@ -11,6 +11,8 @@ import ms from "./ms.json";
 // Phases 6-9 (we do not assert translated values).
 const LOCALES = { fil, id, ms } as Record<string, typeof en>;
 const BLOCKS = ["inquiries", "pageBuilder"] as const;
+// Root-level blocks added in Phase 5 (invite/team flow).
+const ROOT_BLOCKS = ["inviteAccept"] as const;
 
 function deepKeys(value: unknown, prefix = ""): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return [];
@@ -50,5 +52,17 @@ describe("portfolio-maker locale parity", () => {
         "id",
       ]);
     });
+  }
+
+  // Root-level block parity (Phase 5 — invite/team flow).
+  for (const block of ROOT_BLOCKS) {
+    const enKeys = deepKeys((en as Record<string, unknown>)[block]);
+
+    for (const [locale, catalog] of Object.entries(LOCALES)) {
+      it(`${locale}: root.${block} matches the English key tree`, () => {
+        const localeKeys = deepKeys((catalog as Record<string, unknown>)[block]);
+        expect(localeKeys).toEqual(enKeys);
+      });
+    }
   }
 });

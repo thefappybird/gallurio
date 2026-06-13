@@ -14,7 +14,6 @@ function makeWorkspace(overrides: Partial<WorkspaceDoc> = {}): WorkspaceDoc {
     slug: "test-studio",
     name: "Test Studio",
     ownerUserId: "user_001",
-    clerkOrgId: "org_001",
     businessType: "photographer",
     country: "PH",
     currency: "PHP",

@@ -8,34 +8,65 @@ import {
 import { Workspace, User } from "@/lib/db/models";
 
 // ---------------------------------------------------------------------------
-// Mutable session stub — tests mutate this object to simulate different users.
+// Mutable auth stub — tests mutate this to simulate different users.
 // ---------------------------------------------------------------------------
-const session = {
-  userId: "user_owner" as string | null,
-  orgId: "org_test" as string | null,
-  orgRole: "org:admin" as string | undefined,
+const authUserStub: {
+  workosUserId: string | null;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+} = {
+  workosUserId: "user_owner",
+  email: "owner@test.com",
+  name: "Owner",
+  avatarUrl: null,
 };
 
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: async () => undefined,
 }));
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: async () => ({ ...session }),
+vi.mock("./session", () => ({
+  getAuthUser: async () =>
+    authUserStub.workosUserId
+      ? {
+          workosUserId: authUserStub.workosUserId,
+          email: authUserStub.email,
+          name: authUserStub.name,
+          avatarUrl: authUserStub.avatarUrl,
+        }
+      : null,
 }));
 
-// next-intl locale — fixed to "en" so localized() returns bare paths.
+// next-intl locale fixed to "en" so localized() returns bare paths.
 vi.mock("next-intl/server", () => ({
   getLocale: async () => "en",
 }));
 
-// Capture redirect calls so we can assert on them without throwing.
+// Capture redirect calls without actually throwing.
 const redirectMock = vi.fn((_url: string): never => {
   throw new Error(`REDIRECT:${_url}`);
 });
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => redirectMock(url),
 }));
+
+// ---------------------------------------------------------------------------
+// Cookie stub — default to no active-workspace cookie set.
+// ---------------------------------------------------------------------------
+const cookieStore = new Map<string, string>();
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (name: string) => {
+      const v = cookieStore.get(name);
+      return v !== undefined ? { value: v } : undefined;
+    },
+    set: (name: string, value: string) => cookieStore.set(name, value),
+    delete: (name: string) => cookieStore.delete(name),
+  }),
+}));
+
+process.env.ACTIVE_WORKSPACE_COOKIE_SECRET = "test-secret-requireorg";
 
 // ---------------------------------------------------------------------------
 // In-memory Mongo lifecycle
@@ -48,124 +79,104 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  cookieStore.clear();
   redirectMock.mockClear();
-  // Reset to a default owner session.
-  session.userId = "user_owner";
-  session.orgId = "org_test";
-  session.orgRole = "org:admin";
+  // Reset to default owner stub.
+  authUserStub.workosUserId = "user_owner";
+  authUserStub.email = "owner@test.com";
+  authUserStub.name = "Owner";
+  authUserStub.avatarUrl = null;
 });
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-async function makeWorkspace(): Promise<Types.ObjectId> {
-  const ws = await Workspace.create({
-    clerkOrgId: "org_test",
-    ownerUserId: "user_owner",
+async function makeWorkspaceWithOwner(opts?: {
+  ownerWorkosUserId?: string;
+  memberWorkosUserId?: string;
+  memberRole?: "owner" | "staff";
+  onboardingCompletedAt?: Date | null;
+}): Promise<{ wsId: Types.ObjectId }> {
+  const ownerWorkosUserId = opts?.ownerWorkosUserId ?? "user_owner";
+  const wsId = new Types.ObjectId();
+
+  await Workspace.create({
+    _id: wsId,
+    ownerUserId: ownerWorkosUserId,
     name: "Test Workspace",
-    slug: "test-workspace",
+    slug: `test-ws-${wsId.toString()}`,
     plan: "free",
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
     businessType: "photographer",
   });
-  return ws._id;
+
+  const userWorkosUserId = opts?.memberWorkosUserId ?? ownerWorkosUserId;
+  await User.create({
+    workosUserId: userWorkosUserId,
+    email: `${userWorkosUserId}@test.com`,
+    memberships: [{ workspaceId: wsId, role: opts?.memberRole ?? "owner" }],
+    onboardingStep: "done",
+    onboardingCompletedAt:
+      opts?.onboardingCompletedAt !== undefined
+        ? opts.onboardingCompletedAt
+        : new Date(),
+  });
+
+  return { wsId };
 }
 
 async function load() {
-  // Dynamic import so vi.mock() hoisting has settled before the module runs.
+  // Dynamic import so vi.mock() hoisting has settled.
   return import("./requireOrg");
 }
 
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-describe("requireOrg — member onboarding gate fix", () => {
-  it("staff member with onboardingCompletedAt=null is NOT redirected and gets role='staff'", async () => {
-    await makeWorkspace();
-    // Member user — no onboardingCompletedAt set.
+describe("requireOrg — auth and workspace resolution", () => {
+  it("unauthenticated user redirects to /sign-in", async () => {
+    authUserStub.workosUserId = null;
+    const { requireOrg } = await load();
+
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/sign-in");
+    expect(redirectMock).toHaveBeenCalledWith("/sign-in");
+  });
+
+  it("user with no memberships redirects to /onboarding", async () => {
     await User.create({
-      clerkUserId: "user_member",
-      email: "member@test.com",
-      onboardingStep: "done",
-      onboardingCompletedAt: null,
+      workosUserId: "user_owner",
+      email: "owner@test.com",
       memberships: [],
     });
+    const { requireOrg } = await load();
 
-    session.userId = "user_member";
-    session.orgRole = "org:member"; // non-admin
+    await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
+  });
 
+  it("owner with completed onboarding returns role=owner and workspaceId", async () => {
+    const { wsId } = await makeWorkspaceWithOwner();
     const { requireOrg } = await load();
     const ctx = await requireOrg();
 
-    expect(redirectMock).not.toHaveBeenCalled();
-    expect(ctx.role).toBe("staff");
-    expect(ctx.userId).toBe("user_member");
-    expect(ctx.clerkOrgId).toBe("org_test");
+    expect(ctx.role).toBe("owner");
+    expect(ctx.userId).toBe("user_owner");
+    expect(ctx.workspaceId).toBe(wsId.toString());
+    // clerkOrgId must NOT be present in the new shape.
+    expect(ctx).not.toHaveProperty("clerkOrgId");
   });
 
   it("owner with onboardingCompletedAt=null IS redirected to /onboarding", async () => {
-    await makeWorkspace();
-    await User.create({
-      clerkUserId: "user_owner",
-      email: "owner@test.com",
-      onboardingStep: "business",
-      onboardingCompletedAt: null,
-      memberships: [],
-    });
-
-    // session is already org:admin + userId user_owner (set in beforeEach)
+    await makeWorkspaceWithOwner({ onboardingCompletedAt: null });
     const { requireOrg } = await load();
 
     await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
     expect(redirectMock).toHaveBeenCalledWith("/onboarding");
   });
 
-  it("owner with completed onboarding returns role='owner'", async () => {
-    await makeWorkspace();
-    await User.create({
-      clerkUserId: "user_owner",
-      email: "owner@test.com",
-      onboardingStep: "done",
-      onboardingCompletedAt: new Date(),
-      memberships: [],
-    });
-
-    const { requireOrg } = await load();
-    const ctx = await requireOrg();
-
-    expect(redirectMock).not.toHaveBeenCalled();
-    expect(ctx.role).toBe("owner");
-    expect(ctx.userId).toBe("user_owner");
-  });
-
-  it("missing workspace redirects to /onboarding regardless of role", async () => {
-    // No workspace created — workspace lookup will return null.
-    await User.create({
-      clerkUserId: "user_owner",
-      email: "owner@test.com",
-      onboardingStep: "done",
-      onboardingCompletedAt: new Date(),
-      memberships: [],
-    });
-
-    const { requireOrg } = await load();
-
-    await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
-    expect(redirectMock).toHaveBeenCalledWith("/onboarding");
-  });
-
-  it("allowDuringOnboarding=true lets an owner through even without onboardingCompletedAt", async () => {
-    await makeWorkspace();
-    await User.create({
-      clerkUserId: "user_owner",
-      email: "owner@test.com",
-      onboardingStep: "business",
-      onboardingCompletedAt: null,
-      memberships: [],
-    });
-
+  it("allowDuringOnboarding=true lets owner through without onboardingCompletedAt", async () => {
+    await makeWorkspaceWithOwner({ onboardingCompletedAt: null });
     const { requireOrg } = await load();
     const ctx = await requireOrg({ allowDuringOnboarding: true });
 
@@ -173,20 +184,43 @@ describe("requireOrg — member onboarding gate fix", () => {
     expect(ctx.role).toBe("owner");
   });
 
-  it("staff member whose userId matches workspace.ownerUserId is still treated as owner", async () => {
-    // Edge-case: Clerk reports org:member but the DB ownerUserId matches.
-    // The DB truth wins (ownerUserId check in isOwner).
-    await makeWorkspace(); // ownerUserId: "user_owner"
+  it("staff member with membership.role=staff is NOT redirected and gets role=staff", async () => {
+    authUserStub.workosUserId = "user_staff";
+    const { wsId } = await makeWorkspaceWithOwner({
+      memberWorkosUserId: "user_staff",
+      memberRole: "staff",
+      onboardingCompletedAt: null, // staff never complete onboarding
+    });
+    const { requireOrg } = await load();
+    const ctx = await requireOrg();
+
+    expect(redirectMock).not.toHaveBeenCalled();
+    expect(ctx.role).toBe("staff");
+    expect(ctx.userId).toBe("user_staff");
+    expect(ctx.workspaceId).toBe(wsId.toString());
+  });
+
+  it("ownerUserId match overrides membership.role — DB truth wins", async () => {
+    // User has membership.role=staff BUT workspace.ownerUserId matches workosUserId.
+    const wsId = new Types.ObjectId();
+    await Workspace.create({
+      _id: wsId,
+      ownerUserId: "user_owner",
+      name: "Test",
+      slug: `test-ownerid-${wsId.toString()}`,
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
     await User.create({
-      clerkUserId: "user_owner",
+      workosUserId: "user_owner",
       email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "staff" }], // wrong role in membership
       onboardingStep: "done",
       onboardingCompletedAt: new Date(),
-      memberships: [],
     });
-
-    // Simulate Clerk reporting the wrong role (degraded session, etc.).
-    session.orgRole = "org:member";
 
     const { requireOrg } = await load();
     const ctx = await requireOrg();
@@ -194,22 +228,95 @@ describe("requireOrg — member onboarding gate fix", () => {
     expect(ctx.role).toBe("owner");
   });
 
-  it("unauthenticated user (no userId) redirects to /sign-in", async () => {
-    session.userId = null;
-    session.orgId = null;
-
-    const { requireOrg } = await load();
-
-    await expect(requireOrg()).rejects.toThrow("REDIRECT:/sign-in");
-    expect(redirectMock).toHaveBeenCalledWith("/sign-in");
-  });
-
-  it("authenticated user with no active org redirects to /onboarding", async () => {
-    session.orgId = null;
+  it("missing workspace (deleted) redirects to /onboarding", async () => {
+    // User has a membership pointing at a non-existent workspace.
+    const wsId = new Types.ObjectId();
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: wsId, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
 
     const { requireOrg } = await load();
 
     await expect(requireOrg()).rejects.toThrow("REDIRECT:/onboarding");
     expect(redirectMock).toHaveBeenCalledWith("/onboarding");
+  });
+});
+
+describe("requireOrg — tenant isolation", () => {
+  it("cookie pointing at a workspace the user is NOT a member of is rejected", async () => {
+    // Create two workspaces; user is a member of ws1 only.
+    const ws1 = new Types.ObjectId();
+    const ws2 = new Types.ObjectId();
+
+    await Workspace.create({
+      _id: ws1,
+      ownerUserId: "user_owner",
+      name: "WS1",
+      slug: `ws1-${ws1.toString()}`,
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+    await Workspace.create({
+      _id: ws2,
+      ownerUserId: "other_owner",
+      name: "WS2",
+      slug: `ws2-${ws2.toString()}`,
+      plan: "free",
+      country: "PH",
+      currency: "PHP",
+      timezone: "Asia/Manila",
+      businessType: "photographer",
+    });
+
+    await User.create({
+      workosUserId: "user_owner",
+      email: "owner@test.com",
+      memberships: [{ workspaceId: ws1, role: "owner" }],
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+    });
+
+    // Forge a correctly-signed cookie for ws2 (user is not a member of ws2).
+    const { createHmac } = await import("crypto");
+    const secret = process.env.ACTIVE_WORKSPACE_COOKIE_SECRET!;
+    const mac = createHmac("sha256", secret).update(String(ws2)).digest("hex");
+    cookieStore.set("gw_active_ws", `${String(ws2)}.${mac}`);
+
+    const { requireOrg } = await load();
+    const ctx = await requireOrg();
+
+    // Must resolve to ws1 (the legitimate membership), never ws2.
+    expect(ctx.workspaceId).toBe(ws1.toString());
+    expect(ctx.workspaceId).not.toBe(ws2.toString());
+  });
+});
+
+describe("requireRole", () => {
+  it("returns context when user is owner", async () => {
+    await makeWorkspaceWithOwner();
+    const { requireRole } = await load();
+    const ctx = await requireRole("owner");
+
+    expect(ctx.role).toBe("owner");
+  });
+
+  it("throws Forbidden for staff members", async () => {
+    authUserStub.workosUserId = "user_staff";
+    await makeWorkspaceWithOwner({
+      memberWorkosUserId: "user_staff",
+      memberRole: "staff",
+      onboardingCompletedAt: null,
+    });
+
+    const { requireRole } = await load();
+
+    await expect(requireRole("owner")).rejects.toThrow("Forbidden");
   });
 });

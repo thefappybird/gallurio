@@ -1,106 +1,197 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import type { NextRequest } from "next/server";
+import { authkitMiddleware } from "@workos-inc/authkit-nextjs";
+import type { NextRequest, NextMiddleware } from "next/server";
 import { NextResponse } from "next/server";
+
+// NextMiddlewareResult is the resolved return type of a NextMiddleware function.
+type NextMiddlewareResult = Awaited<ReturnType<NextMiddleware>>;
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/lib/i18n/routing";
-import {
-  LOCALE_PREFIX_RE,
-  isMemberBlocked,
-  landingPathForRole,
-  stripLocale,
-} from "@/lib/auth/memberAccess";
+import { LOCALE_PREFIX_RE, stripLocale } from "@/lib/auth/memberAccess";
+
+// ---------------------------------------------------------------------------
+// NOTE: Role-based redirects (non-owner to /bookings, root to role landing)
+// have been REMOVED from middleware. Middleware cannot query Mongo, and
+// WorkOS session claims do not carry workspace role. These redirects now live
+// in:
+//   - requireOrg() / ownerContext() for server-action / page access control
+//   - app/[locale]/(app)/layout.tsx for the root authenticated landing redirect
+// ---------------------------------------------------------------------------
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-const isPublicBase = createRouteMatcher([
+// Routes that never require authentication.
+// Patterns use the same path-to-regexp-style that authkitMiddleware accepts.
+const UNAUTHENTICATED_PATHS = [
+  // Marketing / public
   "/",
   "/pricing",
   "/about",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+  // Auth UI (our first-party forms)
+  "/sign-in",
+  "/sign-in/(.*)",
+  "/sign-up",
+  "/sign-up/(.*)",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  // WorkOS OAuth code-exchange callback — must be public
+  "/api/auth/callback",
+  // Invite acceptance landing (auth resolved inside the page/action)
+  "/invite",
+  "/invite/(.*)",
+  "/api/invites/accept",
+  // Webhooks — verified by HMAC inside the handler
   "/api/webhooks/(.*)",
+  // Public inquiry submission (portfolio contact form)
   "/api/inquiries(.*)",
+  // Public portfolio pages live outside the [locale] segment
   "/w/(.*)",
-]);
+];
+
+// ---------------------------------------------------------------------------
+// Fast public-route matcher used for our own branching logic below.
+// authkitMiddleware also receives UNAUTHENTICATED_PATHS so it won't gate
+// these routes; we need the matcher separately to decide whether to run intl.
+// ---------------------------------------------------------------------------
+function buildPublicMatcher(paths: string[]): (pathname: string) => boolean {
+  const exact = new Set<string>();
+  const patterns: RegExp[] = [];
+
+  for (const p of paths) {
+    if (p.includes("(.*)") || p.includes("(.*")) {
+      const re = new RegExp(`^${p.replace(/\(\.\*\)/g, ".*")}$`);
+      patterns.push(re);
+    } else {
+      exact.add(p);
+    }
+  }
+
+  return (pathname: string): boolean => {
+    if (exact.has(pathname)) return true;
+    return patterns.some((re) => re.test(pathname));
+  };
+}
+
+const matchesPublicBase = buildPublicMatcher(UNAUTHENTICATED_PATHS);
 
 function isPublicRoute(req: NextRequest): boolean {
   const original = req.nextUrl.pathname;
-  if (isPublicBase(req)) return true;
-  const stripped = original.replace(LOCALE_PREFIX_RE, "") || "/";
+  if (matchesPublicBase(original)) return true;
+  // Also check locale-stripped version (handles /fil/sign-in etc.)
+  const stripped = stripLocale(original);
   if (stripped === original) return false;
-  const url = req.nextUrl.clone();
-  url.pathname = stripped;
-  return isPublicBase({ nextUrl: url } as NextRequest);
+  return matchesPublicBase(stripped);
 }
 
-function redirectToBookings(req: NextRequest): NextResponse {
-  const url = req.nextUrl.clone();
-  const localeMatch = req.nextUrl.pathname.match(LOCALE_PREFIX_RE);
-  url.pathname = `${localeMatch ? localeMatch[0] : ""}/bookings`;
-  url.search = "";
-  return NextResponse.redirect(url);
-}
-
-export default clerkMiddleware(async (auth, req) => {
-  // API routes do not participate in locale routing — return early without
-  // running the intl middleware so the route handler resolves at its bare path.
-  if (req.nextUrl.pathname.startsWith("/api")) {
-    if (!isPublicRoute(req)) {
-      await auth.protect();
-    }
-    return;
-  }
-
-  // The public portfolio at /w/[orgSlug] lives OUTSIDE the [locale] segment
-  // (app/(public)/w/...). It must NOT run the intl middleware: with
-  // localePrefix "as-needed", next-intl rewrites the unprefixed path toward
-  // /[locale]/w/... — a route that does not exist — which 404s the live page.
-  // The route is already public (no auth.protect) and picks its locale from the
-  // workspace country, not the URL, so skipping intl here is correct.
-  if (req.nextUrl.pathname === "/w" || req.nextUrl.pathname.startsWith("/w/")) {
-    return;
-  }
-
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-
-    // Non-owner members can only see /bookings + their Clerk profile area.
-    // The DB-aware ownerContext() still runs in server actions; this is a
-    // cheap UX gate to keep members out of UI they shouldn't see.
-    const session = await auth();
-    const orgRole = session.sessionClaims?.org_role ?? session.orgRole;
-    if (
-      session.userId &&
-      session.orgId &&
-      orgRole &&
-      orgRole !== "org:admin" &&
-      isMemberBlocked(req.nextUrl.pathname)
-    ) {
-      return redirectToBookings(req);
-    }
-  }
-
-  // Redirect authenticated users away from the marketing root.
-  if (stripLocale(req.nextUrl.pathname) === "/") {
-    const session = await auth();
-    if (session.userId && session.orgId) {
-      const url = req.nextUrl.clone();
-      const localeMatch = req.nextUrl.pathname.match(LOCALE_PREFIX_RE);
-      const orgRole = session.sessionClaims?.org_role ?? session.orgRole;
-      const dest = landingPathForRole(orgRole);
-      url.pathname = `${localeMatch ? localeMatch[0] : ""}${dest}`;
-      url.search = "";
-      return NextResponse.redirect(url);
-    }
-  }
-
-  return intlMiddleware(req);
+// ---------------------------------------------------------------------------
+// authkitMiddleware composition approach
+//
+// authkitMiddleware(options) returns a NextMiddleware directly (verified
+// against installed @workos-inc/authkit-nextjs v4.x types). It does NOT
+// accept a callback function. We therefore run it as a sub-middleware and
+// compose intl ourselves:
+//   - For API routes: run authkit only (no intl).
+//   - For /w/ routes: skip both (portfolio uses workspace country locale).
+//   - For protected pages: run authkit, localize any /sign-in redirect, then
+//     run intl and merge session-refresh headers from authkit.
+//   - For public pages: skip authkit, run intl only.
+// ---------------------------------------------------------------------------
+const authMiddleware: NextMiddleware = authkitMiddleware({
+  // Set AUTHKIT_DEBUG=true to log the session branch taken per request
+  // ("No session found from cookie" / "Session invalid" / "Failed to refresh.
+  // Deleting cookie." / "Session successfully refreshed") to the server console.
+  debug: process.env.AUTHKIT_DEBUG === "true",
+  middlewareAuth: {
+    enabled: true,
+    unauthenticatedPaths: UNAUTHENTICATED_PATHS,
+  },
 });
+
+export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
+  const { pathname } = req.nextUrl;
+
+  // -------------------------------------------------------------------------
+  // 1. Workflow DevKit internal endpoints — skip everything.
+  // -------------------------------------------------------------------------
+  if (pathname.startsWith("/.well-known/workflow")) {
+    return NextResponse.next();
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. API routes — auth-gate non-public ones, no intl middleware.
+  // -------------------------------------------------------------------------
+  if (pathname.startsWith("/api")) {
+    if (isPublicRoute(req)) return NextResponse.next();
+    return authMiddleware(req, {} as never) as Promise<NextMiddlewareResult>;
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. Public portfolio routes — no auth, no intl.
+  //    /w/[orgSlug] lives outside the [locale] segment. Running next-intl here
+  //    would rewrite /w/... to /[locale]/w/... (a non-existent route) and 404.
+  // -------------------------------------------------------------------------
+  if (pathname === "/w" || pathname.startsWith("/w/")) {
+    return NextResponse.next();
+  }
+
+  // -------------------------------------------------------------------------
+  // 4. Public routes — skip auth check, run intl for locale routing.
+  // -------------------------------------------------------------------------
+  if (isPublicRoute(req)) {
+    return intlMiddleware(req);
+  }
+
+  // -------------------------------------------------------------------------
+  // 5. Protected routes — run authkit for session refresh / unauthn redirect,
+  //    then run intl so next-intl locale routing works on authenticated pages.
+  //
+  //    authkitMiddleware may return a redirect (to /sign-in) or a response
+  //    with session-refresh headers set. Redirects to /sign-in are localized
+  //    so they land on /{locale}/sign-in. Non-redirect responses get intl
+  //    applied on top with authkit headers merged in.
+  // -------------------------------------------------------------------------
+  const authResponse = await (authMiddleware(req, {} as never) as Promise<Response | NextMiddlewareResult>);
+
+  if (authResponse && (authResponse as Response).status >= 300 && (authResponse as Response).status < 400) {
+    const location = (authResponse as Response).headers.get("location");
+    if (location) {
+      try {
+        const locUrl = new URL(location, req.nextUrl.origin);
+        if (locUrl.pathname === "/sign-in") {
+          // Localize the sign-in redirect based on the incoming request locale.
+          const localeMatch = pathname.match(LOCALE_PREFIX_RE);
+          const prefix = localeMatch ? localeMatch[0] : "";
+          const redirectUrl = req.nextUrl.clone();
+          redirectUrl.pathname = `${prefix}/sign-in`;
+          redirectUrl.search = "";
+          return NextResponse.redirect(redirectUrl);
+        }
+      } catch {
+        // Malformed location header — pass through as-is.
+      }
+    }
+    return authResponse as NextMiddlewareResult;
+  }
+
+  // Authenticated — run intl middleware for locale routing.
+  const intlResponse = intlMiddleware(req);
+
+  // Merge any session-refresh headers from authkit into the intl response.
+  if (authResponse) {
+    (authResponse as Response).headers.forEach((value, key) => {
+      intlResponse.headers.set(key, value);
+    });
+  }
+
+  return intlResponse;
+}
+
+export default proxy;
 
 export const config = {
   matcher: [
     // Exclude the Workflow DevKit's internal endpoints (.well-known/workflow/*)
-    // so neither Clerk nor next-intl middleware intercepts workflow resumption
+    // so neither authkit nor next-intl middleware intercepts workflow resumption
     // traffic — Next.js 16 + proxy.ts makes this easy to miss.
     "/((?!_next|\\.well-known/workflow|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",

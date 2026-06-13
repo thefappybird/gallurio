@@ -7,11 +7,11 @@ import {
   Team,
   TeamMembership,
   User,
-  PendingTeamAssignment,
+  Invitation,
   type TeamDoc,
   type TeamMembershipDoc,
   type UserDoc,
-  type PendingTeamAssignmentDoc,
+  type InvitationDoc,
 } from "@/lib/db/models";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { TeamsPageClient } from "./_components/teams-page-client";
@@ -61,16 +61,16 @@ export default async function TeamsPage({
     workspace.plan as "free" | "starter" | "pro",
   );
 
-  const [memberUsers, memberships, pendingInviteRows] = await Promise.all([
+  const [memberUsers, memberships, rawPendingInvites] = await Promise.all([
     User.find({ "memberships.workspaceId": workspace._id })
-      .select({ clerkUserId: 1, email: 1, name: 1, avatarUrl: 1 })
+      .select({ workosUserId: 1, email: 1, name: 1, avatarUrl: 1 })
       .lean<UserDoc[]>(),
     TeamMembership.find({ workspaceId: workspace._id })
-      .select({ clerkUserId: 1, teamId: 1, role: 1 })
+      .select({ workosUserId: 1, teamId: 1, role: 1 })
       .lean<TeamMembershipDoc[]>(),
-    PendingTeamAssignment.find({ workspaceId: workspace._id })
+    Invitation.find({ workspaceId: workspace._id, status: "pending" })
       .sort({ createdAt: -1 })
-      .lean<PendingTeamAssignmentDoc[]>(),
+      .lean<InvitationDoc[]>(),
   ]);
 
   const membershipsByUser = new Map<
@@ -78,27 +78,30 @@ export default async function TeamsPage({
     { teamId: string; role: "member" | "lead" }[]
   >();
   for (const m of memberships) {
-    const list = membershipsByUser.get(m.clerkUserId) ?? [];
+    const uid = m.workosUserId;
+    const list = membershipsByUser.get(uid) ?? [];
     list.push({
       teamId: String(m.teamId),
       role: (m.role ?? "member") as "member" | "lead",
     });
-    membershipsByUser.set(m.clerkUserId, list);
+    membershipsByUser.set(uid, list);
   }
 
   const members: MemberSummary[] = memberUsers.map((u) => ({
-    clerkUserId: u.clerkUserId,
+    workosUserId: u.workosUserId,
     email: u.email,
     name: u.name ?? "",
     avatarUrl: u.avatarUrl ?? null,
-    teams: membershipsByUser.get(u.clerkUserId) ?? [],
+    teams: membershipsByUser.get(u.workosUserId) ?? [],
   }));
 
-  const pendingInvites: PendingInviteRow[] = pendingInviteRows.map((p) => ({
+  const pendingInvites: PendingInviteRow[] = rawPendingInvites.map((p) => ({
+    invitationId: String(p._id),
     email: p.email,
     teamIds: (p.teamIds ?? []).map((id) => String(id)),
     leadOnTeamIds: (p.leadOnTeamIds ?? []).map((id) => String(id)),
-    invitedAt: (p as { createdAt?: Date }).createdAt?.toISOString() ?? "",
+    invitedAt: (p as unknown as { createdAt?: Date }).createdAt?.toISOString() ?? "",
+    expiresAt: p.expiresAt instanceof Date ? p.expiresAt.toISOString() : String(p.expiresAt),
   }));
 
   return (
@@ -111,7 +114,7 @@ export default async function TeamsPage({
         maxMembersPerTeam={maxMembersPerTeam}
         members={members}
         pendingInvites={pendingInvites}
-        ownerClerkUserId={workspace.ownerUserId}
+        ownerWorkosUserId={workspace.ownerUserId}
       />
     </div>
   );

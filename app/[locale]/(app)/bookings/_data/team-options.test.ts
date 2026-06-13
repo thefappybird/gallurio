@@ -30,7 +30,7 @@ function makeTeam(
     isDefault: opts.isDefault ?? false,
     isActive: opts.isActive ?? true,
     memberCount: 0,
-    createdByClerkUserId: "user_owner",
+    createdByWorkosUserId: "user_owner",
   });
 }
 
@@ -71,8 +71,8 @@ describe("getBookingTeamOptions — non-owner (staff)", () => {
     await makeTeam(ws, { name: "Not Mine" }); // member is NOT on this one
 
     await TeamMembership.create([
-      { workspaceId: ws, teamId: onLead._id, clerkUserId: userId, role: "lead" },
-      { workspaceId: ws, teamId: onMember._id, clerkUserId: userId, role: "member" },
+      { workspaceId: ws, teamId: onLead._id, workosUserId: userId, role: "lead" },
+      { workspaceId: ws, teamId: onMember._id, workosUserId: userId, role: "member" },
     ]);
 
     const opts = await getBookingTeamOptions({ role: "staff", userId, workspace: { _id: ws } });
@@ -89,7 +89,7 @@ describe("getBookingTeamOptions — non-owner (staff)", () => {
     await TeamMembership.create({
       workspaceId: ws,
       teamId: dead._id,
-      clerkUserId: userId,
+      workosUserId: userId,
       role: "lead",
     });
 

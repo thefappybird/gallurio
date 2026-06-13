@@ -25,7 +25,6 @@ vi.mock("@/lib/db/mongoose", () => ({
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
-    clerkOrgId: "org_test",
     role: auth.role,
     workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", timezone: "UTC" },
   }),
@@ -54,7 +53,7 @@ beforeEach(async () => {
     isDefault: true,
     isActive: true,
     memberCount: 0,
-    createdByClerkUserId: userId,
+    createdByWorkosUserId: userId,
   });
 });
 

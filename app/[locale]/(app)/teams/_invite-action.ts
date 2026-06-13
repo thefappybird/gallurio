@@ -1,8 +1,8 @@
 "use server";
 
+import crypto from "crypto";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
-import { clerkClient } from "@clerk/nextjs/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import {
   assertCanAddTeamMember,
@@ -11,8 +11,8 @@ import {
   TeamNotFoundError,
 } from "@/lib/auth/assertCanAddTeamMember";
 import { Team } from "@/lib/db/models/team";
-import { PendingTeamAssignment } from "@/lib/db/models/pendingTeamAssignment";
-import { claimAndReleasePendingInvite } from "@/lib/db/jobs/release-pending-invite-seats";
+import { Invitation } from "@/lib/db/models/Invitation";
+import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
 import {
   inviteMemberSchema,
   revokeInviteSchema,
@@ -33,77 +33,20 @@ function toObjectId(id: string): mongoose.Types.ObjectId | null {
   }
 }
 
-// Clerk's SDK throws a ClerkAPIResponseError whose top-level `.message` is the
-// generic HTTP reason ("Bad Request"); the actionable detail lives in `.errors[]`.
-function clerkErrorDetail(err: unknown): { code: string; message: string } {
-  const e = err as {
-    message?: string;
-    errors?: Array<{ code?: string; message?: string; longMessage?: string }>;
-  };
-  const d = e?.errors?.[0];
-  return {
-    code: d?.code ?? "",
-    message: d?.longMessage ?? d?.message ?? e?.message ?? "Failed to send invite",
-  };
+function sha256Hex(raw: string): string {
+  return crypto.createHash("sha256").update(raw, "utf8").digest("hex");
 }
 
-function isDuplicateInviteError(code: string, message: string): boolean {
-  return (
-    code === "duplicate_record" ||
-    /already (a )?member|already.*invit|duplicate|pending invitation/i.test(message)
-  );
+function generateInviteToken(): { raw: string; hash: string } {
+  const raw = crypto.randomBytes(32).toString("base64url");
+  return { raw, hash: sha256Hex(raw) };
 }
 
-// Create a Clerk org invitation. If Clerk reports a stale/duplicate PENDING
-// invite for this email (e.g. our PendingTeamAssignment row expired via TTL but
-// Clerk's invitation still lingers — which otherwise blocks every re-invite),
-// revoke that stale invite and retry once. A genuine "already a member" still
-// throws (no pending invite to clear) and surfaces as ALREADY_INVITED_OR_MEMBER.
-async function sendOrgInvite(
-  clerk: Awaited<ReturnType<typeof clerkClient>>,
-  organizationId: string,
-  email: string,
-  inviterUserId: string,
-): Promise<string> {
-  try {
-    const inv = await clerk.organizations.createOrganizationInvitation({
-      organizationId,
-      emailAddress: email,
-      role: "org:member",
-      inviterUserId,
-    });
-    return inv.id;
-  } catch (err) {
-    const { code, message } = clerkErrorDetail(err);
-    if (!isDuplicateInviteError(code, message)) throw err;
-
-    const list = await clerk.organizations.getOrganizationInvitationList({
-      organizationId,
-      status: ["pending"],
-      limit: 100,
-    });
-    const stale = list.data.find(
-      (i) => i.emailAddress?.toLowerCase() === email.toLowerCase(),
-    );
-    if (!stale) throw err; // already a member — nothing to revoke.
-
-    console.warn("[inviteMemberAction] revoking stale pending Clerk invite + retrying", {
-      email,
-      invitationId: stale.id,
-    });
-    await clerk.organizations.revokeOrganizationInvitation({
-      organizationId,
-      invitationId: stale.id,
-      requestingUserId: inviterUserId,
-    });
-    const retry = await clerk.organizations.createOrganizationInvitation({
-      organizationId,
-      emailAddress: email,
-      role: "org:member",
-      inviterUserId,
-    });
-    return retry.id;
-  }
+async function releaseInvitationSeats(
+  teamIds: mongoose.Types.ObjectId[],
+  workspaceId: mongoose.Types.ObjectId,
+): Promise<void> {
+  await Promise.all(teamIds.map((id) => releaseTeamSeat(id, workspaceId)));
 }
 
 export async function inviteMemberAction(
@@ -133,50 +76,38 @@ export async function inviteMemberAction(
   })
     .select({ _id: 1, name: 1 })
     .lean();
+
   if (teams.length !== validIds.length) {
     const found = new Set(teams.map((t) => String(t._id)));
     const missing = teamIds.filter((id) => !found.has(id));
     return { error: "TEAM_NOT_FOUND", unknownTeamIds: missing };
   }
 
-  // Re-invite over an existing pending invite: release the prior reservation
-  // before reserving new seats. Without this, the upsert below would silently
-  // overwrite `teamIds`, orphaning the old seats — they'd stay reserved on
-  // Team.memberCount forever (no row to revoke or expire through). Also
-  // revoke the prior Clerk invite so the user can't accept an invite for
-  // teams they're no longer being added to.
-  const existingPending = await PendingTeamAssignment.findOne({
+  // Re-invite over an existing pending invite: revoke first, release seats, then
+  // proceed to create a fresh invite. Idempotent — if already revoked, skip.
+  const existingPending = await Invitation.findOne({
     workspaceId: ctx.workspace._id,
     email,
+    status: "pending",
   })
-    .select({ _id: 1, clerkInvitationId: 1 })
+    .select({ _id: 1, teamIds: 1 })
     .lean();
+
   if (existingPending) {
-    if (existingPending.clerkInvitationId) {
-      try {
-        const clerk = await clerkClient();
-        await clerk.organizations.revokeOrganizationInvitation({
-          organizationId: ctx.clerkOrgId,
-          invitationId: existingPending.clerkInvitationId,
-          requestingUserId: ctx.userId,
-        });
-      } catch (err) {
-        console.warn(
-          "[inviteMemberAction] failed to revoke prior Clerk invitation",
-          err,
-        );
-      }
-    }
-    const outcome = await claimAndReleasePendingInvite(existingPending._id);
-    if (outcome.status === "claimed-for-accept") {
-      // The user is currently accepting the prior invite via the webhook —
-      // refuse this new invite so we don't double-allocate seats.
-      return { error: "INVITE_IN_PROGRESS" };
-    }
+    await Invitation.updateOne(
+      { _id: existingPending._id, workspaceId: ctx.workspace._id },
+      { $set: { status: "revoked", revokedAt: new Date() } },
+    );
+    await releaseInvitationSeats(
+      (existingPending.teamIds ?? []) as mongoose.Types.ObjectId[],
+      ctx.workspace._id,
+    );
   }
 
+  // Reserve seats for all requested teams. Roll back on partial failure.
   const reserved: mongoose.Types.ObjectId[] = [];
   const fullTeamNames: string[] = [];
+
   for (const teamId of validIds) {
     try {
       await assertCanAddTeamMember(teamId, ctx.workspace.plan, ctx.workspace._id);
@@ -188,80 +119,73 @@ export async function inviteMemberAction(
       } else if (err instanceof TeamNotFoundError) {
         // Race: deleted between fetch and assert.
       } else {
-        for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
+        await releaseInvitationSeats(reserved, ctx.workspace._id);
         throw err;
       }
     }
   }
 
   if (fullTeamNames.length > 0) {
-    for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
+    await releaseInvitationSeats(reserved, ctx.workspace._id);
     return { error: "TEAM_SEAT_CAP_EXCEEDED", fullTeamNames };
   }
 
-  // Order matters: persist the pending row BEFORE issuing the Clerk invite.
-  // If we sent the invite first and the pending write failed, the user could
-  // accept their invite and join the org with no PendingTeamAssignment for
-  // the webhook to drain — they'd be a member with zero TeamMembership rows.
-  // Writing the pending row first means a downstream Clerk failure can be
-  // rolled back cleanly: delete the pending row + release seats.
-  let pendingId: mongoose.Types.ObjectId;
+  const leadObjectIds = leadOnTeamIds
+    .map(toObjectId)
+    .filter((id): id is mongoose.Types.ObjectId => id !== null);
+
+  const { raw, hash } = generateInviteToken();
+
+  let invitationId: mongoose.Types.ObjectId;
   try {
-    const pending = await PendingTeamAssignment.findOneAndUpdate(
-      { workspaceId: ctx.workspace._id, email },
-      {
-        $set: {
-          workspaceId: ctx.workspace._id,
-          email,
-          teamIds: validIds,
-          leadOnTeamIds: leadOnTeamIds
-            .map(toObjectId)
-            .filter((id): id is mongoose.Types.ObjectId => id !== null),
-          clerkInvitationId: null,
-          invitedByClerkUserId: ctx.userId,
-          createdAt: new Date(),
-          claimedFor: null,
-          claimedAt: null,
-        },
-      },
-      { upsert: true, new: true },
-    )
-      .select({ _id: 1 })
-      .lean();
-    if (!pending) throw new Error("Failed to persist pending assignment");
-    pendingId = pending._id;
+    const invitation = await Invitation.create({
+      workspaceId: ctx.workspace._id,
+      email,
+      role: "staff",
+      teamIds: validIds,
+      leadOnTeamIds: leadObjectIds,
+      tokenHash: hash,
+      invitedByWorkosUserId: ctx.userId,
+      status: "pending",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    invitationId = invitation._id;
   } catch (err) {
-    for (const id of reserved) await releaseTeamSeat(id, ctx.workspace._id);
+    await releaseInvitationSeats(reserved, ctx.workspace._id);
     throw err;
   }
 
-  let invitationId: string | null = null;
-  try {
-    const clerk = await clerkClient();
-    invitationId = await sendOrgInvite(clerk, ctx.clerkOrgId, email, ctx.userId);
-  } catch (err) {
-    // Clerk rejected the invite. Release reserved seats and delete the
-    // pending row through the idempotent helper so seat accounting stays
-    // honest even under a concurrent revoke/cron race.
-    await claimAndReleasePendingInvite(pendingId);
-    const { code, message } = clerkErrorDetail(err);
-    // The top-level Clerk message is often a bare "Bad Request" — log the real
-    // code + detail so failures are diagnosable (previously swallowed).
-    console.error("[inviteMemberAction] Clerk invitation failed", {
-      email,
-      code,
-      message,
-    });
-    if (isDuplicateInviteError(code, message)) {
-      return { error: "ALREADY_INVITED_OR_MEMBER" };
-    }
-    return { error: message };
-  }
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const acceptUrl = `${appUrl}/invite/accept?token=${encodeURIComponent(raw)}`;
 
-  await PendingTeamAssignment.updateOne(
-    { _id: pendingId },
-    { $set: { clerkInvitationId: invitationId } },
-  );
+  // Determine locale from workspace. Default to "en"; use workspace country as hint.
+  const wsCountry = ((ctx.workspace as Record<string, unknown>).country as string | undefined) ?? "";
+  const emailLocale = wsCountry.toLowerCase() === "ph" ? "fil"
+    : wsCountry.toLowerCase() === "my" ? "ms"
+    : wsCountry.toLowerCase() === "id" ? "id"
+    : "en";
+
+  const wsName = ((ctx.workspace as Record<string, unknown>).name as string | undefined) ?? "Gallurio workspace";
+
+  const emailResult = await sendTeamInviteEmail({
+    to: email,
+    inviterName: wsName,
+    workspaceName: wsName,
+    teamNames: teams.map((t) => t.name),
+    acceptUrl,
+    locale: emailLocale,
+  });
+
+  if (!emailResult.ok) {
+    // Email delivery failed — revoke the token so a never-received link can
+    // never be exploited, and release the reserved seats.
+    await Invitation.updateOne(
+      { _id: invitationId },
+      { $set: { status: "revoked", revokedAt: new Date() } },
+    );
+    await releaseInvitationSeats(reserved, ctx.workspace._id);
+    return { error: "EMAIL_SEND_FAILED" };
+  }
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };
@@ -277,36 +201,30 @@ export async function revokeInviteAction(
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
-  const { email } = parsed.data;
+  const { invitationId } = parsed.data;
 
-  const pending = await PendingTeamAssignment.findOne({
+  const invObjId = toObjectId(invitationId);
+  if (!invObjId) return { error: "Invalid invitation id" };
+
+  const invitation = await Invitation.findOne({
+    _id: invObjId,
     workspaceId: ctx.workspace._id,
-    email,
+    status: "pending",
   })
-    .select({ _id: 1, clerkInvitationId: 1, releasedAt: 1 })
+    .select({ _id: 1, teamIds: 1 })
     .lean();
-  if (!pending) return { error: "INVITE_NOT_FOUND" };
 
-  if (pending.clerkInvitationId) {
-    try {
-      const clerk = await clerkClient();
-      await clerk.organizations.revokeOrganizationInvitation({
-        organizationId: ctx.clerkOrgId,
-        invitationId: pending.clerkInvitationId,
-        requestingUserId: ctx.userId,
-      });
-    } catch (err) {
-      // Clerk may have already expired the invitation — proceed to release
-      // seats anyway via the idempotent helper.
-      console.warn("[revokeInviteAction] Clerk revoke failed", err);
-    }
-  }
+  if (!invitation) return { error: "INVITE_NOT_FOUND" };
 
-  const outcome = await claimAndReleasePendingInvite(pending._id);
-  if (outcome.status === "not-found") {
-    // The row was deleted between our findOne and the claim — likely by the
-    // cleanup cron. Seats were already refunded; nothing more to do.
-  }
+  await Invitation.updateOne(
+    { _id: invitation._id, workspaceId: ctx.workspace._id },
+    { $set: { status: "revoked", revokedAt: new Date() } },
+  );
+
+  await releaseInvitationSeats(
+    (invitation.teamIds ?? []) as mongoose.Types.ObjectId[],
+    ctx.workspace._id,
+  );
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };

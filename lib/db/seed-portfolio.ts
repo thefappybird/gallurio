@@ -33,7 +33,6 @@ import { galleryCarouselDefaultProps } from "@/lib/page-builder/blocks/GalleryCa
 import { featuredWorkDefaultProps } from "@/lib/page-builder/blocks/FeaturedWorkBlock";
 
 const SLUG = process.env.SEED_PORTFOLIO_SLUG || "portfolio-demo";
-const ORG_ID = "org_demo_portfolio";
 const OWNER_ID = "user_demo_portfolio";
 
 type SeededItem = {
@@ -254,8 +253,8 @@ async function main() {
     );
   }
 
-  // Resolve the dedicated demo workspace (by slug or the fixed demo org).
-  let workspace = await Workspace.findOne({ $or: [{ slug: SLUG }, { clerkOrgId: ORG_ID }] });
+  // Resolve the dedicated demo workspace (by slug).
+  let workspace = await Workspace.findOne({ slug: SLUG });
   const now = new Date();
 
   if (!workspace) {
@@ -263,7 +262,6 @@ async function main() {
       slug: SLUG,
       name: "Portfolio Demo Studio",
       ownerUserId: OWNER_ID,
-      clerkOrgId: ORG_ID,
       businessType: "photographer",
       country: "PH",
       currency: "PHP",

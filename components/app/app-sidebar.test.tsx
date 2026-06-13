@@ -5,16 +5,7 @@ import { AppSidebar } from "./app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import * as React from "react";
 
-// ── Clerk mocks ────────────────────────────────────────────────────────────────
-// SignOutButton and UserButton are Clerk client components that require a loaded
-// clerk-js bundle. Replace them with inert stubs so the test environment works.
-vi.mock("@clerk/nextjs", () => ({
-  SignOutButton: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  UserButton: () => <div data-testid="clerk-user-button" />,
-}));
-
-// ClientUserButton wraps UserButton — mock the whole module so we don't hit
-// Clerk internals at all.
+// ClientUserButton uses dropdown primitives and auth — stub it for sidebar tests.
 vi.mock("@/components/app/client-user-button", () => ({
   ClientUserButton: () => <div data-testid="client-user-button" />,
 }));
@@ -44,7 +35,14 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 function renderSidebar(role: "owner" | "staff") {
   return renderWithProviders(
     <Wrapper>
-      <AppSidebar role={role} workspaceName="Test Workspace" workspaceLogoUrl={null} />
+      <AppSidebar
+        role={role}
+        workspaceName="Test Workspace"
+        workspaceLogoUrl={null}
+        userName="Test User"
+        userEmail="test@example.com"
+        userAvatarUrl={null}
+      />
     </Wrapper>
   );
 }

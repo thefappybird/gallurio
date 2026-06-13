@@ -1,8 +1,18 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { releaseExpiredInviteSeats } from "@/lib/db/jobs/release-expired-invite-seats";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Constant-time string compare so the bearer-token check does not leak the
+// secret's length/prefix through response-timing differences.
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 // Vercel Cron hits this route hourly (configured in vercel.json/cron).
 // Auth model: Vercel injects `Authorization: Bearer ${CRON_SECRET}` for
@@ -16,8 +26,8 @@ export async function GET(req: Request) {
       { status: 500 },
     );
   }
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${expected}`) {
+  const auth = req.headers.get("authorization") ?? "";
+  if (!safeEqual(auth, `Bearer ${expected}`)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

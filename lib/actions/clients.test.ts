@@ -13,7 +13,7 @@ import {
   getClientBookingsAction,
 } from "./clients";
 
-vi.mock("@/lib/auth/requireOrg");
+vi.mock("@/lib/auth/requireOrg", () => ({ requireOrg: vi.fn(), requireRole: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: vi.fn().mockResolvedValue(undefined) }));
@@ -27,7 +27,7 @@ function mockOrg(wsId: Types.ObjectId = workspaceId) {
   const workspace = { _id: wsId } as unknown as WorkspaceDoc;
   const ctx: OrgContext = {
     userId: "user_test",
-    clerkOrgId: "org_test",
+    workspaceId: wsId.toString(),
     role: "owner",
     workspace,
   };

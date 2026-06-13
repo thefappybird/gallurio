@@ -10,7 +10,7 @@ export type TeamRow = {
 export type TeamMemberRole = "member" | "lead";
 
 export type MemberSummary = {
-  clerkUserId: string;
+  workosUserId: string;
   email: string;
   name: string;
   avatarUrl?: string | null;
@@ -18,10 +18,12 @@ export type MemberSummary = {
 };
 
 export type PendingInviteRow = {
+  invitationId: string;
   email: string;
   teamIds: string[];
   leadOnTeamIds: string[];
   invitedAt: string;
+  expiresAt: string;
 };
 
 // A team enriched with the seat ceiling so cap checks can run in the UI without

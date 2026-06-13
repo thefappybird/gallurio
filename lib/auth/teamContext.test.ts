@@ -38,10 +38,10 @@ describe("getTeamsForUser", () => {
     const otherTeam = new mongoose.Types.ObjectId();
 
     await TeamMembership.create([
-      { workspaceId: ws, teamId: team1, clerkUserId: "user_a", role: "lead" },
-      { workspaceId: ws, teamId: team2, clerkUserId: "user_a", role: "member" },
-      { workspaceId: ws, teamId: team1, clerkUserId: "user_b", role: "member" },
-      { workspaceId: otherWs, teamId: otherTeam, clerkUserId: "user_a", role: "lead" },
+      { workspaceId: ws, teamId: team1, workosUserId: "user_a", role: "lead" },
+      { workspaceId: ws, teamId: team2, workosUserId: "user_a", role: "member" },
+      { workspaceId: ws, teamId: team1, workosUserId: "user_b", role: "member" },
+      { workspaceId: otherWs, teamId: otherTeam, workosUserId: "user_a", role: "lead" },
     ]);
 
     const result = await getTeamsForUser(ws, "user_a");
@@ -60,7 +60,7 @@ describe("getTeamsForUser", () => {
     await TeamMembership.create({
       workspaceId: ws,
       teamId: new mongoose.Types.ObjectId(),
-      clerkUserId: "user_a",
+      workosUserId: "user_a",
       role: "member",
     });
     const result = await getTeamsForUser(String(ws), "user_a");

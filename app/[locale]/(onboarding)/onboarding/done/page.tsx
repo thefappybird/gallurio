@@ -43,7 +43,7 @@ export default async function DoneStepPage() {
 
   const earlierThanDone = ONBOARDING_STEPS.slice(0, ONBOARDING_STEPS.indexOf("done"));
   await User.updateOne(
-    { clerkUserId: ctx.userId, onboardingStep: { $in: earlierThanDone } },
+    { workosUserId: ctx.userId, onboardingStep: { $in: earlierThanDone } },
     { $set: { onboardingStep: "done" } }
   );
 

@@ -1,9 +1,10 @@
 "use server";
 
-import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, User, Team, type PlanTier } from "@/lib/db/models";
+import { getAuthUser } from "@/lib/auth/session";
+import { getActiveWorkspaceId, clearActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { planEntitlements } from "@/lib/plans/entitlements";
 
 export type DevPlanActionResult = {
@@ -35,12 +36,22 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
     return { error: "Not available in production" };
   }
 
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace" };
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
 
   await connectDB();
-  const workspace = await Workspace.findOne({ clerkOrgId: session.orgId })
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
+  if (!ownerMembership) return { error: "No active workspace" };
+
+  const workspaceId = await getActiveWorkspaceId(user!.memberships);
+  if (!workspaceId) return { error: "No active workspace" };
+
+  const workspace = await Workspace.findById(workspaceId)
     .select({ _id: 1, plan: 1 })
     .lean();
   if (!workspace) return { error: "Workspace not found" };
@@ -69,7 +80,7 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
   }
 
   await Workspace.updateOne(
-    { clerkOrgId: session.orgId },
+    { _id: workspace._id },
     {
       $set: {
         plan,
@@ -81,7 +92,7 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
   );
 
   await User.updateOne(
-    { clerkUserId: session.userId },
+    { workosUserId: authUser.workosUserId },
     { $set: { onboardingStep: "done" } }
   );
 
@@ -90,37 +101,41 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
   return { ok: true };
 }
 
-// Dev-only invite shortcut: fires a Clerk organization invitation directly,
-// skipping the seat-reservation + PendingTeamAssignment plumbing. Useful when
-// iterating on member-side UI (sidebar filtering, /bookings as a member,
-// proxy redirects) without round-tripping the full invite flow. Hard-blocked
-// in production by the NODE_ENV gate. Real invites must go through
-// inviteMemberAction in app/.../settings/teams/_invite-action.ts.
-export async function devSeedMemberAction(email: string): Promise<ActionResult> {
+// Dev-only reset: wipe the current user's workspace + memberships + teams so
+// onboarding can be re-run from scratch. Replaces the old Clerk-org deletion
+// path. Hard-blocked in production by the NODE_ENV gate.
+export async function devResetWorkspaceAction(): Promise<ActionResult> {
   if (process.env.NODE_ENV === "production") {
     return { error: "Not available in production" };
   }
-  const trimmed = email.trim().toLowerCase();
-  if (!trimmed || !trimmed.includes("@")) {
-    return { error: "Enter a valid email address" };
+
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  await connectDB();
+
+  const user = await User.findOne(
+    { workosUserId: authUser.workosUserId },
+    { memberships: 1 }
+  ).lean();
+  if (!user) return { ok: true };
+
+  const ownedMembership = user.memberships.find((m) => m.role === "owner");
+  if (ownedMembership) {
+    const wsId = ownedMembership.workspaceId;
+    await Promise.all([
+      Workspace.deleteOne({ _id: wsId }),
+      Team.deleteMany({ workspaceId: wsId }),
+    ]);
   }
 
-  const session = await auth();
-  if (!session.userId) return { error: "Not authenticated" };
-  if (!session.orgId) return { error: "No active workspace" };
+  await User.updateOne(
+    { workosUserId: authUser.workosUserId },
+    {
+      $set: { memberships: [], onboardingStep: "business", onboardingCompletedAt: null },
+    }
+  );
 
-  try {
-    const clerk = await clerkClient();
-    await clerk.organizations.createOrganizationInvitation({
-      organizationId: session.orgId,
-      emailAddress: trimmed,
-      role: "org:member",
-      inviterUserId: session.userId,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Invite failed";
-    return { error: message };
-  }
-
+  await clearActiveWorkspace();
   return { ok: true };
 }

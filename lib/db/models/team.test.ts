@@ -28,7 +28,7 @@ describe("Team model", () => {
       workspaceId,
       name: "Alpha",
       color: TEAM_COLOR_PALETTE[1],
-      createdByClerkUserId: "user_abc",
+      createdByWorkosUserId: "user_abc",
     });
 
     const found = await Team.findById(created._id).lean();
@@ -36,7 +36,7 @@ describe("Team model", () => {
     expect(found!.name).toBe("Alpha");
     expect(found!.color).toBe(TEAM_COLOR_PALETTE[1]);
     expect(found!.workspaceId.toString()).toBe(workspaceId.toString());
-    expect(found!.createdByClerkUserId).toBe("user_abc");
+    expect(found!.createdByWorkosUserId).toBe("user_abc");
     expect(found!.isDefault).toBe(false);
     expect(found!.memberCount).toBe(0);
     // Teams are born active with no deactivation timestamp.
@@ -50,7 +50,7 @@ describe("Team model", () => {
       workspaceId,
       name: "Duplicate",
       color: TEAM_COLOR_PALETTE[0],
-      createdByClerkUserId: "user_x",
+      createdByWorkosUserId: "user_x",
     });
 
     await expect(
@@ -58,7 +58,7 @@ describe("Team model", () => {
         workspaceId,
         name: "Duplicate",
         color: TEAM_COLOR_PALETTE[2],
-        createdByClerkUserId: "user_y",
+        createdByWorkosUserId: "user_y",
       })
     ).rejects.toThrow();
   });
@@ -67,8 +67,8 @@ describe("Team model", () => {
     const wsA = makeWorkspaceId();
     const wsB = makeWorkspaceId();
 
-    await Team.create({ workspaceId: wsA, name: "Shared", color: TEAM_COLOR_PALETTE[0], createdByClerkUserId: "u1" });
-    const second = await Team.create({ workspaceId: wsB, name: "Shared", color: TEAM_COLOR_PALETTE[0], createdByClerkUserId: "u2" });
+    await Team.create({ workspaceId: wsA, name: "Shared", color: TEAM_COLOR_PALETTE[0], createdByWorkosUserId: "u1" });
+    const second = await Team.create({ workspaceId: wsB, name: "Shared", color: TEAM_COLOR_PALETTE[0], createdByWorkosUserId: "u2" });
 
     expect(second._id).toBeDefined();
   });
@@ -83,7 +83,7 @@ describe("ensureDefaultTeam", () => {
     expect(team.isDefault).toBe(true);
     expect(team.color).toBe(TEAM_COLOR_PALETTE[0]);
     expect(team.workspaceId.toString()).toBe(workspaceId.toString());
-    expect(team.createdByClerkUserId).toBe("user_owner");
+    expect(team.createdByWorkosUserId).toBe("user_owner");
     expect(team.isActive).toBe(true);
     expect(team.deactivatedAt).toBeNull();
   });
@@ -134,7 +134,7 @@ describe("Team tenant isolation", () => {
       workspaceId: wsA,
       name: "Team A Secret",
       color: TEAM_COLOR_PALETTE[3],
-      createdByClerkUserId: "user_a",
+      createdByWorkosUserId: "user_a",
     });
 
     const found = await Team.findOne({ workspaceId: wsB, name: "Team A Secret" }).lean();

@@ -25,15 +25,15 @@ describe("TeamMembership model", () => {
   it("creates a membership with required fields and reads it back", async () => {
     const workspaceId = makeId();
     const teamId = makeId();
-    const clerkUserId = "user_test_1";
+    const workosUserId = "user_test_1";
 
-    const created = await TeamMembership.create({ workspaceId, teamId, clerkUserId });
+    const created = await TeamMembership.create({ workspaceId, teamId, workosUserId });
     const found = await TeamMembership.findById(created._id).lean();
 
     expect(found).not.toBeNull();
     expect(found!.workspaceId.toString()).toBe(workspaceId.toString());
     expect(found!.teamId.toString()).toBe(teamId.toString());
-    expect(found!.clerkUserId).toBe(clerkUserId);
+    expect(found!.workosUserId).toBe(workosUserId);
     expect(found!.role).toBe("member"); // default
   });
 
@@ -41,7 +41,7 @@ describe("TeamMembership model", () => {
     const membership = await TeamMembership.create({
       workspaceId: makeId(),
       teamId: makeId(),
-      clerkUserId: "user_lead_1",
+      workosUserId: "user_lead_1",
       role: "lead",
     });
     expect(membership.role).toBe("lead");
@@ -52,7 +52,7 @@ describe("TeamMembership model", () => {
       TeamMembership.create({
         workspaceId: makeId(),
         teamId: makeId(),
-        clerkUserId: "user_bad_role",
+        workosUserId: "user_bad_role",
         role: "admin",
       })
     ).rejects.toThrow();
@@ -67,12 +67,12 @@ describe("TeamMembership model", () => {
   it("rejects a duplicate membership for the same user in the same team", async () => {
     const teamId = makeId();
     const workspaceId = makeId();
-    const clerkUserId = "user_dup";
+    const workosUserId = "user_dup";
 
-    await TeamMembership.create({ workspaceId, teamId, clerkUserId });
+    await TeamMembership.create({ workspaceId, teamId, workosUserId });
 
     await expect(
-      TeamMembership.create({ workspaceId, teamId, clerkUserId, role: "lead" })
+      TeamMembership.create({ workspaceId, teamId, workosUserId, role: "lead" })
     ).rejects.toThrow();
   });
 
@@ -80,10 +80,10 @@ describe("TeamMembership model", () => {
     const workspaceId = makeId();
     const teamA = makeId();
     const teamB = makeId();
-    const clerkUserId = "user_multi_team";
+    const workosUserId = "user_multi_team";
 
-    await TeamMembership.create({ workspaceId, teamId: teamA, clerkUserId });
-    const second = await TeamMembership.create({ workspaceId, teamId: teamB, clerkUserId });
+    await TeamMembership.create({ workspaceId, teamId: teamA, workosUserId });
+    const second = await TeamMembership.create({ workspaceId, teamId: teamB, workosUserId });
 
     expect(second._id).toBeDefined();
   });
@@ -94,11 +94,11 @@ describe("TeamMembership tenant isolation", () => {
     const wsA = makeId();
     const wsB = makeId();
     const teamId = makeId();
-    const clerkUserId = "user_isolated";
+    const workosUserId = "user_isolated";
 
-    await TeamMembership.create({ workspaceId: wsA, teamId, clerkUserId });
+    await TeamMembership.create({ workspaceId: wsA, teamId, workosUserId });
 
-    const found = await TeamMembership.findOne({ workspaceId: wsB, clerkUserId }).lean();
+    const found = await TeamMembership.findOne({ workspaceId: wsB, workosUserId }).lean();
     expect(found).toBeNull();
   });
 });

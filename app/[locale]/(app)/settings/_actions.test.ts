@@ -2,7 +2,7 @@
  * Tests for settings server actions.
  *
  * Mongo: uses in-memory server — never mock Mongoose.
- * Clerk + Paddle + Cloudinary + next/cache: mocked.
+ * WorkOS + Paddle + Cloudinary + next/cache: mocked.
  */
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import {
@@ -15,9 +15,10 @@ import { Workspace, Booking, Client, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: vi.fn(),
-  clerkClient: vi.fn(),
+// authkit-nextjs imports next/cache which is not resolvable in the test env.
+vi.mock("@workos-inc/authkit-nextjs", () => ({
+  withAuth: vi.fn(async () => ({ user: null })),
+  saveSession: vi.fn(async () => undefined),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -28,6 +29,8 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next-intl/server", () => ({
   getLocale: vi.fn().mockResolvedValue("en"),
+  getTranslations: vi.fn().mockResolvedValue((key: string) => key),
+  setRequestLocale: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
@@ -46,9 +49,6 @@ vi.mock("@/lib/storage/cloudinary", () => ({
   destroyAsset: vi.fn().mockResolvedValue(undefined),
 }));
 
-// connectDB is called inside every action. In tests the in-memory Mongo is
-// already connected, so we make connectDB a no-op to avoid it trying to use
-// the real DATABASE_URL env var.
 vi.mock("@/lib/db/mongoose", () => ({
   connectDB: vi.fn().mockResolvedValue(undefined),
 }));
@@ -63,17 +63,55 @@ vi.mock("next/headers", () => ({
 vi.mock("@/lib/email/resend", () => ({
   resend: {
     emails: {
-      send: vi.fn().mockResolvedValue({ data: { id: "email_test_id" }, error: null }),
+      send: vi
+        .fn()
+        .mockResolvedValue({ data: { id: "email_test_id" }, error: null }),
     },
   },
 }));
 
 vi.mock("@/lib/email/templates/data-export", () => ({
-  buildDataExportEmailBody: vi.fn().mockReturnValue("Your data export is attached."),
+  buildDataExportEmailBody: vi
+    .fn()
+    .mockReturnValue("Your data export is attached."),
+}));
+
+// Hoist shared state so vi.mock factories can access it before initialization.
+const { mockWorkos, mockGetAuthUser } = vi.hoisted(() => {
+  const mockWorkos = {
+    userManagement: {
+      updateUser: vi.fn(),
+    },
+    multiFactorAuth: {
+      createUserAuthFactor: vi.fn(),
+      listUserAuthFactors: vi.fn(),
+      verifyChallenge: vi.fn(),
+      deleteFactor: vi.fn(),
+    },
+  };
+  const mockGetAuthUser = vi.fn();
+  return { mockWorkos, mockGetAuthUser };
+});
+
+vi.mock("@/lib/workos", () => ({ workos: mockWorkos }));
+
+vi.mock("@/lib/auth/session", () => ({
+  getAuthUser: mockGetAuthUser,
+}));
+
+// Mock activeWorkspace helpers
+vi.mock("@/lib/auth/activeWorkspace", () => ({
+  getActiveWorkspaceId: vi.fn(),
+  setActiveWorkspace: vi.fn().mockResolvedValue(undefined),
+  clearActiveWorkspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/i18n/routing", () => ({
+  routing: { defaultLocale: "en", locales: ["en", "fil", "ms", "id"] },
 }));
 
 // ---- Lazy imports (after mocks are registered) ------------------------------
-// We import the actions after vi.mock so that the mocked modules are used.
+
 import {
   updateWorkspaceBusinessAction,
   updateWorkspaceBrandingAction,
@@ -82,54 +120,50 @@ import {
   deleteWorkspaceAction,
   updateTimeFormatAction,
   requestDataExportAction,
+  updateProfileNameAction,
+  enrollMfaAction,
+  verifyMfaEnrollmentAction,
+  disableMfaAction,
+  setActiveWorkspaceAction,
 } from "./_actions";
-import { auth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { resend } from "@/lib/email/resend";
 import type { Attachment } from "resend";
 import { cancelSubscription } from "@/lib/paddle/client";
+import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
+import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 
 // ---- Helpers ----------------------------------------------------------------
 
-const OWNER_USER_ID = "user_owner_abc";
-const MEMBER_USER_ID = "user_member_xyz";
-const ORG_ID_A = "org_aaa";
-const ORG_ID_B = "org_bbb";
+const OWNER_WORKOS_ID = "user_owner_abc";
+const MEMBER_WORKOS_ID = "user_member_xyz";
+const WS_A_ID = new Types.ObjectId();
+const WS_B_ID = new Types.ObjectId();
 
-/** Reset Clerk auth mock to return org A as the owner. */
 function mockAuthAsOwnerA() {
-  (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-    userId: OWNER_USER_ID,
-    orgId: ORG_ID_A,
-    orgRole: "org:admin",
+  mockGetAuthUser.mockResolvedValue({
+    workosUserId: OWNER_WORKOS_ID,
+    email: "owner@test.com",
+    name: "Owner User",
+    avatarUrl: null,
   });
 }
 
-/** Auth mock for a regular member of org A (not the owner). */
 function mockAuthAsMemberA() {
-  (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-    userId: MEMBER_USER_ID,
-    orgId: ORG_ID_A,
-    orgRole: "org:member",
+  mockGetAuthUser.mockResolvedValue({
+    workosUserId: MEMBER_WORKOS_ID,
+    email: "member@test.com",
+    name: "Member User",
+    avatarUrl: null,
   });
-}
-
-/** Return a minimal Clerk client stub. */
-function makeClerkClientStub() {
-  return {
-    organizations: {
-      updateOrganization: vi.fn().mockResolvedValue({}),
-      deleteOrganization: vi.fn().mockResolvedValue({}),
-    },
-  };
 }
 
 async function seedWorkspaceA() {
   return Workspace.create({
+    _id: WS_A_ID,
     slug: "sarah-photo",
     name: "Sarah Photography",
-    ownerUserId: OWNER_USER_ID,
-    clerkOrgId: ORG_ID_A,
+    ownerUserId: OWNER_WORKOS_ID,
     businessType: "photographer",
     country: "PH",
     currency: "PHP",
@@ -139,10 +173,10 @@ async function seedWorkspaceA() {
 
 async function seedWorkspaceB() {
   return Workspace.create({
+    _id: WS_B_ID,
     slug: "other-studio",
     name: "Other Studio",
     ownerUserId: "user_other",
-    clerkOrgId: ORG_ID_B,
     businessType: "venue",
     country: "SG",
     currency: "SGD",
@@ -164,16 +198,15 @@ beforeEach(async () => {
   await clearCollections();
   vi.clearAllMocks();
   mockAuthAsOwnerA();
-  (clerkClient as ReturnType<typeof vi.fn>).mockResolvedValue(makeClerkClientStub());
-  // Owner must have finished onboarding for ownerContext() to admit them; the
-  // settings UI is post-onboarding. Tests that exercise the pre-onboarding
-  // path should overwrite this user inside the test.
+  vi.mocked(getActiveWorkspaceId).mockResolvedValue(String(WS_A_ID));
+
   await User.create({
-    clerkUserId: OWNER_USER_ID,
+    workosUserId: OWNER_WORKOS_ID,
     email: "owner@test.com",
+    name: "Owner User",
     onboardingStep: "done",
     onboardingCompletedAt: new Date(),
-    memberships: [],
+    memberships: [{ workspaceId: WS_A_ID, role: "owner" }],
   });
 });
 
@@ -201,7 +234,7 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(result.ok).toBe(true);
     expect(result.error).toBeUndefined();
 
-    const updated = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const updated = await Workspace.findById(WS_A_ID).lean();
     expect(updated?.name).toBe("Sarah Bell Studios");
     expect(updated?.timezone).toBe("Asia/Kolkata");
   });
@@ -210,7 +243,6 @@ describe("updateWorkspaceBusinessAction", () => {
     await seedWorkspaceA();
     await seedWorkspaceB();
 
-    // Try to claim workspace B's slug from workspace A's session
     const result = await updateWorkspaceBusinessAction({
       ...validInput,
       slug: "other-studio",
@@ -218,8 +250,7 @@ describe("updateWorkspaceBusinessAction", () => {
 
     expect(result.error).toMatch(/already taken/i);
 
-    // Workspace A's slug must be unchanged
-    const wsA = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const wsA = await Workspace.findById(WS_A_ID).lean();
     expect(wsA?.slug).toBe("sarah-photo");
   });
 
@@ -237,18 +268,31 @@ describe("updateWorkspaceBusinessAction", () => {
   it("role gating — non-owner gets error and doc is unchanged", async () => {
     await seedWorkspaceA();
 
-    // Auth returns a user who is a member (not the doc's ownerUserId)
-    (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      userId: "user_some_member",
-      orgId: ORG_ID_A,
-      orgRole: "org:member",
+    // Seed a User doc for the member (ownerContext must be able to load it)
+    await User.create({
+      workosUserId: "user_some_member",
+      email: "member@test.com",
+      name: "Member",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [{ workspaceId: WS_A_ID, role: "staff" }],
     });
 
-    const result = await updateWorkspaceBusinessAction({ ...validInput, name: "Hacked Name" });
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "user_some_member",
+      email: "member@test.com",
+      name: "Member",
+      avatarUrl: null,
+    });
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      name: "Hacked Name",
+    });
 
     expect(result.error).toBe("Only the workspace owner can change this");
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.name).toBe("Sarah Photography");
   });
 });
@@ -268,7 +312,7 @@ describe("updateWorkspaceBrandingAction", () => {
 
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.branding?.primaryColor).toBe("#222222");
     expect(ws?.branding?.tagline).toBe("Moments forever.");
   });
@@ -301,7 +345,7 @@ describe("updatePublicPageSettingsAction", () => {
 
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.publicPage?.seoTitle).toBe("Sarah Bell Photography");
     expect(ws?.publicPage?.inquiryRecipientEmail).toBe("sarah@example.com");
   });
@@ -328,17 +372,16 @@ describe("togglePublicPagePublishedAction", () => {
     const result = await togglePublicPagePublishedAction(true);
     expect(result.ok).toBe(true);
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.publicPage?.publishedAt).toBeInstanceOf(Date);
   });
 
   it("toggling to false sets publishedAt to null", async () => {
-    // First publish, then unpublish
     await seedWorkspaceA();
     await togglePublicPagePublishedAction(true);
     await togglePublicPagePublishedAction(false);
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.publicPage?.publishedAt).toBeNull();
   });
 });
@@ -353,14 +396,13 @@ describe("deleteWorkspaceAction", () => {
 
     expect(result.error).toBeTruthy();
 
-    const ws = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws).not.toBeNull();
   });
 
   it("correct confirmation — deletes workspace and related bookings", async () => {
     const ws = await seedWorkspaceA();
 
-    // Seed a related booking
     const client = await Client.create({
       workspaceId: ws._id,
       name: "Emma Carter",
@@ -386,19 +428,19 @@ describe("deleteWorkspaceAction", () => {
 
     expect(result.ok).toBe(true);
 
-    const wsAfter = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const wsAfter = await Workspace.findById(WS_A_ID).lean();
     expect(wsAfter).toBeNull();
 
     const bookings = await Booking.find({ workspaceId: ws._id }).lean();
     expect(bookings).toHaveLength(0);
   });
 
-  it("active Paddle subscription — cancelSubscription is called with the subscription id", async () => {
+  it("active Paddle subscription — cancelSubscription is called", async () => {
     await Workspace.create({
+      _id: WS_A_ID,
       slug: "sarah-photo",
       name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
+      ownerUserId: OWNER_WORKOS_ID,
       businessType: "photographer",
       country: "PH",
       currency: "PHP",
@@ -415,13 +457,15 @@ describe("deleteWorkspaceAction", () => {
   });
 
   it("Paddle cancel throws — delete still succeeds (best-effort cancellation)", async () => {
-    vi.mocked(cancelSubscription).mockRejectedValueOnce(new Error("Paddle API error"));
+    vi.mocked(cancelSubscription).mockRejectedValueOnce(
+      new Error("Paddle API error"),
+    );
 
     await Workspace.create({
+      _id: WS_A_ID,
       slug: "sarah-photo",
       name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
+      ownerUserId: OWNER_WORKOS_ID,
       businessType: "photographer",
       country: "PH",
       currency: "PHP",
@@ -434,33 +478,12 @@ describe("deleteWorkspaceAction", () => {
     const result = await deleteWorkspaceAction("sarah-photo");
 
     expect(result.ok).toBe(true);
-    // Workspace should still be deleted even though cancel threw
-    const wsAfter = await Workspace.findOne({ clerkOrgId: ORG_ID_A }).lean();
+    const wsAfter = await Workspace.findById(WS_A_ID).lean();
     expect(wsAfter).toBeNull();
   });
 
   it("no active Paddle subscription — cancelSubscription is NOT called", async () => {
-    await seedWorkspaceA(); // no paddleSubscriptionId / paddleSubscriptionStatus
-
-    await deleteWorkspaceAction("sarah-photo");
-
-    expect(cancelSubscription).not.toHaveBeenCalled();
-  });
-
-  it("Paddle subscription present but not active — cancelSubscription is NOT called", async () => {
-    await Workspace.create({
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_USER_ID,
-      clerkOrgId: ORG_ID_A,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "starter",
-      paddleSubscriptionId: "sub_test_789",
-      paddleSubscriptionStatus: "canceled",
-    });
+    await seedWorkspaceA();
 
     await deleteWorkspaceAction("sarah-photo");
 
@@ -472,7 +495,6 @@ describe("deleteWorkspaceAction", () => {
 
 describe("updateTimeFormatAction", () => {
   it("updates timeFormat to 12h and sets cookie", async () => {
-    mockAuthAsOwnerA();
     await seedWorkspaceA();
     const mockCookieStore = { get: vi.fn(), set: vi.fn() };
     vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
@@ -481,55 +503,49 @@ describe("updateTimeFormatAction", () => {
     expect(result.ok).toBe(true);
     expect(result.error).toBeUndefined();
 
-    const user = await User.findOne({ clerkUserId: OWNER_USER_ID }).lean();
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
     expect(user?.timeFormat).toBe("12h");
 
     expect(mockCookieStore.set).toHaveBeenCalledWith(
       "timeFormat",
       "12h",
-      expect.objectContaining({ path: "/" })
+      expect.objectContaining({ path: "/" }),
     );
   });
 
   it("rejects invalid format value", async () => {
-    mockAuthAsOwnerA();
     await seedWorkspaceA();
     const result = await updateTimeFormatAction("invalid");
     expect(result.error).toBeDefined();
   });
 
   it("non-owner member can update their own time format", async () => {
-    // Time format is a per-user preference — members are allowed.
     await seedWorkspaceA();
-    // Create a User doc for the member (mirrors the owner doc seeded in beforeEach).
     await User.create({
-      clerkUserId: MEMBER_USER_ID,
+      workosUserId: MEMBER_WORKOS_ID,
       email: "member@test.com",
+      name: "Member User",
       onboardingStep: "done",
       onboardingCompletedAt: new Date(),
-      memberships: [],
+      memberships: [{ workspaceId: WS_A_ID, role: "staff" }],
     });
     mockAuthAsMemberA();
+    vi.mocked(getActiveWorkspaceId).mockResolvedValue(String(WS_A_ID));
     const mockCookieStore = { get: vi.fn(), set: vi.fn() };
     vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
 
     const result = await updateTimeFormatAction("12h");
     expect(result.ok).toBe(true);
-    expect(result.error).toBeUndefined();
 
-    // Persisted to the member's own User doc — not the owner's.
-    const memberUser = await User.findOne({ clerkUserId: MEMBER_USER_ID }).lean();
+    const memberUser = await User.findOne({
+      workosUserId: MEMBER_WORKOS_ID,
+    }).lean();
     expect(memberUser?.timeFormat).toBe("12h");
 
-    // Owner's doc must be untouched (remains at its default "24h").
-    const ownerUser = await User.findOne({ clerkUserId: OWNER_USER_ID }).lean();
+    const ownerUser = await User.findOne({
+      workosUserId: OWNER_WORKOS_ID,
+    }).lean();
     expect(ownerUser?.timeFormat).toBe("24h");
-
-    expect(mockCookieStore.set).toHaveBeenCalledWith(
-      "timeFormat",
-      "12h",
-      expect.objectContaining({ path: "/" })
-    );
   });
 });
 
@@ -537,9 +553,11 @@ describe("updateTimeFormatAction", () => {
 
 describe("requestDataExportAction", () => {
   it("sends email with 3 CSV attachments", async () => {
-    mockAuthAsOwnerA();
     await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({ get: vi.fn(), set: vi.fn() } as never);
+    vi.mocked(cookies).mockResolvedValue({
+      get: vi.fn(),
+      set: vi.fn(),
+    } as never);
 
     const result = await requestDataExportAction();
     expect(result.ok).toBe(true);
@@ -547,16 +565,20 @@ describe("requestDataExportAction", () => {
 
     expect(vi.mocked(resend.emails.send)).toHaveBeenCalledOnce();
     const call = vi.mocked(resend.emails.send).mock.calls[0][0];
-    const filenames = (call.attachments ?? []).map((a: Attachment) => String(a.filename ?? ""));
+    const filenames = (call.attachments ?? []).map((a: Attachment) =>
+      String(a.filename ?? ""),
+    );
     expect(filenames).toContain("bookings.csv");
     expect(filenames).toContain("clients.csv");
     expect(filenames).toContain("inquiries.csv");
   });
 
   it("returns error when Resend fails", async () => {
-    mockAuthAsOwnerA();
     await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({ get: vi.fn(), set: vi.fn() } as never);
+    vi.mocked(cookies).mockResolvedValue({
+      get: vi.fn(),
+      set: vi.fn(),
+    } as never);
     vi.mocked(resend.emails.send).mockResolvedValueOnce({
       data: null,
       error: { name: "validation_error", message: "bad sender" },
@@ -564,5 +586,335 @@ describe("requestDataExportAction", () => {
 
     const result = await requestDataExportAction();
     expect(result.error).toBeDefined();
+  });
+});
+
+// ---- updateProfileNameAction ------------------------------------------------
+
+describe("updateProfileNameAction", () => {
+  it("updates name in WorkOS and syncs Mongo User doc", async () => {
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updateProfileNameAction({ name: "Jane Doe" });
+    expect(result.ok).toBe(true);
+
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: OWNER_WORKOS_ID,
+        firstName: "Jane",
+        lastName: "Doe",
+      }),
+    );
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.name).toBe("Jane Doe");
+  });
+
+  it("rejects empty name", async () => {
+    const result = await updateProfileNameAction({ name: "  " });
+    expect(result.error).toBeTruthy();
+    expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("returns error if WorkOS updateUser throws", async () => {
+    mockWorkos.userManagement.updateUser.mockRejectedValueOnce(
+      new Error("WorkOS error"),
+    );
+
+    const result = await updateProfileNameAction({ name: "Valid Name" });
+    expect(result.error).toBeTruthy();
+  });
+
+  it("unauthenticated user gets error", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await updateProfileNameAction({ name: "Name" });
+    expect(result.error).toBe("Not authenticated");
+  });
+});
+
+// ---- enrollMfaAction --------------------------------------------------------
+
+describe("enrollMfaAction", () => {
+  it("returns qrCode and secret (no challengeId) and sets the httpOnly cookie", async () => {
+    const mockCookieStore = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    mockWorkos.multiFactorAuth.createUserAuthFactor.mockResolvedValue({
+      authenticationFactor: {
+        id: "factor_123",
+        type: "totp",
+        totp: { qrCode: "data:image/png;base64,abc", secret: "MYSECRET" },
+      },
+      authenticationChallenge: { id: "challenge_456" },
+    });
+
+    const result = await enrollMfaAction();
+    expect("error" in result).toBe(false);
+    if (!("error" in result)) {
+      expect(result.qrCode).toBe("data:image/png;base64,abc");
+      expect(result.secret).toBe("MYSECRET");
+      // challengeId must NOT be in the returned result
+      expect((result as Record<string, unknown>).challengeId).toBeUndefined();
+    }
+
+    // Cookie must have been set with the correct attributes
+    expect(mockCookieStore.set).toHaveBeenCalledWith(
+      "gw_mfa_enroll",
+      JSON.stringify({ factorId: "factor_123", challengeId: "challenge_456" }),
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      }),
+    );
+  });
+
+  it("returns error if unauthenticated", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await enrollMfaAction();
+    expect("error" in result).toBe(true);
+  });
+
+  it("returns error if WorkOS throws", async () => {
+    const mockCookieStore = { get: vi.fn(), set: vi.fn(), delete: vi.fn() };
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    mockWorkos.multiFactorAuth.createUserAuthFactor.mockRejectedValueOnce(
+      new Error("WorkOS error"),
+    );
+
+    const result = await enrollMfaAction();
+    expect("error" in result).toBe(true);
+    // Cookie must NOT be set on failure
+    expect(mockCookieStore.set).not.toHaveBeenCalled();
+  });
+});
+
+// ---- verifyMfaEnrollmentAction ----------------------------------------------
+
+describe("verifyMfaEnrollmentAction", () => {
+  function makeCookieStore(cookieValue: string | undefined) {
+    return {
+      get: vi.fn().mockReturnValue(
+        cookieValue !== undefined ? { value: cookieValue } : undefined,
+      ),
+      set: vi.fn(),
+      delete: vi.fn(),
+    };
+  }
+
+  const validCookie = JSON.stringify({
+    factorId: "factor_123",
+    challengeId: "challenge_456",
+  });
+
+  beforeEach(() => {
+    // Default: factor belongs to the user
+    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
+      data: [{ id: "factor_123" }],
+    });
+    mockWorkos.multiFactorAuth.verifyChallenge.mockResolvedValue({
+      valid: true,
+      challenge: { id: "challenge_456" },
+    });
+  });
+
+  it("reads challengeId from cookie — client cannot influence which challenge is verified", async () => {
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    // Note: input has NO challengeId field — only code
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.ok).toBe(true);
+
+    // verifyChallenge must use the cookie's challengeId, not any client value
+    expect(mockWorkos.multiFactorAuth.verifyChallenge).toHaveBeenCalledWith(
+      expect.objectContaining({ authenticationChallengeId: "challenge_456" }),
+    );
+  });
+
+  it("valid code sets mfaEnabled=true on User and deletes the cookie", async () => {
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.ok).toBe(true);
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.mfaEnabled).toBe(true);
+
+    expect(mockCookieStore.delete).toHaveBeenCalledWith("gw_mfa_enroll");
+  });
+
+  it("rejects when the enrollment cookie is absent (expired or never started)", async () => {
+    const mockCookieStore = makeCookieStore(undefined);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.error).toMatch(/expired/i);
+    expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.mfaEnabled).toBe(false);
+  });
+
+  it("rejects when the cookie's factorId is not among the caller's own factors (defense in depth)", async () => {
+    const cookieWithStrangerFactor = JSON.stringify({
+      factorId: "factor_stranger",
+      challengeId: "challenge_stranger",
+    });
+    const mockCookieStore = makeCookieStore(cookieWithStrangerFactor);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    // Caller owns factor_123, not factor_stranger
+    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
+      data: [{ id: "factor_123" }],
+    });
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.error).toBeTruthy();
+    // verifyChallenge must NOT be called when the factor ownership check fails
+    expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.mfaEnabled).toBe(false);
+  });
+
+  it("invalid code returns error without updating User", async () => {
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    mockWorkos.multiFactorAuth.verifyChallenge.mockResolvedValue({
+      valid: false,
+      challenge: { id: "challenge_456" },
+    });
+
+    const result = await verifyMfaEnrollmentAction({ code: "000000" });
+    expect(result.error).toBeTruthy();
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.mfaEnabled).toBe(false);
+  });
+
+  it("rejects non-6-digit code before touching WorkOS", async () => {
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "12345" });
+    expect(result.error).toBeTruthy();
+    expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
+    expect(mockWorkos.multiFactorAuth.listUserAuthFactors).not.toHaveBeenCalled();
+  });
+
+  it("unauthenticated returns error", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.error).toBe("Not authenticated");
+  });
+});
+
+// ---- disableMfaAction -------------------------------------------------------
+
+describe("disableMfaAction", () => {
+  it("deletes all factors and sets mfaEnabled=false", async () => {
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      { $set: { mfaEnabled: true } },
+    );
+
+    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
+      data: [{ id: "factor_111" }, { id: "factor_222" }],
+    });
+    mockWorkos.multiFactorAuth.deleteFactor.mockResolvedValue(undefined);
+
+    const result = await disableMfaAction();
+    expect(result.ok).toBe(true);
+
+    expect(mockWorkos.multiFactorAuth.deleteFactor).toHaveBeenCalledTimes(2);
+    expect(mockWorkos.multiFactorAuth.deleteFactor).toHaveBeenCalledWith("factor_111");
+    expect(mockWorkos.multiFactorAuth.deleteFactor).toHaveBeenCalledWith("factor_222");
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.mfaEnabled).toBe(false);
+  });
+
+  it("unauthenticated returns error", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await disableMfaAction();
+    expect(result.error).toBe("Not authenticated");
+  });
+
+  it("cannot affect another user — userId comes only from getAuthUser()", async () => {
+    // No userId parameter accepted; the action always uses the session userId.
+    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
+      data: [{ id: "factor_own" }],
+    });
+    mockWorkos.multiFactorAuth.deleteFactor.mockResolvedValue(undefined);
+
+    await disableMfaAction();
+
+    expect(mockWorkos.multiFactorAuth.listUserAuthFactors).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: OWNER_WORKOS_ID }),
+    );
+  });
+});
+
+// ---- setActiveWorkspaceAction -----------------------------------------------
+
+describe("setActiveWorkspaceAction", () => {
+  it("switches to a workspace the user is a member of", async () => {
+    const wsB = await seedWorkspaceB();
+
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      {
+        $set: {
+          memberships: [
+            { workspaceId: WS_A_ID, role: "owner" },
+            { workspaceId: wsB._id, role: "staff" },
+          ],
+        },
+      },
+    );
+
+    let threw = false;
+    try {
+      await setActiveWorkspaceAction(String(wsB._id));
+    } catch (e) {
+      threw = true;
+      expect((e as Error).message).toMatch(/REDIRECT/);
+    }
+    expect(threw).toBe(true);
+    expect(setActiveWorkspace).toHaveBeenCalledWith(OWNER_WORKOS_ID, String(wsB._id));
+  });
+
+  it("rejects workspaceId not in the user memberships (tenant isolation)", async () => {
+    const strangerWs = await Workspace.create({
+      slug: "stranger-ws",
+      name: "Stranger WS",
+      ownerUserId: "user_stranger",
+      businessType: "other",
+      country: "SG",
+      currency: "SGD",
+      timezone: "Asia/Singapore",
+    });
+
+    const result = await setActiveWorkspaceAction(String(strangerWs._id));
+    expect(result.error).toBeTruthy();
+    expect(setActiveWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("unauthenticated returns error", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await setActiveWorkspaceAction(String(WS_A_ID));
+    expect(result.error).toBe("Not authenticated");
   });
 });

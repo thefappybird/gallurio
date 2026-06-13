@@ -37,7 +37,7 @@ export type CreateTeamInputForCap = {
   color: string;
   isDefault: boolean;
   memberCount: number;
-  createdByClerkUserId: string;
+  createdByWorkosUserId: string;
 };
 
 // Atomic create-with-cap-enforcement: inserts the team, then re-counts. If the

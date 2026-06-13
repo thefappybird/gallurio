@@ -13,15 +13,15 @@ export type UserTeamMembership = {
 export const getTeamsForUser = cache(
   async (
     workspaceId: mongoose.Types.ObjectId | string,
-    clerkUserId: string,
+    workosUserId: string,
   ): Promise<UserTeamMembership[]> => {
-    if (!workspaceId || !clerkUserId) return [];
+    if (!workspaceId || !workosUserId) return [];
     await connectDB();
     const wsId =
       typeof workspaceId === "string"
         ? new mongoose.Types.ObjectId(workspaceId)
         : workspaceId;
-    const rows = await TeamMembership.find({ workspaceId: wsId, clerkUserId })
+    const rows = await TeamMembership.find({ workspaceId: wsId, workosUserId })
       .select({ teamId: 1, role: 1 })
       .lean();
     return rows.map((r) => ({

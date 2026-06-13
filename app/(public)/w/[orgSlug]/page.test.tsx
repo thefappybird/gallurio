@@ -23,7 +23,7 @@ import { Types } from "mongoose";
 
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
-import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { buildRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { ContactDetailsBlock, contactDetailsDefaultProps } from "@/lib/page-builder/blocks/ContactDetailsBlock";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 import { generateMetadata } from "./page";
@@ -85,7 +85,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     slug: "luna-studio",
     name: "Luna Studio",
     ownerUserId: "user_001",
-    clerkOrgId: "org_001",
     businessType: "photographer",
     country: "PH",
     currency: "PHP",
@@ -362,8 +361,13 @@ describe("buildRenderWorkspace — contact field regression", () => {
       },
     };
     const rw = buildRenderWorkspace(doc);
-    const { getByText } = runWithRenderWorkspace(rw, () =>
-      render(React.createElement(ContactDetailsBlock, contactDetailsDefaultProps))
+    // The render path threads the workspace through Puck `metadata` (RSC-safe),
+    // which is how ContactDetailsBlock reads it.
+    const { getByText } = render(
+      React.createElement(ContactDetailsBlock, {
+        ...contactDetailsDefaultProps,
+        puck: { metadata: { workspace: rw } },
+      })
     );
     expect(getByText("hello@studio.com")).toBeInTheDocument();
   });

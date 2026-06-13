@@ -6,19 +6,19 @@ const teamMembershipSchema = new Schema(
   {
     workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
     teamId: { type: Schema.Types.ObjectId, ref: "Team", required: true, index: true },
-    clerkUserId: { type: String, required: true, index: true },
+    workosUserId: { type: String, required: true, index: true },
     role: { type: String, enum: TEAM_MEMBERSHIP_ROLES, default: "member" },
   },
   { timestamps: true }
 );
 
-teamMembershipSchema.index({ workspaceId: 1, clerkUserId: 1 });
+teamMembershipSchema.index({ workspaceId: 1, workosUserId: 1 });
 // Convention: every compound index starts with workspaceId. The narrower
-// {teamId, clerkUserId} would also be unique because every teamId belongs to
+// {teamId, workosUserId} would also be unique because every teamId belongs to
 // exactly one workspaceId, but the tenant-first ordering satisfies the
 // project-wide index rule.
 teamMembershipSchema.index(
-  { workspaceId: 1, teamId: 1, clerkUserId: 1 },
+  { workspaceId: 1, teamId: 1, workosUserId: 1 },
   { unique: true },
 );
 

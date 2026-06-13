@@ -8,11 +8,16 @@ import {
   AlertTriangle,
   Wrench,
   CreditCard,
+  UserIcon,
+  ShieldIcon,
 } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
+import { getAuthUser } from "@/lib/auth/session";
+import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { routing } from "@/lib/i18n/routing";
+import { connectDB } from "@/lib/db/mongoose";
+import { User, Workspace } from "@/lib/db/models";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { WorkspaceBrandingForm } from "../workspace/_branding-form";
@@ -21,6 +26,8 @@ import { PublicPageSettingsForm } from "../public-page/_form";
 import { DangerPanel } from "../danger/_panel";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
+import { AccountPanel } from "../account/_panel";
+import { SecurityPanel } from "../security/_panel";
 import type {
   UpdateWorkspaceBusinessInput,
   UpdateWorkspaceBrandingInput,
@@ -57,21 +64,40 @@ export default async function SettingsCatchallPage({
   const { locale, catchall } = await params;
   setRequestLocale(locale);
 
-  const [{ role, workspace }, initialTimeFormat, clerkUser] = await Promise.all([
-    requireOrg(),
-    getUserTimeFormat(),
-    currentUser(),
-  ]);
+  const [{ role, workspace, userId }, authUser, initialTimeFormat] =
+    await Promise.all([requireOrg(), getAuthUser(), getUserTimeFormat()]);
 
-  const slug = catchall?.[0];
+  const slug = catchall?.[0] ?? null;
   if (slug && OWNER_ONLY_SLUGS.has(slug) && role !== "owner") {
     notFound();
   }
 
+  await connectDB();
+
+  // Load full user doc for MFA state
+  const userDoc = await User.findOne({ workosUserId: userId }).lean();
+  const mfaEnabled = userDoc?.mfaEnabled ?? false;
+
+  // Load all workspaces the user is a member of for the switcher
+  const membershipWorkspaceIds = (userDoc?.memberships ?? []).map(
+    (m) => m.workspaceId,
+  );
+  const memberWorkspaces = await Workspace.find(
+    { _id: { $in: membershipWorkspaceIds } },
+    { _id: 1, name: 1, "branding.logoUrl": 1 },
+  ).lean();
+
+  const workspaceSwitcherItems = memberWorkspaces.map((w) => ({
+    id: String(w._id),
+    name: w.name,
+    logoUrl: (w as { branding?: { logoUrl?: string | null } }).branding?.logoUrl ?? null,
+  }));
+
   const businessDefaults: UpdateWorkspaceBusinessInput = {
     name: workspace.name,
     slug: workspace.slug,
-    businessType: workspace.businessType as UpdateWorkspaceBusinessInput["businessType"],
+    businessType:
+      workspace.businessType as UpdateWorkspaceBusinessInput["businessType"],
     country: (workspace.country ?? "PH") as SupportedCountry,
     currency: workspace.currency as SupportedCurrency,
     timezone: workspace.timezone ?? "Asia/Manila",
@@ -94,14 +120,34 @@ export default async function SettingsCatchallPage({
 
   const t = await getTranslations("app.settings.tabs");
 
-  const mountPath =
-    locale === routing.defaultLocale ? "/settings" : `/${locale}/settings`;
+  // Active slug: null means base /settings -> render account tab
+  const activeSlug = slug;
 
   return (
     <SettingsUserProfile
-      path={mountPath}
       role={role}
+      activeSlug={activeSlug ?? "account"}
+      workspaces={workspaceSwitcherItems}
+      currentWorkspaceId={String(workspace._id)}
       pages={[
+        {
+          slug: "account",
+          label: t("account"),
+          icon: <UserIcon className="size-4" />,
+          body: (
+            <AccountPanel
+              name={authUser?.name ?? ""}
+              email={authUser?.email ?? ""}
+              avatarUrl={authUser?.avatarUrl ?? null}
+            />
+          ),
+        },
+        {
+          slug: "security",
+          label: t("security"),
+          icon: <ShieldIcon className="size-4" />,
+          body: <SecurityPanel mfaEnabled={mfaEnabled} />,
+        },
         {
           slug: "customize",
           label: t("customize"),
@@ -153,9 +199,7 @@ export default async function SettingsCatchallPage({
               }
               paddleCurrentPeriodEnd={workspace.paddleCurrentPeriodEnd ?? null}
               workspaceId={String(workspace._id)}
-              customerEmail={
-                clerkUser?.emailAddresses?.[0]?.emailAddress ?? ""
-              }
+              customerEmail={authUser?.email ?? ""}
             />
           ),
         },
@@ -179,7 +223,12 @@ export default async function SettingsCatchallPage({
           label: t("danger"),
           icon: <AlertTriangle className="size-4" />,
           ownerOnly: true,
-          body: <DangerPanel workspaceName={workspace.name} workspaceSlug={workspace.slug} />,
+          body: (
+            <DangerPanel
+              workspaceName={workspace.name}
+              workspaceSlug={workspace.slug}
+            />
+          ),
         },
       ]}
     />

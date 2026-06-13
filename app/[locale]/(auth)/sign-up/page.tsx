@@ -1,7 +1,6 @@
-import { SignUp } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { clerkAppearance } from "@/lib/auth/clerkAppearance";
+import { SignUpForm } from "./_sign-up-form";
 
 export async function generateMetadata({
   params,
@@ -11,7 +10,7 @@ export async function generateMetadata({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("auth");
-  return { title: t("signUpTitle") };
+  return { title: t("signUp.title") };
 }
 
 export default async function SignUpPage({
@@ -21,5 +20,5 @@ export default async function SignUpPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <SignUp appearance={clerkAppearance} />;
+  return <SignUpForm />;
 }

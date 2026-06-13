@@ -23,12 +23,11 @@ const teamSchema = new Schema(
     isActive: { type: Boolean, default: true },
     deactivatedAt: { type: Date, default: null },
     memberCount: { type: Number, default: 0, min: 0 },
-    createdByClerkUserId: { type: String, required: true },
-    // Journal of PendingTeamAssignment._ids whose seat reservation has been
-    // refunded back to this team. The seat-refund operation atomically
-    // decrements memberCount AND $addToSets the pendingId here, so any retry
-    // (cron, owner-revoke, invite-rollback) sees the ack and no-ops — making
-    // the refund exactly-once per (teamId, pendingId) without transactions.
+    createdByWorkosUserId: { type: String, required: true },
+    // Journal of Invitation._ids whose seat reservation has been refunded back
+    // to this team. The seat-refund operation atomically decrements memberCount
+    // AND $addToSets the inviteId here, so any retry sees the ack and no-ops —
+    // making the refund exactly-once per (teamId, inviteId) without transactions.
     pendingReleaseAcks: {
       type: [Schema.Types.ObjectId],
       default: [],
@@ -61,7 +60,7 @@ export const Team: Model<TeamDoc> =
 
 export async function ensureDefaultTeam(
   workspaceId: mongoose.Types.ObjectId,
-  createdByClerkUserId: string,
+  createdByWorkosUserId: string,
 ): Promise<TeamDoc> {
   const team = await Team.findOneAndUpdate(
     { workspaceId, isDefault: true },
@@ -71,7 +70,7 @@ export async function ensureDefaultTeam(
         isDefault: true,
         name: "Main",
         color: TEAM_COLOR_PALETTE[0],
-        createdByClerkUserId,
+        createdByWorkosUserId,
         memberCount: 0,
       },
     },

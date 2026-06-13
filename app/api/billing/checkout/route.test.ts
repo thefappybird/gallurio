@@ -29,9 +29,8 @@ vi.mock("@/lib/paddle/client", () => ({
   ensurePaddleCustomer: vi.fn(),
 }));
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: vi.fn(),
-  clerkClient: vi.fn(),
+vi.mock("@/lib/auth/session", () => ({
+  getAuthUser: vi.fn(),
 }));
 
 // Workflow runtime — never spin real runs in unit tests.
@@ -43,13 +42,12 @@ vi.mock("workflow/api", () => ({
 
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { ensurePaddleCustomer } from "@/lib/paddle/client";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getAuthUser } from "@/lib/auth/session";
 import { start, getHookByToken, getRun } from "workflow/api";
 
 const mockRequireOrg = vi.mocked(requireOrg);
 const mockEnsureCustomer = vi.mocked(ensurePaddleCustomer);
-const mockAuth = vi.mocked(auth);
-const mockClerkClient = vi.mocked(clerkClient);
+const mockGetAuthUser = vi.mocked(getAuthUser);
 const mockStart = vi.mocked(start);
 const mockGetHookByToken = vi.mocked(getHookByToken);
 const mockGetRun = vi.mocked(getRun);
@@ -88,16 +86,12 @@ function wireAuth(wsId: Types.ObjectId, paddleCustomerId: string | null = null) 
     },
   } as never);
 
-  mockAuth.mockResolvedValue({ userId: "user_owner" } as never);
-  mockClerkClient.mockResolvedValue({
-    users: {
-      getUser: vi.fn().mockResolvedValue({
-        emailAddresses: [{ emailAddress: "owner@example.com" }],
-        firstName: "Owner",
-        lastName: "Person",
-      }),
-    },
-  } as never);
+  mockGetAuthUser.mockResolvedValue({
+    workosUserId: "wos_user_owner",
+    email: "owner@example.com",
+    name: "Owner Person",
+    avatarUrl: null,
+  });
 }
 
 function makeReq(body: unknown = { plan: "starter" }) {
@@ -167,7 +161,7 @@ describe("billing checkout — happy path (no stale run)", () => {
       workspaceId: wsId.toString(),
     });
 
-    // No in-flight hook → nothing cancelled.
+    // No in-flight hook -> nothing cancelled.
     expect(mockGetRun).not.toHaveBeenCalled();
     expect(mockStart).toHaveBeenCalledOnce();
 
