@@ -385,4 +385,17 @@ describe("EditorShell", () => {
     expect(preview.parentElement).toBe(sectionGroup);
     expect(preview.parentElement?.className).toContain("flex-wrap");
   });
+
+  it("prompts to save unsaved changes when clicking Add new draft", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    // Make the draft dirty via a rename to a unique, valid name.
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Renamed Draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+  });
 });

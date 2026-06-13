@@ -1089,7 +1089,12 @@ export function EditorShell({
         activeDraftId={activeDraftId}
         onApply={(id) => guardThenRun(() => void applyDraft(id))}
         onDelete={(id) => void handleDeleteDraft(id)}
-        onAddNew={() => { setDraftsOpen(false); setTemplatesOpen(true); }}
+        onAddNew={() =>
+          guardThenRun(() => {
+            setDraftsOpen(false);
+            setTemplatesOpen(true);
+          })
+        }
       />
       <PortfolioEntryDialog
         open={entryOpen}
