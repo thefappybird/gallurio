@@ -376,4 +376,13 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: "Save changes" }).className).toContain("bg-brand");
     expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
   });
+
+  it("renders the Preview button as a sibling of the section tabs inside one flex-wrap row", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const preview = screen.getByRole("button", { name: /Preview/ });
+    const sectionGroup = screen.getByRole("group", { name: /sections/i });
+    // Preview must share the section-tab group's flex container (no orphaned second line).
+    expect(preview.parentElement).toBe(sectionGroup);
+    expect(preview.parentElement?.className).toContain("flex-wrap");
+  });
 });

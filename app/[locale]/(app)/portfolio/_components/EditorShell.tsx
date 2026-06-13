@@ -804,36 +804,34 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
-            const label =
-              section === "header"
-                ? t("headerSettings")
-                : section === "contact"
-                  ? t("contactSettingsShort")
-                  : section === "collectionsPopup"
-                    ? "Collections Popup"
-                    : t(`zone.${section}`);
-            return (
-              <Button
-                key={section}
-                type="button"
-                size="sm"
-                variant={activeSection === section ? "default" : "outline"}
-                aria-pressed={activeSection === section}
-                onClick={() => {
-                  if (section === "header") void openHeader();
-                  else if (section === "contact") openContact();
-                  else if (section === "collectionsPopup") void openCollectionsPopup();
-                  else void selectZone(section);
-                }}
-              >
-                {label}
-              </Button>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
+        {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
+          const label =
+            section === "header"
+              ? t("headerSettings")
+              : section === "contact"
+                ? t("contactSettingsShort")
+                : section === "collectionsPopup"
+                  ? "Collections Popup"
+                  : t(`zone.${section}`);
+          return (
+            <Button
+              key={section}
+              type="button"
+              size="sm"
+              variant={activeSection === section ? "default" : "outline"}
+              aria-pressed={activeSection === section}
+              onClick={() => {
+                if (section === "header") void openHeader();
+                else if (section === "contact") openContact();
+                else if (section === "collectionsPopup") void openCollectionsPopup();
+                else void selectZone(section);
+              }}
+            >
+              {label}
+            </Button>
+          );
+        })}
         <Button
           type="button"
           size="sm"
