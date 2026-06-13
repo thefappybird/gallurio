@@ -394,6 +394,7 @@ describe("EditorShell", () => {
     expect(slot!.className).toContain("basis-full");
     expect(slot!.className).toContain("order-first");
     expect(slot!.className).toContain("sm:basis-auto");
+    expect(slot!.className).toContain("sm:order-last");
   });
 
   it("prompts to save unsaved changes when clicking Add new draft", async () => {

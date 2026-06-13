@@ -884,7 +884,7 @@ export function EditorShell({
       <div className="flex w-full flex-wrap items-center gap-2">
         <div
           data-testid="draft-title-slot"
-          className="order-first basis-full sm:order-none sm:basis-auto"
+          className="order-first basis-full sm:order-last sm:ml-auto sm:basis-auto"
         >
           <DraftNameEditor
             name={draftName}
