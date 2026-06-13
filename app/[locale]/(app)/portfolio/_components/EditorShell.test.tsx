@@ -386,6 +386,16 @@ describe("EditorShell", () => {
     expect(preview.parentElement?.className).toContain("flex-wrap");
   });
 
+  it("renders the draft title in a full-width, order-first slot for small screens", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const title = screen.getByTitle("Test Draft");
+    const slot = title.closest('[data-testid="draft-title-slot"]');
+    expect(slot).not.toBeNull();
+    expect(slot!.className).toContain("basis-full");
+    expect(slot!.className).toContain("order-first");
+    expect(slot!.className).toContain("sm:basis-auto");
+  });
+
   it("prompts to save unsaved changes when clicking Add new draft", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     // Make the draft dirty via a rename to a unique, valid name.

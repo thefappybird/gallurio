@@ -845,16 +845,11 @@ export function EditorShell({
     );
   }
 
-  // Right cluster: tools + draft name + the Publish slot.
+  // Right cluster: tools + the Publish slot. DraftNameEditor lives in topBar.
   function toolsCluster(publishSlot: ReactNode) {
     const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
     return (
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <DraftNameEditor
-          name={draftName}
-          error={nameError}
-          onCommit={(n) => { setDraftName(n); setNameError(null); }}
-        />
         <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
           {t("photos")}
         </Button>
@@ -882,10 +877,21 @@ export function EditorShell({
     );
   }
 
-  // Three-section top bar: nav (left) · device toggle (center) · tools (right).
+  // Three-section top bar: draft title (full-width on mobile, inline on sm+) ·
+  // nav (left) · device toggle (center) · tools (right).
   function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
       <div className="flex w-full flex-wrap items-center gap-2">
+        <div
+          data-testid="draft-title-slot"
+          className="order-first basis-full sm:order-none sm:basis-auto"
+        >
+          <DraftNameEditor
+            name={draftName}
+            error={nameError}
+            onCommit={(n) => { setDraftName(n); setNameError(null); }}
+          />
+        </div>
         <div className="flex min-w-0 flex-1 justify-start">{navCluster()}</div>
         {center && <div className="flex shrink-0 items-center justify-center">{center}</div>}
         <div className="flex min-w-0 flex-1 justify-end">{toolsCluster(publishSlot)}</div>
