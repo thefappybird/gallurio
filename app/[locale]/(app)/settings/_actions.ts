@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { AuthenticationException } from "@workos-inc/node";
+import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import {
   Workspace,
   User,
@@ -626,4 +628,83 @@ export async function setActiveWorkspaceAction(
       : `/${locale}/dashboard`;
 
   redirect(dashboardPath);
+}
+
+// ---------------------------------------------------------------------------
+// Profile: change password
+// Verifies the current password via WorkOS authenticateWithPassword before
+// setting the new password via updateUser. Handles MFA-gated accounts where
+// the password is correct but a further step is required.
+// ---------------------------------------------------------------------------
+
+const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+  confirmPassword: z.string().min(1),
+});
+
+// AuthenticationException codes that mean the PASSWORD was accepted but a
+// further step (MFA, email verification, org selection) is pending. For
+// password verification purposes these count as success.
+const PASSWORD_OK_CODES = new Set([
+  "mfa_challenge",
+  "mfa_enrollment",
+  "email_verification_required",
+  "organization_selection_required",
+]);
+
+export async function updatePasswordAction(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  const parsed = updatePasswordSchema.safeParse(input);
+  if (!parsed.success)
+    return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+
+  const { currentPassword, newPassword, confirmPassword } = parsed.data;
+  if (newPassword !== confirmPassword)
+    return { error: "Passwords do not match." };
+
+  const rl = await checkAuthRateLimit({ email: authUser.email });
+  if (!rl.ok)
+    return {
+      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
+    };
+
+  // Verify the current password by attempting authentication.
+  try {
+    await workos.userManagement.authenticateWithPassword({
+      clientId: process.env.WORKOS_CLIENT_ID!,
+      email: authUser.email,
+      password: currentPassword,
+    });
+  } catch (err) {
+    if (err instanceof AuthenticationException) {
+      if (!PASSWORD_OK_CODES.has(err.code)) {
+        return { error: "Current password is incorrect." };
+      }
+      // Password was correct; a pending step (e.g. MFA) is fine here.
+    } else {
+      console.error("[settings] authenticateWithPassword failed", err);
+      return {
+        error: "Could not verify your current password. Please try again.",
+      };
+    }
+  }
+
+  try {
+    await workos.userManagement.updateUser({
+      userId: authUser.workosUserId,
+      password: newPassword,
+    });
+  } catch (err) {
+    console.error("[settings] updateUser(password) failed", err);
+    return { error: "Failed to update password. Please try again." };
+  }
+
+  return { ok: true };
 }

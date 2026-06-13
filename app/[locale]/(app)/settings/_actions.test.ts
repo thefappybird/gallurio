@@ -81,6 +81,9 @@ const { mockWorkos, mockGetAuthUser } = vi.hoisted(() => {
   const mockWorkos = {
     userManagement: {
       updateUser: vi.fn(),
+      authenticateWithPassword: vi.fn(),
+      createPasswordReset: vi.fn(),
+      getUserIdentities: vi.fn(),
     },
     multiFactorAuth: {
       createUserAuthFactor: vi.fn(),
@@ -97,6 +100,14 @@ vi.mock("@/lib/workos", () => ({ workos: mockWorkos }));
 
 vi.mock("@/lib/auth/session", () => ({
   getAuthUser: mockGetAuthUser,
+}));
+
+vi.mock("@/lib/server/authRateLimit", () => ({
+  checkAuthRateLimit: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+vi.mock("@/lib/email/sendPasswordResetEmail", () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock activeWorkspace helpers
@@ -125,6 +136,7 @@ import {
   verifyMfaEnrollmentAction,
   disableMfaAction,
   setActiveWorkspaceAction,
+  updatePasswordAction,
 } from "./_actions";
 import { cookies } from "next/headers";
 import { resend } from "@/lib/email/resend";
@@ -132,6 +144,8 @@ import type { Attachment } from "resend";
 import { cancelSubscription } from "@/lib/paddle/client";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
+import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
+import { AuthenticationException } from "@workos-inc/node";
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -916,5 +930,107 @@ describe("setActiveWorkspaceAction", () => {
 
     const result = await setActiveWorkspaceAction(String(WS_A_ID));
     expect(result.error).toBe("Not authenticated");
+  });
+});
+
+// ---- updatePasswordAction ---------------------------------------------------
+
+describe("updatePasswordAction", () => {
+  const validInput = {
+    currentPassword: "oldpassword",
+    newPassword: "newpassword123",
+    confirmPassword: "newpassword123",
+  };
+
+  it("verifies the current password then updates it", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue({
+      user: { id: OWNER_WORKOS_ID },
+    });
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "owner@test.com", password: "oldpassword" }),
+    );
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: OWNER_WORKOS_ID,
+        password: "newpassword123",
+      }),
+    );
+  });
+
+  it("returns 'incorrect' when current password is wrong", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "invalid_credentials", message: "bad" } as never,
+        "req_1",
+      ),
+    );
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("treats an MFA-challenge exception as a correct password and proceeds", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "mfa_challenge", message: "mfa" } as never,
+        "req_2",
+      ),
+    );
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalled();
+  });
+
+  it("rejects when new and confirm do not match", async () => {
+    const result = await updatePasswordAction({
+      ...validInput,
+      confirmPassword: "different123",
+    });
+    expect(result).toEqual({ error: "Passwords do not match." });
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a too-short new password", async () => {
+    const result = await updatePasswordAction({
+      currentPassword: "oldpassword",
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect("error" in result).toBe(true);
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when rate limited", async () => {
+    vi.mocked(checkAuthRateLimit).mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 60,
+    });
+    const result = await updatePasswordAction(validInput);
+    expect("error" in result).toBe(true);
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Not authenticated" });
   });
 });
