@@ -320,11 +320,13 @@ export function EditorShell({
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
-  // during render. Paired with key={activeZone} so brand-kit re-renders (which
-  // re-run this component) never reset the editor mid-edit.
+  // during render. Paired with key={`${activeZone}-${seedNonce}`} so brand-kit
+  // re-renders never reset the editor mid-edit, and full re-seeds (applyTemplate,
+  // applyDraft) force a remount by bumping seedNonce.
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
     ensureIds(initialData.home ?? EMPTY_ZONE)
   );
+  const [seedNonce, setSeedNonce] = useState(0);
   const draftKey = `gallurio:portfolio-draft:${slug}`;
 
   // ---- Snapshot helpers ----
@@ -549,6 +551,7 @@ export function EditorShell({
     setNameError(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(homeData));
+    setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
       name: d.name,
@@ -746,6 +749,7 @@ export function EditorShell({
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+    setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
@@ -911,7 +915,7 @@ export function EditorShell({
       >
         {showPuck ? (
           <Puck
-            key={activeZone}
+            key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
             // tsc's stack; editorPuckConfig is typed at the component level already.
             config={editorPuckConfig as unknown as Config}

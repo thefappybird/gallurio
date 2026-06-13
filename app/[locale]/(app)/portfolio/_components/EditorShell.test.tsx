@@ -1,29 +1,59 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useEffect, type ReactNode, type ReactElement } from "react";
+import { useEffect, useState, type ReactNode, type ReactElement } from "react";
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 // Stub the heavy Puck editor: render its title + the injected custom header
 // (`overrides.header`), passing a "Publish" action so we can exercise onPublish.
 // Also stub `usePuck` (used by the in-canvas device toggle) so it has context.
+//
+// IMPORTANT: the mock simulates Puck's UNCONTROLLED behavior — it captures `data`
+// via useState on mount and ignores subsequent `data` prop changes (just like the
+// real Puck). A `key` change causes a remount, which re-initializes the seed.
+// `data-seed-len` exposes the captured seed length so remount tests can assert it
+// changed (proving the canvas was repainted, not just re-rendered with stale seed).
+// Module-level mount counter — incremented once per Puck remount (useEffect[]).
+// Reset in beforeEach. Used by the re-seeds test to assert a remount occurred.
+let __puckMountCount = 0;
+
 vi.mock("@measured/puck", () => ({
   Puck: ({
     headerTitle,
     overrides,
     onPublish,
     onChange,
+    data,
   }: {
     headerTitle?: string;
     overrides?: { header?: (p: { actions: ReactNode; children: ReactNode }) => ReactNode };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
+    data?: unknown;
   }) => {
+    // Simulate uncontrolled: capture data only on mount (via useState initializer).
+    // Subsequent `data` prop changes are ignored — same as real Puck after mount.
+    // Only a key change (remount) will re-initialize this seed.
+    const [seed] = useState(() => data);
+
+    // Count mounts — a new key forces a remount, incrementing this counter.
+    useEffect(() => { __puckMountCount++; }, []);
+
+    /* eslint-disable react-hooks/exhaustive-deps */
+    // seed is captured via useState and never changes after mount; omitting it
+    // from the dep array is intentional — we want [onChange]-only re-fire.
     useEffect(() => {
-      onChange?.({ content: [], root: {} });
+      // Emit the captured seed so zoneDataRef stays in sync with puckSeed,
+      // keeping isDirty=false on mount/remount echoes (matches real Puck behavior
+      // where the first onChange reflects the seed data, not empty content).
+      onChange?.(seed as Parameters<NonNullable<typeof onChange>>[0]);
     }, [onChange]);
+    /* eslint-enable react-hooks/exhaustive-deps */
 
     return (
-      <div data-testid="puck">
+      <div
+        data-testid="puck"
+        data-seed-len={JSON.stringify(seed)?.length ?? 0}
+      >
         <div data-testid="puck-title">{headerTitle}</div>
         <button
           type="button"
@@ -75,7 +105,7 @@ const updateDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1
 const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
-const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null } });
+const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" } } });
 vi.mock("../_draftActions", () => ({
   createDraftAction: (...a: unknown[]) => createDraftAction(...a),
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
@@ -151,6 +181,7 @@ async function renderAndDismissEntry(ui: ReactElement) {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  __puckMountCount = 0;
 });
 
 describe("EditorShell", () => {
@@ -408,5 +439,38 @@ describe("EditorShell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
 
     expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+  });
+
+  it("re-seeds the canvas immediately when applying a template (no tab switch required)", async () => {
+    // baseProps: initialData.home has a Hero block; seedTemplateAction returns empty
+    // content. The seed swap should be visible immediately — not deferred to a tab switch.
+    // baseProps has initialActiveDraftId="d1" + matching savedSnapshot → clean draft →
+    // guardThenRun fires immediately without the unsaved-changes modal.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Open the template picker via Drafts → Add new draft.
+    // (The clean-draft path: no unsaved-changes modal, jumps straight to the picker.)
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+
+    // Select the "Minimal" template card — opens the confirmation AlertDialog.
+    // Card button accessible name includes label + description ("Minimal Clean").
+    fireEvent.click(await screen.findByRole("button", { name: /Minimal/ }));
+
+    // Snapshot mount count before the destructive apply so we can detect a remount.
+    const mountCountBefore = __puckMountCount;
+
+    // Confirm the switch in the AlertDialog.
+    fireEvent.click(await screen.findByRole("button", { name: "Switch template" }));
+
+    // After applyTemplate, the seedNonce fix bumps the Puck key → remount.
+    // The mount counter (incremented in useEffect[]) is the authoritative signal:
+    // a key change forces a new Puck instance (new DOM node, new useEffect run).
+    // Without the fix: key stays "home-0", React reuses the instance, mount count stays
+    // at 1 — this assertion would fail.
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+    await waitFor(() => {
+      expect(__puckMountCount).toBeGreaterThan(mountCountBefore);
+    });
   });
 });
