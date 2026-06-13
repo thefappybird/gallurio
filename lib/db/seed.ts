@@ -337,7 +337,7 @@ async function seedWorkspace(
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
-    const status = pick(["new", "new", "contacted", "converted", "archived"] as const);
+    const status = pick(["new", "new", "contacted", "booked", "archived"] as const);
     return {
       workspaceId: workspace._id,
       name: pick([
@@ -469,11 +469,14 @@ async function main() {
   console.log("→ Connecting to MongoDB…");
   await connectDB();
 
-  console.log("→ Syncing indexes (drops stale, rebuilds from schemas)…");
-  await syncAllIndexes();
-
+  // Drop documents BEFORE syncing indexes: a pre-migration collection can hold
+  // legacy docs (e.g. users with no workosUserId) that would break a unique
+  // index build. Emptying first lets indexes rebuild cleanly.
   console.log("→ Dropping tenant collections…");
   await dropTenantCollections();
+
+  console.log("→ Syncing indexes (drops stale, rebuilds from schemas)…");
+  await syncAllIndexes();
 
   console.log("→ Seeding demo workspaces…");
   const owners = new Map<string, OwnerInfo>();
