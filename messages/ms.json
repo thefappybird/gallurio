@@ -576,7 +576,17 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar anda seperti yang dilihat oleh rakan sepasukan.",
-        "avatarHint": "Avatar diurus melalui profil akaun anda.",
+        "avatarHint": "Muat naik imej segi empat sama, sekurang-kurangnya 200×200px.",
+        "avatarUpload": "Muat naik",
+        "avatarReplace": "Ganti",
+        "avatarRemove": "Buang",
+        "avatarUploading": "Memuat naik…",
+        "avatarSaving": "Menyimpan…",
+        "avatarSaved": "Foto dikemas kini",
+        "avatarRemoved": "Foto dibuang",
+        "avatarUploadError": "Muat naik gagal",
+        "avatarTypeError": "Pilih fail imej",
+        "avatarSizeError": "Imej mesti kurang daripada 5 MB",
         "nameSection": "Nama paparan",
         "nameLabel": "Nama penuh",
         "emailLabel": "Alamat e-mel",
@@ -628,12 +638,10 @@
       },
       "tabs": {
         "account": "Akaun",
-        "security": "Keselamatan",
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
         "teams": "Pasukan",
         "publicPage": "Halaman awam",
-        "danger": "Zon berbahaya",
         "billing": "Bil",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Ruang kerja semasa"
@@ -726,21 +734,6 @@
         "saving": "Menyimpan…",
         "savedToast": "Tetapan halaman awam dikemas kini.",
         "visibilityUpdatedToast": "Keterlihatan dikemas kini."
-      },
-      "danger": {
-        "exportSection": "Eksport data ruang kerja",
-        "exportHint": "Muat turun salinan tempahan, pelanggan, rujukan galeri, dan pertanyaan anda. Kami akan menghantar pautan melalui e-mel apabila ia sedia.",
-        "exportButton": "Minta eksport",
-        "exportRequestedToast": "Eksport diminta. Kami akan menghantar e-mel apabila ia sedia.",
-        "deleteSection": "Padam ruang kerja",
-        "deleteHint": "Padam ruang kerja ini dan semua kandungannya secara kekal — tempahan, pelanggan, galeri, pertanyaan. Langganan anda akan dibatalkan. Ini tidak boleh dibuat alik.",
-        "deleteOpen": "Padam ruang kerja",
-        "deleteConfirmTitle": "Padam ruang kerja ini?",
-        "deleteConfirmBody": "Ini akan memadam setiap rekod dalam {workspaceName} secara kekal. Taip slug URL ruang kerja untuk mengesahkan:",
-        "deleteConfirmInput": "Slug URL ruang kerja",
-        "deleteCancel": "Batal",
-        "deleteConfirm": "Saya faham, padamkan",
-        "deleting": "Memadam…"
       }
     },
     "teams": {

@@ -10,6 +10,11 @@ vi.mock("@/components/app/client-user-button", () => ({
   ClientUserButton: () => <div data-testid="client-user-button" />,
 }));
 
+// signOutAction is a server action — stub it to avoid server-only imports.
+vi.mock("@/lib/auth/signOut", () => ({
+  signOutAction: vi.fn(),
+}));
+
 // ThemeToggle pulls in next-themes which isn't relevant to these assertions.
 vi.mock("@/components/app/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
@@ -105,6 +110,27 @@ describe("AppSidebar nav items", () => {
       expect(screen.queryByRole("link", { name: /^inquiries$/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /^portfolio$/i })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("AppSidebar footer logout", () => {
+  it("renders a logout submit button in the sidebar footer", () => {
+    renderSidebar("owner");
+    const btn = screen.getByRole("button", { name: /log.?out/i });
+    expect(btn).toBeInTheDocument();
+    expect(btn).toHaveAttribute("type", "submit");
+  });
+
+  it("wraps the logout button in a form", () => {
+    renderSidebar("owner");
+    const btn = screen.getByRole("button", { name: /log.?out/i });
+    expect(btn.closest("form")).not.toBeNull();
+  });
+
+  it("renders the logout button for staff role too", () => {
+    renderSidebar("staff");
+    const btn = screen.getByRole("button", { name: /log.?out/i });
+    expect(btn).toBeInTheDocument();
   });
 });
 

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
   LayoutDashboardIcon,
+  LogOutIcon,
   SettingsIcon,
   UsersIcon,
   UsersRound,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 import NextImage from "next/image";
 import { ClientUserButton } from "@/components/app/client-user-button";
+import { signOutAction } from "@/lib/auth/signOut";
 import {
   Sidebar,
   SidebarContent,
@@ -138,6 +140,18 @@ export function AppSidebar({
               <SettingsIcon className="size-5! shrink-0" />
               <span>{t("settings")}</span>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <form action={signOutAction}>
+              <SidebarMenuButton
+                render={<button type="submit" />}
+                tooltip={t("logOut")}
+                className="group-data-[collapsible=icon]:mx-auto text-destructive"
+              >
+                <LogOutIcon className="size-5! shrink-0" />
+                <span>{t("logOut")}</span>
+              </SidebarMenuButton>
+            </form>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">

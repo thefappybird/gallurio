@@ -576,7 +576,17 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
-        "avatarHint": "Avatar dikelola melalui profil akun Anda.",
+        "avatarHint": "Unggah gambar persegi, minimal 200×200px.",
+        "avatarUpload": "Unggah",
+        "avatarReplace": "Ganti",
+        "avatarRemove": "Hapus",
+        "avatarUploading": "Mengunggah…",
+        "avatarSaving": "Menyimpan…",
+        "avatarSaved": "Foto diperbarui",
+        "avatarRemoved": "Foto dihapus",
+        "avatarUploadError": "Unggahan gagal",
+        "avatarTypeError": "Pilih file gambar",
+        "avatarSizeError": "Gambar harus kurang dari 5 MB",
         "nameSection": "Nama tampilan",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Alamat email",
@@ -628,12 +638,10 @@
       },
       "tabs": {
         "account": "Akun",
-        "security": "Keamanan",
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
         "teams": "Tim",
         "publicPage": "Halaman publik",
-        "danger": "Zona berbahaya",
         "billing": "Tagihan",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Ruang kerja saat ini"
@@ -726,21 +734,6 @@
         "saving": "Menyimpan…",
         "savedToast": "Pengaturan halaman publik diperbarui.",
         "visibilityUpdatedToast": "Visibilitas diperbarui."
-      },
-      "danger": {
-        "exportSection": "Ekspor data ruang kerja",
-        "exportHint": "Unduh salinan pemesanan, klien, referensi galeri, dan pertanyaan Anda. Kami akan mengirimkan tautan melalui email saat sudah siap.",
-        "exportButton": "Minta ekspor",
-        "exportRequestedToast": "Ekspor diminta. Kami akan mengirimkan email saat sudah siap.",
-        "deleteSection": "Hapus ruang kerja",
-        "deleteHint": "Hapus ruang kerja ini dan semua isinya secara permanen — pemesanan, klien, galeri, pertanyaan. Langganan Anda akan dibatalkan. Tindakan ini tidak dapat dibatalkan.",
-        "deleteOpen": "Hapus ruang kerja",
-        "deleteConfirmTitle": "Hapus ruang kerja ini?",
-        "deleteConfirmBody": "Ini akan menghapus setiap catatan di {workspaceName} secara permanen. Ketik slug URL ruang kerja untuk mengonfirmasi:",
-        "deleteConfirmInput": "Slug URL ruang kerja",
-        "deleteCancel": "Batal",
-        "deleteConfirm": "Saya mengerti, hapus",
-        "deleting": "Menghapus…"
       }
     },
     "teams": {

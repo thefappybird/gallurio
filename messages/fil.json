@@ -576,7 +576,17 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
-        "avatarHint": "Ang avatar ay pinamamahalaan sa pamamagitan ng iyong account profile.",
+        "avatarHint": "Mag-upload ng square na larawan, hindi bababa sa 200×200px.",
+        "avatarUpload": "I-upload",
+        "avatarReplace": "Palitan",
+        "avatarRemove": "Alisin",
+        "avatarUploading": "Ina-upload…",
+        "avatarSaving": "Sine-save…",
+        "avatarSaved": "Na-update ang larawan",
+        "avatarRemoved": "Inalis ang larawan",
+        "avatarUploadError": "Nabigo ang pag-upload",
+        "avatarTypeError": "Pumili ng file na larawan",
+        "avatarSizeError": "Ang larawan ay dapat na wala pang 5 MB",
         "nameSection": "Display na pangalan",
         "nameLabel": "Buong pangalan",
         "emailLabel": "Email address",
@@ -628,12 +638,10 @@
       },
       "tabs": {
         "account": "Account",
-        "security": "Seguridad",
         "customize": "I-customize",
         "workspace": "Workspace",
         "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
-        "danger": "Danger zone",
         "billing": "Bayad",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Kasalukuyang workspace"
@@ -726,21 +734,6 @@
         "saving": "Sine-save…",
         "savedToast": "Na-update ang mga setting ng pampublikong pahina.",
         "visibilityUpdatedToast": "Na-update ang visibility."
-      },
-      "danger": {
-        "exportSection": "I-export ang data ng workspace",
-        "exportHint": "Mag-download ng kopya ng iyong mga booking, kliyente, mga reference sa gallery, at mga inquiry. Magpapadala kami ng link sa iyong email kapag handa na.",
-        "exportButton": "Humiling ng export",
-        "exportRequestedToast": "Hiniling ang export. Mag-eemeil kami sa iyo kapag handa na.",
-        "deleteSection": "Burahin ang workspace",
-        "deleteHint": "Permanenteng burahin ang workspace na ito at lahat ng laman nito — mga booking, kliyente, gallery, mga inquiry. Makakansela ang iyong subscription. Hindi na ito mababawi.",
-        "deleteOpen": "Burahin ang workspace",
-        "deleteConfirmTitle": "Burahin ang workspace na ito?",
-        "deleteConfirmBody": "Permanenteng binubura nito ang bawat rekord sa {workspaceName}. I-type ang URL slug ng workspace para kumpirmahin:",
-        "deleteConfirmInput": "URL slug ng workspace",
-        "deleteCancel": "Kanselahin",
-        "deleteConfirm": "Naiintindihan ko, burahin na",
-        "deleting": "Binubura…"
       }
     },
     "teams": {

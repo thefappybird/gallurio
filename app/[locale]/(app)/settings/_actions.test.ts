@@ -11,7 +11,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Types } from "mongoose";
-import { Workspace, Booking, Client, User } from "@/lib/db/models";
+import { Workspace, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
 
@@ -37,14 +37,6 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/paddle/client", () => ({
-  cancelSubscription: vi.fn().mockResolvedValue(undefined),
-  getPaddle: vi.fn(),
-  ensurePaddleCustomer: vi.fn(),
-  getSubscription: vi.fn(),
-  listActiveSubscriptionsForCustomer: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock("@/lib/storage/cloudinary", () => ({
   destroyAsset: vi.fn().mockResolvedValue(undefined),
 }));
@@ -58,22 +50,6 @@ vi.mock("next/headers", () => ({
     get: vi.fn().mockReturnValue(undefined),
     set: vi.fn(),
   }),
-}));
-
-vi.mock("@/lib/email/resend", () => ({
-  resend: {
-    emails: {
-      send: vi
-        .fn()
-        .mockResolvedValue({ data: { id: "email_test_id" }, error: null }),
-    },
-  },
-}));
-
-vi.mock("@/lib/email/templates/data-export", () => ({
-  buildDataExportEmailBody: vi
-    .fn()
-    .mockReturnValue("Your data export is attached."),
 }));
 
 // Hoist shared state so vi.mock factories can access it before initialization.
@@ -128,9 +104,7 @@ import {
   updateWorkspaceBrandingAction,
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
-  deleteWorkspaceAction,
   updateTimeFormatAction,
-  requestDataExportAction,
   updateProfileNameAction,
   enrollMfaAction,
   verifyMfaEnrollmentAction,
@@ -138,12 +112,10 @@ import {
   setActiveWorkspaceAction,
   updatePasswordAction,
   sendSetPasswordEmailAction,
+  updateAvatarAction,
 } from "./_actions";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
-import { resend } from "@/lib/email/resend";
-import type { Attachment } from "resend";
-import { cancelSubscription } from "@/lib/paddle/client";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
@@ -402,111 +374,6 @@ describe("togglePublicPagePublishedAction", () => {
   });
 });
 
-// ---- deleteWorkspaceAction --------------------------------------------------
-
-describe("deleteWorkspaceAction", () => {
-  it("wrong confirmation — returns error and workspace still exists", async () => {
-    await seedWorkspaceA();
-
-    const result = await deleteWorkspaceAction("wrong-slug");
-
-    expect(result.error).toBeTruthy();
-
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws).not.toBeNull();
-  });
-
-  it("correct confirmation — deletes workspace and related bookings", async () => {
-    const ws = await seedWorkspaceA();
-
-    const client = await Client.create({
-      workspaceId: ws._id,
-      name: "Emma Carter",
-    });
-    await Booking.create({
-      workspaceId: ws._id,
-      teamId: new Types.ObjectId(),
-      clientId: client._id,
-      clientName: "Emma Carter",
-      title: "Carter Wedding",
-      status: "booked",
-      sessions: [
-        {
-          startAt: new Date("2026-08-15T10:00:00Z"),
-          endAt: new Date("2026-08-15T18:00:00Z"),
-        },
-      ],
-      firstSessionStart: new Date("2026-08-15T10:00:00Z"),
-      lastSessionEnd: new Date("2026-08-15T18:00:00Z"),
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-
-    const wsAfter = await Workspace.findById(WS_A_ID).lean();
-    expect(wsAfter).toBeNull();
-
-    const bookings = await Booking.find({ workspaceId: ws._id }).lean();
-    expect(bookings).toHaveLength(0);
-  });
-
-  it("active Paddle subscription — cancelSubscription is called", async () => {
-    await Workspace.create({
-      _id: WS_A_ID,
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_WORKOS_ID,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "starter",
-      paddleSubscriptionId: "sub_test_123",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    expect(cancelSubscription).toHaveBeenCalledWith("sub_test_123");
-  });
-
-  it("Paddle cancel throws — delete still succeeds (best-effort cancellation)", async () => {
-    vi.mocked(cancelSubscription).mockRejectedValueOnce(
-      new Error("Paddle API error"),
-    );
-
-    await Workspace.create({
-      _id: WS_A_ID,
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_WORKOS_ID,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "pro",
-      paddleSubscriptionId: "sub_test_456",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    const wsAfter = await Workspace.findById(WS_A_ID).lean();
-    expect(wsAfter).toBeNull();
-  });
-
-  it("no active Paddle subscription — cancelSubscription is NOT called", async () => {
-    await seedWorkspaceA();
-
-    await deleteWorkspaceAction("sarah-photo");
-
-    expect(cancelSubscription).not.toHaveBeenCalled();
-  });
-});
-
 // ---- updateTimeFormatAction --------------------------------------------------
 
 describe("updateTimeFormatAction", () => {
@@ -562,46 +429,6 @@ describe("updateTimeFormatAction", () => {
       workosUserId: OWNER_WORKOS_ID,
     }).lean();
     expect(ownerUser?.timeFormat).toBe("24h");
-  });
-});
-
-// ---- requestDataExportAction ------------------------------------------------
-
-describe("requestDataExportAction", () => {
-  it("sends email with 3 CSV attachments", async () => {
-    await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({
-      get: vi.fn(),
-      set: vi.fn(),
-    } as never);
-
-    const result = await requestDataExportAction();
-    expect(result.ok).toBe(true);
-    expect(result.error).toBeUndefined();
-
-    expect(vi.mocked(resend.emails.send)).toHaveBeenCalledOnce();
-    const call = vi.mocked(resend.emails.send).mock.calls[0][0];
-    const filenames = (call.attachments ?? []).map((a: Attachment) =>
-      String(a.filename ?? ""),
-    );
-    expect(filenames).toContain("bookings.csv");
-    expect(filenames).toContain("clients.csv");
-    expect(filenames).toContain("inquiries.csv");
-  });
-
-  it("returns error when Resend fails", async () => {
-    await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({
-      get: vi.fn(),
-      set: vi.fn(),
-    } as never);
-    vi.mocked(resend.emails.send).mockResolvedValueOnce({
-      data: null,
-      error: { name: "validation_error", message: "bad sender" },
-    } as never);
-
-    const result = await requestDataExportAction();
-    expect(result.error).toBeDefined();
   });
 });
 
@@ -1110,6 +937,109 @@ describe("sendSetPasswordEmailAction", () => {
   it("rejects an unauthenticated caller", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await sendSetPasswordEmailAction();
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+});
+
+// ---- updateAvatarAction -----------------------------------------------------
+
+const { destroyAsset } = await import("@/lib/storage/cloudinary");
+
+describe("updateAvatarAction", () => {
+  const NEW_URL = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
+  const NEW_PUBLIC_ID = "gallurio/ws_abc/avatars/sample";
+  const OLD_PUBLIC_ID = "gallurio/ws_abc/avatars/old";
+
+  it("sets avatarUrl and avatarCloudinaryPublicId on the User doc", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.avatarUrl).toBe(NEW_URL);
+    expect(user?.avatarCloudinaryPublicId).toBe(NEW_PUBLIC_ID);
+  });
+
+  it("calls destroyAsset with the previous publicId when replacing", async () => {
+    // Seed user with an existing avatar
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+    );
+
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+  });
+
+  it("calls destroyAsset when removing the avatar (both null)", async () => {
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+    );
+
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: null,
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.avatarUrl).toBeNull();
+    expect(user?.avatarCloudinaryPublicId).toBeNull();
+  });
+
+  it("does NOT call destroyAsset when there was no previous publicId", async () => {
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).not.toHaveBeenCalled();
+  });
+
+  it("returns error for a non-https avatarUrl", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: "http://insecure.example.com/a.jpg",
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("returns error for an invalid avatarUrl", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: "not-a-url",
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("returns Not authenticated when no session", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await updateAvatarAction({
+      avatarUrl: null,
+      avatarCloudinaryPublicId: null,
+    });
+
     expect(result).toEqual({ error: "Not authenticated" });
   });
 });

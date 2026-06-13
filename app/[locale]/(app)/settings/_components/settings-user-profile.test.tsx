@@ -49,11 +49,11 @@ const allPages: SettingsPage[] = [
     body: <div data-testid="body-workspace">workspace content</div>,
   },
   {
-    slug: "danger",
-    label: "Danger zone",
+    slug: "billing",
+    label: "Billing",
     icon: dummyIcon,
     ownerOnly: true,
-    body: <div data-testid="body-danger">danger content</div>,
+    body: <div data-testid="body-billing">billing content</div>,
   },
 ];
 
@@ -62,17 +62,21 @@ const mockWorkspaces = [
   { id: "ws_bbb", name: "Workspace B" },
 ];
 
+const singleWorkspace = [{ id: "ws_aaa", name: "Solo Workspace" }];
+
 function renderSettings(
   role: "owner" | "staff",
   activeSlug: string | null = "account",
+  workspaces = mockWorkspaces,
+  currentWorkspaceId = "ws_aaa",
 ) {
   return renderWithProviders(
     <SettingsUserProfile
       role={role}
       pages={allPages}
       activeSlug={activeSlug}
-      workspaces={mockWorkspaces}
-      currentWorkspaceId="ws_aaa"
+      workspaces={workspaces}
+      currentWorkspaceId={currentWorkspaceId}
     />,
   );
 }
@@ -84,7 +88,7 @@ describe("SettingsUserProfile", () => {
       expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /workspace/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /danger/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /billing/i })).toBeInTheDocument();
     });
 
     it("renders the active page body", () => {
@@ -104,12 +108,34 @@ describe("SettingsUserProfile", () => {
       expect(screen.getByRole("link", { name: /account/i })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /customize/i })).toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /workspace/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: /danger/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /billing/i })).not.toBeInTheDocument();
     });
 
     it("renders the active page body for visible page", () => {
       renderSettings("staff", "account");
       expect(screen.getByTestId("body-account")).toBeInTheDocument();
+    });
+  });
+
+  describe("workspace switcher bar", () => {
+    it("renders the org-switcher dropdown when there are 2+ workspaces", () => {
+      renderSettings("owner", "account", mockWorkspaces, "ws_aaa");
+      expect(screen.getByTestId("org-switcher")).toBeInTheDocument();
+    });
+
+    it("does NOT render the org-switcher dropdown when there is only 1 workspace", () => {
+      renderSettings("owner", "account", singleWorkspace, "ws_aaa");
+      expect(screen.queryByTestId("org-switcher")).not.toBeInTheDocument();
+    });
+
+    it("renders the single workspace name as static text when there is only 1 workspace", () => {
+      renderSettings("owner", "account", singleWorkspace, "ws_aaa");
+      expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
+    });
+
+    it("falls back to the first workspace name when currentWorkspaceId has no match", () => {
+      renderSettings("owner", "account", singleWorkspace, "ws_unknown");
+      expect(screen.getByText("Solo Workspace")).toBeInTheDocument();
     });
   });
 });

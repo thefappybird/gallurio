@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -54,37 +55,39 @@ export function ClientUserButton({ name, email, avatarUrl }: Props) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent side="top" align="start" className="w-52">
-        <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-1.5">
-          <span className="truncate text-sm font-medium text-foreground">
-            {name ?? email}
-          </span>
-          {name && (
-            <span className="truncate text-xs text-muted-foreground">
-              {email}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col gap-0.5 px-2 py-1.5">
+            <span className="truncate text-sm font-medium text-foreground">
+              {name ?? email}
             </span>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {/* Settings link — render as an <a> via next-intl Link */}
-        <DropdownMenuItem render={<Link href="/settings" />}>
-          <SettingsIcon className="size-4 shrink-0" aria-hidden />
-          {t("settings")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {/* Sign-out — server action via form so it works without JS */}
-        <form action={signOutAction} className="contents">
-          <DropdownMenuItem
-            render={
-              <button
-                type="submit"
-                className="w-full text-destructive"
-              />
-            }
-          >
-            <LogOutIcon className="size-4 shrink-0" aria-hidden />
-            {t("logOut")}
+            {name && (
+              <span className="truncate text-xs text-muted-foreground">
+                {email}
+              </span>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {/* Settings link — render as an <a> via next-intl Link */}
+          <DropdownMenuItem render={<Link href="/settings" />}>
+            <SettingsIcon className="size-4 shrink-0" aria-hidden />
+            {t("settings")}
           </DropdownMenuItem>
-        </form>
+          <DropdownMenuSeparator />
+          {/* Sign-out — server action via form so it works without JS */}
+          <form action={signOutAction} className="contents">
+            <DropdownMenuItem
+              render={
+                <button
+                  type="submit"
+                  className="w-full text-destructive"
+                />
+              }
+            >
+              <LogOutIcon className="size-4 shrink-0" aria-hidden />
+              {t("logOut")}
+            </DropdownMenuItem>
+          </form>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -576,7 +576,17 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
-        "avatarHint": "Avatar is managed through your account profile.",
+        "avatarHint": "Upload a square image, at least 200×200px.",
+        "avatarUpload": "Upload",
+        "avatarReplace": "Replace",
+        "avatarRemove": "Remove",
+        "avatarUploading": "Uploading…",
+        "avatarSaving": "Saving…",
+        "avatarSaved": "Photo updated",
+        "avatarRemoved": "Photo removed",
+        "avatarUploadError": "Upload failed",
+        "avatarTypeError": "Choose an image file",
+        "avatarSizeError": "Image must be under 5 MB",
         "nameSection": "Display name",
         "nameLabel": "Full name",
         "emailLabel": "Email address",
@@ -628,12 +638,10 @@
       },
       "tabs": {
         "account": "Account",
-        "security": "Security",
         "customize": "Customize",
         "workspace": "Workspace",
         "teams": "Teams",
         "publicPage": "Public page",
-        "danger": "Danger zone",
         "billing": "Billing",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Current workspace"
@@ -726,21 +734,6 @@
         "saving": "Saving…",
         "savedToast": "Public page settings updated.",
         "visibilityUpdatedToast": "Visibility updated."
-      },
-      "danger": {
-        "exportSection": "Export workspace data",
-        "exportHint": "Download a copy of your bookings, clients, gallery references, and inquiries. We'll email you a link when it's ready.",
-        "exportButton": "Request export",
-        "exportRequestedToast": "Export requested. We'll email you when it's ready.",
-        "deleteSection": "Delete workspace",
-        "deleteHint": "Permanently delete this workspace and everything in it — bookings, clients, gallery, inquiries. Your subscription will be cancelled. This cannot be undone.",
-        "deleteOpen": "Delete workspace",
-        "deleteConfirmTitle": "Delete this workspace?",
-        "deleteConfirmBody": "This permanently deletes every record in {workspaceName}. Type the workspace URL slug to confirm:",
-        "deleteConfirmInput": "Workspace URL slug",
-        "deleteCancel": "Cancel",
-        "deleteConfirm": "I understand, delete it",
-        "deleting": "Deleting…"
       }
     },
     "teams": {

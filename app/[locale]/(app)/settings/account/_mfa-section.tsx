@@ -246,14 +246,14 @@ function MfaSetupFlow({
 }
 
 // ---------------------------------------------------------------------------
-// Security panel
+// MFA section — embedded in the account panel
 // ---------------------------------------------------------------------------
 
 type Props = {
   mfaEnabled: boolean;
 };
 
-export function SecurityPanel({ mfaEnabled: initialMfaEnabled }: Props) {
+export function MfaSection({ mfaEnabled: initialMfaEnabled }: Props) {
   const t = useTranslations("app.settings.security");
   const [mfaEnabled, setMfaEnabled] = useState(initialMfaEnabled);
   const [disablePending, startDisable] = useTransition();
@@ -271,62 +271,60 @@ export function SecurityPanel({ mfaEnabled: initialMfaEnabled }: Props) {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">{t("mfaSection")}</h2>
-          <p className="text-sm text-muted-foreground">{t("mfaHint")}</p>
+    <section className="flex flex-col gap-4 border-t border-border pt-8">
+      <div>
+        <h2 className="text-lg font-semibold">{t("mfaSection")}</h2>
+        <p className="text-sm text-muted-foreground">{t("mfaHint")}</p>
+      </div>
+
+      {mfaEnabled ? (
+        <div className="flex flex-col gap-4">
+          {/* Status badge */}
+          <div className="flex items-center gap-2 border border-border bg-card px-4 py-3">
+            <ShieldCheck className="size-4 shrink-0 text-foreground" aria-hidden />
+            <span className="text-sm font-medium">{t("mfaEnabledLabel")}</span>
+            <span className="ml-auto inline-flex items-center border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+              {t("enabled")}
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disablePending}
+            onClick={handleDisable}
+            className="min-h-11 self-start text-destructive hover:text-destructive"
+            aria-label={t("mfaDisableAriaLabel")}
+          >
+            {disablePending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                {t("disabling")}
+              </>
+            ) : (
+              <>
+                <ShieldOff className="mr-2 size-4" aria-hidden />
+                {t("mfaDisable")}
+              </>
+            )}
+          </Button>
         </div>
-
-        {mfaEnabled ? (
-          <div className="flex flex-col gap-4">
-            {/* Status badge */}
-            <div className="flex items-center gap-2 border border-border bg-card px-4 py-3">
-              <ShieldCheck className="size-4 shrink-0 text-foreground" aria-hidden />
-              <span className="text-sm font-medium">{t("mfaEnabledLabel")}</span>
-              <span className="ml-auto inline-flex items-center border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
-                {t("enabled")}
-              </span>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={disablePending}
-              onClick={handleDisable}
-              className="min-h-11 self-start text-destructive hover:text-destructive"
-              aria-label={t("mfaDisableAriaLabel")}
-            >
-              {disablePending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-                  {t("disabling")}
-                </>
-              ) : (
-                <>
-                  <ShieldOff className="mr-2 size-4" aria-hidden />
-                  {t("mfaDisable")}
-                </>
-              )}
-            </Button>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {/* Status badge */}
+          <div className="flex items-center gap-2 border border-border bg-card px-4 py-3">
+            <ShieldOff className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="text-sm text-muted-foreground">
+              {t("mfaNotEnabledLabel")}
+            </span>
           </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* Status badge */}
-            <div className="flex items-center gap-2 border border-border bg-card px-4 py-3">
-              <ShieldOff className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="text-sm text-muted-foreground">
-                {t("mfaNotEnabledLabel")}
-              </span>
-            </div>
 
-            <MfaSetupFlow
-              onDone={() => setMfaEnabled(true)}
-              t={t}
-            />
-          </div>
-        )}
-      </section>
-    </div>
+          <MfaSetupFlow
+            onDone={() => setMfaEnabled(true)}
+            t={t}
+          />
+        </div>
+      )}
+    </section>
   );
 }

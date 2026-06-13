@@ -12,12 +12,10 @@ export type Role = "owner" | "staff";
 export type SettingsPage = {
   slug:
     | "account"
-    | "security"
     | "customize"
     | "workspace"
     | "public-page"
     | "billing"
-    | "danger"
     | "teams"
     | "dev-plan";
   label: string;
@@ -53,10 +51,18 @@ export function SettingsUserProfile({
     <div className="flex w-full flex-col gap-0">
       {/* Workspace switcher bar */}
       <div className="flex w-full items-center justify-between border border-b-0 border-border bg-card px-4 py-3">
-        <SettingsOrgSwitcher
-          workspaces={workspaces}
-          currentWorkspaceId={currentWorkspaceId}
-        />
+        {workspaces.length >= 2 ? (
+          <SettingsOrgSwitcher
+            workspaces={workspaces}
+            currentWorkspaceId={currentWorkspaceId}
+          />
+        ) : (
+          <span className="min-w-0 truncate text-sm font-medium">
+            {workspaces.find((w) => w.id === currentWorkspaceId)?.name ??
+              workspaces[0]?.name ??
+              ""}
+          </span>
+        )}
       </div>
 
       {/* Two-column layout: nav sidebar + panel */}

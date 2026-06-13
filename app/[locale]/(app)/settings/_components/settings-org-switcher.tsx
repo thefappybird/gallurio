@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -63,25 +64,27 @@ export function SettingsOrgSwitcher({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="start" side="bottom" className="w-64">
-        <DropdownMenuLabel>{t("yourWorkspaces")}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {workspaces.map((ws) => {
-          const isActive = ws.id === currentWorkspaceId;
-          return (
-            <DropdownMenuItem
-              key={ws.id}
-              disabled={isActive}
-              onClick={() => handleSelect(ws.id)}
-              className="flex items-center gap-2"
-              aria-current={isActive ? "true" : undefined}
-            >
-              <span className="min-w-0 flex-1 truncate">{ws.name}</span>
-              {isActive && (
-                <CheckIcon className="size-4 shrink-0 text-foreground" aria-hidden />
-              )}
-            </DropdownMenuItem>
-          );
-        })}
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{t("yourWorkspaces")}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {workspaces.map((ws) => {
+            const isActive = ws.id === currentWorkspaceId;
+            return (
+              <DropdownMenuItem
+                key={ws.id}
+                disabled={isActive}
+                onClick={() => handleSelect(ws.id)}
+                className="flex items-center gap-2"
+                aria-current={isActive ? "true" : undefined}
+              >
+                <span className="min-w-0 flex-1 truncate">{ws.name}</span>
+                {isActive && (
+                  <CheckIcon className="size-4 shrink-0 text-foreground" aria-hidden />
+                )}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

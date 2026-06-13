@@ -5,11 +5,9 @@ import {
   Building2,
   Palette,
   Globe,
-  AlertTriangle,
   Wrench,
   CreditCard,
   UserIcon,
-  ShieldIcon,
 } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
@@ -24,11 +22,9 @@ import { WorkspaceBusinessForm } from "../workspace/_business-form";
 import { WorkspaceBrandingForm } from "../workspace/_branding-form";
 import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
-import { DangerPanel } from "../danger/_panel";
 import { DevPlanPanel } from "../dev-plan/_panel";
 import { BillingPanel } from "../billing/_panel";
 import { AccountPanel } from "../account/_panel";
-import { SecurityPanel } from "../security/_panel";
 import type {
   UpdateWorkspaceBusinessInput,
   UpdateWorkspaceBrandingInput,
@@ -41,7 +37,6 @@ const OWNER_ONLY_SLUGS = new Set([
   "workspace",
   "public-page",
   "billing",
-  "danger",
   "dev-plan",
 ]);
 const IS_DEV = process.env.NODE_ENV !== "production";
@@ -140,16 +135,12 @@ export default async function SettingsCatchallPage({
             <AccountPanel
               name={authUser?.name ?? ""}
               email={authUser?.email ?? ""}
-              avatarUrl={authUser?.avatarUrl ?? null}
+              avatarUrl={userDoc?.avatarUrl ?? authUser?.avatarUrl ?? null}
+              avatarCloudinaryPublicId={userDoc?.avatarCloudinaryPublicId ?? null}
               hasOAuth={hasOAuth}
+              mfaEnabled={mfaEnabled}
             />
           ),
-        },
-        {
-          slug: "security",
-          label: t("security"),
-          icon: <ShieldIcon className="size-4" />,
-          body: <SecurityPanel mfaEnabled={mfaEnabled} />,
         },
         {
           slug: "customize",
@@ -221,18 +212,6 @@ export default async function SettingsCatchallPage({
               },
             ] as const)
           : []),
-        {
-          slug: "danger",
-          label: t("danger"),
-          icon: <AlertTriangle className="size-4" />,
-          ownerOnly: true,
-          body: (
-            <DangerPanel
-              workspaceName={workspace.name}
-              workspaceSlug={workspace.slug}
-            />
-          ),
-        },
       ]}
     />
   );
