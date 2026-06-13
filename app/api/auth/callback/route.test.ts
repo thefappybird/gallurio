@@ -56,6 +56,9 @@ const MOCK_AUTH_RESPONSE = {
     lastName: "User",
     profilePictureUrl: null,
   },
+  // sealSession:true is requested, so the SDK returns a sealed session string,
+  // which the route sets directly on the response as the wos-session cookie.
+  sealedSession: "sealed_session_value_for_tests",
 };
 
 // Shared CSRF nonce — embedded in the signed state and mirrored in the cookie.
@@ -250,6 +253,34 @@ describe("GET /api/auth/callback — CSRF state binding", () => {
     const setCookie = res.headers.get("set-cookie") ?? "";
     expect(setCookie).toContain("oauth_csrf=");
     expect(setCookie.toLowerCase()).toMatch(/max-age=0|expires=/);
+  });
+
+  it("sets the wos-session cookie ON THE RESPONSE on a successful exchange", async () => {
+    // Regression guard: saveSession()'s cookies()-store write is NOT merged into
+    // a manually-returned NextResponse, so the session must be set on the
+    // response object directly or the user is bounced straight back to sign-in.
+    const { GET } = await loadRoute();
+    const url = buildCallbackUrl({ code: "code_abc", state: signedState() });
+
+    const res = await GET(makeReq(url));
+
+    expect(res.status).toBe(307);
+    const sessionCookie = res.cookies.get("wos-session");
+    expect(sessionCookie?.value).toBe("sealed_session_value_for_tests");
+  });
+
+  it("redirects to sign-in when the exchange returns no sealedSession", async () => {
+    mockAuthenticateWithCode.mockResolvedValueOnce({
+      user: MOCK_AUTH_RESPONSE.user,
+      // sealedSession intentionally omitted
+    });
+    const { GET } = await loadRoute();
+    const url = buildCallbackUrl({ code: "code_abc", state: signedState() });
+
+    const res = await GET(makeReq(url));
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location") ?? "").toContain("/sign-in");
   });
 });
 

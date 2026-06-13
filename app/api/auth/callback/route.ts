@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 import { timingSafeEqual } from "crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
+import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { ensureUser } from "@/lib/auth/ensureUser";
 import { verifyOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
@@ -21,6 +21,12 @@ import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
 
 const CSRF_COOKIE = "oauth_csrf";
+// Matches @workos-inc/authkit-nextjs's session cookie name (WORKOS_COOKIE_NAME
+// or the "wos-session" default) so its middleware can read what we set here.
+const SESSION_COOKIE = process.env.WORKOS_COOKIE_NAME || "wos-session";
+// 400 days — the max Chrome allows; the access/refresh tokens are the real
+// time-limited part of the session. Mirrors authkit's getCookieOptions().
+const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
 /** Gated debug logging for the OAuth callback. Enable with AUTHKIT_DEBUG=true. */
 function debug(...args: unknown[]): void {
@@ -35,6 +41,30 @@ function localizedDashboard(locale: string): string {
 
 function localizedSignIn(locale: string): string {
   return locale === routing.defaultLocale ? "/sign-in" : `/${locale}/sign-in`;
+}
+
+/**
+ * Persists the sealed WorkOS session DIRECTLY on the response.
+ *
+ * We cannot rely on authkit's saveSession() here: it writes via the next/headers
+ * cookies() store, and in a Route Handler that returns a manually-constructed
+ * NextResponse those writes are NOT merged into the response — so the session
+ * cookie silently never reaches the browser. Setting it on the response object
+ * (the same mechanism as clearCsrfCookie) is what actually ships the cookie.
+ */
+function setSessionCookie(
+  res: NextResponse,
+  sealedSession: string,
+  secure: boolean,
+): NextResponse {
+  res.cookies.set(SESSION_COOKIE, sealedSession, {
+    httpOnly: true,
+    secure,
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_COOKIE_MAX_AGE,
+  });
+  return res;
 }
 
 /** Expires the single-use CSRF nonce cookie on the given response. */
@@ -118,8 +148,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
     });
 
-    // Persist the sealed session cookie.
-    await saveSession(authResponse, request);
+    const sealedSession = (authResponse as { sealedSession?: string })
+      .sealedSession;
+    if (!sealedSession) {
+      // sealSession:true was requested, so this should always be present.
+      throw new Error("authenticateWithCode returned no sealedSession");
+    }
 
     // JIT-provision or sync the User document.
     const firstName = authResponse.user.firstName ?? "";
@@ -134,11 +168,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     };
 
     await ensureUser(authUser);
-    debug("code exchanged + session saved", {
+    debug("code exchanged + session sealed", {
       userId: authResponse.user.id,
-      hasSealedSession: Boolean(
-        (authResponse as { sealedSession?: string }).sealedSession,
-      ),
     });
 
     // Determine redirect destination.
@@ -163,9 +194,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       destination = new URL(localizedDashboard(locale), origin).toString();
     }
 
-    // Single-use: clear the CSRF nonce cookie now that the flow completed.
+    // Set the session cookie on the response itself, then clear the single-use
+    // CSRF nonce cookie now that the flow completed.
     debug("redirect -> destination", { destination });
-    return clearCsrfCookie(NextResponse.redirect(destination), secure);
+    const res = NextResponse.redirect(destination);
+    setSessionCookie(res, sealedSession, secure);
+    return clearCsrfCookie(res, secure);
   } catch (err) {
     // Authentication failure — redirect to localized sign-in.
     debug("redirect -> sign-in: exchange/ensureUser threw", {
