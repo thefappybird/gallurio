@@ -995,6 +995,35 @@ describe("updatePasswordAction", () => {
     expect(mockWorkos.userManagement.updateUser).toHaveBeenCalled();
   });
 
+  it("treats a radar_email_challenge exception as a correct password and proceeds", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "radar_email_challenge", message: "radar" } as never,
+        "req_3",
+      ),
+    );
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalled();
+  });
+
+  it("treats an sso_required exception as a wrong password (not in PASSWORD_OK_CODES)", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "sso_required", message: "sso" } as never,
+        "req_4",
+      ),
+    );
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
+  });
+
   it("rejects when new and confirm do not match", async () => {
     const result = await updatePasswordAction({
       ...validInput,

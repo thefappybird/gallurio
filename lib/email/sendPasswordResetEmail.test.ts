@@ -31,6 +31,16 @@ describe("sendPasswordResetEmail", () => {
     expect(arg.subject).toContain("Gallurio");
   });
 
+  it("percent-encodes URL-unsafe characters in the token", async () => {
+    await sendPasswordResetEmail("user@example.com", "tok+abc/def=");
+
+    const arg = mockSendEmail.mock.calls[0]![0]!;
+    expect(arg.html).toContain(
+      "https://app.example.com/reset-password?token=tok%2Babc%2Fdef%3D",
+    );
+    expect(arg.html).not.toContain("token=tok+abc/def=");
+  });
+
   it("falls back to default app url and name when env vars are unset", async () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
     vi.stubEnv("NEXT_PUBLIC_APP_NAME", "");
