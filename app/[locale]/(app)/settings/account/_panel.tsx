@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { updateProfileNameAction } from "../_actions";
+import { PasswordSection } from "./_password-section";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required").max(80, "Name is too long"),
@@ -34,9 +35,10 @@ type Props = {
   name: string;
   email: string;
   avatarUrl: string | null;
+  hasOAuth: boolean;
 };
 
-export function AccountPanel({ name, email, avatarUrl }: Props) {
+export function AccountPanel({ name, email, avatarUrl, hasOAuth }: Props) {
   const t = useTranslations("app.settings.account");
   const [pending, startTransition] = useTransition();
   const [displayName, setDisplayName] = useState(name);
@@ -156,6 +158,9 @@ export function AccountPanel({ name, email, avatarUrl }: Props) {
           </div>
         </form>
       </section>
+
+      {/* Password */}
+      <PasswordSection hasOAuth={hasOAuth} />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
+import { getAuthMethods } from "@/lib/auth/authMethods";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { routing } from "@/lib/i18n/routing";
@@ -77,6 +78,7 @@ export default async function SettingsCatchallPage({
   // Load full user doc for MFA state
   const userDoc = await User.findOne({ workosUserId: userId }).lean();
   const mfaEnabled = userDoc?.mfaEnabled ?? false;
+  const { hasOAuth } = await getAuthMethods(userId);
 
   // Load all workspaces the user is a member of for the switcher
   const membershipWorkspaceIds = (userDoc?.memberships ?? []).map(
@@ -139,6 +141,7 @@ export default async function SettingsCatchallPage({
               name={authUser?.name ?? ""}
               email={authUser?.email ?? ""}
               avatarUrl={authUser?.avatarUrl ?? null}
+              hasOAuth={hasOAuth}
             />
           ),
         },
