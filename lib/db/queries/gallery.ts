@@ -468,6 +468,59 @@ export async function countItemsByPublicId(
   return GalleryItem.countDocuments({ workspaceId, cloudinaryPublicId });
 }
 
+/** Detach items from a collection: delete the membership, or keep as standalone if last. */
+export async function detachItemsFromCollection(opts: {
+  workspaceId: string;
+  collectionId: string;
+  itemIds: string[];
+}): Promise<number> {
+  const { workspaceId, collectionId, itemIds } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return 0;
+  await connectDB();
+
+  const ids = itemIds.filter((x) => Types.ObjectId.isValid(x));
+  if (ids.length === 0) return 0;
+  const items = await GalleryItem.find({ workspaceId, collectionId, _id: { $in: ids } }).lean();
+  if (items.length === 0) return 0;
+
+  let removed = 0;
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      for (const it of items) {
+        const otherRefs = await GalleryItem.countDocuments({
+          workspaceId,
+          cloudinaryPublicId: it.cloudinaryPublicId,
+          _id: { $ne: it._id },
+        }).session(session);
+        if (otherRefs > 0) {
+          await GalleryItem.deleteOne({ _id: it._id, workspaceId }, { session });
+        } else {
+          await GalleryItem.updateOne({ _id: it._id, workspaceId }, { $set: { collectionId: null } }, { session });
+        }
+        removed += 1;
+      }
+      const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
+        .select({ coverItemId: 1 })
+        .session(session);
+      if (col && col.coverItemId && ids.includes(String(col.coverItemId))) {
+        const newest = await GalleryItem.findOne({ workspaceId, collectionId })
+          .sort({ createdAt: -1, _id: -1 })
+          .select({ _id: 1 })
+          .session(session);
+        await GalleryCollection.updateOne(
+          { _id: collectionId, workspaceId },
+          { $set: { coverItemId: newest ? newest._id : null } },
+          { session }
+        );
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+  return removed;
+}
+
 /** Copy existing items (by id) into a collection as new docs reusing the same asset. */
 export async function copyItemsIntoCollection(opts: {
   workspaceId: string;
