@@ -236,7 +236,7 @@ async function seedWorkspace(
             ? "booked"
             : rand() > 0.4
               ? "booked"
-              : "inquiry";
+              : "booked";
     const eventType = pick(EVENT_TYPES);
     const total = range(20, 250) * 1000;
     const slot = timedSlot(dayDelta);

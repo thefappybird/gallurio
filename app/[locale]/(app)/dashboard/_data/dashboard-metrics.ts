@@ -116,7 +116,7 @@ export async function getUpcomingWeek(workspaceId: WorkspaceId, limit = 6) {
   return Booking.find({
     workspaceId,
     firstSessionStart: { $gt: endOfDay(now), $lte: weekEnd },
-    status: { $in: ["booked", "inquiry"] },
+    status: { $in: ["booked"] },
   })
     .sort({ firstSessionStart: 1 })
     .limit(limit)

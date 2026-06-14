@@ -3,7 +3,6 @@ import { SUPPORTED_CURRENCIES } from "./workspace";
 import { optionalPhone } from "./client";
 
 export const BOOKING_STATUSES = [
-  "inquiry",
   "booked",
   "completed",
   "cancelled",
@@ -84,7 +83,7 @@ export const bookingCreateSchema = z.object({
   teamId: objectIdString,
   title: z.string().min(1, "Required").max(160).trim(),
   eventType: z.enum(EVENT_TYPES).default("other"),
-  status: z.enum(BOOKING_STATUSES).default("inquiry"),
+  status: z.enum(BOOKING_STATUSES).default("booked"),
   sessions: z
     .array(bookingSessionSchema)
     .min(1, "At least one session required"),

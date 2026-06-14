@@ -6,7 +6,6 @@ import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 const KNOWN: Record<BookingStatus, true> = {
-  inquiry: true,
   booked: true,
   completed: true,
   cancelled: true,

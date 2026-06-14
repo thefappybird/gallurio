@@ -220,7 +220,7 @@
               "note": "pernikahan, korporat, potret, dll."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total jumlah pemesanan"
@@ -266,7 +266,6 @@
         "edit": "Edit"
       },
       "statusValues": {
-        "inquiry": "Pertanyaan",
         "booked": "Dipesan",
         "completed": "Selesai",
         "cancelled": "Dibatalkan"

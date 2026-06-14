@@ -399,7 +399,7 @@ async function seedSampleData(workspaceId: string) {
       clientName: clients[3].name,
       title: "Northwood Annual Gala",
       eventType: "corporate",
-      status: "inquiry",
+      status: "booked",
       sessions: [{ startAt: galaSlot.start, endAt: galaSlot.end }],
       firstSessionStart: galaSlot.start,
       lastSessionEnd: galaSlot.end,

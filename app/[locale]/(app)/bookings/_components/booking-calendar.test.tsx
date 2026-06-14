@@ -306,7 +306,6 @@ function OverflowRow({
   const rowRef = useRef<HTMLButtonElement>(null);
   const STATUS_COLOR_TEST: Record<string, string> = {
     booked: "#0d9488",
-    inquiry: "#9333ea",
     completed: "#16a34a",
     cancelled: "#6b7280",
   };

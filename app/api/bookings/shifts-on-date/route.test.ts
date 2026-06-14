@@ -177,6 +177,18 @@ describe("GET /api/bookings/shifts-on-date", () => {
     expect(body.shifts).toHaveLength(0);
   });
 
+  it("does not return draft bookings even when they overlap the queried date", async () => {
+    const { GET } = await load();
+    await seedBooking([
+      { startAt: new Date("2026-08-15T10:00:00Z"), endAt: new Date("2026-08-15T18:00:00Z") },
+    ], { status: "draft", title: "Draft Booking" });
+
+    const req = makeReq("2026-08-15");
+    const res = await GET(req);
+    const body = await res.json();
+    expect(body.shifts).toHaveLength(0);
+  });
+
   it("excludes the booking specified by excludeId", async () => {
     const { GET } = await load();
     const b = await seedBooking([

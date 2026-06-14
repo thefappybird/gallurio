@@ -32,7 +32,7 @@ const STATUS_CHANGED_ENTRY: ActivityEntry = {
   createdAt: TODAY,
   diff: {
     changes: {
-      status: { before: "inquiry", after: "booked" },
+      status: { before: "booked", after: "completed" },
     },
   },
 };
@@ -117,13 +117,13 @@ describe("ActivityTimeline", () => {
         currency="PHP"
       />
     );
-    // Should show "Inquiry" and "Booked" — not "inquiry" / "booked"
-    // The pill text is "Status: Inquiry → Booked"
+    // Should show "Booked" and "Completed" — not "booked" / "completed"
+    // The pill text is "Status: Booked → Completed"
     const pill = screen.getByTitle(/Status:/i);
-    expect(pill.textContent).toContain("Inquiry");
     expect(pill.textContent).toContain("Booked");
+    expect(pill.textContent).toContain("Completed");
     // Raw enum values should NOT appear as-is in a separate element
-    expect(pill.textContent).not.toContain(": inquiry →");
+    expect(pill.textContent).not.toContain(": booked →");
   });
 
   it("renders a sessions diff as label-only pill without before→after", () => {

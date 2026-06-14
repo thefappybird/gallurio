@@ -96,7 +96,6 @@
      surrounding scheme. Saturated mid-luminance palette: white text always
      contrasts. */
   --event-booked: oklch(0.55 0.10 195);    /* teal — confident, primary */
-  --event-inquiry: oklch(0.55 0.07 250);   /* slate blue — new lead */
   --event-completed: oklch(0.55 0.13 145); /* green — done */
   --event-cancelled: oklch(0.60 0.18 25);  /* red — cancelled */
   --radius: 0rem;
