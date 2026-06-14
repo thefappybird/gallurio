@@ -31,6 +31,7 @@ import {
   updateDraftAction,
   deleteDraftAction,
   getDraftAction,
+  listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
   type DraftSummary,
@@ -416,7 +417,7 @@ export function EditorShell({
 
   useEffect(() => {
     persistLocalDraft();
-  }, [collectionsPopup, contact, formLocale, headerConfig, persistLocalDraft]);
+  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, headerConfig, persistLocalDraft]);
 
   // beforeunload guard while dirty.
   useEffect(() => {
@@ -463,26 +464,47 @@ export function EditorShell({
 
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
+    const shouldToastValidationError = templatesOpen;
     const validationError = validateDraftName(draftName);
     if (validationError) {
       setNameError(validationError);
+      if (shouldToastValidationError) toast.error(validationError);
       return false;
     }
     setSavingChanges(true);
     const payload = { name: draftName, ...buildDraftSnapshot() };
     try {
-      let res;
+      let res: Awaited<ReturnType<typeof createDraftAction | typeof updateDraftAction>>;
       if (activeDraftId) {
         res = await updateDraftAction({ id: activeDraftId, ...payload });
       } else {
         res = await createDraftAction(payload);
+        // Recover from a stale server-side default draft when the client is in
+        // "brand-new unsaved draft" mode and the local list is empty.
+        if (
+          "error" in res &&
+          res.error === "name_taken" &&
+          draftName === DEFAULT_DRAFT_NAME &&
+          drafts.length === 0
+        ) {
+          const serverDrafts = await listDraftsAction();
+          const existingDefaultDraft = serverDrafts.find(
+            (d) => d.name.trim().toLowerCase() === DEFAULT_DRAFT_NAME.toLowerCase()
+          );
+          if (existingDefaultDraft) {
+            setDrafts(serverDrafts);
+            res = await updateDraftAction({ id: existingDefaultDraft.id, ...payload });
+          }
+        }
       }
       if ("error" in res) {
         const err = res.error;
         if (err === "name_required") {
           setNameError("This field is required");
+          if (shouldToastValidationError) toast.error("This field is required");
         } else if (err === "name_taken") {
           setNameError("A draft with this name already exists");
+          if (shouldToastValidationError) toast.error("A draft with this name already exists");
         } else if (err.startsWith("draft_limit_reached")) {
           toast.error("You've reached your draft limit.");
         } else {
@@ -508,11 +530,6 @@ export function EditorShell({
 
   // ---- Unsaved-changes guard ----
   function guardThenRun(run: () => void) {
-    const validationError = validateDraftName(draftName);
-    if (validationError) {
-      setNameError(validationError);
-      return;
-    }
     if (activeDraftId === null || isDirty) {
       setPendingAction(() => run);
     } else {
@@ -574,10 +591,23 @@ export function EditorShell({
       toast.error("Could not delete draft. Please try again.");
       return;
     }
-    setDrafts((prev) => prev.filter((d) => d.id !== id));
+    setDrafts((prev) => {
+      const deletedDraft = prev.find((d) => d.id === id) ?? null;
+      const nextDrafts = prev.filter((d) => d.id !== id);
+      if (
+        nameError === "A draft with this name already exists" &&
+        deletedDraft?.name.trim().toLowerCase() === draftName.trim().toLowerCase()
+      ) {
+        setNameError(null);
+      }
+      return nextDrafts;
+    });
     if (id === activeDraftId) {
+      // Keep the loaded canvas as an unsaved working copy after its backing
+      // draft record is deleted.
       setActiveDraftId(null);
       setSavedSnapshot(null);
+      setNameError(null);
     }
   }
 
@@ -849,46 +879,49 @@ export function EditorShell({
     );
   }
 
-  // Right cluster: tools + the Publish slot. DraftNameEditor lives in topBar.
-  function toolsCluster(publishSlot: ReactNode) {
+  function actionsCluster(publishSlot: ReactNode) {
     const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
     return (
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
+      <>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-4 lg:order-3"
+          onClick={() => setPhotosOpen(true)}
+        >
           {t("photos")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={openTheme}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-5 lg:order-4"
+          onClick={openTheme}
+        >
           {t("theme")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setDraftsOpen(true)}>
-          Drafts
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-6 lg:order-5"
+          onClick={() => setGuideOpen(true)}
+        >
           {t("guide")}
         </Button>
         <Button
           type="button"
           size="sm"
-          variant="brand"
-          disabled={saveDisabled}
-          loading={savingChanges}
-          onClick={() => void handleSaveChanges()}
+          variant="outline"
+          className="order-7 lg:order-6"
+          onClick={() => setDraftsOpen(true)}
         >
-          Save changes
+          Drafts
         </Button>
-        {publishSlot}
-      </div>
-    );
-  }
-
-  // Three-section top bar: draft title (full-width on mobile, inline on sm+) ·
-  // nav (left) · device toggle (center) · tools (right).
-  function topBar(center: ReactNode, publishSlot: ReactNode) {
-    return (
-      <div className="flex w-full flex-wrap items-center gap-2">
         <div
           data-testid="draft-title-slot"
-          className="order-first basis-full sm:order-last sm:ml-auto sm:basis-auto"
+          className="order-first basis-full lg:order-7 lg:basis-auto"
         >
           <DraftNameEditor
             name={draftName}
@@ -896,9 +929,29 @@ export function EditorShell({
             onCommit={(n) => { setDraftName(n); setNameError(null); }}
           />
         </div>
-        <div className="flex min-w-0 flex-1 justify-start">{navCluster()}</div>
-        {center && <div className="flex shrink-0 items-center justify-center">{center}</div>}
-        <div className="flex min-w-0 flex-1 justify-end">{toolsCluster(publishSlot)}</div>
+        <Button
+          type="button"
+          size="sm"
+          variant="brand"
+          className="order-8"
+          disabled={saveDisabled}
+          loading={savingChanges}
+          onClick={() => void handleSaveChanges()}
+        >
+          Save changes
+        </Button>
+        <div className="order-9">{publishSlot}</div>
+      </>
+    );
+  }
+
+  // Three-section top bar: nav (left) · device toggle (center) · tools (right).
+  function topBar(center: ReactNode, publishSlot: ReactNode) {
+    return (
+      <div className="flex w-full flex-wrap items-center gap-2">
+        <div className="order-2 flex min-w-0 flex-1 justify-start lg:order-1">{navCluster()}</div>
+        {center && <div className="order-3 flex shrink-0 items-center justify-center lg:order-2">{center}</div>}
+        {actionsCluster(publishSlot)}
       </div>
     );
   }
@@ -1099,12 +1152,10 @@ export function EditorShell({
         activeDraftId={activeDraftId}
         onApply={(id) => guardThenRun(() => void applyDraft(id))}
         onDelete={(id) => void handleDeleteDraft(id)}
-        onAddNew={() =>
-          guardThenRun(() => {
-            setDraftsOpen(false);
-            setTemplatesOpen(true);
-          })
-        }
+        onAddNew={() => {
+          setDraftsOpen(false);
+          setTemplatesOpen(true);
+        }}
       />
       <PortfolioEntryDialog
         open={entryOpen}

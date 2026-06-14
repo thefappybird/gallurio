@@ -49,8 +49,36 @@ describe("DraftsDialog", () => {
     expect(applyBtn).not.toHaveTextContent("Apply");
     const deleteBtn = screen.getByRole("button", { name: "Delete Bold" });
     expect(deleteBtn.querySelector("svg")).toBeTruthy();
+    expect(applyBtn).toHaveAttribute("title", "Apply Bold");
+    expect(deleteBtn).toHaveAttribute("title", "Delete Bold");
     fireEvent.click(applyBtn);
     expect(onApply).toHaveBeenCalledWith("b");
+  });
+
+  it("keeps the draft title and actions on one row with truncation and a fixed action slot", () => {
+    setup({
+      drafts: [
+        {
+          id: "a",
+          name: "A very long draft name that should truncate before it reaches the buttons",
+          templateId: "minimal",
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      activeDraftId: "a",
+    });
+
+    const title = screen.getByTitle(
+      "A very long draft name that should truncate before it reaches the buttons"
+    );
+    expect(title.className).toContain("truncate");
+    expect(title.className).toContain("flex-1");
+
+    const row = title.parentElement;
+    expect(row?.className).toContain("justify-between");
+
+    const actionSlot = screen.getByRole("button", { name: "Apply A very long draft name that should truncate before it reaches the buttons" }).parentElement;
+    expect(actionSlot?.className).toContain("w-[7.5rem]");
   });
 
   it("routes Delete through the confirm AlertDialog then calls onDelete", () => {

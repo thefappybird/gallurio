@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useEffect, useState, type ReactNode, type ReactElement } from "react";
 import { screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { toast } from "sonner";
 
 // Stub the heavy Puck editor: render its title + the injected custom header
 // (`overrides.header`), passing a "Publish" action so we can exercise onPublish.
@@ -104,6 +105,7 @@ const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1
 const updateDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
 const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
+const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" } } });
 vi.mock("../_draftActions", () => ({
@@ -111,6 +113,7 @@ vi.mock("../_draftActions", () => ({
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
   deleteDraftAction: (...a: unknown[]) => deleteDraftAction(...a),
   getDraftAction: (...a: unknown[]) => getDraftAction(...a),
+  listDraftsAction: (...a: unknown[]) => listDraftsAction(...a),
   publishDraftAction: (...a: unknown[]) => publishDraftAction(...a),
   seedTemplateAction: (...a: unknown[]) => seedTemplateAction(...a),
 }));
@@ -182,6 +185,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   __puckMountCount = 0;
+  listDraftsAction.mockResolvedValue([]);
 });
 
 describe("EditorShell", () => {
@@ -395,9 +399,10 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
     expect(updateDraftAction).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("does not open the unsaved-changes modal when the name is invalid; shows the error instead", async () => {
+  it("still opens the unsaved-changes modal when navigating away with an invalid draft name", async () => {
     const props = {
       ...baseProps,
       initialDrafts: [
@@ -411,8 +416,28 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
-    expect(screen.queryByText("Save your changes?")).not.toBeInTheDocument();
-    expect(screen.getByText("A draft with this name already exists")).toBeInTheDocument();
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+  });
+
+  it("does not pre-validate duplicate names when clicking Add new draft", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "New Draft" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+
+    expect(await screen.findByText("Choose a template")).toBeInTheDocument();
+    expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
   });
 
   it("styles Save changes with the brand variant and Preview with the secondary variant", async () => {
@@ -430,18 +455,26 @@ describe("EditorShell", () => {
     expect(preview.parentElement?.className).toContain("flex-wrap");
   });
 
-  it("renders the draft title in a full-width, order-first slot for small screens", async () => {
+  it("renders the draft title above the toolbar below lg and between Drafts and Save changes on desktop", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const draftsButton = screen.getByRole("button", { name: "Drafts" });
     const title = screen.getByTitle("Test Draft");
+    const saveButton = screen.getByRole("button", { name: "Save changes" });
     const slot = title.closest('[data-testid="draft-title-slot"]');
     expect(slot).not.toBeNull();
     expect(slot!.className).toContain("basis-full");
     expect(slot!.className).toContain("order-first");
-    expect(slot!.className).toContain("sm:basis-auto");
-    expect(slot!.className).toContain("sm:order-last");
+    expect(slot!.className).toContain("lg:order-7");
+    expect(slot!.className).toContain("lg:basis-auto");
+    expect(
+      draftsButton.compareDocumentPosition(slot!) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(
+      slot!.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
   });
 
-  it("prompts to save unsaved changes when clicking Add new draft", async () => {
+  it("opens the template picker directly from Add new draft, then prompts once when a template is applied", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     // Make the draft dirty via a rename to a unique, valid name.
     fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
@@ -450,8 +483,147 @@ describe("EditorShell", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    expect(await screen.findByText("Choose a template")).toBeInTheDocument();
+    expect(screen.queryByText("Save your changes?")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
 
     expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+  });
+
+  it("shows both toast and inline validation when template apply save fails on duplicate name", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Summer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
+    expect(toast.error).toHaveBeenCalledWith("A draft with this name already exists");
+  });
+
+  it("clears the duplicate-name error after deleting the conflicting draft", async () => {
+    const props = {
+      ...baseProps,
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Summer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete Summer" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Delete draft$/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+    });
+  });
+
+  it("treats a deleted active draft as an unsaved working copy and saves it as a new draft", async () => {
+    const props = {
+      ...baseProps,
+      initialActiveDraftId: "d1",
+      initialActiveDraftName: "New Draft",
+      initialDrafts: [
+        { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        ...LOCAL_DRAFT_V2,
+        draftId: "d1",
+        draftName: "New Draft",
+      })
+    );
+    renderWithProviders(<EditorShell {...props} />);
+    fireEvent.click(await screen.findByRole("button", { name: /Continue where you left off/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete New Draft" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Delete draft$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no drafts yet/i)).toBeInTheDocument();
+    });
+
+    const draftsDialog = screen.getByRole("dialog", { name: "Your drafts" });
+    fireEvent.click(within(draftsDialog).getAllByRole("button", { name: "Close" })[0]!);
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(createDraftAction).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "New Draft" })
+      );
+    });
+    expect(updateDraftAction).not.toHaveBeenCalled();
+    expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+  });
+
+  it("recovers by updating a stale server-side New Draft when the local list is empty", async () => {
+    createDraftAction.mockResolvedValueOnce({ error: "name_taken" });
+    listDraftsAction.mockResolvedValueOnce([
+      { id: "server-new", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+    ]);
+    updateDraftAction.mockResolvedValueOnce({
+      ok: true,
+      draft: { id: "server-new", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+    });
+
+    window.localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        ...LOCAL_DRAFT_V2,
+        draftId: null,
+        draftName: "New Draft",
+      })
+    );
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+        initialDrafts={[]}
+      />
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /Continue where you left off/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(createDraftAction).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "New Draft" })
+      );
+    });
+    expect(listDraftsAction).toHaveBeenCalled();
+    expect(updateDraftAction).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "server-new", name: "New Draft" })
+    );
+    expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
   });
 
   it("re-seeds the canvas immediately when applying a template (no tab switch required)", async () => {
