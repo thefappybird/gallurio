@@ -60,6 +60,9 @@ export function CreateCollectionDialog({
   onCreated: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Holds the new collection's id once created, so a retry after a failed
+  // "copy existing photos" step re-runs only the copy (never re-creates).
+  const createdIdRef = useRef<string | null>(null);
   const [name, setName] = useState("");
   const [images, setImages] = useState<LocalImage[]>([]);
   const [picked, setPicked] = useState<PickerItem[]>([]);
@@ -74,6 +77,7 @@ export function CreateCollectionDialog({
     setImages([]);
     setPicked([]);
     setError(null);
+    createdIdRef.current = null;
   }
 
   function close() {
@@ -122,14 +126,20 @@ export function CreateCollectionDialog({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/portfolio/gallery/collections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), items: images }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const created = await res.json();
-      const newId = created.id as string;
+      // Skip re-creating if a prior attempt created the collection but the
+      // existing-photo copy step then failed (retry copies only).
+      let newId = createdIdRef.current;
+      if (!newId) {
+        const res = await fetch("/api/portfolio/gallery/collections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), items: images }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const created = await res.json();
+        newId = created.id as string;
+        createdIdRef.current = newId;
+      }
       if (picked.length > 0) {
         const copyRes = await fetch(
           `/api/portfolio/gallery/collections/${newId}/items/copy`,
@@ -139,7 +149,13 @@ export function CreateCollectionDialog({
             body: JSON.stringify({ sourceItemIds: picked.map((p) => p.id) }),
           }
         );
-        if (!copyRes.ok) setError(L.errUpload);
+        // Collection exists but copying existing photos failed — keep the dialog
+        // open with the error so it isn't silent; the ref lets the user retry
+        // the copy without creating a duplicate collection.
+        if (!copyRes.ok) {
+          setError(L.errUpload);
+          return;
+        }
       }
       reset();
       onCreated();
