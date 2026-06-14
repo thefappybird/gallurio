@@ -8,7 +8,7 @@
  *   another workspace or missing IDs are silently dropped.
  */
 
-import mongoose, { Types, type PipelineStage } from "mongoose";
+import { Types } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
