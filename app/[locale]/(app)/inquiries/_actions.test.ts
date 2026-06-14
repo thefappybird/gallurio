@@ -80,7 +80,7 @@ describe("approveInquiryBookingAction", () => {
     expect(res).toMatchObject({ ok: true, bookingId: String(booking._id) });
 
     const freshBooking = await Booking.findById(booking._id).lean();
-    expect(freshBooking?.status).toBe("inquiry");
+    expect(freshBooking?.status).toBe("booked");
     expect(freshBooking?.amount?.total).toBe(75000);
     expect(freshBooking?.amount?.deposit).toBe(25000);
     expect(freshBooking?.notes).toBe("VIP");

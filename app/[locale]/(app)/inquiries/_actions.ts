@@ -9,10 +9,10 @@ import { Inquiry, Booking, ActivityLog } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
-// The status a draft is promoted to on approval. Our Booking enum has no
-// "pending"; "inquiry" is the first real pipeline state the owner then moves
-// through (quoted → booked). Drafts are the only state hidden from the calendar.
-const PROMOTED_STATUS = "inquiry" as const;
+// The status a draft is promoted to on approval. Approval skips the old
+// "inquiry" pipeline state and lands directly on "booked". Drafts are the
+// only state hidden from the calendar.
+const PROMOTED_STATUS = "booked" as const;
 
 export type InquiryActionResult =
   | { ok: true; bookingId?: string; idempotent?: boolean }

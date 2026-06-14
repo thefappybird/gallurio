@@ -220,7 +220,7 @@
               "note": "kasal, corporate, portrait, atb."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Kabuuang halaga ng booking"
@@ -266,7 +266,6 @@
         "edit": "I-edit"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
         "booked": "Naka-book",
         "completed": "Natapos",
         "cancelled": "Nakansela"

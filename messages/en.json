@@ -220,7 +220,7 @@
               "note": "wedding, corporate, portrait, etc."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total booking amount"
@@ -266,7 +266,6 @@
         "edit": "Edit"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
         "booked": "Booked",
         "completed": "Completed",
         "cancelled": "Cancelled"

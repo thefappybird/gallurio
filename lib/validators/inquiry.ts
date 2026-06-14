@@ -115,7 +115,7 @@ export type InquirySubmissionInput = z.infer<typeof inquirySubmissionSchema>;
 // Combines each `{ startDate, startTime/endTime }` into UTC instants using the
 // workspace timezone (wall-clock semantics). Each inquiry session is single-day
 // so startAt/endAt share the same calendar date — matching `bookingSessionSchema`.
-// Used in tests now; consumed by the inquiry → booking flow (creates a Booking with status: "inquiry").
+// Used in tests now; consumed by the inquiry → booking flow (creates a Booking with status: "draft" initially).
 // ---------------------------------------------------------------------------
 
 export function inquirySessionsToBookingSessions(
