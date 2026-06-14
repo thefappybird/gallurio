@@ -3,17 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { z } from "zod";
-import {
-  Workspace,
-  User,
-  Client,
-  Booking,
-  Inquiry,
-  Transaction,
-  ActivityLog,
-  GalleryCollection,
-  GalleryItem,
-} from "@/lib/db/models";
+import { AuthenticationException } from "@workos-inc/node";
+import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
+import { Workspace, User } from "@/lib/db/models";
 import {
   updateWorkspaceBusinessSchema,
   updateWorkspaceBrandingSchema,
@@ -22,7 +14,7 @@ import {
   type UpdateWorkspaceBrandingInput,
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
-import { cancelSubscription } from "@/lib/paddle/client";
+import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { destroyAsset } from "@/lib/storage/cloudinary";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -30,7 +22,6 @@ import { getAuthUser } from "@/lib/auth/session";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { workos } from "@/lib/workos";
 import { connectDB } from "@/lib/db/mongoose";
-import { serializeCsv } from "@/lib/utils/csv-serialize";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
@@ -161,197 +152,6 @@ export async function togglePublicPagePublishedAction(
 }
 
 // ---------------------------------------------------------------------------
-// Delete workspace
-// ---------------------------------------------------------------------------
-
-export async function deleteWorkspaceAction(
-  confirmation: string,
-): Promise<ActionResult> {
-  const ctx = await ownerContext();
-  if ("error" in ctx) return { error: ctx.error };
-
-  if (confirmation.trim() !== ctx.workspace.slug) {
-    return { error: "Confirmation does not match the workspace URL." };
-  }
-
-  if (
-    ctx.workspace.paddleSubscriptionId &&
-    ctx.workspace.paddleSubscriptionStatus === "active"
-  ) {
-    try {
-      await cancelSubscription(ctx.workspace.paddleSubscriptionId);
-    } catch (err) {
-      console.warn("[settings] failed to cancel Paddle subscription", err);
-    }
-  }
-
-  const galleryItems = await GalleryItem.find(
-    { workspaceId: ctx.workspace._id },
-    { cloudinaryPublicId: 1 },
-  ).lean();
-  const publicIds = [
-    ctx.workspace.branding?.logoCloudinaryPublicId,
-    ...galleryItems.map((i) => i.cloudinaryPublicId),
-  ].filter((id): id is string => typeof id === "string" && id.length > 0);
-
-  await Promise.allSettled(publicIds.map((id) => destroyAsset(id)));
-
-  const wid = ctx.workspace._id;
-  await Promise.all([
-    Booking.deleteMany({ workspaceId: wid }),
-    Client.deleteMany({ workspaceId: wid }),
-    Inquiry.deleteMany({ workspaceId: wid }),
-    Transaction.deleteMany({ workspaceId: wid }),
-    ActivityLog.deleteMany({ workspaceId: wid }),
-    GalleryItem.deleteMany({ workspaceId: wid }),
-    GalleryCollection.deleteMany({ workspaceId: wid }),
-  ]);
-
-  await Promise.all([
-    User.updateMany(
-      { "memberships.workspaceId": wid },
-      { $pull: { memberships: { workspaceId: wid } } },
-    ),
-    Workspace.deleteOne({ _id: wid }),
-  ]);
-
-  revalidatePath("/", "layout");
-  return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
-// Request data export
-// ---------------------------------------------------------------------------
-
-export async function requestDataExportAction(): Promise<ActionResult> {
-  const ctx = await ownerContext();
-  if ("error" in ctx) return { error: ctx.error };
-
-  await connectDB();
-
-  const ownerUser = await User.findOne({ workosUserId: ctx.userId })
-    .select({ email: 1 })
-    .lean();
-  if (!ownerUser?.email) return { error: "Could not find owner email" };
-
-  const [bookings, clients, inquiries] = await Promise.all([
-    Booking.find({ workspaceId: ctx.workspace._id }).lean(),
-    Client.find({ workspaceId: ctx.workspace._id }).lean(),
-    Inquiry.find({ workspaceId: ctx.workspace._id }).lean(),
-  ]);
-
-  const bookingsCsv = serializeCsv(
-    [
-      "id",
-      "title",
-      "status",
-      "eventType",
-      "clientName",
-      "firstSessionStart",
-      "lastSessionEnd",
-      "locationAddress",
-      "amountTotal",
-      "amountDeposit",
-      "currency",
-      "notes",
-    ],
-    bookings.map((b) => [
-      String(b._id),
-      b.title,
-      b.status,
-      b.eventType ?? "",
-      b.clientName,
-      b.firstSessionStart?.toISOString() ?? "",
-      b.lastSessionEnd?.toISOString() ?? "",
-      b.location?.address ?? "",
-      String(b.amount?.total ?? 0),
-      String(b.amount?.deposit ?? 0),
-      b.amount?.currency ?? "PHP",
-      b.notes ?? "",
-    ]),
-  );
-
-  const clientsCsv = serializeCsv(
-    [
-      "id",
-      "name",
-      "email",
-      "phone",
-      "tags",
-      "source",
-      "totalSpent",
-      "bookingsCount",
-      "lastBookingAt",
-      "isActive",
-      "notes",
-    ],
-    clients.map((c) => [
-      String(c._id),
-      c.name,
-      c.email ?? "",
-      c.phone ?? "",
-      (c.tags ?? []).join(";"),
-      c.source ?? "",
-      String(c.totalSpent ?? 0),
-      String(c.bookingsCount ?? 0),
-      c.lastBookingAt?.toISOString() ?? "",
-      String(c.isActive !== false),
-      c.notes ?? "",
-    ]),
-  );
-
-  const inquiriesCsv = serializeCsv(
-    [
-      "id",
-      "name",
-      "email",
-      "phone",
-      "message",
-      "eventDate",
-      "eventType",
-      "status",
-      "createdAt",
-    ],
-    inquiries.map((i) => [
-      String(i._id),
-      i.name,
-      i.email,
-      i.phone ?? "",
-      i.message ?? "",
-      i.eventDate?.toISOString() ?? "",
-      i.eventType ?? "",
-      i.status,
-      (i as unknown as { createdAt?: Date }).createdAt?.toISOString() ?? "",
-    ]),
-  );
-
-  const { resend } = await import("@/lib/email/resend");
-  const { buildDataExportEmailBody } = await import(
-    "@/lib/email/templates/data-export"
-  );
-
-  const from = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
-  const result = await resend.emails.send({
-    from,
-    to: ownerUser.email,
-    subject: `Your workspace data export — ${ctx.workspace.name}`,
-    text: buildDataExportEmailBody({ workspaceName: ctx.workspace.name }),
-    attachments: [
-      { filename: "bookings.csv", content: Buffer.from(bookingsCsv) },
-      { filename: "clients.csv", content: Buffer.from(clientsCsv) },
-      { filename: "inquiries.csv", content: Buffer.from(inquiriesCsv) },
-    ],
-  });
-
-  if (result.error) {
-    console.error("[settings] data-export email failed", result.error);
-    return { error: "Failed to send export email. Please try again." };
-  }
-
-  return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
 // Time format preference (any authenticated member)
 // ---------------------------------------------------------------------------
 
@@ -436,10 +236,12 @@ export async function updateProfileNameAction(input: {
 // ---------------------------------------------------------------------------
 
 const MFA_ENROLL_COOKIE = "gw_mfa_enroll";
+// How long the enrollment session (QR code / challenge) stays valid, in seconds.
+const MFA_ENROLL_TTL_SEC = 600;
 
 export type EnrollMfaResult =
   | { error: string }
-  | { qrCode: string; secret: string };
+  | { qrCode: string; secret: string; expiresAt: number };
 
 export async function enrollMfaAction(): Promise<EnrollMfaResult> {
   const authUser = await getAuthUser();
@@ -471,13 +273,16 @@ export async function enrollMfaAction(): Promise<EnrollMfaResult> {
         secure: await authCookieSecure(),
         sameSite: "lax",
         path: "/",
-        maxAge: 600,
+        maxAge: MFA_ENROLL_TTL_SEC,
       },
     );
 
     return {
       qrCode: totp.qrCode,
       secret: totp.secret,
+      // Absolute expiry so the client can show a countdown and prompt a refresh
+      // before the server-side enrollment cookie lapses.
+      expiresAt: Date.now() + MFA_ENROLL_TTL_SEC * 1000,
     };
   } catch (err) {
     console.error("[settings] createUserAuthFactor failed", err);
@@ -506,38 +311,25 @@ export async function verifyMfaEnrollmentAction(input: {
   if (!rawCookie)
     return { error: "Enrollment session expired. Restart setup." };
 
-  let factorId: string;
+  // The challenge is bound to this authenticated user: it was minted by
+  // enrollMfaAction() and stored in a server-set, httpOnly cookie the client
+  // cannot read or forge. verifyChallenge() below ties the code to that exact
+  // challenge, so no further ownership check is needed. (A prior
+  // listUserAuthFactors() guard was removed: WorkOS does not list a factor as
+  // owned until it is verified, so it rejected every legitimate enrollment.)
   let challengeId: string;
   try {
     const parsed = JSON.parse(rawCookie) as unknown;
     if (
       typeof parsed !== "object" ||
       parsed === null ||
-      typeof (parsed as Record<string, unknown>).factorId !== "string" ||
       typeof (parsed as Record<string, unknown>).challengeId !== "string"
     ) {
       return { error: "Enrollment session expired. Restart setup." };
     }
-    factorId = (parsed as Record<string, string>).factorId;
     challengeId = (parsed as Record<string, string>).challengeId;
   } catch {
     return { error: "Enrollment session expired. Restart setup." };
-  }
-
-  // Defense in depth: confirm the factor belongs to the authenticated user
-  // before verifying the challenge.
-  try {
-    const factors = await workos.multiFactorAuth.listUserAuthFactors({
-      userId: authUser.workosUserId,
-    });
-    const owns = factors.data.some(
-      (f: { id: string }) => f.id === factorId,
-    );
-    if (!owns)
-      return { error: "Enrollment session expired. Restart setup." };
-  } catch (err) {
-    console.error("[settings] listUserAuthFactors failed", err);
-    return { error: "Failed to verify MFA enrollment. Please try again." };
   }
 
   try {
@@ -626,4 +418,179 @@ export async function setActiveWorkspaceAction(
       : `/${locale}/dashboard`;
 
   redirect(dashboardPath);
+}
+
+// ---------------------------------------------------------------------------
+// Profile: change password
+// Verifies the current password via WorkOS authenticateWithPassword before
+// setting the new password via updateUser. Handles MFA-gated accounts where
+// the password is correct but a further step is required.
+// ---------------------------------------------------------------------------
+
+const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(128),
+  confirmPassword: z.string().min(1),
+});
+
+// AuthenticationException codes that fire only AFTER WorkOS has accepted the
+// password (a further step — MFA, Radar bot check, email verification, org
+// selection — is pending). For current-password verification these all mean the
+// password was correct. `sso_required` is intentionally excluded: it means the
+// account has no usable password, which should not count as a successful check.
+const PASSWORD_OK_CODES = new Set([
+  "mfa_challenge",
+  "mfa_enrollment",
+  "mfa_verification",
+  "radar_email_challenge",
+  "radar_sms_challenge",
+  "email_verification_required",
+  "organization_selection_required",
+]);
+
+export async function updatePasswordAction(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  const parsed = updatePasswordSchema.safeParse(input);
+  if (!parsed.success)
+    return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+
+  const { currentPassword, newPassword, confirmPassword } = parsed.data;
+  if (newPassword !== confirmPassword)
+    return { error: "Passwords do not match." };
+
+  const rl = await checkAuthRateLimit({ email: authUser.email });
+  if (!rl.ok)
+    return {
+      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
+    };
+
+  // Verify the current password by attempting authentication.
+  try {
+    await workos.userManagement.authenticateWithPassword({
+      clientId: process.env.WORKOS_CLIENT_ID!,
+      email: authUser.email,
+      password: currentPassword,
+    });
+  } catch (err) {
+    if (err instanceof AuthenticationException) {
+      if (!PASSWORD_OK_CODES.has(err.code)) {
+        return { error: "Current password is incorrect." };
+      }
+      // Password was correct; a pending step (e.g. MFA) is fine here.
+    } else {
+      console.error("[settings] authenticateWithPassword failed", err);
+      return {
+        error: "Could not verify your current password. Please try again.",
+      };
+    }
+  }
+
+  try {
+    await workos.userManagement.updateUser({
+      userId: authUser.workosUserId,
+      password: newPassword,
+    });
+  } catch (err) {
+    console.error("[settings] updateUser(password) failed", err);
+    return { error: "Failed to update password. Please try again." };
+  }
+
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Profile: update avatar (user-scoped, not workspace-scoped)
+// ---------------------------------------------------------------------------
+
+const updateAvatarSchema = z.object({
+  avatarUrl: z
+    .string()
+    .url("Avatar URL must be a valid URL")
+    .startsWith("https://", "Avatar URL must use HTTPS")
+    .nullable(),
+  avatarCloudinaryPublicId: z.string().nullable(),
+});
+
+export async function updateAvatarAction(input: {
+  avatarUrl: string | null;
+  avatarCloudinaryPublicId: string | null;
+}): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  const parsed = updateAvatarSchema.safeParse(input);
+  if (!parsed.success)
+    return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+
+  await connectDB();
+
+  let previousPublicId: string | null;
+  const nextPublicId = parsed.data.avatarCloudinaryPublicId;
+
+  try {
+    const userDoc = await User.findOne({
+      workosUserId: authUser.workosUserId,
+    }).lean();
+
+    previousPublicId = userDoc?.avatarCloudinaryPublicId ?? null;
+
+    await User.updateOne(
+      { workosUserId: authUser.workosUserId },
+      {
+        $set: {
+          avatarUrl: parsed.data.avatarUrl,
+          avatarCloudinaryPublicId: nextPublicId,
+        },
+      },
+    );
+  } catch (err) {
+    console.error("[settings] updateAvatarAction DB write failed", err);
+    return { error: "Failed to update photo. Please try again." };
+  }
+
+  if (previousPublicId && previousPublicId !== nextPublicId) {
+    try {
+      await destroyAsset(previousPublicId);
+    } catch (err) {
+      console.warn("[settings] failed to delete old avatar asset", err);
+    }
+  }
+
+  revalidatePath("/settings", "layout");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Profile: send "set a password" email for OAuth-only users
+// Mints a WorkOS password-reset token and emails the link via the shared
+// sendPasswordResetEmail helper. Authenticated + rate-limited.
+// ---------------------------------------------------------------------------
+
+export async function sendSetPasswordEmailAction(): Promise<ActionResult> {
+  const authUser = await getAuthUser();
+  if (!authUser) return { error: "Not authenticated" };
+
+  const rl = await checkAuthRateLimit({ email: authUser.email });
+  if (!rl.ok)
+    return {
+      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
+    };
+
+  try {
+    const reset = await workos.userManagement.createPasswordReset({
+      email: authUser.email,
+    });
+    await sendPasswordResetEmail(authUser.email, reset.passwordResetToken);
+  } catch (err) {
+    console.error("[settings] sendSetPasswordEmail failed", err);
+    return { error: "Could not send the email. Please try again." };
+  }
+
+  return { ok: true };
 }

@@ -14,6 +14,8 @@ export type OrgContext = {
   workspaceId: string;
   role: "owner" | "staff";
   workspace: WorkspaceDoc;
+  /** Uploaded profile photo from the MongoDB User doc (not the identity provider's). */
+  userAvatarUrl: string | null;
 };
 
 function localized(href: string, locale: string): string {
@@ -72,6 +74,7 @@ export async function requireOrg(
     workspaceId,
     role,
     workspace,
+    userAvatarUrl: user.avatarUrl ?? null,
   };
 }
 

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import * as React from "react";
 
-// ClientUserButton uses dropdown primitives and auth — stub it for sidebar tests.
-vi.mock("@/components/app/client-user-button", () => ({
-  ClientUserButton: () => <div data-testid="client-user-button" />,
+// signOutAction is a server action — stub it to avoid server-only imports.
+vi.mock("@/lib/auth/signOut", () => ({
+  signOutAction: vi.fn(),
 }));
 
 // ThemeToggle pulls in next-themes which isn't relevant to these assertions.
@@ -105,6 +105,41 @@ describe("AppSidebar nav items", () => {
       expect(screen.queryByRole("link", { name: /^inquiries$/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /^portfolio$/i })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("AppSidebar account identity", () => {
+  it("shows the user's name and email in the footer (no clickable badge)", () => {
+    renderSidebar("owner");
+    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+    // The old account dropdown trigger is gone.
+    expect(
+      screen.queryByRole("button", { name: /account menu/i }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("AppSidebar footer logout", () => {
+  it("renders a logout trigger button in the sidebar footer", () => {
+    renderSidebar("owner");
+    const btn = screen.getByRole("button", { name: /log.?out/i });
+    expect(btn).toBeInTheDocument();
+    // The trigger no longer submits directly — it opens a confirmation dialog.
+    expect(btn).toHaveAttribute("type", "button");
+  });
+
+  it("opens a confirmation dialog when the logout button is clicked", () => {
+    renderSidebar("owner");
+    expect(screen.queryByText("Log out?")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /log.?out/i }));
+    expect(screen.getByText("Log out?")).toBeInTheDocument();
+  });
+
+  it("renders the logout button for staff role too", () => {
+    renderSidebar("staff");
+    const btn = screen.getByRole("button", { name: /log.?out/i });
+    expect(btn).toBeInTheDocument();
   });
 });
 

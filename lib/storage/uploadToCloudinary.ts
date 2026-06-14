@@ -26,6 +26,7 @@ export async function uploadToCloudinary(
     apiKey: string;
     cloudName: string;
     folder: string;
+    allowedFormats: string;
     uploadUrl: string;
   };
 
@@ -35,6 +36,9 @@ export async function uploadToCloudinary(
   form.append("timestamp", String(sig.timestamp));
   form.append("signature", sig.signature);
   form.append("folder", sig.folder);
+  // allowed_formats is part of the signed params — it MUST be forwarded or
+  // Cloudinary rejects the upload with a 401 "Invalid Signature".
+  form.append("allowed_formats", sig.allowedFormats);
   if (opts.publicId) form.append("public_id", opts.publicId);
 
   const uploadRes = await fetch(sig.uploadUrl, { method: "POST", body: form });

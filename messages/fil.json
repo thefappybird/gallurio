@@ -556,7 +556,10 @@
       "account": "Account",
       "logOut": "Mag-log out",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account"
+      "accountMenu": "Menu ng account",
+      "logOutConfirmTitle": "Mag-log out?",
+      "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
+      "logOutConfirmCancel": "Kanselahin"
     },
     "theme": {
       "label": "Tema",
@@ -577,14 +580,45 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
-        "avatarHint": "Ang avatar ay pinamamahalaan sa pamamagitan ng iyong WorkOS profile.",
+        "avatarHint": "Mag-upload ng square na JPG, PNG, o WebP, hanggang 10 MB.",
+        "avatarUpload": "I-upload",
+        "avatarReplace": "Palitan",
+        "avatarRemove": "Alisin",
+        "avatarUploading": "Ina-upload…",
+        "avatarSaving": "Sine-save…",
+        "avatarSaved": "Na-update ang larawan",
+        "avatarRemoved": "Inalis ang larawan",
+        "avatarUploadError": "Hindi namin na-upload ang iyong larawan. Pakisubukan muli.",
+        "avatarTypeError": "Hindi suportado ang uri ng file na iyon. Pumili ng JPG, PNG, o WebP na larawan.",
+        "avatarSizeError": "Masyadong malaki ang larawan. Pumili ng wala pang 10 MB.",
         "nameSection": "Display na pangalan",
         "nameLabel": "Buong pangalan",
         "emailLabel": "Email address",
         "emailReadOnly": "Hindi pa sinusuportahan ang pagbabago ng email. Makipag-ugnayan sa suporta.",
         "saving": "Sine-save…",
         "saveName": "I-save ang pangalan",
-        "nameSaved": "Na-update ang pangalan."
+        "nameSaved": "Na-update ang pangalan.",
+        "passwordSection": "Password",
+        "passwordHint": "Baguhin ang password na ginagamit mo para mag-sign in.",
+        "currentPasswordLabel": "Kasalukuyang password",
+        "newPasswordLabel": "Bagong password",
+        "confirmPasswordLabel": "Kumpirmahin ang bagong password",
+        "newPasswordHint": "Hindi bababa sa 8 character",
+        "changePassword": "Baguhin ang password",
+        "updatingPassword": "Ina-update…",
+        "passwordSaved": "Na-update ang password.",
+        "passwordMismatch": "Hindi magkatugma ang mga password.",
+        "passwordTooShort": "Dapat hindi bababa sa 8 character ang password.",
+        "passwordRequired": "Ilagay ang iyong kasalukuyang password.",
+        "showPassword": "Ipakita ang password",
+        "hidePassword": "Itago ang password",
+        "setPasswordHint": "Naka-sign in ka gamit ang Google. Padadalhan ka namin ng secure na link sa email para mag-set o mag-reset ng password para sa email sign-in.",
+        "setPassword": "Magtakda ng password",
+        "sendingSetPassword": "Ipinapadala…",
+        "setPasswordSent": "Tingnan ang iyong email para sa link na magtatakda ng iyong password.",
+        "resetPassword": "I-reset ang iyong password",
+        "avatarPreview": "Tingnan ang buong larawan",
+        "avatarPreviewTitle": "Larawan ng profile"
       },
       "security": {
         "mfaSection": "Two-factor authentication",
@@ -607,16 +641,17 @@
         "mfaCodeLabel": "Verification code",
         "verifyCode": "I-verify at paganahin",
         "verifying": "Bine-verify…",
-        "cancel": "Kanselahin"
+        "cancel": "Kanselahin",
+        "mfaRefresh": "I-refresh ang code",
+        "mfaExpiresIn": "Mag-e-expire sa {time}",
+        "mfaExpired": "Nag-expire ang setup code na ito. I-refresh para makakuha ng bago."
       },
       "tabs": {
         "account": "Account",
-        "security": "Seguridad",
         "customize": "I-customize",
         "workspace": "Workspace",
         "teams": "Mga Koponan",
         "publicPage": "Pampublikong pahina",
-        "danger": "Danger zone",
         "billing": "Bayad",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Kasalukuyang workspace"
@@ -709,21 +744,6 @@
         "saving": "Sine-save…",
         "savedToast": "Na-update ang mga setting ng pampublikong pahina.",
         "visibilityUpdatedToast": "Na-update ang visibility."
-      },
-      "danger": {
-        "exportSection": "I-export ang data ng workspace",
-        "exportHint": "Mag-download ng kopya ng iyong mga booking, kliyente, mga reference sa gallery, at mga inquiry. Magpapadala kami ng link sa iyong email kapag handa na.",
-        "exportButton": "Humiling ng export",
-        "exportRequestedToast": "Hiniling ang export. Mag-eemeil kami sa iyo kapag handa na.",
-        "deleteSection": "Burahin ang workspace",
-        "deleteHint": "Permanenteng burahin ang workspace na ito at lahat ng laman nito — mga booking, kliyente, gallery, mga inquiry. Makakansela ang iyong subscription. Hindi na ito mababawi.",
-        "deleteOpen": "Burahin ang workspace",
-        "deleteConfirmTitle": "Burahin ang workspace na ito?",
-        "deleteConfirmBody": "Permanenteng binubura nito ang bawat rekord sa {workspaceName}. I-type ang URL slug ng workspace para kumpirmahin:",
-        "deleteConfirmInput": "URL slug ng workspace",
-        "deleteCancel": "Kanselahin",
-        "deleteConfirm": "Naiintindihan ko, burahin na",
-        "deleting": "Binubura…"
       }
     },
     "teams": {

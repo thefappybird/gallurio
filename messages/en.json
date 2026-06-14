@@ -556,7 +556,10 @@
       "account": "Account",
       "logOut": "Log out",
       "portfolio": "Portfolio",
-      "accountMenu": "Account menu"
+      "accountMenu": "Account menu",
+      "logOutConfirmTitle": "Log out?",
+      "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
+      "logOutConfirmCancel": "Cancel"
     },
     "theme": {
       "label": "Theme",
@@ -577,14 +580,45 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
-        "avatarHint": "Avatar is managed through your WorkOS profile.",
+        "avatarHint": "Upload a square JPG, PNG, or WebP, up to 10 MB.",
+        "avatarUpload": "Upload",
+        "avatarReplace": "Replace",
+        "avatarRemove": "Remove",
+        "avatarUploading": "Uploading…",
+        "avatarSaving": "Saving…",
+        "avatarSaved": "Photo updated",
+        "avatarRemoved": "Photo removed",
+        "avatarUploadError": "We couldn’t upload your photo. Please try again.",
+        "avatarTypeError": "That file type isn’t supported. Please choose a JPG, PNG, or WebP image.",
+        "avatarSizeError": "That image is too large. Please choose one under 10 MB.",
         "nameSection": "Display name",
         "nameLabel": "Full name",
         "emailLabel": "Email address",
         "emailReadOnly": "Email changes are not supported yet. Contact support.",
         "saving": "Saving…",
         "saveName": "Save name",
-        "nameSaved": "Name updated."
+        "nameSaved": "Name updated.",
+        "passwordSection": "Password",
+        "passwordHint": "Change the password you use to sign in.",
+        "currentPasswordLabel": "Current password",
+        "newPasswordLabel": "New password",
+        "confirmPasswordLabel": "Confirm new password",
+        "newPasswordHint": "At least 8 characters",
+        "changePassword": "Change password",
+        "updatingPassword": "Updating…",
+        "passwordSaved": "Password updated.",
+        "passwordMismatch": "Passwords do not match.",
+        "passwordTooShort": "Password must be at least 8 characters.",
+        "passwordRequired": "Enter your current password.",
+        "showPassword": "Show password",
+        "hidePassword": "Hide password",
+        "setPasswordHint": "You sign in with Google. We’ll email you a secure link to set or reset a password for email sign-in.",
+        "setPassword": "Set a password",
+        "sendingSetPassword": "Sending…",
+        "setPasswordSent": "Check your email for a link to set your password.",
+        "resetPassword": "Reset your password",
+        "avatarPreview": "View full photo",
+        "avatarPreviewTitle": "Profile photo"
       },
       "security": {
         "mfaSection": "Two-factor authentication",
@@ -607,16 +641,17 @@
         "mfaCodeLabel": "Verification code",
         "verifyCode": "Verify and enable",
         "verifying": "Verifying…",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "mfaRefresh": "Refresh code",
+        "mfaExpiresIn": "Expires in {time}",
+        "mfaExpired": "This setup code expired. Refresh to get a new one."
       },
       "tabs": {
         "account": "Account",
-        "security": "Security",
         "customize": "Customize",
         "workspace": "Workspace",
         "teams": "Teams",
         "publicPage": "Public page",
-        "danger": "Danger zone",
         "billing": "Billing",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Current workspace"
@@ -709,21 +744,6 @@
         "saving": "Saving…",
         "savedToast": "Public page settings updated.",
         "visibilityUpdatedToast": "Visibility updated."
-      },
-      "danger": {
-        "exportSection": "Export workspace data",
-        "exportHint": "Download a copy of your bookings, clients, gallery references, and inquiries. We'll email you a link when it's ready.",
-        "exportButton": "Request export",
-        "exportRequestedToast": "Export requested. We'll email you when it's ready.",
-        "deleteSection": "Delete workspace",
-        "deleteHint": "Permanently delete this workspace and everything in it — bookings, clients, gallery, inquiries. Your subscription will be cancelled. This cannot be undone.",
-        "deleteOpen": "Delete workspace",
-        "deleteConfirmTitle": "Delete this workspace?",
-        "deleteConfirmBody": "This permanently deletes every record in {workspaceName}. Type the workspace URL slug to confirm:",
-        "deleteConfirmInput": "Workspace URL slug",
-        "deleteCancel": "Cancel",
-        "deleteConfirm": "I understand, delete it",
-        "deleting": "Deleting…"
       }
     },
     "teams": {
