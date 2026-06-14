@@ -31,6 +31,7 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
 - Fix the task directly; do not over-engineer
 - If nearby code can be improved, verify current behavior first, then ask before changing it
 - Never mention AI tools in code, commits, PRs, comments, or output
+- Do not speculate on ambiguous requirements; use AskUserQuestion to get the user's decision/context before acting
 
 ## RTK command policy
 - Prefer explicit RTK commands for verbose shell output
@@ -124,6 +125,19 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 - Shared DB multi-tenancy via `workspaceId`
 - Organizations/workspaces are MongoDB `Workspace` docs, not WorkOS Organizations (see Auth & tenancy)
 - Public pages live at `/w/[orgSlug]`
+
+## Production hosting
+- Favor **Hetzner** for production web hosting over Vercel because the pricing is materially better for Gallurio's steady-state app workload
+- Treat Hetzner as the default production build target when documenting deploys, infra, cron, backups, and custom-domain setup
+- Keep deployment automation explicit: GitHub Actions should run tests, lint, typecheck, and build before shipping the production artifact to Hetzner
+- Default Hetzner shape for this repo: Ubuntu LTS VPS, Node 20+, `pnpm`, a long-lived app process (`pm2` or `systemd`), and Caddy or Nginx as the reverse proxy
+- Production deploy checklist for this Next.js app:
+  - provision the server, create a non-root deploy user, enable firewall, and install Node LTS + `pnpm`
+  - sync production env vars, then run `pnpm install --frozen-lockfile`, `pnpm build`, and `pnpm start`
+  - run the app behind Caddy or Nginx on `80/443` and proxy to the local Next.js process on `3000`
+  - automate deploys with GitHub Actions so prod only updates after tests, lint, typecheck, and build pass
+  - configure logs, restarts, backups, health checks, and TLS before calling the host production-ready
+- Before a full Hetzner cutover, audit any Vercel-coupled capability and either replace it or keep it as an explicit external dependency
 
 ## Auth & tenancy
 - WorkOS AuthKit is identity-only: sign-in/up, password, Google OAuth, MFA, email verification. WorkOS Organizations are NOT used; all org/workspace and membership state lives in MongoDB.

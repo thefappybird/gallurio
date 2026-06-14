@@ -1,18 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
   LayoutDashboardIcon,
+  LogOutIcon,
   SettingsIcon,
-  UsersIcon,
-  UsersRound,
-  BookOpenIcon,
-  CameraIcon,
+  ContactIcon,
+  UsersRoundIcon,
+  CalendarCheck2Icon,
+  ImageIcon,
   MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
-import { ClientUserButton } from "@/components/app/client-user-button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
 import {
   Sidebar,
   SidebarContent,
@@ -31,17 +34,28 @@ import { ThemeToggle } from "@/components/app/theme-toggle";
 
 const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
-  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
-  { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
+  { href: "/bookings" as const, labelKey: "bookings", icon: CalendarCheck2Icon },
+  { href: "/clients" as const, labelKey: "clients", icon: ContactIcon },
   { href: "/inquiries" as const, labelKey: "inquiries", icon: MessageSquareIcon },
-  { href: "/portfolio" as const, labelKey: "portfolio", icon: CameraIcon },
-  { href: "/teams" as const, labelKey: "teams", icon: UsersRound },
+  { href: "/portfolio" as const, labelKey: "portfolio", icon: ImageIcon },
+  { href: "/teams" as const, labelKey: "teams", icon: UsersRoundIcon },
 ];
 
 const MEMBER_NAV = [
-  { href: "/bookings" as const, labelKey: "bookings", icon: BookOpenIcon },
-  { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
+  { href: "/bookings" as const, labelKey: "bookings", icon: CalendarCheck2Icon },
+  { href: "/clients" as const, labelKey: "clients", icon: ContactIcon },
 ];
+
+function getInitials(name: string | null, email: string): string {
+  if (name && name.trim().length > 0) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+    }
+    return (parts[0]![0] ?? "").toUpperCase();
+  }
+  return email[0]?.toUpperCase() ?? "U";
+}
 
 type AppSidebarProps = {
   role: "owner" | "staff";
@@ -62,12 +76,14 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
+  const accountInitials = getInitials(userName, userEmail);
 
   return (
     <Sidebar collapsible="icon">
@@ -143,21 +159,41 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<button type="button" />}
+              onClick={() => setLogoutOpen(true)}
+              tooltip={t("logOut")}
+              className="group-data-[collapsible=icon]:mx-auto text-destructive"
+            >
+              <LogOutIcon className="size-5! shrink-0" />
+              <span>{t("logOut")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            {/* Account identity is presentational only. */}
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-              <div className="grid size-7 shrink-0 place-items-center">
-                <ClientUserButton
-                  name={userName}
-                  email={userEmail}
-                  avatarUrl={userAvatarUrl}
-                />
+              <Avatar size="sm" className="size-7 shrink-0">
+                {userAvatarUrl ? <AvatarImage src={userAvatarUrl} alt="" /> : null}
+                <AvatarFallback className="text-xs">
+                  {accountInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-sm font-medium text-sidebar-foreground">
+                  {userName ?? userEmail}
+                </span>
+                {userName ? (
+                  <span className="truncate text-xs text-sidebar-foreground/70">
+                    {userEmail}
+                  </span>
+                ) : null}
               </div>
-              <span className="text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-                {t("account")}
-              </span>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <SignOutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
     </Sidebar>
   );
 }

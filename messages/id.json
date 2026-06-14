@@ -554,6 +554,9 @@
       "settings": "Pengaturan",
       "account": "Akun",
       "logOut": "Keluar",
+      "logOutConfirmTitle": "Keluar?",
+      "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
+      "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
       "accountMenu": "Menu akun"
     },

@@ -554,6 +554,9 @@
       "settings": "Settings",
       "account": "Account",
       "logOut": "Log out",
+      "logOutConfirmTitle": "Log out?",
+      "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
+      "logOutConfirmCancel": "Cancel",
       "portfolio": "Portfolio",
       "accountMenu": "Account menu"
     },

@@ -1,21 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, fireEvent } from "@testing-library/react";
-import { renderWithProviders } from "@/test-utils/render";
-import { AppSidebar } from "./app-sidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as React from "react";
+import { fireEvent, screen } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "./app-sidebar";
 
-// ClientUserButton uses dropdown primitives and auth — stub it for sidebar tests.
-vi.mock("@/components/app/client-user-button", () => ({
-  ClientUserButton: () => <div data-testid="client-user-button" />,
+vi.mock("@/lib/auth/signOut", () => ({
+  signOutAction: vi.fn(),
 }));
 
-// ThemeToggle pulls in next-themes which isn't relevant to these assertions.
 vi.mock("@/components/app/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
 
-// next/image needs a DOM-safe stub in happy-dom.
 vi.mock("next/image", () => ({
   default: ({ alt, src }: { alt: string; src: string }) => (
     // eslint-disable-next-line @next/next/no-img-element
@@ -23,11 +20,6 @@ vi.mock("next/image", () => ({
   ),
 }));
 
-// ── i18n navigation ────────────────────────────────────────────────────────────
-// usePathname is provided by the vitest alias for @/lib/i18n/navigation which
-// returns "/" by default. No additional mock needed.
-
-// ── helpers ────────────────────────────────────────────────────────────────────
 function Wrapper({ children }: { children: React.ReactNode }) {
   return <SidebarProvider>{children}</SidebarProvider>;
 }
@@ -47,7 +39,6 @@ function renderSidebar(role: "owner" | "staff") {
   );
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────────────
 describe("AppSidebar nav items", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -64,14 +55,13 @@ describe("AppSidebar nav items", () => {
       expect(screen.getByRole("link", { name: /teams/i })).toBeInTheDocument();
     });
 
-    it("does NOT render a gallery link", () => {
+    it("does not render a gallery link", () => {
       renderSidebar("owner");
       expect(screen.queryByRole("link", { name: /gallery/i })).not.toBeInTheDocument();
     });
 
     it("renders the Settings link", () => {
       renderSidebar("owner");
-      // Multiple "settings" links may exist (workspace logo link + footer link)
       const settingsLinks = screen.getAllByRole("link", { name: /settings/i });
       expect(settingsLinks.length).toBeGreaterThan(0);
     });
@@ -90,21 +80,51 @@ describe("AppSidebar nav items", () => {
       expect(settingsLinks.length).toBeGreaterThan(0);
     });
 
-    it("does NOT render the dashboard nav link", () => {
+    it("does not render the dashboard nav link", () => {
       renderSidebar("staff");
       expect(screen.queryByRole("link", { name: /^dashboard$/i })).not.toBeInTheDocument();
     });
 
-    it("does NOT render the teams nav link", () => {
+    it("does not render the teams nav link", () => {
       renderSidebar("staff");
       expect(screen.queryByRole("link", { name: /^teams$/i })).not.toBeInTheDocument();
     });
 
-    it("does NOT render inquiries or portfolio nav links", () => {
+    it("does not render inquiries or portfolio nav links", () => {
       renderSidebar("staff");
       expect(screen.queryByRole("link", { name: /^inquiries$/i })).not.toBeInTheDocument();
       expect(screen.queryByRole("link", { name: /^portfolio$/i })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe("AppSidebar account identity", () => {
+  it("shows the user's name and email in the footer", () => {
+    renderSidebar("owner");
+    expect(screen.getByText("Test User")).toBeInTheDocument();
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /account menu/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("AppSidebar footer logout", () => {
+  it("renders a logout trigger button in the sidebar footer", () => {
+    renderSidebar("owner");
+    const button = screen.getByRole("button", { name: /log.?out/i });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveAttribute("type", "button");
+  });
+
+  it("opens a confirmation dialog when the logout button is clicked", () => {
+    renderSidebar("owner");
+    expect(screen.queryByText("Log out?")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /log.?out/i }));
+    expect(screen.getByText("Log out?")).toBeInTheDocument();
+  });
+
+  it("renders the logout button for staff too", () => {
+    renderSidebar("staff");
+    expect(screen.getByRole("button", { name: /log.?out/i })).toBeInTheDocument();
   });
 });
 
@@ -128,14 +148,6 @@ describe("AppSidebar SidebarTrigger", () => {
   });
 });
 
-// ── Mobile sidebar close on nav click ─────────────────────────────────────────
-// The sidebar UI components (Sidebar, SidebarMenuButton) call the module-local
-// useSidebar() and rely on a real SidebarProvider for context.  AppSidebar
-// itself imports and calls the exported useSidebar() — after the fix that's
-// the only call we need to intercept for isMobile/setOpenMobile.
-// Strategy: wrap with SidebarProvider (satisfies UI internals), then spy on
-// the exported useSidebar so AppSidebar's own call gets the mobile fixture
-// with a captured setOpenMobile spy.
 describe("AppSidebar mobile close on nav", () => {
   const setOpenMobileSpy = vi.fn();
 
@@ -145,6 +157,7 @@ describe("AppSidebar mobile close on nav", () => {
         <AppSidebar
           role="owner"
           workspaceName="Studio"
+          workspaceLogoUrl={null}
           userName="A"
           userEmail="a@b.c"
           userAvatarUrl={null}
@@ -183,13 +196,12 @@ describe("AppSidebar mobile close on nav", () => {
     await spyMobile(true);
     renderMobileSidebar();
 
-    // The footer Settings link is the last "settings"-labelled link.
     const settingsLinks = screen.getAllByRole("link", { name: /settings/i });
-    fireEvent.click(settingsLinks[settingsLinks.length - 1]);
+    fireEvent.click(settingsLinks[settingsLinks.length - 1]!);
     expect(setOpenMobileSpy).toHaveBeenCalledWith(false);
   });
 
-  it("does NOT call setOpenMobile when a nav link is clicked on desktop", async () => {
+  it("does not call setOpenMobile when a nav link is clicked on desktop", async () => {
     await spyMobile(false);
     renderMobileSidebar();
 
