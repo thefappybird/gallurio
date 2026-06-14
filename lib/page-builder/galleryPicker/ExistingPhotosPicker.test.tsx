@@ -56,7 +56,7 @@ describe("ExistingPhotosPicker", () => {
     renderWithProviders(<ExistingPhotosPicker open onOpenChange={vi.fn()} onAdd={vi.fn()} excludePublicIds={["pid-1"]} />);
     fireEvent.click(await screen.findByRole("button", { name: /^Collection 0$/ }));
     const opt = await screen.findByRole("option", { name: /already added/i });
-    expect(opt.querySelector("button")).toBeDisabled();
+    expect(opt).toBeDisabled();
   });
 
   it("shows error + retry when the photo feed fails", async () => {

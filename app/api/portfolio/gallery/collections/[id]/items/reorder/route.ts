@@ -32,10 +32,16 @@ export async function POST(req: Request, { params }: Params) {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
+      // Only advance the index for ids that actually belong to this collection,
+      // so foreign/stale ids don't leave gaps that shift the saved order.
       let order = 0;
       for (const itemId of validIds) {
-        await GalleryItem.updateOne({ _id: itemId, workspaceId, collectionId: id }, { $set: { order } }, { session });
-        order += 1;
+        const result = await GalleryItem.updateOne(
+          { _id: itemId, workspaceId, collectionId: id },
+          { $set: { order } },
+          { session }
+        );
+        if (result.matchedCount > 0) order += 1;
       }
     });
   } finally {

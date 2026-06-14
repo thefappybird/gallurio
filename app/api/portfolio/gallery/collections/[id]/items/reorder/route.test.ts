@@ -48,6 +48,9 @@ describe("POST reorder", () => {
     const foreign = new Types.ObjectId().toString();
     const res = (await POST(req({ orderedItemIds: [foreign, i0.toString()] }), params())) as unknown as MockResp;
     expect(res.status).toBe(200);
+    // The foreign id must not leave a gap: i0 takes index 0, not 1.
+    const i0Doc = await GalleryItem.findById(i0).lean();
+    expect(i0Doc?.order).toBe(0);
   });
   it("rejects non-owner", async () => {
     mockCtx.role = "staff";

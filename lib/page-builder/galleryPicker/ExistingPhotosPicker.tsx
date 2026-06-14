@@ -227,16 +227,15 @@ function PhotosView({
             const isExcluded = excluded.has(item.publicId);
             const selected = isSelected(item.id);
             return (
-              <li
-                key={item.id}
-                role="option"
-                aria-selected={selected}
-                aria-label={`${item.caption || "Photo"}${isExcluded ? " — already added" : selected ? " — selected" : ""}`}
-                onClick={() => !isExcluded && onToggle(item)}
-              >
+              <li key={item.id}>
+                {/* The button itself is the option: keyboard-focusable, Enter/Space
+                    activates onToggle, and a single handler avoids double-firing. */}
                 <button
                   type="button"
+                  role="option"
+                  aria-selected={selected}
                   disabled={isExcluded}
+                  onClick={() => onToggle(item)}
                   aria-label={`${item.caption || "Photo"}${isExcluded ? " — already added" : selected ? " — selected" : ""}`}
                   className={cn(
                     "relative block aspect-square w-full overflow-hidden border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
