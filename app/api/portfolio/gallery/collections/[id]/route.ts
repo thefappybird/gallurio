@@ -5,7 +5,7 @@ import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { destroyAsset } from "@/lib/storage/cloudinary";
-import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "@/lib/db/queries/gallery";
+import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest, countItemsByPublicId } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
 
@@ -110,13 +110,17 @@ export async function DELETE(_req: Request, { params }: Params) {
     await session.endSession();
   }
 
-  // DB state is now authoritative. Best-effort Cloudinary cleanup — a stuck
-  // asset must not resurrect the (already-deleted) collection.
+  // Reference-counted cleanup: the collection's item docs are gone; destroy an
+  // asset on Cloudinary only if no remaining doc (a copy elsewhere) references it.
   let assetsFailed = 0;
+  let assetsDestroyed = 0;
   await Promise.all(
     publicIds.map(async (pid) => {
       try {
+        const remaining = await countItemsByPublicId(workspaceId.toString(), pid);
+        if (remaining > 0) return;
         await destroyAsset(pid);
+        assetsDestroyed += 1;
       } catch (err) {
         assetsFailed += 1;
         console.error(`[portfolio/gallery/collections] cloudinary destroy failed for ${pid}:`, err);
@@ -125,7 +129,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   );
 
   return NextResponse.json(
-    { deleted: true, itemsDeleted: items.length, assetsDestroyed: publicIds.length - assetsFailed, assetsFailed },
+    { deleted: true, itemsDeleted: items.length, assetsDestroyed, assetsFailed },
     { status: 200 }
   );
 }
