@@ -8,7 +8,7 @@
  *   another workspace or missing IDs are silently dropped.
  */
 
-import { Types } from "mongoose";
+import mongoose, { Types, type PipelineStage } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
@@ -425,4 +425,14 @@ export async function listCollectionNewest(opts: {
     .lean();
 
   return docs.map(toPickerItem);
+}
+
+/** Count GalleryItem docs in a workspace that reference a Cloudinary asset. */
+export async function countItemsByPublicId(
+  workspaceId: string,
+  cloudinaryPublicId: string
+): Promise<number> {
+  if (!workspaceId || !cloudinaryPublicId) return 0;
+  await connectDB();
+  return GalleryItem.countDocuments({ workspaceId, cloudinaryPublicId });
 }
