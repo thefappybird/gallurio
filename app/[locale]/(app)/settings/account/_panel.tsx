@@ -316,12 +316,6 @@ export function AccountPanel({
               aria-describedby="profile-email-hint"
               className="cursor-not-allowed"
             />
-            <p
-              id="profile-email-hint"
-              className="text-xs text-muted-foreground"
-            >
-              {t("emailReadOnly")}
-            </p>
           </div>
 
           <div>
