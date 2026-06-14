@@ -52,4 +52,10 @@ describe("POST remove (detach)", () => {
     const res = (await POST(req({ itemIds: [soleItem.toString()] }), params())) as unknown as MockResp;
     expect(res.status).toBe(403);
   });
+  it("repoints the cover to the newest remaining item when the cover was detached", async () => {
+    await GalleryCollection.updateOne({ _id: colA }, { $set: { coverItemId: copyItem } });
+    await POST(req({ itemIds: [copyItem.toString()] }), params());
+    const col = await GalleryCollection.findById(colA).lean();
+    expect(String(col?.coverItemId)).toBe(soleItem.toString());
+  });
 });

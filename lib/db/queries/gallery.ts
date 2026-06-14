@@ -483,7 +483,6 @@ export async function detachItemsFromCollection(opts: {
   const items = await GalleryItem.find({ workspaceId, collectionId, _id: { $in: ids } }).lean();
   if (items.length === 0) return 0;
 
-  let removed = 0;
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -498,7 +497,6 @@ export async function detachItemsFromCollection(opts: {
         } else {
           await GalleryItem.updateOne({ _id: it._id, workspaceId }, { $set: { collectionId: null } }, { session });
         }
-        removed += 1;
       }
       const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
         .select({ coverItemId: 1 })
@@ -518,7 +516,9 @@ export async function detachItemsFromCollection(opts: {
   } finally {
     await session.endSession();
   }
-  return removed;
+  // All resolved items are always processed (deleted or detached); returning the
+  // count this way is retry-safe (no mutable counter inside withTransaction).
+  return items.length;
 }
 
 /** Copy existing items (by id) into a collection as new docs reusing the same asset. */
