@@ -25,7 +25,7 @@ collection in the manager.
   Cloudinary asset must first confirm no other `GalleryItem` in the workspace
   references that `publicId`. DB docs still delete unconditionally.
 - **Edit Collection scope:** rename + add (upload & pick-existing) + remove-from-
-  collection + delete-image. No reorder / cover-pick in this pass.
+  collection + delete-image + **reorder (drag-and-drop)** + **cover-pick**.
 - **Slug is stable on rename.** Rename updates `name` (display) only; `slug` is
   left unchanged so existing references/links don't break.
 
@@ -109,13 +109,21 @@ Sections (use steps/tabs if the mobile height gets tall, per the engineering bar
 - **Add photos** — drag-drop upload (reuse the existing upload flow, posting to
   `POST /items` with this `collectionId`) **and** the "Select existing photos"
   button → `ExistingPhotosPicker`; `onAdd` calls the copy endpoint then refreshes.
-- **Current photos** — paginated grid of this collection's items
-  (`GET /collections/[id]?cursor=`), multi-selectable. A selection action bar
-  exposes two actions:
-  - **Remove from collection** — `POST /collections/[id]/items/remove`.
-  - **Delete image** — destructive; behind an `AlertDialog` confirm that warns the
-    photo will be removed from **every** collection. `POST /items/delete`.
-- Footer: Done. Optimistic updates for add/remove; refetch on error.
+- **Current photos** — grid of this collection's items
+  (`GET /collections/[id]?cursor=`), multi-selectable, **drag-and-drop reorderable**.
+  - Each thumbnail shows a **visible drag affordance** (grip handle, mirroring the
+    existing `ReorderChip` pattern in `MediaPicker`) and supports a
+    **keyboard-accessible** alternative (move-up / move-down controls or arrow-key
+    reorder) — no hover-only / drag-only UX. Reorder persists via
+    `POST /collections/[id]/items/reorder`.
+  - Each thumbnail has a **"Set as cover"** affordance; the current cover shows a
+    persistent badge (cover is signalled by more than color). Persists via the
+    `PATCH /collections/[id]` `coverItemId` field.
+  - A selection action bar exposes two bulk actions:
+    - **Remove from collection** — `POST /collections/[id]/items/remove`.
+    - **Delete image** — destructive; behind an `AlertDialog` confirm that warns
+      the photo will be removed from **every** collection. `POST /items/delete`.
+- Footer: Done. Optimistic updates for add/remove/reorder/cover; refetch on error.
 
 ### `CollectionsManagerDialog.tsx` (modify)
 
@@ -139,8 +147,22 @@ Sections (use steps/tabs if the mobile height gets tall, per the engineering bar
    - Response: `{ items: PickerItem[] }` (the created copies).
 
 2. **`PATCH /api/portfolio/gallery/collections/[id]`** (new, same route file)
-   - Body: `{ name: string }` (trim, non-empty). Owner-only, workspace-scoped.
-   - Updates `name` only; `slug` unchanged. Response: `{ id, name }`.
+   - Body: `{ name?: string; coverItemId?: string }` (Zod; at least one present).
+     Owner-only, workspace-scoped.
+   - `name`: trim, non-empty → updates `name` only; `slug` unchanged.
+   - `coverItemId`: must reference a `GalleryItem` in **this** collection and
+     workspace, else 400; updates `coverItemId`.
+   - Response: `{ id, name, coverItemId }`.
+
+2a. **`POST /api/portfolio/gallery/collections/[id]/items/reorder`** (new)
+   - Body: `{ orderedItemIds: string[] }` (Zod). Owner-only, workspace-scoped.
+   - Reassigns `order` sequentially (index) to the provided items, scoped to
+     `collectionId = [id]`; ids not in this collection/workspace are ignored.
+     Transactional. The edit dialog loads the collection's items in full before
+     entering reorder so the submitted list is complete (collections are
+     user-curated and bounded; if a collection grows large this can move to a
+     within-page reorder — noted, not built now).
+   - Response: `{ ok: true }`.
 
 3. **`POST /api/portfolio/gallery/collections/[id]/items/remove`** (new)
    - Body: `{ itemIds: string[] }`. Owner-only, workspace-scoped.
@@ -216,7 +238,9 @@ Component (Vitest + Testing Library, `renderWithProviders`):
   disabled state, "Add N" callback payload, loading/empty/error states.
 - `CreateCollectionDialog` — picked items merge into the create payload (deduped).
 - `EditCollectionDialog` — rename validation + PATCH, add-from-existing calls copy,
-  multi-select action bar, remove vs delete (delete behind confirm).
+  multi-select action bar, remove vs delete (delete behind confirm), **cover-pick**
+  (badge + PATCH `coverItemId`), **reorder** (drag + keyboard move) persists the
+  new order.
 - `CollectionsManagerDialog` — clicking a collection opens the edit dialog.
 
 API / data layer (in-memory Mongo, mock Cloudinary only):
@@ -229,6 +253,10 @@ API / data layer (in-memory Mongo, mock Cloudinary only):
 - collection DELETE: **reference-counted** destroy (asset kept when another doc
   references it).
 - `listAllItemsPage`: de-dupes by `publicId`; cursor stays correct across pages.
+- reorder: `orderedItemIds` reassigns `order` by index; foreign ids ignored;
+  feed then returns items in the new order.
+- cover-pick (PATCH `coverItemId`): accepts an item in the collection; rejects a
+  foreign/other-collection item (400); **tenant isolation**.
 
 ## Done criteria
 
@@ -241,6 +269,6 @@ if missing).
 
 ## Out of scope
 
-Photo reorder, explicit cover selection, moving (vs copying) photos between
-collections, many-to-many membership model, public-gallery changes beyond what the
-dedup naturally yields.
+Moving (vs copying) photos between collections, many-to-many membership model,
+public-gallery changes beyond what the dedup naturally yields, cross-page drag
+reorder for very large collections (reorder operates on the fully-loaded list).
