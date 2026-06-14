@@ -14,7 +14,7 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
-import { ClientUserButton } from "@/components/app/client-user-button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
 import {
   Sidebar,
@@ -45,6 +45,17 @@ const MEMBER_NAV = [
   { href: "/clients" as const, labelKey: "clients", icon: UsersIcon },
 ];
 
+function getInitials(name: string | null, email: string): string {
+  if (name && name.trim().length > 0) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+    }
+    return (parts[0]![0] ?? "").toUpperCase();
+  }
+  return email[0]?.toUpperCase() ?? "U";
+}
+
 type AppSidebarProps = {
   role: "owner" | "staff";
   workspaceName: string;
@@ -69,6 +80,7 @@ export function AppSidebar({
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
+  const accountInitials = getInitials(userName, userEmail);
 
   return (
     <Sidebar collapsible="icon">
@@ -155,17 +167,26 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            {/* Account identity — presentational only, not interactive. */}
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-              <div className="grid size-7 shrink-0 place-items-center">
-                <ClientUserButton
-                  name={userName}
-                  email={userEmail}
-                  avatarUrl={userAvatarUrl}
-                />
+              <Avatar size="sm" className="size-7 shrink-0">
+                {userAvatarUrl ? (
+                  <AvatarImage src={userAvatarUrl} alt="" />
+                ) : null}
+                <AvatarFallback className="text-xs">
+                  {accountInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+                <span className="truncate text-sm font-medium text-sidebar-foreground">
+                  {userName ?? userEmail}
+                </span>
+                {userName && (
+                  <span className="truncate text-xs text-sidebar-foreground/70">
+                    {userEmail}
+                  </span>
+                )}
               </div>
-              <span className="text-sm text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-                {t("account")}
-              </span>
             </div>
           </SidebarMenuItem>
         </SidebarMenu>

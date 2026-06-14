@@ -615,7 +615,9 @@
         "setPassword": "Set a password",
         "sendingSetPassword": "Sending…",
         "setPasswordSent": "Check your email for a link to set your password.",
-        "resetPassword": "Reset your password"
+        "resetPassword": "Reset your password",
+        "avatarPreview": "View full photo",
+        "avatarPreviewTitle": "Profile photo"
       },
       "security": {
         "mfaSection": "Two-factor authentication",

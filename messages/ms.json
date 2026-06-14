@@ -615,7 +615,9 @@
         "setPassword": "Tetapkan kata laluan",
         "sendingSetPassword": "Menghantar…",
         "setPasswordSent": "Semak e-mel anda untuk pautan menetapkan kata laluan anda.",
-        "resetPassword": "Tetapkan semula kata laluan anda"
+        "resetPassword": "Tetapkan semula kata laluan anda",
+        "avatarPreview": "Lihat foto penuh",
+        "avatarPreviewTitle": "Foto profil"
       },
       "security": {
         "mfaSection": "Pengesahan dua faktor",

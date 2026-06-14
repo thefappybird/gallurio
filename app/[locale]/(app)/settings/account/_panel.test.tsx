@@ -79,6 +79,25 @@ describe("AccountPanel — avatar upload", () => {
     expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
   });
 
+  it("opens an expanded preview when the avatar is clicked", () => {
+    renderWithProviders(
+      <AccountPanel
+        {...defaultProps}
+        avatarUrl="https://example.com/avatar.jpg"
+        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View full photo" }));
+    expect(screen.getByText("Profile photo")).toBeInTheDocument();
+  });
+
+  it("has no clickable avatar when none is set", () => {
+    renderWithProviders(<AccountPanel {...defaultProps} />);
+    expect(
+      screen.queryByRole("button", { name: "View full photo" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("hides Remove for a provider default avatar (no Cloudinary id)", () => {
     renderWithProviders(
       <AccountPanel

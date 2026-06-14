@@ -615,7 +615,9 @@
         "setPassword": "Magtakda ng password",
         "sendingSetPassword": "Ipinapadala…",
         "setPasswordSent": "Tingnan ang iyong email para sa link na magtatakda ng iyong password.",
-        "resetPassword": "I-reset ang iyong password"
+        "resetPassword": "I-reset ang iyong password",
+        "avatarPreview": "Tingnan ang buong larawan",
+        "avatarPreviewTitle": "Larawan ng profile"
       },
       "security": {
         "mfaSection": "Two-factor authentication",

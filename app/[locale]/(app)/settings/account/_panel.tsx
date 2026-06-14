@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useRouter } from "@/lib/i18n/navigation";
 import { updateProfileNameAction, updateAvatarAction } from "../_actions";
 import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
 import { ACCEPTED_MIME } from "@/lib/page-builder/photoSpec";
@@ -52,6 +54,7 @@ export function AccountPanel({
   mfaEnabled,
 }: Props) {
   const t = useTranslations("app.settings.account");
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [avatarPending, startAvatarTransition] = useTransition();
   const [displayName, setDisplayName] = useState(name);
@@ -61,6 +64,7 @@ export function AccountPanel({
   );
   const [uploading, setUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Map the shared uploader's machine-readable failure reasons to friendly,
@@ -126,6 +130,8 @@ export function AccountPanel({
           setAvatarError(result.error ?? t("avatarUploadError"));
         } else {
           toast.success(t("avatarSaved"));
+          // Re-render server components (e.g. the sidebar avatar) with fresh data.
+          router.refresh();
         }
       });
     } catch (err: unknown) {
@@ -154,6 +160,7 @@ export function AccountPanel({
         setAvatarError(result.error ?? t("avatarUploadError"));
       } else {
         toast.success(t("avatarRemoved"));
+        router.refresh();
       }
     });
   }
@@ -170,12 +177,23 @@ export function AccountPanel({
           <p className="text-sm text-muted-foreground">{t("profileHint")}</p>
         </div>
         <div className="flex items-start gap-4">
-          <Avatar size="lg" className="size-14 shrink-0">
-            {avatarUrl ? (
-              <AvatarImage src={avatarUrl} alt={displayName || email} />
-            ) : null}
-            <AvatarFallback className="text-base">{initials}</AvatarFallback>
-          </Avatar>
+          {avatarUrl ? (
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              aria-label={t("avatarPreview")}
+              className="shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Avatar size="lg" className="size-14">
+                <AvatarImage src={avatarUrl} alt={displayName || email} />
+                <AvatarFallback className="text-base">{initials}</AvatarFallback>
+              </Avatar>
+            </button>
+          ) : (
+            <Avatar size="lg" className="size-14 shrink-0">
+              <AvatarFallback className="text-base">{initials}</AvatarFallback>
+            </Avatar>
+          )}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">{displayName || email}</span>
             <p className="text-xs text-muted-foreground">{t("avatarHint")}</p>
@@ -235,6 +253,23 @@ export function AccountPanel({
             />
           </div>
         </div>
+
+        {/* Expanded avatar preview */}
+        {avatarUrl && (
+          <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogTitle className="sr-only">
+                {t("avatarPreviewTitle")}
+              </DialogTitle>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={avatarUrl}
+                alt={displayName || email}
+                className="mx-auto h-auto w-full max-w-sm object-contain"
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </section>
 
       {/* Name form */}

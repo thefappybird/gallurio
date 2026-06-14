@@ -615,7 +615,9 @@
         "setPassword": "Atur kata sandi",
         "sendingSetPassword": "Mengirim…",
         "setPasswordSent": "Periksa email Anda untuk tautan mengatur kata sandi.",
-        "resetPassword": "Atur ulang kata sandi Anda"
+        "resetPassword": "Atur ulang kata sandi Anda",
+        "avatarPreview": "Lihat foto lengkap",
+        "avatarPreviewTitle": "Foto profil"
       },
       "security": {
         "mfaSection": "Autentikasi dua faktor",

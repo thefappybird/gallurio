@@ -30,6 +30,7 @@ function mockOrg(wsId: Types.ObjectId = workspaceId) {
     workspaceId: wsId.toString(),
     role: "owner",
     workspace,
+    userAvatarUrl: null,
   };
   vi.mocked(requireOrg).mockResolvedValue(ctx);
 }

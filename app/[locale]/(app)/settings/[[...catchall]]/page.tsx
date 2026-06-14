@@ -112,7 +112,9 @@ export default async function SettingsCatchallPage({
   const publicPageDefaults: PublicPageSettingsInput = {
     seoTitle: workspace.publicPage?.seoTitle ?? "",
     seoDescription: workspace.publicPage?.seoDescription ?? "",
-    inquiryRecipientEmail: workspace.publicPage?.inquiryRecipientEmail ?? "",
+    // Default inquiry routing to the owner's own email until they set another.
+    inquiryRecipientEmail:
+      workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
   };
 
   const t = await getTranslations("app.settings.tabs");
