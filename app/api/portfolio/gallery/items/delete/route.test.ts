@@ -6,7 +6,7 @@ vi.mock("next/server", async (importOriginal) => {
   return { ...actual, NextResponse: { json: (body: unknown, init?: ResponseInit): MockResp => ({ body, status: init?.status ?? 200 }) } };
 });
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
-const destroyAsset = vi.fn(async () => undefined);
+const destroyAsset = vi.fn(async (_publicId: string) => undefined);
 vi.mock("@/lib/storage/cloudinary", () => ({ destroyAsset: (p: string) => destroyAsset(p) }));
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
 vi.mock("@/lib/auth/requireOrg", () => ({
