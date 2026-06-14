@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
+import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
@@ -125,6 +126,50 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   return NextResponse.json(
     { deleted: true, itemsDeleted: items.length, assetsDestroyed: publicIds.length - assetsFailed, assetsFailed },
+    { status: 200 }
+  );
+}
+
+const patchSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    coverItemId: z.string().min(1).max(64).optional(),
+  })
+  .refine((d) => d.name !== undefined || d.coverItemId !== undefined, { message: "no_fields" });
+
+export async function PATCH(req: Request, { params }: Params) {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
+
+  const { id } = await params;
+  if (!isValidObjectId(id)) return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+
+  const json = await req.json().catch(() => ({}));
+  const parsed = patchSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "invalid_input" }, { status: 400 });
+  }
+
+  const workspaceId = ctx.workspace._id;
+  await connectDB();
+  const collection = await GalleryCollection.findOne({ _id: id, workspaceId });
+  if (!collection) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  if (parsed.data.coverItemId !== undefined) {
+    if (!isValidObjectId(parsed.data.coverItemId)) {
+      return NextResponse.json({ error: "invalid_cover" }, { status: 400 });
+    }
+    const coverItem = await GalleryItem.findOne({ _id: parsed.data.coverItemId, workspaceId, collectionId: id })
+      .select({ _id: 1 })
+      .lean();
+    if (!coverItem) return NextResponse.json({ error: "invalid_cover" }, { status: 400 });
+    collection.coverItemId = coverItem._id;
+  }
+  if (parsed.data.name !== undefined) collection.name = parsed.data.name;
+  await collection.save();
+
+  return NextResponse.json(
+    { id: String(collection._id), name: collection.name, coverItemId: collection.coverItemId ? String(collection.coverItemId) : null },
     { status: 200 }
   );
 }
