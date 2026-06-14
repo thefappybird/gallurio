@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
+import { EditCollectionDialog } from "./EditCollectionDialog";
 import type { PickerCollection } from "./types";
 
 // Plain strings — Puck editor chrome is English (see RELEASE-CHECKLIST §4f).
@@ -55,6 +56,7 @@ export function CollectionsManagerDialog({
 }) {
   const { state, retry } = usePickerData();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<PickerCollection | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PickerCollection | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -122,33 +124,40 @@ export function CollectionsManagerDialog({
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {collections.map((col) => (
                 <li key={col.id} className="group relative flex flex-col overflow-hidden border border-border">
-                  <span className="relative aspect-square w-full overflow-hidden bg-muted">
-                    {col.coverUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={col.coverUrl} alt="" className="size-full object-cover" loading="lazy" />
-                    ) : (
-                      <span className="flex size-full items-center justify-center">
-                        <ImagePlusIcon className="size-6 text-muted-foreground" aria-hidden />
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      aria-label={`${L.deleteCollection}: ${col.name}`}
-                      onClick={() => {
-                        setDeleteError(null);
-                        setPendingDelete(col);
-                      }}
-                      className="absolute right-1 top-1 inline-flex size-8 items-center justify-center border border-border bg-background/90 text-muted-foreground opacity-100 transition-colors hover:bg-destructive hover:text-primary-foreground focus-visible:bg-destructive focus-visible:text-primary-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-                    >
-                      <Trash2Icon className="size-4" aria-hidden />
-                    </button>
-                  </span>
-                  <span className="flex flex-col gap-0.5 px-2 py-1.5">
-                    <span className="truncate text-xs font-medium">{col.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {col.itemCount} {L.photos}
+                  <button
+                    type="button"
+                    aria-label={`Edit ${col.name}`}
+                    onClick={() => setEditing(col)}
+                    className="flex flex-col text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <span className="relative aspect-square w-full overflow-hidden bg-muted">
+                      {col.coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={col.coverUrl} alt="" className="size-full object-cover" loading="lazy" />
+                      ) : (
+                        <span className="flex size-full items-center justify-center">
+                          <ImagePlusIcon className="size-6 text-muted-foreground" aria-hidden />
+                        </span>
+                      )}
                     </span>
-                  </span>
+                    <span className="flex flex-col gap-0.5 px-2 py-1.5">
+                      <span className="truncate text-xs font-medium">{col.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {col.itemCount} {L.photos}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${L.deleteCollection}: ${col.name}`}
+                    onClick={() => {
+                      setDeleteError(null);
+                      setPendingDelete(col);
+                    }}
+                    className="absolute right-1 top-1 inline-flex size-8 items-center justify-center border border-border bg-background/90 text-muted-foreground opacity-100 transition-colors hover:bg-destructive hover:text-primary-foreground focus-visible:bg-destructive focus-visible:text-primary-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                  >
+                    <Trash2Icon className="size-4" aria-hidden />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -170,6 +179,14 @@ export function CollectionsManagerDialog({
           setCreateOpen(false);
           retry();
         }}
+      />
+
+      {/* Nested: edit an existing collection */}
+      <EditCollectionDialog
+        open={editing !== null}
+        onOpenChange={(n) => { if (!n) setEditing(null); }}
+        collection={editing}
+        onChanged={retry}
       />
 
       {/* Nested: confirm hard delete */}
