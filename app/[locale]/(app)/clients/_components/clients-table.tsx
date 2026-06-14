@@ -18,6 +18,9 @@ import {
   EyeIcon,
   Loader2Icon,
   MoreHorizontalIcon,
+  PencilIcon,
+  PowerOffIcon,
+  RotateCcwIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,10 +166,12 @@ export function ClientsTable({
                     {t("table.view")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEdit(row)}>
+                    <PencilIcon className="size-3" />
                     {t("table.edit")}
                   </DropdownMenuItem>
                   {row.isActive ? (
                     <DropdownMenuItem onClick={() => onDeactivate(row)}>
+                      <PowerOffIcon className="size-3" />
                       {t("table.deactivate")}
                     </DropdownMenuItem>
                   ) : (
@@ -174,8 +179,10 @@ export function ClientsTable({
                       onClick={() => onReactivate(row)}
                       disabled={isRowReactivating}
                     >
-                      {isRowReactivating && (
+                      {isRowReactivating ? (
                         <Loader2Icon className="size-3 animate-spin" />
+                      ) : (
+                        <RotateCcwIcon className="size-3" />
                       )}
                       {t("table.reactivate")}
                     </DropdownMenuItem>
