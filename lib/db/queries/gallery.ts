@@ -586,3 +586,39 @@ export async function copyItemsIntoCollection(opts: {
 
   return created.map(toPickerItem);
 }
+
+/** Permanently delete every doc sharing the selected items' assets; report assets to destroy. */
+export async function deleteItemsByPublicId(opts: {
+  workspaceId: string;
+  itemIds: string[];
+}): Promise<{ publicIds: string[]; deletedDocs: number }> {
+  const { workspaceId, itemIds } = opts;
+  if (!workspaceId) return { publicIds: [], deletedDocs: 0 };
+  await connectDB();
+
+  const ids = itemIds.filter((x) => Types.ObjectId.isValid(x));
+  if (ids.length === 0) return { publicIds: [], deletedDocs: 0 };
+  const selected = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).select({ cloudinaryPublicId: 1 }).lean();
+  const publicIds = [...new Set(selected.map((s) => s.cloudinaryPublicId as string))];
+  if (publicIds.length === 0) return { publicIds: [], deletedDocs: 0 };
+
+  const allDocs = await GalleryItem.find({ workspaceId, cloudinaryPublicId: { $in: publicIds } }).select({ _id: 1 }).lean();
+  const allIds = allDocs.map((d) => d._id);
+
+  const session = await mongoose.startSession();
+  let deletedDocs = 0;
+  try {
+    await session.withTransaction(async () => {
+      const del = await GalleryItem.deleteMany({ workspaceId, _id: { $in: allIds } }, { session });
+      deletedDocs = del.deletedCount ?? 0;
+      await GalleryCollection.updateMany(
+        { workspaceId, coverItemId: { $in: allIds } },
+        { $set: { coverItemId: null } },
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+  return { publicIds, deletedDocs };
+}
