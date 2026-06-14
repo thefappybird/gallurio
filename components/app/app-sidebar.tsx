@@ -14,7 +14,7 @@ import {
   MessageSquareIcon,
 } from "lucide-react";
 import NextImage from "next/image";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
 import {
   Sidebar,
@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 
@@ -76,6 +77,12 @@ export function AppSidebar({
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnNav = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
@@ -123,7 +130,7 @@ export function AppSidebar({
                 return (
                   <SidebarMenuItem key={href}>
                     <SidebarMenuButton
-                      render={<Link href={href} />}
+                      render={<Link href={href} onClick={closeOnNav} />}
                       isActive={pathname === href || pathname.startsWith(href + "/")}
                       tooltip={label}
                       className="group-data-[collapsible=icon]:mx-auto"
@@ -147,7 +154,7 @@ export function AppSidebar({
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              render={<Link href="/settings" />}
+              render={<Link href="/settings" onClick={closeOnNav} />}
               tooltip={t("settings")}
               className="group-data-[collapsible=icon]:mx-auto"
             >
@@ -167,25 +174,23 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            {/* Account identity — presentational only, not interactive. */}
+            {/* Account identity is presentational only. */}
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <Avatar size="sm" className="size-7 shrink-0">
                 {userAvatarUrl ? (
                   <AvatarImage src={userAvatarUrl} alt="" />
                 ) : null}
-                <AvatarFallback className="text-xs">
-                  {accountInitials}
-                </AvatarFallback>
+                <AvatarFallback className="text-xs">{accountInitials}</AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-medium text-sidebar-foreground">
                   {userName ?? userEmail}
                 </span>
-                {userName && (
+                {userName ? (
                   <span className="truncate text-xs text-sidebar-foreground/70">
                     {userEmail}
                   </span>
-                )}
+                ) : null}
               </div>
             </div>
           </SidebarMenuItem>

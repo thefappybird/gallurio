@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
+import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { destroyAsset } from "@/lib/storage/cloudinary";
-import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest } from "@/lib/db/queries/gallery";
+import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest, countItemsByPublicId } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
 
@@ -109,13 +110,17 @@ export async function DELETE(_req: Request, { params }: Params) {
     await session.endSession();
   }
 
-  // DB state is now authoritative. Best-effort Cloudinary cleanup — a stuck
-  // asset must not resurrect the (already-deleted) collection.
+  // Reference-counted cleanup: the collection's item docs are gone; destroy an
+  // asset on Cloudinary only if no remaining doc (a copy elsewhere) references it.
   let assetsFailed = 0;
+  let assetsDestroyed = 0;
   await Promise.all(
     publicIds.map(async (pid) => {
       try {
+        const remaining = await countItemsByPublicId(workspaceId.toString(), pid);
+        if (remaining > 0) return;
         await destroyAsset(pid);
+        assetsDestroyed += 1;
       } catch (err) {
         assetsFailed += 1;
         console.error(`[portfolio/gallery/collections] cloudinary destroy failed for ${pid}:`, err);
@@ -124,7 +129,51 @@ export async function DELETE(_req: Request, { params }: Params) {
   );
 
   return NextResponse.json(
-    { deleted: true, itemsDeleted: items.length, assetsDestroyed: publicIds.length - assetsFailed, assetsFailed },
+    { deleted: true, itemsDeleted: items.length, assetsDestroyed, assetsFailed },
+    { status: 200 }
+  );
+}
+
+const patchSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    coverItemId: z.string().min(1).max(64).optional(),
+  })
+  .refine((d) => d.name !== undefined || d.coverItemId !== undefined, { message: "no_fields" });
+
+export async function PATCH(req: Request, { params }: Params) {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
+
+  const { id } = await params;
+  if (!isValidObjectId(id)) return NextResponse.json({ error: "invalid_id" }, { status: 400 });
+
+  const json = await req.json().catch(() => ({}));
+  const parsed = patchSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "invalid_input" }, { status: 400 });
+  }
+
+  const workspaceId = ctx.workspace._id;
+  await connectDB();
+  const collection = await GalleryCollection.findOne({ _id: id, workspaceId });
+  if (!collection) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  if (parsed.data.coverItemId !== undefined) {
+    if (!isValidObjectId(parsed.data.coverItemId)) {
+      return NextResponse.json({ error: "invalid_cover" }, { status: 400 });
+    }
+    const coverItem = await GalleryItem.findOne({ _id: parsed.data.coverItemId, workspaceId, collectionId: id })
+      .select({ _id: 1 })
+      .lean();
+    if (!coverItem) return NextResponse.json({ error: "invalid_cover" }, { status: 400 });
+    collection.coverItemId = coverItem._id;
+  }
+  if (parsed.data.name !== undefined) collection.name = parsed.data.name;
+  await collection.save();
+
+  return NextResponse.json(
+    { id: String(collection._id), name: collection.name, coverItemId: collection.coverItemId ? String(collection.coverItemId) : null },
     { status: 200 }
   );
 }

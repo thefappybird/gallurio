@@ -19,6 +19,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DraftSummary } from "../_draftActions";
 
@@ -30,8 +31,6 @@ const L = {
   empty:
     "No drafts yet. Save your current work, or start a new one from a template.",
   active: "Active",
-  apply: "Apply",
-  delete: "Delete",
   addNew: "Add new draft",
   close: "Close",
   confirmTitle: "Delete this draft?",
@@ -89,40 +88,41 @@ export function DraftsDialog({
                   <li
                     key={d.id}
                     className={cn(
-                      "flex flex-col gap-2 border p-3",
+                      "border p-3",
                       isActive ? "border-foreground" : "border-border"
                     )}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-semibold" title={d.name}>
+                    <div className="flex min-w-0 items-center justify-between gap-3">
+                      <span className="min-w-0 flex-1 truncate font-semibold" title={d.name}>
                         {d.name}
                       </span>
-                      {isActive && (
-                        <span className="border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                          {L.active}
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        aria-label={`Apply ${d.name}`}
-                        onClick={() => onApply(d.id)}
-                      >
-                        {L.apply}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Delete ${d.name}`}
-                        onClick={() => setPendingDelete(d)}
-                      >
-                        {L.delete}
-                      </Button>
+                      <div className="flex w-[7.5rem] shrink-0 items-center justify-end gap-1">
+                        {isActive && (
+                          <span className="border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                            {L.active}
+                          </span>
+                        )}
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="outline"
+                          aria-label={`Apply ${d.name}`}
+                          title={`Apply ${d.name}`}
+                          onClick={() => onApply(d.id)}
+                        >
+                          <Check />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={`Delete ${d.name}`}
+                          title={`Delete ${d.name}`}
+                          onClick={() => setPendingDelete(d)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
                     </div>
                   </li>
                 );

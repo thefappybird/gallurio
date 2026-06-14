@@ -8,16 +8,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { EditorTemplateSummary } from "./EditorShell";
@@ -30,10 +20,6 @@ const L = {
   current: "Current",
   use: "Use this template",
   cancel: "Cancel",
-  confirmTitle: "Switch template?",
-  confirmBody:
-    "This replaces your current Home and Gallery layouts and resets your colors and fonts to the template defaults. Your previous layout is archived so support can recover it, but you can't undo this in the editor.",
-  confirmAction: "Switch template",
   switching: "Switching…",
   error: "Could not switch the template. Please try again.",
 };
@@ -57,9 +43,8 @@ export function TemplatePickerDialog({
 }) {
   const [pending, setPending] = useState<EditorTemplateSummary | null>(null);
 
-  // The confirm step is a portal-based AlertDialog independent of this dialog's
-  // open state — clear it whenever the picker closes (including the success path,
-  // where EditorShell closes the picker) so it can't linger over the editor.
+  // Clear pending selection whenever the picker closes (including the success
+  // path where EditorShell closes it) so stale selection can't linger.
   // Adjusting state during render on a prop change is the documented React
   // pattern ("You Might Not Need an Effect") and avoids a cascading effect.
   const [prevOpen, setPrevOpen] = useState(open);
@@ -90,7 +75,11 @@ export function TemplatePickerDialog({
                     onClick={() => setPending(tpl)}
                     className={cn(
                       "flex w-full flex-col gap-3 border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50",
-                      isCurrent ? "border-foreground" : "border-border hover:bg-accent/40 focus-visible:bg-accent/40"
+                      pending?.id === tpl.id
+                        ? "border-foreground ring-1 ring-ring"
+                        : isCurrent
+                          ? "border-foreground"
+                          : "border-border hover:bg-accent/40 focus-visible:bg-accent/40"
                     )}
                   >
                     {/* Mini preview built from the template palette (no asset fetch). */}
@@ -121,44 +110,25 @@ export function TemplatePickerDialog({
           </ul>
         </div>
 
+        {error && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={switching}>
             {L.cancel}
           </Button>
+          <Button
+            type="button"
+            onClick={() => pending && onConfirm(pending.id)}
+            loading={switching}
+            disabled={switching || pending === null}
+          >
+            {switching ? L.switching : L.use}
+          </Button>
         </DialogFooter>
       </DialogContent>
-
-      {/* Nested: confirm the destructive re-seed. */}
-      <AlertDialog
-        open={pending !== null}
-        onOpenChange={(next) => {
-          if (!next && !switching) setPending(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{L.confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{L.confirmBody}</AlertDialogDescription>
-            {error && (
-              <p role="alert" className="text-xs text-destructive">
-                {error}
-              </p>
-            )}
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPending(null)} disabled={switching}>
-              {L.cancel}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => pending && onConfirm(pending.id)}
-              loading={switching}
-              disabled={switching}
-            >
-              {switching ? L.switching : L.confirmAction}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Dialog>
   );
 }

@@ -6,10 +6,10 @@ import { Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/lib/auth/signOut";
@@ -39,9 +39,7 @@ export function SignOutConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t("logOutConfirmTitle")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("logOutConfirmBody")}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t("logOutConfirmBody")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
           <Button

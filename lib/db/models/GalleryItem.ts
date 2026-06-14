@@ -29,6 +29,8 @@ galleryItemSchema.index({ workspaceId: 1, createdAt: -1 });
 // Backs the newest-item-per-collection lookups (cover fallback in listCollectionsForPicker;
 // listCollectionNewest): match by (workspaceId, collectionId), sort by createdAt desc.
 galleryItemSchema.index({ workspaceId: 1, collectionId: 1, createdAt: -1 });
+// Backs reference-counting (copy semantics): "how many items share this asset?"
+galleryItemSchema.index({ workspaceId: 1, cloudinaryPublicId: 1 });
 
 export type GalleryItemDoc = InferSchemaType<typeof galleryItemSchema> & {
   _id: mongoose.Types.ObjectId;

@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
 import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
+import type { PickerItem } from "./types";
 
 // Plain strings — Puck editor chrome is English (see RELEASE-CHECKLIST §4f).
 const L = {
@@ -58,8 +60,13 @@ export function CreateCollectionDialog({
   onCreated: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Holds the new collection's id once created, so a retry after a failed
+  // "copy existing photos" step re-runs only the copy (never re-creates).
+  const createdIdRef = useRef<string | null>(null);
   const [name, setName] = useState("");
   const [images, setImages] = useState<LocalImage[]>([]);
+  const [picked, setPicked] = useState<PickerItem[]>([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -68,7 +75,9 @@ export function CreateCollectionDialog({
   function reset() {
     setName("");
     setImages([]);
+    setPicked([]);
     setError(null);
+    createdIdRef.current = null;
   }
 
   function close() {
@@ -117,12 +126,37 @@ export function CreateCollectionDialog({
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/portfolio/gallery/collections", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), items: images }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Skip re-creating if a prior attempt created the collection but the
+      // existing-photo copy step then failed (retry copies only).
+      let newId = createdIdRef.current;
+      if (!newId) {
+        const res = await fetch("/api/portfolio/gallery/collections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), items: images }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const created = await res.json();
+        newId = created.id as string;
+        createdIdRef.current = newId;
+      }
+      if (picked.length > 0) {
+        const copyRes = await fetch(
+          `/api/portfolio/gallery/collections/${newId}/items/copy`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sourceItemIds: picked.map((p) => p.id) }),
+          }
+        );
+        // Collection exists but copying existing photos failed — keep the dialog
+        // open with the error so it isn't silent; the ref lets the user retry
+        // the copy without creating a duplicate collection.
+        if (!copyRes.ok) {
+          setError(L.errUpload);
+          return;
+        }
+      }
       reset();
       onCreated();
     } catch {
@@ -201,7 +235,17 @@ export function CreateCollectionDialog({
             onChange={(e) => handleFiles(e.target.files)}
           />
 
-          {images.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => setPickerOpen(true)}
+          >
+            Select existing photos
+          </Button>
+
+          {(images.length > 0 || picked.length > 0) && (
             <ul className="grid grid-cols-4 gap-1.5 sm:grid-cols-6" aria-label="Uploaded photos">
               {images.map((img, i) => (
                 <li
@@ -214,6 +258,20 @@ export function CreateCollectionDialog({
                     type="button"
                     aria-label={L.removePhoto}
                     onClick={() => setImages((p) => p.filter((_, j) => j !== i))}
+                    className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <XIcon className="size-3.5" aria-hidden />
+                  </button>
+                </li>
+              ))}
+              {picked.map((p, i) => (
+                <li key={`picked-${p.id}`} className="relative aspect-square overflow-hidden border border-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.thumbUrl} alt="" className="size-full object-cover" />
+                  <button
+                    type="button"
+                    aria-label={L.removePhoto}
+                    onClick={() => setPicked((prev) => prev.filter((_, j) => j !== i))}
                     className="absolute right-0.5 top-0.5 inline-flex size-6 items-center justify-center border border-border bg-background/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
                     <XIcon className="size-3.5" aria-hidden />
@@ -244,6 +302,21 @@ export function CreateCollectionDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ExistingPhotosPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        excludePublicIds={[
+          ...images.map((i) => i.cloudinaryPublicId),
+          ...picked.map((p) => p.publicId),
+        ]}
+        onAdd={(items) =>
+          setPicked((prev) => {
+            const seen = new Set(prev.map((p) => p.publicId));
+            return [...prev, ...items.filter((it) => !seen.has(it.publicId))];
+          })
+        }
+      />
     </Dialog>
   );
 }

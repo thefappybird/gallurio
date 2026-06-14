@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { DraftsDialog } from "./DraftsDialog";
 import type { DraftSummary } from "../_draftActions";
 
@@ -9,7 +10,7 @@ const drafts: DraftSummary[] = [
 ];
 
 function setup(props: Partial<React.ComponentProps<typeof DraftsDialog>> = {}) {
-  return render(
+  return renderWithProviders(
     <DraftsDialog
       open
       onOpenChange={vi.fn()}
@@ -39,17 +40,53 @@ describe("DraftsDialog", () => {
     expect(onAddNew).toHaveBeenCalled();
   });
 
-  it("applies a draft", () => {
+  it("renders Apply and Delete as icon-only buttons and fires onApply", () => {
     const onApply = vi.fn();
     setup({ onApply });
-    fireEvent.click(screen.getByRole("button", { name: /apply Bold/i }));
+    const applyBtn = screen.getByRole("button", { name: "Apply Bold" });
+    // Icon-only: SVG child present, no visible "Apply" text.
+    expect(applyBtn.querySelector("svg")).toBeTruthy();
+    expect(applyBtn).not.toHaveTextContent("Apply");
+    const deleteBtn = screen.getByRole("button", { name: "Delete Bold" });
+    expect(deleteBtn.querySelector("svg")).toBeTruthy();
+    expect(applyBtn).toHaveAttribute("title", "Apply Bold");
+    expect(deleteBtn).toHaveAttribute("title", "Delete Bold");
+    fireEvent.click(applyBtn);
     expect(onApply).toHaveBeenCalledWith("b");
   });
 
-  it("confirms before deleting", () => {
+  it("keeps the draft title and actions on one row with truncation and a fixed action slot", () => {
+    setup({
+      drafts: [
+        {
+          id: "a",
+          name: "A very long draft name that should truncate before it reaches the buttons",
+          templateId: "minimal",
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+      activeDraftId: "a",
+    });
+
+    const title = screen.getByTitle(
+      "A very long draft name that should truncate before it reaches the buttons"
+    );
+    expect(title.className).toContain("truncate");
+    expect(title.className).toContain("flex-1");
+
+    const row = title.parentElement;
+    expect(row?.className).toContain("justify-between");
+
+    const actionSlot = screen.getByRole("button", { name: "Apply A very long draft name that should truncate before it reaches the buttons" }).parentElement;
+    expect(actionSlot?.className).toContain("w-[7.5rem]");
+  });
+
+  it("routes Delete through the confirm AlertDialog then calls onDelete", () => {
     const onDelete = vi.fn();
     setup({ onDelete });
-    fireEvent.click(screen.getByRole("button", { name: /delete Bold/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Bold" }));
+    // Confirm dialog appears.
+    expect(screen.getByText("Delete this draft?")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^delete draft$/i }));
     expect(onDelete).toHaveBeenCalledWith("b");
   });

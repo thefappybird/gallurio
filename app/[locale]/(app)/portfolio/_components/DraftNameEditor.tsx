@@ -69,8 +69,8 @@ export function DraftNameEditor({
           </Button>
         </div>
       ) : (
-        <div className="flex min-w-0 items-center gap-1">
-          <span className="truncate text-sm font-medium" title={name}>
+        <div className="flex min-w-0 items-center gap-0.5">
+          <span className="max-w-[11rem] truncate text-sm font-medium" title={name}>
             {name}
           </span>
           <Button
@@ -85,7 +85,7 @@ export function DraftNameEditor({
         </div>
       )}
       {error && (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="text-[11px] leading-tight text-destructive">
           {error}
         </p>
       )}

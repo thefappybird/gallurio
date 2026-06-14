@@ -76,3 +76,28 @@ describe("CollectionsManagerDialog", () => {
     );
   });
 });
+
+describe("CollectionsManagerDialog edit", () => {
+  it("opens the edit dialog when a collection is clicked", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url === "/api/portfolio/gallery")
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            collections: [{ id: "col1", name: "Weddings", coverUrl: "https://x/c.jpg", coverPublicId: "pid-a", itemCount: 2 }],
+            items: [],
+          }),
+        } as unknown as Response);
+      if (url.startsWith("/api/portfolio/gallery/collections/col1?"))
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ items: [], nextCursor: null }),
+        } as unknown as Response);
+      return Promise.resolve({ ok: true, json: async () => ({}) } as unknown as Response);
+    });
+
+    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /edit weddings/i }));
+    expect(await screen.findByLabelText(/collection name/i)).toBeTruthy();
+  });
+});

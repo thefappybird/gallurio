@@ -31,6 +31,7 @@ import {
   updateDraftAction,
   deleteDraftAction,
   getDraftAction,
+  listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
   type DraftSummary,
@@ -320,11 +321,13 @@ export function EditorShell({
 
   // The data object handed to <Puck> at mount. Set only on zone switch (in the
   // event handler, from the ref) and initialized from props — never read the ref
-  // during render. Paired with key={activeZone} so brand-kit re-renders (which
-  // re-run this component) never reset the editor mid-edit.
+  // during render. Paired with key={`${activeZone}-${seedNonce}`} so brand-kit
+  // re-renders never reset the editor mid-edit, and full re-seeds (applyTemplate,
+  // applyDraft) force a remount by bumping seedNonce.
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
     ensureIds(initialData.home ?? EMPTY_ZONE)
   );
+  const [seedNonce, setSeedNonce] = useState(0);
   const draftKey = `gallurio:portfolio-draft:${slug}`;
 
   // ---- Snapshot helpers ----
@@ -414,7 +417,7 @@ export function EditorShell({
 
   useEffect(() => {
     persistLocalDraft();
-  }, [collectionsPopup, contact, formLocale, headerConfig, persistLocalDraft]);
+  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, headerConfig, persistLocalDraft]);
 
   // beforeunload guard while dirty.
   useEffect(() => {
@@ -448,23 +451,60 @@ export function EditorShell({
     [activeZone, persistLocalDraft]
   );
 
+  // ---- Draft name validation ----
+  function validateDraftName(name: string): string | null {
+    const trimmed = name.trim();
+    if (!trimmed) return "This field is required";
+    const clash = drafts.some(
+      (d) => d.id !== activeDraftId && d.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (clash) return "A draft with this name already exists";
+    return null;
+  }
+
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
+    const shouldToastValidationError = templatesOpen;
+    const validationError = validateDraftName(draftName);
+    if (validationError) {
+      setNameError(validationError);
+      if (shouldToastValidationError) toast.error(validationError);
+      return false;
+    }
     setSavingChanges(true);
     const payload = { name: draftName, ...buildDraftSnapshot() };
     try {
-      let res;
+      let res: Awaited<ReturnType<typeof createDraftAction | typeof updateDraftAction>>;
       if (activeDraftId) {
         res = await updateDraftAction({ id: activeDraftId, ...payload });
       } else {
         res = await createDraftAction(payload);
+        // Recover from a stale server-side default draft when the client is in
+        // "brand-new unsaved draft" mode and the local list is empty.
+        if (
+          "error" in res &&
+          res.error === "name_taken" &&
+          draftName === DEFAULT_DRAFT_NAME &&
+          drafts.length === 0
+        ) {
+          const serverDrafts = await listDraftsAction();
+          const existingDefaultDraft = serverDrafts.find(
+            (d) => d.name.trim().toLowerCase() === DEFAULT_DRAFT_NAME.toLowerCase()
+          );
+          if (existingDefaultDraft) {
+            setDrafts(serverDrafts);
+            res = await updateDraftAction({ id: existingDefaultDraft.id, ...payload });
+          }
+        }
       }
       if ("error" in res) {
         const err = res.error;
         if (err === "name_required") {
           setNameError("This field is required");
+          if (shouldToastValidationError) toast.error("This field is required");
         } else if (err === "name_taken") {
           setNameError("A draft with this name already exists");
+          if (shouldToastValidationError) toast.error("A draft with this name already exists");
         } else if (err.startsWith("draft_limit_reached")) {
           toast.error("You've reached your draft limit.");
         } else {
@@ -528,6 +568,7 @@ export function EditorShell({
     setNameError(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(homeData));
+    setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
       name: d.name,
@@ -550,10 +591,23 @@ export function EditorShell({
       toast.error("Could not delete draft. Please try again.");
       return;
     }
-    setDrafts((prev) => prev.filter((d) => d.id !== id));
+    setDrafts((prev) => {
+      const deletedDraft = prev.find((d) => d.id === id) ?? null;
+      const nextDrafts = prev.filter((d) => d.id !== id);
+      if (
+        nameError === "A draft with this name already exists" &&
+        deletedDraft?.name.trim().toLowerCase() === draftName.trim().toLowerCase()
+      ) {
+        setNameError(null);
+      }
+      return nextDrafts;
+    });
     if (id === activeDraftId) {
+      // Keep the loaded canvas as an unsaved working copy after its backing
+      // draft record is deleted.
       setActiveDraftId(null);
       setSavedSnapshot(null);
+      setNameError(null);
     }
   }
 
@@ -725,6 +779,7 @@ export function EditorShell({
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
     setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+    setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
@@ -783,40 +838,38 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
-            const label =
-              section === "header"
-                ? t("headerSettings")
-                : section === "contact"
-                  ? t("contactSettingsShort")
-                  : section === "collectionsPopup"
-                    ? "Collections Popup"
-                    : t(`zone.${section}`);
-            return (
-              <Button
-                key={section}
-                type="button"
-                size="sm"
-                variant={activeSection === section ? "default" : "outline"}
-                aria-pressed={activeSection === section}
-                onClick={() => {
-                  if (section === "header") void openHeader();
-                  else if (section === "contact") openContact();
-                  else if (section === "collectionsPopup") void openCollectionsPopup();
-                  else void selectZone(section);
-                }}
-              >
-                {label}
-              </Button>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
+        {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
+          const label =
+            section === "header"
+              ? t("headerSettings")
+              : section === "contact"
+                ? t("contactSettingsShort")
+                : section === "collectionsPopup"
+                  ? "Collections Popup"
+                  : t(`zone.${section}`);
+          return (
+            <Button
+              key={section}
+              type="button"
+              size="sm"
+              variant={activeSection === section ? "default" : "outline"}
+              aria-pressed={activeSection === section}
+              onClick={() => {
+                if (section === "header") void openHeader();
+                else if (section === "contact") openContact();
+                else if (section === "collectionsPopup") void openCollectionsPopup();
+                else void selectZone(section);
+              }}
+            >
+              {label}
+            </Button>
+          );
+        })}
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="secondary"
           aria-pressed={previewMode}
           onClick={() => void togglePreview()}
         >
@@ -826,40 +879,69 @@ export function EditorShell({
     );
   }
 
-  // Right cluster: tools + draft name + the Publish slot.
-  function toolsCluster(publishSlot: ReactNode) {
-    const saveDisabled = !isDirty && activeDraftId !== null;
+  function actionsCluster(publishSlot: ReactNode) {
+    const saveDisabled = (!isDirty && activeDraftId !== null) || nameError !== null;
     return (
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <DraftNameEditor
-          name={draftName}
-          error={nameError}
-          onCommit={(n) => { setDraftName(n); setNameError(null); }}
-        />
-        <Button type="button" size="sm" variant="outline" onClick={() => setPhotosOpen(true)}>
+      <>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-4 lg:order-3"
+          onClick={() => setPhotosOpen(true)}
+        >
           {t("photos")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={openTheme}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-5 lg:order-4"
+          onClick={openTheme}
+        >
           {t("theme")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setDraftsOpen(true)}>
-          Drafts
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => setGuideOpen(true)}>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="order-6 lg:order-5"
+          onClick={() => setGuideOpen(true)}
+        >
           {t("guide")}
         </Button>
         <Button
           type="button"
           size="sm"
           variant="outline"
+          className="order-7 lg:order-6"
+          onClick={() => setDraftsOpen(true)}
+        >
+          Drafts
+        </Button>
+        <div
+          data-testid="draft-title-slot"
+          className="order-first basis-full lg:order-7 lg:basis-auto"
+        >
+          <DraftNameEditor
+            name={draftName}
+            error={nameError}
+            onCommit={(n) => { setDraftName(n); setNameError(null); }}
+          />
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="brand"
+          className="order-8"
           disabled={saveDisabled}
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
         >
           Save changes
         </Button>
-        {publishSlot}
-      </div>
+        <div className="order-9">{publishSlot}</div>
+      </>
     );
   }
 
@@ -867,9 +949,9 @@ export function EditorShell({
   function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
       <div className="flex w-full flex-wrap items-center gap-2">
-        <div className="flex min-w-0 flex-1 justify-start">{navCluster()}</div>
-        {center && <div className="flex shrink-0 items-center justify-center">{center}</div>}
-        <div className="flex min-w-0 flex-1 justify-end">{toolsCluster(publishSlot)}</div>
+        <div className="order-2 flex min-w-0 flex-1 justify-start lg:order-1">{navCluster()}</div>
+        {center && <div className="order-3 flex shrink-0 items-center justify-center lg:order-2">{center}</div>}
+        {actionsCluster(publishSlot)}
       </div>
     );
   }
@@ -886,7 +968,7 @@ export function EditorShell({
       >
         {showPuck ? (
           <Puck
-            key={activeZone}
+            key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
             // tsc's stack; editorPuckConfig is typed at the component level already.
             config={editorPuckConfig as unknown as Config}
@@ -1070,7 +1152,10 @@ export function EditorShell({
         activeDraftId={activeDraftId}
         onApply={(id) => guardThenRun(() => void applyDraft(id))}
         onDelete={(id) => void handleDeleteDraft(id)}
-        onAddNew={() => { setDraftsOpen(false); setTemplatesOpen(true); }}
+        onAddNew={() => {
+          setDraftsOpen(false);
+          setTemplatesOpen(true);
+        }}
       />
       <PortfolioEntryDialog
         open={entryOpen}

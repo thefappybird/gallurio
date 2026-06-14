@@ -8,7 +8,8 @@
  *   another workspace or missing IDs are silently dropped.
  */
 
-import { Types } from "mongoose";
+import mongoose, { Types, type PipelineStage } from "mongoose";
+import type { GalleryItemDoc } from "@/lib/db/models/GalleryItem";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
@@ -296,8 +297,10 @@ export async function listCollectionItemsPage(opts: {
 /**
  * One page of ALL workspace items, newest-first, paginated. Backs the virtual
  * "All photos" collection (covers standalone collectionId:null items too).
- * Cursor pagination on (createdAt,_id) descending. Backed by the
- * { workspaceId, createdAt } index (added alongside this feed).
+ * Deduplicates by Cloudinary asset: each unique `cloudinaryPublicId` appears
+ * once (copy semantics can create multiple GalleryItem docs per asset). The
+ * representative is the newest doc per publicId; cursor pagination is by that
+ * representative's (createdAt, _id) descending.
  */
 export async function listAllItemsPage(opts: {
   workspaceId: string;
@@ -310,33 +313,61 @@ export async function listAllItemsPage(opts: {
   const limit = clampLimit(opts.limit);
   await connectDB();
 
-  const filter: Record<string, unknown> = { workspaceId };
+  // Group by Cloudinary asset so each unique photo appears once (copy semantics
+  // can create several GalleryItem docs per asset). The representative is the
+  // newest doc per publicId; pagination is by that representative's (createdAt,_id).
+  const pipeline: PipelineStage[] = [
+    { $match: { workspaceId: new Types.ObjectId(workspaceId) } },
+    { $sort: { createdAt: -1, _id: -1 } },
+    {
+      $group: {
+        _id: "$cloudinaryPublicId",
+        docId: { $first: "$_id" },
+        createdAt: { $first: "$createdAt" },
+        caption: { $first: "$caption" },
+      },
+    },
+    { $sort: { createdAt: -1, docId: -1 } },
+  ];
+
   if (opts.cursor) {
     const c = decodeCursor(opts.cursor);
     if (c) {
       const ms = Number(c.sortValue);
       if (Number.isFinite(ms)) {
         const d = new Date(ms);
-        filter.$or = [
-          { createdAt: { $lt: d } },
-          { createdAt: d, _id: { $lt: new Types.ObjectId(c.id) } },
-        ];
+        pipeline.push({
+          $match: {
+            $or: [{ createdAt: { $lt: d } }, { createdAt: d, docId: { $lt: new Types.ObjectId(c.id) } }],
+          },
+        });
       }
     }
   }
 
-  const docs = await GalleryItem.find(filter)
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(limit + 1)
-    .select({ cloudinaryPublicId: 1, caption: 1, createdAt: 1 })
-    .lean();
+  pipeline.push({ $limit: limit + 1 });
 
-  const hasMore = docs.length > limit;
-  const page = hasMore ? docs.slice(0, limit) : docs;
+  const rows = await GalleryItem.aggregate<{
+    _id: string;
+    docId: Types.ObjectId;
+    createdAt: Date;
+    caption?: string;
+  }>(pipeline);
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page[page.length - 1];
   const nextCursor =
-    hasMore && last ? encodeCursor(new Date(last.createdAt as Date).getTime(), String(last._id)) : null;
-  return { items: page.map(toPickerItem), nextCursor };
+    hasMore && last ? encodeCursor(new Date(last.createdAt).getTime(), String(last.docId)) : null;
+
+  const items: PickerItem[] = page.map((r) => ({
+    id: String(r.docId),
+    publicId: r._id,
+    thumbUrl: cloudinaryThumbnailUrl(r._id, { width: 200, height: 200 }),
+    caption: (r.caption as string) || null,
+  }));
+
+  return { items, nextCursor };
 }
 
 // ---------------------------------------------------------------------------
@@ -425,4 +456,169 @@ export async function listCollectionNewest(opts: {
     .lean();
 
   return docs.map(toPickerItem);
+}
+
+/** Count GalleryItem docs in a workspace that reference a Cloudinary asset. */
+export async function countItemsByPublicId(
+  workspaceId: string,
+  cloudinaryPublicId: string
+): Promise<number> {
+  if (!workspaceId || !cloudinaryPublicId) return 0;
+  await connectDB();
+  return GalleryItem.countDocuments({ workspaceId, cloudinaryPublicId });
+}
+
+/** Detach items from a collection: delete the membership, or keep as standalone if last. */
+export async function detachItemsFromCollection(opts: {
+  workspaceId: string;
+  collectionId: string;
+  itemIds: string[];
+}): Promise<number> {
+  const { workspaceId, collectionId, itemIds } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return 0;
+  await connectDB();
+
+  const ids = itemIds.filter((x) => Types.ObjectId.isValid(x));
+  if (ids.length === 0) return 0;
+  const items = await GalleryItem.find({ workspaceId, collectionId, _id: { $in: ids } }).lean();
+  if (items.length === 0) return 0;
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      for (const it of items) {
+        const otherRefs = await GalleryItem.countDocuments({
+          workspaceId,
+          cloudinaryPublicId: it.cloudinaryPublicId,
+          _id: { $ne: it._id },
+        }).session(session);
+        if (otherRefs > 0) {
+          await GalleryItem.deleteOne({ _id: it._id, workspaceId }, { session });
+        } else {
+          await GalleryItem.updateOne({ _id: it._id, workspaceId }, { $set: { collectionId: null } }, { session });
+        }
+      }
+      const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
+        .select({ coverItemId: 1 })
+        .session(session);
+      if (col && col.coverItemId && ids.includes(String(col.coverItemId))) {
+        const newest = await GalleryItem.findOne({ workspaceId, collectionId })
+          .sort({ createdAt: -1, _id: -1 })
+          .select({ _id: 1 })
+          .session(session);
+        await GalleryCollection.updateOne(
+          { _id: collectionId, workspaceId },
+          { $set: { coverItemId: newest ? newest._id : null } },
+          { session }
+        );
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+  // All resolved items are always processed (deleted or detached); returning the
+  // count this way is retry-safe (no mutable counter inside withTransaction).
+  return items.length;
+}
+
+/** Copy existing items (by id) into a collection as new docs reusing the same asset. */
+export async function copyItemsIntoCollection(opts: {
+  workspaceId: string;
+  collectionId: string;
+  sourceItemIds: string[];
+}): Promise<PickerItem[]> {
+  const { workspaceId, collectionId, sourceItemIds } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return [];
+  await connectDB();
+
+  const ids = sourceItemIds.filter((id) => Types.ObjectId.isValid(id));
+  if (ids.length === 0) return [];
+  const sources = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).lean();
+  if (sources.length === 0) return [];
+
+  const existing = await GalleryItem.find({ workspaceId, collectionId })
+    .select({ cloudinaryPublicId: 1 })
+    .lean();
+  const present = new Set(existing.map((e) => e.cloudinaryPublicId as string));
+  const seen = new Set<string>();
+  const toCopy = sources.filter((s) => {
+    const pid = s.cloudinaryPublicId as string;
+    if (present.has(pid) || seen.has(pid)) return false;
+    seen.add(pid);
+    return true;
+  });
+  if (toCopy.length === 0) return [];
+
+  const base = await GalleryItem.countDocuments({ workspaceId, collectionId });
+
+  const session = await mongoose.startSession();
+  let created: GalleryItemDoc[] = [];
+  try {
+    await session.withTransaction(async () => {
+      const docs = toCopy.map((s, i) => ({
+        workspaceId,
+        collectionId,
+        cloudinaryPublicId: s.cloudinaryPublicId,
+        url: s.url,
+        width: s.width ?? null,
+        height: s.height ?? null,
+        format: s.format ?? null,
+        sizeBytes: s.sizeBytes ?? 0,
+        caption: s.caption ?? "",
+        altText: s.altText ?? "",
+        order: base + i,
+      }));
+      created = await GalleryItem.create(docs, { session, ordered: true });
+      const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
+        .select({ coverItemId: 1 })
+        .session(session);
+      if (col && !col.coverItemId && created[0]) {
+        await GalleryCollection.updateOne(
+          { _id: collectionId, workspaceId },
+          { $set: { coverItemId: created[0]._id } },
+          { session }
+        );
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return created.map(toPickerItem);
+}
+
+/** Permanently delete every doc sharing the selected items' assets; report assets to destroy. */
+export async function deleteItemsByPublicId(opts: {
+  workspaceId: string;
+  itemIds: string[];
+}): Promise<{ publicIds: string[]; deletedDocs: number }> {
+  const { workspaceId, itemIds } = opts;
+  if (!workspaceId) return { publicIds: [], deletedDocs: 0 };
+  await connectDB();
+
+  const ids = itemIds.filter((x) => Types.ObjectId.isValid(x));
+  if (ids.length === 0) return { publicIds: [], deletedDocs: 0 };
+  const selected = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).select({ cloudinaryPublicId: 1 }).lean();
+  const publicIds = [...new Set(selected.map((s) => s.cloudinaryPublicId as string))];
+  if (publicIds.length === 0) return { publicIds: [], deletedDocs: 0 };
+
+  const allDocs = await GalleryItem.find({ workspaceId, cloudinaryPublicId: { $in: publicIds } }).select({ _id: 1 }).lean();
+  const allIds = allDocs.map((d) => d._id);
+
+  const session = await mongoose.startSession();
+  let deletedDocs = 0;
+  try {
+    await session.withTransaction(async () => {
+      const del = await GalleryItem.deleteMany({ workspaceId, _id: { $in: allIds } }, { session });
+      deletedDocs = del.deletedCount ?? 0;
+      await GalleryCollection.updateMany(
+        { workspaceId, coverItemId: { $in: allIds } },
+        { $set: { coverItemId: null } },
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+  return { publicIds, deletedDocs };
 }
