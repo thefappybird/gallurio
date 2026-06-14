@@ -56,6 +56,7 @@ describe("MfaSection — not enabled", () => {
     mockEnroll.mockResolvedValue({
       qrCode: "data:image/png;base64,abc",
       secret: "JBSWY3DPEHPK3PXP",
+      expiresAt: Date.now() + 600_000,
     });
 
     renderWithProviders(<MfaSection mfaEnabled={false} />);
@@ -73,6 +74,37 @@ describe("MfaSection — not enabled", () => {
 
     // Secret key is visible
     expect(screen.getByText("JBSWY3DPEHPK3PXP")).toBeInTheDocument();
+
+    // Countdown + refresh controls are present
+    expect(screen.getByText(/Expires in/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Refresh code/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("re-enrolls when the Refresh code button is clicked", async () => {
+    mockEnroll.mockResolvedValue({
+      qrCode: "data:image/png;base64,abc",
+      secret: "JBSWY3DPEHPK3PXP",
+      expiresAt: Date.now() + 600_000,
+    });
+
+    renderWithProviders(<MfaSection mfaEnabled={false} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Set up authenticator/i }));
+
+    const refresh = await screen.findByRole("button", {
+      name: /Refresh code/i,
+    });
+    // Wait until the initial enrollment transition settles (button re-enabled).
+    await waitFor(() => expect(refresh).not.toBeDisabled());
+
+    fireEvent.click(refresh);
+
+    // First call was the initial Set Up; the refresh click adds a second.
+    await waitFor(() => {
+      expect(mockEnroll).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("shows error toast when enrollMfaAction returns an error", async () => {

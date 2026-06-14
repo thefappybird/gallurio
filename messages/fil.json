@@ -555,7 +555,10 @@
       "account": "Account",
       "logOut": "Mag-log out",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account"
+      "accountMenu": "Menu ng account",
+      "logOutConfirmTitle": "Mag-log out?",
+      "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
+      "logOutConfirmCancel": "Kanselahin"
     },
     "theme": {
       "label": "Tema",
@@ -576,7 +579,7 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Ang iyong pangalan at avatar na nakikita ng mga katrabaho.",
-        "avatarHint": "Mag-upload ng square na larawan, hindi bababa sa 200×200px.",
+        "avatarHint": "Mag-upload ng square na JPG, PNG, o WebP, hanggang 10 MB.",
         "avatarUpload": "I-upload",
         "avatarReplace": "Palitan",
         "avatarRemove": "Alisin",
@@ -584,9 +587,9 @@
         "avatarSaving": "Sine-save…",
         "avatarSaved": "Na-update ang larawan",
         "avatarRemoved": "Inalis ang larawan",
-        "avatarUploadError": "Nabigo ang pag-upload",
-        "avatarTypeError": "Pumili ng file na larawan",
-        "avatarSizeError": "Ang larawan ay dapat na wala pang 5 MB",
+        "avatarUploadError": "Hindi namin na-upload ang iyong larawan. Pakisubukan muli.",
+        "avatarTypeError": "Hindi suportado ang uri ng file na iyon. Pumili ng JPG, PNG, o WebP na larawan.",
+        "avatarSizeError": "Masyadong malaki ang larawan. Pumili ng wala pang 10 MB.",
         "nameSection": "Display na pangalan",
         "nameLabel": "Buong pangalan",
         "emailLabel": "Email address",
@@ -608,10 +611,11 @@
         "passwordRequired": "Ilagay ang iyong kasalukuyang password.",
         "showPassword": "Ipakita ang password",
         "hidePassword": "Itago ang password",
-        "setPasswordHint": "Nagsa-sign in ka gamit ang Google. Magtakda ng password para makapag-sign in din gamit ang iyong email.",
+        "setPasswordHint": "Naka-sign in ka gamit ang Google. Padadalhan ka namin ng secure na link sa email para mag-set o mag-reset ng password para sa email sign-in.",
         "setPassword": "Magtakda ng password",
         "sendingSetPassword": "Ipinapadala…",
-        "setPasswordSent": "Tingnan ang iyong email para sa link na magtatakda ng iyong password."
+        "setPasswordSent": "Tingnan ang iyong email para sa link na magtatakda ng iyong password.",
+        "resetPassword": "I-reset ang iyong password"
       },
       "security": {
         "mfaSection": "Two-factor authentication",
@@ -634,7 +638,10 @@
         "mfaCodeLabel": "Verification code",
         "verifyCode": "I-verify at paganahin",
         "verifying": "Bine-verify…",
-        "cancel": "Kanselahin"
+        "cancel": "Kanselahin",
+        "mfaRefresh": "I-refresh ang code",
+        "mfaExpiresIn": "Mag-e-expire sa {time}",
+        "mfaExpired": "Nag-expire ang setup code na ito. I-refresh para makakuha ng bago."
       },
       "tabs": {
         "account": "Account",

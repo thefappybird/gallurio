@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { updateProfileNameAction, updateAvatarAction } from "../_actions";
-import { uploadToCloudinary } from "@/lib/storage/uploadToCloudinary";
+import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { ACCEPTED_MIME } from "@/lib/page-builder/photoSpec";
 import { PasswordSection } from "./_password-section";
 import { MfaSection } from "./_mfa-section";
 
@@ -59,7 +60,16 @@ export function AccountPanel({
     initialAvatarPublicId,
   );
   const [uploading, setUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Map the shared uploader's machine-readable failure reasons to friendly,
+  // layman copy shown inline beneath the avatar buttons.
+  function avatarErrorMessage(reason: string): string {
+    if (reason === "type_not_accepted") return t("avatarTypeError");
+    if (reason === "file_too_large") return t("avatarSizeError");
+    return t("avatarUploadError");
+  }
 
   const {
     register,
@@ -87,19 +97,17 @@ export function AccountPanel({
     if (!file) return;
     // Reset input so the same file can be re-selected after removal
     e.target.value = "";
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("avatarTypeError"));
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(t("avatarSizeError"));
-      return;
-    }
+    setAvatarError(null);
     setUploading(true);
     try {
-      const res = await uploadToCloudinary(file, { subfolder: "avatars" });
-      const newUrl = res.secure_url;
-      const newPublicId = res.public_id;
+      // Shared, signature-correct uploader (same one the portfolio gallery
+      // uses). validateDimensions is off — avatars have no minimum size.
+      const res = await uploadImageToCloudinary(file, {
+        subfolder: "avatars",
+        validateDimensions: false,
+      });
+      const newUrl = res.url;
+      const newPublicId = res.cloudinaryPublicId;
       // Capture prior values before optimistic update so we can roll back on DB failure.
       const prevUrl = avatarUrl;
       const prevPublicId = avatarPublicId;
@@ -115,14 +123,14 @@ export function AccountPanel({
         if (result && "error" in result) {
           setAvatarUrl(prevUrl);
           setAvatarPublicId(prevPublicId);
-          toast.error(result.error);
+          setAvatarError(result.error ?? t("avatarUploadError"));
         } else {
           toast.success(t("avatarSaved"));
         }
       });
     } catch (err: unknown) {
-      toast.error(
-        err instanceof Error ? err.message : t("avatarUploadError"),
+      setAvatarError(
+        avatarErrorMessage(err instanceof Error ? err.message : ""),
       );
     } finally {
       setUploading(false);
@@ -130,6 +138,7 @@ export function AccountPanel({
   }
 
   function handleRemoveAvatar() {
+    setAvatarError(null);
     const prevUrl = avatarUrl;
     const prevPublicId = avatarPublicId;
     setAvatarUrl(null);
@@ -142,7 +151,7 @@ export function AccountPanel({
       if (result && "error" in result) {
         setAvatarUrl(prevUrl);
         setAvatarPublicId(prevPublicId);
-        toast.error(result.error);
+        setAvatarError(result.error ?? t("avatarUploadError"));
       } else {
         toast.success(t("avatarRemoved"));
       }
@@ -195,7 +204,9 @@ export function AccountPanel({
                   t("avatarUpload")
                 )}
               </Button>
-              {avatarUrl && (
+              {/* Remove only applies to a photo the user uploaded; a default
+                  avatar from the identity provider has no Cloudinary asset. */}
+              {avatarPublicId && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -208,10 +219,15 @@ export function AccountPanel({
                 </Button>
               )}
             </div>
+            {avatarError && (
+              <p role="alert" className="text-xs text-destructive">
+                {avatarError}
+              </p>
+            )}
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={ACCEPTED_MIME.join(",")}
               className="sr-only"
               aria-hidden
               tabIndex={-1}

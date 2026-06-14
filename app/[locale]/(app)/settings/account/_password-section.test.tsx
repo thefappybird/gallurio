@@ -34,7 +34,7 @@ describe("PasswordSection", () => {
     renderWithProviders(<PasswordSection hasOAuth={true} />);
     expect(screen.queryByLabelText("Current password")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Set a password" }),
+      screen.getByRole("button", { name: "Reset your password" }),
     ).toBeInTheDocument();
   });
 

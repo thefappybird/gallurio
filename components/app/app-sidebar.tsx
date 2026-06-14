@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import NextImage from "next/image";
 import { ClientUserButton } from "@/components/app/client-user-button";
-import { signOutAction } from "@/lib/auth/signOut";
+import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
 import {
   Sidebar,
   SidebarContent,
@@ -63,6 +64,7 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
@@ -142,16 +144,15 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <form action={signOutAction}>
-              <SidebarMenuButton
-                render={<button type="submit" />}
-                tooltip={t("logOut")}
-                className="group-data-[collapsible=icon]:mx-auto text-destructive"
-              >
-                <LogOutIcon className="size-5! shrink-0" />
-                <span>{t("logOut")}</span>
-              </SidebarMenuButton>
-            </form>
+            <SidebarMenuButton
+              render={<button type="button" />}
+              onClick={() => setLogoutOpen(true)}
+              tooltip={t("logOut")}
+              className="group-data-[collapsible=icon]:mx-auto text-destructive"
+            >
+              <LogOutIcon className="size-5! shrink-0" />
+              <span>{t("logOut")}</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
@@ -169,6 +170,8 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+
+      <SignOutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
     </Sidebar>
   );
 }

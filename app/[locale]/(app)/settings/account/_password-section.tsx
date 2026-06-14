@@ -209,7 +209,7 @@ function SetPasswordCard() {
                 {t("sendingSetPassword")}
               </>
             ) : (
-              t("setPassword")
+              t("resetPassword")
             )}
           </Button>
         </div>

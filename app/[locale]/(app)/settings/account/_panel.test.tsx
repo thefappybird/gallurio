@@ -12,8 +12,8 @@ vi.mock("../_actions", () => ({
   sendSetPasswordEmailAction: vi.fn(),
 }));
 
-vi.mock("@/lib/storage/uploadToCloudinary", () => ({
-  uploadToCloudinary: vi.fn(),
+vi.mock("@/lib/storage/uploadToCloudinary.client", () => ({
+  uploadImageToCloudinary: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -28,8 +28,10 @@ vi.mock("./_mfa-section", () => ({
   MfaSection: () => <div data-testid="mfa-section" />,
 }));
 
-const { uploadToCloudinary } = await import("@/lib/storage/uploadToCloudinary");
-const mockUpload = vi.mocked(uploadToCloudinary);
+const { uploadImageToCloudinary } = await import(
+  "@/lib/storage/uploadToCloudinary.client"
+);
+const mockUpload = vi.mocked(uploadImageToCloudinary);
 const mockUpdateAvatar = vi.mocked(updateAvatarAction);
 
 const defaultProps = {
@@ -40,6 +42,17 @@ const defaultProps = {
   hasOAuth: false,
   mfaEnabled: false,
 };
+
+function uploadResult(url: string, publicId: string) {
+  return {
+    url,
+    cloudinaryPublicId: publicId,
+    width: 400,
+    height: 400,
+    format: "jpg",
+    sizeBytes: 1234,
+  };
+}
 
 describe("AccountPanel — avatar upload", () => {
   beforeEach(() => {
@@ -54,7 +67,7 @@ describe("AccountPanel — avatar upload", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders Replace and Remove buttons when avatar is set", () => {
+  it("renders Replace and Remove buttons when an uploaded avatar is set", () => {
     renderWithProviders(
       <AccountPanel
         {...defaultProps}
@@ -66,31 +79,44 @@ describe("AccountPanel — avatar upload", () => {
     expect(screen.getByRole("button", { name: "Remove" })).toBeInTheDocument();
   });
 
-  it("calls updateAvatarAction with uploaded url and publicId after file selection", async () => {
-    mockUpload.mockResolvedValue({
-      secure_url: "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
-      public_id: "gallurio/ws/avatars/a",
-      format: "jpg",
-      resource_type: "image",
-      created_at: "",
-      bytes: 1234,
-      width: 400,
-      height: 400,
-      url: "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
+  it("hides Remove for a provider default avatar (no Cloudinary id)", () => {
+    renderWithProviders(
+      <AccountPanel
+        {...defaultProps}
+        avatarUrl="https://provider.example/default.png"
+        avatarCloudinaryPublicId={null}
+      />,
+    );
+    // Replace is still offered, but there is no uploaded asset to remove.
+    expect(screen.getByRole("button", { name: "Replace" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uploads via the shared helper and persists the url and publicId", async () => {
+    mockUpload.mockResolvedValue(
+      uploadResult(
+        "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
+        "gallurio/ws/avatars/a",
+      ),
+    );
     mockUpdateAvatar.mockResolvedValue({ ok: true });
 
     renderWithProviders(<AccountPanel {...defaultProps} />);
 
-    const fileInput = document
-      .querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
 
     const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(mockUpload).toHaveBeenCalledWith(file, { subfolder: "avatars" });
+      expect(mockUpload).toHaveBeenCalledWith(file, {
+        subfolder: "avatars",
+        validateDimensions: false,
+      });
     });
 
     await waitFor(() => {
@@ -105,37 +131,54 @@ describe("AccountPanel — avatar upload", () => {
     });
   });
 
-  it("shows error toast for a non-image file", async () => {
+  it("shows an inline error for an unsupported file type", async () => {
+    mockUpload.mockRejectedValue(new Error("type_not_accepted"));
     renderWithProviders(<AccountPanel {...defaultProps} />);
 
-    const fileInput = document
-      .querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
     const file = new File(["data"], "doc.pdf", { type: "application/pdf" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Choose an image file");
+      expect(screen.getByText(/Please choose a JPG/i)).toBeInTheDocument();
     });
-    expect(mockUpload).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("shows error toast for a file over 5 MB", async () => {
+  it("shows an inline error for an oversized file", async () => {
+    mockUpload.mockRejectedValue(new Error("file_too_large"));
     renderWithProviders(<AccountPanel {...defaultProps} />);
 
-    const fileInput = document
-      .querySelector('input[type="file"]') as HTMLInputElement;
-    const bigFile = new File([new ArrayBuffer(6 * 1024 * 1024)], "big.jpg", {
-      type: "image/jpeg",
-    });
-    fireEvent.change(fileInput, { target: { files: [bigFile] } });
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const big = new File(["x"], "big.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [big] } });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Image must be under 5 MB");
+      expect(screen.getByText(/too large/i)).toBeInTheDocument();
     });
-    expect(mockUpload).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it("calls updateAvatarAction with nulls and shows success toast on Remove", async () => {
+  it("shows a generic inline error when the upload itself fails", async () => {
+    mockUpload.mockRejectedValue(new Error("upload_failed"));
+    renderWithProviders(<AccountPanel {...defaultProps} />);
+
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["img"], "photo.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/couldn.t upload your photo/i)).toBeInTheDocument();
+    });
+  });
+
+  it("removes the avatar and shows a success toast", async () => {
     mockUpdateAvatar.mockResolvedValue({ ok: true });
 
     renderWithProviders(
@@ -160,7 +203,7 @@ describe("AccountPanel — avatar upload", () => {
     });
   });
 
-  it("shows error toast when updateAvatarAction returns an error on Remove", async () => {
+  it("shows an inline error when removing the avatar fails", async () => {
     mockUpdateAvatar.mockResolvedValue({ error: "Not authenticated" });
 
     renderWithProviders(
@@ -174,47 +217,55 @@ describe("AccountPanel — avatar upload", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Not authenticated");
+      expect(screen.getByText("Not authenticated")).toBeInTheDocument();
     });
   });
 
-  it("reverts avatar to prior image when updateAvatarAction errors after a successful upload", async () => {
-    mockUpload.mockResolvedValue({
-      secure_url: "https://res.cloudinary.com/demo/image/upload/v1/new.jpg",
-      public_id: "gallurio/ws/avatars/new",
-      format: "jpg",
-      resource_type: "image",
-      created_at: "",
-      bytes: 1234,
-      width: 400,
-      height: 400,
-      url: "https://res.cloudinary.com/demo/image/upload/v1/new.jpg",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any);
-    mockUpdateAvatar.mockResolvedValue({ error: "Failed to update photo. Please try again." });
+  it("reverts to no avatar when persistence fails after a successful upload", async () => {
+    mockUpload.mockResolvedValue(
+      uploadResult(
+        "https://res.cloudinary.com/demo/image/upload/v1/new.jpg",
+        "gallurio/ws/avatars/new",
+      ),
+    );
+    mockUpdateAvatar.mockResolvedValue({
+      error: "Failed to update photo. Please try again.",
+    });
 
-    // Start with NO avatar so that a successful rollback means the Upload button
-    // (not Replace) is visible and the avatar img element is gone.
-    renderWithProviders(<AccountPanel {...defaultProps} avatarUrl={null} avatarCloudinaryPublicId={null} />);
+    renderWithProviders(
+      <AccountPanel
+        {...defaultProps}
+        avatarUrl={null}
+        avatarCloudinaryPublicId={null}
+      />,
+    );
 
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
     const file = new File(["img"], "new.jpg", { type: "image/jpeg" });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to update photo. Please try again.");
+      expect(
+        screen.getByText("Failed to update photo. Please try again."),
+      ).toBeInTheDocument();
     });
 
-    // After rollback: avatarUrl is null again, so "Upload" button (not "Replace") is shown
-    // and the "Remove" button is absent — confirming the state reverted.
+    // After rollback the avatar is null again: Upload (not Replace) is shown
+    // and Remove is absent.
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Upload" })).toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Remove" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("reverts avatar to prior image when updateAvatarAction errors after Remove", async () => {
-    mockUpdateAvatar.mockResolvedValue({ error: "Failed to update photo. Please try again." });
+  it("restores the prior avatar when persistence fails after Remove", async () => {
+    mockUpdateAvatar.mockResolvedValue({
+      error: "Failed to update photo. Please try again.",
+    });
 
     renderWithProviders(
       <AccountPanel
@@ -227,10 +278,12 @@ describe("AccountPanel — avatar upload", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Failed to update photo. Please try again.");
+      expect(
+        screen.getByText("Failed to update photo. Please try again."),
+      ).toBeInTheDocument();
     });
 
-    // After rollback: avatarUrl is restored, so "Replace" and "Remove" buttons are shown again.
+    // After rollback the uploaded avatar is back: Replace and Remove return.
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Replace" })).toBeInTheDocument();
     });

@@ -497,6 +497,9 @@ describe("enrollMfaAction", () => {
     if (!("error" in result)) {
       expect(result.qrCode).toBe("data:image/png;base64,abc");
       expect(result.secret).toBe("MYSECRET");
+      // expiresAt lets the client run a countdown and offer a refresh
+      expect(typeof result.expiresAt).toBe("number");
+      expect(result.expiresAt).toBeGreaterThan(Date.now());
       // challengeId must NOT be in the returned result
       expect((result as Record<string, unknown>).challengeId).toBeUndefined();
     }
@@ -555,10 +558,6 @@ describe("verifyMfaEnrollmentAction", () => {
   });
 
   beforeEach(() => {
-    // Default: factor belongs to the user
-    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
-      data: [{ id: "factor_123" }],
-    });
     mockWorkos.multiFactorAuth.verifyChallenge.mockResolvedValue({
       valid: true,
       challenge: { id: "challenge_456" },
@@ -577,6 +576,21 @@ describe("verifyMfaEnrollmentAction", () => {
     expect(mockWorkos.multiFactorAuth.verifyChallenge).toHaveBeenCalledWith(
       expect.objectContaining({ authenticationChallengeId: "challenge_456" }),
     );
+  });
+
+  it("does not gate verification on listUserAuthFactors — a pending factor is not yet listed", async () => {
+    // Regression guard: a prior listUserAuthFactors ownership check rejected
+    // every legitimate enrollment because WorkOS does not list a factor as
+    // owned until it is verified. The cookie (server-set, httpOnly) is the
+    // binding, so verify must succeed without consulting the factor list.
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.ok).toBe(true);
+    expect(
+      mockWorkos.multiFactorAuth.listUserAuthFactors,
+    ).not.toHaveBeenCalled();
   });
 
   it("valid code sets mfaEnabled=true on User and deletes the cookie", async () => {
@@ -598,28 +612,6 @@ describe("verifyMfaEnrollmentAction", () => {
 
     const result = await verifyMfaEnrollmentAction({ code: "123456" });
     expect(result.error).toMatch(/expired/i);
-    expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
-
-    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
-    expect(user?.mfaEnabled).toBe(false);
-  });
-
-  it("rejects when the cookie's factorId is not among the caller's own factors (defense in depth)", async () => {
-    const cookieWithStrangerFactor = JSON.stringify({
-      factorId: "factor_stranger",
-      challengeId: "challenge_stranger",
-    });
-    const mockCookieStore = makeCookieStore(cookieWithStrangerFactor);
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
-
-    // Caller owns factor_123, not factor_stranger
-    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
-      data: [{ id: "factor_123" }],
-    });
-
-    const result = await verifyMfaEnrollmentAction({ code: "123456" });
-    expect(result.error).toBeTruthy();
-    // verifyChallenge must NOT be called when the factor ownership check fails
     expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
 
     const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();

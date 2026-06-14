@@ -555,7 +555,10 @@
       "account": "Account",
       "logOut": "Log out",
       "portfolio": "Portfolio",
-      "accountMenu": "Account menu"
+      "accountMenu": "Account menu",
+      "logOutConfirmTitle": "Log out?",
+      "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
+      "logOutConfirmCancel": "Cancel"
     },
     "theme": {
       "label": "Theme",
@@ -576,7 +579,7 @@
       "account": {
         "profileSection": "Profile",
         "profileHint": "Your name and avatar as shown to teammates.",
-        "avatarHint": "Upload a square image, at least 200×200px.",
+        "avatarHint": "Upload a square JPG, PNG, or WebP, up to 10 MB.",
         "avatarUpload": "Upload",
         "avatarReplace": "Replace",
         "avatarRemove": "Remove",
@@ -584,9 +587,9 @@
         "avatarSaving": "Saving…",
         "avatarSaved": "Photo updated",
         "avatarRemoved": "Photo removed",
-        "avatarUploadError": "Upload failed",
-        "avatarTypeError": "Choose an image file",
-        "avatarSizeError": "Image must be under 5 MB",
+        "avatarUploadError": "We couldn’t upload your photo. Please try again.",
+        "avatarTypeError": "That file type isn’t supported. Please choose a JPG, PNG, or WebP image.",
+        "avatarSizeError": "That image is too large. Please choose one under 10 MB.",
         "nameSection": "Display name",
         "nameLabel": "Full name",
         "emailLabel": "Email address",
@@ -608,10 +611,11 @@
         "passwordRequired": "Enter your current password.",
         "showPassword": "Show password",
         "hidePassword": "Hide password",
-        "setPasswordHint": "You sign in with Google. Set a password to also sign in with your email.",
+        "setPasswordHint": "You sign in with Google. We’ll email you a secure link to set or reset a password for email sign-in.",
         "setPassword": "Set a password",
         "sendingSetPassword": "Sending…",
-        "setPasswordSent": "Check your email for a link to set your password."
+        "setPasswordSent": "Check your email for a link to set your password.",
+        "resetPassword": "Reset your password"
       },
       "security": {
         "mfaSection": "Two-factor authentication",
@@ -634,7 +638,10 @@
         "mfaCodeLabel": "Verification code",
         "verifyCode": "Verify and enable",
         "verifying": "Verifying…",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "mfaRefresh": "Refresh code",
+        "mfaExpiresIn": "Expires in {time}",
+        "mfaExpired": "This setup code expired. Refresh to get a new one."
       },
       "tabs": {
         "account": "Account",

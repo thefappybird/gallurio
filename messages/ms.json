@@ -555,7 +555,10 @@
       "account": "Akaun",
       "logOut": "Log keluar",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akaun"
+      "accountMenu": "Menu akaun",
+      "logOutConfirmTitle": "Log keluar?",
+      "logOutConfirmBody": "Anda perlu log masuk semula untuk mengakses ruang kerja anda.",
+      "logOutConfirmCancel": "Batal"
     },
     "theme": {
       "label": "Tema",
@@ -576,7 +579,7 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar anda seperti yang dilihat oleh rakan sepasukan.",
-        "avatarHint": "Muat naik imej segi empat sama, sekurang-kurangnya 200×200px.",
+        "avatarHint": "Muat naik imej segi empat sama JPG, PNG atau WebP, sehingga 10 MB.",
         "avatarUpload": "Muat naik",
         "avatarReplace": "Ganti",
         "avatarRemove": "Buang",
@@ -584,9 +587,9 @@
         "avatarSaving": "Menyimpan…",
         "avatarSaved": "Foto dikemas kini",
         "avatarRemoved": "Foto dibuang",
-        "avatarUploadError": "Muat naik gagal",
-        "avatarTypeError": "Pilih fail imej",
-        "avatarSizeError": "Imej mesti kurang daripada 5 MB",
+        "avatarUploadError": "Kami tidak dapat memuat naik foto anda. Sila cuba lagi.",
+        "avatarTypeError": "Jenis fail itu tidak disokong. Sila pilih imej JPG, PNG atau WebP.",
+        "avatarSizeError": "Imej itu terlalu besar. Sila pilih yang bawah 10 MB.",
         "nameSection": "Nama paparan",
         "nameLabel": "Nama penuh",
         "emailLabel": "Alamat e-mel",
@@ -608,10 +611,11 @@
         "passwordRequired": "Masukkan kata laluan semasa anda.",
         "showPassword": "Tunjuk kata laluan",
         "hidePassword": "Sembunyi kata laluan",
-        "setPasswordHint": "Anda log masuk dengan Google. Tetapkan kata laluan untuk turut log masuk dengan e-mel anda.",
+        "setPasswordHint": "Anda log masuk dengan Google. Kami akan menghantar pautan selamat ke e-mel anda untuk menetapkan atau menetapkan semula kata laluan bagi log masuk e-mel.",
         "setPassword": "Tetapkan kata laluan",
         "sendingSetPassword": "Menghantar…",
-        "setPasswordSent": "Semak e-mel anda untuk pautan menetapkan kata laluan anda."
+        "setPasswordSent": "Semak e-mel anda untuk pautan menetapkan kata laluan anda.",
+        "resetPassword": "Tetapkan semula kata laluan anda"
       },
       "security": {
         "mfaSection": "Pengesahan dua faktor",
@@ -634,7 +638,10 @@
         "mfaCodeLabel": "Kod pengesahan",
         "verifyCode": "Sahkan dan aktifkan",
         "verifying": "Mengesahkan…",
-        "cancel": "Batal"
+        "cancel": "Batal",
+        "mfaRefresh": "Muat semula kod",
+        "mfaExpiresIn": "Tamat tempoh dalam {time}",
+        "mfaExpired": "Kod persediaan ini telah tamat tempoh. Muat semula untuk mendapatkan yang baharu."
       },
       "tabs": {
         "account": "Akaun",

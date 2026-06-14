@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { AppSidebar } from "./app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -114,17 +114,19 @@ describe("AppSidebar nav items", () => {
 });
 
 describe("AppSidebar footer logout", () => {
-  it("renders a logout submit button in the sidebar footer", () => {
+  it("renders a logout trigger button in the sidebar footer", () => {
     renderSidebar("owner");
     const btn = screen.getByRole("button", { name: /log.?out/i });
     expect(btn).toBeInTheDocument();
-    expect(btn).toHaveAttribute("type", "submit");
+    // The trigger no longer submits directly — it opens a confirmation dialog.
+    expect(btn).toHaveAttribute("type", "button");
   });
 
-  it("wraps the logout button in a form", () => {
+  it("opens a confirmation dialog when the logout button is clicked", () => {
     renderSidebar("owner");
-    const btn = screen.getByRole("button", { name: /log.?out/i });
-    expect(btn.closest("form")).not.toBeNull();
+    expect(screen.queryByText("Log out?")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /log.?out/i }));
+    expect(screen.getByText("Log out?")).toBeInTheDocument();
   });
 
   it("renders the logout button for staff role too", () => {

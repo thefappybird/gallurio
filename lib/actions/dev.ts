@@ -79,14 +79,21 @@ export async function devActivatePlanAction(plan: PlanTier): Promise<DevPlanActi
     };
   }
 
+  // Simulate a complete active subscription so every billing-dependent surface
+  // (settings billing panel, plan gates, "manage subscription") behaves exactly
+  // as it would with a real Paddle subscription — no Paddle credentials needed.
+  const isPaid = plan !== "free";
   await Workspace.updateOne(
     { _id: workspace._id },
     {
       $set: {
         plan,
-        paddleSubscriptionStatus: plan === "free" ? null : "active",
-        paddleCurrentPeriodEnd:
-          plan === "free" ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        paddleSubscriptionStatus: isPaid ? "active" : null,
+        paddleCurrentPeriodEnd: isPaid
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          : null,
+        paddleSubscriptionId: isPaid ? `dev_sub_${workspace._id}` : null,
+        paddleCustomerId: isPaid ? `dev_cus_${workspace._id}` : null,
       },
     }
   );

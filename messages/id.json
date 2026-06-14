@@ -555,7 +555,10 @@
       "account": "Akun",
       "logOut": "Keluar",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akun"
+      "accountMenu": "Menu akun",
+      "logOutConfirmTitle": "Keluar?",
+      "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
+      "logOutConfirmCancel": "Batal"
     },
     "theme": {
       "label": "Tema",
@@ -576,7 +579,7 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
-        "avatarHint": "Unggah gambar persegi, minimal 200×200px.",
+        "avatarHint": "Unggah gambar persegi JPG, PNG, atau WebP, maksimal 10 MB.",
         "avatarUpload": "Unggah",
         "avatarReplace": "Ganti",
         "avatarRemove": "Hapus",
@@ -584,9 +587,9 @@
         "avatarSaving": "Menyimpan…",
         "avatarSaved": "Foto diperbarui",
         "avatarRemoved": "Foto dihapus",
-        "avatarUploadError": "Unggahan gagal",
-        "avatarTypeError": "Pilih file gambar",
-        "avatarSizeError": "Gambar harus kurang dari 5 MB",
+        "avatarUploadError": "Kami tidak dapat mengunggah foto Anda. Silakan coba lagi.",
+        "avatarTypeError": "Tipe file itu tidak didukung. Silakan pilih gambar JPG, PNG, atau WebP.",
+        "avatarSizeError": "Gambar itu terlalu besar. Silakan pilih yang di bawah 10 MB.",
         "nameSection": "Nama tampilan",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Alamat email",
@@ -608,10 +611,11 @@
         "passwordRequired": "Masukkan kata sandi Anda saat ini.",
         "showPassword": "Tampilkan kata sandi",
         "hidePassword": "Sembunyikan kata sandi",
-        "setPasswordHint": "Anda masuk dengan Google. Atur kata sandi untuk juga masuk dengan email Anda.",
+        "setPasswordHint": "Anda masuk dengan Google. Kami akan mengirim tautan aman ke email Anda untuk mengatur atau mengatur ulang kata sandi untuk masuk lewat email.",
         "setPassword": "Atur kata sandi",
         "sendingSetPassword": "Mengirim…",
-        "setPasswordSent": "Periksa email Anda untuk tautan mengatur kata sandi."
+        "setPasswordSent": "Periksa email Anda untuk tautan mengatur kata sandi.",
+        "resetPassword": "Atur ulang kata sandi Anda"
       },
       "security": {
         "mfaSection": "Autentikasi dua faktor",
@@ -634,7 +638,10 @@
         "mfaCodeLabel": "Kode verifikasi",
         "verifyCode": "Verifikasi dan aktifkan",
         "verifying": "Memverifikasi…",
-        "cancel": "Batal"
+        "cancel": "Batal",
+        "mfaRefresh": "Segarkan kode",
+        "mfaExpiresIn": "Kedaluwarsa dalam {time}",
+        "mfaExpired": "Kode penyiapan ini kedaluwarsa. Segarkan untuk mendapatkan yang baru."
       },
       "tabs": {
         "account": "Akun",

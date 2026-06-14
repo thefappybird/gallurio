@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { signOutAction } from "@/lib/auth/signOut";
+import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
 
 type Props = {
   name: string | null;
@@ -36,8 +36,10 @@ function getInitials(name: string | null, email: string): string {
 export function ClientUserButton({ name, email, avatarUrl }: Props) {
   const t = useTranslations("app.sidebar");
   const initials = getInitials(name, email);
+  const [logoutOpen, setLogoutOpen] = React.useState(false);
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={t("accountMenu")}
@@ -73,22 +75,21 @@ export function ClientUserButton({ name, email, avatarUrl }: Props) {
             {t("settings")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {/* Sign-out — server action via form so it works without JS */}
-          <form action={signOutAction} className="contents">
-            <DropdownMenuItem
-              render={
-                <button
-                  type="submit"
-                  className="w-full text-destructive"
-                />
-              }
-            >
-              <LogOutIcon className="size-4 shrink-0" aria-hidden />
-              {t("logOut")}
-            </DropdownMenuItem>
-          </form>
+          {/* Sign-out — opens a confirmation dialog before clearing the session */}
+          <DropdownMenuItem
+            render={
+              <button type="button" className="w-full text-destructive" />
+            }
+            onClick={() => setLogoutOpen(true)}
+          >
+            <LogOutIcon className="size-4 shrink-0" aria-hidden />
+            {t("logOut")}
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <SignOutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
+    </>
   );
 }

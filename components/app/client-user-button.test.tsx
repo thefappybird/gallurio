@@ -54,4 +54,12 @@ describe("ClientUserButton", () => {
     expect(screen.getByText(/settings/i)).toBeInTheDocument();
     expect(screen.getByText(/log out/i)).toBeInTheDocument();
   });
+
+  it("opens a confirmation dialog when log out is clicked", () => {
+    renderButton();
+    fireEvent.click(screen.getByRole("button", { name: /account menu/i }));
+    expect(screen.queryByText("Log out?")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText(/log out/i));
+    expect(screen.getByText("Log out?")).toBeInTheDocument();
+  });
 });

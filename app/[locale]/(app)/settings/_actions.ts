@@ -236,10 +236,12 @@ export async function updateProfileNameAction(input: {
 // ---------------------------------------------------------------------------
 
 const MFA_ENROLL_COOKIE = "gw_mfa_enroll";
+// How long the enrollment session (QR code / challenge) stays valid, in seconds.
+const MFA_ENROLL_TTL_SEC = 600;
 
 export type EnrollMfaResult =
   | { error: string }
-  | { qrCode: string; secret: string };
+  | { qrCode: string; secret: string; expiresAt: number };
 
 export async function enrollMfaAction(): Promise<EnrollMfaResult> {
   const authUser = await getAuthUser();
@@ -271,13 +273,16 @@ export async function enrollMfaAction(): Promise<EnrollMfaResult> {
         secure: await authCookieSecure(),
         sameSite: "lax",
         path: "/",
-        maxAge: 600,
+        maxAge: MFA_ENROLL_TTL_SEC,
       },
     );
 
     return {
       qrCode: totp.qrCode,
       secret: totp.secret,
+      // Absolute expiry so the client can show a countdown and prompt a refresh
+      // before the server-side enrollment cookie lapses.
+      expiresAt: Date.now() + MFA_ENROLL_TTL_SEC * 1000,
     };
   } catch (err) {
     console.error("[settings] createUserAuthFactor failed", err);
@@ -306,38 +311,25 @@ export async function verifyMfaEnrollmentAction(input: {
   if (!rawCookie)
     return { error: "Enrollment session expired. Restart setup." };
 
-  let factorId: string;
+  // The challenge is bound to this authenticated user: it was minted by
+  // enrollMfaAction() and stored in a server-set, httpOnly cookie the client
+  // cannot read or forge. verifyChallenge() below ties the code to that exact
+  // challenge, so no further ownership check is needed. (A prior
+  // listUserAuthFactors() guard was removed: WorkOS does not list a factor as
+  // owned until it is verified, so it rejected every legitimate enrollment.)
   let challengeId: string;
   try {
     const parsed = JSON.parse(rawCookie) as unknown;
     if (
       typeof parsed !== "object" ||
       parsed === null ||
-      typeof (parsed as Record<string, unknown>).factorId !== "string" ||
       typeof (parsed as Record<string, unknown>).challengeId !== "string"
     ) {
       return { error: "Enrollment session expired. Restart setup." };
     }
-    factorId = (parsed as Record<string, string>).factorId;
     challengeId = (parsed as Record<string, string>).challengeId;
   } catch {
     return { error: "Enrollment session expired. Restart setup." };
-  }
-
-  // Defense in depth: confirm the factor belongs to the authenticated user
-  // before verifying the challenge.
-  try {
-    const factors = await workos.multiFactorAuth.listUserAuthFactors({
-      userId: authUser.workosUserId,
-    });
-    const owns = factors.data.some(
-      (f: { id: string }) => f.id === factorId,
-    );
-    if (!owns)
-      return { error: "Enrollment session expired. Restart setup." };
-  } catch (err) {
-    console.error("[settings] listUserAuthFactors failed", err);
-    return { error: "Failed to verify MFA enrollment. Please try again." };
   }
 
   try {

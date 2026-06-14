@@ -1,11 +1,18 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import { Loader2, ShieldCheck, ShieldOff, Copy, Check } from "lucide-react";
+import {
+  Loader2,
+  ShieldCheck,
+  ShieldOff,
+  Copy,
+  Check,
+  RotateCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
@@ -75,8 +82,16 @@ function CopyButton({ text }: { text: string }) {
 
 type EnrollState =
   | { step: "idle" }
-  | { step: "qr"; qrCode: string; secret: string }
+  | { step: "qr"; qrCode: string; secret: string; expiresAt: number }
   | { step: "done" };
+
+/** Format a non-negative second count as m:ss. */
+function formatCountdown(totalSeconds: number): string {
+  const s = Math.max(0, totalSeconds);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
 
 function MfaSetupFlow({
   onDone,
@@ -86,6 +101,7 @@ function MfaSetupFlow({
   t: ReturnType<typeof useTranslations>;
 }) {
   const [enrollState, setEnrollState] = useState<EnrollState>({ step: "idle" });
+  const [secondsLeft, setSecondsLeft] = useState(0);
   const [enrollPending, startEnroll] = useTransition();
   const [verifyPending, startVerify] = useTransition();
 
@@ -98,7 +114,20 @@ function MfaSetupFlow({
     resolver: zodResolver(codeSchema),
   });
 
+  // Tick down the enrollment expiry while the QR code is on screen so the user
+  // knows when to refresh before the server-side session lapses.
+  const expiresAt = enrollState.step === "qr" ? enrollState.expiresAt : null;
+  useEffect(() => {
+    if (expiresAt === null) return;
+    const tick = () =>
+      setSecondsLeft(Math.ceil((expiresAt - Date.now()) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+
   function handleStartSetup() {
+    reset();
     startEnroll(async () => {
       const result: EnrollMfaResult = await enrollMfaAction();
       if ("error" in result) {
@@ -111,6 +140,10 @@ function MfaSetupFlow({
 
   function handleVerify(values: CodeValues) {
     if (enrollState.step !== "qr") return;
+    if (secondsLeft <= 0) {
+      toast.error(t("mfaExpired"));
+      return;
+    }
     startVerify(async () => {
       const result = await verifyMfaEnrollmentAction({
         code: values.code,
@@ -127,11 +160,42 @@ function MfaSetupFlow({
   }
 
   if (enrollState.step === "qr") {
+    const expired = secondsLeft <= 0;
     return (
       <div className="flex flex-col gap-4 border border-border bg-card p-4">
         <div>
           <p className="text-sm font-medium">{t("mfaScanHeading")}</p>
           <p className="text-xs text-muted-foreground">{t("mfaScanHint")}</p>
+        </div>
+
+        {/* Expiry countdown + refresh */}
+        <div className="flex items-center justify-between gap-2">
+          <p
+            role={expired ? "alert" : "status"}
+            aria-live="polite"
+            className={
+              expired
+                ? "text-xs font-medium text-destructive"
+                : "text-xs text-muted-foreground"
+            }
+          >
+            {expired
+              ? t("mfaExpired")
+              : t("mfaExpiresIn", { time: formatCountdown(secondsLeft) })}
+          </p>
+          <button
+            type="button"
+            onClick={handleStartSetup}
+            disabled={enrollPending}
+            className="inline-flex items-center gap-1 border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          >
+            {enrollPending ? (
+              <Loader2 className="size-3 animate-spin" aria-hidden />
+            ) : (
+              <RotateCw className="size-3" aria-hidden />
+            )}
+            {t("mfaRefresh")}
+          </button>
         </div>
 
         {/* QR code */}
@@ -176,7 +240,7 @@ function MfaSetupFlow({
               autoComplete="one-time-code"
               maxLength={6}
               placeholder="000000"
-              disabled={verifyPending}
+              disabled={verifyPending || expired}
               aria-describedby={errors.code ? "mfa-code-error" : undefined}
               aria-invalid={!!errors.code}
               {...register("code")}
@@ -195,7 +259,7 @@ function MfaSetupFlow({
           <div className="flex gap-2">
             <Button
               type="submit"
-              disabled={verifyPending}
+              disabled={verifyPending || expired}
               className="min-h-11 min-w-32"
             >
               {verifyPending ? (
