@@ -8,7 +8,7 @@
  *   another workspace or missing IDs are silently dropped.
  */
 
-import { Types } from "mongoose";
+import { Types, type PipelineStage } from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
@@ -296,8 +296,10 @@ export async function listCollectionItemsPage(opts: {
 /**
  * One page of ALL workspace items, newest-first, paginated. Backs the virtual
  * "All photos" collection (covers standalone collectionId:null items too).
- * Cursor pagination on (createdAt,_id) descending. Backed by the
- * { workspaceId, createdAt } index (added alongside this feed).
+ * Deduplicates by Cloudinary asset: each unique `cloudinaryPublicId` appears
+ * once (copy semantics can create multiple GalleryItem docs per asset). The
+ * representative is the newest doc per publicId; cursor pagination is by that
+ * representative's (createdAt, _id) descending.
  */
 export async function listAllItemsPage(opts: {
   workspaceId: string;
@@ -310,33 +312,61 @@ export async function listAllItemsPage(opts: {
   const limit = clampLimit(opts.limit);
   await connectDB();
 
-  const filter: Record<string, unknown> = { workspaceId };
+  // Group by Cloudinary asset so each unique photo appears once (copy semantics
+  // can create several GalleryItem docs per asset). The representative is the
+  // newest doc per publicId; pagination is by that representative's (createdAt,_id).
+  const pipeline: PipelineStage[] = [
+    { $match: { workspaceId: new Types.ObjectId(workspaceId) } },
+    { $sort: { createdAt: -1, _id: -1 } },
+    {
+      $group: {
+        _id: "$cloudinaryPublicId",
+        docId: { $first: "$_id" },
+        createdAt: { $first: "$createdAt" },
+        caption: { $first: "$caption" },
+      },
+    },
+    { $sort: { createdAt: -1, docId: -1 } },
+  ];
+
   if (opts.cursor) {
     const c = decodeCursor(opts.cursor);
     if (c) {
       const ms = Number(c.sortValue);
       if (Number.isFinite(ms)) {
         const d = new Date(ms);
-        filter.$or = [
-          { createdAt: { $lt: d } },
-          { createdAt: d, _id: { $lt: new Types.ObjectId(c.id) } },
-        ];
+        pipeline.push({
+          $match: {
+            $or: [{ createdAt: { $lt: d } }, { createdAt: d, docId: { $lt: new Types.ObjectId(c.id) } }],
+          },
+        });
       }
     }
   }
 
-  const docs = await GalleryItem.find(filter)
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(limit + 1)
-    .select({ cloudinaryPublicId: 1, caption: 1, createdAt: 1 })
-    .lean();
+  pipeline.push({ $limit: limit + 1 });
 
-  const hasMore = docs.length > limit;
-  const page = hasMore ? docs.slice(0, limit) : docs;
+  const rows = await GalleryItem.aggregate<{
+    _id: string;
+    docId: Types.ObjectId;
+    createdAt: Date;
+    caption?: string;
+  }>(pipeline);
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
   const last = page[page.length - 1];
   const nextCursor =
-    hasMore && last ? encodeCursor(new Date(last.createdAt as Date).getTime(), String(last._id)) : null;
-  return { items: page.map(toPickerItem), nextCursor };
+    hasMore && last ? encodeCursor(new Date(last.createdAt).getTime(), String(last.docId)) : null;
+
+  const items: PickerItem[] = page.map((r) => ({
+    id: String(r.docId),
+    publicId: r._id,
+    thumbUrl: cloudinaryThumbnailUrl(r._id, { width: 200, height: 200 }),
+    caption: (r.caption as string) || null,
+  }));
+
+  return { items, nextCursor };
 }
 
 // ---------------------------------------------------------------------------
