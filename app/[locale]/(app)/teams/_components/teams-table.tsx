@@ -14,12 +14,12 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
-  Eye,
-  MailPlus,
-  MoreHorizontal,
-  Pencil,
-  PowerOff,
-  RotateCcw,
+  EyeIcon,
+  MailPlusIcon,
+  MoreHorizontalIcon,
+  PencilIcon,
+  PowerOffIcon,
+  RotateCcwIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -117,23 +117,23 @@ export function TeamsTable({
                       size="icon-sm"
                       aria-label={t("team.actionsLabel", { name: team.name })}
                     >
-                      <MoreHorizontal className="size-4" />
+                      <MoreHorizontalIcon className="size-4" />
                     </Button>
                   }
                 />
                 <DropdownMenuContent align="end" side="bottom">
                   <DropdownMenuItem onClick={() => onDetails(team)}>
-                    <Eye className="size-4" />
+                    <EyeIcon className="size-4" />
                     {t("table.details")}
                   </DropdownMenuItem>
                   {team.isActive && (
                     <>
                       <DropdownMenuItem onClick={() => onEdit(team)}>
-                        <Pencil className="size-4" />
+                        <PencilIcon className="size-4" />
                         {t("team.edit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onInvite(team)}>
-                        <MailPlus className="size-4" />
+                        <MailPlusIcon className="size-4" />
                         {t("team.invite")}
                       </DropdownMenuItem>
                     </>
@@ -145,7 +145,7 @@ export function TeamsTable({
                         variant="destructive"
                         onClick={() => onDeactivate(team)}
                       >
-                        <PowerOff className="size-4" />
+                        <PowerOffIcon className="size-4" />
                         {t("team.deactivate")}
                       </DropdownMenuItem>
                     </>
@@ -154,7 +154,7 @@ export function TeamsTable({
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onReactivate(team)}>
-                        <RotateCcw className="size-4" />
+                        <RotateCcwIcon className="size-4" />
                         {t("team.reactivate")}
                       </DropdownMenuItem>
                     </>

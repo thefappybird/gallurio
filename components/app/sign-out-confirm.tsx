@@ -14,6 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/lib/auth/signOut";
 
+/**
+ * Confirmation dialog shown before signing out. Controlled by the caller so it
+ * can be triggered from the sidebar menu item or the account dropdown.
+ *
+ * Confirm submits the `signOutAction` via a real <form>, so the sign-out still
+ * works once the dialog is open even without client-side navigation.
+ */
 export function SignOutConfirmDialog({
   open,
   onOpenChange,
@@ -43,7 +50,10 @@ export function SignOutConfirmDialog({
           >
             {t("logOutConfirmCancel")}
           </Button>
-          <form action={() => startTransition(() => signOutAction())} className="contents">
+          <form
+            action={() => startTransition(() => signOutAction())}
+            className="contents"
+          >
             <Button type="submit" variant="destructive" disabled={pending}>
               {pending ? (
                 <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -62,9 +62,20 @@ export function BookingsToolbar({
   const [q, setQ] = useState(searchParams.get("q") ?? "");
   const [importOpen, setImportOpen] = useState(false);
 
+  // Keep a ref to the latest searchParams so pushParams never captures a stale
+  // closure AND never needs searchParams in its own dependency array (which
+  // would give it a new identity every render and break the debounce effect).
+  const searchParamsRef = useRef(searchParams);
+  // eslint-disable-next-line react-hooks/refs -- intentional: mutable ref updated during render to always hold the latest value; only read in effects/callbacks, never during render itself
+  searchParamsRef.current = searchParams;
+
+  // Sync the search-box value with external URL changes (browser back/forward,
+  // link navigation). Guard with a value equality check so React can bail out
+  // when the value hasn't actually changed, preventing an extra render cycle.
   useEffect(() => {
     const next = searchParams.get("q") ?? "";
-    Promise.resolve().then(() => setQ(next));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs controlled input with URL-driven searchParams (external → React sync for back/forward and link navigation)
+    setQ((prev) => (prev === next ? prev : next));
   }, [searchParams]);
 
   const status = searchParams.get("status") ?? ALL;
@@ -84,9 +95,12 @@ export function BookingsToolbar({
     return `/api/bookings/export${qs ? `?${qs}` : ""}`;
   }, [status, q, includeCancelled, from, to]);
 
+  // pushParams reads searchParams via a ref so its identity only changes when
+  // router or pathname changes — never on every searchParams object replacement.
+  // This breaks the cycle: debounce-effect deps no longer change each render.
   const pushParams = useCallback(
     (updates: Record<string, string | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsRef.current.toString());
       for (const [k, v] of Object.entries(updates)) {
         if (v === null || v === "") params.delete(k);
         else params.set(k, v);
@@ -96,16 +110,19 @@ export function BookingsToolbar({
         router.push(qs ? `${pathname}?${qs}` : pathname);
       });
     },
-    [router, pathname, searchParams]
+    [router, pathname]
   );
 
-  // debounce the search input
+  // Debounce the search-box input. The only deps that should change here are
+  // `q` (typed by the user) and `pushParams` (stable unless route changes).
+  // Removing `searchParams` from deps prevents the effect from re-firing every
+  // time the URL object is replaced — which is what caused the render loop.
   useEffect(() => {
-    const current = searchParams.get("q") ?? "";
+    const current = searchParamsRef.current.get("q") ?? "";
     if (q === current) return;
     const id = setTimeout(() => pushParams({ q: q || null }), 250);
     return () => clearTimeout(id);
-  }, [q, searchParams, pushParams]);
+  }, [q, pushParams]);
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">

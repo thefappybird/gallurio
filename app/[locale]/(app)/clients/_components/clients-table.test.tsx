@@ -68,6 +68,7 @@ const defaultProps = {
   locale: "en",
   empty: "No clients",
   onClickClient: vi.fn(),
+  onView: vi.fn(),
   onEdit: vi.fn(),
   onDeactivate: vi.fn(),
   onReactivate: vi.fn(),
@@ -85,6 +86,27 @@ describe("ClientsTable", () => {
     renderWithProviders(<ClientsTable {...defaultProps} onClickClient={onClickClient} />);
     fireEvent.click(screen.getByText("Maria Santos"));
     expect(onClickClient).toHaveBeenCalledWith(sampleRows[0]);
+  });
+
+  it("renders View as the first item in the actions menu", async () => {
+    renderWithProviders(<ClientsTable {...defaultProps} />);
+    const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
+    fireEvent.click(menuButtons[0]);
+    const items = await screen.findAllByRole("button");
+    const viewButton = items.find((btn) => btn.textContent?.includes("View"));
+    expect(viewButton).toBeInTheDocument();
+  });
+
+  it("calls onView when View is clicked in the actions menu", async () => {
+    const onView = vi.fn();
+    renderWithProviders(<ClientsTable {...defaultProps} onView={onView} />);
+    // After sorting by name asc: "John Dela Cruz" (inactive) = index 0
+    const menuButtons = screen.getAllByRole("button", { name: /open client actions/i });
+    fireEvent.click(menuButtons[0]);
+    const viewButtons = await screen.findAllByText("View");
+    // Click the first View button (the one belonging to the first row's menu)
+    fireEvent.click(viewButtons[0]);
+    expect(onView).toHaveBeenCalledWith(sampleRows[1]); // John Dela Cruz
   });
 
   it("shows Deactivate in actions menu for active clients", async () => {

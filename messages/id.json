@@ -262,7 +262,8 @@
       },
       "row": {
         "openMenu": "Buka tindakan pemesanan",
-        "view": "Lihat"
+        "view": "Lihat",
+        "edit": "Edit"
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
@@ -558,7 +559,10 @@
       "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
       "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akun"
+      "accountMenu": "Menu akun",
+      "logOutConfirmTitle": "Keluar?",
+      "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
+      "logOutConfirmCancel": "Batal"
     },
     "theme": {
       "label": "Tema",
@@ -579,14 +583,45 @@
       "account": {
         "profileSection": "Profil",
         "profileHint": "Nama dan avatar Anda seperti yang dilihat oleh rekan tim.",
-        "avatarHint": "Avatar dikelola melalui profil WorkOS Anda.",
+        "avatarHint": "Unggah gambar persegi JPG, PNG, atau WebP, maksimal 10 MB.",
+        "avatarUpload": "Unggah",
+        "avatarReplace": "Ganti",
+        "avatarRemove": "Hapus",
+        "avatarUploading": "Mengunggah…",
+        "avatarSaving": "Menyimpan…",
+        "avatarSaved": "Foto diperbarui",
+        "avatarRemoved": "Foto dihapus",
+        "avatarUploadError": "Kami tidak dapat mengunggah foto Anda. Silakan coba lagi.",
+        "avatarTypeError": "Tipe file itu tidak didukung. Silakan pilih gambar JPG, PNG, atau WebP.",
+        "avatarSizeError": "Gambar itu terlalu besar. Silakan pilih yang di bawah 10 MB.",
         "nameSection": "Nama tampilan",
         "nameLabel": "Nama lengkap",
         "emailLabel": "Alamat email",
         "emailReadOnly": "Perubahan email belum didukung. Hubungi dukungan.",
         "saving": "Menyimpan…",
         "saveName": "Simpan nama",
-        "nameSaved": "Nama diperbarui."
+        "nameSaved": "Nama diperbarui.",
+        "passwordSection": "Kata sandi",
+        "passwordHint": "Ubah kata sandi yang Anda gunakan untuk masuk.",
+        "currentPasswordLabel": "Kata sandi saat ini",
+        "newPasswordLabel": "Kata sandi baru",
+        "confirmPasswordLabel": "Konfirmasi kata sandi baru",
+        "newPasswordHint": "Minimal 8 karakter",
+        "changePassword": "Ubah kata sandi",
+        "updatingPassword": "Memperbarui…",
+        "passwordSaved": "Kata sandi diperbarui.",
+        "passwordMismatch": "Kata sandi tidak cocok.",
+        "passwordTooShort": "Kata sandi harus minimal 8 karakter.",
+        "passwordRequired": "Masukkan kata sandi Anda saat ini.",
+        "showPassword": "Tampilkan kata sandi",
+        "hidePassword": "Sembunyikan kata sandi",
+        "setPasswordHint": "Anda masuk dengan Google. Kami akan mengirim tautan aman ke email Anda untuk mengatur atau mengatur ulang kata sandi untuk masuk lewat email.",
+        "setPassword": "Atur kata sandi",
+        "sendingSetPassword": "Mengirim…",
+        "setPasswordSent": "Periksa email Anda untuk tautan mengatur kata sandi.",
+        "resetPassword": "Atur ulang kata sandi Anda",
+        "avatarPreview": "Lihat foto lengkap",
+        "avatarPreviewTitle": "Foto profil"
       },
       "security": {
         "mfaSection": "Autentikasi dua faktor",
@@ -609,16 +644,17 @@
         "mfaCodeLabel": "Kode verifikasi",
         "verifyCode": "Verifikasi dan aktifkan",
         "verifying": "Memverifikasi…",
-        "cancel": "Batal"
+        "cancel": "Batal",
+        "mfaRefresh": "Segarkan kode",
+        "mfaExpiresIn": "Kedaluwarsa dalam {time}",
+        "mfaExpired": "Kode penyiapan ini kedaluwarsa. Segarkan untuk mendapatkan yang baru."
       },
       "tabs": {
         "account": "Akun",
-        "security": "Keamanan",
         "customize": "Sesuaikan",
         "workspace": "Ruang kerja",
         "teams": "Tim",
         "publicPage": "Halaman publik",
-        "danger": "Zona berbahaya",
         "billing": "Tagihan",
         "devPlan": "Dev · plan",
         "currentWorkspace": "Ruang kerja saat ini"
@@ -711,21 +747,6 @@
         "saving": "Menyimpan…",
         "savedToast": "Pengaturan halaman publik diperbarui.",
         "visibilityUpdatedToast": "Visibilitas diperbarui."
-      },
-      "danger": {
-        "exportSection": "Ekspor data ruang kerja",
-        "exportHint": "Unduh salinan pemesanan, klien, referensi galeri, dan pertanyaan Anda. Kami akan mengirimkan tautan melalui email saat sudah siap.",
-        "exportButton": "Minta ekspor",
-        "exportRequestedToast": "Ekspor diminta. Kami akan mengirimkan email saat sudah siap.",
-        "deleteSection": "Hapus ruang kerja",
-        "deleteHint": "Hapus ruang kerja ini dan semua isinya secara permanen — pemesanan, klien, galeri, pertanyaan. Langganan Anda akan dibatalkan. Tindakan ini tidak dapat dibatalkan.",
-        "deleteOpen": "Hapus ruang kerja",
-        "deleteConfirmTitle": "Hapus ruang kerja ini?",
-        "deleteConfirmBody": "Ini akan menghapus setiap catatan di {workspaceName} secara permanen. Ketik slug URL ruang kerja untuk mengonfirmasi:",
-        "deleteConfirmInput": "Slug URL ruang kerja",
-        "deleteCancel": "Batal",
-        "deleteConfirm": "Saya mengerti, hapus",
-        "deleting": "Menghapus…"
       }
     },
     "teams": {
@@ -949,6 +970,7 @@
         "noBookings": "Belum ada booking",
         "openMenu": "Buka aksi klien",
         "openClient": "Buka {name}",
+        "view": "Lihat",
         "edit": "Ubah",
         "deactivate": "Nonaktifkan",
         "reactivate": "Aktifkan kembali"
@@ -1037,15 +1059,16 @@
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Disetujui",
         "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Disetujui",
         "archived": "Diarsipkan",
-        "booked": "Dipesan"
+        "booked": "Dipesan",
+        "converted": "Dikonversi ke Pemesanan"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -1074,9 +1097,14 @@
           "eventType": "Jenis",
           "submitted": "Dikirim",
           "source": "Sumber",
-          "eventTitle": "Judul acara"
+          "eventTitle": "Judul acara",
+          "actions": "Tindakan"
         },
-        "noTitle": "Acara tanpa judul"
+        "noTitle": "Acara tanpa judul",
+        "actions": {
+          "view": "Lihat",
+          "menuLabel": "Buka tindakan pertanyaan"
+        }
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1101,31 +1129,31 @@
         },
         "bookingDraft": {
           "title": "Draf pemesanan",
-          "description": "Menyetujui ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
+          "description": "Mengonversi ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
           "total": "Total",
           "deposit": "Deposit",
           "notes": "Catatan internal",
           "notesPlaceholder": "Catatan yang hanya dapat Anda lihat…",
           "save": "Simpan perubahan",
           "saving": "Menyimpan…",
-          "approve": "Setujui pemesanan",
-          "approving": "Menyetujui…",
-          "approved": "Disetujui",
+          "approve": "Konversi ke pemesanan",
+          "approving": "Mengonversi…",
+          "approved": "Dikonversi",
           "missing": "Tidak ada draf pemesanan yang terhubung untuk pertanyaan ini.",
           "alreadyConverted": "Pertanyaan ini telah disetujui.",
           "viewBooking": "Lihat pemesanan",
-          "approveError": "Tidak dapat menyetujui. Silakan coba lagi.",
+          "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja yang dapat menyetujui pemesanan."
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan."
         },
         "actions": {
-          "markContacted": "Tandai sudah dihubungi",
+          "approve": "Setujui",
           "archive": "Arsipkan",
           "working": "Menyimpan…",
-          "contactedToast": "Ditandai sebagai sudah dihubungi.",
+          "approveStatusToast": "Pertanyaan disetujui.",
           "archivedToast": "Pertanyaan diarsipkan.",
-          "approvedToast": "Pemesanan disetujui.",
+          "approvedToast": "Dikonversi ke pemesanan.",
           "errorToast": "Ada yang tidak beres. Silakan coba lagi."
         },
         "history": {

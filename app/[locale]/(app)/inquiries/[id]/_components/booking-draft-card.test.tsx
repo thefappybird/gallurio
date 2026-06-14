@@ -47,7 +47,7 @@ describe("BookingDraftCard", () => {
   it("renders editable fields and approves with current edits", async () => {
     renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={5000} initialDeposit={1000} />);
 
-    const approve = screen.getByRole("button", { name: /Approve booking/i });
+    const approve = screen.getByRole("button", { name: /Convert to booking/i });
     fireEvent.click(approve);
 
     await waitFor(() => expect(approveInquiryBookingAction).toHaveBeenCalledOnce());
@@ -63,7 +63,7 @@ describe("BookingDraftCard", () => {
   it("shows the missing-draft notice", () => {
     renderWithProviders(<BookingDraftCard {...baseProps} bookingMissing />);
     expect(screen.getByText("No linked draft booking for this inquiry.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Convert to booking/i })).not.toBeInTheDocument();
   });
 
   it("shows a read-only banner + view link when already converted", () => {
@@ -73,14 +73,14 @@ describe("BookingDraftCard", () => {
       "href",
       "/bookings?detail=bk_1"
     );
-    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Convert to booking/i })).not.toBeInTheDocument();
   });
 
   it("hides approve and shows owner-only note for staff", () => {
     renderWithProviders(<BookingDraftCard {...baseProps} isOwner={false} />);
     expect(
-      screen.getByText("Only the workspace owner can approve bookings.")
+      screen.getByText("Only the workspace owner can convert bookings.")
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Approve booking/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Convert to booking/i })).not.toBeInTheDocument();
   });
 });

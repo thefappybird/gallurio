@@ -144,8 +144,9 @@ describe("getKpiSnapshot", () => {
   });
 
   it("counts new inquiries only with status='new'", async () => {
-    await Inquiry.create({ workspaceId, name: "A", email: "a@ex.com", status: "new" });
-    await Inquiry.create({ workspaceId, name: "B", email: "b@ex.com", status: "contacted" });
+    const ed = new Date("2030-08-15T00:00:00Z");
+    await Inquiry.create({ workspaceId, name: "A", email: "a@ex.com", status: "new", eventDate: ed });
+    await Inquiry.create({ workspaceId, name: "B", email: "b@ex.com", status: "approved", eventDate: ed });
     const snap = await getKpiSnapshot(workspaceId);
     expect(snap.newInquiries).toBe(1);
   });
@@ -184,6 +185,7 @@ describe("tenant isolation", () => {
       name: "X",
       email: "x@x.com",
       status: "new",
+      eventDate: new Date("2030-08-15T00:00:00Z"),
     });
 
     const snap = await getKpiSnapshot(workspaceId);
@@ -202,6 +204,7 @@ describe("tenant isolation", () => {
       name: "Leak",
       email: "leak@x.com",
       status: "new",
+      eventDate: new Date("2030-08-15T00:00:00Z"),
     });
     await ActivityLog.create({
       workspaceId: otherWorkspaceId,
@@ -255,10 +258,11 @@ describe("getUpcomingWeek", () => {
 });
 
 describe("getPipelineCounts", () => {
-  it("groups new+contacted inquiries and booked bookings separately", async () => {
-    await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "new" });
-    await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "contacted" });
-    await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived" });
+  it("groups new+approved inquiries and booked bookings separately", async () => {
+    const ed = new Date("2030-08-15T00:00:00Z");
+    await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "new", eventDate: ed });
+    await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "approved", eventDate: ed });
+    await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived", eventDate: ed });
     await seedBooking(workspaceId, { status: "booked" });
 
     const counts = await getPipelineCounts(workspaceId);

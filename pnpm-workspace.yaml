@@ -1,3 +1,14 @@
+allowBuilds:
+  '@clerk/shared': true
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  '@swc/core': true
+  cbor-extract: true
+  esbuild: true
+  mongodb-memory-server: true
+  msw: true
+  sharp: true
+  unrs-resolver: true
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

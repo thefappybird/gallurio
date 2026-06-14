@@ -64,7 +64,7 @@ export async function listInquiries(
 export type InquiryStatusCounts = {
   all: number;
   new: number;
-  contacted: number;
+  approved: number;
   booked: number;
   archived: number;
 };
@@ -82,13 +82,15 @@ export async function getInquiryStatusCounts(
   const byStatus = new Map(rows.map((r) => [r._id, r.count]));
   const counts = {
     new: byStatus.get("new") ?? 0,
-    contacted: byStatus.get("contacted") ?? 0,
+    // "contacted" is a legacy value migrated to "approved" — count both during
+    // the transition window so the tab total stays accurate.
+    approved: (byStatus.get("approved") ?? 0) + (byStatus.get("contacted") ?? 0),
     booked: (byStatus.get("booked") ?? 0) + (byStatus.get("converted") ?? 0),
     archived: byStatus.get("archived") ?? 0,
   };
   return {
     ...counts,
-    all: counts.new + counts.contacted + counts.booked + counts.archived,
+    all: counts.new + counts.approved + counts.booked + counts.archived,
   };
 }
 

@@ -5,6 +5,7 @@ import { renderWithProviders } from "@/test-utils/render";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 
+// signOutAction is a server action; stub it to avoid server-only imports.
 vi.mock("@/lib/auth/signOut", () => ({
   signOutAction: vi.fn(),
 }));

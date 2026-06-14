@@ -58,6 +58,13 @@ export function TableBookingManager({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Stable ref so callbacks that read searchParams don't capture stale closures
+  // and don't need searchParams in their dep arrays (which would change identity
+  // every render and cause loops in any effect that depends on those callbacks).
+  const searchParamsRef = useRef(searchParams);
+  // eslint-disable-next-line react-hooks/refs -- intentional: mutable ref updated during render to always hold the latest value; only read in effects/callbacks, never during render itself
+  searchParamsRef.current = searchParams;
+
   // Local open state that decouples "modal is open" from URL presence.
   // Lazy initializer seeds from ?add=1 so a refresh / shared link re-opens the wizard.
   const [addOpen, setAddOpen] = useState(() => searchParams.get("add") === "1");
@@ -68,19 +75,22 @@ export function TableBookingManager({
   // Sync modal open state with URL changes (browser back/forward, external navigation).
   // The lazy initializer handles the first render; this effect catches subsequent
   // URL changes so the modal closes when ?add=1 is removed from the URL.
+  // Guard with equality so React bails out when the boolean hasn't changed,
+  // preventing a render cycle when the searchParams object is replaced in place.
   useEffect(() => {
+    const next = searchParams.get("add") === "1";
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: mirrors URL ?add=1 into modal open state (external → React sync for browser back/forward support)
-    setAddOpen(searchParams.get("add") === "1");
+    setAddOpen((prev) => (prev === next ? prev : next));
   }, [searchParams]);
 
   const clearParams = useCallback(
     (params: string[]) => {
-      const sp = new URLSearchParams(searchParams.toString());
+      const sp = new URLSearchParams(searchParamsRef.current.toString());
       for (const p of params) sp.delete(p);
       const qs = sp.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [router, pathname, searchParams]
+    [router, pathname]
   );
 
   const handleAddClick = useCallback(() => {
@@ -90,11 +100,11 @@ export function TableBookingManager({
     setNonce(nonceRef.current);
     setAddOpen(true);
     // Side-effect: set ?add=1 for shareability / browser refresh.
-    const sp = new URLSearchParams(searchParams.toString());
+    const sp = new URLSearchParams(searchParamsRef.current.toString());
     sp.set("add", "1");
     const qs = sp.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [canCreate, router, pathname, searchParams]);
+  }, [canCreate, router, pathname]);
 
   const handleClose = useCallback(() => {
     setAddOpen(false);

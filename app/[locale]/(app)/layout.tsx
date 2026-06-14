@@ -11,7 +11,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [{ role, workspace }, authUser, cookieStore, timeFormat] =
+  const [{ role, workspace, userAvatarUrl }, authUser, cookieStore, timeFormat] =
     await Promise.all([
       requireOrg(),
       getAuthUser(),
@@ -31,7 +31,7 @@ export default async function AppLayout({
           workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
           userName={authUser?.name ?? null}
           userEmail={authUser?.email ?? ""}
-          userAvatarUrl={authUser?.avatarUrl ?? null}
+          userAvatarUrl={userAvatarUrl ?? authUser?.avatarUrl ?? null}
         />
         <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-auto p-6">
           {children}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,7 +235,7 @@ export function InviteForm({
           <Button disabled={pending || noTeamsAvailable} onClick={handleSubmit}>
             {pending ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="mr-2 size-4 animate-spin" />
                 {t("invite.dialog.sending")}
               </>
             ) : (

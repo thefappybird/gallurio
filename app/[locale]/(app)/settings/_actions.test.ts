@@ -11,7 +11,7 @@ import {
   clearCollections,
 } from "@/test-utils/mongo";
 import { Types } from "mongoose";
-import { Workspace, Booking, Client, User } from "@/lib/db/models";
+import { Workspace, User } from "@/lib/db/models";
 
 // ---- External mocks ---------------------------------------------------------
 
@@ -37,14 +37,6 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/paddle/client", () => ({
-  cancelSubscription: vi.fn().mockResolvedValue(undefined),
-  getPaddle: vi.fn(),
-  ensurePaddleCustomer: vi.fn(),
-  getSubscription: vi.fn(),
-  listActiveSubscriptionsForCustomer: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock("@/lib/storage/cloudinary", () => ({
   destroyAsset: vi.fn().mockResolvedValue(undefined),
 }));
@@ -60,27 +52,14 @@ vi.mock("next/headers", () => ({
   }),
 }));
 
-vi.mock("@/lib/email/resend", () => ({
-  resend: {
-    emails: {
-      send: vi
-        .fn()
-        .mockResolvedValue({ data: { id: "email_test_id" }, error: null }),
-    },
-  },
-}));
-
-vi.mock("@/lib/email/templates/data-export", () => ({
-  buildDataExportEmailBody: vi
-    .fn()
-    .mockReturnValue("Your data export is attached."),
-}));
-
 // Hoist shared state so vi.mock factories can access it before initialization.
 const { mockWorkos, mockGetAuthUser } = vi.hoisted(() => {
   const mockWorkos = {
     userManagement: {
       updateUser: vi.fn(),
+      authenticateWithPassword: vi.fn(),
+      createPasswordReset: vi.fn(),
+      getUserIdentities: vi.fn(),
     },
     multiFactorAuth: {
       createUserAuthFactor: vi.fn(),
@@ -97,6 +76,14 @@ vi.mock("@/lib/workos", () => ({ workos: mockWorkos }));
 
 vi.mock("@/lib/auth/session", () => ({
   getAuthUser: mockGetAuthUser,
+}));
+
+vi.mock("@/lib/server/authRateLimit", () => ({
+  checkAuthRateLimit: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
+vi.mock("@/lib/email/sendPasswordResetEmail", () => ({
+  sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock activeWorkspace helpers
@@ -117,21 +104,22 @@ import {
   updateWorkspaceBrandingAction,
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
-  deleteWorkspaceAction,
   updateTimeFormatAction,
-  requestDataExportAction,
   updateProfileNameAction,
   enrollMfaAction,
   verifyMfaEnrollmentAction,
   disableMfaAction,
   setActiveWorkspaceAction,
+  updatePasswordAction,
+  sendSetPasswordEmailAction,
+  updateAvatarAction,
 } from "./_actions";
+import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { cookies } from "next/headers";
-import { resend } from "@/lib/email/resend";
-import type { Attachment } from "resend";
-import { cancelSubscription } from "@/lib/paddle/client";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import { getActiveWorkspaceId } from "@/lib/auth/activeWorkspace";
+import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
+import { AuthenticationException } from "@workos-inc/node";
 
 // ---- Helpers ----------------------------------------------------------------
 
@@ -386,111 +374,6 @@ describe("togglePublicPagePublishedAction", () => {
   });
 });
 
-// ---- deleteWorkspaceAction --------------------------------------------------
-
-describe("deleteWorkspaceAction", () => {
-  it("wrong confirmation — returns error and workspace still exists", async () => {
-    await seedWorkspaceA();
-
-    const result = await deleteWorkspaceAction("wrong-slug");
-
-    expect(result.error).toBeTruthy();
-
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws).not.toBeNull();
-  });
-
-  it("correct confirmation — deletes workspace and related bookings", async () => {
-    const ws = await seedWorkspaceA();
-
-    const client = await Client.create({
-      workspaceId: ws._id,
-      name: "Emma Carter",
-    });
-    await Booking.create({
-      workspaceId: ws._id,
-      teamId: new Types.ObjectId(),
-      clientId: client._id,
-      clientName: "Emma Carter",
-      title: "Carter Wedding",
-      status: "booked",
-      sessions: [
-        {
-          startAt: new Date("2026-08-15T10:00:00Z"),
-          endAt: new Date("2026-08-15T18:00:00Z"),
-        },
-      ],
-      firstSessionStart: new Date("2026-08-15T10:00:00Z"),
-      lastSessionEnd: new Date("2026-08-15T18:00:00Z"),
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-
-    const wsAfter = await Workspace.findById(WS_A_ID).lean();
-    expect(wsAfter).toBeNull();
-
-    const bookings = await Booking.find({ workspaceId: ws._id }).lean();
-    expect(bookings).toHaveLength(0);
-  });
-
-  it("active Paddle subscription — cancelSubscription is called", async () => {
-    await Workspace.create({
-      _id: WS_A_ID,
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_WORKOS_ID,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "starter",
-      paddleSubscriptionId: "sub_test_123",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    expect(cancelSubscription).toHaveBeenCalledWith("sub_test_123");
-  });
-
-  it("Paddle cancel throws — delete still succeeds (best-effort cancellation)", async () => {
-    vi.mocked(cancelSubscription).mockRejectedValueOnce(
-      new Error("Paddle API error"),
-    );
-
-    await Workspace.create({
-      _id: WS_A_ID,
-      slug: "sarah-photo",
-      name: "Sarah Photography",
-      ownerUserId: OWNER_WORKOS_ID,
-      businessType: "photographer",
-      country: "PH",
-      currency: "PHP",
-      timezone: "Asia/Manila",
-      plan: "pro",
-      paddleSubscriptionId: "sub_test_456",
-      paddleSubscriptionStatus: "active",
-    });
-
-    const result = await deleteWorkspaceAction("sarah-photo");
-
-    expect(result.ok).toBe(true);
-    const wsAfter = await Workspace.findById(WS_A_ID).lean();
-    expect(wsAfter).toBeNull();
-  });
-
-  it("no active Paddle subscription — cancelSubscription is NOT called", async () => {
-    await seedWorkspaceA();
-
-    await deleteWorkspaceAction("sarah-photo");
-
-    expect(cancelSubscription).not.toHaveBeenCalled();
-  });
-});
-
 // ---- updateTimeFormatAction --------------------------------------------------
 
 describe("updateTimeFormatAction", () => {
@@ -546,46 +429,6 @@ describe("updateTimeFormatAction", () => {
       workosUserId: OWNER_WORKOS_ID,
     }).lean();
     expect(ownerUser?.timeFormat).toBe("24h");
-  });
-});
-
-// ---- requestDataExportAction ------------------------------------------------
-
-describe("requestDataExportAction", () => {
-  it("sends email with 3 CSV attachments", async () => {
-    await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({
-      get: vi.fn(),
-      set: vi.fn(),
-    } as never);
-
-    const result = await requestDataExportAction();
-    expect(result.ok).toBe(true);
-    expect(result.error).toBeUndefined();
-
-    expect(vi.mocked(resend.emails.send)).toHaveBeenCalledOnce();
-    const call = vi.mocked(resend.emails.send).mock.calls[0][0];
-    const filenames = (call.attachments ?? []).map((a: Attachment) =>
-      String(a.filename ?? ""),
-    );
-    expect(filenames).toContain("bookings.csv");
-    expect(filenames).toContain("clients.csv");
-    expect(filenames).toContain("inquiries.csv");
-  });
-
-  it("returns error when Resend fails", async () => {
-    await seedWorkspaceA();
-    vi.mocked(cookies).mockResolvedValue({
-      get: vi.fn(),
-      set: vi.fn(),
-    } as never);
-    vi.mocked(resend.emails.send).mockResolvedValueOnce({
-      data: null,
-      error: { name: "validation_error", message: "bad sender" },
-    } as never);
-
-    const result = await requestDataExportAction();
-    expect(result.error).toBeDefined();
   });
 });
 
@@ -654,6 +497,9 @@ describe("enrollMfaAction", () => {
     if (!("error" in result)) {
       expect(result.qrCode).toBe("data:image/png;base64,abc");
       expect(result.secret).toBe("MYSECRET");
+      // expiresAt lets the client run a countdown and offer a refresh
+      expect(typeof result.expiresAt).toBe("number");
+      expect(result.expiresAt).toBeGreaterThan(Date.now());
       // challengeId must NOT be in the returned result
       expect((result as Record<string, unknown>).challengeId).toBeUndefined();
     }
@@ -712,10 +558,6 @@ describe("verifyMfaEnrollmentAction", () => {
   });
 
   beforeEach(() => {
-    // Default: factor belongs to the user
-    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
-      data: [{ id: "factor_123" }],
-    });
     mockWorkos.multiFactorAuth.verifyChallenge.mockResolvedValue({
       valid: true,
       challenge: { id: "challenge_456" },
@@ -734,6 +576,21 @@ describe("verifyMfaEnrollmentAction", () => {
     expect(mockWorkos.multiFactorAuth.verifyChallenge).toHaveBeenCalledWith(
       expect.objectContaining({ authenticationChallengeId: "challenge_456" }),
     );
+  });
+
+  it("does not gate verification on listUserAuthFactors — a pending factor is not yet listed", async () => {
+    // Regression guard: a prior listUserAuthFactors ownership check rejected
+    // every legitimate enrollment because WorkOS does not list a factor as
+    // owned until it is verified. The cookie (server-set, httpOnly) is the
+    // binding, so verify must succeed without consulting the factor list.
+    const mockCookieStore = makeCookieStore(validCookie);
+    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
+
+    const result = await verifyMfaEnrollmentAction({ code: "123456" });
+    expect(result.ok).toBe(true);
+    expect(
+      mockWorkos.multiFactorAuth.listUserAuthFactors,
+    ).not.toHaveBeenCalled();
   });
 
   it("valid code sets mfaEnabled=true on User and deletes the cookie", async () => {
@@ -755,28 +612,6 @@ describe("verifyMfaEnrollmentAction", () => {
 
     const result = await verifyMfaEnrollmentAction({ code: "123456" });
     expect(result.error).toMatch(/expired/i);
-    expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
-
-    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
-    expect(user?.mfaEnabled).toBe(false);
-  });
-
-  it("rejects when the cookie's factorId is not among the caller's own factors (defense in depth)", async () => {
-    const cookieWithStrangerFactor = JSON.stringify({
-      factorId: "factor_stranger",
-      challengeId: "challenge_stranger",
-    });
-    const mockCookieStore = makeCookieStore(cookieWithStrangerFactor);
-    vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
-
-    // Caller owns factor_123, not factor_stranger
-    mockWorkos.multiFactorAuth.listUserAuthFactors.mockResolvedValue({
-      data: [{ id: "factor_123" }],
-    });
-
-    const result = await verifyMfaEnrollmentAction({ code: "123456" });
-    expect(result.error).toBeTruthy();
-    // verifyChallenge must NOT be called when the factor ownership check fails
     expect(mockWorkos.multiFactorAuth.verifyChallenge).not.toHaveBeenCalled();
 
     const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
@@ -916,5 +751,287 @@ describe("setActiveWorkspaceAction", () => {
 
     const result = await setActiveWorkspaceAction(String(WS_A_ID));
     expect(result.error).toBe("Not authenticated");
+  });
+});
+
+// ---- updatePasswordAction ---------------------------------------------------
+
+describe("updatePasswordAction", () => {
+  const validInput = {
+    currentPassword: "oldpassword",
+    newPassword: "newpassword123",
+    confirmPassword: "newpassword123",
+  };
+
+  it("verifies the current password then updates it", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue({
+      user: { id: OWNER_WORKOS_ID },
+    });
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "owner@test.com", password: "oldpassword" }),
+    );
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: OWNER_WORKOS_ID,
+        password: "newpassword123",
+      }),
+    );
+  });
+
+  it("returns 'incorrect' when current password is wrong", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "invalid_credentials", message: "bad" } as never,
+        "req_1",
+      ),
+    );
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("treats an MFA-challenge exception as a correct password and proceeds", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "mfa_challenge", message: "mfa" } as never,
+        "req_2",
+      ),
+    );
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalled();
+  });
+
+  it("treats a radar_email_challenge exception as a correct password and proceeds", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "radar_email_challenge", message: "radar" } as never,
+        "req_3",
+      ),
+    );
+    mockWorkos.userManagement.updateUser.mockResolvedValue({});
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ ok: true });
+    expect(mockWorkos.userManagement.updateUser).toHaveBeenCalled();
+  });
+
+  it("treats an sso_required exception as a wrong password (not in PASSWORD_OK_CODES)", async () => {
+    mockWorkos.userManagement.authenticateWithPassword.mockRejectedValue(
+      new AuthenticationException(
+        401,
+        { code: "sso_required", message: "sso" } as never,
+        "req_4",
+      ),
+    );
+
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects when new and confirm do not match", async () => {
+    const result = await updatePasswordAction({
+      ...validInput,
+      confirmPassword: "different123",
+    });
+    expect(result).toEqual({ error: "Passwords do not match." });
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects a too-short new password", async () => {
+    const result = await updatePasswordAction({
+      currentPassword: "oldpassword",
+      newPassword: "short",
+      confirmPassword: "short",
+    });
+    expect(result).toEqual({ error: expect.stringContaining("8") });
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when rate limited", async () => {
+    vi.mocked(checkAuthRateLimit).mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 60,
+    });
+    const result = await updatePasswordAction(validInput);
+    expect("error" in result).toBe(true);
+    expect(
+      mockWorkos.userManagement.authenticateWithPassword,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    const result = await updatePasswordAction(validInput);
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+});
+
+// ---- sendSetPasswordEmailAction ---------------------------------------------
+
+describe("sendSetPasswordEmailAction", () => {
+  it("creates a reset token and emails the link to the user", async () => {
+    mockWorkos.userManagement.createPasswordReset.mockResolvedValue({
+      passwordResetToken: "tok_xyz",
+      passwordResetUrl: "https://workos/x",
+    });
+
+    const result = await sendSetPasswordEmailAction();
+    expect(result).toEqual({ ok: true });
+
+    expect(
+      mockWorkos.userManagement.createPasswordReset,
+    ).toHaveBeenCalledWith({ email: "owner@test.com" });
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+      "owner@test.com",
+      "tok_xyz",
+    );
+  });
+
+  it("returns an error when rate limited", async () => {
+    vi.mocked(checkAuthRateLimit).mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 60,
+    });
+    const result = await sendSetPasswordEmailAction();
+    expect("error" in result).toBe(true);
+    expect(
+      mockWorkos.userManagement.createPasswordReset,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("returns an error when WorkOS createPasswordReset throws", async () => {
+    mockWorkos.userManagement.createPasswordReset.mockRejectedValueOnce(
+      new Error("workos down"),
+    );
+    const result = await sendSetPasswordEmailAction();
+    expect("error" in result).toBe(true);
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+    const result = await sendSetPasswordEmailAction();
+    expect(result).toEqual({ error: "Not authenticated" });
+  });
+});
+
+// ---- updateAvatarAction -----------------------------------------------------
+
+const { destroyAsset } = await import("@/lib/storage/cloudinary");
+
+describe("updateAvatarAction", () => {
+  const NEW_URL = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
+  const NEW_PUBLIC_ID = "gallurio/ws_abc/avatars/sample";
+  const OLD_PUBLIC_ID = "gallurio/ws_abc/avatars/old";
+
+  it("sets avatarUrl and avatarCloudinaryPublicId on the User doc", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.avatarUrl).toBe(NEW_URL);
+    expect(user?.avatarCloudinaryPublicId).toBe(NEW_PUBLIC_ID);
+  });
+
+  it("calls destroyAsset with the previous publicId when replacing", async () => {
+    // Seed user with an existing avatar
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+    );
+
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+  });
+
+  it("calls destroyAsset when removing the avatar (both null)", async () => {
+    await User.updateOne(
+      { workosUserId: OWNER_WORKOS_ID },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+    );
+
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: null,
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+
+    const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
+    expect(user?.avatarUrl).toBeNull();
+    expect(user?.avatarCloudinaryPublicId).toBeNull();
+  });
+
+  it("does NOT call destroyAsset when there was no previous publicId", async () => {
+    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+
+    const result = await updateAvatarAction({
+      avatarUrl: NEW_URL,
+      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(destroyAsset).not.toHaveBeenCalled();
+  });
+
+  it("returns error for a non-https avatarUrl", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: "http://insecure.example.com/a.jpg",
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("returns error for an invalid avatarUrl", async () => {
+    const result = await updateAvatarAction({
+      avatarUrl: "not-a-url",
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("returns Not authenticated when no session", async () => {
+    mockGetAuthUser.mockResolvedValue(null);
+
+    const result = await updateAvatarAction({
+      avatarUrl: null,
+      avatarCloudinaryPublicId: null,
+    });
+
+    expect(result).toEqual({ error: "Not authenticated" });
   });
 });

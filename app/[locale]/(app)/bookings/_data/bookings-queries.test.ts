@@ -218,6 +218,73 @@ describe("listBookings", () => {
     expect(total).toBe(2);
   });
 
+  describe("includePast / server-side past filter", () => {
+    it("excludes fully-past bookings by default (includePast not set)", async () => {
+      // Past booking: lastSessionEnd was 5 days ago
+      await seedBooking(workspaceId, { startAt: days(-5), title: "Past Event" });
+      // Future booking
+      await seedBooking(workspaceId, { startAt: days(3), title: "Future Event" });
+
+      const { rows, total } = await listBookings(workspaceId, {}, { page: 1, limit: 10 });
+      expect(total).toBe(1);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].title).toBe("Future Event");
+    });
+
+    it("includes past bookings when includePast is true", async () => {
+      await seedBooking(workspaceId, { startAt: days(-5), title: "Past Event" });
+      await seedBooking(workspaceId, { startAt: days(3), title: "Future Event" });
+
+      const { rows, total } = await listBookings(
+        workspaceId,
+        { includePast: true },
+        { page: 1, limit: 10 }
+      );
+      expect(total).toBe(2);
+      expect(rows).toHaveLength(2);
+    });
+
+    it("page 1 is NOT empty when rows exist and includePast is false", async () => {
+      // Seed 12 future bookings — without the server-side filter page 1 would
+      // be wrong if any past rows sneaked in. With the filter, page 1 must
+      // contain future rows.
+      for (let i = 1; i <= 12; i++) {
+        await seedBooking(workspaceId, { startAt: days(i), title: `Future ${i}` });
+      }
+      // A past booking that would have been on page 1 before the fix
+      await seedBooking(workspaceId, { startAt: days(-2), title: "Past noise" });
+
+      const { rows, total } = await listBookings(workspaceId, {}, { page: 1, limit: 10 });
+      expect(total).toBe(12); // past booking excluded from count
+      expect(rows).toHaveLength(10);
+      // All rows on page 1 must be future
+      for (const r of rows) {
+        expect(r.title).toMatch(/^Future/);
+      }
+    });
+
+    it("total reflects the filtered set (not raw count) so pagination is accurate", async () => {
+      for (let i = 1; i <= 5; i++) {
+        await seedBooking(workspaceId, { startAt: days(-i), title: `Past ${i}` });
+      }
+      for (let i = 1; i <= 3; i++) {
+        await seedBooking(workspaceId, { startAt: days(i), title: `Future ${i}` });
+      }
+
+      const { total } = await listBookings(workspaceId, {}, { page: 1, limit: 10 });
+      expect(total).toBe(3); // only 3 future bookings
+    });
+
+    it("never leaks another workspace's past bookings", async () => {
+      await seedBooking(otherWorkspaceId, { startAt: days(-1), title: "Other past" });
+      await seedBooking(workspaceId, { startAt: days(1), title: "Mine future" });
+
+      const { rows } = await listBookings(workspaceId, { includePast: true });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].title).toBe("Mine future");
+    });
+  });
+
   describe("team scoping (member visibility)", () => {
     it("owner (teamIds undefined) sees bookings across all teams", async () => {
       await seedBooking(workspaceId, { teamId: teamA });

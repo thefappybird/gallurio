@@ -192,14 +192,14 @@ export async function saveDraftBookingFieldsAction(
   return { ok: true };
 }
 
-/** Triage: mark an inquiry contacted. No booking effect. Owner or staff. */
-export async function markContactedAction(inquiryId: string): Promise<InquiryActionResult> {
+/** Triage: approve an inquiry (status "new" -> "approved"). No booking effect. Owner or staff. */
+export async function approveInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
   await connectDB();
 
   const res = await Inquiry.updateOne(
-    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $in: ["new", "contacted"] } },
-    { $set: { status: "contacted" } }
+    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $in: ["new", "approved"] } },
+    { $set: { status: "approved" } }
   );
   if (res.matchedCount === 0) return { error: "not_found" };
 

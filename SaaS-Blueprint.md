@@ -91,7 +91,7 @@ If you only remember six things from this document:
 **Monolith.** One Next.js 14+ app with App Router. API routes in `app/api/*`. Server Components for data fetching where possible, Route Handlers for mutations and webhooks. Reasons:
 
 - One deploy target, one log stream, one env file.
-- Vercel preview URLs Just Work for every PR.
+- Production hosting should optimize for margin first: favor Hetzner for the long-lived web app runtime, with CI/CD and previews handled separately.
 - No CORS, no cross-service auth, no service discovery.
 - You can extract a service later if a specific endpoint actually needs it. You probably never will.
 
@@ -207,7 +207,7 @@ Use `next/image` with the Cloudinary `secure_url` as `src`, or pass a transforme
 Two strategies, pick **subdirectory first**:
 
 - **Subdirectory** (MVP): `app.yourdomain.com/[orgSlug]` — public landing page.
-- **Custom domain** (v1.1): map `studio.example.com` via Vercel domain API + verify with TXT record. Wildcard SSL via Vercel.
+- **Custom domain** (v1.1): point `studio.example.com` at Hetzner-hosted ingress or a fronting proxy, verify via DNS, and terminate TLS at the edge.
 
 The public route is a separate route group `(public)` that does **not** require auth and uses ISR with `revalidate: 60` so edits propagate within a minute.
 
@@ -545,7 +545,7 @@ Gallurio does **not** broker the owner↔client conversation. There is no in-app
 
 ### Custom domain support (v1.1, NOT MVP)
 
-Use Vercel's [Domains API](https://vercel.com/docs/projects/domains) — call it from an admin endpoint when an owner adds a domain, then verify via TXT record. Wildcard SSL is automatic.
+Use DNS-based domain onboarding that targets the Hetzner production ingress (or a fronting proxy such as Cloudflare). Verify ownership via TXT/CNAME and keep TLS termination automated at the edge.
 
 ### Basic analytics
 
@@ -560,7 +560,7 @@ Ordered by ROI per dev-hour:
 | Feature | Why it matters | Effort |
 |---|---|---|
 | **HitPay deposit collection link** | Owner sends a 1-click link (GCash/Maya/card via HitPay one-off payment-requests), takes 30% deposit, halves no-shows. Massive perceived value in PH. Note: one-off payments support GCash; only recurring/subscription does not. | 1 day |
-| **Automated email reminders** (T-7 / T-1) | Cuts no-shows + saves the owner manual work. Use Vercel Cron + Resend. | 1 day |
+| **Automated email reminders** (T-7 / T-1) | Cuts no-shows + saves the owner manual work. Use a Hetzner-hosted cron worker or GitHub Actions + Resend. | 1 day |
 | **Inquiry → Booking 1-click conversion** | The wedge: "we turn DM inquiries into paying bookings." | 0.5 day |
 | **Simple invoice PDF** | Owners currently use Word docs. Generate via `@react-pdf/renderer`. | 1 day |
 | **Public gallery shareable link** | Owners share "view your event photos" with clients → drives WOM. | 0.5 day |
@@ -581,7 +581,7 @@ Assume 5–6 productive hours/day, 6 days/week = ~30 hours/week. Sequence is dep
 
 **Goal**: a logged-in user can create a workspace and a booking.
 
-- Day 1: repo init, Next.js + Tailwind + shadcn, Vercel deploy, Atlas cluster, Mongoose connection. CI = Vercel previews. ✅ ship a "Hello workspace" page.
+- Day 1: repo init, Next.js + Tailwind + shadcn, first production-ready build target defined for Hetzner, Atlas cluster, Mongoose connection. CI = GitHub Actions with preview/staging deploys as needed. ✅ ship a "Hello workspace" page.
 - Day 2: Clerk integration, sign-in flow, middleware tenant resolution.
 - Day 3: Workspace creation flow + slug routing + dashboard shell.
 - Day 4: Clients CRUD (list, create, edit, delete).
@@ -611,7 +611,7 @@ Assume 5–6 productive hours/day, 6 days/week = ~30 hours/week. Sequence is dep
 - Day 14: Gallery block + theme picker (color + font).
 - Day 15: Section reorder with dnd-kit.
 - Day 16: Public page SEO (metadata, OG image, sitemap).
-- Day 17: Email reminders (Vercel Cron: T-7 & T-1 day notifications).
+- Day 17: Email reminders (scheduled worker on Hetzner or GitHub Actions: T-7 & T-1 day notifications).
 - Day 18: Dashboard widgets (today, upcoming, revenue, pipeline counts).
 
 **Cut if behind**: section reorder (keep fixed order). Theme picker.
@@ -667,7 +667,7 @@ Never cut: auth, billing, bookings CRUD, inquiry form.
 
 | Item | Cost |
 |---|---|
-| Vercel Pro | $20/mo |
+| Hetzner cloud app host / VPS | ~$5–20/mo |
 | MongoDB Atlas M10 | ~$60/mo |
 | Cloudflare R2 (500 GB) | $7.50/mo |
 | Clerk (under 10k MAU) | $0 |
@@ -684,7 +684,7 @@ Never cut: auth, billing, bookings CRUD, inquiry form.
 
 | Need | Provider |
 |---|---|
-| Hosting (Next.js) | **Vercel** |
+| Hosting (Next.js) | **Hetzner** |
 | Database | **MongoDB Atlas** |
 | File storage | **Cloudinary** (signed browser uploads + on-the-fly transforms) |
 | Auth | **Clerk** |
@@ -821,7 +821,7 @@ In settings → Earn 1 month free for every paying customer you refer (Stripe Co
 ### Backups
 
 - Atlas continuous backup on M10+ (point-in-time restore for 7 days, included).
-- Weekly mongodump exported to R2 via Vercel Cron + GitHub Actions — defense in depth.
+- Weekly mongodump exported to R2 via a Hetzner-hosted scheduled job or GitHub Actions — defense in depth.
 - R2 has built-in object versioning — enable it.
 
 ### Rate limiting
@@ -836,10 +836,10 @@ In settings → Earn 1 month free for every paying customer you refer (Stripe Co
 | Scale milestone | Bottleneck | Fix |
 |---|---|---|
 | ~100 orgs | None | Stay on M10 |
-| ~1,000 orgs | Mongo connections | Use Mongoose pooling, Vercel functions cap connections — consider data-API or Atlas serverless |
+| ~1,000 orgs | Mongo connections | Use Mongoose pooling and a long-lived Node process on Hetzner to avoid serverless connection churn |
 | ~5,000 orgs | Index size, slow queries | Audit slow queries, add compound indexes, archive `activityLogs` |
 | ~10,000 orgs | Single-region latency | Add a second Atlas region for read replicas; CDN public pages aggressively |
-| 50k+ orgs | Vercel function cold starts | Move hot paths to edge runtime; consider extracting public-page rendering to a Cloudflare Worker |
+| 50k+ orgs | App saturation / regional latency | Split hot paths, add a fronting cache/CDN, and consider extracting public-page rendering to a Cloudflare Worker |
 
 **Don't pre-scale.** Each fix here is a 1–2 day project you do *when you have the revenue and the problem*, not on day 1.
 
@@ -898,11 +898,11 @@ This isn't comprehensive coverage for its own sake. It's a forcing function: **i
 | **API** | Next.js Route Handlers + Server Actions | No separate API layer; Server Actions remove a round-trip for forms |
 | **Caching** | Next.js `revalidateTag` + ISR for public pages | Built-in, no Redis needed in MVP. Add Upstash for rate limiting only. |
 | **Images** | Cloudflare R2 + Next/Image custom loader | Zero egress = doesn't break the unit economics at scale |
-| **Deployment** | Vercel | Best Next.js DX; preview URLs per PR; zero-config edge |
-| **CI/CD** | Vercel Git integration + GitHub Actions for tests | Vercel = deploys; GHA = test + lint + typecheck gate |
+| **Deployment** | Hetzner | Lower steady-state hosting cost, predictable pricing, and better unit economics for production |
+| **CI/CD** | GitHub Actions + Hetzner deploy target | GitHub Actions runs test/lint/typecheck/build, then ships the production artifact to Hetzner |
 | **Testing** | Vitest (unit) + Playwright (e2e, 3 critical flows only) | Sufficient for MVP; don't aim for 100% coverage |
 | **Observability** | Sentry + PostHog + Better Stack | Errors + product analytics + uptime — the trio |
-| **Background jobs** | Vercel Cron + Inngest if it gets complex | Don't deploy a worker for 2 cron jobs |
+| **Background jobs** | Hetzner-hosted scheduled worker + Inngest if it gets complex | Start simple on the same infra, split only when jobs justify it |
 | **Email** | Resend | Developer-friendly, React Email templates, fairly priced |
 | **Payments** | HitPay (Recurring Billing, card-only for subscriptions) | Stripe doesn't onboard PH businesses; Xendit's PH KYC for the marketplace was too much friction for MVP. HitPay ships subscription billing with simpler onboarding across SG/MY/PH/ID/TH. Marketplace dropped from MVP. |
 | **Linting** | Biome (or ESLint + Prettier) | Biome is faster; either is fine |
@@ -910,7 +910,61 @@ This isn't comprehensive coverage for its own sake. It's a forcing function: **i
 
 ---
 
-## 13. Risks & Mistakes to Avoid
+## 13. Hetzner Production Runbook
+
+If Gallurio production runs on Hetzner, the deployment path should be explicit and boring. The goal is a long-lived Node process behind a reverse proxy, not a serverless-shaped runtime.
+
+### Recommended baseline
+
+- Hetzner Cloud VPS on Ubuntu 24.04 LTS
+- Start at `2 vCPU / 4 GB RAM / 80 GB SSD` for the app host
+- Node 20 LTS + `pnpm`
+- Caddy or Nginx for TLS termination and reverse proxy
+- `pm2` or `systemd` to keep `next start` alive
+- Cloudflare in front for DNS, proxying, and edge caching if needed
+
+### Deployment steps for this Next.js project
+
+1. Provision the server.
+   Use a fresh Ubuntu LTS VM, create a non-root deploy user, disable password SSH, and enable the firewall for `22`, `80`, and `443`.
+2. Install runtime dependencies.
+   Install Node 20 LTS, `pnpm`, Git, and your process/runtime tools (`pm2` or `systemd`, plus Caddy or Nginx).
+3. Prepare the application directory.
+   Clone the repo into a stable path such as `/var/www/gallurio`, and keep ownership under the deploy user.
+4. Sync production environment variables.
+   Copy the full production env set before the first build, including MongoDB, WorkOS, Paddle, Cloudinary, Resend, and any cookie secrets.
+5. Install and build exactly as the repo expects.
+   Run `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm lint`, and `pnpm build`.
+6. Start the production app as a managed process.
+   Run `NODE_ENV=production pnpm start` on port `3000` and keep it supervised with `pm2` or `systemd` so it auto-restarts after failure or reboot.
+7. Put a reverse proxy in front of Next.js.
+   Terminate TLS on Caddy or Nginx, proxy `https://yourdomain` to `http://127.0.0.1:3000`, and forward standard headers (`Host`, `X-Forwarded-Proto`, `X-Forwarded-For`).
+8. Point DNS at Hetzner.
+   Update the apex/root and `www` records to the production ingress, then issue TLS certificates and verify the public routes, auth callbacks, and cookie behavior over HTTPS.
+9. Automate deploys.
+   Use GitHub Actions to run tests, lint, typecheck, and build on every production deploy, then ship the artifact or pull the new revision onto Hetzner and restart the managed process.
+10. Add production operations.
+   Configure backups, uptime checks, structured logs, Sentry, disk-space monitoring, and a rollback path before you consider the host stable.
+
+### Repo-specific caveats
+
+- This repo currently assumes some Vercel-oriented workflows in its documentation and stack notes. Before a hard cutover, audit each one and decide whether it stays external or gets replaced.
+- Any Vercel-coupled runtime feature should not remain implicit. If Gallurio keeps using one, document it as an explicit hosted dependency rather than pretending the app is fully Hetzner-native.
+- Long-lived Hetzner processes are a better fit for MongoDB connection reuse than serverless functions, which is one of the main reasons the hosting economics improve here.
+
+### Minimum acceptance checklist for a Hetzner production host
+
+- `pnpm build` succeeds on the server
+- `pnpm start` stays healthy after a reboot
+- TLS works on the production domain
+- WorkOS auth callbacks and sealed cookies work over HTTPS
+- MongoDB Atlas allows the Hetzner server IPs
+- Paddle webhooks reach the app reliably
+- Backups, logs, and restart behavior are verified
+
+---
+
+## 14. Risks & Mistakes to Avoid
 
 ### Common SaaS MVP mistakes
 
@@ -1013,4 +1067,4 @@ If you can't write line 1 for two days in a row → you're stuck on something. C
 
 ---
 
-**End of blueprint.** Next step: open `/sign-up`, deploy "Hello workspace" to Vercel today, DM 10 photographers tomorrow.
+**End of blueprint.** Next step: open `/sign-up`, ship a production-ready build path that targets Hetzner, DM 10 photographers tomorrow.

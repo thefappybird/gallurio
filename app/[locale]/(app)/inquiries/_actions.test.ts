@@ -22,7 +22,7 @@ import { Inquiry, Booking, Client } from "@/lib/db/models";
 import {
   approveInquiryBookingAction,
   saveDraftBookingFieldsAction,
-  markContactedAction,
+  approveInquiryAction,
   archiveInquiryAction,
 } from "./_actions";
 
@@ -61,6 +61,7 @@ async function seedDraft(wid: Types.ObjectId) {
     name: "Emma Carter",
     email: "emma@example.com",
     status: "new",
+    eventDate: new Date("2030-08-15T00:00:00Z"),
     clientId: client._id,
     draftBookingId: booking._id,
   });
@@ -171,18 +172,26 @@ describe("saveDraftBookingFieldsAction", () => {
   });
 });
 
-describe("markContactedAction", () => {
-  it("moves a new inquiry to contacted", async () => {
+describe("approveInquiryAction", () => {
+  it("moves a new inquiry to approved", async () => {
     const { inquiry } = await seedDraft(workspaceId);
-    const res = await markContactedAction(String(inquiry._id));
+    const res = await approveInquiryAction(String(inquiry._id));
     expect(res).toEqual({ ok: true });
-    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("contacted");
+    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("approved");
+  });
+
+  it("is idempotent — re-approving an approved inquiry is a no-op", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "approved" } });
+    const res = await approveInquiryAction(String(inquiry._id));
+    expect(res).toEqual({ ok: true });
+    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("approved");
   });
 
   it("will not re-open a booked inquiry", async () => {
     const { inquiry } = await seedDraft(workspaceId);
     await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
-    const res = await markContactedAction(String(inquiry._id));
+    const res = await approveInquiryAction(String(inquiry._id));
     expect(res).toEqual({ error: "not_found" });
   });
 });

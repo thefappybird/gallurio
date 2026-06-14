@@ -74,17 +74,11 @@ vi.mock("../customize/_panel", () => ({
 vi.mock("../public-page/_form", () => ({
   PublicPageSettingsForm: () => null,
 }));
-vi.mock("../danger/_panel", () => ({
-  DangerPanel: () => null,
-}));
 vi.mock("../dev-plan/_panel", () => ({
   DevPlanPanel: () => null,
 }));
 vi.mock("../account/_panel", () => ({
   AccountPanel: () => null,
-}));
-vi.mock("../security/_panel", () => ({
-  SecurityPanel: () => null,
 }));
 vi.mock("../billing/_panel", () => ({
   BillingPanel: () => null,
@@ -95,11 +89,9 @@ vi.mock("lucide-react", () => ({
   Building2: () => null,
   Palette: () => null,
   Globe: () => null,
-  AlertTriangle: () => null,
   Wrench: () => null,
   CreditCard: () => null,
   UserIcon: () => null,
-  ShieldIcon: () => null,
 }));
 
 // ---------------------------------------------------------------------------
@@ -144,6 +136,13 @@ vi.mock("@/lib/db/models", () => ({
       ]),
     }),
   },
+}));
+
+// ---------------------------------------------------------------------------
+// getAuthMethods mock
+// ---------------------------------------------------------------------------
+vi.mock("@/lib/auth/authMethods", () => ({
+  getAuthMethods: vi.fn().mockResolvedValue({ hasOAuth: false, oauthProviders: [] }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -228,15 +227,6 @@ describe("SettingsCatchallPage — owner-only slug gating", () => {
     const Page = await loadPage();
 
     await expect(Page({ params: makeParams(["public-page"]) })).rejects.toBeInstanceOf(
-      NotFoundError,
-    );
-  });
-
-  it("staff + catchall=['danger'] → notFound() is called", async () => {
-    mockAsStaff();
-    const Page = await loadPage();
-
-    await expect(Page({ params: makeParams(["danger"]) })).rejects.toBeInstanceOf(
       NotFoundError,
     );
   });

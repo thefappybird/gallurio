@@ -15,8 +15,12 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   ArrowUpDownIcon,
+  EyeIcon,
   Loader2Icon,
   MoreHorizontalIcon,
+  PencilIcon,
+  PowerOffIcon,
+  RotateCcwIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +60,7 @@ type Props = {
   locale: string;
   empty: string;
   onClickClient: (row: ClientRow) => void;
+  onView: (row: ClientRow) => void;
   onEdit: (row: ClientRow) => void;
   onDeactivate: (row: ClientRow) => void;
   onReactivate: (row: ClientRow) => void;
@@ -68,6 +73,7 @@ export function ClientsTable({
   locale,
   empty,
   onClickClient,
+  onView,
   onEdit,
   onDeactivate,
   onReactivate,
@@ -155,11 +161,17 @@ export function ClientsTable({
                   }
                 />
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onView(row)}>
+                    <EyeIcon className="size-3" />
+                    {t("table.view")}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onEdit(row)}>
+                    <PencilIcon className="size-3" />
                     {t("table.edit")}
                   </DropdownMenuItem>
                   {row.isActive ? (
                     <DropdownMenuItem onClick={() => onDeactivate(row)}>
+                      <PowerOffIcon className="size-3" />
                       {t("table.deactivate")}
                     </DropdownMenuItem>
                   ) : (
@@ -167,8 +179,10 @@ export function ClientsTable({
                       onClick={() => onReactivate(row)}
                       disabled={isRowReactivating}
                     >
-                      {isRowReactivating && (
+                      {isRowReactivating ? (
                         <Loader2Icon className="size-3 animate-spin" />
+                      ) : (
+                        <RotateCcwIcon className="size-3" />
                       )}
                       {t("table.reactivate")}
                     </DropdownMenuItem>
@@ -181,7 +195,7 @@ export function ClientsTable({
         enableSorting: false,
       },
     ],
-    [locale, t, onEdit, onDeactivate, onReactivate, reactivatingId]
+    [locale, t, onView, onEdit, onDeactivate, onReactivate, reactivatingId]
   );
 
   const table = useReactTable({

@@ -14,7 +14,7 @@ import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detai
 
 const INQUIRY_TABLE_COLUMNS = 6;
 
-const TABS = ["all", "new", "contacted", "booked", "archived"] as const;
+const TABS = ["all", "new", "approved", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
 
 type Props = {

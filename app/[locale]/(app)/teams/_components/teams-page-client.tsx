@@ -11,7 +11,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
-import { PlusIcon, SearchIcon, MailPlus } from "lucide-react";
+import { PlusIcon, SearchIcon, MailPlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -208,7 +208,7 @@ export function TeamsPageClient({
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => openInvite([])}>
-            <MailPlus className="size-4" />
+            <MailPlusIcon className="size-4" />
             {t("invite.button")}
           </Button>
           <Button

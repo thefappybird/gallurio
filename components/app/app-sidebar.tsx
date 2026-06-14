@@ -78,7 +78,11 @@ export function AppSidebar({
   const t = useTranslations("app.sidebar");
   const [logoutOpen, setLogoutOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
-  const closeOnNav = () => { if (isMobile) setOpenMobile(false); };
+  const closeOnNav = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
 
@@ -173,10 +177,10 @@ export function AppSidebar({
             {/* Account identity is presentational only. */}
             <div className="flex items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
               <Avatar size="sm" className="size-7 shrink-0">
-                {userAvatarUrl ? <AvatarImage src={userAvatarUrl} alt="" /> : null}
-                <AvatarFallback className="text-xs">
-                  {accountInitials}
-                </AvatarFallback>
+                {userAvatarUrl ? (
+                  <AvatarImage src={userAvatarUrl} alt="" />
+                ) : null}
+                <AvatarFallback className="text-xs">{accountInitials}</AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-medium text-sidebar-foreground">

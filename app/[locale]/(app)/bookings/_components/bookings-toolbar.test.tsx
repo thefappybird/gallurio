@@ -158,3 +158,52 @@ describe("BookingsToolbar — Week view button visibility classes (Bug 2)", () =
     expect(dayClass).not.toContain("hidden");
   });
 });
+
+// ── Render-loop regression (Task G) ──────────────────────────────────────────
+// Verifies that pushParams no longer captures a new searchParams reference on
+// every render. With the ref-based fix, pushParams identity is stable (only
+// changes when router/pathname change), so the debounce effect does NOT re-fire
+// on each render.
+//
+// We simulate the prior loop trigger: a render that provides a new (different)
+// URLSearchParams object reference while the query value stays the same.
+// The debounce effect must NOT call router.push again after the initial
+// stable state is reached.
+
+describe("BookingsToolbar — render-loop stability (regression guard)", () => {
+  it("does NOT call router.push on re-render when the component re-renders with the same searchParams values", () => {
+    // First render with no params — debounce effect fires but q === current
+    // (both empty) so it bails out immediately and does NOT call pushParams.
+    const { rerender } = render(
+      <BookingsToolbar defaultCurrency="PHP" />,
+      { wrapper }
+    );
+
+    vi.clearAllMocks();
+
+    // Re-render multiple times — simulates React re-renders triggered by
+    // parent state changes. searchParams object may have a new reference each
+    // time but values are unchanged. With the ref-based pushParams fix,
+    // pushParams identity is stable so the debounce effect does NOT re-fire.
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingsToolbar defaultCurrency="PHP" />
+      </NextIntlClientProvider>
+    );
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingsToolbar defaultCurrency="PHP" />
+      </NextIntlClientProvider>
+    );
+    rerender(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingsToolbar defaultCurrency="PHP" />
+      </NextIntlClientProvider>
+    );
+
+    // router.push must NOT have been called by a re-render-driven effect cycle.
+    // (It would be called if the debounce effect re-fired due to an unstable
+    // pushParams identity caused by searchParams in its dep array.)
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});

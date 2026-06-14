@@ -85,6 +85,11 @@ bookingSchema.index({ workspaceId: 1, createdFromInquiryId: 1 });
 // above with teamId injected after workspaceId.
 bookingSchema.index({ workspaceId: 1, teamId: 1, firstSessionStart: 1 });
 bookingSchema.index({ workspaceId: 1, teamId: 1, status: 1, firstSessionStart: 1 });
+// Backs the server-side showPast filter: excludes bookings whose lastSessionEnd
+// is before today's midnight in the workspace timezone. Combined with the
+// existing firstSessionStart sort this lets MongoDB satisfy the filter+sort
+// via the index without a collection scan.
+bookingSchema.index({ workspaceId: 1, lastSessionEnd: 1, firstSessionStart: 1 });
 
 function recomputeDenormalized(
   sessions: { startAt: Date; endAt: Date }[]
