@@ -6,6 +6,7 @@ import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 
 type PageProps = {
@@ -42,10 +43,14 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const workspace = await findPublishedWorkspaceBySlug(orgSlug);
   if (!workspace) notFound();
 
-  // gallery data is stored as Schema.Types.Mixed; same any-escape as the Home page.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const galleryData: any =
-    (workspace.publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery ?? null;
+  // gallery data is stored as Schema.Types.Mixed; normalize before <Render> so
+  // legacy/partial persisted data can't 500 the route (see the Home page note).
+  const rawGallery = (workspace.publicPage?.data as { gallery?: unknown } | null | undefined)?.gallery;
+  const galleryData = normalizePublicPageData(
+    rawGallery,
+    new Set(Object.keys(puckConfig.components)),
+    "gallery"
+  );
 
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
@@ -81,6 +86,6 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     // metadata threads workspace context to every block via props.puck.metadata —
     // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={galleryData} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
   ));
 }

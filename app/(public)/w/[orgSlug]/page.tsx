@@ -6,6 +6,7 @@ import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 
 // ---------------------------------------------------------------------------
@@ -56,13 +57,16 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   if (!workspace) notFound();
 
   // publicPage is guaranteed non-null here — the query filters on publishedAt != null.
-  // homeData is stored as Schema.Types.Mixed. The raw Mongoose lean doc gives us `unknown`,
-  // and puckConfig.components is typed with our specific Components union, which creates
-  // a Data<Components> vs Data<DefaultComponents> mismatch at the Render call site.
-  // We escape with `any` — the shape is correct at runtime.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const homeData: any =
-    ((workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home) ?? null;
+  // homeData is stored as Schema.Types.Mixed (raw `unknown` from the lean doc).
+  // Normalize it before <Render>: Puck's RSC renderer assumes a well-formed Data
+  // object (it does `'props' in data.root` with no defaulting), so legacy/partial
+  // persisted data would 500 the whole route. null -> show the ComingSoon fallback.
+  const rawHome = (workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home;
+  const homeData = normalizePublicPageData(
+    rawHome,
+    new Set(Object.keys(puckConfig.components)),
+    "home"
+  );
 
   // Derive chrome locale from workspace country and resolve translated strings
   // at the page boundary so blocks stay synchronous and unit-testable.
@@ -110,6 +114,6 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     // metadata threads workspace context to every block via props.puck.metadata —
     // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={homeData} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    <Render data={homeData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
   ));
 }
