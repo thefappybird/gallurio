@@ -8,7 +8,8 @@
  *   another workspace or missing IDs are silently dropped.
  */
 
-import { Types, type PipelineStage } from "mongoose";
+import mongoose, { Types, type PipelineStage } from "mongoose";
+import type { GalleryItemDoc } from "@/lib/db/models/GalleryItem";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
@@ -465,4 +466,70 @@ export async function countItemsByPublicId(
   if (!workspaceId || !cloudinaryPublicId) return 0;
   await connectDB();
   return GalleryItem.countDocuments({ workspaceId, cloudinaryPublicId });
+}
+
+/** Copy existing items (by id) into a collection as new docs reusing the same asset. */
+export async function copyItemsIntoCollection(opts: {
+  workspaceId: string;
+  collectionId: string;
+  sourceItemIds: string[];
+}): Promise<PickerItem[]> {
+  const { workspaceId, collectionId, sourceItemIds } = opts;
+  if (!workspaceId || !Types.ObjectId.isValid(collectionId)) return [];
+  await connectDB();
+
+  const ids = sourceItemIds.filter((id) => Types.ObjectId.isValid(id));
+  if (ids.length === 0) return [];
+  const sources = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).lean();
+  if (sources.length === 0) return [];
+
+  const existing = await GalleryItem.find({ workspaceId, collectionId })
+    .select({ cloudinaryPublicId: 1 })
+    .lean();
+  const present = new Set(existing.map((e) => e.cloudinaryPublicId as string));
+  const seen = new Set<string>();
+  const toCopy = sources.filter((s) => {
+    const pid = s.cloudinaryPublicId as string;
+    if (present.has(pid) || seen.has(pid)) return false;
+    seen.add(pid);
+    return true;
+  });
+  if (toCopy.length === 0) return [];
+
+  const base = await GalleryItem.countDocuments({ workspaceId, collectionId });
+
+  const session = await mongoose.startSession();
+  let created: GalleryItemDoc[] = [];
+  try {
+    await session.withTransaction(async () => {
+      const docs = toCopy.map((s, i) => ({
+        workspaceId,
+        collectionId,
+        cloudinaryPublicId: s.cloudinaryPublicId,
+        url: s.url,
+        width: s.width ?? null,
+        height: s.height ?? null,
+        format: s.format ?? null,
+        sizeBytes: s.sizeBytes ?? 0,
+        caption: s.caption ?? "",
+        altText: s.altText ?? "",
+        order: base + i,
+      }));
+      created = await GalleryItem.create(docs, { session, ordered: true });
+      const col = await GalleryCollection.findOne({ _id: collectionId, workspaceId })
+        .select({ coverItemId: 1 })
+        .session(session);
+      if (col && !col.coverItemId && created[0]) {
+        await GalleryCollection.updateOne(
+          { _id: collectionId, workspaceId },
+          { $set: { coverItemId: created[0]._id } },
+          { session }
+        );
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return created.map(toPickerItem);
 }
