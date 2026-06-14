@@ -4,17 +4,17 @@ import mongoose from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
+import { verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { validatePhotoMeta } from "@/lib/page-builder/photoSpec";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   name: z.string().min(1, "Name is required").max(100).trim(),
-  /** Starter items already uploaded to Cloudinary — must belong to this workspace's folder. */
   items: z
     .array(
       z.object({
-        cloudinaryPublicId: z.string().min(1).max(300),
+        assetId: z.string().min(1).max(300),
         url: z.string().url().max(1000),
         width: z.number().int().positive().max(20000).optional(),
         height: z.number().int().positive().max(20000).optional(),
@@ -34,11 +34,6 @@ function makeSlug(name: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 80) || "collection";
-}
-
-function makeWorkspacePrefixCheck(workspaceId: string) {
-  const prefix = `gallurio/${workspaceId}/`;
-  return (publicId: string) => !publicId.includes("..") && publicId.startsWith(prefix);
 }
 
 /**
@@ -67,11 +62,13 @@ export async function POST(req: Request) {
   const { name, items } = parsed.data;
   const workspaceId = ctx.workspace._id;
 
-  // Validate all item public IDs belong to this workspace's Cloudinary folder.
-  const prefixCheck = makeWorkspacePrefixCheck(workspaceId.toString());
-  const badItem = items.find((img) => !prefixCheck(img.cloudinaryPublicId));
-  if (badItem) {
-    return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
+  if (items.length > 0) {
+    const ownershipResults = await Promise.all(
+      items.map((img) => verifyImageOwnership(img.assetId, workspaceId.toString()))
+    );
+    if (ownershipResults.some((ok) => !ok)) {
+      return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
+    }
   }
 
   // Server-side photo validation — format, size, and dimensions for every starter item.
@@ -110,7 +107,7 @@ export async function POST(req: Request) {
         const docs = items.map((img, i) => ({
           workspaceId,
           collectionId: collection._id,
-          cloudinaryPublicId: img.cloudinaryPublicId,
+          assetId: img.assetId,
           url: img.url,
           width: img.width ?? null,
           height: img.height ?? null,

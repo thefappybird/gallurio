@@ -4,8 +4,8 @@ import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
-import { destroyAsset } from "@/lib/storage/cloudinary";
-import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest, countItemsByPublicId } from "@/lib/db/queries/gallery";
+import { deleteImage } from "@/lib/storage/cloudflareImages";
+import { listCollectionItemsPage, listAllItemsPage, listCollectionNewest, countItemsByAssetId } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
 
@@ -59,15 +59,15 @@ export async function GET(req: Request, { params }: Params) {
  * DELETE /api/portfolio/gallery/collections/[id]
  *
  * Hard-deletes a collection AND every photo inside it — the GalleryItem docs
- * are removed and their Cloudinary assets destroyed. Irreversible; the editor
+ * are removed and their remote assets deleted. Irreversible; the editor
  * UI warns the owner before calling this.
  *
  * Owner-only. Items that live outside a collection (collectionId: null, e.g.
  * Hero/CTA backgrounds and Featured Work picks) are never touched.
  *
- * The DB delete (collection + items) runs in a transaction. Cloudinary destroys
+ * The DB delete (collection + items) runs in a transaction. CF Images deletes
  * run after the transaction commits, per-asset and best-effort: a single failed
- * destroy is logged but never strands the DB delete or fails the whole request.
+ * delete is logged but never strands the DB delete or fails the whole request.
  */
 export async function DELETE(_req: Request, { params }: Params) {
   const ctx = await requireOrg();
@@ -91,11 +91,11 @@ export async function DELETE(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // Capture the public IDs before deletion so we can clean up Cloudinary after.
+  // Capture asset IDs before deletion so we can clean up CF Images after.
   const items = await GalleryItem.find({ workspaceId, collectionId: id })
-    .select({ cloudinaryPublicId: 1 })
+    .select({ assetId: 1 })
     .lean();
-  const publicIds = items.map((it) => it.cloudinaryPublicId).filter(Boolean);
+  const assetIds = items.map((it) => it.assetId).filter(Boolean);
 
   const session = await mongoose.startSession();
   try {
@@ -110,20 +110,20 @@ export async function DELETE(_req: Request, { params }: Params) {
     await session.endSession();
   }
 
-  // Reference-counted cleanup: the collection's item docs are gone; destroy an
-  // asset on Cloudinary only if no remaining doc (a copy elsewhere) references it.
+  // Reference-counted cleanup: the collection's item docs are gone; delete an
+  // asset from CF Images only if no remaining doc (a copy elsewhere) references it.
   let assetsFailed = 0;
   let assetsDestroyed = 0;
   await Promise.all(
-    publicIds.map(async (pid) => {
+    assetIds.map(async (assetId) => {
       try {
-        const remaining = await countItemsByPublicId(workspaceId.toString(), pid);
+        const remaining = await countItemsByAssetId(workspaceId.toString(), assetId);
         if (remaining > 0) return;
-        await destroyAsset(pid);
+        await deleteImage(assetId);
         assetsDestroyed += 1;
       } catch (err) {
         assetsFailed += 1;
-        console.error(`[portfolio/gallery/collections] cloudinary destroy failed for ${pid}:`, err);
+        console.error(`[portfolio/gallery/collections] CF Images delete failed for ${assetId}:`, err);
       }
     })
   );

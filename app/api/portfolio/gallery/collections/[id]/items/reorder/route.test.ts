@@ -23,9 +23,9 @@ async function seed() {
   const col = await GalleryCollection.create({ workspaceId: wsA, name: "C", slug: "c", order: 0 });
   colA = col._id;
   const [a0, a1, a2] = await GalleryItem.create([
-    { workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "0", url: "u", order: 0 },
-    { workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "1", url: "u", order: 1 },
-    { workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "2", url: "u", order: 2 },
+    { workspaceId: wsA, collectionId: colA, assetId: "0", url: "u", order: 0 },
+    { workspaceId: wsA, collectionId: colA, assetId: "1", url: "u", order: 1 },
+    { workspaceId: wsA, collectionId: colA, assetId: "2", url: "u", order: 2 },
   ]);
   i0 = a0._id; i1 = a1._id; i2 = a2._id;
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };

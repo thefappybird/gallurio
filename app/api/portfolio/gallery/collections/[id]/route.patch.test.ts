@@ -24,10 +24,10 @@ async function seed() {
   wsA = a._id;
   const col = await GalleryCollection.create({ workspaceId: wsA, name: "Old", slug: "old", order: 0 });
   colA = col._id;
-  const it = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "p", url: "u", order: 0 });
+  const it = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "p", url: "u", order: 0 });
   itemInA = it._id;
   const otherCol = await GalleryCollection.create({ workspaceId: wsA, name: "Other", slug: "other", order: 1 });
-  const it2 = await GalleryItem.create({ workspaceId: wsA, collectionId: otherCol._id, cloudinaryPublicId: "q", url: "u", order: 0 });
+  const it2 = await GalleryItem.create({ workspaceId: wsA, collectionId: otherCol._id, assetId: "q", url: "u", order: 0 });
   itemForeignCol = it2._id;
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };
 }

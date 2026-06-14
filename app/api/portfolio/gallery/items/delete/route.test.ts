@@ -6,8 +6,8 @@ vi.mock("next/server", async (importOriginal) => {
   return { ...actual, NextResponse: { json: (body: unknown, init?: ResponseInit): MockResp => ({ body, status: init?.status ?? 200 }) } };
 });
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
-const destroyAsset = vi.fn(async (publicId: string) => { void publicId; });
-vi.mock("@/lib/storage/cloudinary", () => ({ destroyAsset: (p: string) => destroyAsset(p) }));
+const deleteImage = vi.fn(async (assetId: string) => { void assetId; });
+vi.mock("@/lib/storage/cloudflareImages", () => ({ deleteImage: (id: string) => deleteImage(id) }));
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({ userId: mockCtx.userId, role: mockCtx.role, workspace: mockCtx.workspace }),
@@ -25,17 +25,17 @@ async function seed() {
   const col = await GalleryCollection.create({ workspaceId: wsA, name: "C", slug: "c", order: 0 });
   colA = col._id;
   const colB = await GalleryCollection.create({ workspaceId: wsA, name: "C2", slug: "c2", order: 1 });
-  const a1 = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "shared", url: "u", order: 0 });
-  const a2 = await GalleryItem.create({ workspaceId: wsA, collectionId: colB._id, cloudinaryPublicId: "shared", url: "u", order: 0 });
+  const a1 = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "shared", url: "u", order: 0 });
+  const a2 = await GalleryItem.create({ workspaceId: wsA, collectionId: colB._id, assetId: "shared", url: "u", order: 0 });
   copyInA = a1._id; copyInB = a2._id;
-  const f = await GalleryItem.create({ workspaceId: b._id, collectionId: null, cloudinaryPublicId: "fpid", url: "u", order: 0 });
+  const f = await GalleryItem.create({ workspaceId: b._id, collectionId: null, assetId: "fpid", url: "u", order: 0 });
   foreign = f._id;
   await GalleryCollection.updateOne({ _id: colA }, { $set: { coverItemId: copyInA } });
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };
 }
 const req = (b: unknown) => new Request("http://t/x", { method: "POST", body: JSON.stringify(b) });
 beforeAll(startInMemoryMongo); afterAll(stopInMemoryMongo);
-beforeEach(async () => { await clearCollections(); destroyAsset.mockClear(); await seed(); });
+beforeEach(async () => { await clearCollections(); deleteImage.mockClear(); await seed(); });
 
 describe("POST items/delete", () => {
   it("deletes every doc for the asset across collections and destroys it once", async () => {
@@ -43,8 +43,8 @@ describe("POST items/delete", () => {
     expect(res.status).toBe(200);
     expect(await GalleryItem.findById(copyInA)).toBeNull();
     expect(await GalleryItem.findById(copyInB)).toBeNull();
-    expect(destroyAsset).toHaveBeenCalledTimes(1);
-    expect(destroyAsset).toHaveBeenCalledWith("shared");
+    expect(deleteImage).toHaveBeenCalledTimes(1);
+    expect(deleteImage).toHaveBeenCalledWith("shared");
   });
   it("repoints a collection cover that referenced a deleted item", async () => {
     await POST(req({ itemIds: [copyInA.toString()] }));
@@ -54,7 +54,7 @@ describe("POST items/delete", () => {
   it("ignores items from another workspace", async () => {
     const res = (await POST(req({ itemIds: [foreign.toString()] }))) as unknown as MockResp;
     expect((res.body as { deletedDocs: number }).deletedDocs).toBe(0);
-    expect(destroyAsset).not.toHaveBeenCalled();
+    expect(deleteImage).not.toHaveBeenCalled();
   });
   it("rejects non-owner", async () => {
     mockCtx.role = "staff";

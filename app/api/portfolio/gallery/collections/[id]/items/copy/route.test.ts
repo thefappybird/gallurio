@@ -31,9 +31,9 @@ async function seed() {
   wsA = a._id; wsB = b._id;
   const col = await GalleryCollection.create({ workspaceId: wsA, name: "C", slug: "c", order: 0 });
   colA = col._id;
-  const s = await GalleryItem.create({ workspaceId: wsA, collectionId: null, cloudinaryPublicId: `gallurio/${wsA}/p/s`, url: "https://x/s.jpg", order: 0 });
+  const s = await GalleryItem.create({ workspaceId: wsA, collectionId: null, assetId: "src_standalone", url: "https://imagedelivery.net/hash/src_standalone/public", order: 0 });
   srcStandalone = s._id;
-  const f = await GalleryItem.create({ workspaceId: wsB, collectionId: null, cloudinaryPublicId: `gallurio/${wsB}/p/f`, url: "https://x/f.jpg", order: 0 });
+  const f = await GalleryItem.create({ workspaceId: wsB, collectionId: null, assetId: "src_foreign", url: "https://imagedelivery.net/hash/src_foreign/public", order: 0 });
   srcForeign = f._id;
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };
 }
@@ -51,7 +51,7 @@ describe("POST copy", () => {
     expect(res.status).toBe(201);
     const copies = await GalleryItem.find({ workspaceId: wsA, collectionId: colA }).lean();
     expect(copies).toHaveLength(1);
-    expect(copies[0].cloudinaryPublicId).toBe(`gallurio/${wsA}/p/s`);
+    expect(copies[0].assetId).toBe("src_standalone");
   });
 
   it("is idempotent per collection (skips assets already present)", async () => {
