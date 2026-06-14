@@ -19,7 +19,6 @@ type Props = {
   limit: number;
   locale: string;
   empty: string;
-  showPast?: boolean;
   workspaceTimezone?: string;
 };
 
@@ -30,7 +29,6 @@ export function BookingsPageClient({
   limit,
   locale,
   empty,
-  showPast = false,
   workspaceTimezone,
 }: Props) {
   const t = useTranslations("common.pagination");
@@ -60,7 +58,6 @@ export function BookingsPageClient({
           rows={rows}
           locale={locale}
           empty={empty}
-          showPast={showPast}
           workspaceTimezone={workspaceTimezone}
         />
       )}

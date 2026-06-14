@@ -1,6 +1,17 @@
 import "server-only";
 import { Types } from "mongoose";
 import { Booking, ActivityLog, type BookingDoc, type ActivityLogDoc } from "@/lib/db/models";
+import { dayBoundInTz } from "@/lib/utils/timezone";
+
+/** Returns YYYY-MM-DD for `d` as seen in `timeZone`. */
+function isoDateInTz(d: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
 
 type WorkspaceId = Types.ObjectId;
 
@@ -25,6 +36,11 @@ export type BookingListFilters = {
   // empty one — restricts via $in, so a member with no teams matches nothing
   // rather than everything. Callers resolve this from getTeamsForUser().
   teamIds?: readonly string[];
+  // When false/undefined, excludes bookings whose lastSessionEnd is before
+  // midnight today in `workspaceTimezone`. Applied BEFORE countDocuments/skip/limit
+  // so pagination counts reflect the filtered set. Callers pass the workspace tz.
+  includePast?: boolean;
+  workspaceTimezone?: string;
 };
 
 export type BookingListPagination = {
@@ -76,6 +92,17 @@ export async function listBookings(
     const safe = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const rx = new RegExp(safe, "i");
     query.$or = [{ title: rx }, { clientName: rx }, { "location.address": rx }];
+  }
+
+  // Exclude fully-past bookings unless the caller explicitly requests them.
+  // "Past" means lastSessionEnd < midnight today in the workspace timezone.
+  // Filtering here (before countDocuments/skip/limit) keeps `total` and
+  // page counts accurate so the server-side pagination is correct.
+  if (!filters.includePast) {
+    const tz = filters.workspaceTimezone ?? "UTC";
+    const todayStr = isoDateInTz(new Date(), tz);
+    const todayStart = dayBoundInTz(todayStr, tz, 0, 0, 0, 0);
+    query.lastSessionEnd = { $gte: todayStart };
   }
 
   const baseQuery = Booking.find(query).sort({ firstSessionStart: 1 });

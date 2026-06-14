@@ -262,7 +262,8 @@
       },
       "row": {
         "openMenu": "Buka tindakan pemesanan",
-        "view": "Lihat"
+        "view": "Lihat",
+        "edit": "Edit"
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
@@ -946,6 +947,7 @@
         "noBookings": "Belum ada booking",
         "openMenu": "Buka aksi klien",
         "openClient": "Buka {name}",
+        "view": "Lihat",
         "edit": "Ubah",
         "deactivate": "Nonaktifkan",
         "reactivate": "Aktifkan kembali"
@@ -1034,15 +1036,16 @@
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Disetujui",
         "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Disetujui",
         "archived": "Diarsipkan",
-        "booked": "Dipesan"
+        "booked": "Dipesan",
+        "converted": "Dikonversi ke Pemesanan"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -1071,9 +1074,14 @@
           "eventType": "Jenis",
           "submitted": "Dikirim",
           "source": "Sumber",
-          "eventTitle": "Judul acara"
+          "eventTitle": "Judul acara",
+          "actions": "Tindakan"
         },
-        "noTitle": "Acara tanpa judul"
+        "noTitle": "Acara tanpa judul",
+        "actions": {
+          "view": "Lihat",
+          "menuLabel": "Buka tindakan pertanyaan"
+        }
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1098,31 +1106,31 @@
         },
         "bookingDraft": {
           "title": "Draf pemesanan",
-          "description": "Menyetujui ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
+          "description": "Mengonversi ini akan membuat pemesanan di kalender Anda. Tetapkan harga sekarang atau nanti.",
           "total": "Total",
           "deposit": "Deposit",
           "notes": "Catatan internal",
           "notesPlaceholder": "Catatan yang hanya dapat Anda lihat…",
           "save": "Simpan perubahan",
           "saving": "Menyimpan…",
-          "approve": "Setujui pemesanan",
-          "approving": "Menyetujui…",
-          "approved": "Disetujui",
+          "approve": "Konversi ke pemesanan",
+          "approving": "Mengonversi…",
+          "approved": "Dikonversi",
           "missing": "Tidak ada draf pemesanan yang terhubung untuk pertanyaan ini.",
           "alreadyConverted": "Pertanyaan ini telah disetujui.",
           "viewBooking": "Lihat pemesanan",
-          "approveError": "Tidak dapat menyetujui. Silakan coba lagi.",
+          "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja yang dapat menyetujui pemesanan."
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan."
         },
         "actions": {
-          "markContacted": "Tandai sudah dihubungi",
+          "approve": "Setujui",
           "archive": "Arsipkan",
           "working": "Menyimpan…",
-          "contactedToast": "Ditandai sebagai sudah dihubungi.",
+          "approveStatusToast": "Pertanyaan disetujui.",
           "archivedToast": "Pertanyaan diarsipkan.",
-          "approvedToast": "Pemesanan disetujui.",
+          "approvedToast": "Dikonversi ke pemesanan.",
           "errorToast": "Ada yang tidak beres. Silakan coba lagi."
         },
         "history": {

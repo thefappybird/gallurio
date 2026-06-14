@@ -186,6 +186,7 @@ export function ClientsPageClient({
           locale={locale}
           empty={empty}
           onClickClient={openDetail}
+          onView={openDetail}
           onEdit={openEdit}
           onDeactivate={openDeactivate}
           onReactivate={handleReactivate}

@@ -262,7 +262,8 @@
       },
       "row": {
         "openMenu": "Buka tindakan tempahan",
-        "view": "Lihat"
+        "view": "Lihat",
+        "edit": "Edit"
       },
       "statusValues": {
         "inquiry": "Pertanyaan",
@@ -946,6 +947,7 @@
         "noBookings": "Belum ada tempahan",
         "openMenu": "Buka tindakan pelanggan",
         "openClient": "Buka {name}",
+        "view": "Lihat",
         "edit": "Sunting",
         "deactivate": "Nyahaktif",
         "reactivate": "Aktifkan semula"
@@ -1034,15 +1036,16 @@
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Diluluskan",
         "booked": "Ditempah",
         "archived": "Diarkib"
       },
       "statusValues": {
         "new": "Baru",
-        "contacted": "Dihubungi",
+        "approved": "Diluluskan",
         "archived": "Diarkib",
-        "booked": "Ditempah"
+        "booked": "Ditempah",
+        "converted": "Ditukar Kepada Tempahan"
       },
       "eventTypes": {
         "wedding": "Perkahwinan",
@@ -1071,9 +1074,14 @@
           "eventType": "Jenis",
           "submitted": "Dihantar",
           "source": "Sumber",
-          "eventTitle": "Tajuk acara"
+          "eventTitle": "Tajuk acara",
+          "actions": "Tindakan"
         },
-        "noTitle": "Acara tanpa tajuk"
+        "noTitle": "Acara tanpa tajuk",
+        "actions": {
+          "view": "Lihat",
+          "menuLabel": "Buka tindakan pertanyaan"
+        }
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
@@ -1098,31 +1106,31 @@
         },
         "bookingDraft": {
           "title": "Draf tempahan",
-          "description": "Meluluskan ini akan mencipta tempahan dalam kalendar anda. Tetapkan harga sekarang atau kemudian.",
+          "description": "Menukar ini akan mencipta tempahan dalam kalendar anda. Tetapkan harga sekarang atau kemudian.",
           "total": "Jumlah",
           "deposit": "Deposit",
           "notes": "Nota dalaman",
           "notesPlaceholder": "Nota yang hanya anda boleh lihat…",
           "save": "Simpan perubahan",
           "saving": "Menyimpan…",
-          "approve": "Luluskan tempahan",
-          "approving": "Meluluskan…",
-          "approved": "Diluluskan",
+          "approve": "Tukar kepada tempahan",
+          "approving": "Menukar…",
+          "approved": "Ditukar",
           "missing": "Tiada draf tempahan yang dikaitkan dengan pertanyaan ini.",
           "alreadyConverted": "Pertanyaan ini telah diluluskan.",
           "viewBooking": "Lihat tempahan",
-          "approveError": "Tidak dapat meluluskan. Sila cuba lagi.",
+          "approveError": "Tidak dapat menukar. Sila cuba lagi.",
           "saveError": "Tidak dapat menyimpan. Sila cuba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja boleh meluluskan tempahan."
+          "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan."
         },
         "actions": {
-          "markContacted": "Tandai sebagai dihubungi",
+          "approve": "Luluskan",
           "archive": "Arkib",
           "working": "Menyimpan…",
-          "contactedToast": "Ditandai sebagai dihubungi.",
+          "approveStatusToast": "Pertanyaan diluluskan.",
           "archivedToast": "Pertanyaan diarkib.",
-          "approvedToast": "Tempahan diluluskan.",
+          "approvedToast": "Ditukar kepada tempahan.",
           "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
         },
         "history": {

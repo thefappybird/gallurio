@@ -415,6 +415,7 @@ async function seedSampleData(workspaceId: string) {
       message: "Brand portrait session -- do you take corporate work?",
       eventType: "corporate",
       status: "new",
+      eventDate: slot(21).start,
     },
   ]);
 }

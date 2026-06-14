@@ -31,6 +31,7 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
 - Fix the task directly; do not over-engineer
 - If nearby code can be improved, verify current behavior first, then ask before changing it
 - Never mention AI tools in code, commits, PRs, comments, or output
+- Do not speculate on ambiguous requirements; use AskUserQuestion to get the user's decision/context before acting
 
 ## RTK command policy
 - Prefer explicit RTK commands for verbose shell output

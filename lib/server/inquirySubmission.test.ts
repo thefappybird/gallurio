@@ -202,6 +202,29 @@ describe("submitInquiry", () => {
     spy.mockRestore();
   });
 
+  it("sets eventDate to the earliest session startDate", async () => {
+    await Workspace.create(makeWorkspace());
+    const res = await submitInquiry({
+      workspaceSlug: "studio-aurora",
+      payload: makePayload({
+        sessions: [
+          { startDate: "2030-08-20", startTime: "10:00", endTime: "18:00" },
+          { startDate: "2030-08-15", startTime: "09:00", endTime: "17:00" },
+          { startDate: "2030-08-22", startTime: "10:00", endTime: "18:00" },
+        ],
+      }),
+    });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+
+    const inquiry = await Inquiry.findById(res.inquiryId).lean();
+    expect(inquiry?.eventDate).toBeTruthy();
+    // Earliest session is 2030-08-15. The stored value is derived from the UTC
+    // instant of the first session start converted from Asia/Manila (UTC+8),
+    // so eventDate < "2030-08-15T16:00:00Z". Just verify the date part.
+    expect(inquiry!.eventDate!.toISOString().startsWith("2030-08-15")).toBe(true);
+  });
+
   it("sends an owner notification when a recipient is configured", async () => {
     await Workspace.create(makeWorkspace());
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });

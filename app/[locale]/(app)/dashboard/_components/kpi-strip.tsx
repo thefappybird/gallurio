@@ -2,8 +2,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   WalletIcon,
   CalendarCheck2Icon,
-  InboxIcon,
-  ReceiptIcon,
+  MessageSquareIcon,
+  CircleDollarSignIcon,
   ArrowUpRightIcon,
   ArrowDownRightIcon,
   MinusIcon,
@@ -100,13 +100,13 @@ export function KpiStrip({ snapshot, currency, locale, labels, trends }: Props) 
       <KpiCard
         label={labels.newInquiries}
         value={snapshot.newInquiries.toString()}
-        icon={InboxIcon}
+        icon={MessageSquareIcon}
         trend={trends?.newInquiries}
       />
       <KpiCard
         label={labels.outstandingBalance}
         value={formatMoney(snapshot.outstandingBalance, currency, locale)}
-        icon={ReceiptIcon}
+        icon={CircleDollarSignIcon}
         trend={trends?.outstandingBalance}
       />
     </div>

@@ -162,6 +162,20 @@ describe("ClientsPageClient", () => {
     expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
   });
 
+  it("opens detail modal when View is clicked in the row actions menu", async () => {
+    renderWithProviders(<ClientsPageClient {...build()} />);
+
+    // The dropdown mock renders all menu items inline (no visibility guard), so
+    // all View buttons are already in the DOM. After sorting by name asc,
+    // "John Dela Cruz" (inactive) is first, so viewItems[0] belongs to his row.
+    const viewItems = await screen.findAllByText("View");
+    fireEvent.click(viewItems[0]);
+
+    const modal = await screen.findByTestId("client-detail-modal");
+    expect(modal).toBeInTheDocument();
+    expect(within(modal).getByText("John Dela Cruz")).toBeInTheDocument();
+  });
+
   it("reactivation calls server action and refreshes the list on success", async () => {
     reactivateMock.mockResolvedValue({ ok: true });
     renderWithProviders(<ClientsPageClient {...build()} />);

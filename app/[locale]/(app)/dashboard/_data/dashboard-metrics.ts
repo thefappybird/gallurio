@@ -144,7 +144,7 @@ export type PipelineCounts = {
 
 export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
   const [inquiries, booked] = await Promise.all([
-    Inquiry.countDocuments({ workspaceId, status: { $in: ["new", "contacted"] } }),
+    Inquiry.countDocuments({ workspaceId, status: { $in: ["new", "approved"] } }),
     Booking.countDocuments({ workspaceId, status: "booked" }),
   ]);
   return { inquiries, booked };

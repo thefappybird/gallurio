@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { BookingsTable, type BookingRow } from "./bookings-table";
 
@@ -89,7 +89,6 @@ describe("BookingsTable", () => {
         rows={[cancelledRow]}
         locale="en"
         empty="No rows"
-        showPast
         workspaceTimezone={TEST_TZ}
       />
     );
@@ -100,28 +99,30 @@ describe("BookingsTable", () => {
     expect(cancelledTitleCell?.className).toMatch(/line-through/);
   });
 
-  // ── Past-booking filter (default: OFF) ───────────────────────────────────────
+  // ── Past-booking filter (server-side) ───────────────────────────────────────
+  // Rows are now pre-filtered server-side by listBookings (includePast filter).
+  // The table component renders whatever rows it receives — no client-side
+  // filtering — so these tests verify render stability, not filtering logic.
 
-  it("hides fully-past rows when showPast is false (default)", () => {
+  it("renders all rows it receives (server is responsible for pre-filtering past rows)", () => {
+    // Simulates server passing only future rows when showPast=false.
     renderWithProviders(
       <BookingsTable
-        rows={[futureRow, pastRow]}
+        rows={[futureRow]}
         locale="en"
         empty="No rows"
         workspaceTimezone={TEST_TZ}
       />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
-    expect(screen.queryByText("Old Completed Shoot")).not.toBeInTheDocument();
   });
 
-  it("shows fully-past rows when showPast is true", () => {
+  it("renders past rows when the server passes them (showPast=true on server)", () => {
     renderWithProviders(
       <BookingsTable
         rows={[futureRow, pastRow]}
         locale="en"
         empty="No rows"
-        showPast
         workspaceTimezone={TEST_TZ}
       />
     );
@@ -129,13 +130,12 @@ describe("BookingsTable", () => {
     expect(screen.getByText("Old Completed Shoot")).toBeInTheDocument();
   });
 
-  it("shows empty state when all rows are past and showPast is false", () => {
+  it("shows empty state when rows array is empty (server filtered everything out)", () => {
     renderWithProviders(
       <BookingsTable
-        rows={[pastRow]}
+        rows={[]}
         locale="en"
         empty="No bookings"
-        showPast={false}
         workspaceTimezone={TEST_TZ}
       />
     );
@@ -144,9 +144,9 @@ describe("BookingsTable", () => {
 
   // ── Past pill ────────────────────────────────────────────────────────────────
 
-  it("shows 'Past' pill for fully-past rows when showPast is true", () => {
+  it("shows 'Past' pill for fully-past rows", () => {
     renderWithProviders(
-      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
+      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
     );
     // The pill text comes from the i18n key app.bookings.table.past
     expect(screen.getByText(/past/i)).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe("BookingsTable", () => {
 
   it("does NOT show 'Past' pill for future rows", () => {
     renderWithProviders(
-      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
     );
     // There must be no element with text "Past" in the table rows
     const pastPills = screen.queryAllByText(/^past$/i);
@@ -165,7 +165,7 @@ describe("BookingsTable", () => {
 
   it("applies opacity-60 to fully-past rows", () => {
     const { container } = renderWithProviders(
-      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
+      <BookingsTable rows={[pastRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
     );
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.className).toMatch(/opacity-60/);
@@ -173,7 +173,7 @@ describe("BookingsTable", () => {
 
   it("does NOT apply opacity-60 to future rows", () => {
     const { container } = renderWithProviders(
-      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" showPast workspaceTimezone={TEST_TZ} />
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
     );
     const rows = container.querySelectorAll("tbody tr");
     expect(rows[0]?.className).not.toMatch(/opacity-60/);
@@ -181,26 +181,12 @@ describe("BookingsTable", () => {
 
   // ── Partially-past bookings — must NOT be treated as past ────────────────────
 
-  it("does NOT hide a partially-past booking (last session in future)", () => {
-    renderWithProviders(
-      <BookingsTable
-        rows={[partiallyPastRow]}
-        locale="en"
-        empty="No rows"
-        showPast={false}
-        workspaceTimezone={TEST_TZ}
-      />
-    );
-    expect(screen.getByText("Ongoing Multi-Day")).toBeInTheDocument();
-  });
-
-  it("does NOT apply opacity-60 to a partially-past booking", () => {
+  it("does NOT apply opacity-60 to a partially-past booking (last session in future)", () => {
     const { container } = renderWithProviders(
       <BookingsTable
         rows={[partiallyPastRow]}
         locale="en"
         empty="No rows"
-        showPast={false}
         workspaceTimezone={TEST_TZ}
       />
     );
@@ -214,7 +200,6 @@ describe("BookingsTable", () => {
         rows={[partiallyPastRow]}
         locale="en"
         empty="No rows"
-        showPast
         workspaceTimezone={TEST_TZ}
       />
     );
@@ -230,26 +215,23 @@ describe("BookingsTable", () => {
         rows={[futureRow, pastRow]}
         locale="en"
         empty="No rows"
-        showPast
         workspaceTimezone="Asia/Manila"
       />
     );
-    // Both rows visible when showPast is true
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
     expect(screen.getByText("Old Completed Shoot")).toBeInTheDocument();
   });
 
-  it("defaults to UTC when workspaceTimezone is omitted", () => {
-    // Should not throw and should still correctly filter past rows
+  it("defaults to UTC when workspaceTimezone is omitted (no crash)", () => {
+    // Server pre-filters by tz; table just renders what it receives.
     renderWithProviders(
       <BookingsTable
-        rows={[futureRow, pastRow]}
+        rows={[futureRow]}
         locale="en"
         empty="No rows"
       />
     );
     expect(screen.getByText("Carter Wedding")).toBeInTheDocument();
-    expect(screen.queryByText("Old Completed Shoot")).not.toBeInTheDocument();
   });
 
   // ── Status pill: translated label + status color ─────────────────────────────
@@ -274,5 +256,25 @@ describe("BookingsTable", () => {
     const totalValue = screen.getByText(/75,000/);
     expect(totalValue.className).not.toMatch(/text-right/);
     expect(totalValue.className).toMatch(/tabular-nums/);
+  });
+
+  // ── Row actions menu: Edit item (Task F) ─────────────────────────────────────
+
+  it("renders a '⋯' menu trigger for each row", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const trigger = screen.getByRole("button", { name: /open booking actions/i });
+    expect(trigger).toBeInTheDocument();
+  });
+
+  it("shows 'View' and 'Edit' items in the row actions menu", () => {
+    renderWithProviders(
+      <BookingsTable rows={[futureRow]} locale="en" empty="No rows" workspaceTimezone={TEST_TZ} />
+    );
+    const trigger = screen.getByRole("button", { name: /open booking actions/i });
+    fireEvent.click(trigger);
+    expect(screen.getByText("View")).toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
   });
 });
