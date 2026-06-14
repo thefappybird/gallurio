@@ -132,7 +132,9 @@ export function EditCollectionDialog({
     void fetch(`/api/portfolio/gallery/collections/${colId}/items/reorder`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedItemIds: next.map((i) => i.id) }),
-    });
+    })
+      .then((res) => { if (!res.ok) setError("Could not save the new order."); })
+      .catch(() => setError("Could not save the new order."));
   }
 
   function reorder(fromId: string, toId: string) {
@@ -213,6 +215,8 @@ export function EditCollectionDialog({
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
             setItems((prev) => [...prev, { id: created.id, publicId: up.cloudinaryPublicId, thumbUrl: created.thumbUrl, caption: created.caption }]);
+          } else {
+            setError("Some photos could not be added.");
           }
         } catch {
           setError("Some photos could not be added.");
