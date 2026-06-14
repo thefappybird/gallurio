@@ -11,11 +11,11 @@ afterAll(stopInMemoryMongo);
 beforeEach(clearCollections);
 
 async function seedSharedAndUnique() {
-  await GalleryItem.create({ workspaceId: ws, cloudinaryPublicId: "dup", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: ws, cloudinaryPublicId: "x", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: ws, cloudinaryPublicId: "dup", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: ws, cloudinaryPublicId: "y", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: ws, cloudinaryPublicId: "dup", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: ws, assetId: "dup", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: ws, assetId: "x", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: ws, assetId: "dup", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: ws, assetId: "y", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: ws, assetId: "dup", url: "u", order: 0 });
 }
 
 describe("listAllItemsPage (deduped)", () => {
