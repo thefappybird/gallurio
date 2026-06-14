@@ -237,7 +237,6 @@ function PhotosView({
                 <button
                   type="button"
                   disabled={isExcluded}
-                  onClick={() => onToggle(item)}
                   aria-label={`${item.caption || "Photo"}${isExcluded ? " — already added" : selected ? " — selected" : ""}`}
                   className={cn(
                     "relative block aspect-square w-full overflow-hidden border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
