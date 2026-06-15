@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Puck, usePuck, type Config, type Data } from "@measured/puck";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight } from "lucide-react";
+import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -34,6 +34,7 @@ import {
   listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
+  createPreviewSnapshotAction,
   type DraftSummary,
 } from "../_draftActions";
 import { PublishDialog } from "./PublishDialog";
@@ -48,6 +49,7 @@ import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
+import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
 import {
   resolveAddSessionAppearance,
@@ -274,6 +276,12 @@ export function EditorShell({
   // Entry dialog shown on every load; options are gated by canContinue / hasDrafts.
   const [entryOpen, setEntryOpen] = useState(true);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [openingPreview, setOpeningPreview] = useState(false);
+  // True only when the canvas holds a newly-created draft (applyTemplate path) that
+  // has no DB record yet; false when the active draft was deleted (deleted-working-copy
+  // path). Controls whether the dashed "Unsaved" row appears in DraftsDialog.
+  const [isNewUnsavedDraft, setIsNewUnsavedDraft] = useState(() => initialActiveDraftId === null);
 
   // JSON string of last-saved snapshot; null = never saved (always dirty).
   // Stored as state so it can be read during render for the derived isDirty check.
@@ -283,8 +291,8 @@ export function EditorShell({
       name: initialActiveDraftName || DEFAULT_DRAFT_NAME,
       templateId: currentTemplateId,
       data: {
-        home: initialData.home ?? EMPTY_ZONE,
-        gallery: initialData.gallery ?? EMPTY_ZONE,
+        home: ensureIds(initialData.home ?? EMPTY_ZONE),
+        gallery: ensureIds(initialData.gallery ?? EMPTY_ZONE),
       },
       brandKit: initialBrandKit,
       contact: initialContact,
@@ -395,11 +403,13 @@ export function EditorShell({
       const draft = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
       if (draft.version !== LOCAL_DRAFT_VERSION || !draft.data) return;
       queueMicrotask(() => {
-        zoneDataRef.current = {
-          home: draft.data?.home ?? zoneDataRef.current.home,
-          gallery: draft.data?.gallery ?? zoneDataRef.current.gallery,
-        };
-        setRenderDraftData(zoneDataRef.current);
+        const home = draft.data?.home ?? zoneDataRef.current.home;
+        const gallery = draft.data?.gallery ?? zoneDataRef.current.gallery;
+        zoneDataRef.current = { home, gallery };
+        setRenderDraftData({
+          home: ensureIds(home) as unknown as PuckData,
+          gallery: ensureIds(gallery) as unknown as PuckData,
+        });
         if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
@@ -409,6 +419,7 @@ export function EditorShell({
         if (draft.draftName) setDraftName(draft.draftName);
         ignoreNextChange.current = true;
         setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setSeedNonce((n) => n + 1);
       });
     } catch {
       window.localStorage.removeItem(draftKey);
@@ -514,6 +525,7 @@ export function EditorShell({
       }
       const saved = res.draft;
       setActiveDraftId(saved.id);
+      setIsNewUnsavedDraft(false);
       setDrafts((prev) => {
         const without = prev.filter((d) => d.id !== saved.id);
         return [saved, ...without];
@@ -586,28 +598,33 @@ export function EditorShell({
 
   // ---- Delete draft ----
   async function handleDeleteDraft(id: string) {
-    const res = await deleteDraftAction(id);
-    if ("error" in res) {
-      toast.error("Could not delete draft. Please try again.");
-      return;
-    }
-    setDrafts((prev) => {
-      const deletedDraft = prev.find((d) => d.id === id) ?? null;
-      const nextDrafts = prev.filter((d) => d.id !== id);
+    setDeletingDraftId(id);
+    try {
+      const res = await deleteDraftAction(id);
+      // Refresh the drafts list to stay in sync.
+      const refreshed = await listDraftsAction();
+      setDrafts(refreshed);
+      if ("error" in res) {
+        toast.error("Could not delete draft. Please try again.");
+        return;
+      }
       if (
         nameError === "A draft with this name already exists" &&
-        deletedDraft?.name.trim().toLowerCase() === draftName.trim().toLowerCase()
+        refreshed.every((d) => d.name.trim().toLowerCase() !== draftName.trim().toLowerCase())
       ) {
         setNameError(null);
       }
-      return nextDrafts;
-    });
-    if (id === activeDraftId) {
-      // Keep the loaded canvas as an unsaved working copy after its backing
-      // draft record is deleted.
-      setActiveDraftId(null);
-      setSavedSnapshot(null);
-      setNameError(null);
+      if (id === activeDraftId) {
+        // Keep the loaded canvas as an unsaved working copy after its backing
+        // draft record is deleted. Not shown as a dashed-border row in DraftsDialog
+        // (that row is only for newly-created drafts from the template picker).
+        setActiveDraftId(null);
+        setIsNewUnsavedDraft(false);
+        setSavedSnapshot(null);
+        setNameError(null);
+      }
+    } finally {
+      setDeletingDraftId(null);
     }
   }
 
@@ -774,6 +791,7 @@ export function EditorShell({
     setCollectionsPopup({});
     setTemplateId(seed.templateId);
     setActiveDraftId(null);
+    setIsNewUnsavedDraft(true);
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
     setSavedSnapshot(null);
@@ -783,6 +801,12 @@ export function EditorShell({
     setSwitching(false);
     setTemplatesOpen(false);
     if (!showPuck) setPreviewNonce((n) => n + 1);
+  }
+
+  // ---- Add New Draft ----
+  function handleAddNewDraft() {
+    setDraftsOpen(false);
+    setTemplatesOpen(true);
   }
 
   // The guide's "Don't show again" persists the dismissal; closing/skipping is
@@ -835,6 +859,28 @@ export function EditorShell({
     []
   );
 
+  async function handleOpenPublicPreview() {
+    setOpeningPreview(true);
+    try {
+      const result = await createPreviewSnapshotAction({
+        data: zoneDataRef.current,
+        brandKit,
+        contact,
+        header: headerConfig,
+        collectionsPopup,
+        formLocale,
+      });
+      const base = `${publicOrigin}/w/${slug}`;
+      window.open(
+        "error" in result ? base : `${base}?preview=${result.token}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    } finally {
+      setOpeningPreview(false);
+    }
+  }
+
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
@@ -875,6 +921,20 @@ export function EditorShell({
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
         </Button>
+        <button
+          type="button"
+          disabled={openingPreview}
+          title={t("preview.openInTab")}
+          aria-label={t("preview.openInTab")}
+          onClick={() => void handleOpenPublicPreview()}
+          className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        >
+          {openingPreview ? (
+            <Loader2Icon className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <ExternalLinkIcon className="size-4" aria-hidden />
+          )}
+        </button>
       </div>
     );
   }
@@ -957,7 +1017,7 @@ export function EditorShell({
   }
 
   return (
-    <>
+    <GalleryPickerCacheProvider>
       <MobileBanner publicUrl={`${publicOrigin}/w/${slug}`} />
 
       <BrandColorsContext.Provider value={brandColors}>
@@ -1152,10 +1212,9 @@ export function EditorShell({
         activeDraftId={activeDraftId}
         onApply={(id) => guardThenRun(() => void applyDraft(id))}
         onDelete={(id) => void handleDeleteDraft(id)}
-        onAddNew={() => {
-          setDraftsOpen(false);
-          setTemplatesOpen(true);
-        }}
+        onAddNew={handleAddNewDraft}
+        deletingId={deletingDraftId}
+        unsavedDraftName={isNewUnsavedDraft && activeDraftId === null ? draftName : null}
       />
       <PortfolioEntryDialog
         open={entryOpen}
@@ -1184,7 +1243,8 @@ export function EditorShell({
         }}
         onCancel={() => setPendingAction(null)}
       />
-    </>
+
+    </GalleryPickerCacheProvider>
   );
 }
 

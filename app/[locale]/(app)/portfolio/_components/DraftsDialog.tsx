@@ -19,7 +19,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DraftSummary } from "../_draftActions";
 
@@ -48,6 +48,8 @@ export function DraftsDialog({
   onApply,
   onDelete,
   onAddNew,
+  deletingId = null,
+  unsavedDraftName = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +58,10 @@ export function DraftsDialog({
   onApply: (id: string) => void;
   onDelete: (id: string) => void;
   onAddNew: () => void;
+  /** Id of the draft currently being deleted; disables all interactive elements. */
+  deletingId?: string | null;
+  /** When non-null, an unsaved draft with this name is shown at the top of the list. */
+  unsavedDraftName?: string | null;
 }) {
   const [pendingDelete, setPendingDelete] = useState<DraftSummary | null>(null);
 
@@ -66,8 +72,16 @@ export function DraftsDialog({
     if (!open) setPendingDelete(null);
   }
 
+  const isDeleting = deletingId !== null;
+  const hasUnsaved = unsavedDraftName !== null;
+  // When a delete is in progress, block the dialog from closing.
+  const handleOpenChange = (next: boolean) => {
+    if (isDeleting) return;
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{L.title}</DialogTitle>
@@ -76,14 +90,35 @@ export function DraftsDialog({
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <p className="text-sm text-muted-foreground">{L.subtitle}</p>
 
-          {drafts.length === 0 ? (
+          {drafts.length === 0 && !hasUnsaved ? (
             <p className="border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
               {L.empty}
             </p>
           ) : (
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Unsaved draft entry — shown at the top when the active draft has no DB record yet */}
+              {hasUnsaved && (
+                <li className="border-2 border-dashed border-muted-foreground/40 p-3">
+                  <div className="flex min-w-0 items-center justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                      <span className="min-w-0 flex-1 truncate font-semibold" title={unsavedDraftName!}>
+                        {unsavedDraftName}
+                      </span>
+                      <span className="shrink-0 border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                        Unsaved
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-end gap-1">
+                      <span className="border border-foreground px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
+                        {L.active}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              )}
               {drafts.map((d) => {
                 const isActive = d.id === activeDraftId;
+                const isBeingDeleted = d.id === deletingId;
                 return (
                   <li
                     key={d.id}
@@ -108,20 +143,34 @@ export function DraftsDialog({
                           variant="outline"
                           aria-label={`Apply ${d.name}`}
                           title={`Apply ${d.name}`}
+                          disabled={isDeleting}
                           onClick={() => onApply(d.id)}
                         >
                           <Check />
                         </Button>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={`Delete ${d.name}`}
-                          title={`Delete ${d.name}`}
-                          onClick={() => setPendingDelete(d)}
-                        >
-                          <Trash2 />
-                        </Button>
+                        {isBeingDeleted ? (
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Deleting ${d.name}`}
+                            disabled
+                          >
+                            <Loader2 className="animate-spin" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            aria-label={`Delete ${d.name}`}
+                            title={`Delete ${d.name}`}
+                            disabled={isDeleting}
+                            onClick={() => setPendingDelete(d)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </li>
@@ -132,10 +181,10 @@ export function DraftsDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" disabled={isDeleting} onClick={() => onOpenChange(false)}>
             {L.close}
           </Button>
-          <Button type="button" onClick={onAddNew}>
+          <Button type="button" disabled={isDeleting} onClick={onAddNew}>
             {L.addNew}
           </Button>
         </DialogFooter>

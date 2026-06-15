@@ -1447,7 +1447,8 @@
           "show": "Preview",
           "edit": "Edit",
           "title": "Live preview",
-          "empty": "Nothing to preview yet. Add some sections, then come back."
+          "empty": "Nothing to preview yet. Add some sections, then come back.",
+          "openInTab": "Open in new tab"
         },
         "photos": "Photos",
         "templates": "Templates",

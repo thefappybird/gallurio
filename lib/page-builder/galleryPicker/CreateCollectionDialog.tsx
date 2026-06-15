@@ -30,7 +30,7 @@ const L = {
   cancel: "Cancel",
   errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
   errSize: "Each photo must be under 10 MB.",
-  errDim: "Photos must be at least 600px on the shorter side.",
+  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
   errCreate: "Could not create the collection. Please try again.",
   removePhoto: "Remove photo",

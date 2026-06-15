@@ -37,6 +37,8 @@ type Props = {
   className?: string;
   editable?: boolean;
   startInDisplayMode?: boolean;
+  /** Optional style applied to the Apply/Accept action button. Use to match a parent form's submit button style. */
+  applyButtonStyle?: React.CSSProperties;
   labels?: {
     searchPlaceholder: string;
     searching: string;
@@ -78,6 +80,7 @@ function BaseLocationPicker({
   labels,
   editable,
   startInDisplayMode,
+  applyButtonStyle,
 }: Props) {
   const resolvedLabels = labels ?? {
     searchPlaceholder: "Search venue or address",
@@ -341,48 +344,67 @@ function BaseLocationPicker({
   // ── edit mode rendering (existing UI + editable action buttons) ──────────
   return (
     <div className={cn("flex flex-col gap-2", className)}>
+      {/* Search input row — Apply button sits beside the input when starting from empty */}
       <div ref={searchWrapperRef} className="relative">
-        <div className="relative">
-          <SearchIcon
-            className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            id={inputId}
-            type="text"
-            value={query}
-            disabled={disabled}
-            maxLength={240}
-            autoComplete="off"
-            role="combobox"
-            aria-expanded={open}
-            aria-controls={listboxId}
-            placeholder={resolvedLabels.searchPlaceholder}
-            className="pl-8 pr-16"
-            onChange={(e) => setQuery(e.target.value)}
-            onBlur={() => commitAddress(query.trim())}
-            onFocus={() => {
-              if (results.length > 0) setOpen(true);
-            }}
-          />
-          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-            {searching ? (
-              <Loader2Icon
-                className="size-4 animate-spin text-muted-foreground"
-                aria-label={resolvedLabels.searching}
-              />
-            ) : null}
-            {hasValue && !disabled ? (
-              <button
-                type="button"
-                onClick={clear}
-                aria-label={resolvedLabels.clear}
-                className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
-              >
-                <XIcon className="size-4" />
-              </button>
-            ) : null}
+        <div className={cn("flex items-center gap-2", editable && editOriginEmpty && "flex-nowrap")}>
+          <div className="relative min-w-0 flex-1">
+            <SearchIcon
+              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              id={inputId}
+              type="text"
+              value={query}
+              disabled={disabled}
+              maxLength={240}
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={listboxId}
+              placeholder={resolvedLabels.searchPlaceholder}
+              className="pl-8 pr-16"
+              onChange={(e) => setQuery(e.target.value)}
+              onBlur={() => commitAddress(query.trim())}
+              onFocus={() => {
+                if (results.length > 0) setOpen(true);
+              }}
+            />
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {searching ? (
+                <Loader2Icon
+                  className="size-4 animate-spin text-muted-foreground"
+                  aria-label={resolvedLabels.searching}
+                />
+              ) : null}
+              {hasValue && !disabled ? (
+                <button
+                  type="button"
+                  onClick={clear}
+                  aria-label={resolvedLabels.clear}
+                  className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+                >
+                  <XIcon className="size-4" />
+                </button>
+              ) : null}
+            </div>
           </div>
+
+          {/* Apply button beside the input — shown only when starting from an empty location */}
+          {editable && editOriginEmpty ? (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleCommit}
+              style={applyButtonStyle}
+              className={cn(
+                "shrink-0 px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+                !applyButtonStyle && "rounded-md bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+            >
+              {resolvedLabels.apply ?? "Apply"}
+            </button>
+          ) : null}
         </div>
 
         {open && (searched || results.length > 0) ? (
@@ -432,42 +454,34 @@ function BaseLocationPicker({
         {resolvedLabels.dragHint}
       </p>
 
-      {/* editable action buttons */}
-      {editable ? (
+      {/* Cancel / Accept buttons — shown when editing an existing (non-empty) location */}
+      {editable && !editOriginEmpty ? (
         <div className="flex items-center gap-2">
-          {editOriginEmpty ? (
-            // Empty-origin: single Apply button
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={handleCancel}
+            className={cn(
+              "border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+              !applyButtonStyle && "rounded-md",
+            )}
+          >
+            {resolvedLabels.cancel ?? "Cancel"}
+          </button>
+          {dirty ? (
             <button
               type="button"
               disabled={disabled}
               onClick={handleCommit}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              style={applyButtonStyle}
+              className={cn(
+                "px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+                !applyButtonStyle && "rounded-md bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
             >
-              {resolvedLabels.apply ?? "Apply"}
+              {resolvedLabels.accept ?? "Accept"}
             </button>
-          ) : (
-            // Populated-origin: Cancel always + Accept only when dirty
-            <>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={handleCancel}
-                className="rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-              >
-                {resolvedLabels.cancel ?? "Cancel"}
-              </button>
-              {dirty ? (
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={handleCommit}
-                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                >
-                  {resolvedLabels.accept ?? "Accept"}
-                </button>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </div>
       ) : null}
     </div>

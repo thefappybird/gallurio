@@ -23,7 +23,38 @@ import {
   FLEX_JUSTIFY_MAP,
   FLEX_ALIGN_MAP,
   type BlockStyle,
+  type HighlightShape,
+  type HighlightSize,
 } from "@/lib/page-builder/styleToolkit";
+
+// Highlight (marker band) appearance — mirrors GalleryText.tsx so all blocks
+// use the same visual output without a shared import cycle.
+const HL_RADIUS: Record<HighlightShape, string> = {
+  sharp: "0",
+  subtle: "0.15em",
+  rounded: "0.6em",
+};
+
+const HL_PADDING: Record<HighlightSize, string> = {
+  sm: "0.05em 0.2em",
+  md: "0.1em 0.3em",
+  lg: "0.2em 0.45em",
+};
+
+function highlightBandStyle(
+  token: BlockStyle["highlightToken"],
+  shape: HighlightShape | undefined,
+  size: HighlightSize | undefined
+): React.CSSProperties {
+  return {
+    background: colorTokenToVar(token) ?? "var(--pf-color-accent)",
+    color: "inherit",
+    padding: HL_PADDING[size ?? "md"],
+    borderRadius: HL_RADIUS[shape ?? "subtle"],
+    boxDecorationBreak: "clone",
+    WebkitBoxDecorationBreak: "clone",
+  };
+}
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -61,6 +92,7 @@ const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
 export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
   const textContent = asText(text);
   const Tag = level;
+  const hl = _style?.highlight;
   return (
     <div
       style={{
@@ -79,7 +111,13 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
           margin: 0,
         }}
       >
-        {textContent}
+        {hl ? (
+          <mark style={highlightBandStyle(_style?.highlightToken, _style?.highlightShape, _style?.highlightSize)}>
+            {textContent}
+          </mark>
+        ) : (
+          textContent
+        )}
       </Tag>
     </div>
   );
@@ -119,6 +157,7 @@ export const textDefaultProps: TextBlockProps = {
 
 export function TextBlock({ _style, text }: TextBlockProps) {
   const textContent = asText(text);
+  const hl = _style?.highlight;
   return (
     <div
       style={{
@@ -128,7 +167,13 @@ export function TextBlock({ _style, text }: TextBlockProps) {
       {...resolveBlockAttrs(_style)}
     >
       <p style={{ fontSize: "inherit", lineHeight: 1.7, color: "inherit", margin: 0, whiteSpace: "pre-line" }}>
-        {textContent}
+        {hl ? (
+          <mark style={highlightBandStyle(_style?.highlightToken, _style?.highlightShape, _style?.highlightSize)}>
+            {textContent}
+          </mark>
+        ) : (
+          textContent
+        )}
       </p>
     </div>
   );
@@ -249,7 +294,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
-  const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
+  const tkBorderRadius = "var(--pf-radius)";
   const customTextColor = colorTokenToVar(_style?.textColorToken);
   const colorVar = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-primary)";
 

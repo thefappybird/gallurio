@@ -101,6 +101,11 @@ export type BlockStyle = {
   italic?: boolean;
   underline?: boolean;
   align?: TextAlign;
+  // Text highlight (marker band) — Heading and Text blocks only.
+  highlight?: boolean;
+  highlightToken?: StyleColorToken | string;
+  highlightShape?: HighlightShape;
+  highlightSize?: HighlightSize;
   // Carousel-only: floating-overlay text padding (shared) + per-target text
   // styling. Heading and description are styled independently and threaded into
   // GalleryHeader by GalleryCarouselBlock. All optional; supersedes the earlier

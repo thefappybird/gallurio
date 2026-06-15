@@ -31,6 +31,8 @@ describe("StyleToolkitField — 3-tab panel", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.getByText("Typography")).toBeTruthy();
+    // Typography controls live inside the collapsed drawer — expand it first.
+    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
     expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Underline" })).toBeTruthy();
@@ -39,6 +41,9 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("switching to Layout tab shows Gap control", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    // Gap lives inside the collapsed "Layout" drawer (aria-expanded distinguishes it
+    // from the "Layout" tab button which has no aria-expanded attribute).
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByText("Gap")).toBeTruthy();
   });
 
@@ -46,6 +51,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={undefined} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(true);
@@ -55,6 +61,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={{ bold: true }} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(false);
@@ -69,6 +76,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("Layout tab shows Align and Justify when no fieldId (no Puck provider)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByText("Align")).toBeTruthy();
     expect(screen.getByText("Justify")).toBeTruthy();
   });
@@ -84,6 +92,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.getByText("Frame")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
     expect(screen.getByRole("button", { name: "No shadow" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Small" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Medium" })).toBeTruthy();
@@ -93,6 +102,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("Layout tab shows Top spacing and Bottom spacing controls", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Spacing" }));
     expect(screen.getByText("Top spacing")).toBeTruthy();
     expect(screen.getByText("Bottom spacing")).toBeTruthy();
   });
@@ -106,6 +116,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("hides the Bold control for Heading blocks", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Heading" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
     expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
   });
@@ -115,8 +126,8 @@ describe("StyleToolkitField — 3-tab panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.queryByText("Frame")).toBeNull();
     expect(screen.queryByText("Typography")).toBeNull();
-    // Animations remain available.
-    expect(screen.getByText("Animations")).toBeTruthy();
+    // Effects drawer remains available for entrance animations.
+    expect(screen.getByText("Effects")).toBeTruthy();
   });
 
   it("hides Frame and the shared Typography for the GalleryCarousel (uses drawers)", () => {
@@ -272,6 +283,8 @@ describe("padding lives in the Layout tab", () => {
         setProp={() => {}}
       />,
     );
+    // Padding lives inside the collapsed Spacing drawer — expand it first.
+    fireEvent.click(screen.getByRole("button", { name: "Spacing" }));
     expect(screen.getByText("Padding")).toBeInTheDocument();
   });
 

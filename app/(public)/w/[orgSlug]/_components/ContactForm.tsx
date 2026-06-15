@@ -523,6 +523,7 @@ export function ContactForm({
                     lng: field.value.lng ?? null,
                   }}
                   compact={compactLocationPicker}
+                  applyButtonStyle={buildButtonStyle(submitAppearance, false)}
                   onChange={(value) =>
                     field.onChange({
                       label: value.address || null,

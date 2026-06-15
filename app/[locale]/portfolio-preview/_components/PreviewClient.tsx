@@ -6,7 +6,7 @@ import { puckConfig } from "@/lib/page-builder/config";
 import type { PuckData } from "@/lib/page-builder/types";
 import type { RenderWorkspace } from "@/lib/page-builder/serverContext";
 
-const LOCAL_DRAFT_VERSION = 1;
+const LOCAL_DRAFT_VERSION = 2;
 
 type DraftShape = {
   version?: number;

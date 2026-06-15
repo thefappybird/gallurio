@@ -21,7 +21,7 @@ describe("PreviewClient", () => {
     window.localStorage.setItem(
       KEY,
       JSON.stringify({
-        version: 1,
+        version: 2,
         data: {
           home: { content: [{ type: "Heading", props: { id: "h1", text: "Hi" } }], root: {} },
           gallery: { content: [], root: {} },

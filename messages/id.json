@@ -1447,7 +1447,8 @@
           "show": "Pratinjau",
           "edit": "Edit",
           "title": "Pratinjau langsung",
-          "empty": "Belum ada yang bisa dipratinjau. Tambahkan beberapa bagian, lalu kembali."
+          "empty": "Belum ada yang bisa dipratinjau. Tambahkan beberapa bagian, lalu kembali.",
+          "openInTab": "Buka di tab baru"
         },
         "photos": "Foto",
         "templates": "Template",
