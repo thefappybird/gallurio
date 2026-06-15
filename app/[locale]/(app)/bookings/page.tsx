@@ -7,6 +7,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { listBookings, getBookingById } from "./_data/bookings-queries";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { ViewToggle, type BookingsView } from "./_components/view-toggle";
 import { CalendarBookingManager } from "./_components/calendar-booking-manager";
 import { TableBookingManager } from "./_components/table-booking-manager";
@@ -136,7 +137,7 @@ export default async function BookingsPage({
     to: sp.to ? new Date(sp.to) : null,
     includeCancelled: sp.includeCancelled === "1",
     includePast: showPastParam,
-    workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? "UTC",
+    workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ,
     // A team selection narrows within the caller's visibility scope; an empty
     // selection falls back to the full visibility scope (owner: undefined = all).
     teamIds: selectedTeamIds.length > 0 ? selectedTeamIds : allowedTeamIds,

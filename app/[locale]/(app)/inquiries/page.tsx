@@ -23,6 +23,7 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
 
 export async function generateMetadata({
   params,
@@ -122,7 +123,7 @@ export default async function InquiriesPage({
         {
           includePast: false,
           includeCancelled: false,
-          workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? "UTC",
+          workspaceTimezone: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ,
           teamIds: allowedTeamIds,
         },
         undefined
@@ -156,7 +157,7 @@ export default async function InquiriesPage({
         })),
         clientName: q.name ?? null,
       })),
-      { today, tz: (workspace as { timezone?: string | null }).timezone ?? "UTC" }
+      { today, tz: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ }
     );
 
     // Keep only active booking statuses for the calendar.
@@ -169,7 +170,7 @@ export default async function InquiriesPage({
   }
 
   // Compute conflicts for non-booked inquiries in the current page.
-  const tz = (workspace as { timezone?: string | null }).timezone ?? "UTC";
+  const tz = (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
   const conflictInputs = items
     .filter((inq) => !isBookedInquiryStatus(inq.status))
     .map((inq) => ({
