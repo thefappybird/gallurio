@@ -120,38 +120,51 @@ export function InquiriesPageClient({
 
   return (
     <>
-      {/* Status tabs with counts */}
-      <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={t("title")}>
-        {TABS.map((tab) => {
-          const count = counts[tab];
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => selectTab(tab)}
-              className={cn(
-                "inline-flex min-h-11 items-center gap-1.5 border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-9",
-                isActive
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-card text-muted-foreground hover:bg-accent/40"
-              )}
-            >
-              <span>{t(`tabs.${tab}`)}</span>
-              <span
-                className={cn(
-                  "tabular-nums text-xs",
-                  isActive ? "text-background/70" : "text-muted-foreground/70"
-                )}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
+      {/* View toggle — shown in both views */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        <InquiryViewToggle view={isCalendar ? "calendar" : "table"} />
       </div>
+
+      {isCalendar ? (
+        <InquiriesCalendarManager events={events} locale={locale} />
+      ) : (
+        <>
+          {/* Status tabs with counts */}
+          <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={t("title")}>
+            {TABS.map((tab) => {
+              const count = counts[tab];
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => selectTab(tab)}
+                  className={cn(
+                    "inline-flex min-h-11 items-center gap-1.5 border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-9",
+                    isActive
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-card text-muted-foreground hover:bg-accent/40"
+                  )}
+                >
+                  <span>{t(`tabs.${tab}`)}</span>
+                  <span
+                    className={cn(
+                      "tabular-nums text-xs",
+                      isActive ? "text-background/70" : "text-muted-foreground/70"
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
       {/* Date range */}
       <div className="flex flex-wrap items-end gap-3">
