@@ -2191,6 +2191,7 @@ function BookingTabs({
         <SectionHeader label={tFields("location")} />
         <div className="flex flex-col gap-1 py-1.5">
           <LocationPicker
+            editable
             value={{
               address:
                 "location.address" in pending

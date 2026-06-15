@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LocationDisplay } from "@/components/ui/location-picker";
 
 export type InquirySessionView = {
   startDate: string;
@@ -70,7 +71,13 @@ export function EventRequestCard({
           </div>
           <div className="flex flex-col gap-0.5 col-span-2 sm:col-span-1">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("location")}</span>
-            <span className="text-sm break-words">{locationLabel || t("none")}</span>
+            <LocationDisplay
+              value={{
+                address: locationLabel ?? "",
+                lat: location?.lat ?? null,
+                lng: location?.lng ?? null,
+              }}
+            />
           </div>
         </div>
 

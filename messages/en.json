@@ -275,7 +275,12 @@
         "searching": "Searching…",
         "noResults": "No matches. Try a different search.",
         "dragHint": "Drag the pin to fine-tune the exact spot.",
-        "clear": "Clear location"
+        "clear": "Clear location",
+        "changeLocation": "Change location",
+        "accept": "Accept",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "currentAddressLabel": "Selected location"
       },
       "eventTypes": {
         "wedding": "Wedding",
