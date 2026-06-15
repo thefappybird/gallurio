@@ -22,6 +22,7 @@ import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
+import { useGalleryPickerCache } from "./GalleryPickerCacheContext";
 import type { PickerCollection, PickerItem } from "./types";
 
 // Plain strings — the Puck field panel is not wrapped in an IntlProvider.
@@ -52,7 +53,7 @@ const L = {
   dropActive: "Drop to upload",
   errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
   errSize: "Each photo must be under 10 MB.",
-  errDim: "Photos must be at least 600px on the shorter side.",
+  errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
 };
 
@@ -120,6 +121,7 @@ function asCollectionSelection(value: MediaPickerCollectionSelection[]): MediaPi
 
 export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: Props) {
   const { state, retry } = usePickerData();
+  const cache = useGalleryPickerCache();
   const [nav, setNav] = useState<Nav>({ kind: "collections" });
   const [feed, setFeed] = useState<FeedState>(EMPTY_FEED);
   const [createOpen, setCreateOpen] = useState(false);
@@ -162,6 +164,19 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
 
   const fetchFeed = useCallback(
     async (id: string, cursor: string | null) => {
+      // First page: serve from session cache if available (avoids a redundant
+      // network round-trip when the user re-opens a collection they already browsed).
+      if (cursor === null) {
+        const cached = cache?.getPages(id);
+        if (cached && cached.length > 0) {
+          const allItems = cached.flatMap((p) => p.items);
+          const lastCursor = cached[cached.length - 1].nextCursor;
+          remember(allItems);
+          setFeed({ items: allItems, nextCursor: lastCursor, loading: false, error: false });
+          return;
+        }
+      }
+
       const token = ++fetchToken.current;
       setFeed((f) => ({ ...f, loading: true, error: false }));
       try {
@@ -171,6 +186,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { items: PickerItem[]; nextCursor: string | null };
         remember(data.items);
+        cache?.addPage(id, { items: data.items, nextCursor: data.nextCursor });
         if (token !== fetchToken.current) return; // stale: a newer view superseded this fetch
         setFeed((f) => ({
           items: cursor ? [...f.items, ...data.items] : data.items,
@@ -183,7 +199,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         setFeed((f) => ({ ...f, loading: false, error: true }));
       }
     },
-    [remember]
+    [cache, remember]
   );
 
   function openCollection(id: string, name: string) {
@@ -369,6 +385,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     if (dimErr) setUploadError(L.errDim);
     else if (generalErr) setUploadError(L.errUpload);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    // Bust the cache for the affected collection so re-opening it fetches fresh data.
+    if (targetCollection) {
+      cache?.bust(targetCollection);
+    } else {
+      cache?.bust(ALL_PHOTOS_ID);
+    }
     retry(); // refresh collection covers/counts
   }
 
@@ -555,6 +577,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         onOpenChange={setCreateOpen}
         onCreated={() => {
           setCreateOpen(false);
+          cache?.bust(); // invalidate all cached pages so the new collection appears
           retry();
         }}
       />

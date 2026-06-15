@@ -5,7 +5,7 @@ import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
-import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import { findPublishedWorkspaceBySlug, findPreviewSnapshot } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 
@@ -15,6 +15,7 @@ import { ComingSoonFallback } from "./_components/ComingSoonFallback";
 
 type PageProps = {
   params: Promise<{ orgSlug: string }>;
+  searchParams?: Promise<{ preview?: string }>;
 };
 
 // ---------------------------------------------------------------------------
@@ -51,17 +52,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function PortfolioHomePage({ params }: PageProps) {
+export default async function PortfolioHomePage({ params, searchParams }: PageProps) {
   const { orgSlug } = await params;
+  const { preview: previewToken } = (await searchParams) ?? {};
+
   const workspace = await findPublishedWorkspaceBySlug(orgSlug);
   if (!workspace) notFound();
+
+  // If a preview token is present, look up the short-lived snapshot. Falls back
+  // to published data on unknown/expired tokens so stale links degrade gracefully.
+  const snapshot = previewToken
+    ? (await findPreviewSnapshot(previewToken, String(workspace._id))) as { data?: { home?: unknown } } | null
+    : null;
 
   // publicPage is guaranteed non-null here — the query filters on publishedAt != null.
   // homeData is stored as Schema.Types.Mixed (raw `unknown` from the lean doc).
   // Normalize it before <Render>: Puck's RSC renderer assumes a well-formed Data
   // object (it does `'props' in data.root` with no defaulting), so legacy/partial
   // persisted data would 500 the whole route. null -> show the ComingSoon fallback.
-  const rawHome = (workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home;
+  const rawHome = snapshot
+    ? (snapshot.data as { home?: unknown } | null | undefined)?.home
+    : (workspace.publicPage?.data as { home?: unknown } | null | undefined)?.home;
+
   const homeData = normalizePublicPageData(
     rawHome,
     new Set(Object.keys(puckConfig.components)),
@@ -84,11 +96,14 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     );
   }
 
-  // buildRenderWorkspace copies all fields (including contact) from the DB doc
-  // into the render context — preventing silent omissions at this boundary.
+  // buildRenderWorkspace copies workspace-level fields (branding, contact, etc.).
+  // When rendering a preview snapshot, block content (data.home) is swapped above,
+  // but brand colors, contact config, and header still reflect the published workspace.
+  // TODO: apply snapshot.brandKit / snapshot.contact / snapshot.header to renderWorkspace
+  // so theme and config changes are also visible in the new-tab preview.
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
-    editorPreview: false,
+    editorPreview: !!snapshot,
     locale,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.

@@ -1447,7 +1447,8 @@
           "show": "Pratonton",
           "edit": "Edit",
           "title": "Pratonton langsung",
-          "empty": "Tiada apa-apa untuk dipratonton lagi. Tambah beberapa bahagian, kemudian kembali."
+          "empty": "Tiada apa-apa untuk dipratonton lagi. Tambah beberapa bahagian, kemudian kembali.",
+          "openInTab": "Buka dalam tab baharu"
         },
         "photos": "Foto",
         "templates": "Templat",

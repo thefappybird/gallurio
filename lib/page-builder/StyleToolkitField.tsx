@@ -879,118 +879,143 @@ export function DesignTab({
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
 
   return (
-    <div className="flex flex-col gap-4 p-3">
-      {/* Typography — Bold/Italic/Underline + text align as one 6-icon row */}
+    <div className="flex flex-col gap-px p-3">
+      {/* Typography drawer */}
       {showTypography && (
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Typography
-        </span>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {blockType !== "Heading" && (
-            <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
-          )}
-          <ToolbarToggle active={!!s.italic} title="Italic" Icon={Italic} onClick={() => set({ italic: !s.italic })} />
-          <ToolbarToggle active={!!s.underline} title="Underline" Icon={Underline} onClick={() => set({ underline: !s.underline })} />
-          {!isButton && (
-            <>
-              <ToolbarToggle
-                active={s.align === "left"}
-                title="Align left"
-                Icon={AlignLeft}
-                onClick={() => set({ align: s.align === "left" ? undefined : "left" })}
-              />
-              <ToolbarToggle
-                active={s.align === "center"}
-                title="Align center"
-                Icon={AlignCenter}
-                onClick={() => set({ align: s.align === "center" ? undefined : "center" })}
-              />
-              <ToolbarToggle
-                active={s.align === "right"}
-                title="Align right"
-                Icon={AlignRight}
-                onClick={() => set({ align: s.align === "right" ? undefined : "right" })}
-              />
-            </>
-          )}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5">
-            <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="text-xs text-muted-foreground">Text color</span>
+        <Drawer title="Typography">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {blockType !== "Heading" && (
+              <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
+            )}
+            <ToolbarToggle active={!!s.italic} title="Italic" Icon={Italic} onClick={() => set({ italic: !s.italic })} />
+            <ToolbarToggle active={!!s.underline} title="Underline" Icon={Underline} onClick={() => set({ underline: !s.underline })} />
+            {!isButton && (
+              <>
+                <ToolbarToggle
+                  active={s.align === "left"}
+                  title="Align left"
+                  Icon={AlignLeft}
+                  onClick={() => set({ align: s.align === "left" ? undefined : "left" })}
+                />
+                <ToolbarToggle
+                  active={s.align === "center"}
+                  title="Align center"
+                  Icon={AlignCenter}
+                  onClick={() => set({ align: s.align === "center" ? undefined : "center" })}
+                />
+                <ToolbarToggle
+                  active={s.align === "right"}
+                  title="Align right"
+                  Icon={AlignRight}
+                  onClick={() => set({ align: s.align === "right" ? undefined : "right" })}
+                />
+              </>
+            )}
           </div>
-          <ColorSwatchRow
-            value={s.textColorToken}
-            onChange={(t) => set({ textColorToken: t })}
-          />
-        </div>
-        {isButton && (
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
-              <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="text-xs text-muted-foreground">Button color</span>
+              <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="text-xs text-muted-foreground">Text color</span>
             </div>
             <ColorSwatchRow
-              value={s.buttonColorToken}
-              onChange={(t) => set({ buttonColorToken: t })}
+              value={s.textColorToken}
+              onChange={(t) => set({ textColorToken: t })}
             />
           </div>
-        )}
-        {/* Font — 2-column with reset */}
-        <div className="flex items-center justify-between gap-2">
-          <span className="shrink-0 text-xs text-muted-foreground">Font</span>
-          <div className="flex items-center gap-1">
-            <select
-              value={s.fontFamily ?? ""}
-              onChange={(e) =>
-                set({
-                  fontFamily: e.target.value
-                    ? (e.target.value as PortfolioFontKey)
-                    : undefined,
-                })
-              }
-              className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              <option value="">Theme font</option>
-              {PORTFOLIO_FONT_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {PORTFOLIO_FONTS[key].label}
-                </option>
-              ))}
-            </select>
-            <ResetButton onClick={() => set({ fontFamily: undefined })} label="Font" />
+          {isButton && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">Button color</span>
+              </div>
+              <ColorSwatchRow
+                value={s.buttonColorToken}
+                onChange={(t) => set({ buttonColorToken: t })}
+              />
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+            <div className="flex items-center gap-1">
+              <select
+                value={s.fontFamily ?? ""}
+                onChange={(e) =>
+                  set({
+                    fontFamily: e.target.value
+                      ? (e.target.value as PortfolioFontKey)
+                      : undefined,
+                  })
+                }
+                className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">Theme font</option>
+                {PORTFOLIO_FONT_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {PORTFOLIO_FONTS[key].label}
+                  </option>
+                ))}
+              </select>
+              <ResetButton onClick={() => set({ fontFamily: undefined })} label="Font" />
+            </div>
           </div>
-        </div>
-        {blockType !== "Heading" && (
-          <NumberInputRow
-            label="Font size"
-            value={s.fontSize}
-            min={STYLE_LIMITS.fontSize.min}
-            max={STYLE_LIMITS.fontSize.max}
-            onChange={(v) => set({ fontSize: v })}
-          />
-        )}
-      </div>
+          {blockType !== "Heading" && (
+            <NumberInputRow
+              label="Font size"
+              value={s.fontSize}
+              min={STYLE_LIMITS.fontSize.min}
+              max={STYLE_LIMITS.fontSize.max}
+              onChange={(v) => set({ fontSize: v })}
+            />
+          )}
+          {/* Highlight band — Heading and Text blocks only */}
+          {(blockType === "Heading" || blockType === "Text") && (
+            <div className="flex flex-col gap-2">
+              <HighlightToggle
+                label="Highlight"
+                on={!!s.highlight}
+                onToggle={() => set({ highlight: !s.highlight })}
+              />
+              {s.highlight && (
+                <div className="flex flex-col gap-2">
+                  <ColorSwatchRow
+                    value={s.highlightToken}
+                    onChange={(t) => set({ highlightToken: t })}
+                    allowNone={false}
+                  />
+                  <ChoiceRow
+                    label="Shape"
+                    value={(s.highlightShape ?? "subtle") as HighlightShape}
+                    options={HIGHLIGHT_SHAPE_OPTIONS}
+                    onChange={(v) => set({ highlightShape: v as HighlightShape })}
+                  />
+                  <ChoiceRow
+                    label="Size"
+                    value={(s.highlightSize ?? "md") as HighlightSize}
+                    options={HIGHLIGHT_SIZE_OPTIONS}
+                    onChange={(v) => set({ highlightSize: v as HighlightSize })}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </Drawer>
       )}
 
+      {/* Carousel per-target typography drawers */}
       {isCarousel && (
-        <div className="flex flex-col gap-2">
+        <>
           <Drawer title="Heading">
             <CarouselTargetControls target="heading" s={s} set={set} />
           </Drawer>
           <Drawer title="Description">
             <CarouselTargetControls target="description" s={s} set={set} />
           </Drawer>
-        </div>
+        </>
       )}
 
-      {/* Frame — hidden for text/button leaf blocks and gallery blocks */}
+      {/* Frame drawer — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Frame
-          </span>
+        <Drawer title="Frame">
           <NumberInputRow
             label="Border width"
             value={s.borderWidth}
@@ -1019,15 +1044,11 @@ export function DesignTab({
             options={SHADOW_OPTIONS}
             onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
           />
-        </div>
+        </Drawer>
       )}
 
-      {/* Animations */}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Animations
-        </span>
-        {/* Entrance — 2-column with reset */}
+      {/* Effects drawer — entrance animation + hover */}
+      <Drawer title="Effects">
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Entrance</span>
           <div className="flex items-center gap-1">
@@ -1053,7 +1074,6 @@ export function DesignTab({
           suffix="ms"
           onChange={(v) => set({ animationDuration: v })}
         />
-        {/* Hover effect — 2-column with reset */}
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Hover effect</span>
           <div className="flex items-center gap-1">
@@ -1071,7 +1091,7 @@ export function DesignTab({
             <ResetButton onClick={() => set({ hover: "none" })} label="Hover effect" />
           </div>
         </div>
-      </div>
+      </Drawer>
     </div>
   );
 }
@@ -1362,9 +1382,9 @@ export function LayoutTabBody({
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
     return (
-      <div className="flex flex-col gap-4 p-3">
+      <div className="flex flex-col gap-px p-3">
         {isButton && p && setProp && (
-          <>
+          <Drawer title="Layout">
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
               <div className="flex items-center gap-1.5">
@@ -1404,87 +1424,95 @@ export function LayoutTabBody({
                 ))}
               </div>
             </div>
-          </>
+            <IconRow
+              label="Block position"
+              value={s.selfAlign}
+              options={BLOCK_POSITION_OPTIONS}
+              onChange={(v) => set({ selfAlign: v })}
+            />
+            <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+          </Drawer>
         )}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Position</span>
-          <IconRow
-            label="Block position"
-            value={s.selfAlign}
-            options={BLOCK_POSITION_OPTIONS}
-            onChange={(v) => set({ selfAlign: v })}
-          />
-        </div>
-        <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
-        {!isButton && <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />}
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Spacing</span>
+        {!isButton && (
+          <Drawer title="Layout">
+            <IconRow
+              label="Block position"
+              value={s.selfAlign}
+              options={BLOCK_POSITION_OPTIONS}
+              onChange={(v) => set({ selfAlign: v })}
+            />
+            <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+            <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+          </Drawer>
+        )}
+        <Drawer title="Spacing">
           <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
           <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-        </div>
+        </Drawer>
       </div>
     );
   }
 
   // Container / generic block layout
   return (
-    <div className="flex flex-col gap-4 p-3">
-      {isFlexContainer && <PaddingControls s={s} set={set} />}
-      <NumberInputRow
-        label="Gap"
-        value={s.gap}
-        min={0}
-        max={96}
-        suffix="px"
-        onChange={(v) => set({ gap: v })}
-      />
-      {/* Min height — only for flex containers, controlled via block prop */}
-      {isFlexContainer && p !== undefined && setProp && (
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
-          <div className="flex items-center gap-1.5">
-            {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={(p.minHeight as string) === value}
-                onClick={() => setProp("minHeight", value)}
-                className={cn(
-                  "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {isGridChild ? (
-        <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} />
-      ) : (
-        <>
-          <IconRow
-            label="Align"
-            value={s.alignItems}
-            options={ALIGN_OPTIONS}
-            onChange={(v) => set({ alignItems: v })}
-          />
-          {showJustify && (
-            <IconRow
-              label="Justify"
-              value={s.justifyContent}
-              options={JUSTIFY_OPTIONS}
-              onChange={(v) => set({ justifyContent: v })}
-            />
-          )}
-        </>
-      )}
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Spacing</span>
+    <div className="flex flex-col gap-px p-3">
+      <Drawer title="Spacing">
+        {isFlexContainer && <PaddingControls s={s} set={set} />}
         <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
         <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-      </div>
+      </Drawer>
+      <Drawer title="Layout">
+        <NumberInputRow
+          label="Gap"
+          value={s.gap}
+          min={0}
+          max={96}
+          suffix="px"
+          onChange={(v) => set({ gap: v })}
+        />
+        {/* Min height — only for flex containers, controlled via block prop */}
+        {isFlexContainer && p !== undefined && setProp && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
+            <div className="flex items-center gap-1.5">
+              {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={(p.minHeight as string) === value}
+                  onClick={() => setProp("minHeight", value)}
+                  className={cn(
+                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {isGridChild ? (
+          <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} />
+        ) : (
+          <>
+            <IconRow
+              label="Align"
+              value={s.alignItems}
+              options={ALIGN_OPTIONS}
+              onChange={(v) => set({ alignItems: v })}
+            />
+            {showJustify && (
+              <IconRow
+                label="Justify"
+                value={s.justifyContent}
+                options={JUSTIFY_OPTIONS}
+                onChange={(v) => set({ justifyContent: v })}
+              />
+            )}
+          </>
+        )}
+      </Drawer>
     </div>
   );
 }

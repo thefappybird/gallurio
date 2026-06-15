@@ -91,6 +91,55 @@ describe("HeadingBlock", () => {
     const div = container.firstChild as HTMLElement;
     expect(div.style.padding).toBe("");
   });
+
+  it("renders text without a <mark> when highlight is not set", () => {
+    render(<HeadingBlock text="Plain heading" level="h2" />);
+    expect(document.querySelector("mark")).toBeNull();
+    expect(screen.getByText("Plain heading")).toBeTruthy();
+  });
+
+  it("wraps text in <mark> when _style.highlight is true", () => {
+    render(<HeadingBlock text="Highlighted heading" level="h2" _style={{ highlight: true }} />);
+    const mark = document.querySelector("mark");
+    expect(mark).not.toBeNull();
+    expect(mark?.textContent).toBe("Highlighted heading");
+  });
+
+  it("applies highlightToken color to the <mark> background", () => {
+    render(
+      <HeadingBlock
+        text="Colored"
+        level="h2"
+        _style={{ highlight: true, highlightToken: "accent" }}
+      />
+    );
+    const mark = document.querySelector("mark") as HTMLElement;
+    expect(mark.style.background).toBe("var(--pf-color-accent)");
+  });
+
+  it("applies highlightShape 'rounded' border-radius to <mark>", () => {
+    render(
+      <HeadingBlock
+        text="Rounded"
+        level="h2"
+        _style={{ highlight: true, highlightShape: "rounded" }}
+      />
+    );
+    const mark = document.querySelector("mark") as HTMLElement;
+    expect(mark.style.borderRadius).toBe("0.6em");
+  });
+
+  it("applies highlightSize 'lg' padding to <mark>", () => {
+    render(
+      <HeadingBlock
+        text="Large"
+        level="h2"
+        _style={{ highlight: true, highlightSize: "lg" }}
+      />
+    );
+    const mark = document.querySelector("mark") as HTMLElement;
+    expect(mark.style.padding).toBe("0.2em 0.45em");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -123,6 +172,38 @@ describe("TextBlock", () => {
     const { container } = render(<TextBlock text="Test" />);
     const div = container.firstChild as HTMLElement;
     expect(div.style.padding).toBe("");
+  });
+
+  it("renders text without a <mark> when highlight is not set", () => {
+    render(<TextBlock text="Plain text" />);
+    expect(document.querySelector("mark")).toBeNull();
+    expect(screen.getByText("Plain text")).toBeTruthy();
+  });
+
+  it("wraps text in <mark> when _style.highlight is true", () => {
+    render(<TextBlock text="Highlighted text" _style={{ highlight: true }} />);
+    const mark = document.querySelector("mark");
+    expect(mark).not.toBeNull();
+    expect(mark?.textContent).toBe("Highlighted text");
+  });
+
+  it("applies highlightToken color to the <mark> background", () => {
+    render(<TextBlock text="Colored" _style={{ highlight: true, highlightToken: "primary" }} />);
+    const mark = document.querySelector("mark") as HTMLElement;
+    expect(mark.style.background).toBe("var(--pf-color-primary)");
+  });
+
+  it("applies highlightShape 'sharp' zero border-radius to <mark>", () => {
+    render(<TextBlock text="Sharp" _style={{ highlight: true, highlightShape: "sharp" }} />);
+    const mark = document.querySelector("mark") as HTMLElement;
+    // jsdom normalises "0" to "0px" for borderRadius
+    expect(mark.style.borderRadius).toBe("0px");
+  });
+
+  it("applies highlightSize 'sm' padding to <mark>", () => {
+    render(<TextBlock text="Small" _style={{ highlight: true, highlightSize: "sm" }} />);
+    const mark = document.querySelector("mark") as HTMLElement;
+    expect(mark.style.padding).toBe("0.05em 0.2em");
   });
 });
 
@@ -349,11 +430,11 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.borderWidth).toBe("");
   });
 
-  it("_style.radius applies borderRadius to the <a> not the wrapper div", () => {
+  it("button borderRadius always comes from var(--pf-radius), not _style.radius", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
     const wrapper = a.parentElement as HTMLElement;
-    expect(a.style.borderRadius).toBe("8px");
+    expect(a.style.borderRadius).toBe("var(--pf-radius)");
     expect(wrapper.style.borderRadius).toBe("");
   });
 

@@ -115,7 +115,7 @@ export function ThemePanelDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => { if (!o) attemptClose(); }}>
-        <DialogContent className="flex max-h-[100dvh] h-[100dvh] w-screen max-w-[100vw] flex-col overflow-hidden sm:h-auto sm:max-h-[85vh] sm:w-auto sm:max-w-2xl lg:max-w-4xl">
+        <DialogContent className="flex max-h-[100dvh] h-[100dvh] w-screen max-w-[100vw] flex-col overflow-hidden sm:h-auto sm:min-h-[520px] sm:max-h-[85vh] sm:w-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t("themeDialog.title")}</DialogTitle>
           </DialogHeader>
