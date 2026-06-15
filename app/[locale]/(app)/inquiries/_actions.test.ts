@@ -6,15 +6,25 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
-let mockCtx: { userId: string; role: "owner" | "staff"; workspaceId: Types.ObjectId };
+let mockCtx: { userId: string; role: "owner" | "staff"; workspaceId: Types.ObjectId; timezone?: string };
 
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId: mockCtx.userId,
     clerkOrgId: "org_test",
     role: mockCtx.role,
-    workspace: { _id: mockCtx.workspaceId, currency: "PHP", name: "Test", slug: "t" },
+    workspace: {
+      _id: mockCtx.workspaceId,
+      currency: "PHP",
+      name: "Test",
+      slug: "t",
+      timezone: mockCtx.timezone ?? "Asia/Manila",
+    },
   }),
+}));
+
+vi.mock("@/lib/bookings/shift-conflicts", () => ({
+  getShiftsOnDate: vi.fn().mockResolvedValue([]),
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
@@ -24,7 +34,9 @@ import {
   saveDraftBookingFieldsAction,
   approveInquiryAction,
   archiveInquiryAction,
+  editInquirySessionsAction,
 } from "./_actions";
+import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -215,5 +227,157 @@ describe("archiveInquiryAction", () => {
     const { inquiry } = await seedDraft(otherWorkspaceId);
     const res = await archiveInquiryAction(String(inquiry._id));
     expect(res).toEqual({ error: "not_found" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// editInquirySessionsAction
+// ---------------------------------------------------------------------------
+
+// A future date far enough away to avoid past-date validation failures.
+function futureDateStr(daysAhead: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().slice(0, 10);
+}
+
+function yesterdayStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+async function seedInquiryWithDraft(
+  wid: Types.ObjectId,
+  overrides: Partial<{
+    status: string;
+    sessions: Array<{ startDate: string; startTime: string; endTime: string }>;
+  }> = {}
+) {
+  const client = await Client.create({
+    workspaceId: wid,
+    name: "Test Client",
+    email: "test@example.com",
+    source: "form",
+  });
+  const startDate = futureDateStr(10);
+  const sessions = overrides.sessions ?? [
+    { startDate, startTime: "09:00", endTime: "17:00" },
+  ];
+  // Use a UTC start corresponding to Manila wall time
+  const utcStart = new Date(`${startDate}T01:00:00Z`); // 09:00 Manila
+  const utcEnd = new Date(`${startDate}T09:00:00Z`);   // 17:00 Manila
+  const booking = await Booking.create({
+    workspaceId: wid,
+    clientId: client._id,
+    clientName: "Test Client",
+    title: "Test Client — inquiry",
+    status: "draft",
+    sessions: [{ startAt: utcStart, endAt: utcEnd }],
+    firstSessionStart: utcStart,
+    lastSessionEnd: utcEnd,
+    amount: { total: 0, deposit: 0, currency: "PHP" },
+  });
+  const inquiry = await Inquiry.create({
+    workspaceId: wid,
+    name: "Test Client",
+    email: "test@example.com",
+    status: overrides.status ?? "new",
+    eventDate: utcStart,
+    clientId: client._id,
+    draftBookingId: booking._id,
+    sessions,
+  });
+  return { client, booking, inquiry };
+}
+
+describe("editInquirySessionsAction", () => {
+  beforeEach(() => {
+    // Reset getShiftsOnDate mock to return no shifts by default
+    vi.mocked(getShiftsOnDate).mockResolvedValue([]);
+  });
+
+  it("returns not_found when inquiry does not exist", async () => {
+    const fakeId = new Types.ObjectId().toString();
+    const res = await editInquirySessionsAction(fakeId, {
+      sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(res).toEqual({ error: "not_found" });
+  });
+
+  it("returns locked when inquiry status is booked", async () => {
+    const { inquiry } = await seedInquiryWithDraft(workspaceId, { status: "booked" });
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(res).toEqual({ error: "locked" });
+  });
+
+  it("returns invalid when session date is in the past", async () => {
+    const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: yesterdayStr(), startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(res).toEqual({ error: "invalid" });
+  });
+
+  it("returns alter_only when session count changes", async () => {
+    // Original inquiry has 1 session; we try to submit 2
+    const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const future = futureDateStr(10);
+    const future2 = futureDateStr(12);
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [
+        { startDate: future, startTime: "09:00", endTime: "17:00" },
+        { startDate: future2, startTime: "09:00", endTime: "17:00" },
+      ],
+    });
+    expect(res).toEqual({ error: "alter_only" });
+  });
+
+  it("returns conflict when getShiftsOnDate returns an overlapping shift", async () => {
+    const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    // Mock an overlapping shift: 08:00–18:00 overlaps 09:00–17:00
+    vi.mocked(getShiftsOnDate).mockResolvedValue([
+      {
+        id: "other",
+        bookingId: "other",
+        sessionIndex: 0,
+        title: "Other Booking",
+        shiftStart: "08:00",
+        shiftEnd: "18:00",
+      },
+    ]);
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: futureDateStr(10), startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(res).toEqual({ error: "conflict" });
+  });
+
+  it("returns ok and updates inquiry sessions and phone on success", async () => {
+    const { inquiry } = await seedInquiryWithDraft(workspaceId);
+    const newDate = futureDateStr(15);
+    const res = await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: newDate, startTime: "10:00", endTime: "16:00" }],
+      phone: "+63 900 111 2222",
+    });
+    expect(res).toEqual({ ok: true });
+
+    const fresh = await Inquiry.findById(inquiry._id).lean();
+    expect(fresh?.sessions?.[0]?.startDate).toBe(newDate);
+    expect(fresh?.phone).toBe("+63 900 111 2222");
+  });
+
+  it("regenerates draft booking with updated firstSessionStart after successful edit", async () => {
+    const { inquiry, booking } = await seedInquiryWithDraft(workspaceId);
+    const newDate = futureDateStr(20);
+    await editInquirySessionsAction(String(inquiry._id), {
+      sessions: [{ startDate: newDate, startTime: "10:00", endTime: "16:00" }],
+    });
+
+    const freshBooking = await Booking.findById(booking._id).lean();
+    // firstSessionStart must be after the original (which was futureDateStr(10))
+    const originalStart = new Date(`${futureDateStr(10)}T01:00:00Z`);
+    expect(freshBooking?.firstSessionStart?.getTime()).toBeGreaterThan(originalStart.getTime());
   });
 });
