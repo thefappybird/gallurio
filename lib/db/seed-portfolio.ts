@@ -3,7 +3,7 @@
  *
  * Usage:  pnpm seed:portfolio
  *
- * What it does (idempotent — safe to re-run):
+ * What it does (idempotent - safe to re-run):
  * - Upserts a DEDICATED demo workspace (slug `portfolio-demo`).
  *   It NEVER touches your real workspace, so the destructive gallery reset below
  *   only ever affects this demo tenant.
@@ -20,6 +20,7 @@ loadEnv();
 import mongoose from "mongoose";
 import { connectDB } from "./mongoose";
 import { Workspace, GalleryCollection, GalleryItem } from "./models";
+import { buildSeedGalleryItem } from "./seedGalleryItem";
 import { HERO_PRESET, CTA_PRESET } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
@@ -72,19 +73,21 @@ async function seedCollection(
     const assetId = `seed-${String(workspaceId)}-${spec.slug}-${i}`;
     const url = `https://picsum.photos/seed/${spec.slug}-${i}/1200/1500`;
 
-    const doc = await GalleryItem.create({
-      workspaceId,
-      collectionId: collection._id,
-      assetId,
-      url,
-      width: 1200,
-      height: 1500,
-      sizeBytes: 300_000,
-      format: "jpg",
-      caption: spec.captions[i],
-      altText: `${spec.name} — ${spec.captions[i]}`,
-      order: i,
-    });
+    const doc = await GalleryItem.create(
+      buildSeedGalleryItem({
+        workspaceId,
+        collectionId: collection._id,
+        assetId,
+        url,
+        width: 1200,
+        height: 1500,
+        sizeBytes: 300_000,
+        format: "jpg",
+        caption: spec.captions[i],
+        altText: `${spec.name} - ${spec.captions[i]}`,
+        order: i,
+      })
+    );
     items.push({ _id: doc._id, assetId, url });
   }
 
@@ -92,7 +95,7 @@ async function seedCollection(
   collection.coverItemId = items[0]._id;
   await collection.save();
 
-  console.log(`  ✓ collection "${spec.name}" (${spec.slug}) — ${items.length} items`);
+  console.log(`  OK collection "${spec.name}" (${spec.slug}) - ${items.length} items`);
   return items;
 }
 
@@ -147,7 +150,7 @@ function buildGalleryData(opts: {
           ...featuredWorkDefaultProps,
           heading: "Featured work",
           subheading: "A few favourites",
-          // Puck persists array fields as objects — exercise the real shape.
+          // Puck persists array fields as objects - exercise the real shape.
           itemIds: opts.featuredItemIds.map((id) => ({ id })),
           layout: "stagger",
         },
@@ -184,7 +187,7 @@ async function main() {
     throw new Error("Refusing to seed in NODE_ENV=production");
   }
 
-  console.log("→ Connecting to MongoDB…");
+  console.log("-> Connecting to MongoDB...");
   await connectDB();
 
   // Resolve the dedicated demo workspace (by slug).
@@ -209,11 +212,11 @@ async function main() {
       plan: "pro",
       onboardingCompletedAt: now,
     });
-    console.log(`  ✓ created demo workspace "${workspace.slug}"`);
+    console.log(`  OK created demo workspace "${workspace.slug}"`);
   } else {
-    console.log(`  ✓ reusing workspace "${workspace.slug}" (${String(workspace._id)})`);
+    console.log(`  OK reusing workspace "${workspace.slug}" (${String(workspace._id)})`);
     console.warn(
-      `  ! resetting this workspace's gallery collections/items so the seed is idempotent`
+      "  ! resetting this workspace's gallery collections/items so the seed is idempotent"
     );
   }
 
@@ -221,9 +224,9 @@ async function main() {
   await GalleryItem.deleteMany({ workspaceId: workspace._id });
   await GalleryCollection.deleteMany({ workspaceId: workspace._id });
 
-  console.log("→ Seeding collections…");
+  console.log("-> Seeding collections...");
   const weddings = await seedCollection(workspace._id, COLLECTIONS[0], 0);
-  const portraits = await seedCollection(workspace._id, COLLECTIONS[1], 1);
+  await seedCollection(workspace._id, COLLECTIONS[1], 1);
 
   const weddingsCollectionId = String(
     (await GalleryCollection.findOne({ workspaceId: workspace._id, slug: "weddings" }).select("_id").lean())!._id
@@ -235,7 +238,7 @@ async function main() {
   const featuredItemIds = weddings.slice(0, 3).map((i) => String(i._id));
   const heroBackgroundPublicId = weddings[0].assetId;
 
-  console.log("→ Writing Puck data + brand kit + contact config, then publishing…");
+  console.log("-> Writing Puck data + brand kit + contact config, then publishing...");
   workspace.set("publicPage", {
     templateId: "wedding-photographer",
     data: {
@@ -253,7 +256,7 @@ async function main() {
       radius: "subtle",
       buttonStyle: "solid",
     },
-    seoTitle: "Portfolio Demo Studio — Wedding & Portrait Photography",
+    seoTitle: "Portfolio Demo Studio - Wedding & Portrait Photography",
     seoDescription: "Fine-art wedding and portrait photography based in Metro Manila.",
     inquiryRecipientEmail: "demo@example.com",
     contact: {
@@ -266,16 +269,16 @@ async function main() {
     lastPublishedAt: now,
     latestVersion: 1,
   });
-  // `data.home`/`data.gallery` are Schema.Types.Mixed — mark modified so Mongoose
+  // `data.home`/`data.gallery` are Schema.Types.Mixed - mark modified so Mongoose
   // persists the freshly-assigned Puck JSON.
   workspace.markModified("publicPage.data");
   await workspace.save();
 
   const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  console.log("\n✓ Seed complete. Test the published portfolio at:");
-  console.log(`    Home    → ${base}/w/${workspace.slug}`);
-  console.log(`    Gallery → ${base}/w/${workspace.slug}/gallery`);
-  console.log(`    Contact → click any "Get in touch" CTA or the header Contact button`);
+  console.log("\nOK Seed complete. Test the published portfolio at:");
+  console.log(`    Home    -> ${base}/w/${workspace.slug}`);
+  console.log(`    Gallery -> ${base}/w/${workspace.slug}/gallery`);
+  console.log('    Contact -> click any "Get in touch" CTA or the header Contact button');
 
   await mongoose.disconnect();
   process.exit(0);

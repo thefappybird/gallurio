@@ -225,11 +225,11 @@ describe("reconcileFeaturedCollections", () => {
     const foreignWs = new Types.ObjectId();
     const foreign = await GalleryCollection.create({ workspaceId: foreignWs, name: "X", slug: "x", isPublic: true });
     const missing = new Types.ObjectId().toString();
-    const data = { root: {}, content: [fwBlock([
+    const data: PuckData = { root: {}, content: [fwBlock([
       { id: String(colA._id), name: "STALE", coverPublicId: "STALE", itemCount: 0 },
       { id: missing },
       { id: String(foreign._id) },
-    ])] } as any;
+    ])] };
     const out = await reconcileFeaturedCollections(ws.toString(), data);
     expect(out.content[0].props.collections).toEqual([{ id: String(colA._id), name: "Weddings", coverPublicId: "cover-pid", itemCount: 2 }]);
   });
@@ -238,7 +238,7 @@ describe("reconcileFeaturedCollections", () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Priv", slug: "p", isPublic: false });
     await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "x", url: "u", order: 0 });
-    const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(col._id) }])] } as any);
+    const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(col._id) }])] });
     expect((out.content[0].props.collections as Array<{ itemCount: number }>)[0].itemCount).toBe(0);
   });
 
@@ -247,7 +247,7 @@ describe("reconcileFeaturedCollections", () => {
     const withItems = await GalleryCollection.create({ workspaceId: ws, name: "A", slug: "a", isPublic: true });
     await GalleryItem.create({ workspaceId: ws, collectionId: withItems._id, assetId: "newest", url: "u", order: 0 });
     const empty = await GalleryCollection.create({ workspaceId: ws, name: "B", slug: "b", isPublic: true });
-    const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(withItems._id) }, { id: String(empty._id) }])] } as any);
+    const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(withItems._id) }, { id: String(empty._id) }])] });
     const cols = out.content[0].props.collections as Array<{ coverPublicId: string }>;
     expect(cols[0].coverPublicId).toBe("newest");
     expect(cols[1].coverPublicId).toBe("");
@@ -256,7 +256,7 @@ describe("reconcileFeaturedCollections", () => {
   it("no-op (no query) when there are no FeaturedWork blocks", async () => {
     const ws = new Types.ObjectId();
     const findSpy = vi.spyOn(GalleryCollection, "find");
-    const data = { root: {}, content: [{ type: "Heading", props: { id: "h", text: "x", level: "h2" } }] } as any;
+    const data: PuckData = { root: {}, content: [{ type: "Heading", props: { id: "h", text: "x", level: "h2" } }] };
     const out = await reconcileFeaturedCollections(ws.toString(), data);
     expect(findSpy).not.toHaveBeenCalled();
     expect(out).toEqual(data);
@@ -268,7 +268,7 @@ describe("reconcileFeaturedCollections", () => {
     const c1 = await GalleryCollection.create({ workspaceId: ws, name: "A", slug: "a", isPublic: true });
     const c2 = await GalleryCollection.create({ workspaceId: ws, name: "B", slug: "b", isPublic: true });
     const findSpy = vi.spyOn(GalleryCollection, "find");
-    const data = { root: {}, content: [fwBlock([{ id: String(c1._id) }])], zones: { "z:1": [fwBlock([{ id: String(c2._id) }])] } } as any;
+    const data: PuckData = { root: {}, content: [fwBlock([{ id: String(c1._id) }])], zones: { "z:1": [fwBlock([{ id: String(c2._id) }])] } };
     await reconcileFeaturedCollections(ws.toString(), data);
     expect(findSpy).toHaveBeenCalledTimes(1);
     findSpy.mockRestore();

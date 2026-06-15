@@ -335,14 +335,12 @@ export function CollectionPopup({
     [mode, collectionId, slug]
   );
 
-  // Fetch on open
+  // Fetch on open. Closed state is rendered as idle, so no reset is needed here.
   useEffect(() => {
-    if (!open) {
-      setState({ status: "idle" });
-      setLightboxImage(null);
-      return;
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- opening the dialog intentionally flips local fetch state before the async request resolves.
+      void fetchPage(null);
     }
-    fetchPage(null);
   }, [open, fetchPage]);
 
   // ---------------------------------------------------------------------------
@@ -435,7 +433,7 @@ export function CollectionPopup({
                       animation: "spin 1s linear infinite",
                     }}
                   />
-                  <span>Loading…</span>
+                  <span>Loading...</span>
                 </div>
               ) : state.status === "error" ? (
                 <div
@@ -486,7 +484,7 @@ export function CollectionPopup({
               ) : (
                 /* populated or loadingMore */
                 <>
-                  {/* Image grid — flex wrap, ~6 per row, reflows at small screens */}
+                  {/* Image grid, roughly six per row, reflowing on smaller screens */}
                   <div
                     style={{
                       display: "flex",
@@ -647,7 +645,7 @@ export function CollectionPopup({
                           animation: "spin 1s linear infinite",
                         }}
                       />
-                      <span>Loading more…</span>
+                      <span>Loading more...</span>
                     </div>
                   ) : null}
                 </>
@@ -658,8 +656,8 @@ export function CollectionPopup({
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
 
-      {/* Nested lightbox — rendered outside the popup Dialog but controlled by popup state */}
-      {lightboxImage && (
+      {/* Nested lightbox rendered outside the popup dialog but controlled by popup state */}
+      {open && lightboxImage && (
         <Lightbox image={lightboxImage} onClose={() => setLightboxImage(null)} />
       )}
     </>

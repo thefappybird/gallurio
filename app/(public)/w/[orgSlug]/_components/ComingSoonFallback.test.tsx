@@ -20,7 +20,7 @@ function makeWorkspace(overrides: Partial<WorkspaceDoc> = {}): WorkspaceDoc {
     timezone: "Asia/Manila",
     branding: {
       logoUrl: null,
-      logoCloudinaryPublicId: null,
+      logoAssetId: null,
       primaryColor: "#1a1a2e",
       secondaryColor: "#e9e9e9",
       tagline: "Capturing memories for life",
@@ -88,7 +88,7 @@ describe("ComingSoonFallback", () => {
     const workspace = makeWorkspace({
       branding: {
         logoUrl: null,
-        logoCloudinaryPublicId: null,
+        logoAssetId: null,
         primaryColor: "#111111",
         secondaryColor: "#f5f5f5",
         tagline: "",
@@ -114,7 +114,7 @@ describe("ComingSoonFallback", () => {
     const workspace = makeWorkspace({
       branding: {
         logoUrl: "https://res.cloudinary.com/example/image/upload/v1/logo.png",
-        logoCloudinaryPublicId: "example/logo",
+        logoAssetId: "example/logo",
         primaryColor: "#111111",
         secondaryColor: "#f5f5f5",
         tagline: "",
@@ -134,7 +134,7 @@ describe("ComingSoonFallback", () => {
     const workspace = makeWorkspace({
       branding: {
         logoUrl: null,
-        logoCloudinaryPublicId: null,
+        logoAssetId: null,
         primaryColor: "#111111",
         secondaryColor: "#f5f5f5",
         tagline: "",
