@@ -1105,6 +1105,7 @@
           "actions": "Tindakan"
         },
         "noTitle": "Acara tanpa tajuk",
+        "conflict": "Konflik",
         "actions": {
           "view": "Lihat",
           "menuLabel": "Buka tindakan pertanyaan"
@@ -1112,6 +1113,7 @@
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
+        "conflictBanner": "Satu atau lebih sesi berkonflik dengan tempahan sedia ada.",
         "submittedOn": "Dihantar {date}",
         "notFound": "Pertanyaan tidak dijumpai.",
         "clientInfo": {

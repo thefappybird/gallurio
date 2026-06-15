@@ -41,6 +41,7 @@ export type InquiryDetailModalData = {
   bookingMissing: boolean;
   booking: InquiryBookingSummary | null;
   isOwner: boolean;
+  hasConflict?: boolean;
 };
 
 export function InquiryDetailModal({
@@ -84,6 +85,13 @@ export function InquiryDetailModal({
           <InquiryActions inquiryId={detail.inquiryId} status={detail.status} />
         </div>
 
+        {detail.hasConflict && (
+          <div className="shrink-0 border-b border-border px-4 py-2">
+            <div className="border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {t("conflictBanner")}
+            </div>
+          </div>
+        )}
         <div className="overflow-y-auto px-4 py-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="flex flex-col gap-4">

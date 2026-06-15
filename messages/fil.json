@@ -1105,6 +1105,7 @@
           "actions": "Mga Aksyon"
         },
         "noTitle": "Walang pamagat na event",
+        "conflict": "Konflikt",
         "actions": {
           "view": "Tingnan",
           "menuLabel": "Buksan ang mga aksyon ng katanungan"
@@ -1112,6 +1113,7 @@
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
+        "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
         "submittedOn": "Isinumite noong {date}",
         "notFound": "Hindi natagpuan ang katanungan.",
         "clientInfo": {
