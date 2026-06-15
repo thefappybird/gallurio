@@ -52,6 +52,11 @@ export type InquiryFormLabels = {
     noResults: string;
     dragHint: string;
     clear: string;
+    changeLocation?: string;
+    accept?: string;
+    cancel?: string;
+    apply?: string;
+    currentAddressLabel?: string;
   };
 };
 
@@ -508,6 +513,7 @@ export function ContactForm({
               render={({ field }) => (
                 <LocationPicker
                   id="cf-location"
+                  editable
                   className="pf-contact-location"
                   labels={labels.locationPicker}
                   searchEnabled={!preview}

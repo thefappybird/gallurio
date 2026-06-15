@@ -136,7 +136,7 @@ describe("getKpiSnapshot", () => {
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     await seedBooking(workspaceId, { status: "booked", startAt: inMonth });
-    await seedBooking(workspaceId, { status: "inquiry", startAt: inMonth });
+    await seedBooking(workspaceId, { status: "draft", startAt: inMonth });
     await seedBooking(workspaceId, { status: "booked", startAt: nextMonth });
 
     const snap = await getKpiSnapshot(workspaceId);

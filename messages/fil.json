@@ -220,7 +220,7 @@
               "note": "kasal, corporate, portrait, atb."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Kabuuang halaga ng booking"
@@ -266,7 +266,6 @@
         "edit": "I-edit"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
         "booked": "Naka-book",
         "completed": "Natapos",
         "cancelled": "Nakansela"
@@ -276,7 +275,12 @@
         "searching": "Naghahanap…",
         "noResults": "Walang tugma. Subukan ang ibang paghahanap.",
         "dragHint": "I-drag ang pin para tumpak na itakda ang eksaktong lugar.",
-        "clear": "Alisin ang lokasyon"
+        "clear": "Alisin ang lokasyon",
+        "changeLocation": "Baguhin ang lokasyon",
+        "accept": "Tanggapin",
+        "cancel": "Kanselahin",
+        "apply": "Ilapat",
+        "currentAddressLabel": "Napiling lokasyon"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -1101,6 +1105,7 @@
           "actions": "Mga Aksyon"
         },
         "noTitle": "Walang pamagat na event",
+        "conflict": "Konflikt",
         "actions": {
           "view": "Tingnan",
           "menuLabel": "Buksan ang mga aksyon ng katanungan"
@@ -1108,6 +1113,7 @@
       },
       "detail": {
         "back": "Bumalik sa mga katanungan",
+        "conflictBanner": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
         "submittedOn": "Isinumite noong {date}",
         "notFound": "Hindi natagpuan ang katanungan.",
         "clientInfo": {
@@ -1160,7 +1166,34 @@
           "title": "Kasaysayan",
           "submitted": "Isinumite ang katanungan",
           "booked": "Naaprubahan bilang booking"
+        },
+        "sessionsEditor": {
+          "edit": "I-edit ang mga sesyon",
+          "save": "I-save ang mga pagbabago",
+          "saving": "Sino-save…",
+          "discard": "Ibalik",
+          "conflictBlocks": "Ang isa o higit pang sesyon ay nasa salungatan sa mga umiiral na booking.",
+          "pastDate": "Ang mga sesyon ay dapat sa hinaharap.",
+          "lockedConverted": "Naka-lock ang mga sesyon pagkatapos ng conversion.",
+          "lockedArchived": "Naka-lock ang mga sesyon (naka-archive).",
+          "phoneLabel": "Telepono",
+          "emailReadonly": "Email (read-only)",
+          "sessionLabel": "Sesi {n}",
+          "conflictInline": "salungatan",
+          "dateLabel": "Petsa",
+          "startLabel": "Oras ng pagsisimula",
+          "endLabel": "Oras ng pagtatapos",
+          "alterOnlyError": "Hindi mababago ang bilang ng mga sesyon."
         }
+      },
+      "view": {
+        "table": "Talahanayan",
+        "calendar": "Kalendaryo"
+      },
+      "calendar": {
+        "legendInquiry": "Lead / Katanungan",
+        "legendBooking": "Booking",
+        "empty": "Walang mga katanungan o booking na ipapakita."
       }
     },
     "pageBuilder": {

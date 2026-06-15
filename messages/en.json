@@ -220,7 +220,7 @@
               "note": "wedding, corporate, portrait, etc."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total booking amount"
@@ -266,7 +266,6 @@
         "edit": "Edit"
       },
       "statusValues": {
-        "inquiry": "Inquiry",
         "booked": "Booked",
         "completed": "Completed",
         "cancelled": "Cancelled"
@@ -276,7 +275,12 @@
         "searching": "Searching…",
         "noResults": "No matches. Try a different search.",
         "dragHint": "Drag the pin to fine-tune the exact spot.",
-        "clear": "Clear location"
+        "clear": "Clear location",
+        "changeLocation": "Change location",
+        "accept": "Accept",
+        "cancel": "Cancel",
+        "apply": "Apply",
+        "currentAddressLabel": "Selected location"
       },
       "eventTypes": {
         "wedding": "Wedding",
@@ -1101,6 +1105,7 @@
           "actions": "Actions"
         },
         "noTitle": "Untitled event",
+        "conflict": "Conflict",
         "actions": {
           "view": "View",
           "menuLabel": "Open inquiry actions"
@@ -1108,6 +1113,7 @@
       },
       "detail": {
         "back": "Back to inquiries",
+        "conflictBanner": "One or more sessions conflict with existing bookings.",
         "submittedOn": "Submitted {date}",
         "notFound": "Inquiry not found.",
         "clientInfo": {
@@ -1160,7 +1166,34 @@
           "title": "History",
           "submitted": "Inquiry submitted",
           "booked": "Approved to booking"
+        },
+        "sessionsEditor": {
+          "edit": "Edit sessions",
+          "save": "Save changes",
+          "saving": "Saving…",
+          "discard": "Discard",
+          "conflictBlocks": "One or more sessions conflict with existing bookings.",
+          "pastDate": "Sessions must be in the future.",
+          "lockedConverted": "Sessions locked after conversion.",
+          "lockedArchived": "Sessions locked (archived).",
+          "phoneLabel": "Phone",
+          "emailReadonly": "Email (read-only)",
+          "sessionLabel": "Session {n}",
+          "conflictInline": "conflict",
+          "dateLabel": "Date",
+          "startLabel": "Start time",
+          "endLabel": "End time",
+          "alterOnlyError": "Session count cannot change."
         }
+      },
+      "view": {
+        "table": "Table",
+        "calendar": "Calendar"
+      },
+      "calendar": {
+        "legendInquiry": "Lead / Inquiry",
+        "legendBooking": "Booking",
+        "empty": "No inquiries or bookings to show."
       }
     },
     "pageBuilder": {

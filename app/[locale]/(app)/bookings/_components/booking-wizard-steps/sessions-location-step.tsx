@@ -370,6 +370,7 @@ export function SessionsLocationStep({
           render={({ field }) => (
             <LocationPicker
               id="wiz-location"
+              editable
               value={{
                 address: field.value?.address ?? "",
                 lat: field.value?.lat ?? null,

@@ -220,7 +220,7 @@
               "note": "pernikahan, korporat, potret, dll."
             },
             "status": {
-              "note": "inquiry, booked, completed, cancelled"
+              "note": "booked, completed, cancelled"
             },
             "amountTotal": {
               "note": "Total jumlah pemesanan"
@@ -266,7 +266,6 @@
         "edit": "Edit"
       },
       "statusValues": {
-        "inquiry": "Pertanyaan",
         "booked": "Dipesan",
         "completed": "Selesai",
         "cancelled": "Dibatalkan"
@@ -276,7 +275,12 @@
         "searching": "Mencari…",
         "noResults": "Tidak ada hasil. Coba pencarian lain.",
         "dragHint": "Seret pin untuk menyesuaikan titik yang tepat.",
-        "clear": "Hapus lokasi"
+        "clear": "Hapus lokasi",
+        "changeLocation": "Ubah lokasi",
+        "accept": "Terima",
+        "cancel": "Batal",
+        "apply": "Terapkan",
+        "currentAddressLabel": "Lokasi yang dipilih"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -1101,6 +1105,7 @@
           "actions": "Tindakan"
         },
         "noTitle": "Acara tanpa judul",
+        "conflict": "Konflik",
         "actions": {
           "view": "Lihat",
           "menuLabel": "Buka tindakan pertanyaan"
@@ -1108,6 +1113,7 @@
       },
       "detail": {
         "back": "Kembali ke pertanyaan",
+        "conflictBanner": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
         "submittedOn": "Dikirim {date}",
         "notFound": "Pertanyaan tidak ditemukan.",
         "clientInfo": {
@@ -1160,7 +1166,34 @@
           "title": "Riwayat",
           "submitted": "Pertanyaan dikirim",
           "booked": "Disetujui menjadi pemesanan"
+        },
+        "sessionsEditor": {
+          "edit": "Edit sesi",
+          "save": "Simpan perubahan",
+          "saving": "Menyimpan…",
+          "discard": "Buang",
+          "conflictBlocks": "Satu atau lebih sesi bertabrakan dengan pemesanan yang ada.",
+          "pastDate": "Sesi harus di masa depan.",
+          "lockedConverted": "Sesi dikunci setelah konversi.",
+          "lockedArchived": "Sesi dikunci (diarsipkan).",
+          "phoneLabel": "Telepon",
+          "emailReadonly": "Email (hanya baca)",
+          "sessionLabel": "Sesi {n}",
+          "conflictInline": "konflik",
+          "dateLabel": "Tanggal",
+          "startLabel": "Waktu mulai",
+          "endLabel": "Waktu selesai",
+          "alterOnlyError": "Jumlah sesi tidak dapat diubah."
         }
+      },
+      "view": {
+        "table": "Tabel",
+        "calendar": "Kalender"
+      },
+      "calendar": {
+        "legendInquiry": "Lead / Pertanyaan",
+        "legendBooking": "Pemesanan",
+        "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan."
       }
     },
     "pageBuilder": {

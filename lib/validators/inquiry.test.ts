@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   inquirySubmissionSchema,
   inquirySessionsToBookingSessions,
+  inquirySessionsEditSchema,
 } from "./inquiry";
 import { bookingSessionSchema } from "./booking";
 
@@ -165,5 +166,43 @@ describe("inquirySessionsToBookingSessions", () => {
       "Asia/Manila"
     );
     expect(s.endAt.getTime()).toBeGreaterThan(s.startAt.getTime());
+  });
+});
+
+describe("inquirySessionsEditSchema", () => {
+  it("accepts valid sessions with phone and normalizes the phone field", () => {
+    const result = inquirySessionsEditSchema.safeParse({
+      sessions: [{ startDate: FUTURE, startTime: "09:00", endTime: "17:00" }],
+      phone: "+63 900 000 0000",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.phone).toBe("+63 900 000 0000");
+      expect(result.data.sessions).toHaveLength(1);
+    }
+  });
+
+  it("accepts valid sessions without phone", () => {
+    const result = inquirySessionsEditSchema.safeParse({
+      sessions: [{ startDate: FUTURE, startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.phone).toBeUndefined();
+    }
+  });
+
+  it("rejects a past date in sessions", () => {
+    const result = inquirySessionsEditSchema.safeParse({
+      sessions: [{ startDate: isoOffsetDays(-1), startTime: "09:00", endTime: "17:00" }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects endTime before startTime", () => {
+    const result = inquirySessionsEditSchema.safeParse({
+      sessions: [{ startDate: FUTURE, startTime: "17:00", endTime: "09:00" }],
+    });
+    expect(result.success).toBe(false);
   });
 });

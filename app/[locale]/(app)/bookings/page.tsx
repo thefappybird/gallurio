@@ -18,7 +18,7 @@ import { PAGE_SIZE_OPTIONS } from "@/lib/pagination";
 import { BookingDetailModal } from "./_components/booking-detail-modal";
 import { BookingWizardModal } from "./_components/booking-wizard-modal";
 import type { CalendarEvent } from "./_components/booking-calendar";
-import { splitSessionIntoCandles } from "@/lib/bookings/candle-split";
+import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
 
@@ -204,39 +204,7 @@ export default async function BookingsPage({
   const events: CalendarEvent[] =
     view !== "calendar"
       ? []
-      : bookings.flatMap((b) => {
-          const bookingId = b._id.toString();
-          const sessions = b.sessions as { startAt: Date; endAt: Date }[];
-
-          return sessions.flatMap((session, sessionIdx) => {
-            const sessionStart = new Date(session.startAt);
-            const sessionEnd = new Date(session.endAt);
-
-            const result = splitSessionIntoCandles(
-              { startAt: sessionStart, endAt: sessionEnd },
-              today
-            );
-
-            return result.candles.map((candle) => ({
-              id: `${bookingId}_s${sessionIdx}_${candle.dayKey}`,
-              bookingId,
-              teamId: b.teamId ? String(b.teamId) : null,
-              title: b.title,
-              start: candle.start,
-              end: candle.end,
-              status: b.status as BookingStatus,
-              clientName: b.clientName,
-              clientEmail: emailByClientId.get(String(b.clientId)) ?? null,
-              rangeStart: result.rangeStart,
-              rangeEnd: result.rangeEnd,
-              sessionIndex: sessionIdx,
-              sessionStartAt: sessionStart,
-              sessionEndAt: sessionEnd,
-              sessionDayCount: result.totalShiftDays,
-              sessionPastDayCount: result.pastShiftDays,
-            }));
-          });
-        });
+      : buildBookingCalendarEvents(bookings, { today, emailByClientId });
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];

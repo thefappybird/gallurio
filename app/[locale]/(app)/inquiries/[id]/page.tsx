@@ -80,6 +80,11 @@ export default async function InquiryDetailPage({
             message={inquiry.message ?? ""}
             sessions={sessions}
             locale={locale}
+            inquiryId={String(inquiry._id)}
+            draftBookingId={booking ? String(booking._id) : null}
+            phone={inquiry.phone ?? null}
+            email={inquiry.email ?? ""}
+            status={inquiry.status}
           />
         </div>
 

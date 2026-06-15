@@ -141,7 +141,7 @@ describe("listBookings", () => {
   it("filters by exact status", async () => {
     await seedBooking(workspaceId, { status: "completed" });
     await seedBooking(workspaceId, { status: "booked" });
-    await seedBooking(workspaceId, { status: "inquiry" });
+    await seedBooking(workspaceId, { status: "booked" });
 
     const { rows } = await listBookings(workspaceId, { status: "completed" });
     expect(rows).toHaveLength(1);
