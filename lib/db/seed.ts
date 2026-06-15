@@ -379,8 +379,8 @@ async function seedWorkspace(
     [1, 2, 3, 4].map((n) => ({
       workspaceId: workspace._id,
       collectionId: collection._id,
-      cloudinaryPublicId: `gallurio/${workspace._id}/seed/sample-${n}`,
-      url: `https://res.cloudinary.com/demo/image/upload/sample.jpg`,
+      assetId: `seed/${workspace._id}/sample-${n}`,
+      url: `https://picsum.photos/seed/seed-${n}/1600/1067`,
       width: 1600,
       height: 1067,
       format: "jpg",
