@@ -1,22 +1,17 @@
 /**
- * Focused dev seed for manually testing the portfolio maker (Phases 4 & 5).
+ * Focused dev seed for manually testing the portfolio maker.
  *
  * Usage:  pnpm seed:portfolio
  *
  * What it does (idempotent — safe to re-run):
- * - Upserts a DEDICATED demo workspace (slug `portfolio-demo`, fake Clerk org).
+ * - Upserts a DEDICATED demo workspace (slug `portfolio-demo`).
  *   It NEVER touches your real workspace, so the destructive gallery reset below
  *   only ever affects this demo tenant.
- * - Uploads a handful of sample images to YOUR Cloudinary cloud (so thumbnails
- *   actually resolve) and creates 2 GalleryCollections of items.
+ * - Creates 2 GalleryCollections of items using Picsum photo URLs.
  * - Seeds Home + Gallery Puck data that references those collections, sets a
  *   brand kit + contact-panel config, and PUBLISHES the page.
  *
  * Override the demo slug with SEED_PORTFOLIO_SLUG=my-slug pnpm seed:portfolio.
- *
- * Requires CLOUDINARY_* env vars (same ones the app uses for uploads). If an
- * upload fails the script falls back to the remote URL and warns — the gallery
- * layout still renders but those thumbnails may 404.
  */
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local" });
@@ -25,7 +20,6 @@ loadEnv();
 import mongoose from "mongoose";
 import { connectDB } from "./mongoose";
 import { Workspace, GalleryCollection, GalleryItem } from "./models";
-import { cloudinary } from "@/lib/storage/cloudinary";
 import { HERO_PRESET, CTA_PRESET } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
@@ -37,7 +31,7 @@ const OWNER_ID = "user_demo_portfolio";
 
 type SeededItem = {
   _id: mongoose.Types.ObjectId;
-  cloudinaryPublicId: string;
+  assetId: string;
   url: string;
 };
 
@@ -60,36 +54,10 @@ const COLLECTIONS: CollectionSpec[] = [
   },
 ];
 
-/** Uploads a remote sample image to the workspace's Cloudinary folder. */
-async function uploadSample(
-  workspaceId: string,
-  collectionSlug: string,
-  index: number
-): Promise<{ publicId: string; url: string; width: number; height: number; bytes: number; format: string }> {
-  // Deterministic distinct image per (collection, index) via Picsum seed.
-  const seed = `${collectionSlug}-${index}`;
-  const remote = `https://picsum.photos/seed/${seed}/1200/1500`;
-  const publicId = `gallurio/${workspaceId}/seed/${collectionSlug}-${index}`;
-  const res = await cloudinary.uploader.upload(remote, {
-    public_id: publicId,
-    overwrite: true,
-    resource_type: "image",
-  });
-  return {
-    publicId: res.public_id,
-    url: res.secure_url,
-    width: res.width,
-    height: res.height,
-    bytes: res.bytes,
-    format: res.format,
-  };
-}
-
 async function seedCollection(
   workspaceId: mongoose.Types.ObjectId,
   spec: CollectionSpec,
-  order: number,
-  canUpload: boolean
+  order: number
 ): Promise<SeededItem[]> {
   const collection = await GalleryCollection.create({
     workspaceId,
@@ -101,46 +69,23 @@ async function seedCollection(
 
   const items: SeededItem[] = [];
   for (let i = 0; i < spec.captions.length; i += 1) {
-    let publicId: string;
-    let url: string;
-    let width = 1200;
-    let height = 1500;
-    let bytes = 300_000;
-    let format = "jpg";
-
-    if (canUpload) {
-      try {
-        const up = await uploadSample(String(workspaceId), spec.slug, i);
-        publicId = up.publicId;
-        url = up.url;
-        width = up.width;
-        height = up.height;
-        bytes = up.bytes;
-        format = up.format;
-      } catch (err) {
-        console.warn(`  ! upload failed for ${spec.slug}-${i}; falling back to remote URL`, (err as Error).message);
-        publicId = `gallurio/${workspaceId}/seed/${spec.slug}-${i}`;
-        url = `https://picsum.photos/seed/${spec.slug}-${i}/1200/1500`;
-      }
-    } else {
-      publicId = `gallurio/${workspaceId}/seed/${spec.slug}-${i}`;
-      url = `https://picsum.photos/seed/${spec.slug}-${i}/1200/1500`;
-    }
+    const assetId = `seed/${String(workspaceId)}/${spec.slug}-${i}`;
+    const url = `https://picsum.photos/seed/${spec.slug}-${i}/1200/1500`;
 
     const doc = await GalleryItem.create({
       workspaceId,
       collectionId: collection._id,
-      cloudinaryPublicId: publicId,
+      assetId,
       url,
-      width,
-      height,
-      sizeBytes: bytes,
-      format,
+      width: 1200,
+      height: 1500,
+      sizeBytes: 300_000,
+      format: "jpg",
       caption: spec.captions[i],
       altText: `${spec.name} — ${spec.captions[i]}`,
       order: i,
     });
-    items.push({ _id: doc._id, cloudinaryPublicId: publicId, url });
+    items.push({ _id: doc._id, assetId, url });
   }
 
   // Set a cover for completeness.
@@ -242,17 +187,6 @@ async function main() {
   console.log("→ Connecting to MongoDB…");
   await connectDB();
 
-  const canUpload = Boolean(
-    process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-  );
-  if (!canUpload) {
-    console.warn(
-      "  ! CLOUDINARY_* env vars not set — seeding placeholder image refs. Thumbnails may not render."
-    );
-  }
-
   // Resolve the dedicated demo workspace (by slug).
   let workspace = await Workspace.findOne({ slug: SLUG });
   const now = new Date();
@@ -287,9 +221,9 @@ async function main() {
   await GalleryItem.deleteMany({ workspaceId: workspace._id });
   await GalleryCollection.deleteMany({ workspaceId: workspace._id });
 
-  console.log("→ Seeding collections + uploading sample images…");
-  const weddings = await seedCollection(workspace._id, COLLECTIONS[0], 0, canUpload);
-  const portraits = await seedCollection(workspace._id, COLLECTIONS[1], 1, canUpload);
+  console.log("→ Seeding collections…");
+  const weddings = await seedCollection(workspace._id, COLLECTIONS[0], 0);
+  const portraits = await seedCollection(workspace._id, COLLECTIONS[1], 1);
 
   const weddingsCollectionId = String(
     (await GalleryCollection.findOne({ workspaceId: workspace._id, slug: "weddings" }).select("_id").lean())!._id
@@ -299,7 +233,7 @@ async function main() {
   );
 
   const featuredItemIds = weddings.slice(0, 3).map((i) => String(i._id));
-  const heroBackgroundPublicId = weddings[0].cloudinaryPublicId;
+  const heroBackgroundPublicId = weddings[0].assetId;
 
   console.log("→ Writing Puck data + brand kit + contact config, then publishing…");
   workspace.set("publicPage", {

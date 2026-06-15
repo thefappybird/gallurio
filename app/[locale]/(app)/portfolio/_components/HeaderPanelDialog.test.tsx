@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
@@ -11,8 +11,8 @@ vi.mock("../_actions", () => ({
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/lib/storage/uploadToCloudinary.client", () => ({
-  uploadImageToCloudinary: vi.fn(),
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: vi.fn(),
 }));
 
 const baseProps = {
@@ -50,10 +50,14 @@ beforeEach(() => {
 });
 
 describe("HeaderPanelDialog", () => {
-  it("uses the signed Cloudinary uploadUrl for logo uploads", async () => {
-    vi.mocked(uploadImageToCloudinary).mockResolvedValueOnce({
-      url: "https://res.cloudinary.com/demo-cloud/logo.png",
-      cloudinaryPublicId: "gallurio/ws1/portfolio/header/logo",
+  it("uses CF Images direct upload for logo uploads", async () => {
+    vi.mocked(uploadImage).mockResolvedValueOnce({
+      url: "https://imagedelivery.net/test-hash/logo-asset-id/public",
+      assetId: "logo-asset-id",
+      width: 200,
+      height: 80,
+      format: "png",
+      sizeBytes: 4096,
     });
 
     const onHeaderChange = vi.fn();
@@ -66,14 +70,13 @@ describe("HeaderPanelDialog", () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(() =>
-      expect(uploadImageToCloudinary).toHaveBeenCalledWith(file, {
+      expect(uploadImage).toHaveBeenCalledWith(file, {
         subfolder: "portfolio_header",
-        validateDimensions: false,
       }),
     );
     expect(onHeaderChange).toHaveBeenCalledWith({
-      logoUrl: "https://res.cloudinary.com/demo-cloud/logo.png",
-      logoPublicId: "gallurio/ws1/portfolio/header/logo",
+      logoUrl: "https://imagedelivery.net/test-hash/logo-asset-id/public",
+      logoPublicId: "logo-asset-id",
     });
   });
 

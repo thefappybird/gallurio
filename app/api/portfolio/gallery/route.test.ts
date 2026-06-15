@@ -68,15 +68,15 @@ async function seedData() {
     {
       workspaceId: workspaceIdA,
       collectionId: colA._id,
-      cloudinaryPublicId: `gallurio/${workspaceIdA}/portfolio/1.jpg`,
-      url: "https://res.cloudinary.com/x/1.jpg",
+      assetId: `gallurio/${workspaceIdA}/portfolio/1.jpg`,
+      url: "https://imagedelivery.net/test-hash/1/public",
       order: 0,
     },
     {
       workspaceId: workspaceIdA,
       collectionId: colA._id,
-      cloudinaryPublicId: `gallurio/${workspaceIdA}/portfolio/2.jpg`,
-      url: "https://res.cloudinary.com/x/2.jpg",
+      assetId: `gallurio/${workspaceIdA}/portfolio/2.jpg`,
+      url: "https://imagedelivery.net/test-hash/2/public",
       order: 1,
     },
   ]);
@@ -92,8 +92,8 @@ async function seedData() {
   await GalleryItem.create({
     workspaceId: workspaceIdB,
     collectionId: colB._id,
-    cloudinaryPublicId: `gallurio/${workspaceIdB}/portfolio/b.jpg`,
-    url: "https://res.cloudinary.com/x/b.jpg",
+    assetId: `gallurio/${workspaceIdB}/portfolio/b.jpg`,
+    url: "https://imagedelivery.net/test-hash/b/public",
     order: 0,
   });
 

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { ChevronDown, RotateCcw, Upload } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { cn } from "@/lib/utils";
 import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
 import {
@@ -304,14 +304,11 @@ export function HeaderPanelDialog({
         setLogoError(t("logoErrors.dimensions"));
         return;
       }
-      const uploaded = await uploadImageToCloudinary(file, {
-        subfolder: "portfolio_header",
-        validateDimensions: false,
-      });
+      const uploaded = await uploadImage(file, { subfolder: "portfolio_header" });
       onHeaderChange({
         ...header,
         logoUrl: uploaded.url,
-        logoPublicId: uploaded.cloudinaryPublicId,
+        logoPublicId: uploaded.assetId,
       });
     } catch (error) {
       toast.error(error instanceof Error && error.message === "invalid_image" ? t("logoErrors.image") : t("logoErrors.upload"));
