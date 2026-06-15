@@ -80,6 +80,30 @@ export function dateToTzMinutes(d: Date, timeZone: string): number {
 }
 
 /**
+ * Return the set of CalendarEvent ids that have a time-window overlap with at
+ * least one other event from a different booking. Used to render a conflict
+ * indicator (⚠) on calendar candles.
+ *
+ * Overlap test: standard half-open interval — adjacent-exact boundaries do NOT
+ * conflict, which matches `overlappingShifts()`.
+ */
+export function detectConflictIds(events: CalendarEvent[]): Set<string> {
+  const ids = new Set<string>();
+  for (let i = 0; i < events.length; i++) {
+    for (let j = i + 1; j < events.length; j++) {
+      const a = events[i];
+      const b = events[j];
+      if (a.bookingId === b.bookingId) continue;
+      if (a.start < b.end && b.start < a.end) {
+        ids.add(a.id);
+        ids.add(b.id);
+      }
+    }
+  }
+  return ids;
+}
+
+/**
  * Reconstruct the full ordered sessions array for a given booking from the
  * current optimistic events state.
  *

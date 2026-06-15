@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { BookingCalendar, type CalendarEvent } from "../../bookings/_components/booking-calendar";
 import { TeamLegend } from "../../bookings/_components/team-legend";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
+import { detectConflictIds } from "../../bookings/_components/_helpers/calendar-helpers";
 
 type Props = {
   events: CalendarEvent[];
@@ -42,6 +43,12 @@ export function InquiriesCalendarManager({
     );
   }, [events, selectedTeams]);
 
+  const eventsWithConflicts = useMemo(() => {
+    const conflictIds = detectConflictIds(filteredEvents);
+    if (conflictIds.size === 0) return filteredEvents;
+    return filteredEvents.map((e) => conflictIds.has(e.id) ? { ...e, hasConflict: true } : e);
+  }, [filteredEvents]);
+
   function handleSelectEvent(ev: CalendarEvent) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("view", "calendar");
@@ -58,7 +65,7 @@ export function InquiriesCalendarManager({
   return (
     <div className="flex flex-col gap-2">
       <BookingCalendar
-        events={filteredEvents}
+        events={eventsWithConflicts}
         onSelectEvent={handleSelectEvent}
         messages={{
           today: tCal("today"),

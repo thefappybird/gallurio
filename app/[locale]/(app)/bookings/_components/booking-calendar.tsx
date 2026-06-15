@@ -15,7 +15,7 @@ import withDragAndDrop, {
   type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, TriangleAlertIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -83,6 +83,8 @@ export type CalendarEvent = {
   inquiryId?: string;
   /** When set, overrides colorMode-based color. Used for inquiry candles. */
   colorOverride?: string;
+  /** When true, this event's time window overlaps with another booking on the same day. */
+  hasConflict?: boolean;
 };
 
 /** Union of a real booking event and the synthetic overflow placeholder. */
@@ -389,6 +391,12 @@ export function MonthBookingEvent({
           Lead
         </span>
       )}
+      {booking.hasConflict && (
+        <TriangleAlertIcon
+          className="pointer-events-none absolute right-1 top-0.5 size-2.5 text-white"
+          aria-label="Schedule conflict"
+        />
+      )}
       <span
         className={`truncate text-xs font-semibold leading-tight${booking.kind === "inquiry" ? " mt-3" : ""}${showPastVisual ? " line-through" : ""}`}
       >
@@ -455,6 +463,12 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
             <span className="pointer-events-none mb-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white self-start">
               Lead
             </span>
+          )}
+          {ev.hasConflict && (
+            <TriangleAlertIcon
+              className="pointer-events-none absolute right-1 top-1 size-3 text-white"
+              aria-label="Schedule conflict"
+            />
           )}
           <span
             className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}

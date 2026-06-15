@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Inquiry, Booking, ActivityLog } from "@/lib/db/models";
+import { Inquiry, Booking, ActivityLog, Team } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
@@ -27,7 +27,7 @@ const draftEditsSchema = z
     total: z.coerce.number().min(0).max(1_000_000_000).optional(),
     deposit: z.coerce.number().min(0).max(1_000_000_000).optional(),
     notes: z.string().max(5000).optional(),
-    teamId: z.string().nullable().optional(),
+    teamId: z.string().refine((v) => mongoose.isValidObjectId(v), { message: "invalid_team" }).nullable().optional(),
   })
   .refine((v) => v.deposit === undefined || v.total === undefined || v.deposit <= v.total, {
     message: "Deposit cannot exceed the total",
@@ -185,7 +185,16 @@ export async function saveDraftBookingFieldsAction(
   if (edits.data.total !== undefined) set["amount.total"] = edits.data.total;
   if (edits.data.deposit !== undefined) set["amount.deposit"] = edits.data.deposit;
   if (edits.data.notes !== undefined) set.notes = edits.data.notes;
-  if (edits.data.teamId !== undefined) set.teamId = edits.data.teamId ?? null;
+  if (edits.data.teamId !== undefined) {
+    if (!edits.data.teamId) {
+      set.teamId = null;
+    } else {
+      if (!mongoose.isValidObjectId(edits.data.teamId)) return { error: "invalid_team" };
+      const team = await Team.findOne({ _id: edits.data.teamId, workspaceId }).lean();
+      if (!team) return { error: "invalid_team" };
+      set.teamId = team._id;
+    }
+  }
 
   if (Object.keys(set).length > 0) {
     await Booking.updateOne(

@@ -25,6 +25,7 @@ import {
   isoDateInTz,
   dateToTzMinutes,
   reconstructSessions,
+  detectConflictIds,
 } from "./_helpers/calendar-helpers";
 import { FALLBACK_TZ, dayBoundInTz } from "@/lib/utils/timezone";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
@@ -631,6 +632,12 @@ export function CalendarView({
     return optimisticEvents.filter((e) => e.end.getTime() >= startOfTodayMs);
   }, [optimisticEvents, showPast, startOfTodayMs]);
 
+  const eventsWithConflicts = useMemo(() => {
+    const conflictIds = detectConflictIds(visibleEvents);
+    if (conflictIds.size === 0) return visibleEvents;
+    return visibleEvents.map((e) => conflictIds.has(e.id) ? { ...e, hasConflict: true } : e);
+  }, [visibleEvents]);
+
   // Team filter (calendar's clickable legend, counterpart to the table's team
   // dropdown). Pushes ?team; "all" clears it. Status filtering now lives in the
   // toolbar status dropdown (?status) for both views — the status legend retired.
@@ -658,7 +665,7 @@ export function CalendarView({
         </div>
       ) : null}
       <BookingCalendar
-        events={visibleEvents}
+        events={eventsWithConflicts}
         defaultDate={defaultDate}
         view={view}
         onViewChange={setView}
