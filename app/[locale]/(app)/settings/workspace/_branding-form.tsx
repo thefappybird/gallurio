@@ -13,7 +13,7 @@ import {
   type UpdateWorkspaceBrandingInput,
 } from "@/lib/validators/workspace";
 import { updateWorkspaceBrandingAction } from "../_actions";
-import { uploadToCloudinary } from "@/lib/storage/uploadToCloudinary";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +29,7 @@ export function WorkspaceBrandingForm({
   const [uploading, setUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(defaults.logoUrl ?? null);
   const [logoPublicId, setLogoPublicId] = useState<string | null>(
-    defaults.logoCloudinaryPublicId ?? null
+    defaults.logoAssetId ?? null
   );
 
   const {
@@ -60,9 +60,9 @@ export function WorkspaceBrandingForm({
     }
     setUploading(true);
     try {
-      const res = await uploadToCloudinary(file, { subfolder: "branding" });
-      setLogoUrl(res.secure_url);
-      setLogoPublicId(res.public_id);
+      const res = await uploadImage(file, { subfolder: "branding" });
+      setLogoUrl(res.url);
+      setLogoPublicId(res.assetId);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : tBrand("errors.uploadFailed"));
     } finally {
@@ -74,7 +74,7 @@ export function WorkspaceBrandingForm({
     const payload: UpdateWorkspaceBrandingInput = {
       ...data,
       logoUrl,
-      logoCloudinaryPublicId: logoPublicId,
+      logoAssetId: logoPublicId,
     };
     const result = await updateWorkspaceBrandingAction(payload);
     if (!toastActionResult(result, t("savedToast"))) return;
@@ -83,7 +83,7 @@ export function WorkspaceBrandingForm({
 
   const logoDirty =
     logoUrl !== (defaults.logoUrl ?? null) ||
-    logoPublicId !== (defaults.logoCloudinaryPublicId ?? null);
+    logoPublicId !== (defaults.logoAssetId ?? null);
   const canSave = isDirty || logoDirty;
 
   return (

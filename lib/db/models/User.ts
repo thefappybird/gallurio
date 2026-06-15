@@ -26,7 +26,7 @@ const userSchema = new Schema(
     email: { type: String, required: true, lowercase: true, trim: true, index: true },
     name: { type: String, default: "" },
     avatarUrl: { type: String, default: null },
-    avatarCloudinaryPublicId: { type: String, default: null },
+    avatarAssetId: { type: String, default: null },
     mfaEnabled: { type: Boolean, default: false },
     memberships: { type: [membershipSchema], default: [] },
     onboardingStep: { type: String, enum: ONBOARDING_STEPS, default: "business" },

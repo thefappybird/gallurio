@@ -12,8 +12,8 @@ vi.mock("../_actions", () => ({
   sendSetPasswordEmailAction: vi.fn(),
 }));
 
-vi.mock("@/lib/storage/uploadToCloudinary.client", () => ({
-  uploadImageToCloudinary: vi.fn(),
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -28,17 +28,17 @@ vi.mock("./_mfa-section", () => ({
   MfaSection: () => <div data-testid="mfa-section" />,
 }));
 
-const { uploadImageToCloudinary } = await import(
-  "@/lib/storage/uploadToCloudinary.client"
+const { uploadImage } = await import(
+  "@/lib/storage/uploadImage.client"
 );
-const mockUpload = vi.mocked(uploadImageToCloudinary);
+const mockUpload = vi.mocked(uploadImage);
 const mockUpdateAvatar = vi.mocked(updateAvatarAction);
 
 const defaultProps = {
   name: "Jane Doe",
   email: "jane@example.com",
   avatarUrl: null,
-  avatarCloudinaryPublicId: null,
+  avatarAssetId: null,
   hasOAuth: false,
   mfaEnabled: false,
 };
@@ -46,7 +46,7 @@ const defaultProps = {
 function uploadResult(url: string, publicId: string) {
   return {
     url,
-    cloudinaryPublicId: publicId,
+    assetId: publicId,
     width: 400,
     height: 400,
     format: "jpg",
@@ -72,7 +72,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://example.com/avatar.jpg"
-        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+        avatarAssetId="gallurio/ws/avatars/abc"
       />,
     );
     expect(screen.getByRole("button", { name: "Replace" })).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://example.com/avatar.jpg"
-        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+        avatarAssetId="gallurio/ws/avatars/abc"
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "View full photo" }));
@@ -103,7 +103,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://provider.example/default.png"
-        avatarCloudinaryPublicId={null}
+        avatarAssetId={null}
       />,
     );
     // Replace is still offered, but there is no uploaded asset to remove.
@@ -141,7 +141,7 @@ describe("AccountPanel — avatar upload", () => {
     await waitFor(() => {
       expect(mockUpdateAvatar).toHaveBeenCalledWith({
         avatarUrl: "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
-        avatarCloudinaryPublicId: "gallurio/ws/avatars/a",
+        avatarAssetId: "gallurio/ws/avatars/a",
       });
     });
 
@@ -204,7 +204,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://example.com/avatar.jpg"
-        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+        avatarAssetId="gallurio/ws/avatars/abc"
       />,
     );
 
@@ -213,7 +213,7 @@ describe("AccountPanel — avatar upload", () => {
     await waitFor(() => {
       expect(mockUpdateAvatar).toHaveBeenCalledWith({
         avatarUrl: null,
-        avatarCloudinaryPublicId: null,
+        avatarAssetId: null,
       });
     });
 
@@ -229,7 +229,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://example.com/avatar.jpg"
-        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+        avatarAssetId="gallurio/ws/avatars/abc"
       />,
     );
 
@@ -255,7 +255,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl={null}
-        avatarCloudinaryPublicId={null}
+        avatarAssetId={null}
       />,
     );
 
@@ -290,7 +290,7 @@ describe("AccountPanel — avatar upload", () => {
       <AccountPanel
         {...defaultProps}
         avatarUrl="https://example.com/avatar.jpg"
-        avatarCloudinaryPublicId="gallurio/ws/avatars/abc"
+        avatarAssetId="gallurio/ws/avatars/abc"
       />,
     );
 

@@ -160,7 +160,7 @@ export async function brandingStepAction(input: BrandingStepInput): Promise<Acti
     {
       $set: {
         "branding.logoUrl": parsed.data.logoUrl ?? null,
-        "branding.logoCloudinaryPublicId": parsed.data.logoCloudinaryPublicId ?? null,
+        "branding.logoAssetId": parsed.data.logoAssetId ?? null,
         "branding.primaryColor": parsed.data.primaryColor,
         "branding.secondaryColor": parsed.data.secondaryColor,
         "branding.tagline": parsed.data.tagline ?? "",

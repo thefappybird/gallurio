@@ -37,8 +37,8 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock("@/lib/storage/cloudinary", () => ({
-  destroyAsset: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  deleteImage: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("@/lib/db/mongoose", () => ({
@@ -935,81 +935,81 @@ describe("sendSetPasswordEmailAction", () => {
 
 // ---- updateAvatarAction -----------------------------------------------------
 
-const { destroyAsset } = await import("@/lib/storage/cloudinary");
+const { deleteImage } = await import("@/lib/storage/cloudflareImages");
 
 describe("updateAvatarAction", () => {
   const NEW_URL = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
   const NEW_PUBLIC_ID = "gallurio/ws_abc/avatars/sample";
   const OLD_PUBLIC_ID = "gallurio/ws_abc/avatars/old";
 
-  it("sets avatarUrl and avatarCloudinaryPublicId on the User doc", async () => {
+  it("sets avatarUrl and avatarAssetId on the User doc", async () => {
     const result = await updateAvatarAction({
       avatarUrl: NEW_URL,
-      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+      avatarAssetId: NEW_PUBLIC_ID,
     });
 
     expect(result.ok).toBe(true);
 
     const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
     expect(user?.avatarUrl).toBe(NEW_URL);
-    expect(user?.avatarCloudinaryPublicId).toBe(NEW_PUBLIC_ID);
+    expect(user?.avatarAssetId).toBe(NEW_PUBLIC_ID);
   });
 
-  it("calls destroyAsset with the previous publicId when replacing", async () => {
+  it("calls deleteImage with the previous publicId when replacing", async () => {
     // Seed user with an existing avatar
     await User.updateOne(
       { workosUserId: OWNER_WORKOS_ID },
-      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarAssetId: OLD_PUBLIC_ID } },
     );
 
-    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+    vi.mocked(deleteImage).mockResolvedValue(undefined);
 
     const result = await updateAvatarAction({
       avatarUrl: NEW_URL,
-      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+      avatarAssetId: NEW_PUBLIC_ID,
     });
 
     expect(result.ok).toBe(true);
-    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+    expect(deleteImage).toHaveBeenCalledWith(OLD_PUBLIC_ID);
   });
 
-  it("calls destroyAsset when removing the avatar (both null)", async () => {
+  it("calls deleteImage when removing the avatar (both null)", async () => {
     await User.updateOne(
       { workosUserId: OWNER_WORKOS_ID },
-      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarCloudinaryPublicId: OLD_PUBLIC_ID } },
+      { $set: { avatarUrl: "https://old.example.com/a.jpg", avatarAssetId: OLD_PUBLIC_ID } },
     );
 
-    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+    vi.mocked(deleteImage).mockResolvedValue(undefined);
 
     const result = await updateAvatarAction({
       avatarUrl: null,
-      avatarCloudinaryPublicId: null,
+      avatarAssetId: null,
     });
 
     expect(result.ok).toBe(true);
-    expect(destroyAsset).toHaveBeenCalledWith(OLD_PUBLIC_ID);
+    expect(deleteImage).toHaveBeenCalledWith(OLD_PUBLIC_ID);
 
     const user = await User.findOne({ workosUserId: OWNER_WORKOS_ID }).lean();
     expect(user?.avatarUrl).toBeNull();
-    expect(user?.avatarCloudinaryPublicId).toBeNull();
+    expect(user?.avatarAssetId).toBeNull();
   });
 
-  it("does NOT call destroyAsset when there was no previous publicId", async () => {
-    vi.mocked(destroyAsset).mockResolvedValue(undefined);
+  it("does NOT call deleteImage when there was no previous publicId", async () => {
+    vi.mocked(deleteImage).mockResolvedValue(undefined);
 
     const result = await updateAvatarAction({
       avatarUrl: NEW_URL,
-      avatarCloudinaryPublicId: NEW_PUBLIC_ID,
+      avatarAssetId: NEW_PUBLIC_ID,
     });
 
     expect(result.ok).toBe(true);
-    expect(destroyAsset).not.toHaveBeenCalled();
+    expect(deleteImage).not.toHaveBeenCalled();
   });
 
   it("returns error for a non-https avatarUrl", async () => {
     const result = await updateAvatarAction({
       avatarUrl: "http://insecure.example.com/a.jpg",
-      avatarCloudinaryPublicId: null,
+      avatarAssetId: null,
     });
 
     expect(result.error).toBeTruthy();
@@ -1018,7 +1018,7 @@ describe("updateAvatarAction", () => {
   it("returns error for an invalid avatarUrl", async () => {
     const result = await updateAvatarAction({
       avatarUrl: "not-a-url",
-      avatarCloudinaryPublicId: null,
+      avatarAssetId: null,
     });
 
     expect(result.error).toBeTruthy();
@@ -1029,7 +1029,7 @@ describe("updateAvatarAction", () => {
 
     const result = await updateAvatarAction({
       avatarUrl: null,
-      avatarCloudinaryPublicId: null,
+      avatarAssetId: null,
     });
 
     expect(result).toEqual({ error: "Not authenticated" });

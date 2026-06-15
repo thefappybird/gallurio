@@ -102,7 +102,7 @@ export type BusinessStepInput = z.infer<typeof businessStepSchema>;
 
 export const brandingStepSchema = z.object({
   logoUrl: z.string().url().nullable().optional(),
-  logoCloudinaryPublicId: z.string().nullable().optional(),
+  logoAssetId: z.string().nullable().optional(),
   primaryColor: hexColor,
   secondaryColor: hexColor,
   tagline: z.string().max(120, "Keep it under 120 characters").optional().default(""),

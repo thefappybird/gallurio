@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import { brandingStepSchema, type BrandingStepInput } from "@/lib/validators/workspace";
 import { brandingStepAction } from "@/lib/actions/onboarding";
-import { uploadToCloudinary } from "@/lib/storage/uploadToCloudinary";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { BrandingIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export function BrandingStepForm({
   const [uploading, setUploading] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(defaults.logoUrl ?? null);
   const [logoPublicId, setLogoPublicId] = useState<string | null>(
-    defaults.logoCloudinaryPublicId ?? null
+    defaults.logoAssetId ?? null
   );
   const [, startTransition] = useTransition();
 
@@ -63,9 +63,9 @@ export function BrandingStepForm({
     }
     setUploading(true);
     try {
-      const res = await uploadToCloudinary(file, { subfolder: "branding" });
-      setLogoUrl(res.secure_url);
-      setLogoPublicId(res.public_id);
+      const res = await uploadImage(file, { subfolder: "branding" });
+      setLogoUrl(res.url);
+      setLogoPublicId(res.assetId);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : t("errors.uploadFailed"));
     } finally {
@@ -77,7 +77,7 @@ export function BrandingStepForm({
     const payload: BrandingStepInput = {
       ...data,
       logoUrl,
-      logoCloudinaryPublicId: logoPublicId,
+      logoAssetId: logoPublicId,
     };
     const result = await brandingStepAction(payload);
     if (result?.error) {
@@ -91,7 +91,7 @@ export function BrandingStepForm({
     startTransition(async () => {
       const result = await brandingStepAction({
         logoUrl: null,
-        logoCloudinaryPublicId: null,
+        logoAssetId: null,
         primaryColor: defaults.primaryColor,
         secondaryColor: defaults.secondaryColor,
         tagline: "",
