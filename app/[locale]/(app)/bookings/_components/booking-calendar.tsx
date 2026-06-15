@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState } from "react";
+import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import {
   Calendar,
@@ -142,6 +142,8 @@ type Props = {
   colorMode?: "status" | "team";
   /** Active-team id → hex color. Only consulted when colorMode is "team". */
   teamColorMap?: Record<string, string>;
+  /** Optional content rendered in the toolbar immediately to the right of the Prev/Today/Next nav buttons. */
+  toolbarTrailing?: ReactNode;
 };
 
 /**
@@ -294,19 +296,37 @@ function PastPill({ label }: { label: string }) {
   );
 }
 
-/** Status pill shown on each candle. Candles are colored by TEAM, so status is
- *  carried here: a light chip with a status-color dot + the localized status
- *  name, pinned bottom-right (clear of the top-right Past badge). */
-function StatusPill({ status, label }: { status: BookingStatus; label: string }) {
+/** Status pill shown at the bottom-right of each candle: a status-color dot +
+ *  label. For inquiry candles, `labelOverride` replaces the booking status text.
+ *  `hasConflict` renders a warning icon to the right of the chip. */
+function StatusPill({
+  status,
+  label,
+  labelOverride,
+  hasConflict,
+}: {
+  status: BookingStatus;
+  label: string;
+  labelOverride?: string;
+  hasConflict?: boolean;
+}) {
   return (
-    <span className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 inline-flex max-w-[85%] items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground">
-      <span
-        aria-hidden
-        className="size-1.5 shrink-0"
-        style={{ backgroundColor: STATUS_COLOR[status] ?? "var(--muted)" }}
-      />
-      <span className="truncate">{label}</span>
-    </span>
+    <div className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex items-center gap-0.5">
+      <span className="inline-flex max-w-[85%] items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground">
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0"
+          style={{ backgroundColor: STATUS_COLOR[status] ?? "var(--muted)" }}
+        />
+        <span className="truncate">{labelOverride ?? label}</span>
+      </span>
+      {hasConflict && (
+        <TriangleAlertIcon
+          className="size-2.5 shrink-0 text-red-400"
+          aria-label="Schedule conflict"
+        />
+      )}
+    </div>
   );
 }
 
@@ -388,26 +408,20 @@ export function MonthBookingEvent({
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
-      {booking.kind === "inquiry" && (
-        <span className="pointer-events-none absolute left-2 top-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white">
-          Inquiry
-        </span>
-      )}
-      {booking.hasConflict && (
-        <TriangleAlertIcon
-          className="pointer-events-none absolute right-1 top-0.5 size-2.5 text-red-400"
-          aria-label="Schedule conflict"
-        />
-      )}
       <span
-        className={`truncate text-xs font-semibold leading-tight${booking.kind === "inquiry" ? " mt-3" : ""}${showPastVisual ? " line-through" : ""}`}
+        className={`truncate text-xs font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
       >
         {booking.title}
       </span>
       <span className="truncate text-[10px] leading-tight opacity-85">{clientDisplay}</span>
       <span className="whitespace-nowrap text-[10px] leading-tight opacity-85">{timeRange}</span>
       {showPastVisual && <PastPill label={t("past")} />}
-      <StatusPill status={booking.status} label={typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status)} />
+      <StatusPill
+        status={booking.status}
+        label={typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status)}
+        labelOverride={booking.kind === "inquiry" && booking.status !== "booked" ? "Inquiry" : undefined}
+        hasConflict={booking.hasConflict}
+      />
     </span>
   );
 }
@@ -461,17 +475,6 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </span>
       ) : (
         <>
-          {ev.kind === "inquiry" && (
-            <span className="pointer-events-none mb-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white self-start">
-              Inquiry
-            </span>
-          )}
-          {ev.hasConflict && (
-            <TriangleAlertIcon
-              className="pointer-events-none absolute right-1 top-1 size-3 text-red-400"
-              aria-label="Schedule conflict"
-            />
-          )}
           <span
             className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
           >
@@ -482,7 +485,14 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </>
       )}
       {showPastVisual && !isContinuation && <PastPill label={t("past")} />}
-      {!isContinuation && <StatusPill status={ev.status} label={typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status)} />}
+      {!isContinuation && (
+        <StatusPill
+          status={ev.status}
+          label={typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status)}
+          labelOverride={ev.kind === "inquiry" && ev.status !== "booked" ? "Inquiry" : undefined}
+          hasConflict={ev.hasConflict}
+        />
+      )}
     </div>
   );
 }
@@ -567,6 +577,7 @@ type CalendarToolbarCtxValue = {
   onScrollToHour: (h: number) => void;
   showPast: boolean;
   eventColor: (ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }) => string;
+  toolbarTrailing?: ReactNode;
 };
 
 /**
@@ -611,41 +622,42 @@ function CalendarToolbar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
-      {/* Navigation */}
-      <div className="flex items-center">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="min-h-11"
-          onClick={() => onNavigate("PREV")}
-          aria-label={messages.previous}
-        >
-          <ChevronLeftIcon className="size-4" />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 border-x-0"
-          onClick={() => onNavigate("TODAY")}
-        >
-          {messages.today}
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          className="min-h-11"
-          onClick={() => onNavigate("NEXT")}
-          aria-label={messages.next}
-        >
-          <ChevronRightIcon className="size-4" />
-        </Button>
+      {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="min-h-11"
+            onClick={() => onNavigate("PREV")}
+            aria-label={messages.previous}
+          >
+            <ChevronLeftIcon className="size-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 border-x-0"
+            onClick={() => onNavigate("TODAY")}
+          >
+            {messages.today}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="min-h-11"
+            onClick={() => onNavigate("NEXT")}
+            aria-label={messages.next}
+          >
+            <ChevronRightIcon className="size-4" />
+          </Button>
+        </div>
+        {ctx?.toolbarTrailing}
       </div>
 
-      {/* Date label — hidden on xs, visible sm+ */}
-      <span className="hidden sm:block font-semibold text-sm">{label}</span>
-
-      {/* Right: jump-to button + view switcher */}
+      {/* Right cluster: date label + jump-to + view switcher */}
       <div className="flex items-center gap-2">
+        <span className="hidden lg:block font-semibold text-sm mr-1">{label}</span>
         {/* Jump-to popover */}
         <Popover>
           <PopoverTrigger
@@ -835,6 +847,7 @@ export function BookingCalendar({
   pendingIds,
   colorMode = "status",
   teamColorMap,
+  toolbarTrailing,
 }: Props) {
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
@@ -902,10 +915,11 @@ export function BookingCalendar({
       onScrollToHour,
       showPast,
       eventColor,
+      toolbarTrailing,
     }),
     // eventColor is recreated only when colorMode/teamColorMap change (inline fn inside render)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [messages, onScrollToHour, showPast, colorMode, teamColorMap]
+    [messages, onScrollToHour, showPast, colorMode, teamColorMap, toolbarTrailing]
   );
 
   const calendarMessages = useMemo(

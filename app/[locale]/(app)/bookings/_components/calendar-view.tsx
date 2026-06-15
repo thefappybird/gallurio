@@ -10,7 +10,7 @@ import {
   type CalendarEvent,
   type AnyCalendarEvent,
 } from "./booking-calendar";
-import { TeamLegend } from "./team-legend";
+import { TeamFilterControl } from "./team-filter-control";
 import type { BookingTeamOption } from "../_data/team-options";
 import { BookingWizardModal } from "./booking-wizard-modal";
 import type { EventInteractionArgs } from "react-big-calendar/lib/addons/dragAndDrop";
@@ -656,14 +656,6 @@ export function CalendarView({
 
   return (
     <>
-      {/* Calendar team filter — the clickable color legend (counterpart to the
-          table view's team dropdown). Status is filtered via the toolbar
-          dropdown and shown per-candle as a status pill. */}
-      {teams && teams.length > 1 ? (
-        <div className="mb-3 flex flex-wrap items-start gap-y-2">
-          <TeamLegend teams={teams} selected={selectedTeams} isOwner={isOwner} onChange={setTeamFilter} />
-        </div>
-      ) : null}
       <BookingCalendar
         events={eventsWithConflicts}
         defaultDate={defaultDate}
@@ -684,6 +676,16 @@ export function CalendarView({
         showPast={showPast}
         colorMode={colorMode}
         teamColorMap={teamColorMap}
+        toolbarTrailing={
+          teams && teams.length > 1 ? (
+            <TeamFilterControl
+              teams={teams}
+              selected={selectedTeams}
+              isOwner={isOwner}
+              onChange={setTeamFilter}
+            />
+          ) : undefined
+        }
       />
       {addState ? (
         <BookingWizardModal

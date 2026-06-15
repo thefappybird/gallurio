@@ -157,6 +157,7 @@
         "allMyTeams": "All my teams",
         "label": "Filter by team",
         "inactive": "Inactive",
+        "teams": "Teams",
         "countLabel": "{count, plural, one {# team} other {# teams}}"
       },
       "import": {

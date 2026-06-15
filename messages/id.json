@@ -157,6 +157,7 @@
         "allMyTeams": "Semua tim saya",
         "label": "Filter berdasarkan tim",
         "inactive": "Tidak aktif",
+        "teams": "Tim",
         "countLabel": "{count, plural, other {# tim}}"
       },
       "import": {
