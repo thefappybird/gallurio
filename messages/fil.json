@@ -1165,6 +1165,15 @@
           "submitted": "Isinumite ang katanungan",
           "booked": "Naaprubahan bilang booking"
         }
+      },
+      "view": {
+        "table": "Table",
+        "calendar": "Calendar"
+      },
+      "calendar": {
+        "legendInquiry": "Lead / Inquiry",
+        "legendBooking": "Booking",
+        "empty": "No inquiries or bookings to show."
       }
     },
     "pageBuilder": {
