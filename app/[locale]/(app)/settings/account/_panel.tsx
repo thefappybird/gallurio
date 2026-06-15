@@ -14,7 +14,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "@/lib/i18n/navigation";
 import { updateProfileNameAction, updateAvatarAction } from "../_actions";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ACCEPTED_MIME } from "@/lib/page-builder/photoSpec";
 import { PasswordSection } from "./_password-section";
 import { MfaSection } from "./_mfa-section";
@@ -40,7 +40,7 @@ type Props = {
   name: string;
   email: string;
   avatarUrl: string | null;
-  avatarCloudinaryPublicId: string | null;
+  avatarAssetId: string | null;
   hasOAuth: boolean;
   mfaEnabled: boolean;
 };
@@ -49,7 +49,7 @@ export function AccountPanel({
   name,
   email,
   avatarUrl: initialAvatarUrl,
-  avatarCloudinaryPublicId: initialAvatarPublicId,
+  avatarAssetId: initialAvatarPublicId,
   hasOAuth,
   mfaEnabled,
 }: Props) {
@@ -106,23 +106,22 @@ export function AccountPanel({
     try {
       // Shared, signature-correct uploader (same one the portfolio gallery
       // uses). validateDimensions is off — avatars have no minimum size.
-      const res = await uploadImageToCloudinary(file, {
+      const res = await uploadImage(file, {
         subfolder: "avatars",
-        validateDimensions: false,
       });
       const newUrl = res.url;
-      const newPublicId = res.cloudinaryPublicId;
+      const newPublicId = res.assetId;
       // Capture prior values before optimistic update so we can roll back on DB failure.
       const prevUrl = avatarUrl;
       const prevPublicId = avatarPublicId;
       // Optimistic update
       setAvatarUrl(newUrl);
       setAvatarPublicId(newPublicId);
-      // If persistence fails, the just-uploaded Cloudinary asset is left as a best-effort orphan — no client-side cleanup is attempted.
+      // If persistence fails, the just-uploaded image is left as a best-effort orphan — no client-side cleanup is attempted.
       startAvatarTransition(async () => {
         const result = await updateAvatarAction({
           avatarUrl: newUrl,
-          avatarCloudinaryPublicId: newPublicId,
+          avatarAssetId: newPublicId,
         });
         if (result && "error" in result) {
           setAvatarUrl(prevUrl);
@@ -152,7 +151,7 @@ export function AccountPanel({
     startAvatarTransition(async () => {
       const result = await updateAvatarAction({
         avatarUrl: null,
-        avatarCloudinaryPublicId: null,
+        avatarAssetId: null,
       });
       if (result && "error" in result) {
         setAvatarUrl(prevUrl);
@@ -223,7 +222,7 @@ export function AccountPanel({
                 )}
               </Button>
               {/* Remove only applies to a photo the user uploaded; a default
-                  avatar from the identity provider has no Cloudinary asset. */}
+                  avatar from the identity provider has no stored asset ID. */}
               {avatarPublicId && (
                 <Button
                   type="button"

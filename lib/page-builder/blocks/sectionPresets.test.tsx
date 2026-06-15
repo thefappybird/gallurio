@@ -11,10 +11,6 @@ import {
   SERVICES_PRESET,
 } from "./sectionPresets";
 
-// Gallery blocks (imported transitively via config) use the client-safe cloudinary URL builder.
-vi.mock("@/lib/storage/cloudinary", () => ({
-  cloudinaryThumbnailUrl: vi.fn((id: string) => `https://res.cloudinary.com/test/${id}`),
-}));
 
 describe("section presets render through Puck", () => {
   it("HeroPreset renders its composed children (heading, text, button)", () => {

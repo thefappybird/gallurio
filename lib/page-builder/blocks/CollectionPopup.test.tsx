@@ -8,7 +8,7 @@ import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 // Env + fetch mocking
 // ---------------------------------------------------------------------------
 
-const OLD_CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const OLD_CLOUD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 
 const baseConfig: PortfolioCollectionsPopupConfig = {
   backgroundColor: undefined,
@@ -96,11 +96,11 @@ function makeLoadMoreFailThenSucceedFetch() {
 }
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
 });
 
 afterEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = OLD_CLOUD;
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = OLD_CLOUD;
   vi.restoreAllMocks();
 });
 
@@ -177,17 +177,17 @@ describe("CollectionPopup", () => {
     expect(images.length).toBeGreaterThanOrEqual(3);
   });
 
-  it("renders thumbnails using cloudinary URLs (width 400, crop fill)", async () => {
+  it("renders thumbnails using CF Images URLs (width 400, fit cover)", async () => {
     vi.stubGlobal("fetch", makeFetch());
     render(<CollectionPopup {...defaultProps()} />);
 
     await screen.findAllByRole("img");
     const imgs = screen.getAllByRole("img") as HTMLImageElement[];
     // Filter thumbnails (not lightbox)
-    const thumbs = imgs.filter((img) => img.src.includes("w_400"));
+    const thumbs = imgs.filter((img) => img.src.includes("w=400"));
     expect(thumbs.length).toBeGreaterThanOrEqual(3);
-    expect(thumbs[0].src).toContain("test-cloud");
-    expect(thumbs[0].src).toContain("c_fill");
+    expect(thumbs[0].src).toContain("imagedelivery.net");
+    expect(thumbs[0].src).toContain("fit=cover");
     expect(thumbs[0].src).toContain("workspace/photo1");
   });
 
@@ -210,7 +210,7 @@ describe("CollectionPopup", () => {
 
     // Page 2 images are present
     const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
-    const thumbs = allImgs.filter((img) => img.src.includes("w_400"));
+    const thumbs = allImgs.filter((img) => img.src.includes("w=400"));
     expect(thumbs.length).toBe(5);
   });
 
@@ -355,7 +355,7 @@ describe("CollectionPopup", () => {
     render(<CollectionPopup {...defaultProps()} />);
 
     const thumbs = await screen.findAllByRole("img");
-    const thumb = thumbs.find((img) => (img as HTMLImageElement).src.includes("w_400"))!;
+    const thumb = thumbs.find((img) => (img as HTMLImageElement).src.includes("w=400"))!;
     expect(thumb).toBeTruthy();
 
     // Click the thumbnail
@@ -364,7 +364,7 @@ describe("CollectionPopup", () => {
     // Lightbox image should appear (width 2000)
     await waitFor(() => {
       const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
-      const lightboxImg = allImgs.find((img) => img.src.includes("w_2000"));
+      const lightboxImg = allImgs.find((img) => img.src.includes("w=2000"));
       expect(lightboxImg).toBeTruthy();
     });
   });
@@ -374,13 +374,13 @@ describe("CollectionPopup", () => {
     render(<CollectionPopup {...defaultProps()} />);
 
     const thumbs = await screen.findAllByRole("img");
-    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w_400"))!;
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w=400"))!;
     fireEvent.click(thumb.closest("button") ?? thumb);
 
     // Lightbox opens
     await waitFor(() => {
       const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
-      expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w_2000"))).toBe(true);
+      expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w=2000"))).toBe(true);
     });
 
     // Close the lightbox
@@ -396,7 +396,7 @@ describe("CollectionPopup", () => {
     // Lightbox image gone
     await waitFor(() => {
       const allImgs = screen.queryAllByRole("img") as HTMLImageElement[];
-      expect(allImgs.every((img) => !(img as HTMLImageElement).src.includes("w_2000"))).toBe(true);
+      expect(allImgs.every((img) => !(img as HTMLImageElement).src.includes("w=2000"))).toBe(true);
     });
   });
 
@@ -405,13 +405,13 @@ describe("CollectionPopup", () => {
     render(<CollectionPopup {...defaultProps()} />);
 
     const thumbs = await screen.findAllByRole("img");
-    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w_400"))!;
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w=400"))!;
     fireEvent.click(thumb.closest("button") ?? thumb);
 
     // Wait for lightbox image to appear
     await waitFor(() => {
       const allImgs = screen.getAllByRole("img") as HTMLImageElement[];
-      expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w_2000"))).toBe(true);
+      expect(allImgs.some((img) => (img as HTMLImageElement).src.includes("w=2000"))).toBe(true);
     });
 
     // The lightbox has its own close button (the popup's close is inerted by base-ui
@@ -497,7 +497,7 @@ describe("CollectionPopup", () => {
     render(<CollectionPopup {...defaultProps()} />);
 
     const thumbs = await screen.findAllByRole("img");
-    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w_400"))!;
+    const thumb = (thumbs as HTMLImageElement[]).find((img) => img.src.includes("w=400"))!;
     fireEvent.click(thumb.closest("button") ?? thumb);
 
     await waitFor(() => {
@@ -518,7 +518,7 @@ describe("CollectionPopup", () => {
     // Wait for page 1
     await screen.findAllByRole("img");
     const page1Thumbs = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
-      (img) => img.src.includes("w_400")
+      (img) => img.src.includes("w=400")
     );
     expect(page1Thumbs.length).toBe(3);
 
@@ -532,7 +532,7 @@ describe("CollectionPopup", () => {
 
     // Original page-1 images still visible
     const stillVisible = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
-      (img) => img.src.includes("w_400")
+      (img) => img.src.includes("w=400")
     );
     expect(stillVisible.length).toBe(3);
 
@@ -545,7 +545,7 @@ describe("CollectionPopup", () => {
     // All 5 images now present
     await waitFor(() => {
       const allThumbs = (screen.getAllByRole("img") as HTMLImageElement[]).filter(
-        (img) => img.src.includes("w_400")
+        (img) => img.src.includes("w=400")
       );
       expect(allThumbs.length).toBe(5);
     });

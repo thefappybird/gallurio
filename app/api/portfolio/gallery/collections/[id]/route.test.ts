@@ -18,15 +18,14 @@ vi.mock("next/server", async (importOriginal) => {
 
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
-// Track every Cloudinary destroy so we can assert the cascade ran.
-const destroyed: string[] = [];
-let destroyShouldThrow = false;
-vi.mock("@/lib/storage/cloudinary", () => ({
-  destroyAsset: async (publicId: string) => {
-    if (destroyShouldThrow) throw new Error("cloudinary_down");
-    destroyed.push(publicId);
+const deleted: string[] = [];
+let deleteShouldThrow = false;
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  deleteImage: async (assetId: string) => {
+    if (deleteShouldThrow) throw new Error("cf_images_down");
+    deleted.push(assetId);
   },
-  cloudinaryThumbnailUrl: (publicId: string) => `https://res.cloudinary.com/test/image/upload/c_fill,w_200,h_200,q_auto,f_auto/${publicId}`,
+  imageDeliveryUrl: (assetId: string) => `https://imagedelivery.net/hash/${assetId}/public`,
 }));
 
 let mockCtx: {
@@ -37,7 +36,6 @@ let mockCtx: {
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId: mockCtx.userId,
-    clerkOrgId: "org_test",
     role: mockCtx.role,
     workspace: mockCtx.workspace,
   }),
@@ -45,8 +43,7 @@ vi.mock("@/lib/auth/requireOrg", () => ({
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryCollection, GalleryItem, Workspace } from "@/lib/db/models";
-import { DELETE } from "./route";
-import { GET } from "./route";
+import { DELETE, GET } from "./route";
 
 let workspaceId: Types.ObjectId;
 
@@ -66,8 +63,8 @@ async function seedCollectionWithItems(wsId: Types.ObjectId, count: number) {
     Array.from({ length: count }, (_, i) => ({
       workspaceId: wsId,
       collectionId: col._id,
-      cloudinaryPublicId: `gallurio/${wsId}/portfolio/img-${i}.jpg`,
-      url: `https://res.cloudinary.com/x/img-${i}.jpg`,
+      assetId: `img-${i}`,
+      url: `https://imagedelivery.net/hash/img-${i}/public`,
       order: i,
     }))
   );
@@ -83,13 +80,12 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
-  destroyed.length = 0;
-  destroyShouldThrow = false;
+  deleted.length = 0;
+  deleteShouldThrow = false;
   const ws = await Workspace.create({
     slug: "ws-a",
     name: "Workspace A",
     ownerUserId: "user_a",
-    clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
     currency: "PHP",
   });
   workspaceId = ws._id;
@@ -97,7 +93,7 @@ beforeEach(async () => {
 });
 
 describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
-  it("hard-deletes the collection, its items, and destroys their Cloudinary assets", async () => {
+  it("hard-deletes the collection, its items, and deletes their CF Images assets", async () => {
     const col = await seedCollectionWithItems(workspaceId, 3);
     const res = (await DELETE(new Request("http://t"), makeParams(String(col._id)))) as unknown as MockResp;
 
@@ -105,7 +101,7 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     expect((res.body as { itemsDeleted: number }).itemsDeleted).toBe(3);
     expect(await GalleryCollection.countDocuments({})).toBe(0);
     expect(await GalleryItem.countDocuments({})).toBe(0);
-    expect(destroyed).toHaveLength(3);
+    expect(deleted).toHaveLength(3);
   });
 
   it("rejects a non-owner with 403 and deletes nothing", async () => {
@@ -116,7 +112,7 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     expect(res.status).toBe(403);
     expect(await GalleryCollection.countDocuments({})).toBe(1);
     expect(await GalleryItem.countDocuments({})).toBe(2);
-    expect(destroyed).toHaveLength(0);
+    expect(deleted).toHaveLength(0);
   });
 
   it("cannot delete another workspace's collection (tenant isolation) → 404", async () => {
@@ -124,7 +120,6 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
       slug: "ws-b",
       name: "Workspace B",
       ownerUserId: "user_b",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
       currency: "PHP",
     });
     const foreign = await seedCollectionWithItems(otherWs._id, 2);
@@ -132,10 +127,9 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     const res = (await DELETE(new Request("http://t"), makeParams(String(foreign._id)))) as unknown as MockResp;
 
     expect(res.status).toBe(404);
-    // Org B's data is untouched.
     expect(await GalleryCollection.countDocuments({ workspaceId: otherWs._id })).toBe(1);
     expect(await GalleryItem.countDocuments({ workspaceId: otherWs._id })).toBe(2);
-    expect(destroyed).toHaveLength(0);
+    expect(deleted).toHaveLength(0);
   });
 
   it("returns 404 for a missing collection", async () => {
@@ -156,8 +150,8 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     await GalleryItem.create({
       workspaceId,
       collectionId: null,
-      cloudinaryPublicId: `gallurio/${workspaceId}/portfolio/featured.jpg`,
-      url: "https://res.cloudinary.com/x/featured.jpg",
+      assetId: "standalone",
+      url: "https://imagedelivery.net/hash/standalone/public",
       order: 0,
     });
 
@@ -167,19 +161,17 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
     const remaining = await GalleryItem.find({}).lean();
     expect(remaining).toHaveLength(1);
     expect(remaining[0].collectionId).toBeNull();
-    // The standalone asset was not destroyed.
-    expect(destroyed).not.toContain(`gallurio/${workspaceId}/portfolio/featured.jpg`);
+    expect(deleted).not.toContain("standalone");
   });
 
-  it("still completes the DB delete when Cloudinary destroy fails, reporting assetsFailed", async () => {
+  it("still completes the DB delete when CF Images delete fails, reporting assetsFailed", async () => {
     const col = await seedCollectionWithItems(workspaceId, 2);
-    destroyShouldThrow = true;
+    deleteShouldThrow = true;
 
     const res = (await DELETE(new Request("http://t"), makeParams(String(col._id)))) as unknown as MockResp;
 
     expect(res.status).toBe(200);
     expect((res.body as { assetsFailed: number }).assetsFailed).toBe(2);
-    // DB is still fully cleaned up despite the Cloudinary failures.
     expect(await GalleryCollection.countDocuments({})).toBe(0);
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
@@ -199,7 +191,7 @@ describe("GET /api/portfolio/gallery/collections/[id]", () => {
   });
 
   it("returns a collection's items, paginated by cursor", async () => {
-    const col = await seedCollectionWithItems(workspaceId, 5); // orders 0..4
+    const col = await seedCollectionWithItems(workspaceId, 5);
     const r1 = (await GET(new Request("http://t/?limit=2"), makeParams(String(col._id)))) as unknown as MockResp;
     const b1 = r1.body as { items: { id: string }[]; nextCursor: string | null };
     expect(b1.items).toHaveLength(2);
@@ -214,8 +206,7 @@ describe("GET /api/portfolio/gallery/collections/[id]", () => {
 
   it("cannot read another workspace's collection items (tenant isolation)", async () => {
     const otherWs = await Workspace.create({
-      slug: "ws-c", name: "C", ownerUserId: "user_c",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`, currency: "PHP",
+      slug: "ws-c", name: "C", ownerUserId: "user_c", currency: "PHP",
     });
     const foreign = await seedCollectionWithItems(otherWs._id, 3);
     const res = (await GET(new Request("http://t/?limit=16"), makeParams(String(foreign._id)))) as unknown as MockResp;
@@ -227,18 +218,18 @@ describe("GET /api/portfolio/gallery/collections/[id]", () => {
     await seedCollectionWithItems(workspaceId, 2);
     await GalleryItem.create({
       workspaceId, collectionId: null,
-      cloudinaryPublicId: `gallurio/${workspaceId}/portfolio/last.jpg`,
-      url: "https://x/last.jpg", caption: "Last", order: 0,
+      assetId: "last",
+      url: "https://imagedelivery.net/hash/last/public", caption: "Last", order: 0,
     });
     const res = (await GET(new Request("http://t/?limit=10"), makeParams("all"))) as unknown as MockResp;
     expect(res.status).toBe(200);
     const body = res.body as { items: { caption: string | null }[] };
     expect(body.items.length).toBeGreaterThanOrEqual(3);
-    expect(body.items[0].caption).toBe("Last"); // newest-first
+    expect(body.items[0].caption).toBe("Last");
   });
 
   it("?newest=N returns the newest N of a collection (bulk select), nextCursor null", async () => {
-    const col = await seedCollectionWithItems(workspaceId, 5); // orders 0..4, createdAt increasing
+    const col = await seedCollectionWithItems(workspaceId, 5);
     const res = (await GET(new Request("http://t/?newest=2"), makeParams(String(col._id)))) as unknown as MockResp;
     expect(res.status).toBe(200);
     const body = res.body as { items: unknown[]; nextCursor: string | null };

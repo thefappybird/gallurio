@@ -4,13 +4,13 @@ import { isValidObjectId } from "mongoose";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { verifyImageOwnership, imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 import { validatePhotoMeta } from "@/lib/page-builder/photoSpec";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
-  cloudinaryPublicId: z.string().min(1).max(300),
+  assetId: z.string().min(1).max(300),
   url: z.string().url().max(1000),
   width: z.number().int().positive().max(20000).optional(),
   height: z.number().int().positive().max(20000).optional(),
@@ -20,11 +20,6 @@ const bodySchema = z.object({
   altText: z.string().max(300).optional(),
   collectionId: z.string().min(1).max(64).optional(),
 });
-
-function makeWorkspacePrefixCheck(workspaceId: string) {
-  const prefix = `gallurio/${workspaceId}/`;
-  return (publicId: string) => !publicId.includes("..") && publicId.startsWith(prefix);
-}
 
 /**
  * POST /api/portfolio/gallery/items
@@ -51,8 +46,8 @@ export async function POST(req: Request) {
 
   const workspaceId = ctx.workspace._id;
 
-  const prefixCheck = makeWorkspacePrefixCheck(workspaceId.toString());
-  if (!prefixCheck(parsed.data.cloudinaryPublicId)) {
+  const owned = await verifyImageOwnership(parsed.data.assetId, workspaceId.toString());
+  if (!owned) {
     return NextResponse.json({ error: "invalid_image_ownership" }, { status: 400 });
   }
 
@@ -93,7 +88,7 @@ export async function POST(req: Request) {
   const item = await GalleryItem.create({
     workspaceId,
     collectionId,
-    cloudinaryPublicId: parsed.data.cloudinaryPublicId,
+    assetId: parsed.data.assetId,
     url: parsed.data.url,
     width: parsed.data.width ?? null,
     height: parsed.data.height ?? null,
@@ -104,9 +99,10 @@ export async function POST(req: Request) {
     order: existingCount,
   });
 
-  const thumbUrl = cloudinaryThumbnailUrl(parsed.data.cloudinaryPublicId, {
+  const thumbUrl = imageDeliveryUrl(parsed.data.assetId, {
     width: 200,
     height: 200,
+    fit: "cover",
   });
 
   return NextResponse.json(

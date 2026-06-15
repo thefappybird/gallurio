@@ -11,7 +11,7 @@
  */
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -69,7 +69,7 @@ export function FeaturedWorkBlock({
     id: c.id,
     name: c.name,
     count: c.itemCount ?? 0,
-    coverUrl: cloudinaryImageUrl(c.coverPublicId, { width: 700, height: 900, crop: "fill" }),
+    coverUrl: imageDeliveryUrl(c.coverPublicId, { width: 700, height: 900, fit: "cover" }),
   }));
 
   return (

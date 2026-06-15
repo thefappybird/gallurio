@@ -18,14 +18,14 @@ const L = {
 };
 
 type Props = {
-  /** Current value: a Cloudinary public ID ("" = none). */
+  /** Current value: a CF Images asset ID ("" = none). */
   value: string;
   onChange: (publicId: string) => void;
 };
 
 /**
  * Picks ONE already-uploaded photo from the workspace's library for a single
- * image field (Hero / CTA background). Stores the photo's Cloudinary public ID —
+ * image field (Hero / CTA background). Stores the photo's asset ID —
  * the owner never sees an ID. Uploading new photos happens in the Collections
  * manager, not here (pick-only by design).
  */

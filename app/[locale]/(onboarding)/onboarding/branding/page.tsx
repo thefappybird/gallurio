@@ -10,7 +10,7 @@ export default async function BrandingStepPage() {
       furthestStep={ctx.currentStep}
       defaults={{
         logoUrl: ctx.workspace?.branding?.logoUrl ?? null,
-        logoCloudinaryPublicId: ctx.workspace?.branding?.logoCloudinaryPublicId ?? null,
+        logoAssetId: ctx.workspace?.branding?.logoAssetId ?? null,
         primaryColor: ctx.workspace?.branding?.primaryColor ?? "#111111",
         secondaryColor: ctx.workspace?.branding?.secondaryColor ?? "#f5f5f5",
         tagline: ctx.workspace?.branding?.tagline ?? "",

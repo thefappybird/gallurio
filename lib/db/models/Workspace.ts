@@ -64,7 +64,7 @@ const workspaceSchema = new Schema(
     timezone: { type: String, default: null },
     branding: {
       logoUrl: { type: String, default: null },
-      logoCloudinaryPublicId: { type: String, default: null },
+      logoAssetId: { type: String, default: null },
       primaryColor: { type: String, default: "#111111" },
       secondaryColor: { type: String, default: "#f5f5f5" },
       tagline: { type: String, default: "" },
@@ -195,7 +195,7 @@ const workspaceSchema = new Schema(
       header: {
         brandText: { type: String },
         logoUrl: { type: String, default: "" },
-        logoPublicId: { type: String, default: "" },
+        logoAssetId: { type: String, default: "" },
         backgroundColor: { type: String, default: "" },
         backgroundOpacity: { type: Number, default: 100 },
         linkColor: { type: String, default: "" },

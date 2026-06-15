@@ -3,7 +3,7 @@
  *
  * Renders purely from its own `images[]` prop (baked by the editor's multi-image
  * picker and refreshed by reconcileGalleryImages on editor-load / publish). No DB
- * access, no server context, no server-only Cloudinary import — so the SAME
+ * access, no server context, no server-only imports — so the SAME
  * component renders in the editor canvas AND on the public page (WYSIWYG,
  * fetch-free).
  *
@@ -11,7 +11,7 @@
  */
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -83,10 +83,10 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
           }}
         >
           {list.map((img) => {
-            const src = cloudinaryImageUrl(img.publicId, {
+            const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth,
-              crop: "fill",
+              fit: "cover",
             });
             // Skip a blank publicId / unset cloud name rather than emit a broken <img src="">.
             if (!src) return null;

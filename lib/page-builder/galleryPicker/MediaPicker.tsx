@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import type { PickerCollection, PickerItem } from "./types";
@@ -329,7 +329,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     setUploading(true);
     setUploadError(null);
     const results = await Promise.allSettled(
-      valid.map((file) => uploadImageToCloudinary(file, { subfolder: "portfolio" }))
+      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
     );
 
     let dimErr = false;
@@ -352,7 +352,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         const created = (await createRes.json()) as { id: string; thumbUrl: string; caption: string | null };
         const item: PickerItem = {
           id: created.id,
-          publicId: r.value.cloudinaryPublicId,
+          publicId: r.value.assetId,
           thumbUrl: created.thumbUrl,
           caption: created.caption,
         };

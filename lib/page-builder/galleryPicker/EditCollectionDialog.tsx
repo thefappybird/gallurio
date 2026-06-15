@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerCollection, PickerItem } from "./types";
 
@@ -204,7 +204,7 @@ export function EditCollectionDialog({
     const valid = Array.from(files).filter((f) => validatePhotoFile(f).ok);
     if (valid.length === 0) return;
     setUploading(true);
-    Promise.allSettled(valid.map((f) => uploadImageToCloudinary(f, { subfolder: "portfolio" }))).then(async (results) => {
+    Promise.allSettled(valid.map((f) => uploadImage(f, { subfolder: "portfolio" }))).then(async (results) => {
       const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
       for (const up of ok) {
         try {
@@ -214,7 +214,7 @@ export function EditCollectionDialog({
           });
           if (res.ok) {
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
-            setItems((prev) => [...prev, { id: created.id, publicId: up.cloudinaryPublicId, thumbUrl: created.thumbUrl, caption: created.caption }]);
+            setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption }]);
           } else {
             setError("Some photos could not be added.");
           }

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
-import { deleteItemsByPublicId } from "@/lib/db/queries/gallery";
-import { destroyAsset } from "@/lib/storage/cloudinary";
+import { deleteItemsByAssetId } from "@/lib/db/queries/gallery";
+import { deleteImage } from "@/lib/storage/cloudflareImages";
 
 export const runtime = "nodejs";
 
@@ -19,22 +19,22 @@ export async function POST(req: Request) {
   }
 
   const workspaceId = ctx.workspace._id.toString();
-  const { publicIds, deletedDocs } = await deleteItemsByPublicId({ workspaceId, itemIds: parsed.data.itemIds });
+  const { assetIds, deletedDocs } = await deleteItemsByAssetId({ workspaceId, itemIds: parsed.data.itemIds });
 
   let assetsFailed = 0;
   await Promise.all(
-    publicIds.map(async (pid) => {
+    assetIds.map(async (assetId) => {
       try {
-        await destroyAsset(pid);
+        await deleteImage(assetId);
       } catch (err) {
         assetsFailed += 1;
-        console.error(`[portfolio/gallery/items/delete] cloudinary destroy failed for ${pid}:`, err);
+        console.error(`[portfolio/gallery/items/delete] CF Images delete failed for ${assetId}:`, err);
       }
     })
   );
 
   return NextResponse.json(
-    { deletedDocs, assetsDestroyed: publicIds.length - assetsFailed, assetsFailed },
+    { deletedDocs, assetsDestroyed: assetIds.length - assetsFailed, assetsFailed },
     { status: 200 }
   );
 }

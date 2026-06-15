@@ -21,12 +21,12 @@ async function seed() {
   wsA = a._id;
   const col = await GalleryCollection.create({ workspaceId: wsA, name: "C", slug: "c", order: 0 });
   colA = col._id;
-  const s = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "uno", url: "u", order: 0 });
+  const s = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "uno", url: "u", order: 0 });
   soleItem = s._id;
-  const c1 = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "dos", url: "u", order: 1 });
+  const c1 = await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "dos", url: "u", order: 1 });
   copyItem = c1._id;
   const otherCol = await GalleryCollection.create({ workspaceId: wsA, name: "O", slug: "o", order: 1 });
-  const c2 = await GalleryItem.create({ workspaceId: wsA, collectionId: otherCol._id, cloudinaryPublicId: "dos", url: "u", order: 0 });
+  const c2 = await GalleryItem.create({ workspaceId: wsA, collectionId: otherCol._id, assetId: "dos", url: "u", order: 0 });
   otherCopy = c2._id;
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };
 }

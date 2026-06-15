@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerItem } from "./types";
 
@@ -37,7 +37,7 @@ const L = {
 };
 
 type LocalImage = {
-  cloudinaryPublicId: string;
+  assetId: string;
   url: string;
   width?: number;
   height?: number;
@@ -106,7 +106,7 @@ export function CreateCollectionDialog({
     setUploading(true);
     setError(topError);
     Promise.allSettled(
-      valid.map((file) => uploadImageToCloudinary(file, { subfolder: "portfolio" }))
+      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
     ).then((results) => {
       const ok: LocalImage[] = [];
       let dimErr = false;
@@ -249,7 +249,7 @@ export function CreateCollectionDialog({
             <ul className="grid grid-cols-4 gap-1.5 sm:grid-cols-6" aria-label="Uploaded photos">
               {images.map((img, i) => (
                 <li
-                  key={img.cloudinaryPublicId}
+                  key={img.assetId}
                   className="relative aspect-square overflow-hidden border border-border"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -307,7 +307,7 @@ export function CreateCollectionDialog({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         excludePublicIds={[
-          ...images.map((i) => i.cloudinaryPublicId),
+          ...images.map((i) => i.assetId),
           ...picked.map((p) => p.publicId),
         ]}
         onAdd={(items) =>

@@ -25,7 +25,7 @@ async function seed() {
   ws = { _id: w._id, slug: "studio" };
   const col = await GalleryCollection.create({ workspaceId: w._id, name: "Weddings", slug: "weddings", isPublic: true });
   publicCol = col._id;
-  await GalleryItem.insertMany(Array.from({ length: 3 }, (_, i) => ({ workspaceId: w._id, collectionId: col._id, cloudinaryPublicId: `p${i}`, url: "u", order: i })));
+  await GalleryItem.insertMany(Array.from({ length: 3 }, (_, i) => ({ workspaceId: w._id, collectionId: col._id, assetId: `p${i}`, url: "u", order: i })));
 }
 
 beforeAll(startInMemoryMongo); afterAll(stopInMemoryMongo);
@@ -52,7 +52,7 @@ describe("GET /api/public/w/[orgSlug]/collections/[id]", () => {
   it("tenant isolation: cannot read another workspace's collection via this slug", async () => {
     const other = await Workspace.create({ slug: "other", name: "O", ownerUserId: "u2",currency: "PHP", publicPage: { publishedAt: new Date() } });
     const colO = await GalleryCollection.create({ workspaceId: other._id, name: "X", slug: "x", isPublic: true });
-    await GalleryItem.create({ workspaceId: other._id, collectionId: colO._id, cloudinaryPublicId: "z", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: other._id, collectionId: colO._id, assetId: "z", url: "u", order: 0 });
     const res = await call("studio", colO._id.toString());
     expect((res.body as { items: unknown[] }).items).toEqual([]);
   });

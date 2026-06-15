@@ -4,7 +4,7 @@
  * ContainerBackgroundSlideshow — client island that animates a Container's
  * baked background images. Receives ALREADY-RESOLVED src URLs from the
  * isomorphic ContainerBlock (same split as GalleryCarouselBlock →
- * GalleryCarouselClient): the block owns Cloudinary URL building, this island
+ * GalleryCarouselClient): the block owns CF Images URL building, this island
  * owns the timer, active-layer index, tab-visibility pause, and reduced-motion.
  *
  * GPU-friendly: only `opacity`/`transform` animate. Decorative: the whole layer

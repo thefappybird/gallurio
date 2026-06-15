@@ -215,7 +215,7 @@ describe("updateWorkspaceBrandingSchema", () => {
     const ok = updateWorkspaceBrandingSchema.safeParse({
       ...validUpdateBranding,
       logoUrl: "https://example.com/logo.png",
-      logoCloudinaryPublicId: "gallurio/ws_123/logo",
+      logoAssetId: "gallurio/ws_123/logo",
       tagline: "Your perfect moment, captured.",
       description: "We shoot weddings and portraits across the Philippines.",
     });

@@ -13,13 +13,13 @@ import type { GalleryItemDoc } from "@/lib/db/models/GalleryItem";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryItem } from "@/lib/db/models/GalleryItem";
 import { GalleryCollection } from "@/lib/db/models/GalleryCollection";
-import { cloudinaryThumbnailUrl } from "@/lib/storage/cloudinary";
+import { imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
 
 const MAX_LIMIT = 100;
 
 export type GalleryBlockItem = {
   _id: Types.ObjectId;
-  cloudinaryPublicId: string;
+  assetId: string;
   url: string;
   caption: string;
   altText: string;
@@ -29,7 +29,7 @@ export type GalleryBlockItem = {
 };
 
 const ITEM_PROJECTION = {
-  cloudinaryPublicId: 1,
+  assetId: 1,
   url: 1,
   caption: 1,
   altText: 1,
@@ -86,7 +86,7 @@ export type PickerCollection = {
 
 export type PickerItem = {
   id: string;
-  /** Cloudinary public ID — used by single-image fields (Hero/CTA backgrounds). */
+  /** Asset ID — used by single-image fields (Hero/CTA backgrounds). */
   publicId: string;
   thumbUrl: string;
   caption: string | null;
@@ -118,7 +118,7 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
       { $match: { workspaceId: new Types.ObjectId(workspaceId), collectionId: { $in: collectionIds } } },
       { $group: { _id: "$collectionId", count: { $sum: 1 } } },
     ]),
-    // For each collection that has a coverItemId, fetch the cloudinaryPublicId.
+    // For each collection that has a coverItemId, fetch the assetId.
     (async (): Promise<Map<string, string>> => {
       const coverIds = withCover
         .map((c) => c.coverItemId)
@@ -128,14 +128,14 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
         workspaceId,
         _id: { $in: coverIds },
       })
-        .select({ cloudinaryPublicId: 1 })
+        .select({ assetId: 1 })
         .lean();
-      return new Map(coverItems.map((ci) => [String(ci._id), ci.cloudinaryPublicId as string]));
+      return new Map(coverItems.map((ci) => [String(ci._id), ci.assetId as string]));
     })(),
     // For cover-less collections, fetch the newest item per collection in a single aggregate.
     (async (): Promise<Map<string, string>> => {
       if (withoutCoverIds.length === 0) return new Map();
-      const rows = await GalleryItem.aggregate<{ _id: Types.ObjectId; cloudinaryPublicId: string }>([
+      const rows = await GalleryItem.aggregate<{ _id: Types.ObjectId; assetId: string }>([
         {
           $match: {
             workspaceId: new Types.ObjectId(workspaceId),
@@ -146,11 +146,11 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
         {
           $group: {
             _id: "$collectionId",
-            cloudinaryPublicId: { $first: "$cloudinaryPublicId" },
+            assetId: { $first: "$assetId" },
           },
         },
       ]);
-      return new Map(rows.map((r) => [String(r._id), r.cloudinaryPublicId]));
+      return new Map(rows.map((r) => [String(r._id), r.assetId]));
     })(),
   ]);
 
@@ -168,7 +168,7 @@ export async function listCollectionsForPicker(workspaceId: string): Promise<Pic
       id: colId,
       name: c.name,
       coverUrl: coverPublicId
-        ? cloudinaryThumbnailUrl(coverPublicId, { width: 240, height: 240 })
+        ? imageDeliveryUrl(coverPublicId, { width: 240, height: 240, fit: "cover" })
         : null,
       coverPublicId,
       itemCount: countMap.get(colId) ?? 0,
@@ -192,7 +192,7 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
   const items = await GalleryItem.find({ workspaceId })
     .sort({ createdAt: -1 })
     .limit(PICKER_ITEMS_CAP + 1)
-    .select({ cloudinaryPublicId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1 })
     .lean();
 
   if (items.length > PICKER_ITEMS_CAP) {
@@ -204,11 +204,8 @@ export async function listItemsForPicker(workspaceId: string): Promise<PickerIte
 
   return items.map((it) => ({
     id: String(it._id),
-    publicId: it.cloudinaryPublicId as string,
-    thumbUrl: cloudinaryThumbnailUrl(it.cloudinaryPublicId as string, {
-      width: 200,
-      height: 200,
-    }),
+    publicId: it.assetId as string,
+    thumbUrl: imageDeliveryUrl(it.assetId as string, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
   }));
 }
@@ -240,12 +237,12 @@ function decodeCursor(cursor: string): { sortValue: string; id: string } | null 
   }
 }
 
-function toPickerItem(it: { _id: unknown; cloudinaryPublicId?: unknown; caption?: unknown }): PickerItem {
-  const publicId = (it.cloudinaryPublicId as string) ?? "";
+function toPickerItem(it: { _id: unknown; assetId?: unknown; caption?: unknown }): PickerItem {
+  const publicId = (it.assetId as string) ?? "";
   return {
     id: String(it._id),
     publicId,
-    thumbUrl: cloudinaryThumbnailUrl(publicId, { width: 200, height: 200 }),
+    thumbUrl: imageDeliveryUrl(publicId, { width: 200, height: 200, fit: "cover" }),
     caption: (it.caption as string) || null,
   };
 }
@@ -284,7 +281,7 @@ export async function listCollectionItemsPage(opts: {
   const docs = await GalleryItem.find(filter)
     .sort({ order: 1, _id: 1 })
     .limit(limit + 1)
-    .select({ cloudinaryPublicId: 1, caption: 1, order: 1 })
+    .select({ assetId: 1, caption: 1, order: 1 })
     .lean();
 
   const hasMore = docs.length > limit;
@@ -297,10 +294,9 @@ export async function listCollectionItemsPage(opts: {
 /**
  * One page of ALL workspace items, newest-first, paginated. Backs the virtual
  * "All photos" collection (covers standalone collectionId:null items too).
- * Deduplicates by Cloudinary asset: each unique `cloudinaryPublicId` appears
- * once (copy semantics can create multiple GalleryItem docs per asset). The
- * representative is the newest doc per publicId; cursor pagination is by that
- * representative's (createdAt, _id) descending.
+ * Deduplicates by asset: each unique `assetId` appears once (copy semantics can
+ * create multiple GalleryItem docs per asset). The representative is the newest
+ * doc per assetId; cursor pagination is by that representative's (createdAt, _id).
  */
 export async function listAllItemsPage(opts: {
   workspaceId: string;
@@ -313,15 +309,15 @@ export async function listAllItemsPage(opts: {
   const limit = clampLimit(opts.limit);
   await connectDB();
 
-  // Group by Cloudinary asset so each unique photo appears once (copy semantics
-  // can create several GalleryItem docs per asset). The representative is the
-  // newest doc per publicId; pagination is by that representative's (createdAt,_id).
+  // Group by asset so each unique photo appears once (copy semantics can create
+  // several GalleryItem docs per asset). The representative is the newest doc
+  // per assetId; pagination is by that representative's (createdAt, _id).
   const pipeline: PipelineStage[] = [
     { $match: { workspaceId: new Types.ObjectId(workspaceId) } },
     { $sort: { createdAt: -1, _id: -1 } },
     {
       $group: {
-        _id: "$cloudinaryPublicId",
+        _id: "$assetId",
         docId: { $first: "$_id" },
         createdAt: { $first: "$createdAt" },
         caption: { $first: "$caption" },
@@ -363,7 +359,7 @@ export async function listAllItemsPage(opts: {
   const items: PickerItem[] = page.map((r) => ({
     id: String(r.docId),
     publicId: r._id,
-    thumbUrl: cloudinaryThumbnailUrl(r._id, { width: 200, height: 200 }),
+    thumbUrl: imageDeliveryUrl(r._id, { width: 200, height: 200, fit: "cover" }),
     caption: (r.caption as string) || null,
   }));
 
@@ -416,7 +412,7 @@ export async function listPublicCollectionItemsPage(opts: {
   const docs = await GalleryItem.find(filter)
     .sort({ order: 1, _id: 1 })
     .limit(limit + 1)
-    .select({ cloudinaryPublicId: 1, altText: 1, caption: 1, order: 1 })
+    .select({ assetId: 1, altText: 1, caption: 1, order: 1 })
     .lean();
 
   const hasMore = docs.length > limit;
@@ -426,7 +422,7 @@ export async function listPublicCollectionItemsPage(opts: {
   return {
     items: page.map((d) => ({
       id: String(d._id),
-      publicId: (d.cloudinaryPublicId as string) ?? "",
+      publicId: (d.assetId as string) ?? "",
       alt: (d.altText as string) || (d.caption as string) || "",
     })),
     nextCursor,
@@ -452,20 +448,20 @@ export async function listCollectionNewest(opts: {
   const docs = await GalleryItem.find({ workspaceId, collectionId })
     .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
-    .select({ cloudinaryPublicId: 1, caption: 1 })
+    .select({ assetId: 1, caption: 1 })
     .lean();
 
   return docs.map(toPickerItem);
 }
 
-/** Count GalleryItem docs in a workspace that reference a Cloudinary asset. */
-export async function countItemsByPublicId(
+/** Count GalleryItem docs in a workspace that reference a given asset. */
+export async function countItemsByAssetId(
   workspaceId: string,
-  cloudinaryPublicId: string
+  assetId: string
 ): Promise<number> {
-  if (!workspaceId || !cloudinaryPublicId) return 0;
+  if (!workspaceId || !assetId) return 0;
   await connectDB();
-  return GalleryItem.countDocuments({ workspaceId, cloudinaryPublicId });
+  return GalleryItem.countDocuments({ workspaceId, assetId });
 }
 
 /** Detach items from a collection: delete the membership, or keep as standalone if last. */
@@ -489,7 +485,7 @@ export async function detachItemsFromCollection(opts: {
       for (const it of items) {
         const otherRefs = await GalleryItem.countDocuments({
           workspaceId,
-          cloudinaryPublicId: it.cloudinaryPublicId,
+          assetId: it.assetId,
           _id: { $ne: it._id },
         }).session(session);
         if (otherRefs > 0) {
@@ -537,14 +533,14 @@ export async function copyItemsIntoCollection(opts: {
   if (sources.length === 0) return [];
 
   const existing = await GalleryItem.find({ workspaceId, collectionId })
-    .select({ cloudinaryPublicId: 1 })
+    .select({ assetId: 1 })
     .lean();
-  const present = new Set(existing.map((e) => e.cloudinaryPublicId as string));
+  const present = new Set(existing.map((e) => e.assetId as string));
   const seen = new Set<string>();
   const toCopy = sources.filter((s) => {
-    const pid = s.cloudinaryPublicId as string;
-    if (present.has(pid) || seen.has(pid)) return false;
-    seen.add(pid);
+    const aid = s.assetId as string;
+    if (present.has(aid) || seen.has(aid)) return false;
+    seen.add(aid);
     return true;
   });
   if (toCopy.length === 0) return [];
@@ -558,7 +554,7 @@ export async function copyItemsIntoCollection(opts: {
       const docs = toCopy.map((s, i) => ({
         workspaceId,
         collectionId,
-        cloudinaryPublicId: s.cloudinaryPublicId,
+        assetId: s.assetId,
         url: s.url,
         width: s.width ?? null,
         height: s.height ?? null,
@@ -588,21 +584,21 @@ export async function copyItemsIntoCollection(opts: {
 }
 
 /** Permanently delete every doc sharing the selected items' assets; report assets to destroy. */
-export async function deleteItemsByPublicId(opts: {
+export async function deleteItemsByAssetId(opts: {
   workspaceId: string;
   itemIds: string[];
-}): Promise<{ publicIds: string[]; deletedDocs: number }> {
+}): Promise<{ assetIds: string[]; deletedDocs: number }> {
   const { workspaceId, itemIds } = opts;
-  if (!workspaceId) return { publicIds: [], deletedDocs: 0 };
+  if (!workspaceId) return { assetIds: [], deletedDocs: 0 };
   await connectDB();
 
   const ids = itemIds.filter((x) => Types.ObjectId.isValid(x));
-  if (ids.length === 0) return { publicIds: [], deletedDocs: 0 };
-  const selected = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).select({ cloudinaryPublicId: 1 }).lean();
-  const publicIds = [...new Set(selected.map((s) => s.cloudinaryPublicId as string))];
-  if (publicIds.length === 0) return { publicIds: [], deletedDocs: 0 };
+  if (ids.length === 0) return { assetIds: [], deletedDocs: 0 };
+  const selected = await GalleryItem.find({ workspaceId, _id: { $in: ids } }).select({ assetId: 1 }).lean();
+  const assetIds = [...new Set(selected.map((s) => s.assetId as string))];
+  if (assetIds.length === 0) return { assetIds: [], deletedDocs: 0 };
 
-  const allDocs = await GalleryItem.find({ workspaceId, cloudinaryPublicId: { $in: publicIds } }).select({ _id: 1 }).lean();
+  const allDocs = await GalleryItem.find({ workspaceId, assetId: { $in: assetIds } }).select({ _id: 1 }).lean();
   const allIds = allDocs.map((d) => d._id);
 
   const session = await mongoose.startSession();
@@ -620,5 +616,5 @@ export async function deleteItemsByPublicId(opts: {
   } finally {
     await session.endSession();
   }
-  return { publicIds, deletedDocs };
+  return { assetIds, deletedDocs };
 }

@@ -102,7 +102,7 @@ export default async function SettingsCatchallPage({
 
   const brandingDefaults: UpdateWorkspaceBrandingInput = {
     logoUrl: workspace.branding?.logoUrl ?? null,
-    logoCloudinaryPublicId: workspace.branding?.logoCloudinaryPublicId ?? null,
+    logoAssetId: workspace.branding?.logoAssetId ?? null,
     primaryColor: workspace.branding?.primaryColor ?? "#111111",
     secondaryColor: workspace.branding?.secondaryColor ?? "#f5f5f5",
     tagline: workspace.branding?.tagline ?? "",
@@ -138,7 +138,7 @@ export default async function SettingsCatchallPage({
               name={authUser?.name ?? ""}
               email={authUser?.email ?? ""}
               avatarUrl={userDoc?.avatarUrl ?? authUser?.avatarUrl ?? null}
-              avatarCloudinaryPublicId={userDoc?.avatarCloudinaryPublicId ?? null}
+              avatarAssetId={userDoc?.avatarAssetId ?? null}
               hasOAuth={hasOAuth}
               mfaEnabled={mfaEnabled}
             />

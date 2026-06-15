@@ -130,11 +130,13 @@ export function SignInForm({ returnTo }: SignInFormProps) {
         </div>
 
         {/* Turnstile */}
-        <TurnstileWidget
-          onToken={setTurnstileToken}
-          onExpire={() => setTurnstileToken("")}
-          onError={() => setTurnstileToken("")}
-        />
+        <div className="flex justify-center">
+          <TurnstileWidget
+            onToken={setTurnstileToken}
+            onExpire={() => setTurnstileToken("")}
+            onError={() => setTurnstileToken("")}
+          />
+        </div>
 
         {/* Error */}
         {error && (

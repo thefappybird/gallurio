@@ -298,7 +298,7 @@ describe("publishPortfolioAction — reconcile + publish", () => {
     const live = await GalleryItem.create({
       workspaceId: wsId,
       collectionId: null,
-      cloudinaryPublicId: `ws/${wsId}/live`,
+      assetId: `ws/${wsId}/live`,
       url: "https://x/l.jpg",
       altText: "Live alt",
       order: 0,

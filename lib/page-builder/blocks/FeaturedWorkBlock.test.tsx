@@ -2,7 +2,7 @@
  * FeaturedWorkBlock — isomorphic (client-safe) unit tests.
  *
  * These tests mirror GalleryGridBlock.test.tsx: no in-memory Mongo, no server
- * context, just rendering from props with NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME set.
+ * context, just rendering from props with NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH set.
  */
 
 import { describe, it, expect, beforeEach } from "vitest";
@@ -11,11 +11,11 @@ import { puckConfig } from "@/lib/page-builder/config";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
 
 // ---------------------------------------------------------------------------
-// Cloudinary env
+// CF Images env
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
 });
 
 // ---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ describe("FeaturedWorkBlock — tiles render", () => {
     );
     const imgs = container.querySelectorAll("img");
     expect(imgs.length).toBeGreaterThan(0);
-    expect(imgs[0].src).toContain("test-cloud");
+    expect(imgs[0].src).toContain("imagedelivery.net");
     expect(imgs[0].src).toContain("gallery/cover.jpg");
   });
 
@@ -139,7 +139,7 @@ describe("FeaturedWorkBlock — tiles render", () => {
         collections={[makeCollection({ coverPublicId: "" })]}
       />
     );
-    // No img when publicId is blank (cloudinaryImageUrl returns "")
+    // No img when publicId is blank (imageDeliveryUrl returns "")
     const placeholders = container.querySelectorAll("[data-cover-placeholder]");
     expect(placeholders.length).toBeGreaterThan(0);
   });
@@ -184,7 +184,7 @@ describe("FeaturedWorkBlock — columns", () => {
 });
 
 describe("FeaturedWorkBlock — client safety", () => {
-  it("produces cloudinary URLs using only NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", () => {
+  it("produces CF Images URLs using NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", () => {
     const { container } = render(
       <FeaturedWorkBlock
         {...featuredWorkDefaultProps}
@@ -193,13 +193,13 @@ describe("FeaturedWorkBlock — client safety", () => {
     );
     const img = container.querySelector("img");
     expect(img).not.toBeNull();
-    expect(img!.src).toContain("res.cloudinary.com/test-cloud");
+    expect(img!.src).toContain("imagedelivery.net/test-hash");
     expect(img!.src).not.toContain("undefined");
   });
 
-  it("renders without crashing when NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is absent", () => {
-    const prev = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  it("renders without crashing when NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is absent", () => {
+    const prev = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
+    delete process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
     try {
       const { container } = render(
         <FeaturedWorkBlock
@@ -207,11 +207,11 @@ describe("FeaturedWorkBlock — client safety", () => {
           collections={[makeCollection({ coverPublicId: "some/image.jpg" })]}
         />
       );
-      // No img (cloudinaryImageUrl returns "" when no cloud name) → placeholder rendered
+      // No img (imageDeliveryUrl returns "" when account hash unset) → placeholder rendered
       const placeholders = container.querySelectorAll("[data-cover-placeholder]");
       expect(placeholders.length).toBeGreaterThan(0);
     } finally {
-      process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = prev;
+      process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = prev;
     }
   });
 });

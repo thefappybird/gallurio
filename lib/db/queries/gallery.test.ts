@@ -38,8 +38,8 @@ async function seedItems(
   const docs = Array.from({ length: count }, (_, i) => ({
     workspaceId,
     collectionId,
-    cloudinaryPublicId: `ws/${workspaceId}/item${startOrder + i}`,
-    url: `https://res.cloudinary.com/test/${workspaceId}/item${startOrder + i}`,
+    assetId: `ws/${workspaceId}/item${startOrder + i}`,
+    url: `https://imagedelivery.net/hash/item${startOrder + i}/public`,
     caption: `Photo ${startOrder + i + 1}`,
     altText: `Alt ${startOrder + i + 1}`,
     order: startOrder + i,
@@ -143,7 +143,7 @@ describe("listCollectionItemsPage", () => {
     await seedItems(ws, col._id, 1);
     const page = await listCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
     expect(page.items[0].id).toBeTruthy();
-    expect(page.items[0].publicId).toContain(`ws/${ws}/item0`);
+    expect(page.items[0].publicId).toContain(`ws/${ws.toString()}/item0`);
   });
 });
 
@@ -155,7 +155,7 @@ describe("listAllItemsPage", () => {
     await seedItems(ws, col._id, 2, 0);            // item0, item1
     await GalleryItem.create({
       workspaceId: ws, collectionId: null,
-      cloudinaryPublicId: `ws/${ws}/standalone`, url: "https://x/s.jpg",
+      assetId: `ws/${ws}/standalone`, url: "https://imagedelivery.net/hash/standalone/public",
       caption: "Standalone", order: 0,
     });
 
@@ -192,7 +192,7 @@ describe("listCollectionNewest", () => {
     for (let i = 0; i < 5; i++) {
       await GalleryItem.create({
         workspaceId: ws, collectionId: col._id,
-        cloudinaryPublicId: `ws/${ws}/n${i}`, url: `https://x/n${i}.jpg`,
+        assetId: `ws/${ws}/n${i}`, url: `https://imagedelivery.net/hash/n${i}/public`,
         caption: `N${i}`, order: i,
       });
     }
@@ -219,7 +219,7 @@ describe("listPublicCollectionItemsPage", () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: true });
     await GalleryItem.insertMany(
-      Array.from({ length: 3 }, (_, i) => ({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: `p${i}`, url: "u", altText: i === 0 ? "Alt0" : "", caption: i === 0 ? "" : `Cap${i}`, order: i }))
+      Array.from({ length: 3 }, (_, i) => ({ workspaceId: ws, collectionId: col._id, assetId: `p${i}`, url: "u", altText: i === 0 ? "Alt0" : "", caption: i === 0 ? "" : `Cap${i}`, order: i }))
     );
     const p1 = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString(), limit: 2 });
     expect(p1.items.map((i) => i.publicId)).toEqual(["p0", "p1"]);
@@ -233,14 +233,14 @@ describe("listPublicCollectionItemsPage", () => {
   it("returns empty for a PRIVATE collection", async () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "C", slug: "c", isPublic: false });
-    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "p", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: ws.toString(), collectionId: col._id.toString() });
     expect(page).toEqual({ items: [], nextCursor: null });
   });
   it("tenant isolation: foreign workspace id yields empty", async () => {
     const wsA = new Types.ObjectId(); const wsB = new Types.ObjectId();
     const colB = await GalleryCollection.create({ workspaceId: wsB, name: "B", slug: "b", isPublic: true });
-    await GalleryItem.create({ workspaceId: wsB, collectionId: colB._id, cloudinaryPublicId: "p", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: wsB, collectionId: colB._id, assetId: "p", url: "u", order: 0 });
     const page = await listPublicCollectionItemsPage({ workspaceId: wsA.toString(), collectionId: colB._id.toString() });
     expect(page).toEqual({ items: [], nextCursor: null });
   });
@@ -254,8 +254,8 @@ describe("listCollectionsForPicker — coverPublicId", () => {
   it("resolves coverPublicId from coverItemId, else newest item, else ''", async () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Weddings", slug: "weddings", isPublic: true });
-    const a = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-a", url: "u", order: 0 });
-    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "pid-b", url: "u", order: 1 });
+    const a = await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "pid-a", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "pid-b", url: "u", order: 1 });
     // no explicit cover → falls back to the newest item's publicId (pid-b created last)
     let cols = await listCollectionsForPicker(ws.toString());
     expect(cols.find((c) => c.id === String(col._id))!.coverPublicId).toBe("pid-b");

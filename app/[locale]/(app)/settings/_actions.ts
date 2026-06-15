@@ -15,7 +15,7 @@ import {
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
-import { destroyAsset } from "@/lib/storage/cloudinary";
+import { deleteImage } from "@/lib/storage/cloudflareImages";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
@@ -73,15 +73,15 @@ export async function updateWorkspaceBrandingAction(
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
   const previousLogoId =
-    ctx.workspace.branding?.logoCloudinaryPublicId ?? null;
-  const nextLogoId = parsed.data.logoCloudinaryPublicId ?? null;
+    ctx.workspace.branding?.logoAssetId ?? null;
+  const nextLogoId = parsed.data.logoAssetId ?? null;
 
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
       $set: {
         "branding.logoUrl": parsed.data.logoUrl ?? null,
-        "branding.logoCloudinaryPublicId": nextLogoId,
+        "branding.logoAssetId": nextLogoId,
         "branding.primaryColor": parsed.data.primaryColor,
         "branding.secondaryColor": parsed.data.secondaryColor,
         "branding.tagline": parsed.data.tagline ?? "",
@@ -92,7 +92,7 @@ export async function updateWorkspaceBrandingAction(
 
   if (previousLogoId && previousLogoId !== nextLogoId) {
     try {
-      await destroyAsset(previousLogoId);
+      await deleteImage(previousLogoId);
     } catch (err) {
       console.warn("[settings] failed to delete old logo asset", err);
     }
@@ -514,12 +514,12 @@ const updateAvatarSchema = z.object({
     .url("Avatar URL must be a valid URL")
     .startsWith("https://", "Avatar URL must use HTTPS")
     .nullable(),
-  avatarCloudinaryPublicId: z.string().nullable(),
+  avatarAssetId: z.string().nullable(),
 });
 
 export async function updateAvatarAction(input: {
   avatarUrl: string | null;
-  avatarCloudinaryPublicId: string | null;
+  avatarAssetId: string | null;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
   if (!authUser) return { error: "Not authenticated" };
@@ -531,21 +531,21 @@ export async function updateAvatarAction(input: {
   await connectDB();
 
   let previousPublicId: string | null;
-  const nextPublicId = parsed.data.avatarCloudinaryPublicId;
+  const nextPublicId = parsed.data.avatarAssetId;
 
   try {
     const userDoc = await User.findOne({
       workosUserId: authUser.workosUserId,
     }).lean();
 
-    previousPublicId = userDoc?.avatarCloudinaryPublicId ?? null;
+    previousPublicId = userDoc?.avatarAssetId ?? null;
 
     await User.updateOne(
       { workosUserId: authUser.workosUserId },
       {
         $set: {
           avatarUrl: parsed.data.avatarUrl,
-          avatarCloudinaryPublicId: nextPublicId,
+          avatarAssetId: nextPublicId,
         },
       },
     );
@@ -556,7 +556,7 @@ export async function updateAvatarAction(input: {
 
   if (previousPublicId && previousPublicId !== nextPublicId) {
     try {
-      await destroyAsset(previousPublicId);
+      await deleteImage(previousPublicId);
     } catch (err) {
       console.warn("[settings] failed to delete old avatar asset", err);
     }

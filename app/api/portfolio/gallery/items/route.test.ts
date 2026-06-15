@@ -18,9 +18,10 @@ vi.mock("next/server", async (importOriginal) => {
 
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
-// Mock Cloudinary thumbnail helper (pure URL derivation, no network needed).
-vi.mock("@/lib/storage/cloudinary", () => ({
-  cloudinaryThumbnailUrl: (publicId: string) => `https://res.cloudinary.com/test/${publicId}`,
+const mockVerifyOwnership = vi.fn(async (_imageId: string, _wsId: string) => true);
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  verifyImageOwnership: (imageId: string, wsId: string) => mockVerifyOwnership(imageId, wsId),
+  imageDeliveryUrl: (assetId: string) => `https://imagedelivery.net/hash/${assetId}/public`,
 }));
 
 let mockCtx: {
@@ -47,12 +48,10 @@ function makeReq(body: unknown): Request {
   return { json: async () => body } as unknown as Request;
 }
 
-/** Returns a valid starter payload for this workspace. */
 function validPayload(override: Record<string, unknown> = {}) {
-  const pid = `gallurio/${workspaceId}/portfolio/test.jpg`;
   return {
-    cloudinaryPublicId: pid,
-    url: "https://res.cloudinary.com/test/x.jpg",
+    assetId: "img_abc123",
+    url: "https://imagedelivery.net/hash/img_abc123/public",
     format: "jpg",
     sizeBytes: 1024,
     width: 1200,
@@ -69,6 +68,8 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await clearCollections();
+  mockVerifyOwnership.mockReset();
+  mockVerifyOwnership.mockResolvedValue(true);
   const ws = await Workspace.create({
     slug: "ws-items",
     name: "Workspace Items",
@@ -80,16 +81,12 @@ beforeEach(async () => {
 });
 
 describe("POST /api/portfolio/gallery/items", () => {
-  // -------------------------------------------------------------------------
-  // Happy path
-  // -------------------------------------------------------------------------
-
   it("creates a gallery item and returns 201 with id + thumbUrl", async () => {
     const res = (await POST(makeReq(validPayload()))) as unknown as MockResp;
     expect(res.status).toBe(201);
     const body = res.body as { id: string; thumbUrl: string; caption: string | null };
     expect(body.id).toBeTruthy();
-    expect(body.thumbUrl).toContain("cloudinary.com");
+    expect(body.thumbUrl).toContain("imagedelivery.net");
     expect(body.caption).toBeNull();
 
     const saved = await GalleryItem.findById(body.id).lean();
@@ -98,25 +95,19 @@ describe("POST /api/portfolio/gallery/items", () => {
 
   it("accepts all supported formats: jpeg, png, webp, avif", async () => {
     for (const fmt of ["jpeg", "png", "webp", "avif"]) {
-      const pid = `gallurio/${workspaceId}/portfolio/${fmt}.img`;
       const res = (await POST(
-        makeReq(validPayload({ cloudinaryPublicId: pid, format: fmt }))
+        makeReq(validPayload({ format: fmt }))
       )) as unknown as MockResp;
       expect(res.status, `format ${fmt} should be accepted`).toBe(201);
     }
   });
 
   it("creates the item even when optional fields (format, sizeBytes, dimensions) are omitted", async () => {
-    const pid = `gallurio/${workspaceId}/portfolio/minimal.jpg`;
     const res = (await POST(
-      makeReq({ cloudinaryPublicId: pid, url: "https://res.cloudinary.com/test/x.jpg" })
+      makeReq({ assetId: "img_min", url: "https://imagedelivery.net/hash/img_min/public" })
     )) as unknown as MockResp;
     expect(res.status).toBe(201);
   });
-
-  // -------------------------------------------------------------------------
-  // Auth / ownership checks
-  // -------------------------------------------------------------------------
 
   it("rejects a non-owner with 403", async () => {
     mockCtx.role = "staff";
@@ -126,28 +117,13 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
-  it("rejects a public_id outside the workspace folder", async () => {
-    const foreignPid = `gallurio/${new Types.ObjectId()}/portfolio/evil.jpg`;
-    const res = (await POST(
-      makeReq(validPayload({ cloudinaryPublicId: foreignPid }))
-    )) as unknown as MockResp;
+  it("rejects when verifyImageOwnership returns false", async () => {
+    mockVerifyOwnership.mockResolvedValueOnce(false);
+    const res = (await POST(makeReq(validPayload()))) as unknown as MockResp;
     expect(res.status).toBe(400);
     expect((res.body as { error: string }).error).toBe("invalid_image_ownership");
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
-
-  it("rejects a path-traversal public_id even with the workspace prefix", async () => {
-    const traversal = `gallurio/${workspaceId}/../${new Types.ObjectId()}/evil.jpg`;
-    const res = (await POST(
-      makeReq(validPayload({ cloudinaryPublicId: traversal }))
-    )) as unknown as MockResp;
-    expect(res.status).toBe(400);
-    expect((res.body as { error: string }).error).toBe("invalid_image_ownership");
-  });
-
-  // -------------------------------------------------------------------------
-  // Photo-meta validation — format
-  // -------------------------------------------------------------------------
 
   it("rejects a gif format with format_not_accepted", async () => {
     const res = (await POST(makeReq(validPayload({ format: "gif" })))) as unknown as MockResp;
@@ -168,10 +144,6 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect((res.body as { error: string }).error).toBe("format_not_accepted");
   });
 
-  // -------------------------------------------------------------------------
-  // Photo-meta validation — sizeBytes
-  // -------------------------------------------------------------------------
-
   it("rejects a file 1 byte over the 10 MB cap with file_too_large", async () => {
     const res = (await POST(
       makeReq(validPayload({ sizeBytes: PHOTO_SPEC.maxBytes + 1 }))
@@ -187,10 +159,6 @@ describe("POST /api/portfolio/gallery/items", () => {
     )) as unknown as MockResp;
     expect(res.status).toBe(201);
   });
-
-  // -------------------------------------------------------------------------
-  // Photo-meta validation — dimensions
-  // -------------------------------------------------------------------------
 
   it("rejects 400×800 (short side 400 < 600) with dimension_too_small", async () => {
     const res = (await POST(
@@ -216,34 +184,26 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect(res.status).toBe(201);
   });
 
-  // -------------------------------------------------------------------------
-  // Tenant isolation
-  // -------------------------------------------------------------------------
-
   it("tenant isolation: org B cannot see org A items after org A creates one", async () => {
-    // Create as org A.
     await POST(makeReq(validPayload()));
 
-    // Switch to org B.
     const wsB = await Workspace.create({
       slug: "ws-b",
       name: "Workspace B",
       ownerUserId: "user_b",
-      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
       currency: "PHP",
     });
     const wsBId = wsB._id;
 
-    // Items query scoped to B returns nothing.
     const itemsForB = await GalleryItem.find({ workspaceId: wsBId }).lean();
     expect(itemsForB).toHaveLength(0);
   });
 });
 
-function validBody(wsId: Types.ObjectId, extra: Record<string, unknown> = {}) {
+function validBody(extra: Record<string, unknown> = {}) {
   return {
-    cloudinaryPublicId: `gallurio/${wsId}/portfolio/x.jpg`,
-    url: "https://res.cloudinary.com/x/x.jpg",
+    assetId: "img_col_test",
+    url: "https://imagedelivery.net/hash/img_col_test/public",
     width: 1200, height: 900, format: "jpg", sizeBytes: 1000,
     ...extra,
   };
@@ -255,14 +215,14 @@ describe("POST /api/portfolio/gallery/items — collectionId", () => {
       workspaceId, name: "C", slug: `c-${Math.round(Math.random() * 1e9)}`, isPublic: true, order: 0,
     });
     await GalleryItem.create({
-      workspaceId, collectionId: col._id, cloudinaryPublicId: `gallurio/${workspaceId}/portfolio/a.jpg`,
-      url: "https://x/a.jpg", order: 0,
+      workspaceId, collectionId: col._id, assetId: "img_existing",
+      url: "https://imagedelivery.net/hash/img_existing/public", order: 0,
     });
 
     const req = new Request("http://t", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(validBody(workspaceId, { collectionId: String(col._id) })),
+      body: JSON.stringify(validBody({ collectionId: String(col._id) })),
     });
     const res = (await POST(req)) as unknown as MockResp;
     expect(res.status).toBe(201);
@@ -283,7 +243,7 @@ describe("POST /api/portfolio/gallery/items — collectionId", () => {
     const req = new Request("http://t", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(validBody(workspaceId, { collectionId: String(foreign._id) })),
+      body: JSON.stringify(validBody({ collectionId: String(foreign._id) })),
     });
     const res = (await POST(req)) as unknown as MockResp;
     expect(res.status).toBe(400);
@@ -294,7 +254,7 @@ describe("POST /api/portfolio/gallery/items — collectionId", () => {
     const req = new Request("http://t", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(validBody(workspaceId)),
+      body: JSON.stringify(validBody()),
     });
     const res = (await POST(req)) as unknown as MockResp;
     expect(res.status).toBe(201);

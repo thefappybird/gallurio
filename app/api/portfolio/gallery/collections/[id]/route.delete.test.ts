@@ -6,8 +6,11 @@ vi.mock("next/server", async (importOriginal) => {
   return { ...actual, NextResponse: { json: (body: unknown, init?: ResponseInit): MockResp => ({ body, status: init?.status ?? 200 }) } };
 });
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
-const destroyAsset = vi.fn(async (publicId: string) => { void publicId; });
-vi.mock("@/lib/storage/cloudinary", () => ({ destroyAsset: (p: string) => destroyAsset(p) }));
+const deleteImage = vi.fn(async (assetId: string) => { void assetId; });
+vi.mock("@/lib/storage/cloudflareImages", () => ({
+  deleteImage: (id: string) => deleteImage(id),
+  imageDeliveryUrl: (assetId: string) => `https://imagedelivery.net/hash/${assetId}/public`,
+}));
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({ userId: mockCtx.userId, role: mockCtx.role, workspace: mockCtx.workspace }),
@@ -25,22 +28,22 @@ async function seed() {
   colA = col._id;
   const colB = await GalleryCollection.create({ workspaceId: wsA, name: "C2", slug: "c2", order: 1 });
   // "shared" is in both colA and colB; "only" is only in colA.
-  await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "shared", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: wsA, collectionId: colB._id, cloudinaryPublicId: "shared", url: "u", order: 0 });
-  await GalleryItem.create({ workspaceId: wsA, collectionId: colA, cloudinaryPublicId: "only", url: "u", order: 1 });
+  await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "shared", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: wsA, collectionId: colB._id, assetId: "shared", url: "u", order: 0 });
+  await GalleryItem.create({ workspaceId: wsA, collectionId: colA, assetId: "only", url: "u", order: 1 });
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: wsA, slug: "a" } };
 }
 const params = () => ({ params: Promise.resolve({ id: colA.toString() }) });
 beforeAll(startInMemoryMongo); afterAll(stopInMemoryMongo);
-beforeEach(async () => { await clearCollections(); destroyAsset.mockClear(); await seed(); });
+beforeEach(async () => { await clearCollections(); deleteImage.mockClear(); await seed(); });
 
 describe("DELETE collection (reference-counted)", () => {
   it("destroys only assets no other collection references", async () => {
     const res = (await DELETE(new Request("http://t/x", { method: "DELETE" }), params())) as unknown as MockResp;
     expect(res.status).toBe(200);
-    expect(destroyAsset).toHaveBeenCalledTimes(1);
-    expect(destroyAsset).toHaveBeenCalledWith("only");
-    expect(destroyAsset).not.toHaveBeenCalledWith("shared");
-    expect(await GalleryItem.countDocuments({ cloudinaryPublicId: "shared" })).toBe(1);
+    expect(deleteImage).toHaveBeenCalledTimes(1);
+    expect(deleteImage).toHaveBeenCalledWith("only");
+    expect(deleteImage).not.toHaveBeenCalledWith("shared");
+    expect(await GalleryItem.countDocuments({ assetId: "shared" })).toBe(1);
   });
 });

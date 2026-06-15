@@ -2,13 +2,13 @@
  * GalleryMasonryBlock — ISOMORPHIC (client-safe) CSS column-count masonry layout.
  *
  * Renders from its own `images[]` prop (no DB, no server context, no server-only
- * Cloudinary import). Empty-state copy is read from `puck.metadata` chrome via
+ * imports). Empty-state copy is read from `puck.metadata` chrome via
  * getGalleryChromeLabelsFrom (a pure, client-safe prop read) so a localized public
  * render still gets translated copy, falling back to English.
  */
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,
@@ -77,10 +77,10 @@ export function GalleryMasonryBlock({
       <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
         <div className="pf-masonry" style={{ columnCount: columns, columnGap: gapValue }}>
           {list.map((img) => {
-            const src = cloudinaryImageUrl(img.publicId, {
+            const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth * 2,
-              crop: "limit",
+              fit: "scale-down",
             });
             if (!src) return null;
             return (

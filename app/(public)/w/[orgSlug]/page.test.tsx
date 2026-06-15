@@ -91,7 +91,7 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     timezone: "Asia/Manila",
     branding: {
       logoUrl: "https://res.cloudinary.com/demo/logo.png",
-      logoCloudinaryPublicId: "demo/logo",
+      logoAssetId: "demo/logo",
       primaryColor: "#1a1a2e",
       secondaryColor: "#e9e9e9",
       tagline: "Moments captured forever",
@@ -210,7 +210,7 @@ describe("generateMetadata", () => {
     const workspace = makePublishedWorkspace({
       branding: {
         logoUrl: null,
-        logoCloudinaryPublicId: null,
+        logoAssetId: null,
         primaryColor: "#111111",
         secondaryColor: "#f5f5f5",
         tagline: "My tagline",

@@ -8,7 +8,7 @@ export type PickerCollection = {
 
 export type PickerItem = {
   id: string;
-  /** Cloudinary public ID — used by single-image fields (Hero/CTA backgrounds). */
+  /** Asset ID (Cloudflare Images) — used by single-image fields (Hero/CTA backgrounds). */
   publicId: string;
   thumbUrl: string;
   caption: string | null;

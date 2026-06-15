@@ -7,7 +7,7 @@
 export const PHOTO_SPEC = {
   /** Accepted MIME types (used in <input accept> and client pre-validation). */
   acceptedTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"] as const,
-  /** Accepted Cloudinary format strings (used in allowed_formats and server validation). */
+  /** Accepted format strings (used in server-side format validation). */
   acceptedFormats: ["jpg", "jpeg", "png", "webp", "avif"] as const,
   /** Maximum file size in bytes (10 MB). */
   maxBytes: 10 * 1024 * 1024,
@@ -18,10 +18,7 @@ export const PHOTO_SPEC = {
 /** Convenience alias — the MIME list as plain strings for <input accept>. */
 export const ACCEPTED_MIME = PHOTO_SPEC.acceptedTypes as readonly string[];
 
-/**
- * Cloudinary format strings that Cloudinary's allowed_formats param accepts.
- * Passed in the signed upload params so Cloudinary itself rejects disallowed formats.
- */
+/** Format strings accepted by the upload API for server-side format validation. */
 export const ACCEPTED_FORMATS = PHOTO_SPEC.acceptedFormats as readonly string[];
 
 export type PhotoValidationResult = { ok: true } | { ok: false; reason: PhotoRejectionReason };
@@ -32,10 +29,7 @@ export type PhotoRejectionReason =
   | "dimension_too_small"
   | "format_not_accepted";
 
-/**
- * Pre-upload: validates file type and size.
- * Call this before fetching a Cloudinary signature.
- */
+/** Pre-upload: validates file type and size. */
 export function validatePhotoFile(file: File): PhotoValidationResult {
   const accepted = (PHOTO_SPEC.acceptedTypes as readonly string[]).includes(file.type);
   if (!accepted) return { ok: false, reason: "type_not_accepted" };
@@ -43,15 +37,12 @@ export function validatePhotoFile(file: File): PhotoValidationResult {
   return { ok: true };
 }
 
-/**
- * Post-upload: validates dimensions from the Cloudinary response.
- * width and height are in pixels as returned by the API.
- */
+/** Post-upload: validates dimensions returned by the upload API (pixels). */
 export function validatePhotoDimensions(
   width: number | null | undefined,
   height: number | null | undefined
 ): PhotoValidationResult {
-  // If Cloudinary didn't return dimensions, skip — not our constraint to enforce.
+  // If dimensions are absent in the upload response, skip — not our constraint to enforce.
   if (!width || !height) return { ok: true };
   const shortSide = Math.min(width, height);
   if (shortSide < PHOTO_SPEC.minShortSide) {
@@ -61,16 +52,14 @@ export function validatePhotoDimensions(
 }
 
 /**
- * Server-side validation of photo metadata returned by Cloudinary
- * and forwarded by the client to create routes.
+ * Server-side validation of photo metadata forwarded by the client to create routes.
  *
  * Checks (in order):
  *   1. format — must be in ACCEPTED_FORMATS
  *   2. sizeBytes — must be ≤ maxBytes
  *   3. dimensions — short side must be ≥ minShortSide (if both present)
  *
- * All fields are optional; missing values skip that check (Cloudinary
- * may omit them for certain resource types).
+ * All fields are optional; missing values skip that check.
  */
 export function validatePhotoMeta(meta: {
   format?: string | null;
