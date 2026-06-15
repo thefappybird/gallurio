@@ -1,7 +1,7 @@
 /**
  * GalleryCarouselBlock — ISOMORPHIC (client-safe). Maps its own `images[]` prop to
  * CarouselSlide[] and feeds the existing GalleryCarouselClient island. No DB, no
- * server context, no server-only Cloudinary import. Floating header copy renders
+ * server context, no server-only imports. Floating header copy renders
  * via the shared GalleryHeader; empty/chrome labels come from puck.metadata chrome
  * (pure, client-safe) with English fallbacks.
  */

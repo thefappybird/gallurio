@@ -177,7 +177,7 @@ describe("ImageBlock — imagePublicId without cloud name (test env)", () => {
   it("falls back to showing placeholder when imagePublicId is set but cloud name is unset", () => {
     // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is not set in test env → imageDeliveryUrl returns ""
     render(<ImageBlock imagePublicId="gallurio/ws/img.jpg" imageUrl="" alt="" fit="cover" />);
-    // Falls through to placeholder since cloudinaryUrl → null and imageUrl is empty
+    // Falls through to placeholder since cfImageUrl → null and imageUrl is empty
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
   });
 });

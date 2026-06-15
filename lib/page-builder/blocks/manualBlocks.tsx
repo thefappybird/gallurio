@@ -29,7 +29,7 @@ import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import type { GalleryImage } from "./GalleryGridBlock";
 
 // Returns null when imageId is missing or env is unset, so existing `url(...) || imageUrl` fallbacks still work.
-function cloudinaryUrl(publicId: string, w = 1200): string | null {
+function cfImageUrl(publicId: string, w = 1200): string | null {
   return imageDeliveryUrl(publicId, { width: w, height: w * 4, fit: "scale-down" }) || null;
 }
 
@@ -159,7 +159,7 @@ export type ImageBlockProps = {
 export const imageDefaultProps: ImageBlockProps = { imagePublicId: "", imageUrl: "", alt: "", fit: "cover" };
 
 export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit }: ImageBlockProps) {
-  const src = (imagePublicId ? cloudinaryUrl(imagePublicId) : null) || imageUrl || null;
+  const src = (imagePublicId ? cfImageUrl(imagePublicId) : null) || imageUrl || null;
   return (
     <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       {src ? (
@@ -197,7 +197,7 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   defaultProps: imageDefaultProps,
   fields: {
     _style: productionStyleField,
-    imagePublicId: { type: "text", label: "Image (Cloudinary public ID)" },
+    imagePublicId: { type: "text", label: "Image (asset ID)" },
     imageUrl: { type: "text", label: "Image URL (fallback)" },
     alt: { type: "text", label: "Alt text" },
     fit: {
@@ -566,7 +566,7 @@ export function ContainerBlock({
   // legacy single background). Drop any that don't resolve (blank publicId / no
   // cloud name) so a 3-image set with one bad id still animates the good two.
   const layers = (Array.isArray(backgroundImages) ? backgroundImages : [])
-    .map((img) => ({ id: img.id, src: cloudinaryUrl(img.publicId, 2000) }))
+    .map((img) => ({ id: img.id, src: cfImageUrl(img.publicId, 2000) }))
     .filter((l): l is { id: string; src: string } => Boolean(l.src));
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;

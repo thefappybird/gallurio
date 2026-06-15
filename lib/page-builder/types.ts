@@ -151,9 +151,9 @@ export type HeaderNavbarSize = (typeof HEADER_NAVBAR_SIZES)[number];
 export type PortfolioHeaderConfig = {
   /** Override for the workspace name shown in the navigation. Undefined = workspace name; empty = logo only. */
   brandText?: string;
-  /** Cloudinary secure URL for the logo image. */
+  /** URL for the logo image. */
   logoUrl?: string;
-  /** Cloudinary public ID for the logo image (used for transforms/deletion). */
+  /** CF Images asset ID for the logo image (used for deletion). */
   logoPublicId?: string;
   /** Token name (e.g. "primary") or custom hex (e.g. "#ffffff"). */
   backgroundColor?: string;

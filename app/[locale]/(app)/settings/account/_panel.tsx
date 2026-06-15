@@ -117,7 +117,7 @@ export function AccountPanel({
       // Optimistic update
       setAvatarUrl(newUrl);
       setAvatarPublicId(newPublicId);
-      // If persistence fails, the just-uploaded Cloudinary asset is left as a best-effort orphan — no client-side cleanup is attempted.
+      // If persistence fails, the just-uploaded image is left as a best-effort orphan — no client-side cleanup is attempted.
       startAvatarTransition(async () => {
         const result = await updateAvatarAction({
           avatarUrl: newUrl,
@@ -222,7 +222,7 @@ export function AccountPanel({
                 )}
               </Button>
               {/* Remove only applies to a photo the user uploaded; a default
-                  avatar from the identity provider has no Cloudinary asset. */}
+                  avatar from the identity provider has no stored asset ID. */}
               {avatarPublicId && (
                 <Button
                   type="button"

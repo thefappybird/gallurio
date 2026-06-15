@@ -3,7 +3,7 @@
  *
  * Renders purely from its own `images[]` prop (baked by the editor's multi-image
  * picker and refreshed by reconcileGalleryImages on editor-load / publish). No DB
- * access, no server context, no server-only Cloudinary import — so the SAME
+ * access, no server context, no server-only imports — so the SAME
  * component renders in the editor canvas AND on the public page (WYSIWYG,
  * fetch-free).
  *

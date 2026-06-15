@@ -2,7 +2,7 @@
  * GalleryMasonryBlock — ISOMORPHIC (client-safe) CSS column-count masonry layout.
  *
  * Renders from its own `images[]` prop (no DB, no server context, no server-only
- * Cloudinary import). Empty-state copy is read from `puck.metadata` chrome via
+ * imports). Empty-state copy is read from `puck.metadata` chrome via
  * getGalleryChromeLabelsFrom (a pure, client-safe prop read) so a localized public
  * render still gets translated copy, falling back to English.
  */

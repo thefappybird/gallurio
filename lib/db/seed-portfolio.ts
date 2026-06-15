@@ -69,7 +69,7 @@ async function seedCollection(
 
   const items: SeededItem[] = [];
   for (let i = 0; i < spec.captions.length; i += 1) {
-    const assetId = `seed/${String(workspaceId)}/${spec.slug}-${i}`;
+    const assetId = `seed-${String(workspaceId)}-${spec.slug}-${i}`;
     const url = `https://picsum.photos/seed/${spec.slug}-${i}/1200/1500`;
 
     const doc = await GalleryItem.create({

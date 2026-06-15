@@ -379,7 +379,7 @@ async function seedWorkspace(
     [1, 2, 3, 4].map((n) => ({
       workspaceId: workspace._id,
       collectionId: collection._id,
-      assetId: `seed/${workspace._id}/sample-${n}`,
+      assetId: `seed-${workspace._id}-sample-${n}`,
       url: `https://picsum.photos/seed/seed-${n}/1600/1067`,
       width: 1600,
       height: 1067,
