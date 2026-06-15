@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { BookingCalendar, type CalendarEvent } from "../../bookings/_components/booking-calendar";
-import { TeamLegend } from "../../bookings/_components/team-legend";
+import { TeamFilterControl } from "../../bookings/_components/team-filter-control";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import { detectConflictIds } from "../../bookings/_components/_helpers/calendar-helpers";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
@@ -79,69 +79,67 @@ export function InquiriesCalendarManager({
     router.push(`${pathname}?${params.toString()}`);
   }
 
-  return (
-    <div className="flex flex-col gap-2">
-      <BookingCalendar
-        events={eventsWithConflicts}
-        onSelectEvent={handleSelectEvent}
-        messages={{
-          today: tCal("today"),
-          previous: tCal("previous"),
-          next: tCal("next"),
-          day: tCal("views.day"),
-          week: tCal("views.week"),
-          month: tCal("views.month"),
-          date: tCal("date"),
-          time: tCal("time"),
-          event: tCal("event"),
-          noEventsInRange: tCal("noEventsInRange"),
-          goTo: tCal("goTo"),
-          scrollToTime: tCal("scrollToTime"),
-          go: tCal("go"),
-        }}
-      />
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
-        {/* Status legend — clickable filters, always shown left */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <button
-            type="button"
-            onClick={() => setShowUnbooked((v) => !v)}
-            aria-pressed={showUnbooked}
-            className={cn(
-              "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              showUnbooked
-                ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-muted-foreground opacity-50"
-            )}
-          >
-            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showUnbooked ? "currentColor" : "var(--event-inquiry)" }} />
-            {t("legendInquiry")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowBookedInquiries((v) => !v)}
-            aria-pressed={showBookedInquiries}
-            className={cn(
-              "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              showBookedInquiries
-                ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-muted-foreground opacity-50"
-            )}
-          >
-            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showBookedInquiries ? "currentColor" : "var(--primary)" }} />
-            {t("legendBooking")}
-          </button>
-        </div>
-
-        {showTeamFilter && (
-          <TeamLegend
-            teams={teams}
-            selected={selectedTeams}
-            isOwner={isOwner}
-            onChange={setSelectedTeams}
-          />
+  const toolbarTrailing = (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setShowUnbooked((v) => !v)}
+        aria-pressed={showUnbooked}
+        className={cn(
+          "inline-flex min-h-9 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          showUnbooked
+            ? "border-foreground bg-foreground text-background"
+            : "border-border bg-card text-muted-foreground opacity-50"
         )}
-      </div>
+      >
+        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showUnbooked ? "currentColor" : "var(--event-inquiry)" }} />
+        {t("legendInquiry")}
+      </button>
+      <button
+        type="button"
+        onClick={() => setShowBookedInquiries((v) => !v)}
+        aria-pressed={showBookedInquiries}
+        className={cn(
+          "inline-flex min-h-9 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          showBookedInquiries
+            ? "border-foreground bg-foreground text-background"
+            : "border-border bg-card text-muted-foreground opacity-50"
+        )}
+      >
+        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showBookedInquiries ? "currentColor" : "var(--primary)" }} />
+        {t("legendBooking")}
+      </button>
+      {showTeamFilter && (
+        <TeamFilterControl
+          teams={teams}
+          selected={selectedTeams}
+          isOwner={isOwner}
+          onChange={setSelectedTeams}
+        />
+      )}
     </div>
+  );
+
+  return (
+    <BookingCalendar
+      events={eventsWithConflicts}
+      onSelectEvent={handleSelectEvent}
+      toolbarTrailing={toolbarTrailing}
+      messages={{
+        today: tCal("today"),
+        previous: tCal("previous"),
+        next: tCal("next"),
+        day: tCal("views.day"),
+        week: tCal("views.week"),
+        month: tCal("views.month"),
+        date: tCal("date"),
+        time: tCal("time"),
+        event: tCal("event"),
+        noEventsInRange: tCal("noEventsInRange"),
+        goTo: tCal("goTo"),
+        scrollToTime: tCal("scrollToTime"),
+        go: tCal("go"),
+      }}
+    />
   );
 }

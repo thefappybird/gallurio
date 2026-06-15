@@ -157,6 +157,7 @@
         "allMyTeams": "Lahat ng aking koponan",
         "label": "I-filter ayon sa koponan",
         "inactive": "Hindi aktibo",
+        "teams": "Mga Team",
         "countLabel": "{count, plural, other {# koponan}}"
       },
       "import": {
