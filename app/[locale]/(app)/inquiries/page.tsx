@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/queries/inquiries";
 import { listBookings, getBookingById } from "../bookings/_data/bookings-queries";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
+import { getBookingTeamOptions } from "../bookings/_data/team-options";
 import { InquiriesPageClient } from "./_components/inquiries-page-client";
 import { BookingDetailModal } from "../bookings/_components/booking-detail-modal";
 import type { InquiryRow } from "./_components/inquiry-table";
@@ -112,9 +113,10 @@ export default async function InquiriesPage({
 
   // Calendar data: fetch all upcoming bookings + un-converted inquiries.
   let events: CalendarEvent[] = [];
+  let calendarTeams: Awaited<ReturnType<typeof getBookingTeamOptions>> = [];
   if (view === "calendar") {
     await connectDB();
-    const [{ rows: bookingRows }, allClients] = await Promise.all([
+    const [{ rows: bookingRows }, allClients, teamsResult] = await Promise.all([
       listBookings(
         workspace._id,
         {
@@ -128,7 +130,9 @@ export default async function InquiriesPage({
       Client.find({ workspaceId: workspace._id })
         .select({ _id: 1, email: 1 })
         .lean(),
+      getBookingTeamOptions({ role, userId, workspace }),
     ]);
+    calendarTeams = teamsResult;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -137,14 +141,13 @@ export default async function InquiriesPage({
       allClients.map((c) => [c._id.toString(), c.email ?? null])
     );
 
-    // Keep only un-converted inquiries (new/approved) for the calendar overlay.
-    const unconvertedInquiries = items.filter(
-      (q) => q.status === "new" || q.status === "approved"
-    );
+    // Keep only un-converted inquiries (new) for the calendar overlay.
+    const unconvertedInquiries = items.filter((q) => q.status === "new");
 
     const inquiryEvents = buildInquiryCalendarEvents(
       unconvertedInquiries.map((q) => ({
         _id: q._id.toString(),
+        status: q.status,
         eventName: q.eventTitle ?? null,
         sessions: (q.sessions ?? []).map((s) => ({
           startDate: (s as { startDate: string }).startDate,
@@ -341,6 +344,8 @@ export default async function InquiriesPage({
         initialDetail={initialDetail}
         view={view}
         events={events}
+        teams={calendarTeams}
+        isOwner={role === "owner"}
       />
       {sp.detail ? (
         <BookingDetailModal

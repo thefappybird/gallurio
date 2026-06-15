@@ -14,10 +14,11 @@ import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detai
 import { InquiryViewToggle, type InquiriesView } from "./inquiry-view-toggle";
 import { InquiriesCalendarManager } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
+import type { BookingTeamOption } from "../../bookings/_data/team-options";
 
 const INQUIRY_TABLE_COLUMNS = 6;
 
-const TABS = ["all", "new", "approved", "booked", "archived"] as const;
+const TABS = ["all", "new", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
 
 type Props = {
@@ -35,6 +36,8 @@ type Props = {
   initialDetail: InquiryDetailModalData | null;
   view?: InquiriesView;
   events?: CalendarEvent[];
+  teams?: BookingTeamOption[];
+  isOwner?: boolean;
 };
 
 export function InquiriesPageClient({
@@ -52,6 +55,8 @@ export function InquiriesPageClient({
   initialDetail,
   view,
   events = [],
+  teams = [],
+  isOwner = false,
 }: Props) {
   const t = useTranslations("app.inquiries");
   const tc = useTranslations("common.pagination");
@@ -138,7 +143,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} />
       ) : (
         <>
           {/* Status tabs with counts */}

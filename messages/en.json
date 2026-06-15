@@ -280,7 +280,8 @@
         "accept": "Accept",
         "cancel": "Cancel",
         "apply": "Apply",
-        "currentAddressLabel": "Selected location"
+        "currentAddressLabel": "Selected location",
+        "viewInMap": "View in map"
       },
       "eventTypes": {
         "wedding": "Wedding",
@@ -299,8 +300,8 @@
           "client": "Client",
           "event": "Event",
           "pricing": "Pricing",
-          "eventPricing": "Event & Pricing",
-          "sessionsLocation": "Sessions & Location",
+          "eventPricing": "Event & Location",
+          "sessionsLocation": "Sessions",
           "activity": "Notes & activity"
         },
         "sections": {
@@ -1063,13 +1064,11 @@
       "tabs": {
         "all": "All",
         "new": "New",
-        "approved": "Approved",
         "booked": "Booked",
         "archived": "Archived"
       },
       "statusValues": {
         "new": "New",
-        "approved": "Approved",
         "archived": "Archived",
         "booked": "Booked",
         "converted": "Converted To Booking"
@@ -1154,10 +1153,8 @@
           "ownerOnly": "Only the workspace owner can convert bookings."
         },
         "actions": {
-          "approve": "Approve",
           "archive": "Archive",
           "working": "Saving…",
-          "approveStatusToast": "Inquiry approved.",
           "archivedToast": "Inquiry archived.",
           "approvedToast": "Converted to booking.",
           "errorToast": "Something went wrong. Please try again."
@@ -1191,7 +1188,7 @@
         "calendar": "Calendar"
       },
       "calendar": {
-        "legendInquiry": "Lead / Inquiry",
+        "legendInquiry": "Inquiry",
         "legendBooking": "Booking",
         "empty": "No inquiries or bookings to show."
       }

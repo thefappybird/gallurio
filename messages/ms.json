@@ -280,7 +280,8 @@
         "accept": "Terima",
         "cancel": "Batal",
         "apply": "Guna",
-        "currentAddressLabel": "Lokasi yang dipilih"
+        "currentAddressLabel": "Lokasi yang dipilih",
+        "viewInMap": "Lihat dalam peta"
       },
       "eventTypes": {
         "wedding": "Perkahwinan",
@@ -299,8 +300,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Harga",
-          "sessionsLocation": "Sesi & Lokasi",
+          "eventPricing": "Acara & Lokasi",
+          "sessionsLocation": "Sesi",
           "activity": "Nota & aktiviti"
         },
         "sections": {
@@ -1063,13 +1064,11 @@
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "approved": "Diluluskan",
         "booked": "Ditempah",
         "archived": "Diarkib"
       },
       "statusValues": {
         "new": "Baru",
-        "approved": "Diluluskan",
         "archived": "Diarkib",
         "booked": "Ditempah",
         "converted": "Ditukar Kepada Tempahan"
@@ -1154,10 +1153,8 @@
           "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan."
         },
         "actions": {
-          "approve": "Luluskan",
           "archive": "Arkib",
           "working": "Menyimpan…",
-          "approveStatusToast": "Pertanyaan diluluskan.",
           "archivedToast": "Pertanyaan diarkib.",
           "approvedToast": "Ditukar kepada tempahan.",
           "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
@@ -1191,7 +1188,7 @@
         "calendar": "Kalendar"
       },
       "calendar": {
-        "legendInquiry": "Lead / Pertanyaan",
+        "legendInquiry": "Pertanyaan",
         "legendBooking": "Tempahan",
         "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan."
       }

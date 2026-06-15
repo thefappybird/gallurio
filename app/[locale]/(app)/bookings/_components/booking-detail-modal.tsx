@@ -52,7 +52,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { LocationPicker } from "@/components/ui/location-picker";
+import { LocationPicker, LocationReadOnly } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -1572,30 +1572,41 @@ function DialogHeaderBar({
                       ))}
                     </SelectContent>
                   </Select>
+                ) : readOnly ? (
+                  <span
+                    className={cn(
+                      "flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium",
+                      "border-border bg-background text-muted-foreground"
+                    )}
+                    aria-label={t("status")}
+                  >
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0"
+                      style={statusColor ? { backgroundColor: statusColor } : undefined}
+                    />
+                    <span>{statusLabel}</span>
+                  </span>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => !isCancelled && !readOnly && setEditingStatus(true)}
-                    disabled={disabled || isCancelled || readOnly}
+                    onClick={() => !isCancelled && setEditingStatus(true)}
+                    disabled={disabled || isCancelled}
                     className={cn(
                       "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
                       hasStatusPending
                         ? "border-brand bg-brand/10 text-brand"
                         : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
                     )}
-                    aria-label={readOnly ? t("status") : t("editStatus")}
+                    aria-label={t("editStatus")}
                   >
                     <span
                       aria-hidden
                       className="size-2 shrink-0"
-                      style={
-                        statusColor
-                          ? { backgroundColor: statusColor }
-                          : undefined
-                      }
+                      style={statusColor ? { backgroundColor: statusColor } : undefined}
                     />
                     <span>{statusLabel}</span>
-                    {!isCancelled && !readOnly ? (
+                    {!isCancelled ? (
                       <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
                     ) : null}
                   </button>
@@ -1949,6 +1960,7 @@ function BookingTabs({
             onCommit={(v) => onCommit("eventType", v)}
             onDiscardPending={() => onDiscard("eventType")}
             disabled={disabled || isCancelled || !!readOnly}
+            readOnly={!!readOnly}
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1963,6 +1975,7 @@ function BookingTabs({
               onCommit={(v) => onCommit("teamId", v || null)}
               onDiscardPending={() => onDiscard("teamId")}
               disabled={disabled || isCancelled || !!readOnly}
+              readOnly={!!readOnly}
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
@@ -1982,6 +1995,7 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
             disabled={disabled || !!readOnly}
+            readOnly={!!readOnly}
             editKey="amount.total"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1995,6 +2009,7 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.deposit", v)}
             onDiscardPending={() => onDiscard("amount.deposit")}
             disabled={disabled || !!readOnly}
+            readOnly={!!readOnly}
             validate={(v) => {
               const n = Number(v);
               if (Number.isFinite(n) && n > total) {
@@ -2014,14 +2029,53 @@ function BookingTabs({
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
             disabled={disabled || !!readOnly}
+            readOnly={!!readOnly}
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
           />
+
+          {/* Location — moved from sessions tab */}
+          <SectionHeader label={tFields("location")} />
+          <div className="flex flex-col gap-1 py-1.5">
+            {readOnly ? (
+              <LocationReadOnly
+                value={{
+                  address: booking.location?.address ?? "",
+                  lat: booking.location?.lat ?? null,
+                  lng: booking.location?.lng ?? null,
+                }}
+              />
+            ) : (
+              <LocationPicker
+                editable
+                value={{
+                  address:
+                    "location.address" in pending
+                      ? ((pending["location.address"] as string) ?? "")
+                      : (booking.location?.address ?? ""),
+                  lat:
+                    "location.lat" in pending
+                      ? (pending["location.lat"] as number | null)
+                      : (booking.location?.lat ?? null),
+                  lng:
+                    "location.lng" in pending
+                      ? (pending["location.lng"] as number | null)
+                      : (booking.location?.lng ?? null),
+                }}
+                onChange={(v) => {
+                  onCommit("location.address", v.address);
+                  onCommit("location.lat", v.lat);
+                  onCommit("location.lng", v.lng);
+                }}
+                disabled={disabled}
+              />
+            )}
+          </div>
         </div>
       </TabsPanel>
 
-      {/* sessionsLocation: sessions editor first, then location */}
+      {/* sessionsLocation: sessions only */}
       <TabsPanel value="sessionsLocation">
         <SectionHeader label={tSections("schedule")} />
 
@@ -2201,33 +2255,6 @@ function BookingTabs({
           </button>
         ) : null}
 
-        {/* Location — below sessions */}
-        <SectionHeader label={tFields("location")} />
-        <div className="flex flex-col gap-1 py-1.5">
-          <LocationPicker
-            editable={!readOnly}
-            value={{
-              address:
-                "location.address" in pending
-                  ? ((pending["location.address"] as string) ?? "")
-                  : (booking.location?.address ?? ""),
-              lat:
-                "location.lat" in pending
-                  ? (pending["location.lat"] as number | null)
-                  : (booking.location?.lat ?? null),
-              lng:
-                "location.lng" in pending
-                  ? (pending["location.lng"] as number | null)
-                  : (booking.location?.lng ?? null),
-            }}
-            onChange={(v) => {
-              onCommit("location.address", v.address);
-              onCommit("location.lat", v.lat);
-              onCommit("location.lng", v.lng);
-            }}
-            disabled={disabled}
-          />
-        </div>
       </TabsPanel>
 
       <TabsPanel value="activity">

@@ -33,14 +33,23 @@ describe("buildInquiryCalendarEvents", () => {
     expect(result).toHaveLength(1);
   });
 
-  it("sets kind to 'inquiry', inquiryId to the inquiry _id, and colorOverride to var(--event-lead)", () => {
+  it("sets kind to 'inquiry', inquiryId, and colorOverride to var(--event-inquiry) for active inquiries", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
-    ]);
+    ], { status: "new" });
     const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
     expect(event.kind).toBe("inquiry");
     expect(event.inquiryId).toBe("abc123");
-    expect(event.colorOverride).toBe("var(--event-lead)");
+    expect(event.colorOverride).toBe("var(--event-inquiry)");
+  });
+
+  it("omits colorOverride for booked inquiries so they render like bookings", () => {
+    const inq = makeInquiry("abc123", [
+      { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
+    ], { status: "booked" });
+    const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
+    expect(event.kind).toBe("inquiry");
+    expect(event.colorOverride).toBeUndefined();
   });
 
   it("sets event id to <inquiryId>_s<sessionIdx>", () => {

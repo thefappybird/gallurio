@@ -1,8 +1,10 @@
 import type { CalendarEvent } from "@/app/[locale]/(app)/bookings/_components/booking-calendar";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 export type InquiryCalendarInput = {
   _id: string;
+  status?: string | null;
   eventName?: string | null;
   sessions: Array<{
     startDate: string; // "YYYY-MM-DD"
@@ -48,7 +50,7 @@ export function buildInquiryCalendarEvents(
         teamId: null,
         kind: "inquiry",
         inquiryId: inq._id,
-        colorOverride: "var(--event-lead)",
+        colorOverride: isBookedInquiryStatus(inq.status) ? undefined : "var(--event-inquiry)",
       });
     });
   }

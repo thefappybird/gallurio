@@ -50,7 +50,7 @@ describe("RecentInquiriesList", () => {
       <RecentInquiriesList
         inquiries={[
           makeInquiry({ name: "Lena Okafor", eventType: "corporate", status: "new" }),
-          makeInquiry({ name: "Jordan Patel", eventType: "wedding", status: "approved" }),
+          makeInquiry({ name: "Jordan Patel", eventType: "wedding", status: "booked" }),
         ]}
         locale="en"
         title="Recent inquiries"
@@ -61,7 +61,7 @@ describe("RecentInquiriesList", () => {
     expect(screen.getByText("Lena Okafor")).toBeInTheDocument();
     expect(screen.getByText("Jordan Patel")).toBeInTheDocument();
     expect(screen.getByText("new")).toBeInTheDocument();
-    expect(screen.getByText("approved")).toBeInTheDocument();
+    expect(screen.getByText("booked")).toBeInTheDocument();
   });
 
   it("links each inquiry to the inbox modal deep-link", () => {

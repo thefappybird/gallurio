@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Loader2Icon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
+import { Loader2Icon, MapIcon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -325,15 +333,17 @@ function BaseLocationPicker({
           </p>
         ) : null}
         <LocationDisplay value={displayValue} />
-        <button
+        <Button
           ref={changeLocationBtnRef}
           type="button"
+          variant="outline"
+          size="sm"
           disabled={disabled}
           onClick={handleEnterEdit}
-          className="self-start text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          className="self-start"
         >
           {resolvedLabels.changeLocation ?? "Change location"}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -425,6 +435,7 @@ function BaseLocationPicker({
           onPick={handlePin}
           disabled={disabled}
           compact={compact}
+          scrollWheelZoom={!!editable}
         />
       </div>
 
@@ -516,5 +527,46 @@ export function LocationDisplay({
   const addr = value.address?.trim();
   return (
     <span className={cn("text-sm break-words", className)}>{addr || "—"}</span>
+  );
+}
+
+// ── LocationReadOnly ─────────────────────────────────────────────────────────
+// Address text + "View in Map" button that opens a dialog with a zoomable map.
+// Used in read-only booking detail views opened from the inquiries page.
+export function LocationReadOnly({ value }: { value: LocationValue }) {
+  const t = useTranslations("app.bookings.locationPicker");
+  const hasCoords = value.lat != null && value.lng != null;
+  const addr = value.address?.trim();
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm break-words">{addr || "—"}</span>
+      {hasCoords ? (
+        <Dialog>
+          <DialogTrigger
+            render={
+              <Button variant="outline" size="sm" className="self-start gap-1.5">
+                <MapIcon className="size-4" />
+                {t("viewInMap")}
+              </Button>
+            }
+          />
+          <DialogContent className="max-w-lg p-0">
+            <DialogHeader className="px-4 pt-4">
+              <DialogTitle className="text-sm font-medium">{addr || "—"}</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-hidden">
+              <LocationMap
+                lat={value.lat}
+                lng={value.lng!}
+                onPick={() => {}}
+                disabled
+                scrollWheelZoom
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </div>
   );
 }

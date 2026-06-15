@@ -72,6 +72,8 @@ type Props = {
    */
   onDiscardPending?: () => void;
   disabled?: boolean;
+  /** When true, hides all edit controls entirely (pencil, confirm, cancel). */
+  readOnly?: boolean;
 
   // ── Parent-observation API (optional) ────────────────────────────────────
   /**
@@ -107,6 +109,7 @@ export function EditableField({
   onCommit,
   onDiscardPending,
   disabled,
+  readOnly,
   editKey,
   onEditingChange,
   registerHandle,
@@ -379,42 +382,44 @@ export function EditableField({
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          {editing ? (
-            <>
+        {!readOnly ? (
+          <div className="flex shrink-0 items-center gap-1">
+            {editing ? (
+              <>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={commit}
+                  aria-label="Confirm"
+                  disabled={!canCommit}
+                >
+                  <CheckIcon className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={cancelEdit}
+                  aria-label="Cancel"
+                >
+                  <XIcon className="size-4" />
+                </Button>
+              </>
+            ) : (
               <Button
                 type="button"
                 size="icon-sm"
                 variant="ghost"
-                onClick={commit}
-                aria-label="Confirm"
-                disabled={!canCommit}
+                onClick={startEdit}
+                disabled={disabled}
+                aria-label={`Edit ${label}`}
               >
-                <CheckIcon className="size-4" />
+                <PencilIcon className="size-4" />
               </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                onClick={cancelEdit}
-                aria-label="Cancel"
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </>
-          ) : (
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              onClick={startEdit}
-              disabled={disabled}
-              aria-label={`Edit ${label}`}
-            >
-              <PencilIcon className="size-4" />
-            </Button>
-          )}
-        </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

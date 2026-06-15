@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationDisplay } from "@/components/ui/location-picker";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+
+const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
+  ssr: false,
+  loading: () => <div className="h-40 w-full animate-pulse bg-muted" aria-hidden />,
+});
 import { editInquirySessionsAction } from "@/app/[locale]/(app)/inquiries/_actions";
 import {
   overlappingShifts,
@@ -173,18 +179,32 @@ export function EventRequestCard({
               {guestCount === null ? t("none") : guestCount}
             </span>
           </div>
-          <div className="flex flex-col gap-0.5 col-span-2 sm:col-span-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              {t("location")}
-            </span>
-            <LocationDisplay
-              value={{
-                address: locationLabel ?? "",
-                lat: location?.lat ?? null,
-                lng: location?.lng ?? null,
-              }}
-            />
-          </div>
+        </div>
+
+        {/* Location — full-width with map when coords are available */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            {t("location")}
+          </span>
+          <LocationDisplay
+            value={{
+              address: locationLabel ?? "",
+              lat: location?.lat ?? null,
+              lng: location?.lng ?? null,
+            }}
+          />
+          {location?.lat != null && location?.lng != null ? (
+            <div className="overflow-hidden border border-border">
+              <LocationMap
+                lat={location.lat}
+                lng={location.lng}
+                onPick={() => {}}
+                disabled
+                compact
+                scrollWheelZoom
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* Sessions section */}

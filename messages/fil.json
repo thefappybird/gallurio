@@ -280,7 +280,8 @@
         "accept": "Tanggapin",
         "cancel": "Kanselahin",
         "apply": "Ilapat",
-        "currentAddressLabel": "Napiling lokasyon"
+        "currentAddressLabel": "Napiling lokasyon",
+        "viewInMap": "Tingnan sa mapa"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -299,8 +300,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Presyo",
-          "sessionsLocation": "Mga Sesyon at Lokasyon",
+          "eventPricing": "Event at Lokasyon",
+          "sessionsLocation": "Mga Sesyon",
           "activity": "Mga tala at aktibidad"
         },
         "sections": {
@@ -1063,13 +1064,11 @@
       "tabs": {
         "all": "Lahat",
         "new": "Bago",
-        "approved": "Naaprubahan",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
         "new": "Bago",
-        "approved": "Naaprubahan",
         "archived": "Naka-archive",
         "booked": "Na-book",
         "converted": "Na-convert sa Booking"
@@ -1154,10 +1153,8 @@
           "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking."
         },
         "actions": {
-          "approve": "Aprubahan",
           "archive": "I-archive",
           "working": "Sino-save…",
-          "approveStatusToast": "Naaprubahan ang katanungan.",
           "archivedToast": "Naka-archive na ang katanungan.",
           "approvedToast": "Na-convert sa booking.",
           "errorToast": "May nangyaring mali. Pakisubukang muli."
@@ -1191,7 +1188,7 @@
         "calendar": "Kalendaryo"
       },
       "calendar": {
-        "legendInquiry": "Lead / Katanungan",
+        "legendInquiry": "Katanungan",
         "legendBooking": "Booking",
         "empty": "Walang mga katanungan o booking na ipapakita."
       }
