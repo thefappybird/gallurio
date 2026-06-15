@@ -114,13 +114,15 @@ function BaseLocationPicker({
   });
   const [draft, setDraft] = useState<LocationValue>(value);
   const committedRef = useRef<LocationValue>(value);
+  // Mirrors committedRef for render-time dirty computation (refs must not be read during render).
+  const [committedValue, setCommittedValue] = useState<LocationValue>(value);
 
   // Captured once when entering edit mode: was the committed value empty?
   const [editOriginEmpty, setEditOriginEmpty] = useState<boolean>(() =>
-    editable ? isEmpty(committedRef.current) : false,
+    editable ? isEmpty(value) : false,
   );
 
-  const dirty = editable ? !sameLocation(draft, committedRef.current) : false;
+  const dirty = editable ? !sameLocation(draft, committedValue) : false;
 
   // Refs for focus management
   const changeLocationBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -139,6 +141,11 @@ function BaseLocationPicker({
     [editable, onChange],
   );
 
+  // ── search / input state ─────────────────────────────────────────────────
+  // Use draft.address as the source of truth for the query when in editable mode.
+  // Declared before the external-value-sync effect so the closure captures a defined setter.
+  const [query, setQuery] = useState(value.address ?? "");
+
   // ── external value sync ──────────────────────────────────────────────────
   // In display mode, keep committedRef + draft in sync with parent value.
   // In edit mode, do NOT clobber draft.
@@ -146,14 +153,14 @@ function BaseLocationPicker({
     if (!editable) return;
     if (mode === "display") {
       committedRef.current = value;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
+      setCommittedValue(value);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
       setDraft(value);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
       setQuery(value.address ?? "");  // sync search input for next edit session
     }
   }, [editable, mode, value]);
-
-  // ── search / input state ─────────────────────────────────────────────────
-  // Use draft.address as the source of truth for the query when in editable mode.
-  const [query, setQuery] = useState(value.address ?? "");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
@@ -297,6 +304,7 @@ function BaseLocationPicker({
     // Commit draft to parent and return to display mode
     onChange(draft);
     committedRef.current = draft;
+    setCommittedValue(draft);
     setMode("display");
     Promise.resolve().then(() => changeLocationBtnRef.current?.focus());
   }
@@ -333,6 +341,18 @@ function BaseLocationPicker({
           </p>
         ) : null}
         <LocationDisplay value={displayValue} />
+        {displayValue.lat != null && displayValue.lng != null ? (
+          <div className="overflow-hidden border border-border">
+            <LocationMap
+              lat={displayValue.lat}
+              lng={displayValue.lng}
+              onPick={() => {}}
+              disabled
+              compact
+              scrollWheelZoom={false}
+            />
+          </div>
+        ) : null}
         <Button
           ref={changeLocationBtnRef}
           type="button"

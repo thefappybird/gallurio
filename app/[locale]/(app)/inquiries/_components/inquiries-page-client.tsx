@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
 import type { InquiryStatusCounts } from "@/lib/db/queries/inquiries";
@@ -77,6 +78,64 @@ export function InquiriesPageClient({
     }
   }
 
+  // Optimistic table updates after conversion
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, { status: string }>>({});
+
+  const localRows = rows.map((row) => ({
+    ...row,
+    ...(optimisticUpdates[row.id] ?? {}),
+  }));
+
+  function handleConverted() {
+    if (detail) {
+      setOptimisticUpdates((prev) => ({ ...prev, [detail.inquiryId]: { status: "booked" } }));
+    }
+    setDetailOpen(false);
+  }
+
+  function handleConvertFailed() {
+    if (detail) {
+      setOptimisticUpdates((prev) => {
+        const next = { ...prev };
+        delete next[detail.inquiryId];
+        return next;
+      });
+    }
+  }
+
+  // Date popover
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [draftFrom, setDraftFrom] = useState(from);
+  const [draftTo, setDraftTo] = useState(to);
+
+  function handleDatePopoverOpenChange(open: boolean) {
+    if (open) {
+      setDraftFrom(from);
+      setDraftTo(to);
+    }
+    setDatePopoverOpen(open);
+  }
+
+  function handleApplyDates() {
+    pushParams((params) => {
+      if (draftFrom) params.set("from", draftFrom); else params.delete("from");
+      if (draftTo) params.set("to", draftTo); else params.delete("to");
+      params.delete("page");
+    });
+    setDatePopoverOpen(false);
+  }
+
+  function handleClearDates() {
+    setDraftFrom("");
+    setDraftTo("");
+    pushParams((params) => {
+      params.delete("from");
+      params.delete("to");
+      params.delete("page");
+    });
+    setDatePopoverOpen(false);
+  }
+
   const activeTab: TabKey = (TABS as readonly string[]).includes(status)
     ? (status as TabKey)
     : "all";
@@ -93,22 +152,6 @@ export function InquiriesPageClient({
     pushParams((params) => {
       if (tab === "all") params.delete("status");
       else params.set("status", tab);
-      params.delete("page");
-    });
-  }
-
-  function setDate(key: "from" | "to", value: string) {
-    pushParams((params) => {
-      if (value) params.set(key, value);
-      else params.delete(key);
-      params.delete("page");
-    });
-  }
-
-  function clearDates() {
-    pushParams((params) => {
-      params.delete("from");
-      params.delete("to");
       params.delete("page");
     });
   }
@@ -130,10 +173,10 @@ export function InquiriesPageClient({
   const totalPages = Math.ceil(total / limit);
   const fromRow = Math.min((page - 1) * limit + 1, total);
   const toRow = Math.min(page * limit, total);
+  const hasActiveDates = Boolean(from || to);
 
   return (
     <>
-      {/* View toggle — shown in both views */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
@@ -146,7 +189,7 @@ export function InquiriesPageClient({
         <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} />
       ) : (
         <>
-          {/* Status tabs with counts */}
+          {/* Status tabs + Date popover tab */}
           <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label={t("title")}>
             {TABS.map((tab) => {
               const count = counts[tab];
@@ -166,52 +209,84 @@ export function InquiriesPageClient({
                   )}
                 >
                   <span>{t(`tabs.${tab}`)}</span>
-                  <span
-                    className={cn(
-                      "tabular-nums text-xs",
-                      isActive ? "text-background/70" : "text-muted-foreground/70"
-                    )}
-                  >
+                  <span className={cn("tabular-nums text-xs", isActive ? "text-background/70" : "text-muted-foreground/70")}>
                     {count}
                   </span>
                 </button>
               );
             })}
-          </div>
 
-          {/* Date range */}
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              {t("toolbar.from")}
-              <input
-                type="date"
-                value={from}
-                max={to || undefined}
-                onChange={(e) => setDate("from", e.target.value)}
-                className="min-h-11 border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-9"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-              {t("toolbar.to")}
-              <input
-                type="date"
-                value={to}
-                min={from || undefined}
-                onChange={(e) => setDate("to", e.target.value)}
-                className="min-h-11 border border-input bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-9"
-              />
-            </label>
-            {(from || to) && (
-              <Button variant="ghost" size="sm" onClick={clearDates} className="min-h-11 sm:min-h-9">
-                {t("toolbar.clear")}
-              </Button>
-            )}
+            {/* Date filter popover tab */}
+            <Popover open={datePopoverOpen} onOpenChange={handleDatePopoverOpenChange}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className={cn(
+                      "inline-flex min-h-11 items-center gap-1.5 border px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:min-h-9",
+                      hasActiveDates
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent/40"
+                    )}
+                  />
+                }
+              >
+                <span>{t("toolbar.date")}</span>
+                {hasActiveDates && (
+                  <span className={cn("tabular-nums text-xs", hasActiveDates ? "text-background/70" : "text-muted-foreground/70")}>
+                    {[from, to].filter(Boolean).join(" – ")}
+                  </span>
+                )}
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-auto min-w-56 p-3">
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted-foreground">{t("toolbar.from")}</label>
+                    <input
+                      type="date"
+                      value={draftFrom}
+                      max={draftTo || undefined}
+                      onChange={(e) => setDraftFrom(e.target.value)}
+                      className="border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-muted-foreground">{t("toolbar.to")}</label>
+                    <input
+                      type="date"
+                      value={draftTo}
+                      min={draftFrom || undefined}
+                      onChange={(e) => setDraftTo(e.target.value)}
+                      className="border border-border bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleApplyDates}
+                      className="flex-1 border border-foreground bg-foreground px-3 py-1.5 text-sm text-background transition-colors hover:opacity-90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {t("toolbar.apply")}
+                    </button>
+                    {(draftFrom || draftTo) && (
+                      <button
+                        type="button"
+                        onClick={handleClearDates}
+                        className="shrink-0 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                      >
+                        {t("toolbar.clear")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {isPending ? (
             <TableSkeleton columns={INQUIRY_TABLE_COLUMNS} rows={Math.min(limit, 8)} />
           ) : (
-            <InquiryTable rows={rows} locale={locale} empty={empty} emptyHint={emptyHint} />
+            <InquiryTable rows={localRows} locale={locale} empty={empty} emptyHint={emptyHint} />
           )}
 
           {total > 0 && (
@@ -248,10 +323,13 @@ export function InquiriesPageClient({
       <InquiryDetailModal
         detail={detail}
         open={detailOpen}
+        teams={teams}
         onClose={() => {
           setDetailOpen(false);
           stripInquiryParam();
         }}
+        onConverted={handleConverted}
+        onConvertFailed={handleConvertFailed}
       />
     </>
   );

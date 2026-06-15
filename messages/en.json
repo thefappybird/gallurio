@@ -1059,7 +1059,9 @@
       "toolbar": {
         "from": "From",
         "to": "To",
-        "clear": "Clear dates"
+        "clear": "Clear dates",
+        "date": "Date",
+        "apply": "Apply"
       },
       "tabs": {
         "all": "All",
@@ -1121,7 +1123,10 @@
           "email": "Email",
           "phone": "Phone",
           "preferredContact": "Preferred contact",
-          "none": "—"
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Save",
+          "cancelEdit": "Cancel"
         },
         "eventRequest": {
           "title": "Event request",

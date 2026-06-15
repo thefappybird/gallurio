@@ -1059,7 +1059,9 @@
       "toolbar": {
         "from": "Mula",
         "to": "Hanggang",
-        "clear": "I-clear ang mga petsa"
+        "clear": "I-clear ang mga petsa",
+        "date": "Petsa",
+        "apply": "I-apply"
       },
       "tabs": {
         "all": "Lahat",
@@ -1121,7 +1123,10 @@
           "email": "Email",
           "phone": "Telepono",
           "preferredContact": "Piniling paraan ng pakikipag-ugnayan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "I-edit",
+          "savePhone": "I-save",
+          "cancelEdit": "Kanselahin"
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",

@@ -341,3 +341,31 @@ export async function editInquirySessionsAction(
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
+
+/** Update only the phone number on a non-converted inquiry. */
+export async function updateInquiryPhoneAction(
+  inquiryId: string,
+  phone: string
+): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId });
+  if (!inquiry) return { error: "not_found" };
+  if (isBookedInquiryStatus(inquiry.status)) return { error: "locked" };
+
+  const sanitized = phone.trim().slice(0, 50);
+  await Inquiry.updateOne({ _id: inquiryId, workspaceId }, { $set: { phone: sanitized || null } });
+
+  await ActivityLog.create({
+    workspaceId,
+    entity: "inquiry",
+    entityId: inquiry._id,
+    action: "updated",
+    diff: { phone: sanitized || null },
+  });
+
+  revalidateInquiry(inquiryId);
+  return { ok: true };
+}

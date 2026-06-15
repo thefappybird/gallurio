@@ -51,6 +51,7 @@ export function buildInquiryCalendarEvents(
         kind: "inquiry",
         inquiryId: inq._id,
         colorOverride: isBookedInquiryStatus(inq.status) ? undefined : "var(--event-inquiry)",
+        workspaceTz: opts.tz,
       });
     });
   }

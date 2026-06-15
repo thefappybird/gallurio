@@ -1059,7 +1059,9 @@
       "toolbar": {
         "from": "Dari",
         "to": "Sampai",
-        "clear": "Hapus tanggal"
+        "clear": "Hapus tanggal",
+        "date": "Tanggal",
+        "apply": "Terapkan"
       },
       "tabs": {
         "all": "Semua",
@@ -1121,7 +1123,10 @@
           "email": "Email",
           "phone": "Telepon",
           "preferredContact": "Kontak pilihan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Simpan",
+          "cancelEdit": "Batal"
         },
         "eventRequest": {
           "title": "Permintaan acara",

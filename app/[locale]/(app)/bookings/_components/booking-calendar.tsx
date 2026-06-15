@@ -85,6 +85,8 @@ export type CalendarEvent = {
   colorOverride?: string;
   /** When true, this event's time window overlaps with another booking on the same day. */
   hasConflict?: boolean;
+  /** Workspace IANA timezone. When set, session times are formatted in this timezone. */
+  workspaceTz?: string;
 };
 
 /** Union of a real booking event and the synthetic overflow placeholder. */
@@ -388,12 +390,12 @@ export function MonthBookingEvent({
       />
       {booking.kind === "inquiry" && (
         <span className="pointer-events-none absolute left-2 top-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white">
-          Lead
+          Inquiry
         </span>
       )}
       {booking.hasConflict && (
         <TriangleAlertIcon
-          className="pointer-events-none absolute right-1 top-0.5 size-2.5 text-white"
+          className="pointer-events-none absolute right-1 top-0.5 size-2.5 text-red-400"
           aria-label="Schedule conflict"
         />
       )}
@@ -425,7 +427,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
-  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt, timeMode);
+  const timeRange = formatTimeRange(ev.sessionStartAt, ev.sessionEndAt, timeMode, ev.workspaceTz);
   const isContinuation = ev.isMorningContinuation === true;
   const isPast = ev.end < new Date();
   const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
@@ -461,12 +463,12 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         <>
           {ev.kind === "inquiry" && (
             <span className="pointer-events-none mb-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white self-start">
-              Lead
+              Inquiry
             </span>
           )}
           {ev.hasConflict && (
             <TriangleAlertIcon
-              className="pointer-events-none absolute right-1 top-1 size-3 text-white"
+              className="pointer-events-none absolute right-1 top-1 size-3 text-red-400"
               aria-label="Schedule conflict"
             />
           )}

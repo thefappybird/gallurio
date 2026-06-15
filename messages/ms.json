@@ -1059,7 +1059,9 @@
       "toolbar": {
         "from": "Dari",
         "to": "Hingga",
-        "clear": "Padam tarikh"
+        "clear": "Padam tarikh",
+        "date": "Tarikh",
+        "apply": "Guna"
       },
       "tabs": {
         "all": "Semua",
@@ -1121,7 +1123,10 @@
           "email": "E-mel",
           "phone": "Telefon",
           "preferredContact": "Kaedah hubungan pilihan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Simpan",
+          "cancelEdit": "Batal"
         },
         "eventRequest": {
           "title": "Permintaan acara",

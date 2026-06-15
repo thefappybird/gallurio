@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { cn } from "@/lib/utils";
 import { BookingCalendar, type CalendarEvent } from "../../bookings/_components/booking-calendar";
 import { TeamLegend } from "../../bookings/_components/team-legend";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
 import { detectConflictIds } from "../../bookings/_components/_helpers/calendar-helpers";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 type Props = {
   events: CalendarEvent[];
@@ -36,12 +38,27 @@ export function InquiriesCalendarManager({
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const showTeamFilter = teams.length > 1;
 
+  // Status legend: clickable filters for inquiry vs booked event types
+  const [showUnbooked, setShowUnbooked] = useState(true);
+  const [showBookedInquiries, setShowBookedInquiries] = useState(true);
+
   const filteredEvents = useMemo(() => {
-    if (selectedTeams.length === 0) return events;
-    return events.filter(
-      (ev) => ev.kind === "inquiry" || (ev.teamId !== null && selectedTeams.includes(ev.teamId))
-    );
-  }, [events, selectedTeams]);
+    let evs = events;
+    if (selectedTeams.length > 0) {
+      evs = evs.filter(
+        (ev) => ev.kind === "inquiry" || (ev.teamId !== null && selectedTeams.includes(ev.teamId))
+      );
+    }
+    if (!showUnbooked || !showBookedInquiries) {
+      evs = evs.filter((ev) => {
+        if (ev.kind !== "inquiry") return true;
+        const booked = isBookedInquiryStatus(ev.status as string);
+        if (booked) return showBookedInquiries;
+        return showUnbooked;
+      });
+    }
+    return evs;
+  }, [events, selectedTeams, showUnbooked, showBookedInquiries]);
 
   const eventsWithConflicts = useMemo(() => {
     const conflictIds = detectConflictIds(filteredEvents);
@@ -84,6 +101,38 @@ export function InquiriesCalendarManager({
         }}
       />
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
+        {/* Status legend — clickable filters, always shown left */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <button
+            type="button"
+            onClick={() => setShowUnbooked((v) => !v)}
+            aria-pressed={showUnbooked}
+            className={cn(
+              "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              showUnbooked
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card text-muted-foreground opacity-50"
+            )}
+          >
+            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showUnbooked ? "currentColor" : "var(--event-inquiry)" }} />
+            {t("legendInquiry")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowBookedInquiries((v) => !v)}
+            aria-pressed={showBookedInquiries}
+            className={cn(
+              "inline-flex min-h-8 items-center gap-1.5 border px-2 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              showBookedInquiries
+                ? "border-foreground bg-foreground text-background"
+                : "border-border bg-card text-muted-foreground opacity-50"
+            )}
+          >
+            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: showBookedInquiries ? "currentColor" : "var(--primary)" }} />
+            {t("legendBooking")}
+          </button>
+        </div>
+
         {showTeamFilter && (
           <TeamLegend
             teams={teams}
@@ -92,16 +141,6 @@ export function InquiriesCalendarManager({
             onChange={setSelectedTeams}
           />
         )}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground">
-            <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: "var(--event-inquiry)" }} />
-            {t("legendInquiry")}
-          </span>
-          <span className="inline-flex min-h-8 items-center gap-1.5 border border-border px-2 py-1 text-xs font-medium text-muted-foreground">
-            <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-primary" />
-            {t("legendBooking")}
-          </span>
-        </div>
       </div>
     </div>
   );
