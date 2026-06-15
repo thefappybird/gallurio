@@ -1164,6 +1164,18 @@
           "title": "Sejarah",
           "submitted": "Pertanyaan dihantar",
           "booked": "Diluluskan ke tempahan"
+        },
+        "sessionsEditor": {
+          "edit": "Edit sessions",
+          "save": "Save changes",
+          "saving": "Saving…",
+          "discard": "Discard",
+          "conflictBlocks": "One or more sessions conflict with existing bookings.",
+          "pastDate": "Sessions must be in the future.",
+          "lockedConverted": "Sessions locked after conversion.",
+          "lockedArchived": "Sessions locked (archived).",
+          "phoneLabel": "Phone",
+          "emailReadonly": "Email (read-only)"
         }
       },
       "view": {

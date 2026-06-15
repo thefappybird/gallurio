@@ -127,3 +127,18 @@ export function inquirySessionsToBookingSessions(
     endAt: new Date(wallTimeInTzToUtc(s.startDate, s.endTime, timeZone)),
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Session edit schema — alter-only (no add/remove), used by the inquiry
+// session editor to update an existing inquiry's requested dates.
+// ---------------------------------------------------------------------------
+
+export const inquirySessionsEditSchema = z.object({
+  sessions: z
+    .array(inquirySessionSchema)
+    .min(1, "At least one session is required")
+    .max(20, "Too many sessions"),
+  phone: z.string().trim().min(7).max(30).optional().or(z.literal("")),
+});
+
+export type InquirySessionsEditInput = z.infer<typeof inquirySessionsEditSchema>;

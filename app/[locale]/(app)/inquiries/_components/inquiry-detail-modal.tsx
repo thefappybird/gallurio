@@ -100,6 +100,11 @@ export function InquiryDetailModal({
                 message={detail.message}
                 sessions={detail.sessions}
                 locale={detail.locale}
+                inquiryId={detail.inquiryId}
+                draftBookingId={detail.booking?.id ?? null}
+                phone={detail.phone}
+                email={detail.email}
+                status={detail.status}
               />
             </div>
 
