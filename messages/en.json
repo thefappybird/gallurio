@@ -1177,7 +1177,13 @@
           "lockedConverted": "Sessions locked after conversion.",
           "lockedArchived": "Sessions locked (archived).",
           "phoneLabel": "Phone",
-          "emailReadonly": "Email (read-only)"
+          "emailReadonly": "Email (read-only)",
+          "sessionLabel": "Session {n}",
+          "conflictInline": "conflict",
+          "dateLabel": "Date",
+          "startLabel": "Start time",
+          "endLabel": "End time",
+          "alterOnlyError": "Session count cannot change."
         }
       },
       "view": {

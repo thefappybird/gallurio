@@ -1168,26 +1168,32 @@
           "booked": "Diluluskan ke tempahan"
         },
         "sessionsEditor": {
-          "edit": "Edit sessions",
-          "save": "Save changes",
-          "saving": "Saving…",
-          "discard": "Discard",
-          "conflictBlocks": "One or more sessions conflict with existing bookings.",
-          "pastDate": "Sessions must be in the future.",
-          "lockedConverted": "Sessions locked after conversion.",
-          "lockedArchived": "Sessions locked (archived).",
-          "phoneLabel": "Phone",
-          "emailReadonly": "Email (read-only)"
+          "edit": "Edit sesi",
+          "save": "Simpan perubahan",
+          "saving": "Menyimpan…",
+          "discard": "Buang",
+          "conflictBlocks": "Satu atau lebih sesi berkonflik dengan tempahan sedia ada.",
+          "pastDate": "Sesi mesti pada masa hadapan.",
+          "lockedConverted": "Sesi dikunci selepas penukaran.",
+          "lockedArchived": "Sesi dikunci (diarkib).",
+          "phoneLabel": "Telefon",
+          "emailReadonly": "E-mel (baca sahaja)",
+          "sessionLabel": "Sesi {n}",
+          "conflictInline": "konflik",
+          "dateLabel": "Tarikh",
+          "startLabel": "Masa mula",
+          "endLabel": "Masa tamat",
+          "alterOnlyError": "Bilangan sesi tidak boleh diubah."
         }
       },
       "view": {
-        "table": "Table",
-        "calendar": "Calendar"
+        "table": "Jadual",
+        "calendar": "Kalendar"
       },
       "calendar": {
-        "legendInquiry": "Lead / Inquiry",
-        "legendBooking": "Booking",
-        "empty": "No inquiries or bookings to show."
+        "legendInquiry": "Lead / Pertanyaan",
+        "legendBooking": "Tempahan",
+        "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan."
       }
     },
     "pageBuilder": {

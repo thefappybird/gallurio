@@ -237,17 +237,17 @@ export function EventRequestCard({
                   className="flex flex-col gap-1.5 border border-border p-3"
                 >
                   <span className="text-xs text-muted-foreground">
-                    Session {i + 1}
+                    {ts("sessionLabel", { n: i + 1 })}
                     {conflicts[i] && (
                       <span className="ml-2 text-destructive font-medium">
-                        ·{" "}conflict
+                        · {ts("conflictInline")}
                       </span>
                     )}
                   </span>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="flex flex-col gap-0.5 col-span-3 sm:col-span-1">
                       <label className="text-xs text-muted-foreground">
-                        Date
+                        {ts("dateLabel")}
                       </label>
                       <input
                         type="date"
@@ -260,7 +260,7 @@ export function EventRequestCard({
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <label className="text-xs text-muted-foreground">
-                        Start
+                        {ts("startLabel")}
                       </label>
                       <input
                         type="time"
@@ -273,7 +273,7 @@ export function EventRequestCard({
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <label className="text-xs text-muted-foreground">
-                        End
+                        {ts("endLabel")}
                       </label>
                       <input
                         type="time"
@@ -327,7 +327,7 @@ export function EventRequestCard({
                   {error === "conflict"
                     ? ts("conflictBlocks")
                     : error === "alter_only"
-                    ? "Session count cannot change."
+                    ? ts("alterOnlyError")
                     : `Error: ${error}`}
                 </p>
               )}
