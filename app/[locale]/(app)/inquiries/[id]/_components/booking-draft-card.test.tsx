@@ -55,6 +55,7 @@ describe("BookingDraftCard", () => {
       total: 5000,
       deposit: 1000,
       notes: "",
+      teamId: null,
     });
     // Optimistic success banner.
     expect(await screen.findByText("This inquiry has been approved.")).toBeInTheDocument();

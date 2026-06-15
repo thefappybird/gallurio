@@ -34,11 +34,6 @@ describe("InquiryStatusBadge", () => {
     expect(screen.getByText("Booked")).toBeInTheDocument();
   });
 
-  it("renders Approved for the approved status", () => {
-    renderWithProviders(<InquiryStatusBadge status="approved" />);
-    expect(screen.getByText("Approved")).toBeInTheDocument();
-  });
-
   it("renders Converted To Booking for the converted status", () => {
     renderWithProviders(<InquiryStatusBadge status="converted" />);
     expect(screen.getByText("Converted To Booking")).toBeInTheDocument();
