@@ -1948,7 +1948,7 @@ function BookingTabs({
             {...get("eventType")}
             onCommit={(v) => onCommit("eventType", v)}
             onDiscardPending={() => onDiscard("eventType")}
-            disabled={disabled || isCancelled}
+            disabled={disabled || isCancelled || !!readOnly}
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1962,7 +1962,7 @@ function BookingTabs({
               {...get("teamId")}
               onCommit={(v) => onCommit("teamId", v || null)}
               onDiscardPending={() => onDiscard("teamId")}
-              disabled={disabled || isCancelled}
+              disabled={disabled || isCancelled || !!readOnly}
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
@@ -1981,7 +1981,7 @@ function BookingTabs({
             {...get("amount.total")}
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             editKey="amount.total"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1994,7 +1994,7 @@ function BookingTabs({
             {...get("amount.deposit")}
             onCommit={(v) => onCommit("amount.deposit", v)}
             onDiscardPending={() => onDiscard("amount.deposit")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             validate={(v) => {
               const n = Number(v);
               if (Number.isFinite(n) && n > total) {
@@ -2013,7 +2013,7 @@ function BookingTabs({
             {...get("amount.currency")}
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}

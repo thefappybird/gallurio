@@ -139,6 +139,7 @@ function BaseLocationPicker({
     if (mode === "display") {
       committedRef.current = value;
       setDraft(value);
+      setQuery(value.address ?? "");  // sync search input for next edit session
     }
   }, [editable, mode, value]);
 

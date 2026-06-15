@@ -253,6 +253,8 @@ export async function editInquirySessionsAction(
 
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
 
+  // Note: conflict check runs outside the transaction (TOCTOU window).
+  // Matches existing booking wizard behavior; server-side check reduces risk significantly.
   // Server-side conflict re-check (authoritative)
   for (const s of parsed.data.sessions) {
     const shifts = await getShiftsOnDate(workspaceId, s.startDate, tz, {

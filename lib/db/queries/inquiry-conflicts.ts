@@ -1,6 +1,6 @@
 import { connectDB } from "@/lib/db/mongoose";
 import { Booking } from "@/lib/db/models";
-import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
+import { wallTimeInTzToUtc, dayBoundInTz } from "@/lib/utils/timezone";
 import { formatHHMM } from "@/lib/bookings/shift-conflicts";
 import { isoDateInTz } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 
@@ -65,7 +65,7 @@ export async function computeInquiryConflicts(
 
   // Convert day boundaries to UTC for the Booking query range.
   const utcDayStart = new Date(wallTimeInTzToUtc(minDate, "00:00", tz));
-  const utcDayEnd = new Date(wallTimeInTzToUtc(maxDate, "23:59", tz));
+  const utcDayEnd = dayBoundInTz(maxDate, tz, 23, 59, 59, 999);
 
   await connectDB();
 
