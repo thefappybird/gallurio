@@ -1150,7 +1150,8 @@
           "approveError": "Tidak dapat menukar. Sila cuba lagi.",
           "saveError": "Tidak dapat menyimpan. Sila cuba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan."
+          "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan.",
+          "team": "Pasukan"
         },
         "actions": {
           "archive": "Arkib",

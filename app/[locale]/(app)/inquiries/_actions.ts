@@ -27,6 +27,7 @@ const draftEditsSchema = z
     total: z.coerce.number().min(0).max(1_000_000_000).optional(),
     deposit: z.coerce.number().min(0).max(1_000_000_000).optional(),
     notes: z.string().max(5000).optional(),
+    teamId: z.string().nullable().optional(),
   })
   .refine((v) => v.deposit === undefined || v.total === undefined || v.deposit <= v.total, {
     message: "Deposit cannot exceed the total",
@@ -184,12 +185,21 @@ export async function saveDraftBookingFieldsAction(
   if (edits.data.total !== undefined) set["amount.total"] = edits.data.total;
   if (edits.data.deposit !== undefined) set["amount.deposit"] = edits.data.deposit;
   if (edits.data.notes !== undefined) set.notes = edits.data.notes;
+  if (edits.data.teamId !== undefined) set.teamId = edits.data.teamId ?? null;
 
   if (Object.keys(set).length > 0) {
     await Booking.updateOne(
       { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
       { $set: set }
     );
+    await ActivityLog.create({
+      workspaceId,
+      actorUserId: ctx.userId,
+      entity: "inquiry",
+      entityId: inquiry._id,
+      action: "updated",
+      diff: edits.data,
+    });
   }
 
   revalidateInquiry(inquiryId);
@@ -202,15 +212,27 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
   const ctx = await requireOrg();
   await connectDB();
 
+  const inquiry = await Inquiry.findOne({
+    _id: inquiryId,
+    workspaceId: ctx.workspace._id,
+    status: { $nin: ["booked", "converted"] },
+  }).lean();
+  if (!inquiry) return { error: "not_found" };
+
   const res = await Inquiry.updateOne(
-    {
-      _id: inquiryId,
-      workspaceId: ctx.workspace._id,
-      status: { $nin: ["booked", "converted"] },
-    },
+    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
     { $set: { status: "archived" } }
   );
   if (res.matchedCount === 0) return { error: "not_found" };
+
+  await ActivityLog.create({
+    workspaceId: ctx.workspace._id,
+    actorUserId: ctx.userId,
+    entity: "inquiry",
+    entityId: inquiry._id,
+    action: "status_changed",
+    meta: { from: inquiry.status, to: "archived" },
+  });
 
   revalidateInquiry(inquiryId);
   return { ok: true };
@@ -285,6 +307,20 @@ export async function editInquirySessionsAction(
           { session: mongoSession }
         );
       }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "updated",
+            diff: { sessions: parsed.data.sessions },
+          },
+        ],
+        { session: mongoSession }
+      );
     });
   } catch (err) {
     console.error("[inquiry] editSessions transaction failed:", err);

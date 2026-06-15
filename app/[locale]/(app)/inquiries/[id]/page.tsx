@@ -12,6 +12,7 @@ import { EventRequestCard, type InquirySessionView } from "./_components/event-r
 import { BookingDraftCard } from "./_components/booking-draft-card";
 import { InquiryActions } from "./_components/inquiry-actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { getBookingTeamOptions } from "../../bookings/_data/team-options";
 
 export default async function InquiryDetailPage({
   params,
@@ -22,11 +23,14 @@ export default async function InquiryDetailPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.inquiries.detail");
 
-  const { workspace, role } = await requireOrg();
+  const { workspace, role, userId } = await requireOrg();
 
   if (!isValidObjectId(id)) notFound();
 
-  const result = await getInquiryWithDraft(workspace._id, id);
+  const [result, teams] = await Promise.all([
+    getInquiryWithDraft(workspace._id, id),
+    getBookingTeamOptions({ role, userId, workspace }),
+  ]);
   if (!result) notFound();
 
   const { inquiry, booking } = result;
@@ -99,6 +103,8 @@ export default async function InquiryDetailPage({
             initialTotal={booking?.amount?.total ?? 0}
             initialDeposit={booking?.amount?.deposit ?? 0}
             initialNotes={booking?.notes ?? ""}
+            teams={teams}
+            initialTeamId={(booking?.teamId ? String(booking.teamId) : null)}
           />
 
           <Card>

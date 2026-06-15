@@ -1150,7 +1150,8 @@
           "approveError": "Hindi ma-convert. Pakisubukang muli.",
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
-          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking."
+          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
+          "team": "Koponan"
         },
         "actions": {
           "archive": "I-archive",

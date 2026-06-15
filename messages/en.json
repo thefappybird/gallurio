@@ -1150,7 +1150,8 @@
           "approveError": "Could not convert. Please try again.",
           "saveError": "Could not save. Please try again.",
           "savedToast": "Draft saved.",
-          "ownerOnly": "Only the workspace owner can convert bookings."
+          "ownerOnly": "Only the workspace owner can convert bookings.",
+          "team": "Team"
         },
         "actions": {
           "archive": "Archive",

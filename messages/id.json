@@ -1150,7 +1150,8 @@
           "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan."
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
+          "team": "Tim"
         },
         "actions": {
           "archive": "Arsipkan",

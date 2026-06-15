@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { BookingTeamOption } from "@/app/[locale]/(app)/bookings/_data/team-options";
+import {
   approveInquiryBookingAction,
   saveDraftBookingFieldsAction,
 } from "../../_actions";
@@ -24,6 +32,8 @@ type Props = {
   initialTotal: number;
   initialDeposit: number;
   initialNotes: string;
+  teams?: BookingTeamOption[];
+  initialTeamId?: string | null;
 };
 
 export function BookingDraftCard({
@@ -36,14 +46,19 @@ export function BookingDraftCard({
   initialTotal,
   initialDeposit,
   initialNotes,
+  teams = [],
+  initialTeamId = null,
 }: Props) {
   const t = useTranslations("app.inquiries.detail.bookingDraft");
   const ta = useTranslations("app.inquiries.detail.actions");
+  const tTeam = useTranslations("app.bookings.teamPicker");
   const router = useRouter();
 
   const [total, setTotal] = useState(String(initialTotal));
   const [deposit, setDeposit] = useState(String(initialDeposit));
   const [notes, setNotes] = useState(initialNotes);
+  const [teamId, setTeamId] = useState<string | null>(initialTeamId);
+  const showTeamPicker = teams.length > 1;
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   // Optimistic: once approved we flip to a success banner immediately.
@@ -54,6 +69,7 @@ export function BookingDraftCard({
       total: Number(total) || 0,
       deposit: Number(deposit) || 0,
       notes,
+      teamId,
     };
   }
 
@@ -182,6 +198,28 @@ export function BookingDraftCard({
             onChange={(e) => setNotes(e.target.value)}
           />
         </div>
+
+        {showTeamPicker ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="draft-team">{t("team")}</Label>
+            <Select<string>
+              value={teamId ?? ""}
+              disabled={!isOwner}
+              onValueChange={(v) => setTeamId(v || null)}
+            >
+              <SelectTrigger id="draft-team">
+                <SelectValue placeholder={tTeam("allTeams")} />
+              </SelectTrigger>
+              <SelectContent>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.isActive ? team.name : `${team.name} (${tTeam("inactive")})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
 
         {!isOwner ? (
           <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
