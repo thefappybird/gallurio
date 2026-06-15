@@ -6,12 +6,12 @@ import type { GalleryCarouselProps } from "./GalleryCarouselBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { puckConfig } from "@/lib/page-builder/config";
 
-const OLD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
 });
 afterEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = OLD;
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = OLD;
 });
 
 function imgs(n: number): GalleryImage[] {

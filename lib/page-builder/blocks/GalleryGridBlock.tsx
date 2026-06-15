@@ -11,7 +11,7 @@
  */
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -83,10 +83,10 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
           }}
         >
           {list.map((img) => {
-            const src = cloudinaryImageUrl(img.publicId, {
+            const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
               height: thumbWidth,
-              crop: "fill",
+              fit: "cover",
             });
             // Skip a blank publicId / unset cloud name rather than emit a broken <img src="">.
             if (!src) return null;

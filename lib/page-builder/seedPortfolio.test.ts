@@ -74,7 +74,7 @@ describe("seedDefaultPortfolio", () => {
       order: 0,
     });
     await GalleryItem.create([
-      { workspaceId, cloudinaryPublicId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
+      { workspaceId, assetId: `gallurio/${workspaceId}/p/1.jpg`, url: "u1", order: 0 },
     ]);
 
     const seed = await seedDefaultPortfolio(workspaceId);

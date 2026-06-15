@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { XIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "./CollectionPopupChrome";
 
@@ -185,7 +185,7 @@ function Lightbox({
   image: PopupImage;
   onClose: () => void;
 }) {
-  const src = cloudinaryImageUrl(image.publicId, { width: 2000, crop: "limit" });
+  const src = imageDeliveryUrl(image.publicId, { width: 2000, fit: "scale-down" });
 
   return (
     <DialogPrimitive.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -495,10 +495,10 @@ export function CollectionPopup({
                     }}
                   >
                     {state.images.map((img) => {
-                      const thumbSrc = cloudinaryImageUrl(img.publicId, {
+                      const thumbSrc = imageDeliveryUrl(img.publicId, {
                         width: 400,
                         height: 400,
-                        crop: "fill",
+                        fit: "cover",
                       });
                       return (
                         <button

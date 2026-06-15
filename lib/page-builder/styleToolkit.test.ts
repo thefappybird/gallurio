@@ -125,7 +125,7 @@ describe("resolveBlockStyle", () => {
 
   it("omits a background image when the public cloud name is unset (test env)", () => {
     const css = resolveBlockStyle({ bgImagePublicId: "gallurio/x/y.jpg" });
-    // No NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME in the test env → no backgroundImage.
+    // No NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH in the test env → no backgroundImage.
     expect(css.backgroundImage).toBeUndefined();
   });
 });

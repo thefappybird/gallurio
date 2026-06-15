@@ -7,8 +7,8 @@ const MOCK_DATA = {
   items: [
     {
       id: "i1",
-      publicId: "gallurio/ws1/photo.jpg",
-      thumbUrl: "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      publicId: "cf-asset-abc123",
+      thumbUrl: "https://imagedelivery.net/test-hash/cf-asset-abc123/w=200,h=200,fit=cover,q=85,f=auto",
       caption: null,
     },
   ],
@@ -121,7 +121,7 @@ describe("usePickerData", () => {
     if (result.current.state.status === "ok") {
       const { collections, items } = result.current.state.data;
       expect(collections[0].id).toBe("c1");
-      expect(items[0].publicId).toBe("gallurio/ws1/photo.jpg");
+      expect(items[0].publicId).toBe("cf-asset-abc123");
     }
   });
 

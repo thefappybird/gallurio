@@ -175,7 +175,7 @@ describe("ImageBlock — with imageUrl (no cloud env)", () => {
 
 describe("ImageBlock — imagePublicId without cloud name (test env)", () => {
   it("falls back to showing placeholder when imagePublicId is set but cloud name is unset", () => {
-    // NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME is not set in test env → cloudinaryUrl returns null
+    // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is not set in test env → imageDeliveryUrl returns ""
     render(<ImageBlock imagePublicId="gallurio/ws/img.jpg" imageUrl="" alt="" fit="cover" />);
     // Falls through to placeholder since cloudinaryUrl → null and imageUrl is empty
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
@@ -711,7 +711,7 @@ describe("ContainerBlock background images", () => {
   const Slot: SlotComponent = (props) => <div data-testid="slot-inner" style={props?.style} />;
 
   beforeEach(() => {
-    vi.stubEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", "demo");
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
   });
   afterEach(() => {
     vi.unstubAllEnvs();

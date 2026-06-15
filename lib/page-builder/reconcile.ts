@@ -61,7 +61,7 @@ function validId(id: unknown): id is string {
  * - ONE batched query: `GalleryItem.find({ workspaceId, _id: { $in: allIds } })`
  *   (no N+1). `workspaceId` comes from the CALLER's session — never Puck props —
  *   so foreign ids resolve to nothing and are pruned (tenant-safe).
- * - For each stored id still present: emit `{ id, publicId: cloudinaryPublicId,
+ * - For each stored id still present: emit `{ id, publicId: assetId,
  *   alt: altText || caption || "" }`. Refreshes a changed publicId/alt.
  * - Drops ids whose item no longer exists. Preserves the stored order. NEVER adds.
  * - No-op (and no DB call) when the tree has no gallery or background-image blocks.
@@ -96,11 +96,11 @@ export async function reconcileGalleryImages(workspaceId: string, data: PuckData
   if (allIds.size > 0) {
     await connectDB();
     const docs = (await GalleryItem.find({ workspaceId, _id: { $in: [...allIds] } })
-      .select({ cloudinaryPublicId: 1, altText: 1, caption: 1 })
-      .lean()) as Array<{ _id: unknown; cloudinaryPublicId?: string; altText?: string; caption?: string }>;
+      .select({ assetId: 1, altText: 1, caption: 1 })
+      .lean()) as Array<{ _id: unknown; assetId?: string; altText?: string; caption?: string }>;
     for (const d of docs) {
       map.set(String(d._id), {
-        publicId: d.cloudinaryPublicId ?? "",
+        publicId: d.assetId ?? "",
         alt: d.altText || d.caption || "",
       });
     }
@@ -154,7 +154,7 @@ type StoredCollection = { id?: unknown; name?: unknown; coverPublicId?: unknown;
  * - Prunes ids not in the result map (missing or foreign workspace). Preserves
  *   stored order. NEVER adds. Returns a NEW data object; does not mutate input.
  * - itemCount = 0 for private collections (isPublic === false).
- * - coverPublicId: coverItemId's cloudinaryPublicId → newest item's → "".
+ * - coverPublicId: coverItemId's assetId → newest item's → "".
  */
 export async function reconcileFeaturedCollections(workspaceId: string, data: PuckData): Promise<PuckData> {
   if (!workspaceId || !data) return data;
@@ -211,7 +211,7 @@ export async function reconcileFeaturedCollections(workspaceId: string, data: Pu
   }
 
   // 4. Batched cover resolution.
-  //    a) Explicit coverItemId → resolve cloudinaryPublicId.
+  //    a) Explicit coverItemId → resolve assetId.
   const explicitCoverIds: string[] = [];
   for (const col of colMap.values()) {
     if (col.coverItemId) explicitCoverIds.push(col.coverItemId);
@@ -219,10 +219,10 @@ export async function reconcileFeaturedCollections(workspaceId: string, data: Pu
   const explicitCoverMap = new Map<string, string>();
   if (explicitCoverIds.length > 0) {
     const coverDocs = (await GalleryItem.find({ workspaceId, _id: { $in: explicitCoverIds } })
-      .select({ cloudinaryPublicId: 1 })
-      .lean()) as Array<{ _id: unknown; cloudinaryPublicId?: string }>;
+      .select({ assetId: 1 })
+      .lean()) as Array<{ _id: unknown; assetId?: string }>;
     for (const d of coverDocs) {
-      explicitCoverMap.set(String(d._id), d.cloudinaryPublicId ?? "");
+      explicitCoverMap.set(String(d._id), d.assetId ?? "");
     }
   }
 
@@ -236,7 +236,7 @@ export async function reconcileFeaturedCollections(workspaceId: string, data: Pu
     const newestResults = (await GalleryItem.aggregate([
       { $match: { workspaceId: wsObjectId, collectionId: { $in: coverlessIds.map((id) => new Types.ObjectId(id)) } } },
       { $sort: { createdAt: -1, _id: -1 } },
-      { $group: { _id: "$collectionId", pid: { $first: "$cloudinaryPublicId" } } },
+      { $group: { _id: "$collectionId", pid: { $first: "$assetId" } } },
     ])) as Array<{ _id: unknown; pid?: string }>;
     for (const r of newestResults) {
       newestCoverMap.set(String(r._id), r.pid ?? "");

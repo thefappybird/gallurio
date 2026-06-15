@@ -1,40 +1,40 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { cloudinaryImageUrl } from "./cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 
-const OLD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const OLD = process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
 
 beforeEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = "test-cloud";
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = "test-hash";
 });
 afterEach(() => {
-  process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = OLD;
+  process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = OLD;
 });
 
-describe("cloudinaryImageUrl", () => {
-  it("builds a fill URL with width+height (mirrors server cloudinaryThumbnailUrl)", () => {
-    expect(cloudinaryImageUrl("ws/1/item0", { width: 600, height: 600 })).toBe(
-      "https://res.cloudinary.com/test-cloud/image/upload/c_fill,w_600,h_600,q_auto,f_auto/ws/1/item0"
+describe("imageDeliveryUrl (via cloudinaryClient re-export)", () => {
+  it("builds a cover URL with width+height", () => {
+    expect(imageDeliveryUrl("img123", { width: 600, height: 600, fit: "cover" })).toBe(
+      "https://imagedelivery.net/test-hash/img123/w=600,h=600,fit=cover,q=85,f=auto"
     );
   });
 
-  it("defaults height to width and crop to fill", () => {
-    expect(cloudinaryImageUrl("p", { width: 400 })).toBe(
-      "https://res.cloudinary.com/test-cloud/image/upload/c_fill,w_400,h_400,q_auto,f_auto/p"
+  it("builds a scale-down URL", () => {
+    expect(imageDeliveryUrl("img123", { width: 800, height: 1600, fit: "scale-down" })).toBe(
+      "https://imagedelivery.net/test-hash/img123/w=800,h=1600,fit=scale-down,q=85,f=auto"
     );
   });
 
-  it("honours an explicit crop (limit)", () => {
-    expect(cloudinaryImageUrl("p", { width: 800, height: 1600, crop: "limit" })).toBe(
-      "https://res.cloudinary.com/test-cloud/image/upload/c_limit,w_800,h_1600,q_auto,f_auto/p"
+  it("returns /public URL when no dims given", () => {
+    expect(imageDeliveryUrl("img123")).toBe(
+      "https://imagedelivery.net/test-hash/img123/public"
     );
   });
 
-  it("returns empty string when publicId is missing", () => {
-    expect(cloudinaryImageUrl("", { width: 400 })).toBe("");
+  it("returns empty string when imageId is missing", () => {
+    expect(imageDeliveryUrl("", { width: 400 })).toBe("");
   });
 
-  it("returns empty string when the cloud name env is unset", () => {
-    delete process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    expect(cloudinaryImageUrl("p", { width: 400 })).toBe("");
+  it("returns empty string when account hash env is unset", () => {
+    delete process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH;
+    expect(imageDeliveryUrl("img123", { width: 400 })).toBe("");
   });
 });

@@ -7,7 +7,7 @@
  */
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
-import { cloudinaryImageUrl } from "@/lib/page-builder/cloudinaryClient";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import { GalleryCarouselClient, type CarouselSlide } from "./GalleryCarouselClient";
 import {
@@ -86,7 +86,7 @@ export function GalleryCarouselBlock({
   const slides: CarouselSlide[] = list
     .map((img) => ({
       id: img.id,
-      src: cloudinaryImageUrl(img.publicId, { width: size.width, height: size.height, crop: "fill" }),
+      src: imageDeliveryUrl(img.publicId, { width: size.width, height: size.height, fit: "cover" }),
       alt: img.alt ?? "",
     }))
     .filter((s) => s.src);

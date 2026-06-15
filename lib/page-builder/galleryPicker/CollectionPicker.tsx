@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { ImagePlusIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
-import { uploadImageToCloudinary } from "@/lib/storage/uploadToCloudinary.client";
+import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import type { PickerCollection } from "./types";
 
@@ -37,7 +37,7 @@ const L = {
 };
 
 type LocalImage = {
-  cloudinaryPublicId: string;
+  assetId: string;
   url: string;
   width?: number;
   height?: number;
@@ -91,7 +91,7 @@ export function CollectionPicker({ value, onChange }: Props) {
     setForm((f) => f.open ? { ...f, uploading: true, error: topError } : f);
 
     Promise.allSettled(
-      valid.map((file) => uploadImageToCloudinary(file, { subfolder: "portfolio" }))
+      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
     ).then((results) => {
       const ok: LocalImage[] = [];
       let dimErr = false;
@@ -317,7 +317,7 @@ export function CollectionPicker({ value, onChange }: Props) {
           {form.images.length > 0 && (
             <ul className="grid grid-cols-4 gap-1.5" aria-label="Uploaded photos">
               {form.images.map((img, i) => (
-                <li key={img.cloudinaryPublicId} className="relative aspect-square overflow-hidden border border-border">
+                <li key={img.assetId} className="relative aspect-square overflow-hidden border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={img.url} alt="" className="size-full object-cover" />
                   <button

@@ -20,7 +20,7 @@ async function makeItem(workspaceId: Types.ObjectId, i: number, over: Record<str
   return GalleryItem.create({
     workspaceId,
     collectionId: null,
-    cloudinaryPublicId: `ws/${workspaceId}/item${i}`,
+    assetId: `ws/${workspaceId}/item${i}`,
     url: `https://x/${i}.jpg`,
     altText: `Alt ${i}`,
     caption: `Cap ${i}`,
@@ -219,8 +219,8 @@ describe("reconcileFeaturedCollections", () => {
   it("refreshes name + coverPublicId(from coverItemId) + itemCount(public total); preserves order; prunes deleted/foreign; never adds", async () => {
     const ws = new Types.ObjectId();
     const colA = await GalleryCollection.create({ workspaceId: ws, name: "Weddings", slug: "w", isPublic: true });
-    const cover = await GalleryItem.create({ workspaceId: ws, collectionId: colA._id, cloudinaryPublicId: "cover-pid", url: "u", order: 0 });
-    await GalleryItem.create({ workspaceId: ws, collectionId: colA._id, cloudinaryPublicId: "p1", url: "u", order: 1 });
+    const cover = await GalleryItem.create({ workspaceId: ws, collectionId: colA._id, assetId: "cover-pid", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: colA._id, assetId: "p1", url: "u", order: 1 });
     await GalleryCollection.updateOne({ _id: colA._id }, { $set: { coverItemId: cover._id } });
     const foreignWs = new Types.ObjectId();
     const foreign = await GalleryCollection.create({ workspaceId: foreignWs, name: "X", slug: "x", isPublic: true });
@@ -237,7 +237,7 @@ describe("reconcileFeaturedCollections", () => {
   it("itemCount is 0 for a private collection", async () => {
     const ws = new Types.ObjectId();
     const col = await GalleryCollection.create({ workspaceId: ws, name: "Priv", slug: "p", isPublic: false });
-    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, cloudinaryPublicId: "x", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: col._id, assetId: "x", url: "u", order: 0 });
     const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(col._id) }])] } as any);
     expect((out.content[0].props.collections as Array<{ itemCount: number }>)[0].itemCount).toBe(0);
   });
@@ -245,7 +245,7 @@ describe("reconcileFeaturedCollections", () => {
   it("falls back coverPublicId to newest item when no coverItemId; '' for empty collection", async () => {
     const ws = new Types.ObjectId();
     const withItems = await GalleryCollection.create({ workspaceId: ws, name: "A", slug: "a", isPublic: true });
-    await GalleryItem.create({ workspaceId: ws, collectionId: withItems._id, cloudinaryPublicId: "newest", url: "u", order: 0 });
+    await GalleryItem.create({ workspaceId: ws, collectionId: withItems._id, assetId: "newest", url: "u", order: 0 });
     const empty = await GalleryCollection.create({ workspaceId: ws, name: "B", slug: "b", isPublic: true });
     const out = await reconcileFeaturedCollections(ws.toString(), { root: {}, content: [fwBlock([{ id: String(withItems._id) }, { id: String(empty._id) }])] } as any);
     const cols = out.content[0].props.collections as Array<{ coverPublicId: string }>;

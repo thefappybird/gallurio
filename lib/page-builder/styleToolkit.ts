@@ -15,6 +15,7 @@
  */
 
 import type { Field } from "@measured/puck";
+import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
 import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
 import { fontFamilyValue, type PortfolioFontKey } from "./fonts";
@@ -228,13 +229,9 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-// Build a Cloudinary delivery URL from a public id using the PUBLIC cloud name,
-// so this stays client-safe (no server Cloudinary SDK import). Returns null when
-// the cloud name isn't configured (e.g. in tests).
-function bgImageUrl(publicId: string): string | null {
-  const cloud = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  if (!cloud) return null;
-  return `https://res.cloudinary.com/${cloud}/image/upload/c_fill,w_1600,q_auto,f_auto/${publicId}`;
+function bgImageUrl(assetId: string): string | null {
+  const url = imageDeliveryUrl(assetId, { width: 1600, fit: "cover" });
+  return url || null;
 }
 
 /**
