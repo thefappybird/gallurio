@@ -20,6 +20,8 @@ import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events"
 import type { CalendarEvent } from "../bookings/_components/booking-calendar";
 import { connectDB } from "@/lib/db/mongoose";
 import { Client } from "@/lib/db/models";
+import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
+import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 export async function generateMetadata({
   params,
@@ -163,6 +165,20 @@ export default async function InquiriesPage({
     events = [...inquiryEvents, ...bookingEvents];
   }
 
+  // Compute conflicts for non-booked inquiries in the current page.
+  const tz = (workspace as { timezone?: string | null }).timezone ?? "UTC";
+  const conflictInputs = items
+    .filter((inq) => !isBookedInquiryStatus(inq.status))
+    .map((inq) => ({
+      _id: inq._id.toString(),
+      sessions: (inq.sessions ?? []).map((s) => ({
+        startDate: (s as { startDate: string }).startDate,
+        startTime: (s as { startTime: string }).startTime,
+        endTime: (s as { endTime: string }).endTime,
+      })),
+    }));
+  const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
+
   // Stale/over-range page (e.g. after archiving the last row on a page): send the
   // owner to the last valid page instead of an empty table that looks like a dead end.
   if (total > 0 && page > 1) {
@@ -191,6 +207,7 @@ export default async function InquiriesPage({
     eventType: q.eventType ?? "other",
     submittedAt: q.createdAt.toISOString(),
     source: compactSource(q.source),
+    hasConflict: conflictSet.has(q._id.toString()),
   }));
 
   // ?detail=<bookingId> — read-only booking detail modal (calendar view).
@@ -224,6 +241,11 @@ export default async function InquiriesPage({
       });
     }
   }
+
+  // Track whether the detail inquiry's conflict was already covered by the page-level query.
+  const detailInPageConflicts = sp.inquiryId
+    ? conflictInputs.some((ci) => ci._id === sp.inquiryId)
+    : false;
 
   let initialDetail: InquiryDetailModalData | null = null;
   if (sp.inquiryId) {
@@ -276,6 +298,29 @@ export default async function InquiriesPage({
           }
         : null,
       isOwner: role === "owner",
+      hasConflict: await (async () => {
+        const detailId = String(detail.inquiry._id);
+        // If this inquiry was already included in the page-level conflict query, use that result.
+        if (detailInPageConflicts) return conflictSet.has(detailId);
+        // If it's booked/converted, conflicts are irrelevant.
+        if (isBookedInquiryStatus(detail.inquiry.status)) return false;
+        // Compute conflict for this single inquiry separately.
+        const detailConflictSet = await computeInquiryConflicts(
+          workspace._id,
+          [
+            {
+              _id: detailId,
+              sessions: (detail.inquiry.sessions ?? []).map((s) => ({
+                startDate: (s as { startDate: string }).startDate,
+                startTime: (s as { startTime: string }).startTime,
+                endTime: (s as { endTime: string }).endTime,
+              })),
+            },
+          ],
+          tz
+        );
+        return detailConflictSet.has(detailId);
+      })(),
     };
   }
 

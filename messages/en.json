@@ -1105,6 +1105,7 @@
           "actions": "Actions"
         },
         "noTitle": "Untitled event",
+        "conflict": "Conflict",
         "actions": {
           "view": "View",
           "menuLabel": "Open inquiry actions"
@@ -1112,6 +1113,7 @@
       },
       "detail": {
         "back": "Back to inquiries",
+        "conflictBanner": "One or more sessions conflict with existing bookings.",
         "submittedOn": "Submitted {date}",
         "notFound": "Inquiry not found.",
         "clientInfo": {
