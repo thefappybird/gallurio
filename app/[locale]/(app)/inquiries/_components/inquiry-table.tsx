@@ -23,6 +23,7 @@ export type InquiryRow = {
   eventType: string;
   submittedAt: string;
   source: string | null;
+  hasConflict?: boolean;
 };
 
 type Props = {
@@ -84,6 +85,11 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                 <span className="font-semibold leading-snug">{row.name}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <InquiryStatusBadge status={row.status} />
+                  {row.hasConflict && (
+                    <span className="inline-flex items-center gap-0.5 border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
+                      ⚠ {t("table.conflict")}
+                    </span>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -146,7 +152,14 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                 className="border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-within:bg-accent/40"
               >
                 <td className="px-3 py-2.5 align-middle">
-                  <InquiryStatusBadge status={row.status} />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <InquiryStatusBadge status={row.status} />
+                    {row.hasConflict && (
+                      <span className="inline-flex items-center gap-0.5 border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive">
+                        ⚠ {t("table.conflict")}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-3 py-2.5 align-middle">
                   <Link

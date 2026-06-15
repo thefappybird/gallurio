@@ -327,8 +327,8 @@ describe("BOOKING_STATUSES — quoted removal regression", () => {
     expect(BOOKING_STATUSES).not.toContain("quoted");
   });
 
-  it("contains exactly the four expected statuses in order", () => {
-    expect([...BOOKING_STATUSES]).toEqual(["inquiry", "booked", "completed", "cancelled"]);
+  it("contains exactly the three expected statuses in order", () => {
+    expect([...BOOKING_STATUSES]).toEqual(["booked", "completed", "cancelled"]);
   });
 
   it("bookingCreateSchema rejects status: 'quoted'", () => {

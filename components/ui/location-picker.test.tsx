@@ -20,6 +20,19 @@ vi.mock("next/dynamic", () => ({
 
 import { LocationPicker, type LocationValue } from "./location-picker";
 
+const EDITABLE_LABELS = {
+  searchPlaceholder: "Search venue",
+  searching: "Searching",
+  noResults: "No matches",
+  dragHint: "Drag pin",
+  clear: "Clear",
+  changeLocation: "Change location",
+  accept: "Accept",
+  cancel: "Cancel",
+  apply: "Apply",
+  currentAddressLabel: "Selected location",
+};
+
 const EMPTY: LocationValue = { address: "", lat: null, lng: null };
 
 function mockNominatim(results: unknown[]) {
@@ -238,5 +251,229 @@ describe("LocationPicker", () => {
     vi.advanceTimersByTime(1000);
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  describe("editable mode", () => {
+    const POPULATED: LocationValue = { address: "Somewhere", lat: 14.5, lng: 121.0 };
+
+    it("empty value starts in edit mode with Apply button", async () => {
+      const fetchMock = mockNominatim([
+        {
+          place_id: 42,
+          display_name: "Pier 27, Manila, Philippines",
+          lat: "14.5995",
+          lon: "120.9842",
+        },
+      ]);
+      vi.stubGlobal("fetch", fetchMock);
+
+      const onChange = vi.fn();
+      render(
+        <LocationPicker
+          editable
+          value={EMPTY}
+          onChange={onChange}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Edit mode: Apply present, no Change-location, no address display text
+      expect(screen.getByRole("button", { name: /apply/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /change location/i })).toBeNull();
+      expect(screen.queryByText("Somewhere")).toBeNull();
+
+      // Pick a search result
+      fireEvent.change(screen.getByRole("combobox"), { target: { value: "Pier 27" } });
+      const option = await screen.findByText("Pier 27, Manila, Philippines");
+      fireEvent.mouseDown(option);
+
+      // Click Apply
+      fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+
+      // onChange called exactly once with correct value
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith({
+        address: "Pier 27, Manila, Philippines",
+        lat: 14.5995,
+        lng: 120.9842,
+      });
+
+      // Now in display mode: Change-location button visible, Apply gone
+      expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
+    });
+
+    it("populated value starts in display mode", () => {
+      const onChange = vi.fn();
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={onChange}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Address text visible
+      expect(screen.getByText("Somewhere")).toBeInTheDocument();
+      // Change-location button visible
+      expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
+      // Map NOT in DOM
+      expect(screen.queryByTestId("location-map")).toBeNull();
+      // onChange not called on mount
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it("Change location → Accept commits the new value", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ display_name: "New Place, Manila" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const onChange = vi.fn();
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={onChange}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Click Change location → edit mode, map appears
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+      expect(screen.getByTestId("location-map")).toBeInTheDocument();
+
+      // Simulate a pin pick — triggers reverse geocoding
+      fireEvent.click(screen.getByTestId("map-pick"));
+
+      // Wait for reverse geocoding to fill in address
+      await screen.findByDisplayValue("New Place, Manila");
+
+      // Accept and Cancel should be visible (dirty state); Apply not visible
+      expect(screen.getByRole("button", { name: /^accept$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
+
+      // Click Accept
+      fireEvent.click(screen.getByRole("button", { name: /^accept$/i }));
+
+      // onChange called once with new value
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "New Place, Manila", lat: 1.23, lng: 4.56 })
+      );
+
+      // Back to display mode: Change-location visible, map gone
+      // (In a real app the parent would update the `value` prop after onChange fires;
+      // here we just verify the component returns to display mode correctly.)
+      expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
+      expect(screen.queryByTestId("location-map")).toBeNull();
+      expect(screen.queryByRole("button", { name: /^accept$/i })).toBeNull();
+    });
+
+    it("Cancel reverts draft without calling onChange", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ display_name: "Different Place, Quezon City" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const onChange = vi.fn();
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={onChange}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Enter edit mode
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+
+      // Drop a pin at a different location, reverse geocoding resolves
+      fireEvent.click(screen.getByTestId("map-pick"));
+      await screen.findByDisplayValue("Different Place, Quezon City");
+
+      // Click Cancel
+      fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+
+      // onChange must NOT have been called
+      expect(onChange).not.toHaveBeenCalled();
+
+      // Display mode restored with ORIGINAL address
+      expect(screen.getByText("Somewhere")).toBeInTheDocument();
+      // Map unmounted
+      expect(screen.queryByTestId("location-map")).toBeNull();
+    });
+
+    it("empty-origin shows Apply, not Accept or Cancel", () => {
+      render(
+        <LocationPicker
+          editable
+          value={EMPTY}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      expect(screen.getByRole("button", { name: /^apply$/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^accept$/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^cancel$/i })).toBeNull();
+    });
+
+    it("populated-origin shows Accept+Cancel when dirty, no Apply", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ display_name: "Another Place" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Enter edit mode
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+
+      // Make it dirty via pin pick
+      fireEvent.click(screen.getByTestId("map-pick"));
+      await screen.findByDisplayValue("Another Place");
+
+      expect(screen.getByRole("button", { name: /^accept$/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
+    });
+
+    it("disabled + editable shows address text but Change-location button is disabled and map is not in DOM", () => {
+      render(
+        <LocationPicker
+          editable
+          disabled
+          value={POPULATED}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Address text visible
+      expect(screen.getByText("Somewhere")).toBeInTheDocument();
+      // Change-location button is present but disabled
+      const changeBtn = screen.getByRole("button", { name: /change location/i });
+      expect(changeBtn).toBeInTheDocument();
+      expect(changeBtn).toBeDisabled();
+      // Map not in DOM (still in display mode)
+      expect(screen.queryByTestId("location-map")).toBeNull();
+    });
   });
 });

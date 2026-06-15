@@ -71,11 +71,11 @@ describe("serializeCsv", () => {
       ["title", "status"],
       [
         ["Smith Wedding", "booked"],
-        ["Jones Event", "inquiry"],
+        ["Jones Event", "completed"],
       ]
     );
     expect(result).toBe(
-      "title,status\r\nSmith Wedding,booked\r\nJones Event,inquiry\r\n"
+      "title,status\r\nSmith Wedding,booked\r\nJones Event,completed\r\n"
     );
   });
 

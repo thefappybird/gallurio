@@ -115,7 +115,7 @@ export type InquirySubmissionInput = z.infer<typeof inquirySubmissionSchema>;
 // Combines each `{ startDate, startTime/endTime }` into UTC instants using the
 // workspace timezone (wall-clock semantics). Each inquiry session is single-day
 // so startAt/endAt share the same calendar date — matching `bookingSessionSchema`.
-// Used in tests now; consumed by the inquiry → booking flow (creates a Booking with status: "inquiry").
+// Used in tests now; consumed by the inquiry → booking flow (creates a Booking with status: "draft" initially).
 // ---------------------------------------------------------------------------
 
 export function inquirySessionsToBookingSessions(
@@ -127,3 +127,18 @@ export function inquirySessionsToBookingSessions(
     endAt: new Date(wallTimeInTzToUtc(s.startDate, s.endTime, timeZone)),
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Session edit schema — alter-only (no add/remove), used by the inquiry
+// session editor to update an existing inquiry's requested dates.
+// ---------------------------------------------------------------------------
+
+export const inquirySessionsEditSchema = z.object({
+  sessions: z
+    .array(inquirySessionSchema)
+    .min(1, "At least one session is required")
+    .max(20, "Too many sessions"),
+  phone: z.string().trim().min(7).max(30).optional().or(z.literal("")),
+});
+
+export type InquirySessionsEditInput = z.infer<typeof inquirySessionsEditSchema>;

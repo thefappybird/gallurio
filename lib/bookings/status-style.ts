@@ -6,14 +6,12 @@ import type { BookingStatus } from "@/lib/validators/booking";
 // contrasts these mid-luminance fills. Consumed by the table pills, the
 // calendar candles, and the calendar legend so all three never drift apart.
 export const STATUS_COLOR_VAR: Record<BookingStatus, string> = {
-  inquiry: "var(--event-inquiry)",
   booked: "var(--event-booked)",
   completed: "var(--event-completed)",
   cancelled: "var(--event-cancelled)",
 };
 
 export const STATUS_ORDER: BookingStatus[] = [
-  "inquiry",
   "booked",
   "completed",
   "cancelled",

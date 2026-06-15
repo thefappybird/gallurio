@@ -110,6 +110,7 @@ type Props = {
   locale: string;
   teams?: BookingTeamOption[];
   writableTeams?: BookingTeamOption[];
+  readOnly?: boolean;
 };
 
 type PendingChanges = Record<string, string | number | null>;
@@ -153,7 +154,7 @@ const NESTED_TO_DOTTED: Record<string, EditableKey> = {
   "amount.currency": "amount.currency",
 };
 
-export function BookingDetailModal({ bookingId, locale, teams = [], writableTeams = [] }: Props) {
+export function BookingDetailModal({ bookingId, locale, teams = [], writableTeams = [], readOnly = false }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1148,6 +1149,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
           loading={loading}
           locale={locale}
           disabled={saving}
+          readOnly={readOnly}
           onCommit={commitField}
           onDiscard={discardField}
           onEditAll={() => {
@@ -1184,6 +1186,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               eventTypeOptions={eventTypeOptions}
               teams={teams}
               writableTeams={writableTeams}
+              readOnly={readOnly}
               onCommit={commitField}
               onDiscard={discardField}
               onReassign={(c) => {
@@ -1217,7 +1220,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
           )}
         </div>
 
-        {booking ? (
+        {booking && !readOnly ? (
           <DialogFooterBar
             cancelled={booking.status === "cancelled"}
             hasPending={hasPending}
@@ -1373,6 +1376,7 @@ function DialogHeaderBar({
   loading,
   locale,
   disabled,
+  readOnly,
   onCommit,
   onDiscard,
   onEditAll,
@@ -1383,6 +1387,7 @@ function DialogHeaderBar({
   loading: boolean;
   locale: string;
   disabled: boolean;
+  readOnly?: boolean;
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onEditAll: () => void;
@@ -1426,7 +1431,7 @@ function DialogHeaderBar({
   const statusColor = STATUS_COLOR_VAR[effectiveStatus as BookingStatus];
 
   function startTitleEdit() {
-    if (disabled || isCancelled || !booking) return;
+    if (disabled || isCancelled || !booking || readOnly) return;
     setTitleDraft(effectiveTitle);
     setEditingTitle(true);
     setTimeout(() => titleInputRef.current?.focus(), 0);
@@ -1492,6 +1497,8 @@ function DialogHeaderBar({
                     <XIcon className="size-3.5" />
                   </Button>
                 </div>
+              ) : readOnly ? (
+                <span className="truncate">{effectiveTitle}</span>
               ) : (
                 <button
                   type="button"
@@ -1568,15 +1575,15 @@ function DialogHeaderBar({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => !isCancelled && setEditingStatus(true)}
-                    disabled={disabled || isCancelled}
+                    onClick={() => !isCancelled && !readOnly && setEditingStatus(true)}
+                    disabled={disabled || isCancelled || readOnly}
                     className={cn(
                       "group flex h-auto items-center gap-1.5 border px-2 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-60",
                       hasStatusPending
                         ? "border-brand bg-brand/10 text-brand"
                         : "border-border bg-background text-muted-foreground hover:border-brand/60 hover:text-foreground"
                     )}
-                    aria-label={t("editStatus")}
+                    aria-label={readOnly ? t("status") : t("editStatus")}
                   >
                     <span
                       aria-hidden
@@ -1588,7 +1595,7 @@ function DialogHeaderBar({
                       }
                     />
                     <span>{statusLabel}</span>
-                    {!isCancelled ? (
+                    {!isCancelled && !readOnly ? (
                       <PencilIcon className="size-3 shrink-0 opacity-50 transition-opacity group-hover:opacity-90 group-focus-visible:opacity-90" />
                     ) : null}
                   </button>
@@ -1637,7 +1644,7 @@ function DialogHeaderBar({
             {t("outstanding")}: {formatMoney(outstanding, currency, locale)}
           </Badge>
         ) : null}
-        {booking ? (
+        {booking && !readOnly ? (
           <Button
             type="button"
             variant="outline"
@@ -1677,6 +1684,7 @@ function BookingTabs({
   eventTypeOptions,
   teams,
   writableTeams,
+  readOnly,
   onCommit,
   onDiscard,
   onReassign,
@@ -1713,6 +1721,7 @@ function BookingTabs({
   eventTypeOptions: { value: string; label: string }[];
   teams: BookingTeamOption[];
   writableTeams: BookingTeamOption[];
+  readOnly?: boolean;
   onCommit: (key: EditableKey, value: string | number | null) => void;
   onDiscard: (key: EditableKey) => void;
   onReassign: (c: { id: string; name: string; email: string | null; phone: string | null }) => void;
@@ -1894,7 +1903,7 @@ function BookingTabs({
                   {tFields("viewClient")}
                 </button>
               ) : null}
-              {!isMultiSession && !reassignOpen ? (
+              {!isMultiSession && !reassignOpen && !readOnly ? (
                 <button
                   type="button"
                   onClick={() => setReassignOpen(true)}
@@ -1939,7 +1948,7 @@ function BookingTabs({
             {...get("eventType")}
             onCommit={(v) => onCommit("eventType", v)}
             onDiscardPending={() => onDiscard("eventType")}
-            disabled={disabled || isCancelled}
+            disabled={disabled || isCancelled || !!readOnly}
             editKey="eventType"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1953,7 +1962,7 @@ function BookingTabs({
               {...get("teamId")}
               onCommit={(v) => onCommit("teamId", v || null)}
               onDiscardPending={() => onDiscard("teamId")}
-              disabled={disabled || isCancelled}
+              disabled={disabled || isCancelled || !!readOnly}
               editKey="teamId"
               registerHandle={registerFieldHandle}
               onEditingChange={onFieldEditingChange}
@@ -1972,7 +1981,7 @@ function BookingTabs({
             {...get("amount.total")}
             onCommit={(v) => onCommit("amount.total", v)}
             onDiscardPending={() => onDiscard("amount.total")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             editKey="amount.total"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -1985,7 +1994,7 @@ function BookingTabs({
             {...get("amount.deposit")}
             onCommit={(v) => onCommit("amount.deposit", v)}
             onDiscardPending={() => onDiscard("amount.deposit")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             validate={(v) => {
               const n = Number(v);
               if (Number.isFinite(n) && n > total) {
@@ -2004,7 +2013,7 @@ function BookingTabs({
             {...get("amount.currency")}
             onCommit={(v) => onCommit("amount.currency", v)}
             onDiscardPending={() => onDiscard("amount.currency")}
-            disabled={disabled}
+            disabled={disabled || !!readOnly}
             editKey="amount.currency"
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
@@ -2091,6 +2100,7 @@ function BookingTabs({
                 total={(booking?.sessions ?? []).length}
                 locale={locale}
                 disabled={disabled}
+                readOnly={readOnly}
                 isPast={isPastSession(s)}
                 label={tSessions("label", { n: resolvedIdx + 1 })}
                 removeLabel={tSessions("remove")}
@@ -2135,6 +2145,7 @@ function BookingTabs({
                 draft={draft}
                 locale={locale}
                 disabled={disabled}
+                readOnly={readOnly}
                 label={tSessions("label", {
                   n: booking.sessions.length + draftIdx + 1,
                 })}
@@ -2152,6 +2163,7 @@ function BookingTabs({
                 draftIndex={draftIdx}
                 locale={locale}
                 disabled={disabled}
+                readOnly={readOnly}
                 label={tSessions("label", {
                   n: booking.sessions.length + draftIdx + 1,
                 })}
@@ -2171,26 +2183,29 @@ function BookingTabs({
         </div>
 
         {/* Add session */}
-        <button
-          type="button"
-          onClick={onAddSession}
-          disabled={disabled}
-          className={cn(
-            "mt-2 flex w-full items-center justify-center gap-1.5 border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground transition-colors",
-            "hover:border-foreground hover:text-foreground focus-visible:border-foreground focus-visible:text-foreground focus-visible:outline-none",
-            "active:border-foreground active:text-foreground",
-            "disabled:pointer-events-none disabled:opacity-50",
-            "min-h-11"
-          )}
-        >
-          <PlusIcon className="size-4" />
-          {tSessions("add")}
-        </button>
+        {!readOnly ? (
+          <button
+            type="button"
+            onClick={onAddSession}
+            disabled={disabled}
+            className={cn(
+              "mt-2 flex w-full items-center justify-center gap-1.5 border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground transition-colors",
+              "hover:border-foreground hover:text-foreground focus-visible:border-foreground focus-visible:text-foreground focus-visible:outline-none",
+              "active:border-foreground active:text-foreground",
+              "disabled:pointer-events-none disabled:opacity-50",
+              "min-h-11"
+            )}
+          >
+            <PlusIcon className="size-4" />
+            {tSessions("add")}
+          </button>
+        ) : null}
 
         {/* Location — below sessions */}
         <SectionHeader label={tFields("location")} />
         <div className="flex flex-col gap-1 py-1.5">
           <LocationPicker
+            editable={!readOnly}
             value={{
               address:
                 "location.address" in pending
@@ -2318,6 +2333,7 @@ function SessionCard({
   total,
   locale,
   disabled,
+  readOnly,
   isPast,
   label,
   removeLabel,
@@ -2336,6 +2352,7 @@ function SessionCard({
   total: number;
   locale: string;
   disabled: boolean;
+  readOnly?: boolean;
   isPast: boolean;
   label: string;
   removeLabel: string;
@@ -2484,78 +2501,80 @@ function SessionCard({
             </span>
           ) : null}
         </div>
-        <div className="flex items-center gap-1">
-          {editing ? (
-            <>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                onClick={commit}
-                aria-label="Confirm"
-                disabled={disabled || !canCommit || isCheckingConflicts}
-              >
-                {isCheckingConflicts ? (
-                  <Loader2Icon className="size-3 animate-spin" />
-                ) : (
-                  <CheckIcon className="size-4" />
-                )}
-              </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                onClick={cancelEdit}
-                aria-label="Cancel"
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                onClick={startEdit}
-                disabled={disabled}
-                aria-label={`Edit ${label}`}
-              >
-                <PencilIcon className="size-4" />
-              </Button>
-              {hasPendingEdit ? (
+        {!readOnly ? (
+          <div className="flex items-center gap-1">
+            {editing ? (
+              <>
                 <Button
                   type="button"
                   size="icon-sm"
                   variant="ghost"
-                  onClick={onDiscardEdit}
-                  disabled={disabled}
-                  aria-label="Discard edit"
-                  className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                  onClick={commit}
+                  aria-label="Confirm"
+                  disabled={disabled || !canCommit || isCheckingConflicts}
+                >
+                  {isCheckingConflicts ? (
+                    <Loader2Icon className="size-3 animate-spin" />
+                  ) : (
+                    <CheckIcon className="size-4" />
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={cancelEdit}
+                  aria-label="Cancel"
                 >
                   <XIcon className="size-4" />
                 </Button>
-              ) : null}
-            </>
-          )}
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={isOnlySession ? undefined : onRemove}
-            disabled={disabled || isOnlySession}
-            aria-disabled={isOnlySession}
-            title={isOnlySession ? removeLabel : undefined}
-            aria-label={removeLabel}
-            className={cn(
-              "text-muted-foreground",
-              !isOnlySession &&
-                "hover:text-destructive focus-visible:text-destructive"
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  size="icon-sm"
+                  variant="ghost"
+                  onClick={startEdit}
+                  disabled={disabled}
+                  aria-label={`Edit ${label}`}
+                >
+                  <PencilIcon className="size-4" />
+                </Button>
+                {hasPendingEdit ? (
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={onDiscardEdit}
+                    disabled={disabled}
+                    aria-label="Discard edit"
+                    className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+                  >
+                    <XIcon className="size-4" />
+                  </Button>
+                ) : null}
+              </>
             )}
-          >
-            <Trash2Icon className="size-4" />
-          </Button>
-        </div>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={isOnlySession ? undefined : onRemove}
+              disabled={disabled || isOnlySession}
+              aria-disabled={isOnlySession}
+              title={isOnlySession ? removeLabel : undefined}
+              aria-label={removeLabel}
+              className={cn(
+                "text-muted-foreground",
+                !isOnlySession &&
+                  "hover:text-destructive focus-visible:text-destructive"
+              )}
+            >
+              <Trash2Icon className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {!editing ? (
@@ -2694,6 +2713,7 @@ function LockedDraftCard({
   draft,
   locale,
   disabled,
+  readOnly,
   label,
   unsavedLabel,
   removeLabel,
@@ -2705,6 +2725,7 @@ function LockedDraftCard({
   draft: DraftSession;
   locale: string;
   disabled: boolean;
+  readOnly?: boolean;
   label: string;
   unsavedLabel: string;
   removeLabel: string;
@@ -2726,29 +2747,31 @@ function LockedDraftCard({
             {unsavedLabel}
           </span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={onEdit}
-            disabled={disabled}
-            aria-label={`Edit ${label}`}
-          >
-            <PencilIcon className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={onRemove}
-            disabled={disabled}
-            aria-label={removeLabel}
-            className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
-          >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={onEdit}
+              disabled={disabled}
+              aria-label={`Edit ${label}`}
+            >
+              <PencilIcon className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={onRemove}
+              disabled={disabled}
+              aria-label={removeLabel}
+              className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+            >
+              <XIcon className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
@@ -2810,6 +2833,7 @@ function DraftSessionCard({
   draftIndex,
   locale,
   disabled,
+  readOnly,
   label,
   conflicts,
   isCheckingConflicts,
@@ -2822,6 +2846,7 @@ function DraftSessionCard({
   draftIndex: number;
   locale: string;
   disabled: boolean;
+  readOnly?: boolean;
   label: string;
   conflicts: ShiftHit[];
   isCheckingConflicts: boolean;
@@ -2900,32 +2925,34 @@ function DraftSessionCard({
             draft
           </span>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={commit}
-            aria-label="Confirm draft session"
-            disabled={disabled || !isDraftValid || isCheckingConflicts}
-          >
-            {isCheckingConflicts ? (
-              <Loader2Icon className="size-3 animate-spin" />
-            ) : (
-              <CheckIcon className="size-4" />
-            )}
-          </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={onDiscard}
-            aria-label="Remove draft session"
-            className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
-          >
-            <XIcon className="size-4" />
-          </Button>
-        </div>
+        {!readOnly ? (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={commit}
+              aria-label="Confirm draft session"
+              disabled={disabled || !isDraftValid || isCheckingConflicts}
+            >
+              {isCheckingConflicts ? (
+                <Loader2Icon className="size-3 animate-spin" />
+              ) : (
+                <CheckIcon className="size-4" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={onDiscard}
+              aria-label="Remove draft session"
+              className="text-muted-foreground hover:text-destructive focus-visible:text-destructive"
+            >
+              <XIcon className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       {/* Inline edit — always open for draft rows */}

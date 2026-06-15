@@ -8,11 +8,15 @@ import { connectDB } from "@/lib/db/mongoose";
 import { Inquiry, Booking, ActivityLog } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 
-// The status a draft is promoted to on approval. Our Booking enum has no
-// "pending"; "inquiry" is the first real pipeline state the owner then moves
-// through (quoted → booked). Drafts are the only state hidden from the calendar.
-const PROMOTED_STATUS = "inquiry" as const;
+// The status a draft is promoted to on approval. Approval skips the old
+// "inquiry" pipeline state and lands directly on "booked". Drafts are the
+// only state hidden from the calendar.
+const PROMOTED_STATUS = "booked" as const;
 
 export type InquiryActionResult =
   | { ok: true; bookingId?: string; idempotent?: boolean }
@@ -221,6 +225,87 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
     { $set: { status: "archived" } }
   );
   if (res.matchedCount === 0) return { error: "not_found" };
+
+  revalidateInquiry(inquiryId);
+  return { ok: true };
+}
+
+/** Edit the requested sessions and optional phone on a non-converted inquiry. */
+export async function editInquirySessionsAction(
+  inquiryId: string,
+  input: InquirySessionsEditInput
+): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId });
+  if (!inquiry) return { error: "not_found" };
+
+  if (isBookedInquiryStatus(inquiry.status)) return { error: "locked" };
+
+  const parsed = inquirySessionsEditSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid" };
+
+  if (parsed.data.sessions.length !== inquiry.sessions.length) {
+    return { error: "alter_only" };
+  }
+
+  const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+
+  // Note: conflict check runs outside the transaction (TOCTOU window).
+  // Matches existing booking wizard behavior; server-side check reduces risk significantly.
+  // Server-side conflict re-check (authoritative)
+  for (const s of parsed.data.sessions) {
+    const shifts = await getShiftsOnDate(workspaceId, s.startDate, tz, {
+      excludeId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
+    });
+    const aStart = toMinutes(s.startTime);
+    const aEnd = toMinutes(s.endTime);
+    if (aStart !== null && aEnd !== null && overlappingShifts(shifts, aStart, aEnd).length > 0) {
+      return { error: "conflict" };
+    }
+  }
+
+  // Build UTC sessions for the draft booking
+  const utcSessions = inquirySessionsToBookingSessions(parsed.data.sessions, tz);
+  const firstSessionStart = utcSessions.reduce((a, b) => (a.startAt < b.startAt ? a : b)).startAt;
+  const lastSessionEnd = utcSessions.reduce((a, b) => (a.endAt > b.endAt ? a : b)).endAt;
+
+  const mongoSession = await mongoose.startSession();
+  try {
+    await mongoSession.withTransaction(async () => {
+      const phoneUpdate =
+        parsed.data.phone !== undefined
+          ? { phone: parsed.data.phone || null }
+          : {};
+
+      await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId },
+        {
+          $set: {
+            sessions: parsed.data.sessions,
+            eventDate: new Date(parsed.data.sessions[0].startDate),
+            ...phoneUpdate,
+          },
+        },
+        { session: mongoSession }
+      );
+
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId },
+          { $set: { sessions: utcSessions, firstSessionStart, lastSessionEnd } },
+          { session: mongoSession }
+        );
+      }
+    });
+  } catch (err) {
+    console.error("[inquiry] editSessions transaction failed:", err);
+    return { error: "edit_sessions_failed" };
+  } finally {
+    await mongoSession.endSession();
+  }
 
   revalidateInquiry(inquiryId);
   return { ok: true };

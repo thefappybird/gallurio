@@ -240,7 +240,7 @@ export function BookingWizardModal({
           },
           title: b.title ?? "",
           eventType: b.eventType ?? "other",
-          status: b.status ?? "inquiry",
+          status: b.status ?? "booked",
           sessions:
             wizardSessions.length > 0
               ? wizardSessions
@@ -978,7 +978,7 @@ function makeDefaults({
       ({ mode: "existing", clientId: "", clientName: "" } as const),
     title: initialValues?.title ?? "",
     eventType: initialValues?.eventType ?? "other",
-    status: initialValues?.status ?? "inquiry",
+    status: initialValues?.status ?? "booked",
     sessions:
       initialValues?.sessions && initialValues.sessions.length > 0
         ? initialValues.sessions

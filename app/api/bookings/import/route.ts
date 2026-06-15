@@ -187,7 +187,7 @@ export async function POST(req: Request) {
               clientName,
               title: row.title,
               eventType: row.eventType ?? "other",
-              status: row.status ?? "inquiry",
+              status: row.status ?? "booked",
               sessions: [{ startAt: sessionStart, endAt: sessionEnd }],
               firstSessionStart: sessionStart,
               lastSessionEnd: sessionEnd,

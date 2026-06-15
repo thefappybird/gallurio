@@ -62,6 +62,11 @@ export function buildContactLabels(t: Translator, tLocationPicker?: Translator):
         noResults: tp("noResults"),
         dragHint: tp("dragHint"),
         clear: tp("clear"),
+        changeLocation: tp("changeLocation"),
+        accept: tp("accept"),
+        cancel: tp("cancel"),
+        apply: tp("apply"),
+        currentAddressLabel: tp("currentAddressLabel"),
       },
     },
   };

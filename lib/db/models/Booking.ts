@@ -4,9 +4,8 @@ export const BOOKING_STATUSES = [
   // "draft" is the auto-created state from a public inquiry submission (Phase 6).
   // Drafts are invisible to every owner-facing booking surface (lists, calendar,
   // dashboard metrics, client history, export) until the owner approves the
-  // inquiry in the lead inbox, which promotes the draft to "inquiry"/"pending".
+  // inquiry in the lead inbox, which promotes the draft straight to "booked".
   "draft",
-  "inquiry",
   "booked",
   "completed",
   "cancelled",
@@ -33,7 +32,7 @@ const bookingSchema = new Schema(
     clientName: { type: String, required: true },
     title: { type: String, required: true, trim: true },
     eventType: { type: String, default: "other" },
-    status: { type: String, enum: BOOKING_STATUSES, default: "inquiry", required: true },
+    status: { type: String, enum: BOOKING_STATUSES, default: "booked", required: true },
     // Each booking has one or more sessions. A session is a contiguous date
     // range with a daily shift-start and shift-end time. Single-session
     // bookings behave identically to the legacy single startAt/endAt model.
