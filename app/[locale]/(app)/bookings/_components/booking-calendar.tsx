@@ -77,6 +77,12 @@ export type CalendarEvent = {
   isMorningContinuation?: boolean;
   /** The team this booking belongs to, if any. Used for team-color mode. */
   teamId: string | null;
+  /** Distinguishes inquiry candles from booking candles. Undefined = booking. */
+  kind?: "inquiry" | "booking";
+  /** Set only when kind === "inquiry". */
+  inquiryId?: string;
+  /** When set, overrides colorMode-based color. Used for inquiry candles. */
+  colorOverride?: string;
 };
 
 /** Union of a real booking event and the synthetic overflow placeholder. */
@@ -378,8 +384,13 @@ export function MonthBookingEvent({
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
+      {booking.kind === "inquiry" && (
+        <span className="pointer-events-none absolute left-2 top-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white">
+          Lead
+        </span>
+      )}
       <span
-        className={`truncate text-xs font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
+        className={`truncate text-xs font-semibold leading-tight${booking.kind === "inquiry" ? " mt-3" : ""}${showPastVisual ? " line-through" : ""}`}
       >
         {booking.title}
       </span>
@@ -440,6 +451,11 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
         </span>
       ) : (
         <>
+          {ev.kind === "inquiry" && (
+            <span className="pointer-events-none mb-0.5 inline-flex items-center bg-white/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-white self-start">
+              Lead
+            </span>
+          )}
           <span
             className={`truncate text-sm font-semibold leading-tight${showPastVisual ? " line-through" : ""}`}
           >
@@ -534,7 +550,7 @@ type CalendarToolbarCtxValue = {
   messages: Props["messages"];
   onScrollToHour: (h: number) => void;
   showPast: boolean;
-  eventColor: (ev: { status: BookingStatus; teamId: string | null }) => string;
+  eventColor: (ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }) => string;
 };
 
 /**
@@ -804,7 +820,8 @@ export function BookingCalendar({
   colorMode = "status",
   teamColorMap,
 }: Props) {
-  function eventColor(ev: { status: BookingStatus; teamId: string | null }): string {
+  function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
+    if (ev.colorOverride) return ev.colorOverride;
     if (colorMode === "team") {
       return (ev.teamId && teamColorMap?.[ev.teamId]) || INACTIVE_TEAM_COLOR;
     }
