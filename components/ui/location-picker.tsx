@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { Loader2Icon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
@@ -35,17 +35,37 @@ type Props = {
   id?: string;
   compact?: boolean;
   className?: string;
+  editable?: boolean;
+  startInDisplayMode?: boolean;
   labels?: {
     searchPlaceholder: string;
     searching: string;
     noResults: string;
     dragHint: string;
     clear: string;
+    // editable-mode labels (optional)
+    changeLocation?: string;
+    accept?: string;
+    cancel?: string;
+    apply?: string;
+    currentAddressLabel?: string;
   };
 };
 
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse";
+
+function sameLocation(a: LocationValue, b: LocationValue): boolean {
+  return (
+    (a.address?.trim() ?? "") === (b.address?.trim() ?? "") &&
+    a.lat === b.lat &&
+    a.lng === b.lng
+  );
+}
+
+function isEmpty(v: LocationValue): boolean {
+  return !v.address?.trim() && v.lat == null && v.lng == null;
+}
 
 function BaseLocationPicker({
   value,
@@ -56,6 +76,8 @@ function BaseLocationPicker({
   compact,
   className,
   labels,
+  editable,
+  startInDisplayMode,
 }: Props) {
   const resolvedLabels = labels ?? {
     searchPlaceholder: "Search venue or address",
@@ -63,11 +85,65 @@ function BaseLocationPicker({
     noResults: "No matches",
     dragHint: "Drag the pin to fine-tune the exact spot.",
     clear: "Clear location",
+    changeLocation: "Change location",
+    accept: "Accept",
+    cancel: "Cancel",
+    apply: "Apply",
+    currentAddressLabel: "Selected location",
   };
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listboxId = `${inputId}-results`;
 
+  // ── editable mode state machine ──────────────────────────────────────────
+  // Determine initial mode.  When editable=true we default to "display" if
+  // startInDisplayMode is explicitly true OR the value already has content.
+  // Otherwise we start in "edit" (empty-field scenario).
+  const [mode, setMode] = useState<"display" | "edit">(() => {
+    if (!editable) return "edit";
+    if (startInDisplayMode !== undefined) return startInDisplayMode ? "display" : "edit";
+    return !isEmpty(value) ? "display" : "edit";
+  });
+  const [draft, setDraft] = useState<LocationValue>(value);
+  const committedRef = useRef<LocationValue>(value);
+
+  // Captured once when entering edit mode: was the committed value empty?
+  const [editOriginEmpty, setEditOriginEmpty] = useState<boolean>(() =>
+    editable ? isEmpty(committedRef.current) : false,
+  );
+
+  const dirty = editable ? !sameLocation(draft, committedRef.current) : false;
+
+  // Refs for focus management
+  const changeLocationBtnRef = useRef<HTMLButtonElement | null>(null);
+  const searchWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  // ── commit helper ────────────────────────────────────────────────────────
+  // When editable, writes go to draft; otherwise straight to onChange.
+  const commit = useCallback(
+    (next: LocationValue) => {
+      if (editable) {
+        setDraft(next);
+      } else {
+        onChange(next);
+      }
+    },
+    [editable, onChange],
+  );
+
+  // ── external value sync ──────────────────────────────────────────────────
+  // In display mode, keep committedRef + draft in sync with parent value.
+  // In edit mode, do NOT clobber draft.
+  useEffect(() => {
+    if (!editable) return;
+    if (mode === "display") {
+      committedRef.current = value;
+      setDraft(value);
+    }
+  }, [editable, mode, value]);
+
+  // ── search / input state ─────────────────────────────────────────────────
+  // Use draft.address as the source of truth for the query when in editable mode.
   const [query, setQuery] = useState(value.address ?? "");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -129,8 +205,9 @@ function BaseLocationPicker({
   useEffect(() => () => abortRef.current?.abort(), []);
 
   function commitAddress(address: string) {
-    if (address === value.address) return;
-    onChange({ ...value, address });
+    const source = editable ? draft : value;
+    if (address === source.address) return;
+    commit({ ...source, address });
   }
 
   function selectResult(r: NominatimResult) {
@@ -143,12 +220,13 @@ function BaseLocationPicker({
     setQuery(address);
     setOpen(false);
     setResults([]);
-    onChange({ address, lat, lng });
+    commit({ address, lat, lng });
   }
 
   async function handlePin(lat: number, lng: number) {
     // Show the pin immediately; the address fills in once reverse geocoding lands.
-    onChange({ ...value, lat, lng });
+    const source = editable ? draft : value;
+    commit({ ...source, lat, lng });
     if (disabled || !searchEnabled) return;
 
     abortRef.current?.abort();
@@ -171,7 +249,7 @@ function BaseLocationPicker({
       setQuery(address);
       setOpen(false);
       setResults([]);
-      onChange({ address, lat, lng });
+      commit({ address, lat, lng });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return;
       console.error("[LocationPicker] reverse geocoding failed", err);
@@ -186,14 +264,83 @@ function BaseLocationPicker({
     setResults([]);
     setOpen(false);
     setSearched(false);
-    onChange({ address: "", lat: null, lng: null });
+    commit({ address: "", lat: null, lng: null });
   }
 
-  const hasValue = !!value.address || value.lat != null;
+  // ── focus: move into search input when entering edit mode ────────────────
+  useEffect(() => {
+    if (mode === "edit") {
+      searchWrapperRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    }
+  }, [mode]);
 
+  // ── editable-mode action handlers ────────────────────────────────────────
+
+  function handleEnterEdit() {
+    const origin = committedRef.current;
+    setEditOriginEmpty(isEmpty(origin));
+    setDraft(origin);
+    setQuery(origin.address ?? "");
+    setMode("edit");
+  }
+
+  function handleCommit() {
+    // Commit draft to parent and return to display mode
+    onChange(draft);
+    committedRef.current = draft;
+    setMode("display");
+    Promise.resolve().then(() => changeLocationBtnRef.current?.focus());
+  }
+
+  function handleCancel() {
+    // Revert to last committed value, no onChange call
+    setDraft(committedRef.current);
+    setQuery(committedRef.current.address ?? "");
+    setResults([]);
+    setOpen(false);
+    setSearched(false);
+    setMode("display");
+    Promise.resolve().then(() => changeLocationBtnRef.current?.focus());
+  }
+
+  // ── display mode: the effective location to show ─────────────────────────
+  // Use draft (state) rather than committedRef.current (ref) so React re-renders
+  // when the committed value changes while in display mode.
+  const displayValue = editable ? draft : value;
+  const hasValue = editable
+    ? !!draft.address || draft.lat != null
+    : !!value.address || value.lat != null;
+
+  // The map always reads from the correct source depending on mode
+  const mapValue = editable ? draft : value;
+
+  // ── display mode rendering ───────────────────────────────────────────────
+  if (editable && mode === "display") {
+    return (
+      <div className={cn("flex flex-col gap-2", className)}>
+        {resolvedLabels.currentAddressLabel ? (
+          <p className="text-xs text-muted-foreground">
+            {resolvedLabels.currentAddressLabel}
+          </p>
+        ) : null}
+        <LocationDisplay value={displayValue} />
+        <button
+          ref={changeLocationBtnRef}
+          type="button"
+          disabled={disabled}
+          onClick={handleEnterEdit}
+          className="self-start text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+        >
+          {resolvedLabels.changeLocation ?? "Change location"}
+        </button>
+      </div>
+    );
+  }
+
+  // ── edit mode rendering (existing UI + editable action buttons) ──────────
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="relative">
+      <div ref={searchWrapperRef} className="relative">
         <div className="relative">
           <SearchIcon
             className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -272,8 +419,8 @@ function BaseLocationPicker({
 
       <div className="overflow-hidden border border-border">
         <LocationMap
-          lat={value.lat}
-          lng={value.lng}
+          lat={mapValue.lat}
+          lng={mapValue.lng}
           onPick={handlePin}
           disabled={disabled}
           compact={compact}
@@ -283,6 +430,45 @@ function BaseLocationPicker({
       <p className={cn("text-xs text-muted-foreground", disabled && "opacity-60")}>
         {resolvedLabels.dragHint}
       </p>
+
+      {/* editable action buttons */}
+      {editable ? (
+        <div className="flex items-center gap-2">
+          {editOriginEmpty ? (
+            // Empty-origin: single Apply button
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={handleCommit}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+            >
+              {resolvedLabels.apply ?? "Apply"}
+            </button>
+          ) : (
+            // Populated-origin: Cancel always + Accept only when dirty
+            <>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={handleCancel}
+                className="rounded-md border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              >
+                {resolvedLabels.cancel ?? "Cancel"}
+              </button>
+              {dirty ? (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={handleCommit}
+                  className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {resolvedLabels.accept ?? "Accept"}
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -299,6 +485,11 @@ function IntlLocationPicker(props: Omit<Props, "labels">) {
         noResults: t("noResults"),
         dragHint: t("dragHint"),
         clear: t("clear"),
+        changeLocation: t("changeLocation"),
+        accept: t("accept"),
+        cancel: t("cancel"),
+        apply: t("apply"),
+        currentAddressLabel: t("currentAddressLabel"),
       }}
     />
   );
@@ -309,4 +500,20 @@ export function LocationPicker(props: Props) {
     return <BaseLocationPicker {...props} />;
   }
   return <IntlLocationPicker {...props} />;
+}
+
+// ── LocationDisplay ─────────────────────────────────────────────────────────
+// Lightweight read-only display of a LocationValue. Safe to import in contexts
+// where Leaflet must not be loaded (e.g. inquiry modals).
+export function LocationDisplay({
+  value,
+  className,
+}: {
+  value: LocationValue;
+  className?: string;
+}) {
+  const addr = value.address?.trim();
+  return (
+    <span className={cn("text-sm break-words", className)}>{addr || "—"}</span>
+  );
 }

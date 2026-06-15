@@ -275,7 +275,12 @@
         "searching": "Naghahanap…",
         "noResults": "Walang tugma. Subukan ang ibang paghahanap.",
         "dragHint": "I-drag ang pin para tumpak na itakda ang eksaktong lugar.",
-        "clear": "Alisin ang lokasyon"
+        "clear": "Alisin ang lokasyon",
+        "changeLocation": "Baguhin ang lokasyon",
+        "accept": "Tanggapin",
+        "cancel": "Kanselahin",
+        "apply": "Ilapat",
+        "currentAddressLabel": "Napiling lokasyon"
       },
       "eventTypes": {
         "wedding": "Kasal",
