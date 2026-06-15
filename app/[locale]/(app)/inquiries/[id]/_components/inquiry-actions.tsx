@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { approveInquiryAction, archiveInquiryAction } from "../../_actions";
+import { archiveInquiryAction } from "../../_actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 type Props = {
@@ -18,10 +18,9 @@ export function InquiryActions({ inquiryId, status }: Props) {
   const router = useRouter();
   const [working, setWorking] = useState(false);
 
-  const canApprove = status === "new";
   const canArchive = !isBookedInquiryStatus(status) && status !== "archived";
 
-  if (!canApprove && !canArchive) return null;
+  if (!canArchive) return null;
 
   async function run(action: () => Promise<{ ok: true } | { error: string }>, successMsg: string) {
     setWorking(true);
@@ -42,16 +41,6 @@ export function InquiryActions({ inquiryId, status }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {canApprove && (
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={working}
-          onClick={() => run(() => approveInquiryAction(inquiryId), t("approveStatusToast"))}
-        >
-          {t("approve")}
-        </Button>
-      )}
       {canArchive && (
         <Button
           variant="ghost"

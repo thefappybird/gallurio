@@ -280,7 +280,8 @@
         "accept": "Tanggapin",
         "cancel": "Kanselahin",
         "apply": "Ilapat",
-        "currentAddressLabel": "Napiling lokasyon"
+        "currentAddressLabel": "Napiling lokasyon",
+        "viewInMap": "Tingnan sa mapa"
       },
       "eventTypes": {
         "wedding": "Kasal",
@@ -299,8 +300,8 @@
           "client": "Kliyente",
           "event": "Event",
           "pricing": "Presyo",
-          "eventPricing": "Event at Presyo",
-          "sessionsLocation": "Mga Sesyon at Lokasyon",
+          "eventPricing": "Event at Lokasyon",
+          "sessionsLocation": "Mga Sesyon",
           "activity": "Mga tala at aktibidad"
         },
         "sections": {
@@ -1058,18 +1059,18 @@
       "toolbar": {
         "from": "Mula",
         "to": "Hanggang",
-        "clear": "I-clear ang mga petsa"
+        "clear": "I-clear ang mga petsa",
+        "date": "Petsa",
+        "apply": "I-apply"
       },
       "tabs": {
         "all": "Lahat",
         "new": "Bago",
-        "approved": "Naaprubahan",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
         "new": "Bago",
-        "approved": "Naaprubahan",
         "archived": "Naka-archive",
         "booked": "Na-book",
         "converted": "Na-convert sa Booking"
@@ -1122,7 +1123,10 @@
           "email": "Email",
           "phone": "Telepono",
           "preferredContact": "Piniling paraan ng pakikipag-ugnayan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "I-edit",
+          "savePhone": "I-save",
+          "cancelEdit": "Kanselahin"
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",
@@ -1151,13 +1155,12 @@
           "approveError": "Hindi ma-convert. Pakisubukang muli.",
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
-          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking."
+          "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
+          "team": "Koponan"
         },
         "actions": {
-          "approve": "Aprubahan",
           "archive": "I-archive",
           "working": "Sino-save…",
-          "approveStatusToast": "Naaprubahan ang katanungan.",
           "archivedToast": "Naka-archive na ang katanungan.",
           "approvedToast": "Na-convert sa booking.",
           "errorToast": "May nangyaring mali. Pakisubukang muli."
@@ -1191,7 +1194,7 @@
         "calendar": "Kalendaryo"
       },
       "calendar": {
-        "legendInquiry": "Lead / Katanungan",
+        "legendInquiry": "Katanungan",
         "legendBooking": "Booking",
         "empty": "Walang mga katanungan o booking na ipapakita."
       }

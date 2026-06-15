@@ -35,6 +35,7 @@ type Props = {
   onPick: (lat: number, lng: number) => void;
   disabled?: boolean;
   compact?: boolean;
+  scrollWheelZoom?: boolean;
 };
 
 function Recenter({ lat, lng }: { lat: number | null; lng: number | null }) {
@@ -62,7 +63,7 @@ function ClickToPin({
   return null;
 }
 
-export default function LocationMap({ lat, lng, onPick, disabled, compact }: Props) {
+export default function LocationMap({ lat, lng, onPick, disabled, compact, scrollWheelZoom = false }: Props) {
   const hasPin = lat != null && lng != null;
   const center: [number, number] = hasPin ? [lat, lng] : DEFAULT_CENTER;
   const pinIcon = useMemo(() => makePinIcon(), []);
@@ -71,7 +72,7 @@ export default function LocationMap({ lat, lng, onPick, disabled, compact }: Pro
     <MapContainer
       center={center}
       zoom={hasPin ? 14 : 11}
-      scrollWheelZoom={false}
+      scrollWheelZoom={scrollWheelZoom}
       className={compact ? "h-40 w-full sm:h-44" : "h-56 w-full sm:h-64"}
     >
       <TileLayer

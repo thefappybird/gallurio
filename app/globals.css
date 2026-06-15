@@ -98,7 +98,7 @@
   --event-booked: oklch(0.55 0.10 195);    /* teal — confident, primary */
   --event-completed: oklch(0.55 0.13 145); /* green — done */
   --event-cancelled: oklch(0.60 0.18 25);  /* red — cancelled */
-  --event-lead: oklch(0.55 0.04 250);      /* slate — inquiry/lead, neutral */
+  --event-inquiry: oklch(0.55 0.04 250);   /* slate — active inquiry, neutral */
   --radius: 0rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);

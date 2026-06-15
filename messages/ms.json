@@ -280,7 +280,8 @@
         "accept": "Terima",
         "cancel": "Batal",
         "apply": "Guna",
-        "currentAddressLabel": "Lokasi yang dipilih"
+        "currentAddressLabel": "Lokasi yang dipilih",
+        "viewInMap": "Lihat dalam peta"
       },
       "eventTypes": {
         "wedding": "Perkahwinan",
@@ -299,8 +300,8 @@
           "client": "Pelanggan",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Harga",
-          "sessionsLocation": "Sesi & Lokasi",
+          "eventPricing": "Acara & Lokasi",
+          "sessionsLocation": "Sesi",
           "activity": "Nota & aktiviti"
         },
         "sections": {
@@ -1058,18 +1059,18 @@
       "toolbar": {
         "from": "Dari",
         "to": "Hingga",
-        "clear": "Padam tarikh"
+        "clear": "Padam tarikh",
+        "date": "Tarikh",
+        "apply": "Guna"
       },
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "approved": "Diluluskan",
         "booked": "Ditempah",
         "archived": "Diarkib"
       },
       "statusValues": {
         "new": "Baru",
-        "approved": "Diluluskan",
         "archived": "Diarkib",
         "booked": "Ditempah",
         "converted": "Ditukar Kepada Tempahan"
@@ -1122,7 +1123,10 @@
           "email": "E-mel",
           "phone": "Telefon",
           "preferredContact": "Kaedah hubungan pilihan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Simpan",
+          "cancelEdit": "Batal"
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -1151,13 +1155,12 @@
           "approveError": "Tidak dapat menukar. Sila cuba lagi.",
           "saveError": "Tidak dapat menyimpan. Sila cuba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan."
+          "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan.",
+          "team": "Pasukan"
         },
         "actions": {
-          "approve": "Luluskan",
           "archive": "Arkib",
           "working": "Menyimpan…",
-          "approveStatusToast": "Pertanyaan diluluskan.",
           "archivedToast": "Pertanyaan diarkib.",
           "approvedToast": "Ditukar kepada tempahan.",
           "errorToast": "Sesuatu telah berlaku. Sila cuba lagi."
@@ -1191,7 +1194,7 @@
         "calendar": "Kalendar"
       },
       "calendar": {
-        "legendInquiry": "Lead / Pertanyaan",
+        "legendInquiry": "Pertanyaan",
         "legendBooking": "Tempahan",
         "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan."
       }

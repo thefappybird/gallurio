@@ -35,18 +35,28 @@ const FORMATTERS: Record<TimeMode, Intl.DateTimeFormat> = {
   }),
 };
 
-/** Format a Date as HH:MM (24h) or h:MM AM/PM (12h). */
-export function formatTime(date: Date, mode: TimeMode = DEFAULT_TIME_MODE): string {
+function makeFormatter(mode: TimeMode, timeZone: string): Intl.DateTimeFormat {
+  return mode === "24h"
+    ? new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone })
+    : new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true, timeZone });
+}
+
+/** Format a Date as HH:MM (24h) or h:MM AM/PM (12h).
+ *  Pass `timeZone` (IANA) to get a timezone-correct display instead of runtime-local. */
+export function formatTime(date: Date, mode: TimeMode = DEFAULT_TIME_MODE, timeZone?: string): string {
+  if (timeZone) return makeFormatter(mode, timeZone).format(date);
   return FORMATTERS[mode].format(date);
 }
 
-/** Format a time range as "HH:MM – HH:MM" or "h:MM AM – h:MM PM" (en-dash separator). */
+/** Format a time range as "HH:MM – HH:MM" or "h:MM AM – h:MM PM" (en-dash separator).
+ *  Pass `timeZone` (IANA) to get a timezone-correct display instead of runtime-local. */
 export function formatTimeRange(
   start: Date,
   end: Date,
-  mode: TimeMode = DEFAULT_TIME_MODE
+  mode: TimeMode = DEFAULT_TIME_MODE,
+  timeZone?: string
 ): string {
-  return `${formatTime(start, mode)} – ${formatTime(end, mode)}`;
+  return `${formatTime(start, mode, timeZone)} – ${formatTime(end, mode, timeZone)}`;
 }
 
 // ─── Native <input type="time"> lang hint ─────────────────────────────────────

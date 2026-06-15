@@ -280,7 +280,8 @@
         "accept": "Terima",
         "cancel": "Batal",
         "apply": "Terapkan",
-        "currentAddressLabel": "Lokasi yang dipilih"
+        "currentAddressLabel": "Lokasi yang dipilih",
+        "viewInMap": "Lihat di peta"
       },
       "eventTypes": {
         "wedding": "Pernikahan",
@@ -299,8 +300,8 @@
           "client": "Klien",
           "event": "Acara",
           "pricing": "Harga",
-          "eventPricing": "Acara & Harga",
-          "sessionsLocation": "Sesi & Lokasi",
+          "eventPricing": "Acara & Lokasi",
+          "sessionsLocation": "Sesi",
           "activity": "Catatan & aktivitas"
         },
         "sections": {
@@ -1058,18 +1059,18 @@
       "toolbar": {
         "from": "Dari",
         "to": "Sampai",
-        "clear": "Hapus tanggal"
+        "clear": "Hapus tanggal",
+        "date": "Tanggal",
+        "apply": "Terapkan"
       },
       "tabs": {
         "all": "Semua",
         "new": "Baru",
-        "approved": "Disetujui",
         "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
         "new": "Baru",
-        "approved": "Disetujui",
         "archived": "Diarsipkan",
         "booked": "Dipesan",
         "converted": "Dikonversi ke Pemesanan"
@@ -1122,7 +1123,10 @@
           "email": "Email",
           "phone": "Telepon",
           "preferredContact": "Kontak pilihan",
-          "none": "—"
+          "none": "—",
+          "editPhone": "Edit",
+          "savePhone": "Simpan",
+          "cancelEdit": "Batal"
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -1151,13 +1155,12 @@
           "approveError": "Tidak dapat mengonversi. Silakan coba lagi.",
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
-          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan."
+          "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
+          "team": "Tim"
         },
         "actions": {
-          "approve": "Setujui",
           "archive": "Arsipkan",
           "working": "Menyimpan…",
-          "approveStatusToast": "Pertanyaan disetujui.",
           "archivedToast": "Pertanyaan diarsipkan.",
           "approvedToast": "Dikonversi ke pemesanan.",
           "errorToast": "Ada yang tidak beres. Silakan coba lagi."
@@ -1191,7 +1194,7 @@
         "calendar": "Kalender"
       },
       "calendar": {
-        "legendInquiry": "Lead / Pertanyaan",
+        "legendInquiry": "Pertanyaan",
         "legendBooking": "Pemesanan",
         "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan."
       }

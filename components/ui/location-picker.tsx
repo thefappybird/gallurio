@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Loader2Icon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
+import { Loader2Icon, MapIcon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -109,13 +117,15 @@ function BaseLocationPicker({
   });
   const [draft, setDraft] = useState<LocationValue>(value);
   const committedRef = useRef<LocationValue>(value);
+  // Mirrors committedRef for render-time dirty computation (refs must not be read during render).
+  const [committedValue, setCommittedValue] = useState<LocationValue>(value);
 
   // Captured once when entering edit mode: was the committed value empty?
   const [editOriginEmpty, setEditOriginEmpty] = useState<boolean>(() =>
-    editable ? isEmpty(committedRef.current) : false,
+    editable ? isEmpty(value) : false,
   );
 
-  const dirty = editable ? !sameLocation(draft, committedRef.current) : false;
+  const dirty = editable ? !sameLocation(draft, committedValue) : false;
 
   // Refs for focus management
   const changeLocationBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -134,6 +144,11 @@ function BaseLocationPicker({
     [editable, onChange],
   );
 
+  // ── search / input state ─────────────────────────────────────────────────
+  // Use draft.address as the source of truth for the query when in editable mode.
+  // Declared before the external-value-sync effect so the closure captures a defined setter.
+  const [query, setQuery] = useState(value.address ?? "");
+
   // ── external value sync ──────────────────────────────────────────────────
   // In display mode, keep committedRef + draft in sync with parent value.
   // In edit mode, do NOT clobber draft.
@@ -141,14 +156,14 @@ function BaseLocationPicker({
     if (!editable) return;
     if (mode === "display") {
       committedRef.current = value;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
+      setCommittedValue(value);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
       setDraft(value);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- controlled external sync
       setQuery(value.address ?? "");  // sync search input for next edit session
     }
   }, [editable, mode, value]);
-
-  // ── search / input state ─────────────────────────────────────────────────
-  // Use draft.address as the source of truth for the query when in editable mode.
-  const [query, setQuery] = useState(value.address ?? "");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState(false);
@@ -292,6 +307,7 @@ function BaseLocationPicker({
     // Commit draft to parent and return to display mode
     onChange(draft);
     committedRef.current = draft;
+    setCommittedValue(draft);
     setMode("display");
     Promise.resolve().then(() => changeLocationBtnRef.current?.focus());
   }
@@ -328,15 +344,29 @@ function BaseLocationPicker({
           </p>
         ) : null}
         <LocationDisplay value={displayValue} />
-        <button
+        {displayValue.lat != null && displayValue.lng != null ? (
+          <div className="overflow-hidden border border-border">
+            <LocationMap
+              lat={displayValue.lat}
+              lng={displayValue.lng}
+              onPick={() => {}}
+              disabled
+              compact
+              scrollWheelZoom={false}
+            />
+          </div>
+        ) : null}
+        <Button
           ref={changeLocationBtnRef}
           type="button"
+          variant="outline"
+          size="sm"
           disabled={disabled}
           onClick={handleEnterEdit}
-          className="self-start text-sm text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          className="self-start"
         >
           {resolvedLabels.changeLocation ?? "Change location"}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -447,6 +477,7 @@ function BaseLocationPicker({
           onPick={handlePin}
           disabled={disabled}
           compact={compact}
+          scrollWheelZoom={!!editable}
         />
       </div>
 
@@ -530,5 +561,46 @@ export function LocationDisplay({
   const addr = value.address?.trim();
   return (
     <span className={cn("text-sm break-words", className)}>{addr || "—"}</span>
+  );
+}
+
+// ── LocationReadOnly ─────────────────────────────────────────────────────────
+// Address text + "View in Map" button that opens a dialog with a zoomable map.
+// Used in read-only booking detail views opened from the inquiries page.
+export function LocationReadOnly({ value }: { value: LocationValue }) {
+  const t = useTranslations("app.bookings.locationPicker");
+  const hasCoords = value.lat != null && value.lng != null;
+  const addr = value.address?.trim();
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-sm break-words">{addr || "—"}</span>
+      {hasCoords ? (
+        <Dialog>
+          <DialogTrigger
+            render={
+              <Button variant="outline" size="sm" className="self-start gap-1.5">
+                <MapIcon className="size-4" />
+                {t("viewInMap")}
+              </Button>
+            }
+          />
+          <DialogContent className="max-w-lg p-0">
+            <DialogHeader className="px-4 pt-4">
+              <DialogTitle className="text-sm font-medium">{addr || "—"}</DialogTitle>
+            </DialogHeader>
+            <div className="overflow-hidden">
+              <LocationMap
+                lat={value.lat}
+                lng={value.lng!}
+                onPick={() => {}}
+                disabled
+                scrollWheelZoom
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </div>
   );
 }

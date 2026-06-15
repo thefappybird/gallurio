@@ -1,4 +1,4 @@
-export const INQUIRY_STATUS_VALUES = ["new", "approved", "booked", "converted", "archived"] as const;
+export const INQUIRY_STATUS_VALUES = ["new", "booked", "converted", "archived"] as const;
 
 export const BOOKED_INQUIRY_STATUS = "booked";
 // "converted" is a terminal booked state treated identically to "booked" for

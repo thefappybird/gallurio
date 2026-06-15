@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Inquiry, Booking, ActivityLog } from "@/lib/db/models";
+import { Inquiry, Booking, ActivityLog, Team } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
@@ -27,6 +27,7 @@ const draftEditsSchema = z
     total: z.coerce.number().min(0).max(1_000_000_000).optional(),
     deposit: z.coerce.number().min(0).max(1_000_000_000).optional(),
     notes: z.string().max(5000).optional(),
+    teamId: z.string().refine((v) => mongoose.isValidObjectId(v), { message: "invalid_team" }).nullable().optional(),
   })
   .refine((v) => v.deposit === undefined || v.total === undefined || v.deposit <= v.total, {
     message: "Deposit cannot exceed the total",
@@ -184,47 +185,63 @@ export async function saveDraftBookingFieldsAction(
   if (edits.data.total !== undefined) set["amount.total"] = edits.data.total;
   if (edits.data.deposit !== undefined) set["amount.deposit"] = edits.data.deposit;
   if (edits.data.notes !== undefined) set.notes = edits.data.notes;
+  if (edits.data.teamId !== undefined) {
+    if (!edits.data.teamId) {
+      set.teamId = null;
+    } else {
+      if (!mongoose.isValidObjectId(edits.data.teamId)) return { error: "invalid_team" };
+      const team = await Team.findOne({ _id: edits.data.teamId, workspaceId }).lean();
+      if (!team) return { error: "invalid_team" };
+      set.teamId = team._id;
+    }
+  }
 
   if (Object.keys(set).length > 0) {
     await Booking.updateOne(
       { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
       { $set: set }
     );
+    await ActivityLog.create({
+      workspaceId,
+      actorUserId: ctx.userId,
+      entity: "inquiry",
+      entityId: inquiry._id,
+      action: "updated",
+      diff: edits.data,
+    });
   }
 
   revalidateInquiry(inquiryId);
   return { ok: true };
 }
 
-/** Triage: approve an inquiry (status "new" -> "approved"). No booking effect. Owner or staff. */
-export async function approveInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
-  const ctx = await requireOrg();
-  await connectDB();
-
-  const res = await Inquiry.updateOne(
-    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $in: ["new", "approved"] } },
-    { $set: { status: "approved" } }
-  );
-  if (res.matchedCount === 0) return { error: "not_found" };
-
-  revalidateInquiry(inquiryId);
-  return { ok: true };
-}
 
 /** Triage: archive an inquiry. Booked inquiries cannot be archived. */
 export async function archiveInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
   await connectDB();
 
+  const inquiry = await Inquiry.findOne({
+    _id: inquiryId,
+    workspaceId: ctx.workspace._id,
+    status: { $nin: ["booked", "converted"] },
+  }).lean();
+  if (!inquiry) return { error: "not_found" };
+
   const res = await Inquiry.updateOne(
-    {
-      _id: inquiryId,
-      workspaceId: ctx.workspace._id,
-      status: { $nin: ["booked", "converted"] },
-    },
+    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
     { $set: { status: "archived" } }
   );
   if (res.matchedCount === 0) return { error: "not_found" };
+
+  await ActivityLog.create({
+    workspaceId: ctx.workspace._id,
+    actorUserId: ctx.userId,
+    entity: "inquiry",
+    entityId: inquiry._id,
+    action: "status_changed",
+    meta: { from: inquiry.status, to: "archived" },
+  });
 
   revalidateInquiry(inquiryId);
   return { ok: true };
@@ -299,6 +316,20 @@ export async function editInquirySessionsAction(
           { session: mongoSession }
         );
       }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "updated",
+            diff: { sessions: parsed.data.sessions },
+          },
+        ],
+        { session: mongoSession }
+      );
     });
   } catch (err) {
     console.error("[inquiry] editSessions transaction failed:", err);
@@ -306,6 +337,34 @@ export async function editInquirySessionsAction(
   } finally {
     await mongoSession.endSession();
   }
+
+  revalidateInquiry(inquiryId);
+  return { ok: true };
+}
+
+/** Update only the phone number on a non-converted inquiry. */
+export async function updateInquiryPhoneAction(
+  inquiryId: string,
+  phone: string
+): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId });
+  if (!inquiry) return { error: "not_found" };
+  if (isBookedInquiryStatus(inquiry.status)) return { error: "locked" };
+
+  const sanitized = phone.trim().slice(0, 50);
+  await Inquiry.updateOne({ _id: inquiryId, workspaceId }, { $set: { phone: sanitized || null } });
+
+  await ActivityLog.create({
+    workspaceId,
+    entity: "inquiry",
+    entityId: inquiry._id,
+    action: "updated",
+    diff: { phone: sanitized || null },
+  });
 
   revalidateInquiry(inquiryId);
   return { ok: true };

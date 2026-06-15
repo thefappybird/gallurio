@@ -95,6 +95,10 @@ export async function businessStepAction(
           $setOnInsert: {
             ownerUserId: authUser.workosUserId,
             plan: "free",
+            // Seed the inquiry recipient with the owner's auth email so
+            // notifications are delivered from day one, without requiring a
+            // settings visit.
+            "publicPage.inquiryRecipientEmail": authUser.email,
           },
         },
         { upsert: true, new: true, session }

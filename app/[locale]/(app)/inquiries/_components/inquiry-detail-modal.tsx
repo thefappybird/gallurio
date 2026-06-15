@@ -8,6 +8,7 @@ import { BookingDraftCard } from "../[id]/_components/booking-draft-card";
 import { InquiryActions } from "../[id]/_components/inquiry-actions";
 import { useTranslations } from "next-intl";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import type { BookingTeamOption } from "../../bookings/_data/team-options";
 
 type InquiryBookingSummary = {
   id: string | null;
@@ -15,6 +16,7 @@ type InquiryBookingSummary = {
   total: number;
   deposit: number;
   notes: string;
+  teamId?: string | null;
 };
 
 export type InquiryDetailModalData = {
@@ -48,10 +50,16 @@ export function InquiryDetailModal({
   detail,
   open,
   onClose,
+  teams = [],
+  onConverted,
+  onConvertFailed,
 }: {
   detail: InquiryDetailModalData | null;
   open: boolean;
   onClose: () => void;
+  teams?: BookingTeamOption[];
+  onConverted?: () => void;
+  onConvertFailed?: () => void;
 }) {
   const t = useTranslations("app.inquiries.detail");
 
@@ -68,7 +76,7 @@ export function InquiryDetailModal({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent
         showCloseButton={false}
-        className="flex w-full max-h-[calc(100dvh-2rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"      
+        className="flex w-full max-h-[calc(100dvh-2rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl"
       >
         <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
           <div className="flex min-w-0 flex-col gap-1">
@@ -92,27 +100,23 @@ export function InquiryDetailModal({
             </div>
           </div>
         )}
+
         <div className="overflow-y-auto px-4 py-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="flex flex-col gap-4">
               <ClientInfoCard
+                inquiryId={detail.inquiryId}
                 name={detail.name}
                 email={detail.email}
                 phone={detail.phone}
                 preferredContact={detail.preferredContact}
+                status={detail.status}
               />
               <EventRequestCard
                 eventType={detail.eventType}
                 guestCount={detail.guestCount}
                 location={detail.location}
                 message={detail.message}
-                sessions={detail.sessions}
-                locale={detail.locale}
-                inquiryId={detail.inquiryId}
-                draftBookingId={detail.booking?.id ?? null}
-                phone={detail.phone}
-                email={detail.email}
-                status={detail.status}
               />
             </div>
 
@@ -127,6 +131,12 @@ export function InquiryDetailModal({
                 initialTotal={detail.booking?.total ?? 0}
                 initialDeposit={detail.booking?.deposit ?? 0}
                 initialNotes={detail.booking?.notes ?? ""}
+                teams={teams}
+                initialTeamId={detail.booking?.teamId ?? null}
+                sessions={detail.sessions}
+                locale={detail.locale}
+                onConverted={onConverted}
+                onConvertFailed={onConvertFailed}
               />
 
               <div className="border border-border bg-card">
@@ -137,9 +147,7 @@ export function InquiryDetailModal({
                   <ol className="flex flex-col gap-3">
                     <li className="flex items-baseline justify-between gap-3 text-sm">
                       <span>{t("history.submitted")}</span>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {submittedLabel}
-                      </span>
+                      <span className="shrink-0 text-xs text-muted-foreground">{submittedLabel}</span>
                     </li>
                     {isBooked ? (
                       <li className="flex items-baseline justify-between gap-3 text-sm">

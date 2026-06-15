@@ -12,6 +12,7 @@ import { EventRequestCard, type InquirySessionView } from "./_components/event-r
 import { BookingDraftCard } from "./_components/booking-draft-card";
 import { InquiryActions } from "./_components/inquiry-actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { getBookingTeamOptions } from "../../bookings/_data/team-options";
 
 export default async function InquiryDetailPage({
   params,
@@ -22,11 +23,14 @@ export default async function InquiryDetailPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.inquiries.detail");
 
-  const { workspace, role } = await requireOrg();
+  const { workspace, role, userId } = await requireOrg();
 
   if (!isValidObjectId(id)) notFound();
 
-  const result = await getInquiryWithDraft(workspace._id, id);
+  const [result, teams] = await Promise.all([
+    getInquiryWithDraft(workspace._id, id),
+    getBookingTeamOptions({ role, userId, workspace }),
+  ]);
   if (!result) notFound();
 
   const { inquiry, booking } = result;
@@ -68,23 +72,18 @@ export default async function InquiryDetailPage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
           <ClientInfoCard
+            inquiryId={String(inquiry._id)}
             name={inquiry.name}
             email={inquiry.email}
             phone={inquiry.phone ?? null}
             preferredContact={inquiry.preferredContact ?? "email"}
+            status={inquiry.status}
           />
           <EventRequestCard
             eventType={inquiry.eventType ?? "other"}
             guestCount={inquiry.guestCount ?? null}
             location={inquiry.location ?? null}
             message={inquiry.message ?? ""}
-            sessions={sessions}
-            locale={locale}
-            inquiryId={String(inquiry._id)}
-            draftBookingId={booking ? String(booking._id) : null}
-            phone={inquiry.phone ?? null}
-            email={inquiry.email ?? ""}
-            status={inquiry.status}
           />
         </div>
 
@@ -99,6 +98,10 @@ export default async function InquiryDetailPage({
             initialTotal={booking?.amount?.total ?? 0}
             initialDeposit={booking?.amount?.deposit ?? 0}
             initialNotes={booking?.notes ?? ""}
+            teams={teams}
+            initialTeamId={booking?.teamId ? String(booking.teamId) : null}
+            sessions={sessions}
+            locale={locale}
           />
 
           <Card>

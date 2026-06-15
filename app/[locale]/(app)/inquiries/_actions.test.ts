@@ -32,7 +32,6 @@ import { Inquiry, Booking, Client } from "@/lib/db/models";
 import {
   approveInquiryBookingAction,
   saveDraftBookingFieldsAction,
-  approveInquiryAction,
   archiveInquiryAction,
   editInquirySessionsAction,
 } from "./_actions";
@@ -184,29 +183,6 @@ describe("saveDraftBookingFieldsAction", () => {
   });
 });
 
-describe("approveInquiryAction", () => {
-  it("moves a new inquiry to approved", async () => {
-    const { inquiry } = await seedDraft(workspaceId);
-    const res = await approveInquiryAction(String(inquiry._id));
-    expect(res).toEqual({ ok: true });
-    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("approved");
-  });
-
-  it("is idempotent — re-approving an approved inquiry is a no-op", async () => {
-    const { inquiry } = await seedDraft(workspaceId);
-    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "approved" } });
-    const res = await approveInquiryAction(String(inquiry._id));
-    expect(res).toEqual({ ok: true });
-    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("approved");
-  });
-
-  it("will not re-open a booked inquiry", async () => {
-    const { inquiry } = await seedDraft(workspaceId);
-    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
-    const res = await approveInquiryAction(String(inquiry._id));
-    expect(res).toEqual({ error: "not_found" });
-  });
-});
 
 describe("archiveInquiryAction", () => {
   it("archives a new inquiry", async () => {
