@@ -2,13 +2,17 @@
 
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import {
   createTeamWithCapEnforcement,
   TeamCapExceededError,
 } from "@/lib/auth/assertCanAddTeam";
 import { Team } from "@/lib/db/models/team";
+import { TeamMembership } from "@/lib/db/models/teamMembership";
+import { User } from "@/lib/db/models/User";
 import { planEntitlements } from "@/lib/plans/entitlements";
+import { sendNotification } from "@/lib/notifications/send";
 import {
   createTeamSchema,
   renameTeamSchema,
@@ -169,6 +173,34 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
       { _id: objectId, workspaceId: ctx.workspace._id },
       { $set: { isActive: false, deactivatedAt: new Date() } },
     );
+
+    const memberships = await TeamMembership.find(
+      { teamId: team._id, workspaceId: ctx.workspace._id },
+      { workosUserId: 1 },
+    ).lean();
+    if (memberships.length > 0) {
+      const memberIds = memberships.map((m) => m.workosUserId);
+      const members = await User.find(
+        { workosUserId: { $in: memberIds } },
+        { workosUserId: 1, email: 1, name: 1 },
+      ).lean();
+      const recipients = members.map((u) => ({
+        workosUserId: u.workosUserId,
+        email: u.email,
+        name: u.name || undefined,
+      }));
+      const locale = await getLocale();
+      await sendNotification({
+        workspaceId: ctx.workspaceId,
+        recipients,
+        type: "team.deleted",
+        entityId: String(team._id),
+        entityType: "team",
+        triggeredByWorkosUserId: ctx.userId,
+        locale,
+        vars: { teamName: team.name },
+      });
+    }
   }
 
   revalidatePath("/[locale]/teams", "page");

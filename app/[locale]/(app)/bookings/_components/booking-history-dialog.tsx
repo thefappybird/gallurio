@@ -38,6 +38,7 @@ export function BookingHistoryDialog({
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -49,10 +50,28 @@ export function BookingHistoryDialog({
         setLoading(true);
         return fetch(url)
           .then((r) => (r.ok ? r.json() : { entries: [], total: 0 }))
-          .then(({ entries, total }) => {
+          .then(async ({ entries: rawEntries, total: rawTotal }: { entries: ActivityEntry[]; total: number }) => {
             if (cancelled) return;
-            setEntries(entries ?? []);
-            setTotal(total ?? 0);
+            const fetched = rawEntries ?? [];
+            setEntries(fetched);
+            setTotal(rawTotal ?? 0);
+
+            // Resolve actor display names for entries that have an actorUserId.
+            const ids = [...new Set(
+              fetched
+                .map((e) => e.actorUserId)
+                .filter((id): id is string => !!id)
+            )];
+            if (ids.length > 0) {
+              const params = new URLSearchParams();
+              ids.forEach((id) => params.append("ids", id));
+              const res = await fetch(`/api/users/names?${params.toString()}`);
+              if (!cancelled && res.ok) {
+                const names: Record<string, string> = await res.json();
+                setActorNames(names);
+              }
+            }
+
             setLoading(false);
           })
           .catch(() => {
@@ -108,6 +127,7 @@ export function BookingHistoryDialog({
               entries={entries}
               locale={locale}
               currency={currency}
+              actorNames={actorNames}
             />
           )}
         </div>

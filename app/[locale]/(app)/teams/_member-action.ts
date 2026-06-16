@@ -2,6 +2,7 @@
 
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import {
   assertCanAddTeamMember,
@@ -13,6 +14,7 @@ import { Team } from "@/lib/db/models/team";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { User } from "@/lib/db/models/User";
 import { connectDB } from "@/lib/db/mongoose";
+import { sendNotification } from "@/lib/notifications/send";
 import {
   assignMemberToTeamSchema,
   removeMemberFromTeamSchema,
@@ -124,6 +126,12 @@ export async function removeMemberFromTeamAction(
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
 
+  const team = await Team.findOne(
+    { _id: teamObjectId, workspaceId: ctx.workspace._id },
+    { _id: 1, name: 1 },
+  ).lean();
+  if (!team) return { error: "TEAM_NOT_FOUND" };
+
   const result = await TeamMembership.deleteOne({
     workspaceId: ctx.workspace._id,
     teamId: teamObjectId,
@@ -133,6 +141,28 @@ export async function removeMemberFromTeamAction(
   if (result.deletedCount === 0) return { error: "MEMBERSHIP_NOT_FOUND" };
 
   await releaseTeamSeat(teamObjectId, ctx.workspace._id);
+
+  const removedUser = await User.findOne(
+    { workosUserId },
+    { workosUserId: 1, email: 1, name: 1 },
+  ).lean();
+  if (removedUser) {
+    const locale = await getLocale();
+    await sendNotification({
+      workspaceId: ctx.workspaceId,
+      recipients: [{
+        workosUserId: removedUser.workosUserId,
+        email: removedUser.email,
+        name: removedUser.name || undefined,
+      }],
+      type: "team.removed",
+      entityId: String(team._id),
+      entityType: "team",
+      triggeredByWorkosUserId: ctx.userId,
+      locale,
+      vars: { teamName: team.name },
+    });
+  }
 
   revalidatePath("/[locale]/teams", "page");
   return { ok: true };

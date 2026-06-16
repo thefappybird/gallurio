@@ -9,6 +9,7 @@ import {
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
 import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
+import { sendNotification } from "@/lib/notifications/send";
 
 export type SubmitInquiryResult =
   | { ok: true; inquiryId: string; draftBookingId: string; clientId: string }
@@ -52,10 +53,12 @@ export async function submitInquiry(
     .select({
       _id: 1,
       name: 1,
+      ownerUserId: 1,
       currency: 1,
       timezone: 1,
       "contact.email": 1,
       "publicPage.inquiryRecipientEmail": 1,
+      "publicPage.formLocale": 1,
     })
     .lean();
 
@@ -219,6 +222,21 @@ export async function submitInquiry(
     });
   } catch (err) {
     console.error("[inquiry] client confirmation failed (non-fatal):", err);
+  }
+
+  const ownerEmail = workspace.contact?.email ?? "";
+  if (ownerEmail) {
+    const notifLocale = workspace.publicPage?.formLocale || "en";
+    await sendNotification({
+      workspaceId: String(workspaceId),
+      recipients: [{ workosUserId: workspace.ownerUserId, email: ownerEmail }],
+      type: "inquiry.created",
+      entityId: String(inquiryId),
+      entityType: "inquiry",
+      triggeredByWorkosUserId: "public",
+      locale: notifLocale,
+      vars: { clientName: name || "Unknown" },
+    });
   }
 
   return {

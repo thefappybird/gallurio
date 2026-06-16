@@ -1528,6 +1528,41 @@
           "error": "Sesuatu telah berlaku. Sila cuba lagi."
         }
       }
+    },
+    "notifications": {
+      "bell": "Pemberitahuan",
+      "popoverTitle": "Pemberitahuan Terkini",
+      "markAllRead": "Tandakan semua dibaca",
+      "seeAll": "Lihat semua pemberitahuan",
+      "empty": "Tiada pemberitahuan baru",
+      "pageTitle": "Pemberitahuan",
+      "loadMore": "Muatkan lagi",
+      "types": {
+        "inquiry.created": {
+          "title": "Pertanyaan baru diterima",
+          "body": "Anda menerima pertanyaan baru daripada {clientName}."
+        },
+        "booking.team_assigned": {
+          "title": "Tempahan baharu diberikan kepada pasukan anda",
+          "body": "{assignerName} memberikan tempahan kepada pasukan anda."
+        },
+        "booking.status_changed": {
+          "title": "Status tempahan dikemas kini",
+          "body": "{actorName} menukar tempahan kepada {newStatus}."
+        },
+        "team.invitation": {
+          "title": "Anda dijemput ke dalam pasukan",
+          "body": "{inviterName} menjemput anda untuk menyertai {teamName}."
+        },
+        "team.removed": {
+          "title": "Dikeluarkan daripada pasukan",
+          "body": "Anda telah dikeluarkan daripada {teamName}."
+        },
+        "team.deleted": {
+          "title": "Pasukan dibubarkan",
+          "body": "{teamName} telah dipadamkan."
+        }
+      }
     }
   },
   "common": {

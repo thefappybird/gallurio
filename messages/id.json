@@ -1528,6 +1528,41 @@
           "error": "Ada yang tidak beres. Silakan coba lagi."
         }
       }
+    },
+    "notifications": {
+      "bell": "Notifikasi",
+      "popoverTitle": "Notifikasi Terbaru",
+      "markAllRead": "Tandai semua sudah dibaca",
+      "seeAll": "Lihat semua notifikasi",
+      "empty": "Tidak ada notifikasi baru",
+      "pageTitle": "Notifikasi",
+      "loadMore": "Muat lebih banyak",
+      "types": {
+        "inquiry.created": {
+          "title": "Pertanyaan baru diterima",
+          "body": "Anda memiliki pertanyaan baru dari {clientName}."
+        },
+        "booking.team_assigned": {
+          "title": "Pemesanan baru ditugaskan ke tim Anda",
+          "body": "{assignerName} menugaskan pemesanan ke tim Anda."
+        },
+        "booking.status_changed": {
+          "title": "Status pemesanan diperbarui",
+          "body": "{actorName} mengubah status pemesanan menjadi {newStatus}."
+        },
+        "team.invitation": {
+          "title": "Anda diundang ke tim",
+          "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
+        },
+        "team.removed": {
+          "title": "Dihapus dari tim",
+          "body": "Anda telah dihapus dari {teamName}."
+        },
+        "team.deleted": {
+          "title": "Tim dibubarkan",
+          "body": "{teamName} telah dihapus."
+        }
+      }
     }
   },
   "common": {
