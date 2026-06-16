@@ -13,7 +13,7 @@ export const runtime = "nodejs";
  * actor names without exposing the full user document.
  */
 export async function GET(req: Request) {
-  await requireOrg();
+  const { workspace } = await requireOrg();
 
   const url = new URL(req.url);
   const ids = url.searchParams.getAll("ids").filter(Boolean);
@@ -27,14 +27,18 @@ export async function GET(req: Request) {
 
   await connectDB();
 
+  // Constrain to members of the caller's workspace to prevent cross-tenant enumeration.
   const users = await User.find(
-    { workosUserId: { $in: safeIds } },
-    { workosUserId: 1, name: 1, email: 1 },
-  ).lean<{ workosUserId: string; name?: string; email: string }[]>();
+    {
+      workosUserId: { $in: safeIds },
+      "memberships.workspaceId": workspace._id,
+    },
+    { workosUserId: 1, name: 1 },
+  ).lean<{ workosUserId: string; name?: string }[]>();
 
   const result: Record<string, string> = {};
   for (const u of users) {
-    result[u.workosUserId] = u.name?.trim() || u.email;
+    if (u.name?.trim()) result[u.workosUserId] = u.name.trim();
   }
 
   return NextResponse.json(result);
