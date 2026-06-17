@@ -95,9 +95,10 @@
      mode) so calendar events read as a stable vocabulary regardless of the
      surrounding scheme. Saturated mid-luminance palette: white text always
      contrasts. */
+  --danger: oklch(0.60 0.18 25);           /* shared red — cancelled events, conflicts */
   --event-booked: oklch(0.55 0.10 195);    /* teal — confident, primary */
   --event-completed: oklch(0.55 0.13 145); /* green — done */
-  --event-cancelled: oklch(0.60 0.18 25);  /* red — cancelled */
+  --event-cancelled: var(--danger);        /* red — cancelled */
   --event-inquiry: oklch(0.55 0.04 250);   /* slate — active inquiry, neutral */
   --radius: 0rem;
   --sidebar: oklch(0.985 0 0);
@@ -141,6 +142,7 @@
   --chart-3: oklch(0.65 0 0);
   --chart-4: var(--brand-3);
   --chart-5: oklch(0.75 0 0);
+  --danger: oklch(0.60 0.18 25);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

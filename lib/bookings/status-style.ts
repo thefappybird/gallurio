@@ -16,3 +16,5 @@ export const STATUS_ORDER: BookingStatus[] = [
   "completed",
   "cancelled",
 ];
+
+export const CONFLICT_COLOR_VAR = "var(--danger)";
