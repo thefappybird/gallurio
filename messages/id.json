@@ -1204,7 +1204,9 @@
           "new": "Baru",
           "booked": "Dipesan",
           "conflicted": "Konflik"
-        }
+        },
+        "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
+        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi"
       }
     },
     "pageBuilder": {

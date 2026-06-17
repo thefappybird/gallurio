@@ -144,6 +144,9 @@ type Props = {
   teamColorMap?: Record<string, string>;
   /** Optional content rendered in the toolbar immediately to the right of the Prev/Today/Next nav buttons. */
   toolbarTrailing?: ReactNode;
+  /** Gate which events are draggable. When absent, all events are draggable
+   *  (preserves current bookings-calendar behavior). */
+  draggableAccessor?: (event: AnyCalendarEvent) => boolean;
 };
 
 /**
@@ -849,6 +852,7 @@ export function BookingCalendar({
   colorMode = "status",
   teamColorMap,
   toolbarTrailing,
+  draggableAccessor,
 }: Props) {
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
@@ -1004,6 +1008,7 @@ export function BookingCalendar({
           dragFromOutsideItem={
             (dragFromOutsideItem ?? undefined) as (() => AnyCalendarEvent) | undefined
           }
+          draggableAccessor={draggableAccessor as ((event: object) => boolean) | undefined}
           eventPropGetter={(event) => {
             if ("type" in event && (event as OverflowEvent).type === "overflow") {
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };

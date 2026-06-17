@@ -1,4 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// The manager imports rescheduleInquirySessionAction which pulls in server-only
+// Next.js modules (next/cache). Stub them out so the pure filter functions can
+// be tested in the Vitest (non-Next.js) environment.
+vi.mock("../_actions", () => ({
+  rescheduleInquirySessionAction: vi.fn(),
+}));
+
 import { calendarEventMatchesFilters, mergeConflict } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 

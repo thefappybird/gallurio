@@ -5,6 +5,7 @@ import {
   isoDate,
   isoDateInTz,
   dateToTzMinutes,
+  dateToTzWallClock,
   reconstructSessions,
   detectConflictIds,
 } from "./calendar-helpers";
@@ -251,6 +252,33 @@ describe("reconstructSessions", () => {
 
   it("returns empty array for an empty events list", () => {
     expect(reconstructSessions([], "b1")).toHaveLength(0);
+  });
+});
+
+// ── dateToTzWallClock ─────────────────────────────────────────────────────────
+
+describe("dateToTzWallClock", () => {
+  it("returns YYYY-MM-DD date and HH:MM time for a UTC date in Manila time", () => {
+    // 2026-08-15T02:30:00Z → 10:30 Manila (UTC+8), date still Aug 15.
+    const d = new Date("2026-08-15T02:30:00Z");
+    const { date, time } = dateToTzWallClock(d, "Asia/Manila");
+    expect(date).toBe("2026-08-15");
+    expect(time).toBe("10:30");
+  });
+
+  it("crosses the date boundary when UTC time is past local midnight", () => {
+    // 2026-08-15T16:01:00Z → 2026-08-16 00:01 in Manila.
+    const d = new Date("2026-08-15T16:01:00Z");
+    const { date, time } = dateToTzWallClock(d, "Asia/Manila");
+    expect(date).toBe("2026-08-16");
+    expect(time).toBe("00:01");
+  });
+
+  it("zero-pads single-digit hours and minutes", () => {
+    // 2026-08-15T01:05:00Z → 09:05 Manila (UTC+8).
+    const d = new Date("2026-08-15T01:05:00Z");
+    const { date, time } = dateToTzWallClock(d, "Asia/Manila");
+    expect(time).toBe("09:05");
   });
 });
 

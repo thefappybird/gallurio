@@ -1204,7 +1204,9 @@
           "new": "Baharu",
           "booked": "Ditempah",
           "conflicted": "Berkonflik"
-        }
+        },
+        "rescheduleConflict": "Masa ini bercanggah dengan tempahan sedia ada — pemindahan dibatalkan",
+        "rescheduleFailed": "Tidak dapat menjadualkan semula — sila cuba lagi"
       }
     },
     "pageBuilder": {

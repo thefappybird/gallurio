@@ -1204,7 +1204,9 @@
           "new": "New",
           "booked": "Booked",
           "conflicted": "Conflicted"
-        }
+        },
+        "rescheduleConflict": "This time conflicts with an existing booking — move cancelled",
+        "rescheduleFailed": "Could not reschedule — please try again"
       }
     },
     "pageBuilder": {

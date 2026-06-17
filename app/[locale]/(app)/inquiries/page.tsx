@@ -350,6 +350,7 @@ export default async function InquiriesPage({
         events={events}
         teams={calendarTeams}
         isOwner={role === "owner"}
+        workspaceTz={tz}
       />
       {sp.detail ? (
         <BookingDetailModal

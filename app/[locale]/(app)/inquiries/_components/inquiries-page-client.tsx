@@ -39,6 +39,7 @@ type Props = {
   events?: CalendarEvent[];
   teams?: BookingTeamOption[];
   isOwner?: boolean;
+  workspaceTz?: string;
 };
 
 export function InquiriesPageClient({
@@ -58,6 +59,7 @@ export function InquiriesPageClient({
   events = [],
   teams = [],
   isOwner = false,
+  workspaceTz,
 }: Props) {
   const t = useTranslations("app.inquiries");
   const tc = useTranslations("common.pagination");
@@ -186,7 +188,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} />
       ) : (
         <>
           {/* Status tabs + Date popover tab */}

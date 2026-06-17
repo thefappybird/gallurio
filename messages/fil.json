@@ -1204,7 +1204,9 @@
           "new": "Bago",
           "booked": "Naka-book",
           "conflicted": "May Salungatan"
-        }
+        },
+        "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
+        "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli"
       }
     },
     "pageBuilder": {
