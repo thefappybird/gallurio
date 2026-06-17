@@ -34,6 +34,11 @@ time mismatch).
    **and the public contact form location is also required**.
 8. Conflict color = a dedicated theme-aware semantic token **`--danger`** (defined
    per theme: `:root` and `.dark`), used by conflicted candles via `var(--danger)`.
+   A **single shared red** — `--danger` and `--event-cancelled` resolve to the same
+   red value (no separate distinct hue).
+9. Time display (#14) must be **consistent across all surfaces** — bookings calendar,
+   bookings modals (already synced), public contact form, inquiries modal, and
+   inquiries table — all driven by one canonical formatter so they always agree.
 
 ## Current-state references (verified)
 
@@ -81,7 +86,8 @@ time mismatch).
 
 ### A. Candle visuals (#0, #10)
 - Add `--danger` token to `app/globals.css` in **both** `:root` and `.dark` (and any
-  other theme blocks) so it resolves correctly across themes.
+  other theme blocks) so it resolves correctly across themes. Single shared red:
+  `--danger` and `--event-cancelled` use the same red value.
 - Remove the `TriangleAlertIcon` conflict glyph from `StatusPill()`.
 - Conflicted candles get `colorOverride: var(--danger)` (conflict wins over the base
   status color).
@@ -160,9 +166,13 @@ time mismatch).
 - **#13:** Trace the runtime `app.inquiries.statusValues.approved` lookup (no
   `approved` status exists) and fix the source to a valid key; add a safe fallback in
   the status-label helper so an unknown status never throws MISSING_MESSAGE.
-- **#14:** Make the calendar candle time use the same wall-clock source/formatter as
-  the inquiry modal (requested local session times) so the two always match;
-  eliminate the tz double-conversion causing the offset.
+- **#14:** Establish **one canonical time formatter** (extend
+  `lib/utils/time-format.ts`) and route every session-time display through it so all
+  surfaces agree: bookings calendar, bookings modals (already synced — keep as the
+  reference behavior), public contact form, inquiries modal, and inquiries table.
+  Eliminate the tz double-conversion causing the current calendar↔inquiry-modal
+  offset; align inquiries modal/table to the same workspace-tz wall-clock the
+  bookings surfaces use.
 
 ## Cross-cutting / Done criteria
 - Tests: new `rescheduleInquirySessionAction` (happy path, conflict block, non-New
