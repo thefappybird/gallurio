@@ -13,6 +13,8 @@ export type ActivityTimelineProps = {
   locale: string;
   currency?: string;
   className?: string;
+  /** Map of workosUserId → display name, used to show who made each change. */
+  actorNames?: Record<string, string>;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -131,6 +133,7 @@ export function ActivityTimeline({
   locale,
   currency = "PHP",
   className,
+  actorNames,
 }: ActivityTimelineProps) {
   const tHistory = useTranslations("app.bookings.detail.history");
   const tFields = useTranslations("app.bookings.detail.fields");
@@ -272,6 +275,14 @@ export function ActivityTimeline({
                       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
                         {time}
                       </span>
+                      {entry.actorUserId && actorNames?.[entry.actorUserId] ? (
+                        <span className="shrink-0 text-[11px] text-muted-foreground">
+                          {"by "}
+                          <span className="font-medium text-foreground">
+                            {actorNames[entry.actorUserId]}
+                          </span>
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Change pills */}

@@ -3,6 +3,7 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
 import { revalidatePath } from "next/cache";
+import { getLocale } from "next-intl/server";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import {
   assertCanAddTeamMember,
@@ -11,8 +12,10 @@ import {
   TeamNotFoundError,
 } from "@/lib/auth/assertCanAddTeamMember";
 import { Team } from "@/lib/db/models/team";
+import { User } from "@/lib/db/models/User";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
+import { sendNotification } from "@/lib/notifications/send";
 import {
   inviteMemberSchema,
   revokeInviteSchema,
@@ -185,6 +188,32 @@ export async function inviteMemberAction(
     );
     await releaseInvitationSeats(reserved, ctx.workspace._id);
     return { error: "EMAIL_SEND_FAILED" };
+  }
+
+  // Notify the invited user if they already have an account.
+  const invitedUser = await User.findOne(
+    { email },
+    { workosUserId: 1, email: 1, name: 1 },
+  ).lean();
+  if (invitedUser) {
+    const locale = await getLocale();
+    const wsName = (ctx.workspace as Record<string, unknown>).name as string | undefined;
+    for (const team of teams) {
+      await sendNotification({
+        workspaceId: ctx.workspaceId,
+        recipients: [{
+          workosUserId: invitedUser.workosUserId,
+          email: invitedUser.email,
+          name: invitedUser.name || undefined,
+        }],
+        type: "team.invitation",
+        entityId: String(team._id),
+        entityType: "team",
+        triggeredByWorkosUserId: ctx.userId,
+        locale,
+        vars: { inviterName: wsName ?? "Gallurio workspace", teamName: team.name },
+      });
+    }
   }
 
   revalidatePath("/[locale]/teams", "page");
