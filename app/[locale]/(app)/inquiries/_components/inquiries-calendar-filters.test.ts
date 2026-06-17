@@ -1,5 +1,5 @@
-﻿import { describe, it, expect } from "vitest";
-import { calendarEventMatchesFilters } from "./inquiries-calendar-manager";
+import { describe, it, expect } from "vitest";
+import { calendarEventMatchesFilters, mergeConflict } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 
 function makeEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
@@ -33,6 +33,26 @@ const newCandle = makeEvent({ kind: "inquiry", hasConflict: false });
 const conflictedCandle = makeEvent({ kind: "inquiry", hasConflict: true });
 // booking candle (kind omitted = undefined, treated as non-inquiry)
 const bookingCandle = makeEvent({ kind: undefined, hasConflict: false });
+
+describe("mergeConflict", () => {
+  it("preserves server hasConflict=true even when conflictIds is empty (Booked chip OFF scenario)", () => {
+    const ev = makeEvent({ kind: "inquiry", hasConflict: true });
+    const result = mergeConflict(ev, new Set<string>());
+    expect(result.hasConflict).toBe(true);
+  });
+
+  it("sets hasConflict=true when client detector finds the id", () => {
+    const ev = makeEvent({ id: "ev1", kind: undefined, hasConflict: false });
+    const result = mergeConflict(ev, new Set(["ev1"]));
+    expect(result.hasConflict).toBe(true);
+  });
+
+  it("returns same reference when no change needed", () => {
+    const ev = makeEvent({ hasConflict: false });
+    const result = mergeConflict(ev, new Set<string>());
+    expect(result).toBe(ev);
+  });
+});
 
 describe("calendarEventMatchesFilters", () => {
   it("shows everything when all chips are ON", () => {

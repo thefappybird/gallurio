@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
@@ -40,6 +40,16 @@ export function calendarEventMatchesFilters(
 }
 
 /**
+ * Merges server-authoritative conflict state with the client-detected conflict
+ * set. An event is conflicted if the server already flagged it (stable) OR if
+ * the client detector flags it (booking-vs-booking visual overlap).
+ */
+export function mergeConflict(ev: CalendarEvent, conflictIds: Set<string>): CalendarEvent {
+  const hasConflict = ev.hasConflict || conflictIds.has(ev.id);
+  return hasConflict === ev.hasConflict ? ev : { ...ev, hasConflict };
+}
+
+/**
  * Read-only calendar view for the inquiries page. Wraps BookingCalendar
  * without DnD and routes clicks to either the inquiry detail modal (?inquiryId=)
  * or booking detail modal (?detail=), preserving ?view=calendar in both cases.
@@ -78,7 +88,7 @@ export function InquiriesCalendarManager({
   const eventsWithConflicts = useMemo(() => {
     const conflictIds = detectConflictIds(filteredEvents);
     if (conflictIds.size === 0) return filteredEvents;
-    return filteredEvents.map((e) => conflictIds.has(e.id) ? { ...e, hasConflict: true } : e);
+    return filteredEvents.map((e) => mergeConflict(e, conflictIds));
   }, [filteredEvents]);
 
   function handleSelectEvent(ev: CalendarEvent) {
