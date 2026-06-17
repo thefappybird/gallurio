@@ -77,6 +77,57 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
   - This keeps fan-out agents consistent, avoids duplicated crawling, and saves tokens. Haiku readers should query the graph first and only open files the graph points them to.
 - Record durable architecture decisions with `manage_adr`. Set `persistence: true` on `index_repository` to write `.codebase-memory/graph.db.zst` when an index is worth sharing across the team/agents.
 
+## DRY & code reuse (cross-agent)
+DRY is enforced across ALL agents, not just within one task. `REUSABLE_CODE.md`
+(repo root) is the shared catalog of reusable components, hooks, and helpers, plus
+a ranked list of known duplication / extraction candidates. It exists so agents
+reuse instead of re-implement, and so they avoid re-reading source files to learn
+what already exists.
+- **Before writing any component, hook, or helper**: consult `REUSABLE_CODE.md`
+  first. If something matching the need exists, import and reuse it — do not write
+  a parallel copy. The catalog is the cheap (low-token) way to discover this;
+  fall back to the codebase-memory graph only if the catalog is silent.
+- **When you create or update a feature**: check whether the same logic already
+  lives elsewhere (catalog → codebase-memory `search_code` / `SIMILAR_TO`). If it
+  does, extract a single modular version (`components/ui/*` or `components/app/*`
+  for UI, `hooks/*` or `lib/hooks/*` for hooks, `lib/<area>/*` for helpers),
+  point the call sites at it, and **register it in `REUSABLE_CODE.md`** so future
+  agents find it. New genuinely-shared code must be added to the catalog in the
+  same change.
+- **When you spot duplication you are not extracting now**: add it to the
+  "Extraction candidates" section of `REUSABLE_CODE.md` with file paths so it can
+  be picked up later. Never silently leave a second copy undocumented.
+- Keep the catalog accurate: if you move/rename/delete a reusable module, update
+  its entry. A stale catalog costs more tokens than no catalog.
+- Reuse must not break the design/tenancy rules below — a shared component still
+  ships all UI states and a shared query still scopes by `workspaceId`.
+
+## Tooling: browser verification & plugins
+Use the installed MCP servers and plugins whenever they fit the task — they are
+faster and more accurate than guessing, and several Done-criteria depend on them.
+- **Playwright MCP** (`mcp__plugin_playwright_playwright__*`): use to actually
+  drive the app in a browser when a change is UI-facing or behavioral. Required
+  for the "mobile view checked at 375px" Done-criterion — resize to 375px,
+  navigate the flow, snapshot/screenshot, and verify loading/empty/error/
+  populated and idle/hover/focus/active/disabled states render. Also use it to
+  reproduce bugs and confirm fixes end-to-end (browser → action → result) rather
+  than asserting from code alone.
+- **context7** (`mcp__plugin_context7_context7__*`): fetch current docs for any
+  library/framework/API (Next.js 16, React 19, Mongoose, Tailwind v4, Paddle,
+  next-intl, WorkOS, etc.) before relying on memory. Prefer it over web search
+  for library docs; pair with the local `node_modules/.../docs` references.
+- **codebase-memory-mcp**: default for locating/understanding code (see Codebase
+  memory). Query the shared project index instead of broad file reads.
+- **Security/static-analysis skills** (semgrep, codeql, differential-review,
+  fp-check, the `security-auditor` agent): run when a change touches auth,
+  tenancy, webhooks, uploads, payments, public routes, or input validation, and
+  for pre-merge passes.
+- **Vercel / Figma plugins**: use only when the task is actually about that
+  surface (deploy/runtime questions, design-to-code) — do not push them otherwise.
+- General rule: reach for the relevant tool when it raises confidence or is
+  required by Done criteria; skip it when it adds no signal. Don't claim a UI/flow
+  works until you've observed it (Playwright or a real run), not just compiled it.
+
 ## Engineering bar
 Every executor/planner operates as a senior full-stack engineer with strong mobile-first UI and backend/API design judgment.
 
@@ -104,6 +155,44 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 - Use Node runtime unless Edge is explicitly justified
 - Cache intentionally
 - Use Mongo transactions for multi-document writes that must succeed together
+
+#### Endpoint hardening checklist (apply when creating OR updating any endpoint)
+These are mandatory review points for every Server Action, Route Handler, and
+public/server-component data loader. Treat them as acceptance criteria, not
+aspirations. The current backlog of known lapses lives in
+`docs/backend-audit-findings.md` — read it before touching a flagged area.
+- **Rate limiting / abuse control**: every public or cheaply-abusable endpoint
+  (inquiry submit, signed upload, public reads, auth callback, search) must have
+  throttling and/or a challenge (honeypot + `rateLimit()` today; CAPTCHA/Turnstile
+  where spam-prone). Validate and bound any client-supplied `limit`/`cursor`.
+  Note prod runs on Hetzner with no edge WAF, so app-level limiting is the only
+  layer. `lib/server/rateLimit.ts` is in-memory/best-effort by design — do not
+  assume it is distributed.
+- **Extreme-case error handling must never break the app**: no empty/log-only
+  catches that continue with bad state; every external call (Paddle, Cloudflare
+  Images, WorkOS, Mongo, email) gets a timeout (`AbortController`/`Promise.race`)
+  and a graceful failure path; every async route/page tree has an `error.tsx`
+  (or try/catch) so one bad record degrades instead of 500ing the page. Webhooks
+  must ack (200) after signature verification even when a handler fails, then
+  dead-letter/log — never return 500 into a provider retry loop. Don't collapse
+  malformed JSON into `{}`; surface a distinct, logged error.
+- **N+1 / DB efficiency**: no query-per-item loops — batch with `$in`/`bulkWrite`/
+  aggregation. Project to needed fields, `.lean()` read paths, cursor-paginate
+  unbounded lists, and confirm a `{ workspaceId, ... }` compound index backs each
+  query shape and sort (verify with `explain()` when in doubt).
+- **Auth on every page/route, not just login**: every authenticated page calls
+  `requireOrg()`, every server action `ownerContext()`/`requireRole()`, every
+  route handler an explicit identity or signature check. Never add an
+  authenticated surface that relies on the middleware alone.
+- **Auth token / secret exposure**: never log tokens/sessions/cookies/headers,
+  never return session state to the client or serialize it into props, never put
+  a secret in a `NEXT_PUBLIC_` var. Auth secrets stay server-only.
+- **MongoDB tenant isolation (the RLS-equivalent)**: Mongo has no row-level
+  security — isolation is YOUR code. Every tenant-scoped read filters by
+  `workspaceId`; every mutation by `_id` also filters by `workspaceId`;
+  client-supplied `workspaceId` is never trusted (resolve from session +
+  re-validated active-workspace cookie); public routes resolve
+  `orgSlug -> workspaceId` before any tenant read. See Multi-tenant rules.
 
 ## Multi-tenant rules
 - Never trust client-supplied `workspaceId`
@@ -279,6 +368,8 @@ A task is done only when:
 - Prefer RTK for diff/log/read/test/lint/type/build flows when appropriate
 
 ## References
+- `REUSABLE_CODE.md` (shared component/hook/helper catalog + extraction candidates — read before building shared code; see DRY & code reuse)
+- `docs/backend-audit-findings.md` (known backend lapses to remediate; see Endpoint hardening checklist)
 - `SaaS-Blueprint.md`
 - `docs/portfolio-maker/`
 - `docs/RELEASE-CHECKLIST.md`
