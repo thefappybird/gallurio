@@ -247,4 +247,33 @@ describe("rescheduleInquirySessionAction", () => {
     });
     expect(res).toMatchObject({ error: expect.any(String) });
   });
+
+  // (f) Draft booking sync
+  it("syncs the draft booking sessions, firstSessionStart, and lastSessionEnd after a successful reschedule", async () => {
+    const { inquiry, booking } = await seedInquiry(workspaceId);
+    const res = await rescheduleInquirySessionAction({
+      inquiryId: String(inquiry._id),
+      sessionIndex: 0,
+      startDate: "2035-04-01",
+      startTime: "10:00",
+      endTime: "18:00",
+    });
+    expect(res).toEqual({ ok: true });
+
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking).not.toBeNull();
+
+    // The rescheduled wall-clock time in Asia/Manila is UTC-8 (UTC+8 means -8h offset).
+    // 2035-04-01 10:00 Asia/Manila = 2035-04-01T02:00:00Z
+    // 2035-04-01 18:00 Asia/Manila = 2035-04-01T10:00:00Z
+    const expectedStart = new Date(wallTimeInTzToUtc("2035-04-01", "10:00", "Asia/Manila"));
+    const expectedEnd = new Date(wallTimeInTzToUtc("2035-04-01", "18:00", "Asia/Manila"));
+
+    const sessions = freshBooking?.sessions as { startAt: Date; endAt: Date }[] | undefined;
+    expect(sessions).toHaveLength(1);
+    expect(new Date(sessions![0].startAt).toISOString()).toBe(expectedStart.toISOString());
+    expect(new Date(sessions![0].endAt).toISOString()).toBe(expectedEnd.toISOString());
+    expect(new Date(freshBooking!.firstSessionStart!).toISOString()).toBe(expectedStart.toISOString());
+    expect(new Date(freshBooking!.lastSessionEnd!).toISOString()).toBe(expectedEnd.toISOString());
+  });
 });

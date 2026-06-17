@@ -431,21 +431,44 @@ export async function rescheduleInquirySessionAction(
   }
   if (conflicts) return { error: "conflict" };
 
-  // Idempotent positional $set: same values applied twice yields same state.
+  // Build updated sessions list for draft-booking sync (replace only the target index).
+  const updatedSessions = inquiry.sessions.map(
+    (s: { startDate: string; startTime: string; endTime: string }, i: number) =>
+      i === sessionIndex ? { ...s, startDate, startTime, endTime } : { ...s }
+  );
+  const utcSessions = inquirySessionsToBookingSessions(updatedSessions, tz);
+  const firstSessionStart = utcSessions.reduce((a, b) => (a.startAt < b.startAt ? a : b)).startAt;
+  const lastSessionEnd = utcSessions.reduce((a, b) => (a.endAt > b.endAt ? a : b)).endAt;
+
+  // Idempotent positional $set inside a transaction; also syncs the draft booking.
+  const mongoSession = await mongoose.startSession();
   try {
-    await Inquiry.updateOne(
-      { _id: inquiryId, workspaceId },
-      {
-        $set: {
-          [`sessions.${sessionIndex}.startDate`]: startDate,
-          [`sessions.${sessionIndex}.startTime`]: startTime,
-          [`sessions.${sessionIndex}.endTime`]: endTime,
+    await mongoSession.withTransaction(async () => {
+      await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId },
+        {
+          $set: {
+            [`sessions.${sessionIndex}.startDate`]: startDate,
+            [`sessions.${sessionIndex}.startTime`]: startTime,
+            [`sessions.${sessionIndex}.endTime`]: endTime,
+          },
         },
+        { session: mongoSession }
+      );
+
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId },
+          { $set: { sessions: utcSessions, firstSessionStart, lastSessionEnd } },
+          { session: mongoSession }
+        );
       }
-    );
+    });
   } catch (err) {
-    console.error("[inquiry] reschedule updateOne failed:", err);
+    console.error("[inquiry] reschedule transaction failed:", err);
     return { error: "reschedule_failed" };
+  } finally {
+    await mongoSession.endSession();
   }
 
   revalidatePath("/inquiries");
