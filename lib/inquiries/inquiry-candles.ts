@@ -1,4 +1,4 @@
-﻿import type { CalendarEvent } from "@/app/[locale]/(app)/bookings/_components/booking-calendar";
+import type { CalendarEvent } from "@/app/[locale]/(app)/bookings/_components/booking-calendar";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
