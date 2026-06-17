@@ -94,6 +94,9 @@ export function detectConflictIds(events: CalendarEvent[]): Set<string> {
       const a = events[i];
       const b = events[j];
       if (a.bookingId === b.bookingId) continue;
+      // Two inquiry candles overlapping each other are not a conflict;
+      // only an inquiry vs. a real booking (or booking vs. booking) counts.
+      if (a.kind === "inquiry" && b.kind === "inquiry") continue;
       if (a.start < b.end && b.start < a.end) {
         ids.add(a.id);
         ids.add(b.id);

@@ -6,6 +6,7 @@ import {
   isoDateInTz,
   dateToTzMinutes,
   reconstructSessions,
+  detectConflictIds,
 } from "./calendar-helpers";
 import type { CalendarEvent } from "../booking-calendar";
 
@@ -250,5 +251,102 @@ describe("reconstructSessions", () => {
 
   it("returns empty array for an empty events list", () => {
     expect(reconstructSessions([], "b1")).toHaveLength(0);
+  });
+});
+
+// ── detectConflictIds ─────────────────────────────────────────────────────────
+
+function makeConflictEvent(
+  id: string,
+  bookingId: string,
+  start: Date,
+  end: Date,
+  kind?: 'inquiry' | 'booking'
+): CalendarEvent {
+  return {
+    id,
+    bookingId,
+    teamId: null,
+    title: 'Event',
+    start,
+    end,
+    status: 'booked',
+    clientName: 'Client',
+    clientEmail: null,
+    rangeStart: start,
+    rangeEnd: end,
+    sessionIndex: 0,
+    sessionStartAt: start,
+    sessionEndAt: end,
+    sessionDayCount: 1,
+    sessionPastDayCount: 0,
+    kind,
+  };
+}
+
+describe('detectConflictIds', () => {
+  const t = (h: number, m = 0) => new Date(2026, 4, 25, h, m, 0);
+
+  it('returns empty for non-overlapping events', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(12)),
+      makeConflictEvent('b', 'b2', t(13), t(15)),
+    ];
+    expect(detectConflictIds(events).size).toBe(0);
+  });
+
+  it('flags two overlapping booking events', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14)),
+      makeConflictEvent('b', 'b2', t(12), t(16)),
+    ];
+    const ids = detectConflictIds(events);
+    expect(ids.has('a')).toBe(true);
+    expect(ids.has('b')).toBe(true);
+  });
+
+  it('does NOT flag two overlapping inquiry events as conflicts', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'i1', t(10), t(14), 'inquiry'),
+      makeConflictEvent('b', 'i2', t(12), t(16), 'inquiry'),
+    ];
+    const ids = detectConflictIds(events);
+    expect(ids.size).toBe(0);
+  });
+
+  it('flags an inquiry overlapping a booking', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'i1', t(10), t(14), 'inquiry'),
+      makeConflictEvent('b', 'b1', t(12), t(16)),
+    ];
+    const ids = detectConflictIds(events);
+    expect(ids.has('a')).toBe(true);
+    expect(ids.has('b')).toBe(true);
+  });
+
+  it('does not flag events with the same bookingId', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a1', 'b1', t(10), t(14)),
+      makeConflictEvent('a2', 'b1', t(12), t(16)),
+    ];
+    expect(detectConflictIds(events).size).toBe(0);
+  });
+
+  it('does not flag adjacent-exact boundary (end === start) as conflict', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(12)),
+      makeConflictEvent('b', 'b2', t(12), t(14)),
+    ];
+    expect(detectConflictIds(events).size).toBe(0);
+  });
+
+  it('booking-vs-booking still conflicts when kind is undefined', () => {
+    const events: CalendarEvent[] = [
+      makeConflictEvent('a', 'b1', t(10), t(14), undefined),
+      makeConflictEvent('b', 'b2', t(12), t(16), undefined),
+    ];
+    const ids = detectConflictIds(events);
+    expect(ids.has('a')).toBe(true);
+    expect(ids.has('b')).toBe(true);
   });
 });
