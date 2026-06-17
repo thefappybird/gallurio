@@ -189,6 +189,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   } | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [activityTotal, setActivityTotal] = useState(0);
+  const [actorNames, setActorNames] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<PendingChanges>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -318,13 +319,30 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
           ),
         ]);
       })
-      .then((results) => {
+      .then(async (results) => {
         if (!results || cancelled) return;
         const [b, a] = results;
         setBooking(b);
-        setActivity(a?.entries ?? []);
+        const entries: ActivityEntry[] = a?.entries ?? [];
+        setActivity(entries);
         setActivityTotal(a?.total ?? 0);
         setLoading(false);
+
+        // Resolve actor display names for the initial page of activity entries.
+        const ids = [...new Set(
+          entries
+            .map((e) => e.actorUserId)
+            .filter((id): id is string => !!id)
+        )];
+        if (ids.length > 0) {
+          const params = new URLSearchParams();
+          ids.forEach((id) => params.append("ids", id));
+          const res = await fetch(`/api/users/names?${params.toString()}`);
+          if (!cancelled && res.ok) {
+            const names: Record<string, string> = await res.json();
+            setActorNames(names);
+          }
+        }
       })
       .catch(() => {
         if (cancelled) return;
@@ -1176,6 +1194,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
               bookingId={bookingId}
               activity={activity}
               activityTotal={activityTotal}
+              actorNames={actorNames}
               pending={pending}
               draftSessions={draftSessions}
               pendingSessionEdits={pendingSessionEdits}
@@ -1685,6 +1704,7 @@ function BookingTabs({
   bookingId,
   activity,
   activityTotal,
+  actorNames,
   pending,
   draftSessions,
   pendingSessionEdits,
@@ -1722,6 +1742,7 @@ function BookingTabs({
   bookingId: string;
   activity: ActivityEntry[];
   activityTotal: number;
+  actorNames: Record<string, string>;
   pending: PendingChanges;
   draftSessions: DraftSession[];
   pendingSessionEdits: Record<number, PendingSessionEdit>;
@@ -2275,6 +2296,7 @@ function BookingTabs({
           entries={activity.slice(0, 5)}
           locale={locale}
           currency={currency}
+          actorNames={actorNames}
         />
         {activityTotal > 5 && activity.length > 0 ? (
           <button

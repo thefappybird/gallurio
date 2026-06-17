@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -15,6 +14,7 @@ import {
 } from "@/lib/db/models";
 import { planEntitlements } from "@/lib/plans/entitlements";
 import { TeamsPageClient } from "./_components/teams-page-client";
+import { MemberTeamsView } from "./_components/MemberTeamsView";
 import type { MemberSummary, PendingInviteRow, TeamRow } from "./_types";
 
 export async function generateMetadata({
@@ -37,10 +37,21 @@ export default async function TeamsPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.teams");
 
-  const { role, workspace } = await requireOrg();
-  // Teams management is owner-only; members never see the nav link, and a
-  // direct URL hit must 404 rather than leak the workspace roster.
-  if (role !== "owner") notFound();
+  const { role, workspace, userId } = await requireOrg();
+
+  // Staff members see only their own team memberships.
+  // MemberTeamsView handles its own connectDB() call.
+  if (role !== "owner") {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <MemberTeamsView
+          workosUserId={userId}
+          workspaceId={String(workspace._id)}
+        />
+      </div>
+    );
+  }
 
   await connectDB();
 

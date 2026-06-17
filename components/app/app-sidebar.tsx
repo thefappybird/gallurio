@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
+  BellIcon,
   LayoutDashboardIcon,
   LogOutIcon,
   SettingsIcon,
@@ -13,6 +14,8 @@ import {
   ImageIcon,
   MessageSquareIcon,
 } from "lucide-react";
+import { NotificationPopover } from "@/components/notifications/NotificationPopover";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 import NextImage from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
@@ -24,6 +27,7 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
@@ -44,6 +48,7 @@ const OWNER_NAV = [
 const MEMBER_NAV = [
   { href: "/bookings" as const, labelKey: "bookings", icon: CalendarCheck2Icon },
   { href: "/clients" as const, labelKey: "clients", icon: ContactIcon },
+  { href: "/teams" as const, labelKey: "teams", icon: UsersRoundIcon },
 ];
 
 function getInitials(name: string | null, email: string): string {
@@ -76,8 +81,11 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const pathname = usePathname();
   const t = useTranslations("app.sidebar");
+  const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
+  const { unreadCount } = useNotifications();
   const closeOnNav = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -122,6 +130,32 @@ export function AppSidebar({
       <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
 
       <SidebarContent>
+        {/* Bell / notifications */}
+        <SidebarGroup className="pb-0">
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  render={<button type="button" />}
+                  onClick={() => setBellOpen((v) => !v)}
+                  tooltip={tNotif("bell")}
+                  className="group-data-[collapsible=icon]:mx-auto"
+                  aria-expanded={bellOpen}
+                  aria-label={tNotif("bell")}
+                >
+                  <BellIcon className="size-5! shrink-0" />
+                  <span>{tNotif("bell")}</span>
+                </SidebarMenuButton>
+                {unreadCount > 0 && (
+                  <SidebarMenuBadge>{unreadCount > 99 ? "99+" : unreadCount}</SidebarMenuBadge>
+                )}
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -198,6 +232,7 @@ export function AppSidebar({
       </SidebarFooter>
 
       <SignOutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} />
+      <NotificationPopover open={bellOpen} onClose={() => setBellOpen(false)} />
     </Sidebar>
   );
 }

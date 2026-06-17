@@ -1528,6 +1528,41 @@
           "error": "Something went wrong. Please try again."
         }
       }
+    },
+    "notifications": {
+      "bell": "Notifications",
+      "popoverTitle": "Recent Notifications",
+      "markAllRead": "Mark all read",
+      "seeAll": "See all notifications",
+      "empty": "You're all caught up",
+      "pageTitle": "Notifications",
+      "loadMore": "Load more",
+      "types": {
+        "inquiry.created": {
+          "title": "New inquiry received",
+          "body": "You have a new inquiry from {clientName}."
+        },
+        "booking.team_assigned": {
+          "title": "New booking assigned to your team",
+          "body": "{assignerName} assigned a booking to your team."
+        },
+        "booking.status_changed": {
+          "title": "Booking status updated",
+          "body": "{actorName} changed a booking status to {newStatus}."
+        },
+        "team.invitation": {
+          "title": "You've been invited to a team",
+          "body": "{inviterName} invited you to join {teamName}."
+        },
+        "team.removed": {
+          "title": "Removed from team",
+          "body": "You have been removed from {teamName}."
+        },
+        "team.deleted": {
+          "title": "Team disbanded",
+          "body": "{teamName} has been deleted."
+        }
+      }
     }
   },
   "common": {
