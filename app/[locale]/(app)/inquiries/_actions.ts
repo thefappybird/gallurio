@@ -12,6 +12,7 @@ import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type Inqui
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
+import { sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 
 // The status a draft is promoted to on approval. Approval skips the old
 // "inquiry" pipeline state and lands directly on "booked". Drafts are the
@@ -67,7 +68,7 @@ export async function approveInquiryBookingAction(
   const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId });
   if (!inquiry) return { error: "not_found" };
 
-  // Idempotency: already approved → return the existing booking, do nothing.
+  // Idempotency: already approved -> return the existing booking, do nothing.
   if (isBookedInquiryStatus(inquiry.status) && inquiry.convertedBookingId) {
     return { ok: true, bookingId: inquiry.convertedBookingId.toString(), idempotent: true };
   }
@@ -88,8 +89,7 @@ export async function approveInquiryBookingAction(
   try {
     await session.withTransaction(async () => {
       // Promote the draft. The `status: "draft"` guard makes the write a no-op
-      // if a concurrent approval already promoted it — belt-and-suspenders with
-      // the idempotency check above.
+      // if a concurrent approval already promoted it.
       const promoted = await Booking.updateOne(
         { _id: booking._id, workspaceId, status: "draft" },
         {
@@ -103,14 +103,8 @@ export async function approveInquiryBookingAction(
         { session }
       );
 
-      // A concurrent approval already promoted this draft — skip recording so
-      // the client isn't double-credited. Returning commits this (empty) txn;
-      // the caller still resolves ok since the booking is promoted either way.
       if (promoted.matchedCount === 0) return;
 
-      // Now the booking is real, fold it into the client's financial footprint
-      // (mirrors the manual booking-create flow — drafts are deliberately not
-      // recorded, so this is the first and only time this booking is counted).
       await recordBookingForClient({
         workspaceId,
         clientId: booking.clientId,
@@ -270,9 +264,6 @@ export async function editInquirySessionsAction(
 
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
 
-  // Note: conflict check runs outside the transaction (TOCTOU window).
-  // Matches existing booking wizard behavior; server-side check reduces risk significantly.
-  // Server-side conflict re-check (authoritative)
   for (const s of parsed.data.sessions) {
     const shifts = await getShiftsOnDate(workspaceId, s.startDate, tz, {
       excludeId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
@@ -284,7 +275,6 @@ export async function editInquirySessionsAction(
     }
   }
 
-  // Build UTC sessions for the draft booking
   const utcSessions = inquirySessionsToBookingSessions(parsed.data.sessions, tz);
   const firstSessionStart = utcSessions.reduce((a, b) => (a.startAt < b.startAt ? a : b)).startAt;
   const lastSessionEnd = utcSessions.reduce((a, b) => (a.endAt > b.endAt ? a : b)).endAt;
@@ -367,5 +357,97 @@ export async function updateInquiryPhoneAction(
   });
 
   revalidateInquiry(inquiryId);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// rescheduleInquirySessionAction
+// ---------------------------------------------------------------------------
+
+const rescheduleSessionSchema = z
+  .object({
+    inquiryId: z.string().min(1),
+    sessionIndex: z.number().int().min(0),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid_date"),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),
+  })
+  .refine(
+    (v) => {
+      const [sh, sm] = v.startTime.split(":").map(Number);
+      const [eh, em] = v.endTime.split(":").map(Number);
+      return eh * 60 + em > sh * 60 + sm;
+    },
+    { message: "end_before_start", path: ["endTime"] }
+  );
+
+export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
+
+/**
+ * Reschedule a single session on a "new" inquiry.
+ * Blocked if the new slot conflicts with an existing real booking.
+ * Idempotent: applying the same payload twice leaves state unchanged.
+ */
+export async function rescheduleInquirySessionAction(
+  input: RescheduleSessionInput
+): Promise<{ ok: true } | { error: string }> {
+  const ctx = await requireOrg();
+
+  const parsed = rescheduleSessionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.errors[0]?.message ?? "invalid_input" };
+  }
+
+  await connectDB();
+  const workspaceId = ctx.workspace._id;
+  const { inquiryId, sessionIndex, startDate, startTime, endTime } = parsed.data;
+
+  // Tenant isolation: workspaceId always from session, never from client input.
+  const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId }).lean();
+  if (!inquiry) return { error: "not_found" };
+
+  // Only "new" inquiries are reschedulable.
+  if (inquiry.status !== "new") return { error: "not_reschedulable" };
+
+  if (sessionIndex >= inquiry.sessions.length) {
+    return { error: "session_index_out_of_range" };
+  }
+
+  const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+
+  // Conflict check: block if any real booking occupies the new slot.
+  // Exclude own draft booking to avoid self-conflict.
+  let conflicts: boolean;
+  try {
+    conflicts = await sessionConflictsWithBookings(
+      workspaceId,
+      tz,
+      { startDate, startTime, endTime },
+      inquiry.draftBookingId
+    );
+  } catch (err) {
+    console.error("[inquiry] reschedule conflict check failed:", err);
+    return { error: "conflict_check_failed" };
+  }
+  if (conflicts) return { error: "conflict" };
+
+  // Idempotent positional $set: same values applied twice yields same state.
+  try {
+    await Inquiry.updateOne(
+      { _id: inquiryId, workspaceId },
+      {
+        $set: {
+          [`sessions.${sessionIndex}.startDate`]: startDate,
+          [`sessions.${sessionIndex}.startTime`]: startTime,
+          [`sessions.${sessionIndex}.endTime`]: endTime,
+        },
+      }
+    );
+  } catch (err) {
+    console.error("[inquiry] reschedule updateOne failed:", err);
+    return { error: "reschedule_failed" };
+  }
+
+  revalidatePath("/inquiries");
   return { ok: true };
 }

@@ -78,7 +78,7 @@ export async function computeInquiryConflicts(
     .select("sessions")
     .lean();
 
-  // Build a map from local date (YYYY-MM-DD in tz) → shift-time pairs.
+  // Build a map from local date (YYYY-MM-DD in tz) -> shift-time pairs.
   const shiftsByDate = new Map<string, { shiftStart: string; shiftEnd: string }[]>();
 
   for (const booking of bookings) {
@@ -100,7 +100,7 @@ export async function computeInquiryConflicts(
       shiftsByDate.set(startLocalDate, startEntry);
 
       // If the session spans midnight into a different local date, also add
-      // a sentinel entry for that end date covering 00:00 → shiftEnd.
+      // a sentinel entry for that end date covering 00:00 -> shiftEnd.
       if (endLocalDate !== startLocalDate) {
         const endEntry = shiftsByDate.get(endLocalDate) ?? [];
         endEntry.push({ shiftStart: "00:00", shiftEnd });
@@ -124,4 +124,74 @@ export async function computeInquiryConflicts(
   }
 
   return result;
+}
+
+export type SingleSession = {
+  startDate: string; // YYYY-MM-DD
+  startTime: string; // HH:MM wall-clock
+  endTime: string;   // HH:MM wall-clock
+};
+
+/**
+ * Returns true when the given single session conflicts with any existing
+ * (non-cancelled, non-draft) booking in the workspace.
+ *
+ * Mirrors computeInquiryConflicts for a single session without the
+ * per-inquiry wrapper. Used by rescheduleInquirySessionAction.
+ *
+ * Pass excludeBookingId to skip the inquiry's own draft booking from
+ * the conflict check (avoids self-conflict on re-schedule).
+ */
+export async function sessionConflictsWithBookings(
+  workspaceId: unknown,
+  tz: string,
+  session: SingleSession,
+  excludeBookingId?: unknown
+): Promise<boolean> {
+  const { startDate, startTime, endTime } = session;
+
+  const aStart = toMins(startTime);
+  const aEnd = toMins(endTime);
+  if (aStart === null || aEnd === null) return false;
+
+  const utcDayStart = new Date(wallTimeInTzToUtc(startDate, "00:00", tz));
+  const utcDayEnd = dayBoundInTz(startDate, tz, 23, 59, 59, 999);
+
+  await connectDB();
+
+  const query: Record<string, unknown> = {
+    workspaceId,
+    status: { $nin: ["cancelled", "draft"] },
+    firstSessionStart: { $lte: utcDayEnd },
+    lastSessionEnd: { $gte: utcDayStart },
+  };
+  if (excludeBookingId) {
+    query._id = { $ne: excludeBookingId };
+  }
+
+  const bookings = await Booking.find(query).select("sessions").lean();
+
+  const shifts: { shiftStart: string; shiftEnd: string }[] = [];
+  for (const booking of bookings) {
+    const sessions = booking.sessions as { startAt: Date; endAt: Date }[] | undefined;
+    if (!sessions) continue;
+    for (const s of sessions) {
+      const startAt = new Date(s.startAt);
+      const endAt = new Date(s.endAt);
+      const startLocalDate = isoDateInTz(startAt, tz);
+      const endLocalDate = isoDateInTz(endAt, tz);
+      const shiftStart = formatHHMM(startAt, tz);
+      const shiftEnd = formatHHMM(endAt, tz);
+
+      if (startLocalDate === startDate) {
+        shifts.push({ shiftStart, shiftEnd });
+      }
+      // Midnight-spanning session ending on startDate
+      if (endLocalDate === startDate && endLocalDate !== startLocalDate) {
+        shifts.push({ shiftStart: "00:00", shiftEnd });
+      }
+    }
+  }
+
+  return hasOverlap(shifts, aStart, aEnd);
 }
