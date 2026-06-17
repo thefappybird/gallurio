@@ -87,7 +87,7 @@ Composed, app-specific shared components.
 | `lib/utils/timezone.ts` | `wallTimeInTzToUtc` | `(date, time, tz) => ISO` | Wall-clock in IANA tz → UTC ISO |
 | `lib/utils/timezone.ts` | `dayBoundInTz` | `(dateStr, tz, h, min, sec, ms) => Date` | DST-aware day-bound UTC Date |
 | `lib/utils/timezones.ts` | `formatUtcOffset`, `TIMEZONE_GROUPS` | — | Offset formatting; grouped tz options |
-| `lib/utils/time-format.ts` | `formatTime`, `formatTimeRange`, `DEFAULT_TIME_MODE`, `TIME_INPUT_LANG` | — | Display Date/time range as 24h/12h |
+| `lib/utils/time-format.ts` | `formatTime`, `formatTimeRange`, `formatRangeFromParts`, `DEFAULT_TIME_MODE`, `TIME_INPUT_LANG` | — | Display Date/time range as 24h/12h; `formatRangeFromParts(startHHMM, endHHMM, mode)` is the shared primitive both `formatTimeRange` and `formatSessionTimeRange` delegate to — use it when you already have wall-clock HH:MM strings |
 | `lib/utils/get-user-time-format.ts` | `getUserTimeFormat` | `() => Promise<TimeMode>` | Read user time-format pref from cookie (fallback 24h) |
 | `lib/pagination.ts` | `PAGE_SIZE_OPTIONS` | `[10,20,30,50]` | Shared page sizes (client + server) |
 
@@ -97,6 +97,11 @@ Composed, app-specific shared components.
 | `lib/bookings/candle-split.ts` | `splitSessionIntoCandles` | Split multi-day session into per-day candles; overnight + past-day handling |
 | `lib/bookings/session-edits.ts` | `startOfDay`, `endOfDay`, `countDays`, `countPastDays`, `splitDayOut`, `shiftSession`, `shiftSessionTimes` | Session date math + edit operations (past/future split) |
 | `lib/bookings/session-validation.ts` | `sessionsAreSameDayInTz` | Verify session start/end same calendar day in workspace tz |
+
+### `lib/inquiries/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/inquiries/session-time.ts` | `formatSessionTimeRange(session, mode, _tz)` | Format inquiry session times (`{ startTime, endTime }` HH:MM wall-clock strings) as a display range; delegates to `formatRangeFromParts` — structurally guaranteed to match `formatTimeRange` output for the same wall-clock time (fixes calendar↔modal mismatch #14). Pass workspace tz for documentation clarity but it is intentionally unused. |
 
 ### `lib/auth/` (see also CLAUDE.md → Auth & tenancy)
 | Import | Export | Purpose |
