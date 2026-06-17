@@ -2055,44 +2055,43 @@ function BookingTabs({
             registerHandle={registerFieldHandle}
             onEditingChange={onFieldEditingChange}
           />
-
-          {/* Location — moved from sessions tab */}
-          <SectionHeader label={tFields("location")} />
-          <div className="flex flex-col gap-1 py-1.5">
-            {readOnly ? (
-              <LocationReadOnly
-                value={{
-                  address: booking.location?.address ?? "",
-                  lat: booking.location?.lat ?? null,
-                  lng: booking.location?.lng ?? null,
-                }}
-              />
-            ) : (
-              <LocationPicker
-                editable
-                value={{
-                  address:
-                    "location.address" in pending
-                      ? ((pending["location.address"] as string) ?? "")
-                      : (booking.location?.address ?? ""),
-                  lat:
-                    "location.lat" in pending
-                      ? (pending["location.lat"] as number | null)
-                      : (booking.location?.lat ?? null),
-                  lng:
-                    "location.lng" in pending
-                      ? (pending["location.lng"] as number | null)
-                      : (booking.location?.lng ?? null),
-                }}
-                onChange={(v) => {
-                  onCommit("location.address", v.address);
-                  onCommit("location.lat", v.lat);
-                  onCommit("location.lng", v.lng);
-                }}
-                disabled={disabled}
-              />
-            )}
-          </div>
+        </div>
+        {/* Location — moved from sessions tab */}
+        <SectionHeader label={tFields("location")} />
+        <div className="flex flex-col gap-1 py-1.5">
+          {readOnly ? (
+            <LocationReadOnly
+              value={{
+                address: booking.location?.address ?? "",
+                lat: booking.location?.lat ?? null,
+                lng: booking.location?.lng ?? null,
+              }}
+            />
+          ) : (
+            <LocationPicker
+              editable
+              value={{
+                address:
+                  "location.address" in pending
+                    ? ((pending["location.address"] as string) ?? "")
+                    : (booking.location?.address ?? ""),
+                lat:
+                  "location.lat" in pending
+                    ? (pending["location.lat"] as number | null)
+                    : (booking.location?.lat ?? null),
+                lng:
+                  "location.lng" in pending
+                    ? (pending["location.lng"] as number | null)
+                    : (booking.location?.lng ?? null),
+              }}
+              onChange={(v) => {
+                onCommit("location.address", v.address);
+                onCommit("location.lat", v.lat);
+                onCommit("location.lng", v.lng);
+              }}
+              disabled={disabled}
+            />
+          )}
         </div>
       </TabsPanel>
 
