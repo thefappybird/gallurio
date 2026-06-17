@@ -48,6 +48,29 @@ export function formatTime(date: Date, mode: TimeMode = DEFAULT_TIME_MODE, timeZ
   return FORMATTERS[mode].format(date);
 }
 
+/**
+ * Shared formatting core: accepts wall-clock "HH:MM" strings and returns a
+ * formatted range. Both `formatTimeRange` (after tz-extracting wall-clock parts)
+ * and `formatSessionTimeRange` delegate here — one Intl code path, no duplication.
+ *
+ * Pins the times at UTC epoch so the Intl formatter (set to "UTC") reads
+ * exactly the hours/minutes supplied — no host-tz shift.
+ */
+export function formatRangeFromParts(
+  startHHMM: string,
+  endHHMM: string,
+  mode: TimeMode
+): string {
+  function toUTCDate(hhmm: string): Date {
+    const [hh, mm] = hhmm.split(":").map(Number);
+    const d = new Date(0);
+    d.setUTCHours(hh, mm, 0, 0);
+    return d;
+  }
+  const fmt = makeFormatter(mode, "UTC");
+  return `${fmt.format(toUTCDate(startHHMM))} – ${fmt.format(toUTCDate(endHHMM))}`;
+}
+
 /** Format a time range as "HH:MM – HH:MM" or "h:MM AM – h:MM PM" (en-dash separator).
  *  Pass `timeZone` (IANA) to get a timezone-correct display instead of runtime-local. */
 export function formatTimeRange(
