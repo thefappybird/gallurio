@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "The CRM for event businesses.",
@@ -1199,7 +1199,12 @@
       "calendar": {
         "legendInquiry": "Inquiry",
         "legendBooking": "Booking",
-        "empty": "No inquiries or bookings to show."
+        "empty": "No inquiries or bookings to show.",
+        "filters": {
+          "new": "New",
+          "booked": "Booked",
+          "conflicted": "Conflicted"
+        }
       }
     },
     "pageBuilder": {

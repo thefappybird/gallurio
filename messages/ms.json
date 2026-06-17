@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "CRM untuk perniagaan acara.",
@@ -1199,7 +1199,12 @@
       "calendar": {
         "legendInquiry": "Pertanyaan",
         "legendBooking": "Tempahan",
-        "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan."
+        "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan.",
+        "filters": {
+          "new": "Baharu",
+          "booked": "Ditempah",
+          "conflicted": "Berkonflik"
+        }
       }
     },
     "pageBuilder": {

@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "Ang CRM para sa mga event business.",
@@ -1199,7 +1199,12 @@
       "calendar": {
         "legendInquiry": "Katanungan",
         "legendBooking": "Booking",
-        "empty": "Walang mga katanungan o booking na ipapakita."
+        "empty": "Walang mga katanungan o booking na ipapakita.",
+        "filters": {
+          "new": "Bago",
+          "booked": "Naka-book",
+          "conflicted": "May Salungatan"
+        }
       }
     },
     "pageBuilder": {
