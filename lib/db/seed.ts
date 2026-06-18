@@ -4,14 +4,35 @@
  * Usage:  pnpm seed
  *
  * WARNING: this drops the tenant-scoped collections (workspaces, users, clients,
- * bookings, inquiries, gallery_collections, gallery_items, transactions, activity_logs).
+ * bookings, inquiries, gallery_collections, gallery_items, transactions, activity_logs,
+ * teams, teammemberships, invitations, notifications).
  * Never run against production.
  *
- * By default the two seeded workspaces use placeholder workosUserId values
- * (user_demo_*). For a one-step reset you can sign in as them: set
- * SEED_OWNER_WORKOS_USER_ID (your real WorkOS user_... id) in .env.local and
- * both demo workspaces are owned by you, so AuthKit sign-in lands straight in a
- * populated workspace. Optional: SEED_OWNER_EMAIL, SEED_OWNER_NAME.
+ * Three dev accounts share the PRIMARY workspace (sarah-bell-photo) so team +
+ * notification flows are testable together. All three accounts must exist as real
+ * WorkOS users so AuthKit sign-in works — the seed wires their WorkOS user IDs
+ * directly into User.workosUserId, which is how ensureUser() identifies returning
+ * users at sign-in time.
+ *
+ * Required env vars (set in .env.local):
+ *
+ *   SEED_OWNER_WORKOS_USER_ID   owner's real WorkOS user_... id
+ *   SEED_OWNER_EMAIL            owner email
+ *   SEED_OWNER_NAME             owner display name (optional)
+ *   SEED_OWNER_PASSWORD         Playwright reads this to sign in as owner
+ *
+ *   SEED_STAFF_WORKOS_USER_ID   staff member's WorkOS user_... id
+ *   SEED_STAFF_EMAIL            staff member email
+ *   SEED_STAFF_NAME             staff member display name (optional)
+ *   SEED_STAFF_PASSWORD         Playwright reads this to sign in as staff
+ *
+ *   SEED_LEAD_WORKOS_USER_ID    team lead's WorkOS user_... id
+ *   SEED_LEAD_EMAIL             team lead email
+ *   SEED_LEAD_NAME              team lead display name (optional)
+ *   SEED_LEAD_PASSWORD          Playwright reads this to sign in as lead
+ *
+ * Staff and lead accounts are skipped gracefully when their *_WORKOS_USER_ID and
+ * *_EMAIL are both absent, so the seed still runs with only the owner configured.
  *
  * Fixtures are deterministic — a seeded PRNG (mulberry32) means re-running gives
  * identical data, which keeps screenshots and dashboard widgets stable.
@@ -33,8 +54,10 @@ import {
   Transaction,
   ActivityLog,
   Team,
+  TeamMembership,
   TEAM_COLOR_PALETTE,
 } from "./models";
+import { Notification } from "./models/Notification";
 import { recordBookingForClient } from "./clientTransactions";
 import { buildSeedGalleryItem } from "./seedGalleryItem";
 import type { BookingStatus } from "@/lib/validators/booking";
@@ -110,6 +133,7 @@ async function dropTenantCollections() {
     "teams",
     "teammemberships",
     "invitations",
+    "notifications",
   ];
   for (const c of collections) {
     if (tenantNames.includes(c.collectionName)) {
@@ -430,7 +454,7 @@ async function seedWorkspace(
   console.log(
     `  ✓ ${w.slug} — ${clients.length} clients, ${bookings.length} bookings (+ transactions), ${inquiryPayloads.length} inquiries`
   );
-  return workspace;
+  return { workspace, mainTeam, bookings };
 }
 
 async function syncAllIndexes() {
@@ -453,21 +477,127 @@ type OwnerInfo = {
   }>;
 };
 
+/** Build seed notification docs for a user in the primary workspace. */
+function buildSeedNotifications(opts: {
+  workspaceId: mongoose.Types.ObjectId;
+  recipientWorkosUserId: string;
+  triggeredByWorkosUserId: string;
+  bookingIds: mongoose.Types.ObjectId[];
+  primaryBookingId: mongoose.Types.ObjectId;
+  teamId: mongoose.Types.ObjectId;
+  now: Date;
+}) {
+  const {
+    workspaceId,
+    recipientWorkosUserId,
+    triggeredByWorkosUserId,
+    bookingIds,
+    primaryBookingId,
+    teamId,
+    now,
+  } = opts;
+
+  const dayAgo = (d: number) => new Date(now.getTime() - d * 86_400_000);
+
+  return [
+    {
+      workspaceId,
+      recipientWorkosUserId,
+      type: "inquiry.created" as const,
+      entityId: new mongoose.Types.ObjectId(),
+      entityType: "inquiry" as const,
+      triggeredByWorkosUserId,
+      read: false,
+      readAt: null,
+      title: "New inquiry received",
+      body: "You have a new inquiry from Emma Carter.",
+      href: "/en/inquiries",
+      createdAt: dayAgo(1),
+    },
+    {
+      workspaceId,
+      recipientWorkosUserId,
+      type: "booking.team_assigned" as const,
+      entityId: primaryBookingId,
+      entityType: "booking" as const,
+      triggeredByWorkosUserId,
+      read: false,
+      readAt: null,
+      title: "New booking assigned to your team",
+      body: "Owner assigned a booking to your team.",
+      href: `/en/bookings?detail=${primaryBookingId}`,
+      createdAt: dayAgo(2),
+    },
+    {
+      workspaceId,
+      recipientWorkosUserId,
+      type: "booking.status_changed" as const,
+      entityId: bookingIds[1] ?? primaryBookingId,
+      entityType: "booking" as const,
+      triggeredByWorkosUserId,
+      read: false,
+      readAt: null,
+      title: "Booking status updated",
+      body: "Owner changed a booking status to completed.",
+      href: `/en/bookings?detail=${bookingIds[1] ?? primaryBookingId}`,
+      createdAt: dayAgo(3),
+    },
+    {
+      workspaceId,
+      recipientWorkosUserId,
+      type: "team.invitation" as const,
+      entityId: teamId,
+      entityType: "team" as const,
+      triggeredByWorkosUserId,
+      read: true,
+      readAt: dayAgo(4),
+      title: "You've been invited to a team",
+      body: "Owner invited you to join Main.",
+      href: "/en/teams",
+      createdAt: dayAgo(5),
+    },
+    {
+      workspaceId,
+      recipientWorkosUserId,
+      type: "booking.status_changed" as const,
+      entityId: bookingIds[2] ?? primaryBookingId,
+      entityType: "booking" as const,
+      triggeredByWorkosUserId,
+      read: true,
+      readAt: dayAgo(6),
+      title: "Booking status updated",
+      body: "Owner changed a booking status to booked.",
+      href: `/en/bookings?detail=${bookingIds[2] ?? primaryBookingId}`,
+      createdAt: dayAgo(7),
+    },
+  ];
+}
+
 async function main() {
   if (process.env.NODE_ENV === "production") {
     throw new Error("Refusing to seed in NODE_ENV=production");
   }
 
-  // Optional: wire the demo data to your real WorkOS identity so you can sign in
-  // and immediately own the seeded workspaces. Set these in .env.local:
-  //   SEED_OWNER_WORKOS_USER_ID  (your real user_... id from WorkOS / AuthKit)
-  //   SEED_OWNER_EMAIL           (optional; re-synced from WorkOS on first sign-in)
-  //   SEED_OWNER_NAME            (optional display name)
-  // When SEED_OWNER_WORKOS_USER_ID is set, ALL demo workspaces are owned by you.
-  // When unset, the per-workspace placeholder ids (user_demo_*) are used.
+  // --- Owner account (required for a fully functional dev workspace) --------
+  // SEED_OWNER_WORKOS_USER_ID must be the real WorkOS user_... id because
+  // ensureUser() (the JIT-provisioning hook) matches on workosUserId at sign-in;
+  // if the ids don't match, the user lands in onboarding instead of the workspace.
   const sharedOwnerId = process.env.SEED_OWNER_WORKOS_USER_ID?.trim() || null;
   const sharedOwnerEmail = process.env.SEED_OWNER_EMAIL?.trim() || null;
   const sharedOwnerName = process.env.SEED_OWNER_NAME?.trim() || null;
+
+  // --- Staff member (optional — skip if env vars absent) -------------------
+  const staffId = process.env.SEED_STAFF_WORKOS_USER_ID?.trim() || null;
+  const staffEmail = process.env.SEED_STAFF_EMAIL?.trim() || null;
+  const staffName = process.env.SEED_STAFF_NAME?.trim() || "Staff Member";
+  const seedStaff = !!(staffId && staffEmail);
+
+  // --- Team lead (optional — skip if env vars absent) ----------------------
+  const leadId = process.env.SEED_LEAD_WORKOS_USER_ID?.trim() || null;
+  const leadEmail = process.env.SEED_LEAD_EMAIL?.trim() || null;
+  const leadName = process.env.SEED_LEAD_NAME?.trim() || "Team Lead";
+  const seedLead = !!(leadId && leadEmail);
+
   const now = new Date();
 
   console.log("→ Connecting to MongoDB…");
@@ -485,10 +615,22 @@ async function main() {
   console.log("→ Seeding demo workspaces…");
   const owners = new Map<string, OwnerInfo>();
 
+  // Track primary workspace + team for staff/lead wiring (index 0 = sarah-bell-photo).
+  let primaryWorkspaceId: mongoose.Types.ObjectId | null = null;
+  let primaryTeamId: mongoose.Types.ObjectId | null = null;
+  let primaryBookingIds: mongoose.Types.ObjectId[] = [];
+
   for (let i = 0; i < DEMO_WORKSPACES.length; i += 1) {
     const w = DEMO_WORKSPACES[i];
     const ownerUserId = sharedOwnerId ?? w.ownerUserId;
-    const workspace = await seedWorkspace(w, i, ownerUserId);
+    const { workspace, mainTeam, bookings } = await seedWorkspace(w, i, ownerUserId);
+
+    if (i === 0) {
+      // The first workspace (sarah-bell-photo) is the shared "dev" workspace.
+      primaryWorkspaceId = workspace._id;
+      primaryTeamId = mainTeam._id;
+      primaryBookingIds = bookings.map((b) => b._id as mongoose.Types.ObjectId);
+    }
 
     let owner = owners.get(ownerUserId);
     if (!owner) {
@@ -520,14 +662,114 @@ async function main() {
     });
   }
 
-  console.log("\n✓ Seed complete.");
-  if (sharedOwnerId) {
-    console.log(
-      `\nBoth demo workspaces are owned by SEED_OWNER_WORKOS_USER_ID=${sharedOwnerId}.`
+  // --- Add owner to primary team as lead ------------------------------------
+  const ownerWorkosId = sharedOwnerId ?? DEMO_WORKSPACES[0].ownerUserId;
+  if (primaryWorkspaceId && primaryTeamId) {
+    await TeamMembership.create({
+      workspaceId: primaryWorkspaceId,
+      teamId: primaryTeamId,
+      workosUserId: ownerWorkosId,
+      role: "lead",
+    });
+    let memberCount = 1;
+
+    // --- Staff member -------------------------------------------------------
+    if (seedStaff) {
+      console.log("→ Creating staff member user…");
+      // workosUserId must match the real WorkOS user_... id so JIT sign-in
+      // recognises the returning user and finds their pre-seeded membership.
+      await User.create({
+        workosUserId: staffId,
+        email: staffEmail,
+        name: staffName,
+        memberships: [{ workspaceId: primaryWorkspaceId, role: "staff", lastAccessedAt: now }],
+        onboardingStep: "done",
+        onboardingCompletedAt: now,
+      });
+      await TeamMembership.create({
+        workspaceId: primaryWorkspaceId,
+        teamId: primaryTeamId,
+        workosUserId: staffId,
+        role: "member",
+      });
+      memberCount += 1;
+    }
+
+    // --- Team lead ----------------------------------------------------------
+    if (seedLead) {
+      console.log("→ Creating team lead user…");
+      await User.create({
+        workosUserId: leadId,
+        email: leadEmail,
+        name: leadName,
+        memberships: [{ workspaceId: primaryWorkspaceId, role: "staff", lastAccessedAt: now }],
+        onboardingStep: "done",
+        onboardingCompletedAt: now,
+      });
+      await TeamMembership.create({
+        workspaceId: primaryWorkspaceId,
+        teamId: primaryTeamId,
+        workosUserId: leadId,
+        role: "lead",
+      });
+      memberCount += 1;
+    }
+
+    // Reflect actual team roster in memberCount.
+    await Team.updateOne({ _id: primaryTeamId }, { $set: { memberCount } });
+
+    // --- Seed notifications so the bell/badge/modal have real content -------
+    console.log("→ Seeding notifications…");
+    const notificationDocs: ReturnType<typeof buildSeedNotifications> = [];
+    const primaryBookingId = primaryBookingIds[0] ?? new mongoose.Types.ObjectId();
+
+    // Owner notifications (triggered by a placeholder system actor).
+    notificationDocs.push(
+      ...buildSeedNotifications({
+        workspaceId: primaryWorkspaceId,
+        recipientWorkosUserId: ownerWorkosId,
+        triggeredByWorkosUserId: staffId ?? "system",
+        bookingIds: primaryBookingIds,
+        primaryBookingId,
+        teamId: primaryTeamId,
+        now,
+      })
     );
-    console.log("Sign in via AuthKit as that user to land in Sarah Bell Photography;");
-    console.log("use the workspace switcher to reach Rosewood Venue.");
-  } else {
+
+    // Staff notifications (triggered by owner).
+    if (seedStaff && staffId) {
+      notificationDocs.push(
+        ...buildSeedNotifications({
+          workspaceId: primaryWorkspaceId,
+          recipientWorkosUserId: staffId,
+          triggeredByWorkosUserId: ownerWorkosId,
+          bookingIds: primaryBookingIds,
+          primaryBookingId,
+          teamId: primaryTeamId,
+          now,
+        })
+      );
+    }
+
+    if (notificationDocs.length > 0) {
+      await Notification.insertMany(notificationDocs);
+      console.log(`  ✓ ${notificationDocs.length} notification docs inserted`);
+    }
+  }
+
+  const ownerEmailDisplay = sharedOwnerEmail ?? DEMO_WORKSPACES[0].ownerEmail;
+
+  console.log("\n✓ Seed complete.\n");
+  console.log("  Workspace : sarah-bell-photo (primary dev workspace)");
+  console.log(`  Owner     : ${ownerEmailDisplay} (SEED_OWNER_WORKOS_USER_ID=${ownerWorkosId})`);
+  if (seedStaff) console.log(`  Staff     : ${staffEmail}`);
+  if (seedLead)  console.log(`  Lead      : ${leadEmail}`);
+  if (!seedStaff && !seedLead) {
+    console.log("  Staff/Lead: not configured (set SEED_STAFF_* / SEED_LEAD_* to add them)");
+  }
+  console.log("  Turnstile : bypassed in NODE_ENV=development (no challenge required)");
+
+  if (!sharedOwnerId) {
     console.log("\nNote: owner WorkOS user IDs are placeholders (user_demo_*), so you");
     console.log("cannot sign in as these workspaces yet. For a one-step reset, set");
     console.log("SEED_OWNER_WORKOS_USER_ID (your real user_... id) in .env.local, then re-run.");

@@ -5,6 +5,18 @@ import { Server as SocketIOServer } from 'socket.io'
 import { setIO } from './lib/sockets/io'
 import { verifySocketToken } from './lib/sockets/auth'
 
+// Ensure NODE_ENV is set so that downstream code (e.g. Turnstile dev bypass,
+// Next.js internals) can distinguish dev from prod. The pnpm scripts set
+// NODE_ENV explicitly via cross-env ("dev" => "development", "start" =>
+// "production"). This fallback only fires for a bare `tsx server.ts`
+// invocation (e.g. a CI script that forgot to export NODE_ENV). It MUST
+// default to "production" so the Turnstile bypass can never accidentally
+// enable. NODE_ENV is typed read-only in @types/node; we set it early via the
+// index-signature cast before Next.js reads it.
+if (!(process.env as Record<string, string | undefined>)["NODE_ENV"]) {
+  (process.env as Record<string, string>)["NODE_ENV"] = "production"
+}
+
 const dev = process.env.NODE_ENV !== 'production'
 const port = parseInt(process.env.PORT ?? '3000', 10)
 const app = next({ dev })

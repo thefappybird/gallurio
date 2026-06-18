@@ -55,3 +55,6 @@ skills-lock.json
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Playwright MCP browser artifacts (screenshots, snapshots, console logs)
+.playwright-mcp/
