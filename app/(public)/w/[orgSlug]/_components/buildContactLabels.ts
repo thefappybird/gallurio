@@ -56,6 +56,7 @@ export function buildContactLabels(t: Translator, tLocationPicker?: Translator):
       submitting: t("submitting"),
       errorGeneric: t("errorGeneric"),
       requiredHint: t("requiredHint"),
+      locationRequired: t("locationRequired"),
       locationPicker: {
         searchPlaceholder: tp("searchPlaceholder"),
         searching: tp("searching"),

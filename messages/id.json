@@ -1789,7 +1789,8 @@
         "anniversary": "Hari jadi",
         "other": "Lainnya"
       },
-      "location": "Lokasi (opsional)",
+      "location": "Lokasi",
+      "locationRequired": "Silakan pilih lokasi sebelum mengirim.",
       "message": "Ceritakan lebih lanjut",
       "messagePlaceholder": "Bagikan detail acara Anda…",
       "submit": "Kirim pertanyaan",

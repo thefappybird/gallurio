@@ -1789,7 +1789,8 @@
         "anniversary": "Anibersaryo",
         "other": "Iba pa"
       },
-      "location": "Lokasyon (opsyonal)",
+      "location": "Lokasyon",
+      "locationRequired": "Pumili ng lokasyon bago magsumite.",
       "message": "Sabihin pa sa amin",
       "messagePlaceholder": "Ibahagi ang mga detalye ng iyong kaganapan…",
       "submit": "Ipadala ang katanungan",

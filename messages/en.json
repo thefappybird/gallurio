@@ -1789,7 +1789,8 @@
         "anniversary": "Anniversary",
         "other": "Other"
       },
-      "location": "Location (optional)",
+      "location": "Location",
+      "locationRequired": "Please pick a location before submitting.",
       "message": "Tell us more",
       "messagePlaceholder": "Share details about your event…",
       "submit": "Send inquiry",

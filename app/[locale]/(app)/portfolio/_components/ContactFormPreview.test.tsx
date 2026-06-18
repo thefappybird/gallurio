@@ -44,6 +44,7 @@ const labels: InquiryFormLabels = {
   submitting: "Sending...",
   errorGeneric: "Something went wrong",
   requiredHint: "Required",
+  locationRequired: "Please pick a location before submitting.",
   locationPicker: {
     searchPlaceholder: "Search venue or address",
     searching: "Searching",
