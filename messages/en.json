@@ -1201,15 +1201,13 @@
         "calendar": "Calendar"
       },
       "calendar": {
-        "legendInquiry": "Inquiry",
-        "legendBooking": "Booking",
         "empty": "No inquiries or bookings to show.",
         "filters": {
           "new": "New",
           "booked": "Booked",
           "conflicted": "Conflicted"
         },
-        "rescheduleConflict": "This time conflicts with an existing booking — move cancelled",
+        "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
         "rescheduleFailed": "Could not reschedule — please try again"
       }
     },

@@ -1201,8 +1201,6 @@
         "calendar": "Kalender"
       },
       "calendar": {
-        "legendInquiry": "Pertanyaan",
-        "legendBooking": "Pemesanan",
         "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan.",
         "filters": {
           "new": "Baru",

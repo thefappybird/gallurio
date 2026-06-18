@@ -28,6 +28,8 @@ import {
   toMinutes,
 } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
+import { useTimeFormat } from "@/lib/time-format/context";
+import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
 
 type Props = {
   inquiryId: string;
@@ -74,6 +76,7 @@ export function BookingDraftCard({
   const ter = useTranslations("app.inquiries.detail.eventRequest");
   const tTeam = useTranslations("app.bookings.teamPicker");
   const router = useRouter();
+  const timeMode = useTimeFormat();
 
   const [total, setTotal] = useState(String(initialTotal));
   const [deposit, setDeposit] = useState(String(initialDeposit));
@@ -297,7 +300,7 @@ export function BookingDraftCard({
                 {draftSessions.map((s, i) => (
                   <li key={i} className="text-sm tabular-nums">
                     {fmtSessionDate(s.startDate)}
-                    <span className="text-muted-foreground">{" · "}{s.startTime}–{s.endTime}</span>
+                    <span className="text-muted-foreground">{" · "}{formatSessionTimeRange({ startDate: s.startDate, startTime: s.startTime, endTime: s.endTime }, timeMode, "UTC")}</span>
                   </li>
                 ))}
               </ul>

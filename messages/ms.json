@@ -1201,8 +1201,6 @@
         "calendar": "Kalendar"
       },
       "calendar": {
-        "legendInquiry": "Pertanyaan",
-        "legendBooking": "Tempahan",
         "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan.",
         "filters": {
           "new": "Baharu",

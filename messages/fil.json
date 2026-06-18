@@ -1201,8 +1201,6 @@
         "calendar": "Kalendaryo"
       },
       "calendar": {
-        "legendInquiry": "Katanungan",
-        "legendBooking": "Booking",
         "empty": "Walang mga katanungan o booking na ipapakita.",
         "filters": {
           "new": "Bago",
