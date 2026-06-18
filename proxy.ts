@@ -121,7 +121,6 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   // 2. API routes — auth-gate non-public ones, no intl middleware.
   // -------------------------------------------------------------------------
   if (pathname.startsWith("/api")) {
-    if (isPublicRoute(req)) return NextResponse.next();
     return authMiddleware(req, {} as never) as Promise<NextMiddlewareResult>;
   }
 

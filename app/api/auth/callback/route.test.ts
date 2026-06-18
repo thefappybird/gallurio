@@ -24,7 +24,14 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
 const mockAuthenticateWithCode = vi.fn();
 const mockSaveSession = vi.fn(async () => undefined);
-const mockEnsureUser = vi.fn(async () => undefined);
+type MockCallbackUser = {
+  memberships: { role: "owner" | "staff" }[];
+  onboardingCompletedAt: Date | null;
+};
+const mockEnsureUser = vi.fn<() => Promise<MockCallbackUser>>(async () => ({
+  memberships: [],
+  onboardingCompletedAt: null,
+}));
 
 vi.mock("@workos-inc/authkit-nextjs", () => ({
   getWorkOS: vi.fn(() => ({
@@ -107,7 +114,10 @@ describe("GET /api/auth/callback — invite cookie forwarding", () => {
   beforeEach(() => {
     mockAuthenticateWithCode.mockResolvedValue(MOCK_AUTH_RESPONSE);
     mockSaveSession.mockResolvedValue(undefined);
-    mockEnsureUser.mockResolvedValue(undefined);
+    mockEnsureUser.mockResolvedValue({
+      memberships: [],
+      onboardingCompletedAt: null,
+    });
   });
 
   afterEach(() => {
@@ -137,8 +147,36 @@ describe("GET /api/auth/callback — invite cookie forwarding", () => {
     expect(res.status).toBe(307);
     const location = res.headers.get("location") ?? "";
     expect(location).not.toContain("/invite/accept");
-    // Falls through to the localized dashboard.
-    expect(location).toContain("/dashboard");
+    // Falls through to onboarding when the user has no workspace yet.
+    expect(location).toContain("/onboarding");
+  });
+
+  it("defaults staff users to bookings when no returnTo is provided", async () => {
+    mockEnsureUser.mockResolvedValueOnce({
+      memberships: [{ role: "staff" }],
+      onboardingCompletedAt: null,
+    });
+    const { GET } = await loadRoute();
+    const url = buildCallbackUrl({ code: "code_staff", state: signedState() });
+
+    const res = await GET(makeReq(url));
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location") ?? "").toContain("/bookings");
+  });
+
+  it("defaults completed owners to dashboard when no returnTo is provided", async () => {
+    mockEnsureUser.mockResolvedValueOnce({
+      memberships: [{ role: "owner" }],
+      onboardingCompletedAt: new Date(),
+    });
+    const { GET } = await loadRoute();
+    const url = buildCallbackUrl({ code: "code_owner", state: signedState() });
+
+    const res = await GET(makeReq(url));
+
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location") ?? "").toContain("/dashboard");
   });
 
   it("respects returnTo over dashboard when no invite cookie and returnTo is valid", async () => {
@@ -196,7 +234,7 @@ describe("GET /api/auth/callback — invite cookie forwarding", () => {
     expect(res.status).toBe(307);
     const location = res.headers.get("location") ?? "";
     expect(location).not.toContain("evil.example.com");
-    expect(location).toContain("/dashboard");
+    expect(location).toContain("/onboarding");
   });
 });
 

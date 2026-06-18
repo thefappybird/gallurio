@@ -878,6 +878,7 @@
           "emailRequired": "Masukkan alamat e-mel yang sah.",
           "pickAtLeastOneTeam": "Pilih sekurang-kurangnya satu pasukan untuk menambahkan mereka.",
           "teamFull": "Pasukan-pasukan ini penuh dan tidak boleh menerima ahli baru: {teams}.",
+          "teamAlreadyHasLead": "Pasukan-pasukan ini sudah mempunyai ketua yang ditetapkan: {teams}.",
           "teamNotFound": "Salah satu pasukan yang dipilih tidak dijumpai.",
           "alreadyInvitedOrMember": "E-mel tersebut sudah mempunyai jemputan atau sudah menjadi ahli ruang kerja.",
           "noTeamsExist": "Buat pasukan dahulu sebelum menjemput ahli."

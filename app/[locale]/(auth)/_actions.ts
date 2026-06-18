@@ -15,6 +15,7 @@ import { verifyTurnstileToken } from "@/lib/server/turnstile";
 import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
+import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,6 +91,20 @@ async function buildReturnCookie(returnTo: string | undefined): Promise<string |
   return sanitizeReturnTo(returnTo);
 }
 
+async function postAuthRedirect(
+  locale: string,
+  user: { memberships: { role: "owner" | "staff" }[]; onboardingCompletedAt?: Date | null },
+  returnTo?: string,
+): Promise<never> {
+  const jar = await cookies();
+  if (jar.get("gw_invite_token")?.value) {
+    redirect("/api/invites/accept");
+  }
+
+  const dest = sanitizeReturnTo(returnTo) ?? defaultPostAuthPath(user, locale);
+  redirect(dest);
+}
+
 // ---------------------------------------------------------------------------
 // Shared result shape
 // ---------------------------------------------------------------------------
@@ -160,7 +175,7 @@ export async function signInAction(
     });
 
     // JIT provision the user
-    await ensureUser({
+    const user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -168,6 +183,7 @@ export async function signInAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
+    return postAuthRedirect(locale, user, returnTo);
   } catch (err) {
     if (err instanceof AuthenticationException) {
       if (
@@ -226,8 +242,7 @@ export async function signInAction(
     return { error: t("errors.generic") };
   }
 
-  const dest = sanitizeReturnTo(returnTo) ?? `/${locale}/onboarding`;
-  redirect(dest);
+  return { error: t("errors.generic") };
 }
 
 // ---------------------------------------------------------------------------
@@ -310,7 +325,7 @@ export async function signUpAction(
       maxAge: 34_560_000,
     });
 
-    await ensureUser({
+    const user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -318,6 +333,7 @@ export async function signUpAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
+    return postAuthRedirect(locale, user);
   } catch (err) {
     if (err instanceof AuthenticationException) {
       if (err.code === "email_verification_required") {
@@ -340,7 +356,7 @@ export async function signUpAction(
     return { error: t("errors.generic") };
   }
 
-  redirect(`/${locale}/onboarding`);
+  return { error: t("errors.generic") };
 }
 
 // ---------------------------------------------------------------------------
@@ -510,7 +526,7 @@ export async function verifyEmailAction(
 
     jar.delete("wos-email-verify-pending");
 
-    await ensureUser({
+    const user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -518,12 +534,13 @@ export async function verifyEmailAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
+    return postAuthRedirect(locale, user);
   } catch (err) {
     console.error("[verifyEmailAction]", err);
     return { error: t("errors.invalidCode") };
   }
 
-  redirect(`/${locale}/onboarding`);
+  return { error: t("errors.invalidCode") };
 }
 
 export async function resendVerificationEmailAction(
@@ -622,7 +639,7 @@ export async function mfaChallengeAction(
 
     jar.delete(MFA_PENDING_COOKIE);
 
-    await ensureUser({
+    const user = await ensureUser({
       workosUserId: response.user.id,
       email: response.user.email,
       name: [response.user.firstName, response.user.lastName]
@@ -630,12 +647,13 @@ export async function mfaChallengeAction(
         .join(" "),
       avatarUrl: response.user.profilePictureUrl ?? null,
     });
+    return postAuthRedirect(locale, user);
   } catch (err) {
     console.error("[mfaChallengeAction]", err);
     return { error: t("errors.invalidCode") };
   }
 
-  redirect(`/${locale}/onboarding`);
+  return { error: t("errors.invalidCode") };
 }
 
 // ---------------------------------------------------------------------------

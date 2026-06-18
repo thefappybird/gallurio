@@ -17,6 +17,7 @@ import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { ensureUser } from "@/lib/auth/ensureUser";
 import { verifyOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
+import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
 import type { AuthUser } from "@/lib/auth/session";
 import { routing } from "@/lib/i18n/routing";
 
@@ -33,10 +34,6 @@ function debug(...args: unknown[]): void {
   if (process.env.AUTHKIT_DEBUG === "true") {
     console.log("[auth/callback]", ...args);
   }
-}
-
-function localizedDashboard(locale: string): string {
-  return locale === routing.defaultLocale ? "/dashboard" : `/${locale}/dashboard`;
 }
 
 function localizedSignIn(locale: string): string {
@@ -167,14 +164,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       avatarUrl: authResponse.user.profilePictureUrl ?? null,
     };
 
-    await ensureUser(authUser);
+    const user = await ensureUser(authUser);
     debug("code exchanged + session sealed", {
       userId: authResponse.user.id,
     });
 
     // Determine redirect destination.
-    // Priority: invite cookie > returnTo > localized /dashboard
+    // Priority: invite cookie > returnTo > role-aware default landing
     let destination: string;
+    const fallback = new URL(defaultPostAuthPath(user, locale), origin).toString();
     if (hasInviteCookie) {
       // The invite token is in the httpOnly cookie; send the user back to the
       // accept route with no token in the URL — the route reads the cookie.
@@ -183,7 +181,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       // Validate returnTo is a local path only (prevent open redirect).
       // Second char must not be "/" or "\" — browsers normalize "/\evil.com"
       // in Location headers to protocol-relative "//evil.com".
-      const fallback = new URL(localizedDashboard(locale), origin).toString();
       if (/^\/[^/\\]/.test(returnTo)) {
         const resolved = new URL(returnTo, origin);
         destination = resolved.origin === origin ? resolved.toString() : fallback;
@@ -191,7 +188,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         destination = fallback;
       }
     } else {
-      destination = new URL(localizedDashboard(locale), origin).toString();
+      destination = fallback;
     }
 
     // Set the session cookie on the response itself, then clear the single-use

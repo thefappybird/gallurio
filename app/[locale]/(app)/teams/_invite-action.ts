@@ -14,6 +14,7 @@ import {
 import { Team } from "@/lib/db/models/team";
 import { User } from "@/lib/db/models/User";
 import { Invitation } from "@/lib/db/models/Invitation";
+import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
 import { sendNotification } from "@/lib/notifications/send";
 import {
@@ -25,6 +26,7 @@ import {
 
 export type InviteMemberResult = ActionResult & {
   fullTeamNames?: string[];
+  leadTakenTeamNames?: string[];
   unknownTeamIds?: string[];
 };
 
@@ -136,6 +138,44 @@ export async function inviteMemberAction(
   const leadObjectIds = leadOnTeamIds
     .map(toObjectId)
     .filter((id): id is mongoose.Types.ObjectId => id !== null);
+
+  if (leadObjectIds.length > 0) {
+    const [leadMemberships, pendingLeadInvites] = await Promise.all([
+      TeamMembership.find({
+        workspaceId: ctx.workspace._id,
+        teamId: { $in: leadObjectIds },
+        role: "lead",
+      })
+        .select({ teamId: 1 })
+        .lean(),
+      Invitation.find({
+        workspaceId: ctx.workspace._id,
+        status: "pending",
+        leadOnTeamIds: { $in: leadObjectIds },
+      })
+        .select({ leadOnTeamIds: 1 })
+        .lean(),
+    ]);
+
+    const takenLeadIds = new Set<string>(
+      leadMemberships.map((membership) => String(membership.teamId)),
+    );
+    for (const invite of pendingLeadInvites) {
+      for (const teamId of invite.leadOnTeamIds ?? []) {
+        takenLeadIds.add(String(teamId));
+      }
+    }
+
+    if (takenLeadIds.size > 0) {
+      await releaseInvitationSeats(reserved, ctx.workspace._id);
+      return {
+        error: "TEAM_ALREADY_HAS_LEAD",
+        leadTakenTeamNames: teams
+          .filter((team) => takenLeadIds.has(String(team._id)))
+          .map((team) => team.name),
+      };
+    }
+  }
 
   const { raw, hash } = generateInviteToken();
 
