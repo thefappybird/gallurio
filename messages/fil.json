@@ -278,6 +278,8 @@
         "dragHint": "I-drag ang pin para tumpak na itakda ang eksaktong lugar.",
         "clear": "Alisin ang lokasyon",
         "changeLocation": "Baguhin ang lokasyon",
+        "acceptLocation": "Tanggapin ang lokasyon",
+        "discardLocation": "Itapon ang mga pagbabago",
         "accept": "Tanggapin",
         "cancel": "Kanselahin",
         "apply": "Ilapat",

@@ -278,6 +278,8 @@
         "dragHint": "Seret pin untuk menyesuaikan titik yang tepat.",
         "clear": "Hapus lokasi",
         "changeLocation": "Ubah lokasi",
+        "acceptLocation": "Terima lokasi",
+        "discardLocation": "Buang perubahan",
         "accept": "Terima",
         "cancel": "Batal",
         "apply": "Terapkan",

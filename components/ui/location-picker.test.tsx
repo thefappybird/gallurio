@@ -27,6 +27,8 @@ const EDITABLE_LABELS = {
   dragHint: "Drag pin",
   clear: "Clear",
   changeLocation: "Change location",
+  acceptLocation: "Accept location",
+  discardLocation: "Discard changes",
   accept: "Accept",
   cancel: "Cancel",
   apply: "Apply",
@@ -256,7 +258,7 @@ describe("LocationPicker", () => {
   describe("editable mode", () => {
     const POPULATED: LocationValue = { address: "Somewhere", lat: 14.5, lng: 121.0 };
 
-    it("empty value starts in edit mode with Apply button", async () => {
+    it("empty value starts in edit mode with accept/discard controls below map", async () => {
       const fetchMock = mockNominatim([
         {
           place_id: 42,
@@ -277,9 +279,11 @@ describe("LocationPicker", () => {
         />
       );
 
-      // Edit mode: Apply present, no Change-location, no address display text
-      expect(screen.getByRole("button", { name: /apply/i })).toBeInTheDocument();
+      // Edit mode: accept+discard present below map, no Change-location, no Apply
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Discard changes" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /change location/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
       expect(screen.queryByText("Somewhere")).toBeNull();
 
       // Pick a search result
@@ -287,8 +291,8 @@ describe("LocationPicker", () => {
       const option = await screen.findByText("Pier 27, Manila, Philippines");
       fireEvent.mouseDown(option);
 
-      // Click Apply
-      fireEvent.click(screen.getByRole("button", { name: /apply/i }));
+      // Click Accept (onChange fires only on accept, not on intermediate edits)
+      fireEvent.click(screen.getByRole("button", { name: "Accept location" }));
 
       // onChange called exactly once with correct value
       expect(onChange).toHaveBeenCalledTimes(1);
@@ -298,9 +302,10 @@ describe("LocationPicker", () => {
         lng: 120.9842,
       });
 
-      // Now in display mode: Change-location button visible, Apply gone
+      // Now in display mode: Change-location button visible, accept/discard gone
       expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /apply/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Accept location" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
     });
 
     it("populated value starts in display mode", () => {
@@ -318,8 +323,9 @@ describe("LocationPicker", () => {
       expect(screen.getByText("Somewhere")).toBeInTheDocument();
       // Change-location button visible
       expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
-      // Map NOT in DOM
-      expect(screen.queryByTestId("location-map")).toBeNull();
+      // Edit mode controls not shown (accept/discard icon buttons)
+      expect(screen.queryByRole("button", { name: "Accept location" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
       // onChange not called on mount
       expect(onChange).not.toHaveBeenCalled();
     });
@@ -352,13 +358,13 @@ describe("LocationPicker", () => {
       // Wait for reverse geocoding to fill in address
       await screen.findByDisplayValue("New Place, Manila");
 
-      // Accept and Cancel should be visible (dirty state); Apply not visible
-      expect(screen.getByRole("button", { name: /^accept$/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
+      // Accept and Discard icon buttons should be visible; no plain Apply
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Discard changes" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
 
-      // Click Accept
-      fireEvent.click(screen.getByRole("button", { name: /^accept$/i }));
+      // Click Accept (onChange fires only on commit, not on intermediate edits)
+      fireEvent.click(screen.getByRole("button", { name: "Accept location" }));
 
       // onChange called once with new value
       expect(onChange).toHaveBeenCalledTimes(1);
@@ -366,12 +372,12 @@ describe("LocationPicker", () => {
         expect.objectContaining({ address: "New Place, Manila", lat: 1.23, lng: 4.56 })
       );
 
-      // Back to display mode: Change-location visible, map gone
+      // Back to display mode: Change-location visible, edit controls gone
       // (In a real app the parent would update the `value` prop after onChange fires;
       // here we just verify the component returns to display mode correctly.)
       expect(screen.getByRole("button", { name: /change location/i })).toBeInTheDocument();
-      expect(screen.queryByTestId("location-map")).toBeNull();
-      expect(screen.queryByRole("button", { name: /^accept$/i })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Accept location" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
     });
 
     it("Cancel reverts draft without calling onChange", async () => {
@@ -399,19 +405,20 @@ describe("LocationPicker", () => {
       fireEvent.click(screen.getByTestId("map-pick"));
       await screen.findByDisplayValue("Different Place, Quezon City");
 
-      // Click Cancel
-      fireEvent.click(screen.getByRole("button", { name: /^cancel$/i }));
+      // Click Discard
+      fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
 
       // onChange must NOT have been called
       expect(onChange).not.toHaveBeenCalled();
 
       // Display mode restored with ORIGINAL address
       expect(screen.getByText("Somewhere")).toBeInTheDocument();
-      // Map unmounted
-      expect(screen.queryByTestId("location-map")).toBeNull();
+      // Edit controls unmounted
+      expect(screen.queryByRole("button", { name: "Accept location" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
     });
 
-    it("empty-origin shows Apply, not Accept or Cancel", () => {
+    it("empty-origin shows accept/discard icon buttons below map, not an inline Apply", () => {
       render(
         <LocationPicker
           editable
@@ -421,12 +428,14 @@ describe("LocationPicker", () => {
         />
       );
 
-      expect(screen.getByRole("button", { name: /^apply$/i })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /^accept$/i })).toBeNull();
-      expect(screen.queryByRole("button", { name: /^cancel$/i })).toBeNull();
+      // Uniform placement: both icon buttons always present in edit mode
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Discard changes" })).toBeInTheDocument();
+      // Legacy apply button no longer exists
+      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
     });
 
-    it("populated-origin shows Accept+Cancel when dirty, no Apply", async () => {
+    it("populated-origin shows accept+discard icon buttons when editing; accept enabled only when dirty", async () => {
       const fetchMock = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -446,16 +455,21 @@ describe("LocationPicker", () => {
       // Enter edit mode
       fireEvent.click(screen.getByRole("button", { name: /change location/i }));
 
+      // Before making changes: discard present and enabled; accept present but disabled (not dirty)
+      expect(screen.getByRole("button", { name: "Discard changes" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeDisabled();
+      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
+
       // Make it dirty via pin pick
       fireEvent.click(screen.getByTestId("map-pick"));
       await screen.findByDisplayValue("Another Place");
 
-      expect(screen.getByRole("button", { name: /^accept$/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /^cancel$/i })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /^apply$/i })).toBeNull();
+      // Now dirty: accept enabled
+      expect(screen.getByRole("button", { name: "Accept location" })).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: "Discard changes" })).not.toBeDisabled();
     });
 
-    it("disabled + editable shows address text but Change-location button is disabled and map is not in DOM", () => {
+    it("disabled + editable shows address text, Change-location button is disabled, and edit controls are not shown", () => {
       render(
         <LocationPicker
           editable
@@ -472,8 +486,57 @@ describe("LocationPicker", () => {
       const changeBtn = screen.getByRole("button", { name: /change location/i });
       expect(changeBtn).toBeInTheDocument();
       expect(changeBtn).toBeDisabled();
-      // Map not in DOM (still in display mode)
-      expect(screen.queryByTestId("location-map")).toBeNull();
+      // Edit mode controls not shown (still in display mode)
+      expect(screen.queryByRole("button", { name: "Accept location" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "Discard changes" })).toBeNull();
+    });
+
+    it("commit-only: onChange does not fire on intermediate edits; discard reverts without onChange", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ display_name: "Intermediate Place" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      const onChange = vi.fn();
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={onChange}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Enter edit mode
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+
+      // Drop a pin → triggers reverse geocoding, updates draft but NOT onChange
+      fireEvent.click(screen.getByTestId("map-pick"));
+      await screen.findByDisplayValue("Intermediate Place");
+
+      // Intermediate edit must NOT have called onChange
+      expect(onChange).not.toHaveBeenCalled();
+
+      // Discard: revert without calling onChange
+      fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+      expect(onChange).not.toHaveBeenCalled();
+
+      // Display mode restored with original address
+      expect(screen.getByText("Somewhere")).toBeInTheDocument();
+
+      // Enter edit again and this time accept
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+      fireEvent.click(screen.getByTestId("map-pick"));
+      await screen.findByDisplayValue("Intermediate Place");
+
+      // Accept: now onChange fires exactly once
+      fireEvent.click(screen.getByRole("button", { name: "Accept location" }));
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(
+        expect.objectContaining({ address: "Intermediate Place", lat: 1.23, lng: 4.56 })
+      );
     });
   });
 });

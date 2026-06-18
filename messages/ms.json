@@ -278,6 +278,8 @@
         "dragHint": "Seret pin untuk menentukan lokasi tepat.",
         "clear": "Kosongkan lokasi",
         "changeLocation": "Tukar lokasi",
+        "acceptLocation": "Terima lokasi",
+        "discardLocation": "Buang perubahan",
         "accept": "Terima",
         "cancel": "Batal",
         "apply": "Guna",

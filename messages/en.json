@@ -278,6 +278,8 @@
         "dragHint": "Drag the pin to fine-tune the exact spot.",
         "clear": "Clear location",
         "changeLocation": "Change location",
+        "acceptLocation": "Accept location",
+        "discardLocation": "Discard changes",
         "accept": "Accept",
         "cancel": "Cancel",
         "apply": "Apply",

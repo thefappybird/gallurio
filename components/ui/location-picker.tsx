@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
-import { Loader2Icon, MapIcon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
+import { CheckIcon, Loader2Icon, MapIcon, MapPinIcon, SearchIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,8 +55,15 @@ type Props = {
     clear: string;
     // editable-mode labels (optional)
     changeLocation?: string;
+    /** aria-label for the accept (check) icon button */
+    acceptLocation?: string;
+    /** aria-label for the discard (X) icon button */
+    discardLocation?: string;
+    /** @deprecated Use acceptLocation. Kept for backward compat; ignored when acceptLocation is set. */
     accept?: string;
+    /** @deprecated Use discardLocation. Kept for backward compat; ignored when discardLocation is set. */
     cancel?: string;
+    /** @deprecated Unified: both empty-origin and editing now use accept/discard below the map. */
     apply?: string;
     currentAddressLabel?: string;
   };
@@ -97,11 +104,17 @@ function BaseLocationPicker({
     dragHint: "Drag the pin to fine-tune the exact spot.",
     clear: "Clear location",
     changeLocation: "Change location",
+    acceptLocation: "Accept location",
+    discardLocation: "Discard changes",
     accept: "Accept",
     cancel: "Cancel",
     apply: "Apply",
     currentAddressLabel: "Selected location",
   };
+  const acceptAriaLabel =
+    resolvedLabels.acceptLocation ?? resolvedLabels.accept ?? "Accept location";
+  const discardAriaLabel =
+    resolvedLabels.discardLocation ?? resolvedLabels.cancel ?? "Discard changes";
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const listboxId = `${inputId}-results`;
@@ -371,12 +384,12 @@ function BaseLocationPicker({
     );
   }
 
-  // ── edit mode rendering (existing UI + editable action buttons) ──────────
+  // ── edit mode rendering ──────────────────────────────────────────────────
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {/* Search input row — Apply button sits beside the input when starting from empty */}
+      {/* Search input row */}
       <div ref={searchWrapperRef} className="relative">
-        <div className={cn("flex items-center gap-2", editable && editOriginEmpty && "flex-nowrap")}>
+        <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
             <SearchIcon
               className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -419,22 +432,6 @@ function BaseLocationPicker({
               ) : null}
             </div>
           </div>
-
-          {/* Apply button beside the input — shown only when starting from an empty location */}
-          {editable && editOriginEmpty ? (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={handleCommit}
-              style={applyButtonStyle}
-              className={cn(
-                "shrink-0 px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                !applyButtonStyle && "rounded-md bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-            >
-              {resolvedLabels.apply ?? "Apply"}
-            </button>
-          ) : null}
         </div>
 
         {open && (searched || results.length > 0) ? (
@@ -485,34 +482,33 @@ function BaseLocationPicker({
         {resolvedLabels.dragHint}
       </p>
 
-      {/* Cancel / Accept buttons — shown when editing an existing (non-empty) location */}
-      {editable && !editOriginEmpty ? (
+      {/* Accept (check) / Discard (X) icon buttons — shown consistently below the map
+          for both empty-origin and editing-existing cases when in editable mode.
+          onChange fires ONLY on accept (commit); discard reverts to last committed value. */}
+      {editable ? (
         <div className="flex items-center gap-2">
           <button
             type="button"
             disabled={disabled}
             onClick={handleCancel}
+            aria-label={discardAriaLabel}
+            className="inline-flex size-8 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          >
+            <XIcon className="size-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            disabled={disabled || (!dirty && !editOriginEmpty)}
+            onClick={handleCommit}
+            aria-label={acceptAriaLabel}
+            style={applyButtonStyle}
             className={cn(
-              "border border-border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-              !applyButtonStyle && "rounded-md",
+              "inline-flex size-8 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
+              !applyButtonStyle && "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
-            {resolvedLabels.cancel ?? "Cancel"}
+            <CheckIcon className="size-4" aria-hidden />
           </button>
-          {dirty ? (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={handleCommit}
-              style={applyButtonStyle}
-              className={cn(
-                "px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
-                !applyButtonStyle && "rounded-md bg-primary text-primary-foreground hover:bg-primary/90",
-              )}
-            >
-              {resolvedLabels.accept ?? "Accept"}
-            </button>
-          ) : null}
         </div>
       ) : null}
     </div>
@@ -532,6 +528,8 @@ function IntlLocationPicker(props: Omit<Props, "labels">) {
         dragHint: t("dragHint"),
         clear: t("clear"),
         changeLocation: t("changeLocation"),
+        acceptLocation: t("acceptLocation"),
+        discardLocation: t("discardLocation"),
         accept: t("accept"),
         cancel: t("cancel"),
         apply: t("apply"),
