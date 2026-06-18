@@ -114,6 +114,9 @@ describe("BookingDraftCard", () => {
     fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2500" } });
     fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
     await waitFor(() => expect(saveDraftBookingFieldsAction).toHaveBeenCalledOnce());
-    expect(onInquiryChanged).toHaveBeenCalledWith("abc", expect.objectContaining({ total: 2500 }));
+    expect(onInquiryChanged).toHaveBeenCalledWith(
+      "abc",
+      expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
+    );
   });
 });

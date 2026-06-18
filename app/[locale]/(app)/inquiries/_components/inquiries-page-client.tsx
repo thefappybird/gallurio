@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -89,7 +89,44 @@ export function InquiriesPageClient({
   // can skip router.refresh() when nothing changed.
   const hasChanges = useRef(false);
 
-  const localRows = applyOptimisticPatch(rows, optimisticUpdates);
+  // Prune-on-match: derive the active patch map by dropping entries whose fields
+  // the server row now reflects. Using useMemo instead of useEffect+setState avoids
+  // the react-hooks/set-state-in-effect rule and prevents cascading renders.
+  // The raw optimisticUpdates state is still the write-target; prunedUpdates is the
+  // read-only view used for rendering and for the applyOptimisticPatch call below.
+  const prunedUpdates = useMemo<Record<string, InquiryOptimisticPatch>>(() => {
+    const keys = Object.keys(optimisticUpdates);
+    if (keys.length === 0) return optimisticUpdates;
+
+    const rowMap = new Map(rows.map((r) => [r.id, r]));
+    let changed = false;
+    const next: Record<string, InquiryOptimisticPatch> = {};
+
+    for (const id of keys) {
+      const patch = optimisticUpdates[id];
+      const serverRow = rowMap.get(id) as Record<string, unknown> | undefined;
+
+      if (!serverRow) {
+        next[id] = patch;
+        continue;
+      }
+
+      const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
+        (field) => serverRow[field] === patch[field]
+      );
+
+      if (allCaughtUp) {
+        changed = true;
+      } else {
+        next[id] = patch;
+      }
+    }
+
+    // Return the same reference when nothing was pruned — stable identity for deps.
+    return changed ? next : optimisticUpdates;
+  }, [rows, optimisticUpdates]);
+
+  const localRows = applyOptimisticPatch(rows, prunedUpdates);
 
   function handleInquiryChanged(inquiryId: string, patch: InquiryOptimisticPatch) {
     setOptimisticUpdates((prev) => ({
