@@ -140,6 +140,9 @@ export function InquiriesPageClient({
     if (detail) {
       handleInquiryChanged(detail.inquiryId, { status: "booked" });
     }
+    // Convert closes the modal directly and handles its own refresh path;
+    // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
+    hasChanges.current = false;
     setDetailOpen(false);
   }
 
