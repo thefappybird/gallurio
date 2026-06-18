@@ -452,6 +452,7 @@ export async function PATCH(req: Request, { params }: Params) {
           email: u.email,
           name: u.name || undefined,
         }));
+        // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({
           workspaceId: ctx.workspaceId,
           recipients,
@@ -461,6 +462,8 @@ export async function PATCH(req: Request, { params }: Params) {
           triggeredByWorkosUserId: ctx.userId,
           locale: "en",
           vars: { assignerName: actorName },
+        }).catch((err) => {
+          console.error("[bookings] sendNotification (team_assigned) failed:", err);
         });
       }
     }
@@ -502,6 +505,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
       const recipients = [...recipientMap.values()];
       if (recipients.length > 0) {
+        // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({
           workspaceId: ctx.workspaceId,
           recipients,
@@ -511,6 +515,8 @@ export async function PATCH(req: Request, { params }: Params) {
           triggeredByWorkosUserId: ctx.userId,
           locale: "en",
           vars: { actorName, newStatus },
+        }).catch((err) => {
+          console.error("[bookings] sendNotification (status_changed) failed:", err);
         });
       }
     }

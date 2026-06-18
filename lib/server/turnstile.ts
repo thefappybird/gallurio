@@ -19,6 +19,11 @@ export async function verifyTurnstileToken(
   token: string | null | undefined,
   ip?: string,
 ): Promise<boolean> {
+  // Local dev bypass — skip Cloudflare verification so developers and Playwright
+  // tests don't need a real challenge. Gated on "development" (not "!== production")
+  // so Vitest (NODE_ENV="test") still exercises the real fail-closed paths below.
+  if (process.env.NODE_ENV === "development") return true;
+
   if (!token) return false;
 
   const secret = process.env.TURNSTILE_SECRET_KEY;

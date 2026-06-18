@@ -833,6 +833,7 @@
         "noPending": "Tidak ada undangan tertunda untuk tim ini.",
         "inviteToTeam": "Undang ke tim ini",
         "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
         "removeFromTeam": "Hapus",
         "teamFull": "Tim ini sudah penuh.",
         "close": "Tutup"
@@ -878,6 +879,7 @@
           "emailRequired": "Masukkan alamat email yang valid.",
           "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
           "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+          "teamAlreadyHasLead": "Tim-tim ini sudah memiliki lead yang ditetapkan: {teams}.",
           "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
           "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
           "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."
@@ -1538,29 +1540,35 @@
       "pageTitle": "Notifikasi",
       "loadMore": "Muat lebih banyak",
       "types": {
-        "inquiry.created": {
-          "title": "Pertanyaan baru diterima",
-          "body": "Anda memiliki pertanyaan baru dari {clientName}."
+        "inquiry": {
+          "created": {
+            "title": "Pertanyaan baru diterima",
+            "body": "Anda memiliki pertanyaan baru dari {clientName}."
+          }
         },
-        "booking.team_assigned": {
-          "title": "Pemesanan baru ditugaskan ke tim Anda",
-          "body": "{assignerName} menugaskan pemesanan ke tim Anda."
+        "booking": {
+          "team_assigned": {
+            "title": "Pemesanan baru ditugaskan ke tim Anda",
+            "body": "{assignerName} menugaskan pemesanan ke tim Anda."
+          },
+          "status_changed": {
+            "title": "Status pemesanan diperbarui",
+            "body": "{actorName} mengubah status pemesanan menjadi {newStatus}."
+          }
         },
-        "booking.status_changed": {
-          "title": "Status pemesanan diperbarui",
-          "body": "{actorName} mengubah status pemesanan menjadi {newStatus}."
-        },
-        "team.invitation": {
-          "title": "Anda diundang ke tim",
-          "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
-        },
-        "team.removed": {
-          "title": "Dihapus dari tim",
-          "body": "Anda telah dihapus dari {teamName}."
-        },
-        "team.deleted": {
-          "title": "Tim dibubarkan",
-          "body": "{teamName} telah dihapus."
+        "team": {
+          "invitation": {
+            "title": "Anda diundang ke tim",
+            "body": "{inviterName} mengundang Anda untuk bergabung dengan {teamName}."
+          },
+          "removed": {
+            "title": "Dihapus dari tim",
+            "body": "Anda telah dihapus dari {teamName}."
+          },
+          "deleted": {
+            "title": "Tim dibubarkan",
+            "body": "{teamName} telah dihapus."
+          }
         }
       }
     }

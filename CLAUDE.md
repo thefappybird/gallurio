@@ -105,13 +105,44 @@ what already exists.
 ## Tooling: browser verification & plugins
 Use the installed MCP servers and plugins whenever they fit the task — they are
 faster and more accurate than guessing, and several Done-criteria depend on them.
-- **Playwright MCP** (`mcp__plugin_playwright_playwright__*`): use to actually
-  drive the app in a browser when a change is UI-facing or behavioral. Required
-  for the "mobile view checked at 375px" Done-criterion — resize to 375px,
-  navigate the flow, snapshot/screenshot, and verify loading/empty/error/
-  populated and idle/hover/focus/active/disabled states render. Also use it to
+- **Playwright (prefer the CLI, not the MCP plugin)**: use Playwright to actually
+  drive the app in a browser when a change is UI-facing or behavioral. **Default
+  to the Playwright CLI** (`@playwright/test` via `pnpm exec playwright test`) — it
+  costs far fewer tokens than the `mcp__plugin_playwright_playwright__*` MCP
+  plugin, which should be avoided for routine verification and reserved only for
+  one-off interactive exploration that a scripted spec can't express. The repo is
+  wired for the CLI: `playwright.config.ts` loads `.env.local` via dotenv, an
+  `auth.setup.ts` project logs in once and reuses `storageState`, and specs live
+  in `e2e/`. Required for the "mobile view checked at 375px" Done-criterion —
+  set a 375px viewport, navigate the flow, screenshot, and assert loading/empty/
+  error/populated and idle/hover/focus/active/disabled states. Also use it to
   reproduce bugs and confirm fixes end-to-end (browser → action → result) rather
   than asserting from code alone.
+  - **Submit only when the flow requires it; minimize side effects**: submitting
+    forms / triggering mutations (create/invite/save/pay) is allowed when needed
+    to verify a flow end-to-end, but the dev DB is shared and seeded — do it
+    deliberately, prefer the minimal action, avoid destructive ones
+    (delete/wipe), and never repeat a submit once it's verified. Where inspecting
+    states (idle/focus/error/disabled, validation) already answers the question,
+    don't submit.
+  - **No unnecessary API calls / refetching / navigation**: this is a hard rule —
+    don't reload, re-navigate, re-poll, or re-snapshot when the current DOM
+    already answers the question. Navigate once to the target view and assert
+    against that state; consolidate related checks into a single page load
+    instead of one navigation per assertion; never loop a flow that repeatedly
+    hits the server. Each page load reconnects the socket and refetches
+    notifications, so keep navigations to the minimum the test truly needs.
+  - **Test login env vars** (set in the worktree `.env.local`, values never
+    printed/committed): three real WorkOS accounts wired into the seeded
+    workspace let Playwright sign in autonomously. The seed (`lib/db/seed.ts`)
+    reads the WorkOS user id + email; the matching password is used only to
+    sign in via the UI:
+    - Owner: `SEED_OWNER_WORKOS_USER_ID`, `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD` (optional `SEED_OWNER_NAME`)
+    - Staff/member: `SEED_STAFF_WORKOS_USER_ID`, `SEED_STAFF_EMAIL`, `SEED_STAFF_PASSWORD` (optional `SEED_STAFF_NAME`)
+    - Team lead: `SEED_LEAD_WORKOS_USER_ID`, `SEED_LEAD_EMAIL`, `SEED_LEAD_PASSWORD` (optional `SEED_LEAD_NAME`)
+    Staff and lead accounts are seeded only when both their id and email are
+    present. Turnstile is bypassed in dev (`NODE_ENV=development`), so sign-in
+    needs only email + password.
 - **context7** (`mcp__plugin_context7_context7__*`): fetch current docs for any
   library/framework/API (Next.js 16, React 19, Mongoose, Tailwind v4, Paddle,
   next-intl, WorkOS, etc.) before relying on memory. Prefer it over web search
@@ -325,6 +356,8 @@ aspirations. The current backlog of known lapses lives in
   `git worktree add .claude/worktrees/<slug> -b <branch> dev`
 - Immediately after creating a branch/worktree, index it with codebase-memory-mcp as its own project:
   `index_repository { repo_path: "<absolute worktree path>", mode: "full", persistence: true }` (use `fast`/`moderate` for later refreshes). This is a required step for every new branch/worktree — see Codebase memory.
+- Commit periodically during long tasks: make frequent, small checkpoint commits as each coherent unit of work lands (a fix, a passing test, a refactor step) rather than batching everything into one commit at the end. Many checkpoints are the norm — they bound data loss if a session crashes or context is lost, and keep the branch recoverable. Each checkpoint should be a buildable, self-describing commit; do not wait for the entire task to be "done" before the first commit.
+- A worktree starts without a `.env.local`, so the app cannot boot there for Playwright/browser verification. You are allowed to copy the env values from the canonical `dev` checkout's `.env.local` into the worktree's `.env.local` so the app runs and Playwright can drive the real flow. This copy is for local verification only: never commit `.env.local` or any secret value (it must stay git-ignored), never print/log the values, and never paste them into commits, PRs, reviews, or chat output.
 
 ## Testing
 - Every code change ships with tests
@@ -357,8 +390,10 @@ A task is done only when:
 - Consolidate locales
 - Build
 - Run strict code review
+  - The code review step must include a Playwright run-through (prefer the Playwright CLI, not the MCP plugin — see Tooling) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) plus the 375px mobile view, not just that the code compiles
 - Save review as markdown
 - Fix review findings
+- After the final review passes and all findings are fixed, automatically open a PR for the branch. The PR description must list the completed tasks as a checklist (`- [ ]`) so each can be tested easily later. Only open the PR once there are no remaining tasks on the branch.
 - Merge to `dev` only after review and explicit approval
 
 ## Commands

@@ -224,20 +224,25 @@ export async function submitInquiry(
     console.error("[inquiry] client confirmation failed (non-fatal):", err);
   }
 
-  const ownerEmail = workspace.contact?.email ?? "";
-  if (ownerEmail) {
-    const notifLocale = workspace.publicPage?.formLocale || "en";
-    await sendNotification({
-      workspaceId: String(workspaceId),
-      recipients: [{ workosUserId: workspace.ownerUserId, email: ownerEmail }],
-      type: "inquiry.created",
-      entityId: String(inquiryId),
-      entityType: "inquiry",
-      triggeredByWorkosUserId: "public",
-      locale: notifLocale,
-      vars: { clientName: name || "Unknown" },
-    });
-  }
+  const notifLocale = workspace.publicPage?.formLocale || "en";
+  // Non-fatal: the inquiry is already committed; a notification failure must
+  // not roll back the successful submission.
+  // Pass email: "" so sendNotification always fires the in-app + socket path
+  // (Notification.insertMany is unconditional), while avoiding a duplicate
+  // owner email — the rich inquiry email was already sent via
+  // sendInquiryNotification above.
+  sendNotification({
+    workspaceId: String(workspaceId),
+    recipients: [{ workosUserId: workspace.ownerUserId, email: "" }],
+    type: "inquiry.created",
+    entityId: String(inquiryId),
+    entityType: "inquiry",
+    triggeredByWorkosUserId: "public",
+    locale: notifLocale,
+    vars: { clientName: name || "Unknown" },
+  }).catch((err) => {
+    console.error("[inquiry] sendNotification failed (non-fatal):", err);
+  });
 
   return {
     ok: true,

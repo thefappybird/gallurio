@@ -132,8 +132,13 @@ export function TeamsPageClient({
           color: tm.color,
           memberCount: tm.memberCount,
           maxMembersPerTeam,
+          hasLead:
+            members.some((member) =>
+              member.teams.some((team) => team.teamId === tm.id && team.role === "lead"),
+            ) ||
+            pendingInvites.some((invite) => invite.leadOnTeamIds.includes(tm.id)),
         })),
-    [optimisticTeams, maxMembersPerTeam],
+    [optimisticTeams, maxMembersPerTeam, members, pendingInvites],
   );
 
   // Dialog / drawer state

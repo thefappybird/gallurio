@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useCallback } from "react";
 
@@ -30,11 +30,17 @@ interface TurnstileWidgetProps {
   className?: string;
 }
 
+const IS_DEV = process.env.NODE_ENV === "development";
+
 /**
  * Cloudflare Turnstile widget (explicit render mode, no npm dep).
  * Loads the Turnstile script once and renders the widget into the container.
- * The token is surfaced via onToken — the parent must inject it into the form
+ * The token is surfaced via onToken -- the parent must inject it into the form
  * as a hidden field named "cf-turnstile-response" before submit.
+ *
+ * In local development (NODE_ENV === "development") the widget is skipped
+ * entirely: onToken is called once on mount with a sentinel "dev-bypass" value
+ * so forms are immediately submittable without a real Cloudflare challenge.
  */
 export function TurnstileWidget({
   onToken,
@@ -42,26 +48,38 @@ export function TurnstileWidget({
   onError,
   className,
 }: TurnstileWidgetProps) {
+  // Capture onToken in a ref so the dev-bypass effect can call it without
+  // adding it to the dependency array. The ref is initialized once on mount;
+  // since the effect also runs once on mount, the value is always current.
+  const onTokenRef = useRef(onToken);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
-  // Stable ref to avoid circular dependency in the useCallback
   const renderRef = useRef<(() => void) | null>(null);
+
+  // Dev-only mount effect: fire sentinel token so parent forms become enabled.
+  // Gated on IS_DEV (module-level constant) -- not "!== production" -- so that
+  // NODE_ENV="test" (Vitest) still exercises the real fail-closed server path.
+  useEffect(() => {
+    if (!IS_DEV) return;
+    onTokenRef.current("dev-bypass");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const siteKey = IS_DEV ? "" : (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "");
 
   const render = useCallback(() => {
     if (!containerRef.current || !window.turnstile || !siteKey) return;
-    if (widgetIdRef.current) return; // Already rendered
+    if (widgetIdRef.current) return;
 
     widgetIdRef.current = window.turnstile.render(containerRef.current, {
       sitekey: siteKey,
       callback: onToken,
       "expired-callback": () => {
         onExpire?.();
-        // Reset so the user can get a fresh token
         if (widgetIdRef.current && window.turnstile) {
           window.turnstile.reset(widgetIdRef.current);
           widgetIdRef.current = null;
-          // Re-render after reset via stable ref
           setTimeout(() => renderRef.current?.(), 50);
         }
       },
@@ -72,8 +90,7 @@ export function TurnstileWidget({
   }, [onToken, onExpire, onError, siteKey]);
 
   useEffect(() => {
-    if (!siteKey) return;
-    // Keep renderRef in sync so the expired-callback can call the latest render
+    if (IS_DEV || !siteKey) return;
     renderRef.current = render;
 
     if (window.turnstile) {
@@ -81,7 +98,6 @@ export function TurnstileWidget({
       return;
     }
 
-    // Set global callback for when script loads
     window.onTurnstileLoad = render;
 
     const existing = document.querySelector(
@@ -102,6 +118,9 @@ export function TurnstileWidget({
       }
     };
   }, [render, siteKey]);
+
+  // In development: render nothing -- the sentinel token was already fired above.
+  if (IS_DEV) return null;
 
   if (!siteKey) return null;
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+﻿import { describe, it, expect, vi, afterEach } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Stub fetch before importing the module under test
@@ -96,6 +96,39 @@ describe("verifyTurnstileToken — fail closed", () => {
     });
     const result = await verifyTurnstileToken("token-q");
     expect(result).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dev bypass (NODE_ENV === "development")
+// ---------------------------------------------------------------------------
+
+describe("verifyTurnstileToken — dev bypass", () => {
+  // NODE_ENV is typed read-only in @types/node; cast to write in tests.
+  const env = process.env as Record<string, string | undefined>;
+
+  it("returns true immediately in development without calling fetch", async () => {
+    const saved = env.NODE_ENV;
+    env.NODE_ENV = "development";
+    try {
+      const result = await verifyTurnstileToken("any-token");
+      expect(result).toBe(true);
+      expect(mockFetch).not.toHaveBeenCalled();
+    } finally {
+      env.NODE_ENV = saved;
+    }
+  });
+
+  it("returns true even for a null token in development (bypass is unconditional)", async () => {
+    const saved = env.NODE_ENV;
+    env.NODE_ENV = "development";
+    try {
+      const result = await verifyTurnstileToken(null);
+      expect(result).toBe(true);
+      expect(mockFetch).not.toHaveBeenCalled();
+    } finally {
+      env.NODE_ENV = saved;
+    }
   });
 });
 

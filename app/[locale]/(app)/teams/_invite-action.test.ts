@@ -8,6 +8,7 @@ import {
 } from "@/test-utils/mongo";
 import { Team, TEAM_COLOR_PALETTE } from "@/lib/db/models/team";
 import { Invitation } from "@/lib/db/models/Invitation";
+import { TeamMembership } from "@/lib/db/models/teamMembership";
 
 const WORKSPACE_ID = new Types.ObjectId();
 const OTHER_WORKSPACE_ID = new Types.ObjectId();
@@ -324,5 +325,58 @@ describe("revokeInviteAction — basic", () => {
     // Foreign invite is untouched.
     const after = await Invitation.findById(foreignInvite._id).lean();
     expect(after?.status).toBe("pending");
+  });
+});
+
+describe("inviteMemberAction â€” lead uniqueness", () => {
+  it("rejects lead assignment when the team already has a lead member", async () => {
+    const team = await makeTeam();
+    await TeamMembership.create({
+      workspaceId: WORKSPACE_ID,
+      teamId: team._id,
+      workosUserId: "existing-lead",
+      role: "lead",
+    });
+    const { inviteMemberAction } = await import("./_invite-action");
+
+    const result = await inviteMemberAction({
+      email: "lead-blocked@example.com",
+      teamIds: [String(team._id)],
+      leadOnTeamIds: [String(team._id)],
+    });
+
+    expect(result.error).toBe("TEAM_ALREADY_HAS_LEAD");
+    expect(result.leadTakenTeamNames).toEqual(["Crew"]);
+    expect(
+      await Invitation.findOne({
+        workspaceId: WORKSPACE_ID,
+        email: "lead-blocked@example.com",
+      }).lean(),
+    ).toBeNull();
+  });
+
+  it("rejects lead assignment when a pending invite already claims team lead", async () => {
+    const team = await makeTeam();
+    await Invitation.create({
+      workspaceId: WORKSPACE_ID,
+      email: "pending@example.com",
+      role: "staff",
+      teamIds: [team._id],
+      leadOnTeamIds: [team._id],
+      tokenHash: sha256Hex("pending-lead-token"),
+      invitedByWorkosUserId: OWNER_USER_ID,
+      status: "pending",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
+    const { inviteMemberAction } = await import("./_invite-action");
+
+    const result = await inviteMemberAction({
+      email: "next@example.com",
+      teamIds: [String(team._id)],
+      leadOnTeamIds: [String(team._id)],
+    });
+
+    expect(result.error).toBe("TEAM_ALREADY_HAS_LEAD");
+    expect(result.leadTakenTeamNames).toEqual(["Crew"]);
   });
 });

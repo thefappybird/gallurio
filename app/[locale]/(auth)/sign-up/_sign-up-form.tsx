@@ -14,7 +14,11 @@ import { signUpAction, googleSignInAction } from "../_actions";
 import type { ActionResult } from "../_actions";
 import { useTransition } from "react";
 
-export function SignUpForm() {
+type SignUpFormProps = {
+  lockedEmail?: string | null;
+};
+
+export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
   const t = useTranslations("auth");
   const router = useRouter();
   const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
@@ -67,6 +71,9 @@ export function SignUpForm() {
           name="cf-turnstile-response"
           value={turnstileToken}
         />
+        {lockedEmail ? (
+          <input type="hidden" name="email" value={lockedEmail} />
+        ) : null}
 
         {/* Name row */}
         <div className="grid grid-cols-2 gap-3">
@@ -103,11 +110,12 @@ export function SignUpForm() {
           <Label htmlFor="signup-email">{t("fields.email")}</Label>
           <Input
             id="signup-email"
-            name="email"
+            name={lockedEmail ? undefined : "email"}
             type="email"
             autoComplete="email"
             required
-            disabled={pending}
+            disabled={pending || Boolean(lockedEmail)}
+            defaultValue={lockedEmail ?? undefined}
             aria-describedby={error ? "signup-error" : undefined}
           />
         </div>

@@ -291,6 +291,21 @@ describe("signInAction", () => {
     );
   });
 
+  it("redirects invite sign-in to invite accept before onboarding", async () => {
+    mockCookieJar["gw_invite_token"] = "invite-token";
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue(
+      sealedResponse(),
+    );
+
+    await expect(
+      signInAction(null, fd({
+        email: "test@example.com",
+        password: "Password1!",
+        "cf-turnstile-response": "valid-token",
+      })),
+    ).rejects.toThrow("REDIRECT:/api/invites/accept");
+  });
+
   it("redirects to MFA page on mfa_challenge code", async () => {
     const ex = Object.assign(new Error("mfa required"), {
       code: "mfa_challenge",
@@ -377,6 +392,24 @@ describe("signUpAction", () => {
       expect.objectContaining({ email: "new@example.com" }),
     );
     expect(mockWorkos.userManagement.authenticateWithPassword).toHaveBeenCalled();
+  });
+
+  it("redirects invite sign-up to invite accept before onboarding", async () => {
+    mockCookieJar["gw_invite_token"] = "invite-token";
+    mockWorkos.userManagement.createUser.mockResolvedValue({ id: "new-user" });
+    mockWorkos.userManagement.authenticateWithPassword.mockResolvedValue(
+      sealedResponse(),
+    );
+
+    await expect(
+      signUpAction(null, fd({
+        firstName: "Test",
+        email: "new@example.com",
+        password: "Password12345!",
+        confirmPassword: "Password12345!",
+        "cf-turnstile-response": "valid-token",
+      })),
+    ).rejects.toThrow("REDIRECT:/api/invites/accept");
   });
 });
 
@@ -501,6 +534,18 @@ describe("verifyEmailAction", () => {
     expect(mockCookieJar["wos-session"]).toBe("sealed-session-token");
     expect(mockCookieJar["wos-email-verify-pending"]).toBeUndefined();
   });
+
+  it("redirects invite email verification to invite accept before onboarding", async () => {
+    mockCookieJar["gw_invite_token"] = "invite-token";
+    mockCookieJar["wos-email-verify-pending"] = "pending-email-token";
+    mockWorkos.userManagement.authenticateWithEmailVerification.mockResolvedValue(
+      sealedResponse(),
+    );
+
+    await expect(
+      verifyEmailAction(null, fd({ code: "123456" })),
+    ).rejects.toThrow("REDIRECT:/api/invites/accept");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -532,6 +577,21 @@ describe("mfaChallengeAction", () => {
     expect(caught?.message).toMatch(/^REDIRECT:/);
     expect(mockCookieJar["wos-session"]).toBe("sealed-session-token");
     expect(mockCookieJar["wos-mfa-pending"]).toBeUndefined();
+  });
+
+  it("redirects invite MFA completion to invite accept before onboarding", async () => {
+    mockCookieJar["gw_invite_token"] = "invite-token";
+    mockCookieJar["wos-mfa-pending"] = JSON.stringify({
+      pendingToken: "pending-mfa",
+      challengeId: "challenge-xyz",
+    });
+    mockWorkos.userManagement.authenticateWithTotp.mockResolvedValue(
+      sealedResponse(),
+    );
+
+    await expect(
+      mfaChallengeAction(null, fd({ code: "654321" })),
+    ).rejects.toThrow("REDIRECT:/api/invites/accept");
   });
 
   it("returns invalidCode on bad TOTP", async () => {

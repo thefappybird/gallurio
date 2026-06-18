@@ -130,6 +130,40 @@ describe("assignMemberToTeamAction — workspace-member guard", () => {
   });
 });
 
+describe("setLeadFlagAction — one lead per team", () => {
+  it("rejects promotion when the team already has a different lead", async () => {
+    const team = await makeTeam();
+    await seedMemberUser("user_existing_lead");
+    await seedMemberUser("user_candidate");
+    await TeamMembership.create({
+      workspaceId: WORKSPACE_ID,
+      teamId: team._id,
+      workosUserId: "user_existing_lead",
+      role: "lead",
+    });
+    await TeamMembership.create({
+      workspaceId: WORKSPACE_ID,
+      teamId: team._id,
+      workosUserId: "user_candidate",
+      role: "member",
+    });
+
+    const { setLeadFlagAction } = await import("./_member-action");
+    const result = await setLeadFlagAction({
+      workosUserId: "user_candidate",
+      teamId: String(team._id),
+      isLead: true,
+    });
+
+    expect(result.error).toBe("TEAM_ALREADY_HAS_LEAD");
+    const candidate = await TeamMembership.findOne({
+      teamId: team._id,
+      workosUserId: "user_candidate",
+    }).lean();
+    expect(candidate?.role).toBe("member");
+  });
+});
+
 describe("removeMemberFromWorkspaceAction — transaction + seat release", () => {
   it("removes workspace membership, team memberships, and releases seats", async () => {
     const team = await makeTeam();

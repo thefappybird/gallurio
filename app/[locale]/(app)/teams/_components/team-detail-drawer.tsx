@@ -60,6 +60,7 @@ export function TeamDetailDrawer({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addValue, setAddValue] = useState("");
+  const [leadWarnFor, setLeadWarnFor] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   if (!team) {
@@ -85,6 +86,10 @@ export function TeamDetailDrawer({
   function roleOf(m: MemberSummary): "member" | "lead" {
     return m.teams.find((tm) => tm.teamId === teamId)?.role ?? "member";
   }
+
+  // A team may have at most one lead. Once one exists, every other member's lead
+  // toggle is disabled; clicking it surfaces a validation popover instead.
+  const teamHasLead = teamMembers.some((m) => roleOf(m) === "lead");
 
   function handleAdd(workosUserId: string) {
     if (!workosUserId) return;
@@ -187,6 +192,7 @@ export function TeamDetailDrawer({
                 {teamMembers.map((m) => {
                   const isOwner = m.workosUserId === ownerWorkosUserId;
                   const isLead = roleOf(m) === "lead";
+                  const blocked = teamHasLead && !isLead;
                   const busy = busyId === m.workosUserId;
                   return (
                     <li
@@ -213,12 +219,57 @@ export function TeamDetailDrawer({
                             className="flex items-center gap-1.5 text-xs text-muted-foreground"
                           >
                             {t("drawer.leadToggleLabel")}
-                            <Switch
-                              id={`lead-${m.workosUserId}`}
-                              checked={isLead}
-                              disabled={busy}
-                              onCheckedChange={(v) => handleSetLead(m.workosUserId, v)}
-                            />
+                            {blocked ? (
+                              // Lead already taken: render a disabled-looking
+                              // switch that surfaces a validation popup just above
+                              // it on hover, keyboard focus, or tap (kept off
+                              // hover-only so touch + keyboard users see it too). A
+                              // real button with aria-disabled keeps it
+                              // keyboard-focusable and announces the disabled state
+                              // (color is not the only signal). It mirrors the
+                              // Switch's off-state styles.
+                              <span className="relative inline-flex">
+                                <button
+                                  type="button"
+                                  id={`lead-${m.workosUserId}`}
+                                  role="switch"
+                                  aria-checked={false}
+                                  aria-disabled
+                                  aria-label={t("drawer.leadToggleLabel")}
+                                  aria-describedby={
+                                    leadWarnFor === m.workosUserId
+                                      ? `lead-warn-${m.workosUserId}`
+                                      : undefined
+                                  }
+                                  onMouseEnter={() => setLeadWarnFor(m.workosUserId)}
+                                  onMouseLeave={() => setLeadWarnFor(null)}
+                                  onFocus={() => setLeadWarnFor(m.workosUserId)}
+                                  onBlur={() => setLeadWarnFor(null)}
+                                  onClick={() => setLeadWarnFor(m.workosUserId)}
+                                  className="inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center border border-input bg-input opacity-50 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                                >
+                                  <span className="pointer-events-none block size-4 translate-x-0 bg-background" />
+                                </button>
+                                {leadWarnFor === m.workosUserId && (
+                                  <span
+                                    id={`lead-warn-${m.workosUserId}`}
+                                    role="alert"
+                                    className="absolute bottom-full right-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
+                                  >
+                                    {t("drawer.leadOnlyOnePerTeam")}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <Switch
+                                id={`lead-${m.workosUserId}`}
+                                checked={isLead}
+                                disabled={busy}
+                                onCheckedChange={(v) =>
+                                  handleSetLead(m.workosUserId, v)
+                                }
+                              />
+                            )}
                           </Label>
                           <Button
                             size="sm"

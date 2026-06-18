@@ -124,6 +124,11 @@ export function InviteForm({
           setFormError(t("invite.errors.teamNotFound"));
           return;
         }
+        if (result.error === "TEAM_ALREADY_HAS_LEAD") {
+          const names = (result.leadTakenTeamNames ?? []).join(", ");
+          setFormError(t("invite.errors.teamAlreadyHasLead", { teams: names || "—" }));
+          return;
+        }
         setFormError(t("errors.generic"));
         return;
       }
@@ -168,6 +173,7 @@ export function InviteForm({
                   const selected = selectedTeamIds.has(team.id);
                   const atCap = team.memberCount >= team.maxMembersPerTeam;
                   const isLead = leadOnTeamIds.has(team.id);
+                  const leadTaken = team.hasLead && !isLead;
                   return (
                     <li
                       key={team.id}
@@ -210,7 +216,7 @@ export function InviteForm({
                         <Switch
                           id={`invite-lead-${team.id}`}
                           checked={isLead}
-                          disabled={pending || !selected}
+                          disabled={pending || !selected || leadTaken}
                           onCheckedChange={(v) => toggleLead(team.id, v)}
                         />
                       </div>

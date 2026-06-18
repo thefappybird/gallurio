@@ -27,7 +27,6 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
@@ -127,13 +126,11 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarSeparator className="group-data-[collapsible=icon]:hidden" />
-
       <SidebarContent>
-        {/* Bell / notifications */}
-        <SidebarGroup className="pb-0">
+        <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Bell / notifications — same structure as nav items */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   render={<button type="button" />}
@@ -141,24 +138,26 @@ export function AppSidebar({
                   tooltip={tNotif("bell")}
                   className="group-data-[collapsible=icon]:mx-auto"
                   aria-expanded={bellOpen}
-                  aria-label={tNotif("bell")}
+                  aria-label={
+                    unreadCount > 0
+                      ? `${unreadCount > 99 ? "99+" : unreadCount} unread notifications`
+                      : tNotif("bell")
+                  }
                 >
-                  <BellIcon className="size-5! shrink-0" />
+                  <span className="relative inline-flex shrink-0">
+                    <BellIcon className="size-5! shrink-0" />
+                    {unreadCount > 0 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-destructive-foreground"
+                      >
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
                   <span>{tNotif("bell")}</span>
                 </SidebarMenuButton>
-                {unreadCount > 0 && (
-                  <SidebarMenuBadge>{unreadCount > 99 ? "99+" : unreadCount}</SidebarMenuBadge>
-                )}
               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator />
-
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
               {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);
                 return (

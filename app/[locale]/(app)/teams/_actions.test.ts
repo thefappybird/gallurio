@@ -32,6 +32,16 @@ vi.mock("@/lib/auth/ownerContext", () => ({
   })),
 }));
 
+// next-intl/server reads request context that does not exist under Vitest, so
+// getLocale/getTranslations throw "not supported in Client Components". They run
+// fine inside real Server Actions (server-side); the test just lacks the request
+// scope, so stub them the same way settings/_actions.test.ts does.
+vi.mock("next-intl/server", () => ({
+  getLocale: vi.fn().mockResolvedValue("en"),
+  getTranslations: vi.fn().mockResolvedValue((key: string) => key),
+  setRequestLocale: vi.fn(),
+}));
+
 beforeAll(async () => {
   await startInMemoryMongo();
 });

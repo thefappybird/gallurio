@@ -838,6 +838,7 @@
         "noPending": "No pending invites for this team.",
         "inviteToTeam": "Invite to this team",
         "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "A team can only have one lead.",
         "removeFromTeam": "Remove",
         "teamFull": "This team is full.",
         "close": "Close"
@@ -883,6 +884,7 @@
           "emailRequired": "Enter a valid email address.",
           "pickAtLeastOneTeam": "Pick at least one team to add them to.",
           "teamFull": "These teams are full and can't accept new members: {teams}.",
+          "teamAlreadyHasLead": "These teams already have a lead assigned: {teams}.",
           "teamNotFound": "One of the selected teams was not found.",
           "alreadyInvitedOrMember": "That email already has an invite or is already a workspace member.",
           "noTeamsExist": "Create a team first before inviting members."
@@ -1538,29 +1540,35 @@
       "pageTitle": "Notifications",
       "loadMore": "Load more",
       "types": {
-        "inquiry.created": {
-          "title": "New inquiry received",
-          "body": "You have a new inquiry from {clientName}."
+        "inquiry": {
+          "created": {
+            "title": "New inquiry received",
+            "body": "You have a new inquiry from {clientName}."
+          }
         },
-        "booking.team_assigned": {
-          "title": "New booking assigned to your team",
-          "body": "{assignerName} assigned a booking to your team."
+        "booking": {
+          "team_assigned": {
+            "title": "New booking assigned to your team",
+            "body": "{assignerName} assigned a booking to your team."
+          },
+          "status_changed": {
+            "title": "Booking status updated",
+            "body": "{actorName} changed a booking status to {newStatus}."
+          }
         },
-        "booking.status_changed": {
-          "title": "Booking status updated",
-          "body": "{actorName} changed a booking status to {newStatus}."
-        },
-        "team.invitation": {
-          "title": "You've been invited to a team",
-          "body": "{inviterName} invited you to join {teamName}."
-        },
-        "team.removed": {
-          "title": "Removed from team",
-          "body": "You have been removed from {teamName}."
-        },
-        "team.deleted": {
-          "title": "Team disbanded",
-          "body": "{teamName} has been deleted."
+        "team": {
+          "invitation": {
+            "title": "You've been invited to a team",
+            "body": "{inviterName} invited you to join {teamName}."
+          },
+          "removed": {
+            "title": "Removed from team",
+            "body": "You have been removed from {teamName}."
+          },
+          "deleted": {
+            "title": "Team disbanded",
+            "body": "{teamName} has been deleted."
+          }
         }
       }
     }

@@ -31,7 +31,7 @@ importers:
         version: 1.16.3
       '@workos-inc/authkit-nextjs':
         specifier: ^4.1.1
-        version: 4.1.1(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        version: 4.1.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@workos-inc/node':
         specifier: ^10.2.0
         version: 10.2.0
@@ -61,10 +61,10 @@ importers:
         version: 12.39.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next:
         specifier: 16.2.6
-        version: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-intl:
         specifier: ^4.0.0
-        version: 4.12.0(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        version: 4.12.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -121,11 +121,14 @@ importers:
         version: 1.4.0
       workflow:
         specifier: ^4.2.6
-        version: 4.2.6(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
+        version: 4.2.6(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
       zod:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.61.0
+        version: 1.61.0
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.3.0
@@ -156,6 +159,9 @@ importers:
       '@workflow/vitest':
         specifier: ^4.0.7
         version: 4.0.7(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))(vitest@4.1.7(@types/node@20.19.41)(happy-dom@20.9.0)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3)))(zod@3.25.76)
+      cross-env:
+        specifier: ^10.1.0
+        version: 10.1.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -174,6 +180,9 @@ importers:
       tailwindcss:
         specifier: ^4
         version: 4.3.0
+      tdd-guard-vitest:
+        specifier: ^0.2.0
+        version: 0.2.0(vitest@4.1.7(@types/node@20.19.41)(happy-dom@20.9.0)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3)))
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -189,6 +198,135 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+
+  '@anthropic-ai/claude-agent-sdk@0.2.112':
+    resolution: {integrity: sha512-vMFoiDKlOive8p3tphpV1gQaaytOipwGJ+uw9mvvaLQUODSC2+fCdRDAY25i2Tsv+lOtxzXBKctmaDuWqZY7ig==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      zod: ^4.0.0
+
+  '@anthropic-ai/sdk@0.81.0':
+    resolution: {integrity: sha512-D4K5PvEV6wPiRtVlVsJHIUhHAmOZ6IT/I9rKlTf84gR7GyyAurPJK7z9BOf/AZqC5d1DhYQGJNKRmV+q8dGhgw==}
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@anthropic-ai/sdk@0.92.0':
+    resolution: {integrity: sha512-l653JFC83wCglH8H83t1xpgDurCyPyslYW1maPRdCsfuNuGbLvQjQ81sWd3Go3LWRm0jNspzAhuqAYV8r9joSw==}
+    hasBin: true
+    peerDependencies:
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
+  '@ast-grep/lang-go@0.0.6':
+    resolution: {integrity: sha512-PZap9Rp6t+YKbLjRnFRF5aGBX3/HV9s5Rp7ZPsCM+o3tlTZDo1IqDYnFu+Oeh5Razs2U8K8ccPSJ+GBxalVhWg==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-php@0.0.7':
+    resolution: {integrity: sha512-cDCcgSRj4eL8QnEivUbxYVSUn4PESyLdp6RuFvYw2gMOb8qzfR1FTq503D9tZ5pqvZCALR3KrbVNzc8SHaQs7Q==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-python@0.0.6':
+    resolution: {integrity: sha512-eF/bEBspmrxdVuPNihvZDyyJx5qtIpGEMz9l1nNQmrji7NZcUiRNC8WwzYyQCBdy1mj8HZ0Tn4I2q3gp/6Bkiw==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-ruby@0.0.7':
+    resolution: {integrity: sha512-tSoj96K/saNfz2wqLZPtKPhwGsRsveydv1FIce9KbXVmxmk+9cerg+LqPS9A8CO3OMQj6LFr1J2Jyr7A/KMpZQ==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/lang-rust@0.0.7':
+    resolution: {integrity: sha512-CF6jv8XmlVQgr/pFKADM87EkoGiHIrHKsG1wcX2iqgdBX5kW8wH+Zd4GP6SMme2eZogD49f19vRoRTF44iZqzg==}
+    peerDependencies:
+      tree-sitter-cli: 0.25.8
+    peerDependenciesMeta:
+      tree-sitter-cli:
+        optional: true
+
+  '@ast-grep/napi-darwin-arm64@0.42.3':
+    resolution: {integrity: sha512-pcTBI8UiNQ9xVOYfu3Ww5KXcrrHV/jJqECQ6efpJpzTGwW+mOpzgihfrq5GKjbMONhr0OaRARCMwEsvKgBXCpA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@ast-grep/napi-darwin-x64@0.42.3':
+    resolution: {integrity: sha512-mQeDYeMWUruf0oiYJejzRzG9BEXjopbhPML8rJombviX6ePmulNjh6SDX/Mxe+vqNGt0JHXgdYtsAtDu9d0LQg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@ast-grep/napi-linux-arm64-gnu@0.42.3':
+    resolution: {integrity: sha512-T2/8eEvFTKSEXd9Dql34/bsyWogFYh7IGsuOoqYNJOcYwT+TPCLTWPZdcpGqrdYdTYT92qX+4H0dUmaZ+TuOPw==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@ast-grep/napi-linux-arm64-musl@0.42.3':
+    resolution: {integrity: sha512-O/K4p/GB5MiK2NE8s7pCBDpZ0EOUrMkMF0HbZKi/HIXH9HQdkoYYO+NqKumk92YNr3gUo8fkGkIG6v4wowANvQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@ast-grep/napi-linux-x64-gnu@0.42.3':
+    resolution: {integrity: sha512-HnljxyLZmt7t7al46j/j/fLj7e9qG8Nlk6/vrj+AD6nRqoeu7pW4YHcQA9NXst79GBz2CU0nba1WEtjUfkNgGg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@ast-grep/napi-linux-x64-musl@0.42.3':
+    resolution: {integrity: sha512-6WLvV3ErwWXQcpMS4BEVjD7QiTGO2Hr3LuDouQoUUBSMu9gI0bBAZGQaqGfWidI+aXYZ0eL5KmCCDB4X6Oyskg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@ast-grep/napi-win32-arm64-msvc@0.42.3':
+    resolution: {integrity: sha512-LiDOhkvBEeXi+yJomrfUYgnLvCntrWianruKXMzIK1QpxWmFSVC2uwWacMbq2v/DTk0MlQ09225yD6sAuL5pEQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@ast-grep/napi-win32-ia32-msvc@0.42.3':
+    resolution: {integrity: sha512-DOAzKQPWQF42a9jgvCz4ajitARcMm9j2xKzcSNwkgZjrconAsRphqCTG3qkfEXX2x7KaVHAqoUp4XgPZXZ5vlA==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@ast-grep/napi-win32-x64-msvc@0.42.3':
+    resolution: {integrity: sha512-1bl5eAbRGI5VRlKzXVPiq+sFJezh60O3ur6G+w8elA20uEZ7ik+WLQZu9T5tScFxOfCQQcjV9v4fQiaGNgHJsA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@ast-grep/napi@0.42.3':
+    resolution: {integrity: sha512-iWuH84nptrXpfrpYAsc93CD6JRnyRLYWFRzP9j1KRMK2hspVMBCbmfRyEoMd2B572dd2sSF3eXIQvY/CqIxYmQ==}
+    engines: {node: '>= 10'}
+
+  '@ast-grep/setup-lang@0.0.6':
+    resolution: {integrity: sha512-aSYZNF5nGQMxnwiA3Lcc8zi0AtpGlug47ADgqCgP/2n7p922FbnW7vo1rbW4kKjW72B/3mDdN7uvYidv8JnPnw==}
 
   '@aws-crypto/crc32@5.2.0':
     resolution: {integrity: sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg==}
@@ -474,6 +612,9 @@ packages:
 
   '@emnapi/wasi-threads@1.2.1':
     resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
+
+  '@epic-web/invariant@1.0.0':
+    resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
 
   '@esbuild/aix-ppc64@0.27.7':
     resolution: {integrity: sha512-EKX3Qwmhz1eMdEJokhALr0YiD0lhQNwDqkPYyPhiSwKrh7/4KRjQc04sZ8db+5DVVnZ1LmbNDI1uAMPEUBnQPg==}
@@ -1482,6 +1623,11 @@ packages:
   '@parcel/watcher@2.5.6':
     resolution: {integrity: sha512-tmmZ3lQxAe/k/+rNnXQRawJ4NjxO2hqiOLTHvWchtGZULp4RyFeh6aU4XdOYBFe2KE1oShQTv4AblOs2iOrNnQ==}
     engines: {node: '>= 10.0.0'}
+
+  '@playwright/test@1.61.0':
+    resolution: {integrity: sha512-cKA5B6lpFEMyMGjxF54QihfYpB4FkEGH+qZhtArDEG+wezQAJY8Pq6C7T1SjWz+FFzt3TbyoXBQYk/0292TdJA==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
@@ -3023,6 +3169,11 @@ packages:
   country-flag-icons@1.6.17:
     resolution: {integrity: sha512-Nmik0289ZVZSI3c7mJR/amg6DyY7Z59b0sTFSKayeX72mHfPzCPJygwJs2pYgQULzuAyWeCUgwAJ+Dq8OR+JFw==}
 
+  cross-env@10.1.0:
+    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
+    engines: {node: '>=20'}
+    hasBin: true
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -3736,6 +3887,11 @@ packages:
     resolution: {integrity: sha512-eKpRKAovdpZtR1WopLHxlBWvAgPny3c4gX1G5Jhwmmw4XJj0ifSD5qB5TOo8hmA0wlRKDAOAhEE1yVPgs6Fgcg==}
     engines: {node: '>=14.14'}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
@@ -4251,6 +4407,10 @@ packages:
 
   json-parse-even-better-errors@2.3.1:
     resolution: {integrity: sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==}
+
+  json-schema-to-ts@3.1.1:
+    resolution: {integrity: sha512-+DWg8jCJG2TEnpy7kOm/7/AxaYoaRbjVB4LFZLySZlWn8exGs3A4OLJR966cVvU26N7X9TWxl+Jsw7dzAqKT6g==}
+    engines: {node: '>=16'}
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
@@ -5044,6 +5204,16 @@ packages:
   pkg-types@2.3.1:
     resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
 
+  playwright-core@1.61.0:
+    resolution: {integrity: sha512-caX7TrY3Ml6egyDX0WUcTHDxodl/b51y5wJOdCEA36QviK/s2g081hvmGs8eaE3DWb6NYZQ6BjO/QkNRPenoPA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.61.0:
+    resolution: {integrity: sha512-Z+7BeeqQPRRzklHsVFP4KTGIyMxKUmfeRA4WisM6G3/XW6nwGeX6fX9qYaDa+CiUqpOkb2f6X3nar05R3kSuJQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   po-parser@2.1.1:
     resolution: {integrity: sha512-ECF4zHLbUItpUgE3OTtLKlPjeBN+fKEczj2zYjDfCGOzicNs0GK3Vg2IoAYwx7LH/XYw43fZQP6xnZ4TkNxSLQ==}
 
@@ -5665,6 +5835,16 @@ packages:
   tar-stream@3.2.0:
     resolution: {integrity: sha512-ojzvCvVaNp6aOTFmG7jaRD0meowIAuPc3cMMhSgKiVWws1GyHbGd/xvnyuRKcKlMpt3qvxx6r0hreCNITP9hIg==}
 
+  tdd-guard-vitest@0.2.0:
+    resolution: {integrity: sha512-f2Mzpbs1Xqvo5Qzy2WLd44C2GV1VtQfEa/9INA+SlhnazYkBfrc+9dJ0rmx99RcxC8Vpd8aOxFy3dLn2abo45Q==}
+    peerDependencies:
+      vitest: '>=3.2.4'
+
+  tdd-guard@1.6.9:
+    resolution: {integrity: sha512-9vu/QKIWVTDUtArqwjJ0fHGH9JHVSeITS6fwdxMrHLIje3P9BXyZ/01YGY9IZDqTsOTxKzhf/0+wxPjPWjUNmg==}
+    engines: {node: '>=22.0.0'}
+    hasBin: true
+
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
 
@@ -5730,6 +5910,9 @@ packages:
   tr46@5.1.1:
     resolution: {integrity: sha512-hdF5ZgjTqgAntKkklYw0R03MG2x/bSzTtkxmIRw/sTNV8YXsCJ1tfLAX23lhxhHJlEf3CRCOCGGWw3vI3GaSPw==}
     engines: {node: '>=18'}
+
+  ts-algebra@2.0.0:
+    resolution: {integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==}
 
   ts-api-utils@2.5.0:
     resolution: {integrity: sha512-OJ/ibxhPlqrMM0UiNHJ/0CKQkoKF243/AEmplt3qpRgkW8VG7IfOS41h7V8TjITqdByHzrjcS/2si+y4lIh8NA==}
@@ -6233,6 +6416,98 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
+  '@anthropic-ai/claude-agent-sdk@0.2.112(zod@4.3.6)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.81.0(zod@4.3.6)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@4.3.6)
+      zod: 4.3.6
+    optionalDependencies:
+      '@img/sharp-darwin-arm64': 0.34.5
+      '@img/sharp-darwin-x64': 0.34.5
+      '@img/sharp-linux-arm': 0.34.5
+      '@img/sharp-linux-arm64': 0.34.5
+      '@img/sharp-linux-x64': 0.34.5
+      '@img/sharp-linuxmusl-arm64': 0.34.5
+      '@img/sharp-linuxmusl-x64': 0.34.5
+      '@img/sharp-win32-arm64': 0.34.5
+      '@img/sharp-win32-x64': 0.34.5
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+
+  '@anthropic-ai/sdk@0.81.0(zod@4.3.6)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 4.3.6
+
+  '@anthropic-ai/sdk@0.92.0(zod@4.3.6)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 4.3.6
+
+  '@ast-grep/lang-go@0.0.6':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-php@0.0.7':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-python@0.0.6':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-ruby@0.0.7':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/lang-rust@0.0.7':
+    dependencies:
+      '@ast-grep/setup-lang': 0.0.6
+
+  '@ast-grep/napi-darwin-arm64@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-darwin-x64@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-linux-arm64-gnu@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-linux-arm64-musl@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-linux-x64-gnu@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-linux-x64-musl@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-win32-arm64-msvc@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-win32-ia32-msvc@0.42.3':
+    optional: true
+
+  '@ast-grep/napi-win32-x64-msvc@0.42.3':
+    optional: true
+
+  '@ast-grep/napi@0.42.3':
+    optionalDependencies:
+      '@ast-grep/napi-darwin-arm64': 0.42.3
+      '@ast-grep/napi-darwin-x64': 0.42.3
+      '@ast-grep/napi-linux-arm64-gnu': 0.42.3
+      '@ast-grep/napi-linux-arm64-musl': 0.42.3
+      '@ast-grep/napi-linux-x64-gnu': 0.42.3
+      '@ast-grep/napi-linux-x64-musl': 0.42.3
+      '@ast-grep/napi-win32-arm64-msvc': 0.42.3
+      '@ast-grep/napi-win32-ia32-msvc': 0.42.3
+      '@ast-grep/napi-win32-x64-msvc': 0.42.3
+
+  '@ast-grep/setup-lang@0.0.6': {}
+
   '@aws-crypto/crc32@5.2.0':
     dependencies:
       '@aws-crypto/util': 5.2.0
@@ -6631,6 +6906,8 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@epic-web/invariant@1.0.0': {}
 
   '@esbuild/aix-ppc64@0.27.7':
     optional: true
@@ -7075,6 +7352,28 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.3.6)':
+    dependencies:
+      '@hono/node-server': 1.19.14(hono@4.12.20)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.0.8
+      express: 5.2.1
+      express-rate-limit: 8.5.2(express@5.2.1)
+      hono: 4.12.20
+      jose: 6.2.3
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 4.3.6
+      zod-to-json-schema: 3.25.2(zod@4.3.6)
+    transitivePeerDependencies:
+      - supports-color
+
   '@mongodb-js/saslprep@1.4.11':
     dependencies:
       sparse-bitfield: 3.0.3
@@ -7375,6 +7674,10 @@ snapshots:
       '@parcel/watcher-win32-arm64': 2.5.6
       '@parcel/watcher-win32-ia32': 2.5.6
       '@parcel/watcher-win32-x64': 2.5.6
+
+  '@playwright/test@1.61.0':
+    dependencies:
+      playwright: 1.61.0
 
   '@popperjs/core@2.11.8': {}
 
@@ -8230,7 +8533,7 @@ snapshots:
       - '@swc/helpers'
       - supports-color
 
-  '@workflow/next@4.0.7(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@workflow/next@4.0.7(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@swc/core': 1.15.3
       '@workflow/builders': 4.0.7
@@ -8239,7 +8542,7 @@ snapshots:
       semver: 7.7.4
       watchpack: 2.5.1
     optionalDependencies:
-      next: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - '@swc/helpers'
@@ -8371,13 +8674,13 @@ snapshots:
       ulid: 3.0.2
       zod: 4.3.6
 
-  '@workos-inc/authkit-nextjs@4.1.1(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@workos-inc/authkit-nextjs@4.1.1(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
       '@sindresorhus/fnv1a': 3.1.0
       '@workos-inc/node': 9.3.1
       iron-session: 8.0.4
       jose: 5.10.0
-      next: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       path-to-regexp: 6.3.0
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
@@ -8988,6 +9291,11 @@ snapshots:
       typescript: 5.9.3
 
   country-flag-icons@1.6.17: {}
+
+  cross-env@10.1.0:
+    dependencies:
+      '@epic-web/invariant': 1.0.0
+      cross-spawn: 7.0.6
 
   cross-spawn@7.0.6:
     dependencies:
@@ -9958,6 +10266,9 @@ snapshots:
       jsonfile: 6.2.1
       universalify: 2.0.1
 
+  fsevents@2.3.2:
+    optional: true
+
   fsevents@2.3.3:
     optional: true
 
@@ -10422,6 +10733,11 @@ snapshots:
 
   json-parse-even-better-errors@2.3.1: {}
 
+  json-schema-to-ts@3.1.1:
+    dependencies:
+      '@babel/runtime': 7.29.2
+      ts-algebra: 2.0.0
+
   json-schema-traverse@0.4.1: {}
 
   json-schema-traverse@1.0.0: {}
@@ -10836,14 +11152,14 @@ snapshots:
 
   next-intl-swc-plugin-extractor@4.12.0: {}
 
-  next-intl@4.12.0(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3):
+  next-intl@4.12.0(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(typescript@5.9.3):
     dependencies:
       '@formatjs/intl-localematcher': 0.8.8
       '@parcel/watcher': 2.5.6
       '@swc/core': 1.15.33
       icu-minify: 4.12.0
       negotiator: 1.0.0
-      next: 16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      next: 16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       next-intl-swc-plugin-extractor: 4.12.0
       po-parser: 2.1.1
       react: 19.2.4
@@ -10858,7 +11174,7 @@ snapshots:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.2.6
       '@swc/helpers': 0.5.15
@@ -10877,6 +11193,7 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.2.6
       '@next/swc-win32-arm64-msvc': 16.2.6
       '@next/swc-win32-x64-msvc': 16.2.6
+      '@playwright/test': 1.61.0
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -11148,6 +11465,14 @@ snapshots:
       confbox: 0.2.4
       exsolve: 1.0.8
       pathe: 2.0.3
+
+  playwright-core@1.61.0: {}
+
+  playwright@1.61.0:
+    dependencies:
+      playwright-core: 1.61.0
+    optionalDependencies:
+      fsevents: 2.3.2
 
   po-parser@2.1.1: {}
 
@@ -11969,6 +12294,33 @@ snapshots:
       - bare-buffer
       - react-native-b4a
 
+  tdd-guard-vitest@0.2.0(vitest@4.1.7(@types/node@20.19.41)(happy-dom@20.9.0)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))):
+    dependencies:
+      tdd-guard: 1.6.9
+      vitest: 4.1.7(@types/node@20.19.41)(happy-dom@20.9.0)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3))
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+      - tree-sitter-cli
+
+  tdd-guard@1.6.9:
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk': 0.2.112(zod@4.3.6)
+      '@anthropic-ai/sdk': 0.92.0(zod@4.3.6)
+      '@ast-grep/lang-go': 0.0.6
+      '@ast-grep/lang-php': 0.0.7
+      '@ast-grep/lang-python': 0.0.6
+      '@ast-grep/lang-ruby': 0.0.7
+      '@ast-grep/lang-rust': 0.0.7
+      '@ast-grep/napi': 0.42.3
+      dotenv: 17.4.2
+      minimatch: 10.2.5
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
+      - tree-sitter-cli
+
   teex@1.0.1:
     dependencies:
       streamx: 2.25.0
@@ -12036,6 +12388,8 @@ snapshots:
   tr46@5.1.1:
     dependencies:
       punycode: 2.3.1
+
+  ts-algebra@2.0.0: {}
 
   ts-api-utils@2.5.0(typescript@5.9.3):
     dependencies:
@@ -12425,14 +12779,14 @@ snapshots:
 
   wordwrap@1.0.0: {}
 
-  workflow@4.2.6(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3):
+  workflow@4.2.6(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3):
     dependencies:
       '@workflow/astro': 4.0.6
       '@workflow/cli': 4.2.6
       '@workflow/core': 4.2.6
       '@workflow/errors': 4.1.2
       '@workflow/nest': 0.0.6(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.24(@nestjs/common@11.1.24(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)(rxjs@7.8.2))(@swc/cli@0.8.1(@swc/core@1.15.3)(chokidar@5.0.0))(@swc/core@1.15.3)
-      '@workflow/next': 4.0.7(next@16.2.6(@babel/core@7.29.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+      '@workflow/next': 4.0.7(next@16.2.6(@babel/core@7.29.0)(@playwright/test@1.61.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@workflow/nitro': 4.0.7
       '@workflow/nuxt': 4.0.7
       '@workflow/rollup': 4.0.6
@@ -12522,6 +12876,10 @@ snapshots:
   zod-to-json-schema@3.25.2(zod@3.25.76):
     dependencies:
       zod: 3.25.76
+
+  zod-to-json-schema@3.25.2(zod@4.3.6):
+    dependencies:
+      zod: 4.3.6
 
   zod-validation-error@4.0.2(zod@3.25.76):
     dependencies:

@@ -148,6 +148,7 @@ export async function removeMemberFromTeamAction(
   ).lean();
   if (removedUser) {
     const locale = await getLocale();
+    // Non-fatal: removal already committed; don't surface a notification failure to the caller.
     await sendNotification({
       workspaceId: ctx.workspaceId,
       recipients: [{
@@ -161,6 +162,8 @@ export async function removeMemberFromTeamAction(
       triggeredByWorkosUserId: ctx.userId,
       locale,
       vars: { teamName: team.name },
+    }).catch((err) => {
+      console.error("[teams] sendNotification (team.removed) failed:", err);
     });
   }
 
@@ -181,6 +184,21 @@ export async function setLeadFlagAction(
   const { workosUserId, teamId, isLead } = parsed.data;
   const teamObjectId = toObjectId(teamId);
   if (!teamObjectId) return { error: "Invalid team id" };
+
+  // A team can have at most one lead. Reject promotion when another member is
+  // already the lead (mirrors the invite-flow enforcement). Demotion is always
+  // allowed, and re-promoting the same member is a no-op that stays valid.
+  if (isLead) {
+    const existingLead = await TeamMembership.findOne({
+      workspaceId: ctx.workspace._id,
+      teamId: teamObjectId,
+      role: "lead",
+      workosUserId: { $ne: workosUserId },
+    })
+      .select({ _id: 1 })
+      .lean();
+    if (existingLead) return { error: "TEAM_ALREADY_HAS_LEAD" };
+  }
 
   const updated = await TeamMembership.findOneAndUpdate(
     { workspaceId: ctx.workspace._id, teamId: teamObjectId, workosUserId },

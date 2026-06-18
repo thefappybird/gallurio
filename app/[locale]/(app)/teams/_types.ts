@@ -34,4 +34,5 @@ export type InvitableTeam = {
   color: string;
   memberCount: number;
   maxMembersPerTeam: number;
+  hasLead: boolean;
 };

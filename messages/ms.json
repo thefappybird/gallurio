@@ -833,6 +833,7 @@
         "noPending": "Tiada jemputan belum selesai untuk pasukan ini.",
         "inviteToTeam": "Jemput ke pasukan ini",
         "leadToggleLabel": "Ketua",
+        "leadOnlyOnePerTeam": "Setiap pasukan hanya boleh mempunyai satu ketua sahaja.",
         "removeFromTeam": "Buang",
         "teamFull": "Pasukan ini sudah penuh.",
         "close": "Tutup"
@@ -878,6 +879,7 @@
           "emailRequired": "Masukkan alamat e-mel yang sah.",
           "pickAtLeastOneTeam": "Pilih sekurang-kurangnya satu pasukan untuk menambahkan mereka.",
           "teamFull": "Pasukan-pasukan ini penuh dan tidak boleh menerima ahli baru: {teams}.",
+          "teamAlreadyHasLead": "Pasukan-pasukan ini sudah mempunyai ketua yang ditetapkan: {teams}.",
           "teamNotFound": "Salah satu pasukan yang dipilih tidak dijumpai.",
           "alreadyInvitedOrMember": "E-mel tersebut sudah mempunyai jemputan atau sudah menjadi ahli ruang kerja.",
           "noTeamsExist": "Buat pasukan dahulu sebelum menjemput ahli."
@@ -1538,29 +1540,35 @@
       "pageTitle": "Pemberitahuan",
       "loadMore": "Muatkan lagi",
       "types": {
-        "inquiry.created": {
-          "title": "Pertanyaan baru diterima",
-          "body": "Anda menerima pertanyaan baru daripada {clientName}."
+        "inquiry": {
+          "created": {
+            "title": "Pertanyaan baru diterima",
+            "body": "Anda menerima pertanyaan baru daripada {clientName}."
+          }
         },
-        "booking.team_assigned": {
-          "title": "Tempahan baharu diberikan kepada pasukan anda",
-          "body": "{assignerName} memberikan tempahan kepada pasukan anda."
+        "booking": {
+          "team_assigned": {
+            "title": "Tempahan baharu diberikan kepada pasukan anda",
+            "body": "{assignerName} memberikan tempahan kepada pasukan anda."
+          },
+          "status_changed": {
+            "title": "Status tempahan dikemas kini",
+            "body": "{actorName} menukar tempahan kepada {newStatus}."
+          }
         },
-        "booking.status_changed": {
-          "title": "Status tempahan dikemas kini",
-          "body": "{actorName} menukar tempahan kepada {newStatus}."
-        },
-        "team.invitation": {
-          "title": "Anda dijemput ke dalam pasukan",
-          "body": "{inviterName} menjemput anda untuk menyertai {teamName}."
-        },
-        "team.removed": {
-          "title": "Dikeluarkan daripada pasukan",
-          "body": "Anda telah dikeluarkan daripada {teamName}."
-        },
-        "team.deleted": {
-          "title": "Pasukan dibubarkan",
-          "body": "{teamName} telah dipadamkan."
+        "team": {
+          "invitation": {
+            "title": "Anda dijemput ke dalam pasukan",
+            "body": "{inviterName} menjemput anda untuk menyertai {teamName}."
+          },
+          "removed": {
+            "title": "Dikeluarkan daripada pasukan",
+            "body": "Anda telah dikeluarkan daripada {teamName}."
+          },
+          "deleted": {
+            "title": "Pasukan dibubarkan",
+            "body": "{teamName} telah dipadamkan."
+          }
         }
       }
     }

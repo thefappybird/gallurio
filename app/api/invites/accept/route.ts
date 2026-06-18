@@ -87,6 +87,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const state = signOAuthState({ locale: "en" });
     const signUpUrl = new URL(localizedUrl(req, "/sign-up"));
     signUpUrl.searchParams.set("state", state);
+    signUpUrl.searchParams.set("email", String(invitation.email));
     const res = NextResponse.redirect(signUpUrl);
     // 15 min — enough time to complete the OAuth round-trip. sameSite=lax
     // ensures the cookie survives the top-level redirect back from WorkOS.
