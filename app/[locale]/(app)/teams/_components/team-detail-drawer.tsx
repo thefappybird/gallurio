@@ -221,11 +221,13 @@ export function TeamDetailDrawer({
                             {t("drawer.leadToggleLabel")}
                             {blocked ? (
                               // Lead already taken: render a disabled-looking
-                              // switch that, instead of toggling, surfaces a
-                              // validation popup just above it. A real button with
-                              // aria-disabled keeps it keyboard-focusable and
-                              // announces the disabled state (color is not the only
-                              // signal). It mirrors the Switch's off-state styles.
+                              // switch that surfaces a validation popup just above
+                              // it on hover, keyboard focus, or tap (kept off
+                              // hover-only so touch + keyboard users see it too). A
+                              // real button with aria-disabled keeps it
+                              // keyboard-focusable and announces the disabled state
+                              // (color is not the only signal). It mirrors the
+                              // Switch's off-state styles.
                               <span className="relative inline-flex">
                                 <button
                                   type="button"
@@ -234,20 +236,23 @@ export function TeamDetailDrawer({
                                   aria-checked={false}
                                   aria-disabled
                                   aria-label={t("drawer.leadToggleLabel")}
-                                  onClick={() =>
-                                    setLeadWarnFor((cur) =>
-                                      cur === m.workosUserId
-                                        ? null
-                                        : m.workosUserId,
-                                    )
+                                  aria-describedby={
+                                    leadWarnFor === m.workosUserId
+                                      ? `lead-warn-${m.workosUserId}`
+                                      : undefined
                                   }
+                                  onMouseEnter={() => setLeadWarnFor(m.workosUserId)}
+                                  onMouseLeave={() => setLeadWarnFor(null)}
+                                  onFocus={() => setLeadWarnFor(m.workosUserId)}
                                   onBlur={() => setLeadWarnFor(null)}
+                                  onClick={() => setLeadWarnFor(m.workosUserId)}
                                   className="inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center border border-input bg-input opacity-50 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                                 >
                                   <span className="pointer-events-none block size-4 translate-x-0 bg-background" />
                                 </button>
                                 {leadWarnFor === m.workosUserId && (
                                   <span
+                                    id={`lead-warn-${m.workosUserId}`}
                                     role="alert"
                                     className="absolute bottom-full right-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
                                   >
