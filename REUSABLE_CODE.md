@@ -46,7 +46,7 @@ hooks, ARIA built in. Sharp-cornered per design rules.
 | `components/ui/sidebar.tsx` | `Sidebar*` system + `useSidebar` | Full sidebar layout (collapse, mobile sheet, cookie persist, Ctrl+B) | `variant`: sidebar/floating/inset; `collapsible`: offcanvas/icon/none; `side` |
 | `components/ui/phone-input.tsx` | `PhoneInput` | Intl phone input | defaults to PH; react-phone-number-input |
 | `components/ui/color-picker.tsx` | `ColorPicker` | Hex picker w/ presets | `value`, `onChange(hex)`, `presets`, `disabled` |
-| `components/ui/location-picker.tsx` | `LocationPicker`, `BaseLocationPicker`, `IntlLocationPicker`, `LocationDisplay`, `LocationReadOnly` | Location select (Nominatim geocode + drag pin) | `value: {address,lat,lng}`; `editable`/`compact`/`searchEnabled`; i18n |
+| `components/ui/location-picker.tsx` | `LocationPicker`, `BaseLocationPicker`, `IntlLocationPicker`, `LocationDisplay`, `LocationReadOnly` | Location select (Nominatim geocode + drag pin). **Commit-only semantics**: `onChange` fires only on explicit Accept (✓); Discard (✗) reverts to last committed value — never fires on intermediate map/search state. Accepts `ariaDescribedby` to associate error messages with the inner search input. `LocationReadOnly` is unused (see extraction candidates). | `value: {address,lat,lng}`; `editable`/`compact`/`searchEnabled`/`ariaDescribedby`; i18n |
 | `components/ui/location-map.tsx` | `LocationMap` (default) | Leaflet map w/ draggable pin | `lat`/`lng` nullable; `onPick`; `compact`/`scrollWheelZoom` |
 
 ## 2. App components — `components/app/`
@@ -97,11 +97,14 @@ Composed, app-specific shared components.
 | `lib/bookings/candle-split.ts` | `splitSessionIntoCandles` | Split multi-day session into per-day candles; overnight + past-day handling |
 | `lib/bookings/session-edits.ts` | `startOfDay`, `endOfDay`, `countDays`, `countPastDays`, `splitDayOut`, `shiftSession`, `shiftSessionTimes` | Session date math + edit operations (past/future split) |
 | `lib/bookings/session-validation.ts` | `sessionsAreSameDayInTz` | Verify session start/end same calendar day in workspace tz |
+| `lib/bookings/status-style.ts` | `STATUS_COLOR_VAR`, `STATUS_ORDER`, `CONFLICT_COLOR_VAR` | Canonical booking-status CSS var map + status ordering; `CONFLICT_COLOR_VAR = "var(--danger)"` is the conflict candle color token (mirrors `--danger` in `app/globals.css`) — used by table pills, calendar candles, and legend |
 
 ### `lib/inquiries/`
 | Import | Export | Purpose |
 |--------|--------|---------|
 | `lib/inquiries/session-time.ts` | `formatSessionTimeRange(session, mode, _tz)` | Format inquiry session times (`{ startTime, endTime }` HH:MM wall-clock strings) as a display range; delegates to `formatRangeFromParts` — structurally guaranteed to match `formatTimeRange` output for the same wall-clock time (fixes calendar↔modal mismatch #14). Pass workspace tz for documentation clarity but it is intentionally unused. |
+| `lib/inquiries/optimistic-patch.ts` | `applyOptimisticPatch<T extends {id:string}>(rows, patches)`, `InquiryOptimisticPatch` | Overlay a `Record<id, patch>` map over table rows for instant optimistic UI; reconciles automatically on server re-render. |
+| `app/[locale]/(app)/inquiries/_actions.ts` | `rescheduleInquirySessionAction(input)` | Server action: reschedule a single inquiry session (owner-auth, Zod-validated, idempotent, conflict-checked via `sessionConflictsWithBookings`). |
 
 ### `lib/auth/` (see also CLAUDE.md → Auth & tenancy)
 | Import | Export | Purpose |
@@ -123,6 +126,7 @@ Composed, app-specific shared components.
 |--------|--------|---------|
 | `lib/db/mongoose.ts` | `connectDB` | Lazy cached connection (pool 10, bufferCommands off) |
 | `lib/db/clientTransactions.ts` | `recordBookingForClient`, `reassignBookingBetweenClients` | Atomic client financial-footprint writes |
+| `lib/db/queries/inquiry-conflicts.ts` | `computeInquiryConflicts(workspaceId, inquiries, tz)`, `sessionConflictsWithBookings(workspaceId, tz, session, excludeBookingId?)` | Booking-only conflict detection for inquiries: bulk check across all inquiries (calendar list view) or single-session check (reschedule action); one Booking query per call |
 
 ### Other lib
 | Import | Export | Purpose |
@@ -148,6 +152,7 @@ the same. (Sourced from the 2026-06-17 audit; verify current state before acting
 
 | # | Candidate | Copies | What's duplicated | Suggested home | Confidence |
 |---|-----------|--------|-------------------|----------------|------------|
+| C-0 | `LocationReadOnly` export cleanup | `components/ui/location-picker.tsx` | `LocationReadOnly` is exported but no longer called (its only caller was replaced in Task 13 by the new commit-only `LocationPicker`). Safe to remove once confirmed no external callers remain. | Delete export or keep as deprecated alias | high |
 | C-1 | View toggle (table/calendar) | `bookings/_components/view-toggle.tsx`, `inquiries/_components/inquiry-view-toggle.tsx` | ~95% identical; differ only by localStorage key + i18n namespace | `components/app/view-toggle.tsx` (params: `storageKey`, `namespace`) | high |
 | C-2 | Confirm dialog template | `bookings/_components/{cancel-confirm,past-date-confirm,session-edit-confirm}-dialog.tsx`, `clients/_components/deactivate-client-dialog.tsx`, `teams/_components/downgrade-block-modal.tsx` | Same shell: alert-icon header + border-b, title/body, two-button footer (outline + destructive) | `components/app/confirm-dialog.tsx` (slots: icon, heading, body, actions) | high |
 | C-3 | Unsaved-changes dialog | `bookings/_components/unsaved-changes-dialog.tsx`, `clients/_components/unsaved-changes-dialog.tsx`, `portfolio/_components/UnsavedChangesDialog.tsx` | Bookings & clients ~90% identical; portfolio variant differs (save/discard/cancel) | `components/app/unsaved-changes-dialog.tsx` | high |
