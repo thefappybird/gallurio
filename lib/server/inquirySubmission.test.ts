@@ -16,6 +16,11 @@ vi.mock("@/lib/email/inquiryClientConfirmation", () => ({
   sendInquiryClientConfirmation: (...args: unknown[]) => sendInquiryClientConfirmation(...args),
 }));
 
+const sendNotification = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/notifications/send", () => ({
+  sendNotification: (...args: unknown[]) => sendNotification(...args),
+}));
+
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace, Client, Inquiry, Booking } from "@/lib/db/models";
 import { submitInquiry } from "./inquirySubmission";
@@ -66,6 +71,7 @@ beforeEach(async () => {
   await clearCollections();
   sendInquiryNotification.mockClear();
   sendInquiryClientConfirmation.mockClear();
+  sendNotification.mockClear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -265,5 +271,25 @@ describe("submitInquiry", () => {
     await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
     expect(sendInquiryNotification).toHaveBeenCalledOnce();
     expect(sendInquiryNotification.mock.calls[0][0].recipientEmail).toBe("fallback@studio.test");
+  });
+
+  it("fires sendNotification for the owner even when contact.email is empty", async () => {
+    // inquiryRecipientEmail is set (so the rich owner email fires via sendInquiryNotification)
+    // but contact.email is absent — the in-app + socket notification must still be sent.
+    const ws = await Workspace.create(
+      makeWorkspace({
+        publicPage: { publishedAt: new Date(), inquiryRecipientEmail: "owner@studio.test" },
+        contact: { email: "" },
+      })
+    );
+    await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+
+    expect(sendNotification).toHaveBeenCalledOnce();
+    const call = sendNotification.mock.calls[0][0] as {
+      recipients: { workosUserId: string }[];
+      type: string;
+    };
+    expect(call.recipients[0].workosUserId).toBe(ws.ownerUserId);
+    expect(call.type).toBe("inquiry.created");
   });
 });
