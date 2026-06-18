@@ -105,11 +105,17 @@ what already exists.
 ## Tooling: browser verification & plugins
 Use the installed MCP servers and plugins whenever they fit the task — they are
 faster and more accurate than guessing, and several Done-criteria depend on them.
-- **Playwright MCP** (`mcp__plugin_playwright_playwright__*`): use to actually
-  drive the app in a browser when a change is UI-facing or behavioral. Required
-  for the "mobile view checked at 375px" Done-criterion — resize to 375px,
-  navigate the flow, snapshot/screenshot, and verify loading/empty/error/
-  populated and idle/hover/focus/active/disabled states render. Also use it to
+- **Playwright (prefer the CLI, not the MCP plugin)**: use Playwright to actually
+  drive the app in a browser when a change is UI-facing or behavioral. **Default
+  to the Playwright CLI** (`@playwright/test` via `pnpm exec playwright test`) — it
+  costs far fewer tokens than the `mcp__plugin_playwright_playwright__*` MCP
+  plugin, which should be avoided for routine verification and reserved only for
+  one-off interactive exploration that a scripted spec can't express. The repo is
+  wired for the CLI: `playwright.config.ts` loads `.env.local` via dotenv, an
+  `auth.setup.ts` project logs in once and reuses `storageState`, and specs live
+  in `e2e/`. Required for the "mobile view checked at 375px" Done-criterion —
+  set a 375px viewport, navigate the flow, screenshot, and assert loading/empty/
+  error/populated and idle/hover/focus/active/disabled states. Also use it to
   reproduce bugs and confirm fixes end-to-end (browser → action → result) rather
   than asserting from code alone.
   - **Submit only when the flow requires it; minimize side effects**: submitting
@@ -384,7 +390,7 @@ A task is done only when:
 - Consolidate locales
 - Build
 - Run strict code review
-  - The code review step must include a Playwright run-through (Playwright MCP) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) plus the 375px mobile view, not just that the code compiles
+  - The code review step must include a Playwright run-through (prefer the Playwright CLI, not the MCP plugin — see Tooling) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) plus the 375px mobile view, not just that the code compiles
 - Save review as markdown
 - Fix review findings
 - After the final review passes and all findings are fixed, automatically open a PR for the branch. The PR description must list the completed tasks as a checklist (`- [ ]`) so each can be tested easily later. Only open the PR once there are no remaining tasks on the branch.

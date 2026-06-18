@@ -75,11 +75,14 @@ test("mobile (375px): popover opens as a full-screen overlay", async ({
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/dashboard");
 
-  // NOTE: there is no visible SidebarTrigger outside the sidebar on mobile, so a
-  // real user currently cannot open the sheet / reach the bell (app-shell bug,
-  // reported separately). Open the off-canvas sheet via the Ctrl/Cmd+B shortcut
-  // to verify the notification overlay's mobile branch renders correctly.
-  await page.keyboard.press("ControlOrMeta+b");
+  // The mobile top bar exposes a SidebarTrigger (the sidebar itself is an
+  // off-canvas sheet on phones). A real user taps it to open the nav and reach
+  // the bell — exercise that exact path.
+  const topbarTrigger = page.locator(
+    '[data-slot="app-topbar"] [data-sidebar="trigger"]',
+  );
+  await expect(topbarTrigger).toBeVisible();
+  await topbarTrigger.click();
   await bell(page).click();
 
   // The mobile branch renders a full-screen overlay (fixed inset-0 z-[9999]),
