@@ -878,6 +878,7 @@
           "emailRequired": "Maglagay ng wastong email address.",
           "pickAtLeastOneTeam": "Pumili ng kahit isang koponan para idagdag sila.",
           "teamFull": "Puno na ang mga koponang ito at hindi makakatanggap ng bagong miyembro: {teams}.",
+          "teamAlreadyHasLead": "May naka-assign nang lead sa mga koponang ito: {teams}.",
           "teamNotFound": "Hindi nahanap ang isa sa mga napiling koponan.",
           "alreadyInvitedOrMember": "Mayroon na itong imbitasyon ang email na iyon o miyembro na ng workspace.",
           "noTeamsExist": "Gumawa muna ng koponan bago mag-imbita ng mga miyembro."

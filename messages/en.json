@@ -883,6 +883,7 @@
           "emailRequired": "Enter a valid email address.",
           "pickAtLeastOneTeam": "Pick at least one team to add them to.",
           "teamFull": "These teams are full and can't accept new members: {teams}.",
+          "teamAlreadyHasLead": "These teams already have a lead assigned: {teams}.",
           "teamNotFound": "One of the selected teams was not found.",
           "alreadyInvitedOrMember": "That email already has an invite or is already a workspace member.",
           "noTeamsExist": "Create a team first before inviting members."

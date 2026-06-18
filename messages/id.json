@@ -878,6 +878,7 @@
           "emailRequired": "Masukkan alamat email yang valid.",
           "pickAtLeastOneTeam": "Pilih setidaknya satu tim untuk menambahkan mereka.",
           "teamFull": "Tim-tim ini penuh dan tidak dapat menerima anggota baru: {teams}.",
+          "teamAlreadyHasLead": "Tim-tim ini sudah memiliki lead yang ditetapkan: {teams}.",
           "teamNotFound": "Salah satu tim yang dipilih tidak ditemukan.",
           "alreadyInvitedOrMember": "Email tersebut sudah memiliki undangan atau sudah menjadi anggota ruang kerja.",
           "noTeamsExist": "Buat tim terlebih dahulu sebelum mengundang anggota."

@@ -183,6 +183,19 @@ describe("GET /api/invites/accept — unauthenticated branch (cookie hardening)"
     expect(location).toContain("/sign-up");
   });
 
+  it("prefills the invited email on the sign-up redirect", async () => {
+    const { GET } = await loadRoute();
+    const rawToken = "raw_invite_token_prefill";
+    const res = await GET(
+      makeReq(`http://localhost/api/invites/accept?token=${rawToken}`),
+    );
+
+    expect(res.status).toBe(307);
+    const location = new URL(res.headers.get("location") ?? "");
+    expect(location.pathname).toContain("/sign-up");
+    expect(location.searchParams.get("email")).toBe("invitee@example.com");
+  });
+
   it("does NOT embed the token in the signed OAuth state query param", async () => {
     const { GET } = await loadRoute();
     const rawToken = "tok_state_check";
