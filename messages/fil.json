@@ -1159,6 +1159,7 @@
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
           "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
+          "conflictBlocks": "Ayusin ang salungatan sa iskedyul sa itaas bago mag-convert.",
           "team": "Koponan"
         },
         "actions": {

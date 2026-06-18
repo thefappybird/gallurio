@@ -1159,6 +1159,7 @@
           "saveError": "Tidak dapat menyimpan. Silakan coba lagi.",
           "savedToast": "Draf disimpan.",
           "ownerOnly": "Hanya pemilik ruang kerja yang dapat mengonversi pemesanan.",
+          "conflictBlocks": "Selesaikan konflik jadwal di atas sebelum mengonversi.",
           "team": "Tim"
         },
         "actions": {

@@ -1159,6 +1159,7 @@
           "saveError": "Tidak dapat menyimpan. Sila cuba lagi.",
           "savedToast": "Draf disimpan.",
           "ownerOnly": "Hanya pemilik ruang kerja boleh menukar tempahan.",
+          "conflictBlocks": "Selesaikan konflik penjadualan di atas sebelum menukar.",
           "team": "Pasukan"
         },
         "actions": {

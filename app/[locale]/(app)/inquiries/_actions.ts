@@ -73,6 +73,27 @@ export async function approveInquiryBookingAction(
     return { ok: true, bookingId: inquiry.convertedBookingId.toString(), idempotent: true };
   }
 
+  // Server-side conflict guard: recompute whether any of the inquiry's sessions
+  // conflict with real (non-draft, non-cancelled) bookings, excluding the
+  // inquiry's own draft booking to avoid self-conflict.
+  // Workspace timezone and workspaceId come from the server session only.
+  const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+  for (const s of inquiry.sessions as { startDate: string; startTime: string; endTime: string }[]) {
+    let conflicted: boolean;
+    try {
+      conflicted = await sessionConflictsWithBookings(
+        workspaceId,
+        tz,
+        { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
+        inquiry.draftBookingId
+      );
+    } catch (err) {
+      console.error('[inquiry] approve conflict check failed:', err);
+      return { error: 'conflict_check_failed' };
+    }
+    if (conflicted) return { error: 'conflict' };
+  }
+
   const booking = await Booking.findOne({ _id: inquiry.draftBookingId, workspaceId }).lean();
   if (!booking) return { error: "missing_draft" };
 

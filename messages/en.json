@@ -1159,6 +1159,7 @@
           "saveError": "Could not save. Please try again.",
           "savedToast": "Draft saved.",
           "ownerOnly": "Only the workspace owner can convert bookings.",
+          "conflictBlocks": "Resolve the scheduling conflict above before converting.",
           "team": "Team"
         },
         "actions": {
