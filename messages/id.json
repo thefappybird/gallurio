@@ -492,7 +492,7 @@
           "event": "Acara",
           "pricing": "Harga",
           "eventPricing": "Acara & Harga",
-          "sessionsLocation": "Sesi & Lokasi",
+          "sessionsLocation": "Sesi",
           "review": "Tinjau"
         },
         "client": {
@@ -537,7 +537,8 @@
           "rangeTooLong": "Rentang terlalu panjang (maks 366 hari).",
           "startTimeRequired": "Waktu mulai diperlukan.",
           "endTimeRequired": "Waktu selesai diperlukan.",
-          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai."
+          "endTimeBeforeStart": "Waktu selesai harus setelah waktu mulai.",
+          "locationRequired": "Pilih lokasi sebelum melanjutkan."
         },
         "pricing": {
           "total": "Total",

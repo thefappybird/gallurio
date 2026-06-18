@@ -492,7 +492,7 @@
           "event": "Event",
           "pricing": "Pricing",
           "eventPricing": "Event & Pricing",
-          "sessionsLocation": "Sessions & Location",
+          "sessionsLocation": "Sessions",
           "review": "Review"
         },
         "client": {
@@ -537,7 +537,8 @@
           "rangeTooLong": "Range too long (max 366 days).",
           "startTimeRequired": "Start time is required.",
           "endTimeRequired": "End time is required.",
-          "endTimeBeforeStart": "End time must be after start time."
+          "endTimeBeforeStart": "End time must be after start time.",
+          "locationRequired": "Pick a location before continuing."
         },
         "pricing": {
           "total": "Total",

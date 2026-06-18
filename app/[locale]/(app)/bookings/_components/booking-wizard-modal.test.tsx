@@ -93,8 +93,8 @@ async function advanceToEventStep() {
   });
 }
 
-/** Navigate from the client step all the way to the Sessions & Location step.
- *  Fills the title field so the Event & Pricing step passes validation. */
+/** Navigate from the client step all the way to the Sessions step.
+ *  Fills title and commits a location so the Event & Pricing step passes. */
 async function advanceToSessionsStep() {
   await advanceToEventStep();
 
@@ -103,13 +103,23 @@ async function advanceToSessionsStep() {
     target: { value: "Test Booking" },
   });
 
-  // Click Next — move to Sessions & Location step.
+  // Commit a location: type an address into the location search input, blur it
+  // (triggers commitAddress on the draft), then click the Accept button.
+  const locationInput = screen.getByPlaceholderText(/search venue or address/i);
+  fireEvent.change(locationInput, { target: { value: "Test Venue, Manila" } });
+  fireEvent.blur(locationInput);
+  const acceptBtn = screen.getByRole("button", { name: /accept location/i });
+  await act(async () => {
+    fireEvent.click(acceptBtn);
+  });
+
+  // Click Next — move to Sessions step.
   const nextBtn = screen.getByRole("button", { name: /next/i });
   await act(async () => {
     fireEvent.click(nextBtn);
   });
 
-  // Confirm we're on the Sessions & Location step (sessions list visible).
+  // Confirm we're on the Sessions step (sessions list visible).
   await waitFor(() => {
     expect(document.getElementById("wiz-startDate-0")).toBeInTheDocument();
   });
@@ -593,7 +603,7 @@ describe("BookingWizardModal — Item 4b: edit mode time-change persists", () =>
           allowPastDate: false,
         },
       ],
-      location: { address: "", lat: null, lng: null },
+      location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -765,7 +775,7 @@ describe("BookingWizardModal — single-session edit: client picker visible", ()
               sessions: [{ startAt: "2026-08-15T10:00:00Z", endAt: "2026-08-15T17:00:00Z" }],
               amount: { total: 75_000, deposit: 25_000, currency: "PHP" },
               notes: "",
-              location: { address: "", lat: null, lng: null },
+              location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
               eventType: "wedding",
             }),
           };
@@ -900,7 +910,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       sessions: [
         { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "", lat: null, lng: null },
+      location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -993,7 +1003,7 @@ describe("BookingWizardModal — Issue 2: conflict check in edit mode", () => {
       sessions: [
         { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "", lat: null, lng: null },
+      location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -1061,7 +1071,7 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
     sessions: [
       { startDate: "2026-09-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
     ],
-    location: { address: "", lat: null, lng: null },
+    location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
     amount: { total: 0, deposit: 0, currency: "PHP" as const },
     notes: "",
   };
@@ -1186,18 +1196,25 @@ describe("BookingWizardModal — Issue 3: submit disabled until form is dirty (e
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
-    // Event & Pricing step: fill title and advance.
+    // Event & Pricing step: fill title, commit location, then advance.
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
     });
     fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
       target: { value: "Test Shoot" },
     });
+    const locationInputCreate = screen.getByPlaceholderText(/search venue or address/i);
+    fireEvent.change(locationInputCreate, { target: { value: "Test Venue, Manila" } });
+    fireEvent.blur(locationInputCreate);
+    const acceptBtnCreate = screen.getByRole("button", { name: /accept location/i });
+    await act(async () => {
+      fireEvent.click(acceptBtnCreate);
+    });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /next/i }));
     });
 
-    // Sessions & Location step: wait for conflict check then advance.
+    // Sessions step: wait for conflict check then advance.
     await waitFor(() => {
       expect(document.getElementById("wiz-startDate-0")).not.toBeNull();
     });
@@ -1236,7 +1253,7 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
       sessions: [
         { startDate: "2026-07-01", startTime: "10:00", endTime: "17:00", allowPastDate: false },
       ],
-      location: { address: "", lat: null, lng: null },
+      location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
       amount: { total: 0, deposit: 0, currency: "PHP" as const },
       notes: "",
     };
@@ -1382,6 +1399,81 @@ describe("BookingWizardModal — Issue 2: submit blocked when conflict fetch is 
   });
 });
 
+// ── Task 14: location required gate on Event & Pricing step ──────────────────
+//
+// After the move, LocationPicker lives on the Event & Pricing step and the
+// Next button must be blocked until a location has been committed (non-empty
+// address). validateStep for eventPricing must return false when address is empty.
+describe("BookingWizardModal — Task 14: location required on Event & Pricing step", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/bookings/shifts-on-date")) {
+          return { ok: true, json: async () => ({ shifts: [] }) };
+        }
+        if (url.includes("/api/clients")) {
+          return { ok: true, json: async () => ({ clients: [] }) };
+        }
+        return { ok: false, json: async () => ({}) };
+      })
+    );
+  });
+
+  it("Next is blocked on Event & Pricing step when location is empty", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate={TARGET_DATE}
+          defaultCurrency="PHP"
+          locale="en"
+          teamId="507f1f77bcf86cd799439011"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    // Fill title so other required fields pass.
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+
+    // Attempt to advance without committing a location.
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    // Must still be on Event & Pricing step — sessions start date should NOT be visible.
+    await waitFor(() => {
+      expect(document.getElementById("wiz-startDate-0")).not.toBeInTheDocument();
+    });
+  });
+
+  it("location-required error message visible on Event & Pricing step when address is empty", async () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate={TARGET_DATE}
+          defaultCurrency="PHP"
+          locale="en"
+          teamId="507f1f77bcf86cd799439011"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    // The location required message should be visible (address starts empty).
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+  });
+});
+
 // ── Client reassignment — multi-session edit ─────────────────────────────────
 //
 // Multi-session edits remove the Client step entirely and show the client as a
@@ -1410,7 +1502,7 @@ describe("BookingWizardModal — multi-session edit: no client step", () => {
                 ],
                 amount: { total: 150_000, deposit: 50_000, currency: "PHP" },
                 notes: "",
-                location: { address: "", lat: null, lng: null },
+                location: { address: "Test Venue, Manila", lat: 14.5995, lng: 120.9842 },
                 eventType: "wedding",
               }),
             };

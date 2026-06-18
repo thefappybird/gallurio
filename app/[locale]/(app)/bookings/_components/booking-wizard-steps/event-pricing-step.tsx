@@ -24,6 +24,7 @@ import {
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
+import { LocationPicker } from "@/components/ui/location-picker";
 import type { WizardValues } from "./types";
 
 type Props = {
@@ -52,6 +53,7 @@ function safe(t: (k: string) => string, key: string, fallback: string) {
 export function EventPricingStep({
   control,
   register,
+  watch,
   errors,
   teams,
 }: Props) {
@@ -59,6 +61,8 @@ export function EventPricingStep({
   const tWiz = useTranslations("app.bookings.wizard");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const tPricing = useTranslations("app.bookings.wizard.pricing");
+
+  const locationValue = watch("location");
 
   // A team picker only appears when the caller can choose among >1 writable
   // teams; a single team is auto-applied (seeded into teamId), so no field is
@@ -206,6 +210,40 @@ export function EventPricingStep({
         <p className="sm:col-span-3 text-xs text-muted-foreground">
           {tPricing("hint")}
         </p>
+      </div>
+
+      {/* Location — required, applies to all sessions */}
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="wiz-location">
+          {t("location")}
+          <Asterisk />
+        </Label>
+        <Controller
+          control={control}
+          name="location"
+          render={({ field }) => (
+            <LocationPicker
+              id="wiz-location"
+              editable
+              value={{
+                address: field.value?.address ?? "",
+                lat: field.value?.lat ?? null,
+                lng: field.value?.lng ?? null,
+              }}
+              onChange={field.onChange}
+            />
+          )}
+        />
+        {!locationValue?.address ? (
+          <p
+            id="wiz-location-required"
+            className="text-xs text-destructive"
+            role="alert"
+            aria-live="polite"
+          >
+            {t("locationRequired")}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -492,7 +492,7 @@
           "event": "Event",
           "pricing": "Presyo",
           "eventPricing": "Event at Presyo",
-          "sessionsLocation": "Mga Sesyon at Lokasyon",
+          "sessionsLocation": "Mga Sesyon",
           "review": "Suriin"
         },
         "client": {
@@ -537,7 +537,8 @@
           "rangeTooLong": "Masyadong mahaba ang hanay (max 366 araw).",
           "startTimeRequired": "Kailangan ang oras ng simula.",
           "endTimeRequired": "Kailangan ang oras ng katapusan.",
-          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula."
+          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula.",
+          "locationRequired": "Pumili ng lokasyon bago magpatuloy."
         },
         "pricing": {
           "total": "Kabuuan",

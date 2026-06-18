@@ -83,14 +83,14 @@ type StepDef = {
 
 const ALL_STEPS: StepDef[] = [
   { id: "client", fields: ["client"] },
-  { id: "eventPricing", fields: ["title", "eventType", "teamId", "amount"] },
-  { id: "sessionsLocation", fields: ["sessions", "location"] },
+  { id: "eventPricing", fields: ["title", "eventType", "teamId", "amount", "location"] },
+  { id: "sessionsLocation", fields: ["sessions"] },
   { id: "review", fields: [] },
 ];
 
 const MULTI_SESSION_STEPS: StepDef[] = [
-  { id: "eventPricing", fields: ["title", "eventType", "amount"] },
-  { id: "sessionsLocation", fields: ["sessions", "location"] },
+  { id: "eventPricing", fields: ["title", "eventType", "amount", "location"] },
+  { id: "sessionsLocation", fields: ["sessions"] },
   { id: "review", fields: [] },
 ];
 
@@ -460,6 +460,9 @@ export function BookingWizardModal({
       if (typeof total !== "number" || total < 0) return false;
       if (typeof deposit !== "number" || deposit < 0) return false;
       if (deposit > total) return false;
+      // Location is required — must have a committed (non-empty) address.
+      const location = watch("location");
+      if (!location?.address?.trim()) return false;
     }
     if (step.id === "sessionsLocation") {
       const sessions = watch("sessions") ?? [];
