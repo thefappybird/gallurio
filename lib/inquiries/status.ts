@@ -20,5 +20,12 @@ export function getInquiryStatusLabelKey(status: string | null | undefined): str
   // "converted" has its own label key (displayed as "Converted To Booking").
   if (status === CONVERTED_INQUIRY_STATUS) return CONVERTED_INQUIRY_STATUS;
   if (isBookedInquiryStatus(status)) return BOOKED_INQUIRY_STATUS;
-  return status ?? "new";
+  // Legacy "approved" was an intermediate value (contacted -> approved -> booked).
+  // Map it to "booked" so it renders correctly without a MISSING_MESSAGE error.
+  if (status === "approved") return BOOKED_INQUIRY_STATUS;
+  // Safe fallback: if the status is unknown or missing, return "new" so t(key)
+  // never hits MISSING_MESSAGE. This is defence-in-depth only -- callers should
+  // pass a valid INQUIRY_STATUS_VALUES member.
+  const key = status ?? "new";
+  return (INQUIRY_STATUS_VALUES as readonly string[]).includes(key) ? key : "new";
 }

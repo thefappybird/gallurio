@@ -362,7 +362,7 @@ async function seedWorkspace(
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
-    const status = pick(["new", "new", "approved", "booked", "archived"] as const);
+    const status = pick(["new", "new", "booked", "booked", "archived"] as const);
     return {
       workspaceId: workspace._id,
       name: pick([
