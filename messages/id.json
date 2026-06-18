@@ -833,6 +833,7 @@
         "noPending": "Tidak ada undangan tertunda untuk tim ini.",
         "inviteToTeam": "Undang ke tim ini",
         "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "Setiap tim hanya boleh memiliki satu lead.",
         "removeFromTeam": "Hapus",
         "teamFull": "Tim ini sudah penuh.",
         "close": "Tutup"

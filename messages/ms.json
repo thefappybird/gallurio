@@ -833,6 +833,7 @@
         "noPending": "Tiada jemputan belum selesai untuk pasukan ini.",
         "inviteToTeam": "Jemput ke pasukan ini",
         "leadToggleLabel": "Ketua",
+        "leadOnlyOnePerTeam": "Setiap pasukan hanya boleh mempunyai satu ketua sahaja.",
         "removeFromTeam": "Buang",
         "teamFull": "Pasukan ini sudah penuh.",
         "close": "Tutup"

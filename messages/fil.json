@@ -833,6 +833,7 @@
         "noPending": "Walang nakabinbing imbitasyon para sa koponang ito.",
         "inviteToTeam": "Mag-imbita sa koponang ito",
         "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "Isang lead lang ang maaari sa bawat koponan.",
         "removeFromTeam": "Alisin",
         "teamFull": "Puno na ang koponang ito.",
         "close": "Isara"

@@ -79,4 +79,45 @@ describe("TeamDetailDrawer", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByText("Add existing member")).toBeInTheDocument();
   });
+
+  it("disables the lead toggle for other members once the team has a lead", () => {
+    const membersWithLead: MemberSummary[] = [
+      { workosUserId: OWNER, email: "owner@test.com", name: "Owner", teams: [] },
+      {
+        workosUserId: "u_lead",
+        email: "lead@test.com",
+        name: "Lead Member",
+        teams: [{ teamId: "t1", role: "lead" }],
+      },
+      {
+        workosUserId: "u_other",
+        email: "other@test.com",
+        name: "Other Member",
+        teams: [{ teamId: "t1", role: "member" }],
+      },
+    ];
+    renderWithProviders(
+      <TeamDetailDrawer
+        team={TEAM}
+        open
+        onOpenChange={vi.fn()}
+        members={membersWithLead}
+        pendingInvites={[]}
+        maxMembersPerTeam={10}
+        ownerWorkosUserId={OWNER}
+        onInvite={vi.fn()}
+      />,
+    );
+
+    // The existing lead can still toggle themselves off…
+    expect(document.getElementById("lead-u_lead")).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    // …but every other member's lead toggle is disabled.
+    expect(document.getElementById("lead-u_other")).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
 });

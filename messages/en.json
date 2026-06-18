@@ -838,6 +838,7 @@
         "noPending": "No pending invites for this team.",
         "inviteToTeam": "Invite to this team",
         "leadToggleLabel": "Lead",
+        "leadOnlyOnePerTeam": "A team can only have one lead.",
         "removeFromTeam": "Remove",
         "teamFull": "This team is full.",
         "close": "Close"
