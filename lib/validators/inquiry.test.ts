@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+﻿import { describe, it, expect } from "vitest";
 import {
   inquirySubmissionSchema,
   inquirySessionsToBookingSessions,
@@ -138,9 +138,31 @@ describe("inquirySubmissionSchema", () => {
     if (result.success) expect("guestCount" in result.data).toBe(false);
   });
 
-  it("accepts an empty structured location", () => {
+  it("rejects an empty structured location address", () => {
     const result = inquirySubmissionSchema.safeParse(
       validPayload({ location: { label: "", address: "", placeId: null, lat: null, lng: null } })
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((i) => i.path.join("."));
+      expect(paths.some((p) => p.includes("address"))).toBe(true);
+    }
+  });
+
+  it("rejects a whitespace-only location address", () => {
+    const result = inquirySubmissionSchema.safeParse(
+      validPayload({ location: { label: "Venue", address: "   ", placeId: null, lat: null, lng: null } })
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((i) => i.path.join("."));
+      expect(paths.some((p) => p.includes("address"))).toBe(true);
+    }
+  });
+
+  it("accepts a structured location with a non-empty address", () => {
+    const result = inquirySubmissionSchema.safeParse(
+      validPayload({ location: { label: "Venue", address: "123 Main St, Manila", placeId: null, lat: null, lng: null } })
     );
     expect(result.success).toBe(true);
   });
