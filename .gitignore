@@ -58,3 +58,9 @@ skills-lock.json
 
 # Playwright MCP browser artifacts (screenshots, snapshots, console logs)
 .playwright-mcp/
+
+# Playwright CLI artifacts — may capture filled form values (incl. credentials)
+/test-results/
+/playwright-report/
+/e2e/.auth/
+*.log

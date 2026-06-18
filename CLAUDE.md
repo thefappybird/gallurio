@@ -112,6 +112,31 @@ faster and more accurate than guessing, and several Done-criteria depend on them
   populated and idle/hover/focus/active/disabled states render. Also use it to
   reproduce bugs and confirm fixes end-to-end (browser → action → result) rather
   than asserting from code alone.
+  - **Submit only when the flow requires it; minimize side effects**: submitting
+    forms / triggering mutations (create/invite/save/pay) is allowed when needed
+    to verify a flow end-to-end, but the dev DB is shared and seeded — do it
+    deliberately, prefer the minimal action, avoid destructive ones
+    (delete/wipe), and never repeat a submit once it's verified. Where inspecting
+    states (idle/focus/error/disabled, validation) already answers the question,
+    don't submit.
+  - **No unnecessary API calls / refetching / navigation**: this is a hard rule —
+    don't reload, re-navigate, re-poll, or re-snapshot when the current DOM
+    already answers the question. Navigate once to the target view and assert
+    against that state; consolidate related checks into a single page load
+    instead of one navigation per assertion; never loop a flow that repeatedly
+    hits the server. Each page load reconnects the socket and refetches
+    notifications, so keep navigations to the minimum the test truly needs.
+  - **Test login env vars** (set in the worktree `.env.local`, values never
+    printed/committed): three real WorkOS accounts wired into the seeded
+    workspace let Playwright sign in autonomously. The seed (`lib/db/seed.ts`)
+    reads the WorkOS user id + email; the matching password is used only to
+    sign in via the UI:
+    - Owner: `SEED_OWNER_WORKOS_USER_ID`, `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD` (optional `SEED_OWNER_NAME`)
+    - Staff/member: `SEED_STAFF_WORKOS_USER_ID`, `SEED_STAFF_EMAIL`, `SEED_STAFF_PASSWORD` (optional `SEED_STAFF_NAME`)
+    - Team lead: `SEED_LEAD_WORKOS_USER_ID`, `SEED_LEAD_EMAIL`, `SEED_LEAD_PASSWORD` (optional `SEED_LEAD_NAME`)
+    Staff and lead accounts are seeded only when both their id and email are
+    present. Turnstile is bypassed in dev (`NODE_ENV=development`), so sign-in
+    needs only email + password.
 - **context7** (`mcp__plugin_context7_context7__*`): fetch current docs for any
   library/framework/API (Next.js 16, React 19, Mongoose, Tailwind v4, Paddle,
   next-intl, WorkOS, etc.) before relying on memory. Prefer it over web search
