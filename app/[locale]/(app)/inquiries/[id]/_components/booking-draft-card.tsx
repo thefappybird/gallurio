@@ -374,32 +374,34 @@ export function BookingDraftCard({
         {!isOwner ? (
           <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
         ) : (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              onClick={handleApprove}
-              loading={approving}
-              disabled={hasConflict || saving || approving}
-              aria-disabled={hasConflict || saving || approving}
-              className="sm:flex-1"
-            >
-              {approving ? t("approving") : t("approve")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleSave}
-              loading={saving}
-              disabled={!isDirty || saving || approving}
-              aria-disabled={!isDirty || saving || approving}
-            >
-              {saving ? t("saving") : t("save")}
-            </Button>
-          </div>
-        )}
+          <>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                onClick={handleApprove}
+                loading={approving}
+                disabled={hasConflict || saving || approving}
+                aria-disabled={hasConflict || saving || approving}
+                className="sm:flex-1"
+              >
+                {approving ? t("approving") : t("approve")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSave}
+                loading={saving}
+                disabled={!isDirty || saving || approving}
+                aria-disabled={!isDirty || saving || approving}
+              >
+                {saving ? t("saving") : t("save")}
+              </Button>
+            </div>
 
-        {hasConflict && (
-          <p className="text-xs text-destructive" role="alert">
-            {t("conflictBlocks")}
-          </p>
+            {hasConflict && (
+              <p className="text-xs text-destructive" role="alert">
+                {t("conflictBlocks")}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

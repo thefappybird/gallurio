@@ -12,7 +12,7 @@ import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type Inqui
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
-import { sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
+import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 
 // The status a draft is promoted to on approval. Approval skips the old
 // "inquiry" pipeline state and lands directly on "booked". Drafts are the
@@ -74,25 +74,23 @@ export async function approveInquiryBookingAction(
   }
 
   // Server-side conflict guard: recompute whether any of the inquiry's sessions
-  // conflict with real (non-draft, non-cancelled) bookings, excluding the
-  // inquiry's own draft booking to avoid self-conflict.
+  // conflict with real (non-draft, non-cancelled) bookings in a single batched
+  // query. computeInquiryConflicts already excludes draft and cancelled bookings
+  // so the inquiry's own draft booking is excluded automatically.
   // Workspace timezone and workspaceId come from the server session only.
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
-  for (const s of inquiry.sessions as { startDate: string; startTime: string; endTime: string }[]) {
-    let conflicted: boolean;
-    try {
-      conflicted = await sessionConflictsWithBookings(
-        workspaceId,
-        tz,
-        { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
-        inquiry.draftBookingId
-      );
-    } catch (err) {
-      console.error('[inquiry] approve conflict check failed:', err);
-      return { error: 'conflict_check_failed' };
-    }
-    if (conflicted) return { error: 'conflict' };
+  let conflictIds: Set<string>;
+  try {
+    conflictIds = await computeInquiryConflicts(
+      workspaceId,
+      [{ _id: String(inquiry._id), sessions: inquiry.sessions as { startDate: string; startTime: string; endTime: string }[] }],
+      tz
+    );
+  } catch (err) {
+    console.error('[inquiry] approve conflict check failed:', err);
+    return { error: 'conflict_check_failed' };
   }
+  if (conflictIds.has(String(inquiry._id))) return { error: 'conflict' };
 
   const booking = await Booking.findOne({ _id: inquiry.draftBookingId, workspaceId }).lean();
   if (!booking) return { error: "missing_draft" };

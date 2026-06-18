@@ -84,4 +84,25 @@ describe("BookingDraftCard", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Convert to booking/i })).not.toBeInTheDocument();
   });
+
+  it("disables convert button and shows conflict alert when hasConflict is true", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} hasConflict />);
+    const convertBtn = screen.getByRole("button", { name: /Convert to booking/i });
+    expect(convertBtn).toBeDisabled();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("staff does not see the conflict alert even when hasConflict is true", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} isOwner={false} hasConflict />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("save button is disabled when not dirty and enables after a field change", async () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={1000} />);
+    const saveBtn = screen.getByRole("button", { name: /Save edits/i });
+    expect(saveBtn).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2000" } });
+    expect(saveBtn).not.toBeDisabled();
+  });
 });
