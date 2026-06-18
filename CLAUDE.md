@@ -326,6 +326,7 @@ aspirations. The current backlog of known lapses lives in
 - Immediately after creating a branch/worktree, index it with codebase-memory-mcp as its own project:
   `index_repository { repo_path: "<absolute worktree path>", mode: "full", persistence: true }` (use `fast`/`moderate` for later refreshes). This is a required step for every new branch/worktree — see Codebase memory.
 - Commit periodically during long tasks: make frequent, small checkpoint commits as each coherent unit of work lands (a fix, a passing test, a refactor step) rather than batching everything into one commit at the end. Many checkpoints are the norm — they bound data loss if a session crashes or context is lost, and keep the branch recoverable. Each checkpoint should be a buildable, self-describing commit; do not wait for the entire task to be "done" before the first commit.
+- A worktree starts without a `.env.local`, so the app cannot boot there for Playwright/browser verification. You are allowed to copy the env values from the canonical `dev` checkout's `.env.local` into the worktree's `.env.local` so the app runs and Playwright can drive the real flow. This copy is for local verification only: never commit `.env.local` or any secret value (it must stay git-ignored), never print/log the values, and never paste them into commits, PRs, reviews, or chat output.
 
 ## Testing
 - Every code change ships with tests
