@@ -47,6 +47,8 @@ type Props = {
   startInDisplayMode?: boolean;
   /** Optional style applied to the Apply/Accept action button. Use to match a parent form's submit button style. */
   applyButtonStyle?: React.CSSProperties;
+  /** Optional id(s) for aria-describedby on the inner search input, e.g. to associate a required-field error message. */
+  ariaDescribedby?: string;
   labels?: {
     searchPlaceholder: string;
     searching: string;
@@ -96,6 +98,7 @@ function BaseLocationPicker({
   editable,
   startInDisplayMode,
   applyButtonStyle,
+  ariaDescribedby,
 }: Props) {
   const resolvedLabels = labels ?? {
     searchPlaceholder: "Search venue or address",
@@ -405,6 +408,7 @@ function BaseLocationPicker({
               role="combobox"
               aria-expanded={open}
               aria-controls={listboxId}
+              aria-describedby={ariaDescribedby}
               placeholder={resolvedLabels.searchPlaceholder}
               className="pl-8 pr-16"
               onChange={(e) => setQuery(e.target.value)}

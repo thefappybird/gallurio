@@ -231,10 +231,11 @@ export function EventPricingStep({
                 lng: field.value?.lng ?? null,
               }}
               onChange={field.onChange}
+              ariaDescribedby={!locationValue?.address?.trim() ? "wiz-location-required" : undefined}
             />
           )}
         />
-        {!locationValue?.address ? (
+        {!locationValue?.address?.trim() ? (
           <p
             id="wiz-location-required"
             className="text-xs text-destructive"
