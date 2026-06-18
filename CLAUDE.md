@@ -325,6 +325,7 @@ aspirations. The current backlog of known lapses lives in
   `git worktree add .claude/worktrees/<slug> -b <branch> dev`
 - Immediately after creating a branch/worktree, index it with codebase-memory-mcp as its own project:
   `index_repository { repo_path: "<absolute worktree path>", mode: "full", persistence: true }` (use `fast`/`moderate` for later refreshes). This is a required step for every new branch/worktree — see Codebase memory.
+- Commit periodically during long tasks: make frequent, small checkpoint commits as each coherent unit of work lands (a fix, a passing test, a refactor step) rather than batching everything into one commit at the end. Many checkpoints are the norm — they bound data loss if a session crashes or context is lost, and keep the branch recoverable. Each checkpoint should be a buildable, self-describing commit; do not wait for the entire task to be "done" before the first commit.
 
 ## Testing
 - Every code change ships with tests
@@ -357,8 +358,10 @@ A task is done only when:
 - Consolidate locales
 - Build
 - Run strict code review
+  - The code review step must include a Playwright run-through (Playwright MCP) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) plus the 375px mobile view, not just that the code compiles
 - Save review as markdown
 - Fix review findings
+- After the final review passes and all findings are fixed, automatically open a PR for the branch. The PR description must list the completed tasks as a checklist (`- [ ]`) so each can be tested easily later. Only open the PR once there are no remaining tasks on the branch.
 - Merge to `dev` only after review and explicit approval
 
 ## Commands
