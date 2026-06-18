@@ -1,10 +1,15 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { VitestReporter } from "tdd-guard-vitest";
 
 export default defineConfig({
   plugins: [react()],
   test: {
+    // `default` keeps normal console output; the tdd-guard reporter writes
+    // results to .claude/tdd-guard/data/test.json so the TDD guard hook can read
+    // red/green state. projectRoot is pinned to this worktree root.
+    reporters: ["default", new VitestReporter({ projectRoot: __dirname })],
     environment: "happy-dom",
     setupFiles: ["./vitest.setup.ts"],
     globals: false,
