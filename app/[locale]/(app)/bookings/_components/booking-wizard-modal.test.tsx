@@ -1452,7 +1452,7 @@ describe("BookingWizardModal — Task 14: location required on Event & Pricing s
     });
   });
 
-  it("location-required error message visible on Event & Pricing step when address is empty", async () => {
+  it("location-required error not shown on mount but shown after failed Next attempt", async () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <BookingWizardModal
@@ -1467,7 +1467,21 @@ describe("BookingWizardModal — Task 14: location required on Event & Pricing s
 
     await advanceToEventStep();
 
-    // The location required message should be visible (address starts empty).
+    // Error must NOT appear before any user interaction.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    // Fill title so only location blocks Next.
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+
+    // Click Next — step validation fails (empty location) and marks step invalid.
+    const nextBtn = screen.getByRole("button", { name: /next/i });
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    // After the failed attempt the location-required alert must now be visible.
     await waitFor(() => {
       expect(screen.getByRole("alert")).toBeInTheDocument();
     });

@@ -112,7 +112,7 @@ export function InquiriesPageClient({
       }
 
       const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
-        (field) => serverRow[field] === patch[field]
+        (field) => !(field in serverRow) || serverRow[field] === patch[field]
       );
 
       if (allCaughtUp) {

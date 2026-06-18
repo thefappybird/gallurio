@@ -67,7 +67,7 @@ describe("prune-on-match reconciliation", () => {
       }
 
       const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
-        (field) => serverRow[field] === patch[field]
+        (field) => !(field in serverRow) || serverRow[field] === patch[field]
       );
 
       if (allCaughtUp) {
@@ -124,5 +124,36 @@ describe("prune-on-match reconciliation", () => {
     const result = reconcile(patches, serverRows);
     expect(Object.keys(result)).toEqual(["b"]);
     expect(result["b"]).toEqual({ status: "archived" });
+  });
+
+  it("prunes a phone-only patch because phone is absent from the server row", () => {
+    // InquiryRow only carries `status`; phone/notes/total are not rendered columns.
+    // A patch with only non-row fields should be pruned so the map does not grow unbounded.
+    const patches: Record<string, InquiryOptimisticPatch> = {
+      a: { phone: "+63912345678" },
+    };
+    const serverRows = [{ id: "a", status: "new", name: "Alice" }];
+    const result = reconcile(patches, serverRows);
+    expect(Object.keys(result)).toHaveLength(0);
+  });
+
+  it("keeps a status patch when the server row status has not caught up yet", () => {
+    // Ensures the !(field in serverRow) branch does not prune status,
+    // which IS on the server row and must reconcile by value.
+    const patches: Record<string, InquiryOptimisticPatch> = {
+      b: { status: "booked" },
+    };
+    const serverRows = [{ id: "b", status: "new", name: "Bob" }];
+    const result = reconcile(patches, serverRows);
+    expect(result["b"]).toEqual({ status: "booked" });
+  });
+
+  it("prunes a mixed phone+status patch once the status field has also caught up", () => {
+    const patches: Record<string, InquiryOptimisticPatch> = {
+      a: { phone: "+63912345678", status: "booked" },
+    };
+    const serverRows = [{ id: "a", status: "booked", name: "Alice" }];
+    const result = reconcile(patches, serverRows);
+    expect(Object.keys(result)).toHaveLength(0);
   });
 });

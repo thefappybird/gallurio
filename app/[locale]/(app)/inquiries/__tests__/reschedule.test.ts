@@ -248,6 +248,21 @@ describe("rescheduleInquirySessionAction", () => {
     expect(res).toMatchObject({ error: expect.any(String) });
   });
 
+  it("rejects an invalid (non-ObjectId) inquiryId via schema and returns an error", async () => {
+    // The rescheduleSessionSchema now validates inquiryId as a valid ObjectId.
+    const res = await rescheduleInquirySessionAction({
+      inquiryId: "not-an-objectid",
+      sessionIndex: 0,
+      startDate: "2035-03-15",
+      startTime: "10:00",
+      endTime: "18:00",
+    });
+    expect(res).toMatchObject({ error: expect.any(String) });
+    // Must not have touched the DB — no inquiries were created in this test.
+    const count = await Inquiry.countDocuments({});
+    expect(count).toBe(0);
+  });
+
   // (f) Draft booking sync
   it("syncs the draft booking sessions, firstSessionStart, and lastSessionEnd after a successful reschedule", async () => {
     const { inquiry, booking } = await seedInquiry(workspaceId);

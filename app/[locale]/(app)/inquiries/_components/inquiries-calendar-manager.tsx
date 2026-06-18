@@ -305,7 +305,9 @@ export function InquiriesCalendarManager({
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
       draggableAccessor={(ev: AnyCalendarEvent) =>
-        "kind" in ev && (ev as CalendarEvent).kind === "inquiry"
+        "kind" in ev &&
+        (ev as CalendarEvent).kind === "inquiry" &&
+        (ev as CalendarEvent).colorOverride !== undefined
       }
       toolbarTrailing={toolbarTrailing}
       messages={{

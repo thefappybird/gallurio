@@ -807,6 +807,7 @@ export function BookingWizardModal({
                     errors={errors}
                     teams={teams}
                     mode={mode}
+                    locationSubmitted={stepErrors.has(STEPS.findIndex((s) => s.id === "eventPricing"))}
                   />
                 ) : null}
                 {current.id === "sessionsLocation" ? (

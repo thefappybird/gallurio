@@ -37,6 +37,10 @@ const draftEditsSchema = z
 
 export type DraftEdits = z.infer<typeof draftEditsSchema>;
 
+// Reusable phone validator — matches the phone rule in inquirySessionsEditSchema
+// (min 7, max 30, or empty string).
+const phoneSchema = z.string().trim().min(7).max(30).or(z.literal(""));
+
 function revalidateInquiry(id: string) {
   revalidatePath("/inquiries");
   revalidatePath(`/inquiries/${id}`);
@@ -56,6 +60,8 @@ export async function approveInquiryBookingAction(
   if (ctx.role !== "owner") {
     return { error: "owner_only" };
   }
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
 
   const edits = draftEditsSchema.safeParse(draftEdits ?? {});
   if (!edits.success) {
@@ -183,6 +189,8 @@ export async function saveDraftBookingFieldsAction(
   const ctx = await requireOrg();
   if (ctx.role !== "owner") return { error: "owner_only" };
 
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
   const edits = draftEditsSchema.safeParse(draftEdits);
   if (!edits.success) {
     return { error: edits.error.errors[0]?.message ?? "invalid_input" };
@@ -232,6 +240,9 @@ export async function saveDraftBookingFieldsAction(
 /** Triage: archive an inquiry. Booked inquiries cannot be archived. */
 export async function archiveInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
   await connectDB();
 
   const inquiry = await Inquiry.findOne({
@@ -266,6 +277,9 @@ export async function editInquirySessionsAction(
   input: InquirySessionsEditInput
 ): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
   await connectDB();
   const workspaceId = ctx.workspace._id;
 
@@ -282,11 +296,19 @@ export async function editInquirySessionsAction(
   }
 
   const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+  const excludeId = inquiry.draftBookingId ? String(inquiry.draftBookingId) : null;
+
+  // Batch shift lookups: fetch shifts once per unique date instead of once per
+  // session. For a 20-session inquiry that all share the same date this collapses
+  // 20 queries into 1; for n distinct dates it runs n queries (one each).
+  const uniqueDates = [...new Set(parsed.data.sessions.map((s) => s.startDate))];
+  const shiftsByDate = new Map<string, Awaited<ReturnType<typeof getShiftsOnDate>>>();
+  for (const date of uniqueDates) {
+    shiftsByDate.set(date, await getShiftsOnDate(workspaceId, date, tz, { excludeId }));
+  }
 
   for (const s of parsed.data.sessions) {
-    const shifts = await getShiftsOnDate(workspaceId, s.startDate, tz, {
-      excludeId: inquiry.draftBookingId ? String(inquiry.draftBookingId) : null,
-    });
+    const shifts = shiftsByDate.get(s.startDate)!;
     const aStart = toMinutes(s.startTime);
     const aEnd = toMinutes(s.endTime);
     if (aStart !== null && aEnd !== null && overlappingShifts(shifts, aStart, aEnd).length > 0) {
@@ -357,6 +379,12 @@ export async function updateInquiryPhoneAction(
   phone: string
 ): Promise<InquiryActionResult> {
   const ctx = await requireOrg();
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  const phoneParsed = phoneSchema.safeParse(phone);
+  if (!phoneParsed.success) return { error: "invalid_input" };
+
   await connectDB();
   const workspaceId = ctx.workspace._id;
 
@@ -364,11 +392,12 @@ export async function updateInquiryPhoneAction(
   if (!inquiry) return { error: "not_found" };
   if (isBookedInquiryStatus(inquiry.status)) return { error: "locked" };
 
-  const sanitized = phone.trim().slice(0, 50);
+  const sanitized = phoneParsed.data;
   await Inquiry.updateOne({ _id: inquiryId, workspaceId }, { $set: { phone: sanitized || null } });
 
   await ActivityLog.create({
     workspaceId,
+    actorUserId: ctx.userId,
     entity: "inquiry",
     entityId: inquiry._id,
     action: "updated",
@@ -385,7 +414,7 @@ export async function updateInquiryPhoneAction(
 
 const rescheduleSessionSchema = z
   .object({
-    inquiryId: z.string().min(1),
+    inquiryId: z.string().refine((v) => mongoose.isValidObjectId(v), { message: "invalid_input" }),
     sessionIndex: z.number().int().min(0),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "invalid_date"),
     startTime: z.string().regex(/^\d{2}:\d{2}$/, "invalid_time"),

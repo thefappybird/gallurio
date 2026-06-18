@@ -280,6 +280,14 @@ describe("dateToTzWallClock", () => {
     const { date, time } = dateToTzWallClock(d, "Asia/Manila");
     expect(time).toBe("09:05");
   });
+
+  it("normalises ICU '24' hour to '00' for midnight", () => {
+    // Some ICU/V8 builds emit "24" for midnight with hour12:false.
+    // The normalization must always produce "00:00" regardless of engine behaviour.
+    const midnight = new Date("2026-08-16T00:00:00Z");
+    const { time } = dateToTzWallClock(midnight, "UTC");
+    expect(time).toBe("00:00");
+  });
 });
 
 // ── detectConflictIds ─────────────────────────────────────────────────────────

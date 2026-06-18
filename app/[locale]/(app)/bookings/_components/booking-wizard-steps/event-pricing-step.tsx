@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Controller,
   type Control,
@@ -37,6 +38,8 @@ type Props = {
   teams?: { id: string; name: string }[];
   /** Wizard mode — team selector only rendered when teams.length > 1. */
   mode?: "create" | "edit";
+  /** True when the step has been submitted/validated — reveals the location error even before onChange. */
+  locationSubmitted?: boolean;
 };
 
 const Asterisk = () => <span className="ml-0.5 text-destructive">*</span>;
@@ -56,6 +59,7 @@ export function EventPricingStep({
   watch,
   errors,
   teams,
+  locationSubmitted = false,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
   const tWiz = useTranslations("app.bookings.wizard");
@@ -63,6 +67,8 @@ export function EventPricingStep({
   const tPricing = useTranslations("app.bookings.wizard.pricing");
 
   const locationValue = watch("location");
+  const [locationTouched, setLocationTouched] = useState(false);
+  const showLocationError = (locationTouched || locationSubmitted) && !locationValue?.address?.trim();
 
   // A team picker only appears when the caller can choose among >1 writable
   // teams; a single team is auto-applied (seeded into teamId), so no field is
@@ -230,12 +236,12 @@ export function EventPricingStep({
                 lat: field.value?.lat ?? null,
                 lng: field.value?.lng ?? null,
               }}
-              onChange={field.onChange}
-              ariaDescribedby={!locationValue?.address?.trim() ? "wiz-location-required" : undefined}
+              onChange={(v) => { setLocationTouched(true); field.onChange(v); }}
+              ariaDescribedby={showLocationError ? "wiz-location-required" : undefined}
             />
           )}
         />
-        {!locationValue?.address?.trim() ? (
+        {showLocationError ? (
           <p
             id="wiz-location-required"
             className="text-xs text-destructive"

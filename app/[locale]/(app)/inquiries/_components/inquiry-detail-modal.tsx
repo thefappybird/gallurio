@@ -139,6 +139,7 @@ export function InquiryDetailModal({
                 initialTeamId={detail.booking?.teamId ?? null}
                 sessions={detail.sessions}
                 locale={detail.locale}
+                hasConflict={detail.hasConflict}
                 onConverted={onConverted}
                 onConvertFailed={onConvertFailed}
                 onInquiryChanged={onInquiryChanged}

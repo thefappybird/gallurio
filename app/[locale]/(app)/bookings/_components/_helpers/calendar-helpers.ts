@@ -100,7 +100,10 @@ export function dateToTzWallClock(
   const parts = fmt.formatToParts(d);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
   const date = `${get("year")}-${get("month")}-${get("day")}`;
-  const time = `${get("hour")}:${get("minute")}`;
+  // Some ICU/V8 builds emit "24" for midnight with hour12:false; normalise to "00".
+  const rawHour = get("hour");
+  const hour = rawHour === "24" ? "00" : rawHour;
+  const time = `${hour}:${get("minute")}`;
   return { date, time };
 }
 

@@ -360,11 +360,40 @@ async function seedWorkspace(
     await Transaction.insertMany(supplementaryTxs);
   }
 
+  // Format a Date as "YYYY-MM-DD" wall-clock string (no UTC shift needed — the
+  // date is already constructed via setDate on a local Date, matching dayOffset).
+  const toDateStr = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const toTimeStr = (h: number, min = 0): string =>
+    `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+
+  // Conflict anchors: two "new" inquiries share today's booking date+time window
+  // so the calendar conflict filter and conflict-color gating are exercisable.
+  const conflictDateStr = toDateStr(todaySlot.start);
+  const conflictStartH = todaySlot.start.getHours();
+  const conflictEndH = todaySlot.end.getHours();
+
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
     const status = pick(["new", "new", "booked", "booked", "archived"] as const);
+    const eventDate = dayOffset(range(30, 200));
+    const startH = range(9, 15); // 9am–3pm start for a business-hours feel
+    const durationH = range(2, 5);
+
+    // Inquiries 13 and 14 are forced "new" and overlap the today booking so the
+    // New/Conflicted calendar filter and conflict coloring can be verified.
+    const isConflict = i >= 13;
+    const sessionDate = isConflict ? conflictDateStr : toDateStr(eventDate);
+    const sessionStartH = isConflict ? conflictStartH : startH;
+    const sessionEndH = isConflict ? conflictEndH : startH + durationH;
+
     return {
       workspaceId: workspace._id,
+      clientId: clients[i % clients.length]._id,
       name: pick([
         "Lena Okafor",
         "Jordan Patel",
@@ -383,10 +412,17 @@ async function seedWorkspace(
         "Considering you for our wedding — what's your starting package?",
         "Need a venue for ~120 guests in October.",
       ]),
-      eventDate: dayOffset(range(30, 200)),
+      sessions: [
+        {
+          startDate: sessionDate,
+          startTime: toTimeStr(sessionStartH),
+          endTime: toTimeStr(sessionEndH),
+        },
+      ],
+      eventDate: isConflict ? todaySlot.start : eventDate,
       eventType: pick(EVENT_TYPES),
       budgetRange: pick(["under 50k", "50-100k", "100-250k", "250k+"]),
-      status,
+      status: isConflict ? ("new" as const) : status,
       createdAt: dayOffset(-range(0, 30)),
     };
   });
