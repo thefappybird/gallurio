@@ -27,6 +27,7 @@ import {
   overlappingShifts,
   toMinutes,
 } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
+import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type Props = {
   inquiryId: string;
@@ -45,6 +46,7 @@ type Props = {
   hasConflict?: boolean;
   onConverted?: () => void;
   onConvertFailed?: () => void;
+  onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
 export function BookingDraftCard({
@@ -64,6 +66,7 @@ export function BookingDraftCard({
   hasConflict = false,
   onConverted,
   onConvertFailed,
+  onInquiryChanged,
 }: Props) {
   const t = useTranslations("app.inquiries.detail.bookingDraft");
   const ta = useTranslations("app.inquiries.detail.actions");
@@ -166,11 +169,14 @@ export function BookingDraftCard({
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await saveDraftBookingFieldsAction(inquiryId, currentEdits());
+      const edits = currentEdits();
+      const res = await saveDraftBookingFieldsAction(inquiryId, edits);
       if ("error" in res) { toast.error(t("saveError")); return; }
       toast.success(t("savedToast"));
       // Reset snapshot so Save button disables until next edit.
       setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
+      // Propagate optimistic patch to the table row.
+      onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
     } finally {
       setSaving(false);
     }

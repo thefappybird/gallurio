@@ -105,4 +105,15 @@ describe("BookingDraftCard", () => {
     fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2000" } });
     expect(saveBtn).not.toBeDisabled();
   });
+
+  it("calls onInquiryChanged with draft patch after a successful save", async () => {
+    const onInquiryChanged = vi.fn();
+    renderWithProviders(
+      <BookingDraftCard {...baseProps} initialTotal={1000} onInquiryChanged={onInquiryChanged} />
+    );
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2500" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() => expect(saveDraftBookingFieldsAction).toHaveBeenCalledOnce());
+    expect(onInquiryChanged).toHaveBeenCalledWith("abc", expect.objectContaining({ total: 2500 }));
+  });
 });

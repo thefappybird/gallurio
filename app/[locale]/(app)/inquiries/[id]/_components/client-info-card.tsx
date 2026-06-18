@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { PencilIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateInquiryPhoneAction } from "@/app/[locale]/(app)/inquiries/_actions";
+import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type Props = {
   inquiryId: string;
@@ -14,6 +15,7 @@ type Props = {
   phone: string | null;
   preferredContact: string;
   status: string;
+  onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -25,7 +27,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tp = useTranslations("app.inquiries.preferred");
   const preferredLabel = (() => {
@@ -46,6 +48,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       return;
     }
     setEditingPhone(false);
+    onInquiryChanged?.(inquiryId, { phone: draftPhone });
   }
 
   function handleCancelPhone() {
