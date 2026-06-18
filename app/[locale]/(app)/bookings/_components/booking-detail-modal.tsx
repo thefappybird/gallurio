@@ -52,7 +52,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { LocationPicker, LocationReadOnly } from "@/components/ui/location-picker";
+import dynamic from "next/dynamic";
+import { LocationPicker, LocationDisplay } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
 import { STATUS_COLOR_VAR } from "@/lib/bookings/status-style";
 import type { BookingTeamOption } from "../_data/team-options";
@@ -85,6 +86,11 @@ import {
   type Session,
 } from "@/lib/bookings/session-edits";
 import { cn } from "@/lib/utils";
+
+const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
+  ssr: false,
+  loading: () => <div className="h-40 w-full animate-pulse bg-muted" aria-hidden />,
+});
 
 type SessionDoc = { startAt: string; endAt: string };
 
@@ -2060,13 +2066,27 @@ function BookingTabs({
         <SectionHeader label={tFields("location")} />
         <div className="flex flex-col gap-1 py-1.5">
           {readOnly ? (
-            <LocationReadOnly
-              value={{
-                address: booking.location?.address ?? "",
-                lat: booking.location?.lat ?? null,
-                lng: booking.location?.lng ?? null,
-              }}
-            />
+            <>
+              <LocationDisplay
+                value={{
+                  address: booking.location?.address ?? "",
+                  lat: booking.location?.lat ?? null,
+                  lng: booking.location?.lng ?? null,
+                }}
+              />
+              {booking.location?.lat != null && booking.location?.lng != null ? (
+                <div className="overflow-hidden border border-border">
+                  <LocationMap
+                    lat={booking.location.lat}
+                    lng={booking.location.lng}
+                    onPick={() => {}}
+                    disabled
+                    compact
+                    scrollWheelZoom
+                  />
+                </div>
+              ) : null}
+            </>
           ) : (
             <LocationPicker
               editable
