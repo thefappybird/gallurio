@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import {
   markNotificationReadAction,
@@ -45,44 +45,57 @@ export function NotificationProvider({
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
-    let cancelled = false
+    // Use socket.io's async auth callback so a fresh token is fetched on every
+    // (re)connection attempt — including reconnects after HMR, server restarts,
+    // and 60-second token expiry. A static auth object would reuse the original
+    // token on reconnect, silently failing auth and killing the listener.
+    const socket = io({
+      auth: (cb: (data: { token: string }) => void) => {
+        fetch('/api/socket-token')
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error('token fetch failed'))))
+          .then(({ token }: { token: string }) => cb({ token }))
+          .catch((err: unknown) => {
+            console.error('[notifications] token fetch error', err)
+            cb({ token: '' })
+          })
+      },
+      transports: ['websocket', 'polling'],
+    })
+    socketRef.current = socket
 
-    async function connect() {
-      const res = await fetch('/api/socket-token')
-      if (!res.ok || cancelled) return
-      const { token } = await res.json()
-      if (cancelled) return
+    socket.on('connect', () => {
+      console.log('[notifications] connected', socket.id)
+    })
+    socket.on('disconnect', (reason: string) => {
+      console.log('[notifications] disconnected', reason)
+    })
+    socket.on('connect_error', (err: Error) => {
+      console.error('[notifications] connect_error', err.message)
+    })
 
-      const socket = io({ auth: { token }, transports: ['websocket', 'polling'] })
-      socketRef.current = socket
+    socket.on('notification:new', (notification: SerializedNotification) => {
+      setNotifications((prev) => [notification, ...prev])
+      setUnreadCount((n) => n + 1)
+    })
 
-      socket.on('notification:new', (notification: SerializedNotification) => {
-        setNotifications((prev) => [notification, ...prev])
-        setUnreadCount((n) => n + 1)
-      })
+    socket.on('notification:read', ({ id }: { id: string }) => {
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n._id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n,
+        ),
+      )
+      setUnreadCount((n) => Math.max(0, n - 1))
+    })
 
-      socket.on('notification:read', ({ id }: { id: string }) => {
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n._id === id ? { ...n, read: true, readAt: new Date().toISOString() } : n,
-          ),
-        )
-        setUnreadCount((n) => Math.max(0, n - 1))
-      })
-
-      socket.on('notification:readAll', () => {
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })),
-        )
-        setUnreadCount(0)
-      })
-    }
-
-    connect()
+    socket.on('notification:readAll', () => {
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, read: true, readAt: new Date().toISOString() })),
+      )
+      setUnreadCount(0)
+    })
 
     return () => {
-      cancelled = true
-      socketRef.current?.disconnect()
+      socket.disconnect()
       socketRef.current = null
     }
   }, [])

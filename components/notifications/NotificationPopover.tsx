@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useNotifications } from '@/lib/hooks/useNotifications'
 import type { SerializedNotification } from '@/components/notifications/NotificationProvider'
+import { useSidebar } from '@/components/ui/sidebar'
 
 // ─── Relative time helper ────────────────────────────────────────────────────
 
@@ -189,6 +190,12 @@ export function NotificationPopover({
   open,
   onClose,
 }: NotificationPopoverProps) {
+  const { state } = useSidebar()
+  const left =
+    state === 'collapsed'
+      ? 'calc(var(--sidebar-width-icon, 4rem) + 1px)'
+      : 'calc(var(--sidebar-width, 16rem) + 1px)'
+
   if (!open) return null
 
   return (
@@ -198,34 +205,22 @@ export function NotificationPopover({
         <NotificationPanelContent onClose={onClose} />
       </div>
 
-      {/* Desktop: panel anchored to sidebar right edge.
-          The sidebar wrapper exposes --sidebar-width and --sidebar-width-icon as inline CSS
-          vars on the SidebarProvider div; they are accessible from any fixed descendant because
-          fixed elements still inherit custom properties. */}
+      {/* Desktop: full-height side panel anchored to the right edge of the sidebar.
+          left tracks the actual sidebar state so it works for both expanded and collapsed.
+          --sidebar-width and --sidebar-width-icon are set by SidebarProvider as inline CSS vars
+          and are accessible from fixed descendants via CSS custom property inheritance. */}
       <div
         role="dialog"
         aria-label="Notifications"
-        style={
-          {
-            left: 'calc(var(--sidebar-width, 16rem) + 1px)',
-          } as React.CSSProperties
-        }
+        style={{ left } as React.CSSProperties}
         className={[
           'fixed z-[9998] hidden md:flex',
-          'top-[4.5rem]',
-          'h-[min(560px,calc(100vh-6rem))] w-[360px] flex-col',
-          'border border-border bg-background shadow-lg',
+          'top-0',
+          'h-svh w-[360px] flex-col',
+          'border border-border bg-background',
           'animate-in fade-in-0 slide-in-from-left-2 duration-150',
         ].join(' ')}
       >
-        {/* Left-pointing arrow */}
-        <span
-          aria-hidden
-          className="absolute -left-[9px] top-6 border-[8px] border-transparent border-r-border"
-        >
-          <span className="absolute -top-[7px] -left-[6px] border-[7px] border-transparent border-r-background" />
-        </span>
-
         <NotificationPanelContent onClose={onClose} />
       </div>
 

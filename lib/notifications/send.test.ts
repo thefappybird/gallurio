@@ -40,6 +40,7 @@ vi.mock('@/lib/db/models/Notification', () => ({
 
 import { sendNotification } from './send'
 import { Notification } from '@/lib/db/models/Notification'
+import * as ioModule from '@/lib/sockets/io'
 import type { SendNotificationOptions } from './types'
 
 const WS_ID = String(new Types.ObjectId())
@@ -208,6 +209,57 @@ describe('sendNotification', () => {
       for (const doc of docs) {
         expect(doc.workspaceId).toBe(targetWsId)
       }
+    })
+  })
+
+  describe('persist before emit / no-socket resilience', () => {
+    it('persists to DB even when getIO() returns undefined (socket unavailable)', async () => {
+      const spy = vi.spyOn(ioModule, 'getIO').mockReturnValue(undefined)
+      try {
+        await sendNotification(
+          makeOpts({
+            recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+            triggeredByWorkosUserId: 'trigger',
+          }),
+        )
+      } finally {
+        spy.mockRestore()
+      }
+
+      // DB write must have happened unconditionally.
+      expect(Notification.insertMany).toHaveBeenCalledOnce()
+      // Socket emit must NOT have been attempted.
+      expect(mockTo).not.toHaveBeenCalled()
+      expect(mockEmit).not.toHaveBeenCalled()
+    })
+
+    it('persists to DB before emitting (insertMany called before any emit)', async () => {
+      const callOrder: string[] = []
+      ;(Notification.insertMany as ReturnType<typeof vi.fn>).mockImplementation(
+        async (docs: unknown[]) => {
+          callOrder.push('insertMany')
+          return (docs as Record<string, unknown>[]).map((d) => ({
+            ...d,
+            _id: new Types.ObjectId(),
+            createdAt: new Date(),
+          }))
+        },
+      )
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(mockTo as any).mockImplementation((room: string) => {
+        callOrder.push(`emit:${room}`)
+        return { emit: mockEmit }
+      })
+
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+
+      expect(callOrder[0]).toBe('insertMany')
+      expect(callOrder[1]).toBe('emit:user:user-A')
     })
   })
 })

@@ -199,6 +199,7 @@ export async function inviteMemberAction(
     const locale = await getLocale();
     const wsName = (ctx.workspace as Record<string, unknown>).name as string | undefined;
     for (const team of teams) {
+      // Non-fatal: invite already committed; don't surface a notification failure to the caller.
       await sendNotification({
         workspaceId: ctx.workspaceId,
         recipients: [{
@@ -212,6 +213,8 @@ export async function inviteMemberAction(
         triggeredByWorkosUserId: ctx.userId,
         locale,
         vars: { inviterName: wsName ?? "Gallurio workspace", teamName: team.name },
+      }).catch((err) => {
+        console.error("[teams] sendNotification (team.invitation) failed:", err);
       });
     }
   }

@@ -38,11 +38,15 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
     }),
   )
 
+  // ORDERING GUARANTEE: DB persistence is unconditional and always happens before
+  // any socket emit. Notifications are saved even when getIO() is undefined
+  // (socket server unavailable), so users see them on next login via the DB list.
   const inserted = await Notification.insertMany(payloads)
   const io = getIO()
 
   inserted.forEach((doc, i) => {
     if (io) {
+      console.log(`[notifications] emit notification:new -> user:${doc.recipientWorkosUserId}`)
       io.to(`user:${doc.recipientWorkosUserId}`).emit('notification:new', {
         _id: String(doc._id),
         type: doc.type,

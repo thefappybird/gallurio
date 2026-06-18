@@ -227,7 +227,9 @@ export async function submitInquiry(
   const ownerEmail = workspace.contact?.email ?? "";
   if (ownerEmail) {
     const notifLocale = workspace.publicPage?.formLocale || "en";
-    await sendNotification({
+    // Non-fatal: the inquiry is already committed; a notification failure must
+    // not roll back the successful submission.
+    sendNotification({
       workspaceId: String(workspaceId),
       recipients: [{ workosUserId: workspace.ownerUserId, email: ownerEmail }],
       type: "inquiry.created",
@@ -236,6 +238,8 @@ export async function submitInquiry(
       triggeredByWorkosUserId: "public",
       locale: notifLocale,
       vars: { clientName: name || "Unknown" },
+    }).catch((err) => {
+      console.error("[inquiry] sendNotification failed (non-fatal):", err);
     });
   }
 

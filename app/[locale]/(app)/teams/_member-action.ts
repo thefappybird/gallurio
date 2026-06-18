@@ -148,6 +148,7 @@ export async function removeMemberFromTeamAction(
   ).lean();
   if (removedUser) {
     const locale = await getLocale();
+    // Non-fatal: removal already committed; don't surface a notification failure to the caller.
     await sendNotification({
       workspaceId: ctx.workspaceId,
       recipients: [{
@@ -161,6 +162,8 @@ export async function removeMemberFromTeamAction(
       triggeredByWorkosUserId: ctx.userId,
       locale,
       vars: { teamName: team.name },
+    }).catch((err) => {
+      console.error("[teams] sendNotification (team.removed) failed:", err);
     });
   }
 

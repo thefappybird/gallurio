@@ -1538,29 +1538,35 @@
       "pageTitle": "Mga Abiso",
       "loadMore": "Mag-load ng higit pa",
       "types": {
-        "inquiry.created": {
-          "title": "Bagong katanungan natanggap",
-          "body": "Mayroon kang bagong katanungan mula kay {clientName}."
+        "inquiry": {
+          "created": {
+            "title": "Bagong katanungan natanggap",
+            "body": "Mayroon kang bagong katanungan mula kay {clientName}."
+          }
         },
-        "booking.team_assigned": {
-          "title": "Bagong booking itinalaga sa iyong koponan",
-          "body": "Itinalaga ni {assignerName} ang isang booking sa iyong koponan."
+        "booking": {
+          "team_assigned": {
+            "title": "Bagong booking itinalaga sa iyong koponan",
+            "body": "Itinalaga ni {assignerName} ang isang booking sa iyong koponan."
+          },
+          "status_changed": {
+            "title": "Na-update ang status ng booking",
+            "body": "Binago ni {actorName} ang booking sa {newStatus}."
+          }
         },
-        "booking.status_changed": {
-          "title": "Na-update ang status ng booking",
-          "body": "Binago ni {actorName} ang booking sa {newStatus}."
-        },
-        "team.invitation": {
-          "title": "Inimbitahan ka sa isang koponan",
-          "body": "Inimbitahan ka ni {inviterName} na sumali sa {teamName}."
-        },
-        "team.removed": {
-          "title": "Tinanggal sa koponan",
-          "body": "Natanggal ka sa {teamName}."
-        },
-        "team.deleted": {
-          "title": "Koponan naisara",
-          "body": "Tinanggal ang {teamName}."
+        "team": {
+          "invitation": {
+            "title": "Inimbitahan ka sa isang koponan",
+            "body": "Inimbitahan ka ni {inviterName} na sumali sa {teamName}."
+          },
+          "removed": {
+            "title": "Tinanggal sa koponan",
+            "body": "Natanggal ka sa {teamName}."
+          },
+          "deleted": {
+            "title": "Koponan naisara",
+            "body": "Tinanggal ang {teamName}."
+          }
         }
       }
     }

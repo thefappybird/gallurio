@@ -1538,29 +1538,35 @@
       "pageTitle": "Notifications",
       "loadMore": "Load more",
       "types": {
-        "inquiry.created": {
-          "title": "New inquiry received",
-          "body": "You have a new inquiry from {clientName}."
+        "inquiry": {
+          "created": {
+            "title": "New inquiry received",
+            "body": "You have a new inquiry from {clientName}."
+          }
         },
-        "booking.team_assigned": {
-          "title": "New booking assigned to your team",
-          "body": "{assignerName} assigned a booking to your team."
+        "booking": {
+          "team_assigned": {
+            "title": "New booking assigned to your team",
+            "body": "{assignerName} assigned a booking to your team."
+          },
+          "status_changed": {
+            "title": "Booking status updated",
+            "body": "{actorName} changed a booking status to {newStatus}."
+          }
         },
-        "booking.status_changed": {
-          "title": "Booking status updated",
-          "body": "{actorName} changed a booking status to {newStatus}."
-        },
-        "team.invitation": {
-          "title": "You've been invited to a team",
-          "body": "{inviterName} invited you to join {teamName}."
-        },
-        "team.removed": {
-          "title": "Removed from team",
-          "body": "You have been removed from {teamName}."
-        },
-        "team.deleted": {
-          "title": "Team disbanded",
-          "body": "{teamName} has been deleted."
+        "team": {
+          "invitation": {
+            "title": "You've been invited to a team",
+            "body": "{inviterName} invited you to join {teamName}."
+          },
+          "removed": {
+            "title": "Removed from team",
+            "body": "You have been removed from {teamName}."
+          },
+          "deleted": {
+            "title": "Team disbanded",
+            "body": "{teamName} has been deleted."
+          }
         }
       }
     }

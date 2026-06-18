@@ -190,6 +190,7 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
         name: u.name || undefined,
       }));
       const locale = await getLocale();
+      // Non-fatal: deactivation already committed; don't surface a notification failure to the caller.
       await sendNotification({
         workspaceId: ctx.workspaceId,
         recipients,
@@ -199,6 +200,8 @@ export async function deactivateTeamAction(input: DeactivateTeamInput): Promise<
         triggeredByWorkosUserId: ctx.userId,
         locale,
         vars: { teamName: team.name },
+      }).catch((err) => {
+        console.error("[teams] sendNotification (team.deleted) failed:", err);
       });
     }
   }
