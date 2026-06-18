@@ -492,7 +492,7 @@ function BaseLocationPicker({
             disabled={disabled}
             onClick={handleCancel}
             aria-label={discardAriaLabel}
-            className="inline-flex size-8 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:bg-accent disabled:pointer-events-none disabled:opacity-50"
+            className="inline-flex size-8 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent disabled:pointer-events-none disabled:opacity-50"
           >
             <XIcon className="size-4" aria-hidden />
           </button>
@@ -501,9 +501,8 @@ function BaseLocationPicker({
             disabled={disabled || (!dirty && !editOriginEmpty)}
             onClick={handleCommit}
             aria-label={acceptAriaLabel}
-            style={applyButtonStyle}
             className={cn(
-              "inline-flex size-8 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
+              "inline-flex size-8 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
               !applyButtonStyle && "bg-primary text-primary-foreground hover:bg-primary/90",
             )}
           >
