@@ -66,33 +66,24 @@ describe("InquiryTable", () => {
     expect(sourceCell?.className).toMatch(/capitalize/);
   });
 
-  // ── Task C: actions menu ───────────────────────────────────────────────────
+  // ── Task C: view icon buttons ──────────────────────────────────────────────
 
-  it("renders ⋯ actions menu trigger buttons (mobile + desktop) per row", () => {
+  it("renders View (eye) icon buttons (mobile + desktop) per row", () => {
     renderTable();
-    const menuButtons = screen.getAllByRole("button", {
-      name: /open inquiry actions/i,
-    });
+    // aria-label is t("table.actions.view") = "View"
+    const viewButtons = screen.getAllByRole("button", { name: "View" });
     // One in mobile card list, one in desktop table per row
-    expect(menuButtons.length).toBeGreaterThanOrEqual(2);
+    expect(viewButtons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("shows a View item when the desktop actions menu is opened", () => {
+  it("View icon button is already visible without opening any menu", () => {
     renderTable();
-    const triggers = screen.getAllByRole("button", {
-      name: /open inquiry actions/i,
-    });
-    fireEvent.click(triggers[0]);
-    expect(screen.getByText("View")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "View" }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("View menu item is clickable without throwing", () => {
+  it("View icon button is clickable without throwing", () => {
     renderTable();
-    const triggers = screen.getAllByRole("button", {
-      name: /open inquiry actions/i,
-    });
-    fireEvent.click(triggers[0]);
-    const viewItem = screen.getByText("View");
-    expect(() => fireEvent.click(viewItem)).not.toThrow();
+    const viewButtons = screen.getAllByRole("button", { name: "View" });
+    expect(() => fireEvent.click(viewButtons[0])).not.toThrow();
   });
 });

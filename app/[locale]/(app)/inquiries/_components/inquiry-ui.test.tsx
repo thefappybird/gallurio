@@ -62,27 +62,23 @@ describe("InquiryTable", () => {
     expect(screen.getByText("Submit to see them.")).toBeInTheDocument();
   });
 
-  it("renders a View actions menu button for each row", () => {
+  it("renders a View (eye) icon button for each row", () => {
     renderWithProviders(
       <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
     );
-    // There are two layouts (mobile + desktop), each with one ⋯ button per row.
-    const menuButtons = screen.getAllByRole("button", { name: /Open inquiry actions/i });
-    expect(menuButtons.length).toBeGreaterThanOrEqual(1);
+    // aria-label is t("table.actions.view") = "View"; mobile + desktop = 2 per row
+    const viewButtons = screen.getAllByRole("button", { name: "View" });
+    expect(viewButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("navigates to the detail modal URL when View is clicked in the actions menu", async () => {
+  it("navigates to the detail modal URL when the View icon button is clicked", () => {
     mockPush.mockClear();
     renderWithProviders(
       <InquiryTable rows={rows} locale="en" empty="No inquiries yet." emptyHint="hint" />
     );
-    // Open the first ⋯ menu trigger button.
-    const menuButtons = screen.getAllByRole("button", { name: /Open inquiry actions/i });
-    fireEvent.click(menuButtons[0]);
-    // The View menu item should appear in the opened dropdown.
-    const viewItems = await screen.findAllByText("View");
-    expect(viewItems.length).toBeGreaterThan(0);
-    fireEvent.click(viewItems[0]);
+    // Click the first View icon button (mobile card layout).
+    const viewButtons = screen.getAllByRole("button", { name: "View" });
+    fireEvent.click(viewButtons[0]);
     expect(mockPush).toHaveBeenCalledWith("/inquiries?inquiryId=111111111111111111111111");
   });
 

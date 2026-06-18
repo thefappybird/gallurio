@@ -199,9 +199,9 @@ async function waitForLoad() {
     // The title appears as a DialogTitle (<h2>). Use heading role to be precise.
     expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
   });
-  // Sessions live under the "Sessions & Location" tab — activate it so that
+  // Sessions live under the "Sessions" tab — activate it so that
   // session card content is in the DOM for tests that need it.
-  fireEvent.click(screen.getByRole("tab", { name: "Sessions & Location" }));
+  fireEvent.click(screen.getByRole("tab", { name: "Sessions" }));
 }
 
 /** Click the inline-edit pencil for Session N (1-indexed). */
@@ -724,8 +724,8 @@ describe("False-conflict regression — time-overlap filtering", () => {
         screen.getByRole("heading", { name: "Multi-Session Booking" })
       ).toBeInTheDocument();
     });
-    // Session cards live under the "Sessions & Location" tab.
-    fireEvent.click(screen.getByRole("tab", { name: "Sessions & Location" }));
+    // Session cards live under the "Sessions" tab.
+    fireEvent.click(screen.getByRole("tab", { name: "Sessions" }));
   }
 
   it("does NOT show a conflict when the only shift on the date belongs to the same booking", async () => {
@@ -882,13 +882,13 @@ describe("pendingCount — includes all pending types", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Pill tabs — four tabs render and switch panels", () => {
-  it("renders four tab triggers (Client, Event & Pricing, Sessions & Location, Notes & activity)", async () => {
+  it("renders four tab triggers (Client, Event & Location, Sessions, Notes & activity)", async () => {
     renderModal();
     await waitForLoad();
 
     const clientTab = screen.getByRole("tab", { name: /client/i });
-    const eventPricingTab = screen.getByRole("tab", { name: /event & pricing/i });
-    const sessionsLocationTab = screen.getByRole("tab", { name: /sessions & location/i });
+    const eventPricingTab = screen.getByRole("tab", { name: /event & location/i });
+    const sessionsLocationTab = screen.getByRole("tab", { name: /^sessions$/i });
     const activityTab = screen.getByRole("tab", { name: /notes/i });
 
     expect(clientTab).toBeInTheDocument();
@@ -897,11 +897,11 @@ describe("Pill tabs — four tabs render and switch panels", () => {
     expect(activityTab).toBeInTheDocument();
   });
 
-  it("switching to the Event & Pricing tab shows the currency field", async () => {
+  it("switching to the Event & Location tab shows the currency field", async () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
 
     await waitFor(() => {
       // Currency field label renders in the eventPricing tab panel
@@ -923,12 +923,12 @@ describe("Header inline title editing", () => {
     ).toBeInTheDocument();
   });
 
-  it("does NOT render a standalone Title EditableField inside the Sessions & Location tab", async () => {
+  it("does NOT render a standalone Title EditableField inside the Sessions tab", async () => {
     renderModal();
     await waitForLoad();
 
-    // waitForLoad already switches to Sessions & Location tab — verify
-    // Sessions & Location tab shows schedule/location sections, not a title row.
+    // waitForLoad already switches to Sessions tab — verify
+    // Sessions tab shows schedule sections, not a title row.
     await waitFor(() => {
       // The SectionHeader "Schedule" should be present in this tab.
       expect(screen.getByText("Schedule")).toBeInTheDocument();
@@ -987,16 +987,16 @@ describe("Header inline title editing", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Issue new-2b — event-type control in Event & Pricing tab
+// Issue new-2b — event-type control in Event & Location tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("Event & Pricing tab — event-type field", () => {
+describe("Event & Location tab — event-type field", () => {
   it("renders the event-type value as a pill with an edit button (no dropdown until clicked)", async () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Event & Pricing tab
-    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
+    // Switch to Event & Location tab
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
 
     // The event type shows as a read-only value + pencil edit button — the
     // dropdown is only mounted after the pencil is clicked (reveal pattern).
@@ -1016,7 +1016,7 @@ describe("Event & Pricing tab — event-type field", () => {
     renderModal();
     await waitForLoad();
 
-    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
 
     const editBtn = await screen.findByRole("button", {
       name: /edit event type/i,
@@ -1514,11 +1514,11 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
   // ── EditableField undrafted tests ──────────────────────────────────────────
 
   /**
-   * Switch to the Event & Pricing tab and open the Deposit field's inline editor
+   * Switch to the Event & Location tab and open the Deposit field's inline editor
    * WITHOUT clicking ✓ (leaving an undrafted change).
    */
   async function openDepositEditorWithoutConfirm(depositValue = "5000") {
-    fireEvent.click(screen.getByRole("tab", { name: /event & pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
     await waitFor(() =>
       expect(screen.getByText("Deposit")).toBeInTheDocument()
     );
@@ -1540,8 +1540,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Switch to Event & Pricing tab and draft the Total via ✓
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    // Switch to Event & Location tab and draft the Total via ✓
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1583,8 +1583,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓ (Event & Pricing tab)
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    // Draft the Total via ✓ (Event & Location tab)
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1640,8 +1640,8 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     renderModal();
     await waitForLoad();
 
-    // Draft the Total via ✓ (Event & Pricing tab)
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    // Draft the Total via ✓ (Event & Location tab)
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
@@ -1693,7 +1693,7 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     await waitForLoad();
 
     // Draft the Total via ✓ — keep it at 10000 (the MOCK_BOOKING default)
-    fireEvent.click(screen.getByRole("tab", { name: /pricing/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
     );
