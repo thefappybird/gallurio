@@ -80,13 +80,14 @@ export type HeadingBlockProps = {
 
 export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
+/** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
-  h1: "3rem",
-  h2: "2.25rem",
-  h3: "1.75rem",
-  h4: "1.375rem",
-  h5: "1.125rem",
-  h6: "0.875rem",
+  h1: "clamp(2rem, 1.4rem + 4cqi, 3rem)",
+  h2: "clamp(1.6rem, 1.2rem + 2.5cqi, 2.25rem)",
+  h3: "clamp(1.3rem, 1rem + 1.8cqi, 1.75rem)",
+  h4: "clamp(1.1rem, 0.95rem + 1cqi, 1.35rem)",
+  h5: "clamp(1rem, 0.9rem + 0.6cqi, 1.125rem)",
+  h6: "clamp(0.8rem, 0.75rem + 0.3cqi, 0.875rem)",
 };
 
 export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {

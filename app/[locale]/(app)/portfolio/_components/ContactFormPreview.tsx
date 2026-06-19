@@ -57,6 +57,12 @@ export function ContactFormPreview({
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-auto bg-black/45 p-4">
+      <style>{`
+        @media (max-width: 400px) {
+          .pf-preview-popup-header { padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 1rem !important; }
+          .pf-preview-popup-body { padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 1rem !important; }
+        }
+      `}</style>
       <div
         aria-label="Contact form preview"
         className="flex w-full max-w-lg flex-col overflow-hidden"
@@ -65,7 +71,7 @@ export function ContactFormPreview({
           maxHeight: "calc(100dvh - 2rem)",
         }}
       >
-        <div className="flex items-start justify-between gap-4 px-5 pt-5">
+        <div className="pf-preview-popup-header flex items-start justify-between gap-4 px-5 pt-5">
           <div>
             <h2 className="text-xl font-bold" style={{ fontFamily: "var(--pf-font-heading)" }}>
               {title}
@@ -74,7 +80,7 @@ export function ContactFormPreview({
           </div>
           <span className="text-lg opacity-50">x</span>
         </div>
-        <div className="min-h-0 overflow-y-auto px-5 pb-5 pt-3">
+        <div className="pf-preview-popup-body min-h-0 overflow-y-auto px-5 pb-5 pt-3">
           <ContactForm
             workspaceSlug="preview"
             labels={labels}

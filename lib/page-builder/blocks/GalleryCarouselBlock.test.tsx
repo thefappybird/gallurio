@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { GalleryCarouselBlock, galleryCarouselDefaultProps } from "./GalleryCarouselBlock";
 import type { GalleryCarouselProps } from "./GalleryCarouselBlock";
@@ -94,15 +95,20 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
     expect(mark!.getAttribute("style") ?? "").toContain("padding: 0.2em 0.45em");
   });
 
-  it("applies Text Padding to the overlay layer (default 1.5rem, overridable)", () => {
-    const def = render(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
-    expect(def.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "").toContain("padding: 1.5rem");
+  it("applies Text Padding to the overlay layer using responsive vars (default 1.5rem, overridable)", () => {
+    // JSDOM strips var() from CSS shorthand properties (known limitation), so we use
+    // renderToStaticMarkup to get the raw HTML string with the literal style attribute value.
+    const html = renderToStaticMarkup(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
+    expect(html).toContain("var(--pf-overlay-py, 1.5rem)");
+    expect(html).toContain("var(--pf-overlay-px, 1.5rem)");
+  });
 
-    const custom = render(
+  it("explicit overlay Text Padding wins as a literal over the responsive default", () => {
+    const html = renderToStaticMarkup(
       GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
     );
-    const style = custom.container.querySelector("[data-gallery-overlay]")!.getAttribute("style") ?? "";
-    expect(style).toContain("padding: 3rem 2rem");
+    expect(html).toContain("padding:3rem 2rem");
+    expect(html).not.toContain("var(--pf-overlay-px, 2rem)");
   });
 
   it("lets _style.headingAlign override the float-derived heading alignment", () => {

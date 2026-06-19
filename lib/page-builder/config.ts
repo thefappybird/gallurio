@@ -17,6 +17,7 @@
 import React from "react";
 import type { Config } from "@measured/puck";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
+import { PF_PAGE_CONTAINER, PF_RESPONSIVE_CSS } from "./responsive";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
@@ -126,7 +127,11 @@ export const puckConfig: Config<Components> = {
     render: (({ _rootStyle, children }: { _rootStyle?: RootPageStyle; children?: React.ReactNode }) =>
       React.createElement(
         "div",
-        { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%" } },
+        // The root wrapper is the `pfpage` container: all blocks are descendants,
+        // so PF_RESPONSIVE_CSS's `@container pfpage` rules respond to the page
+        // width (== viewport here, == clamped canvas in the editor).
+        { style: { ...resolveRootStyle(_rootStyle), minHeight: "100%", ...PF_PAGE_CONTAINER } },
+        React.createElement("style", { dangerouslySetInnerHTML: { __html: PF_RESPONSIVE_CSS } }),
         children,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       )) as any,

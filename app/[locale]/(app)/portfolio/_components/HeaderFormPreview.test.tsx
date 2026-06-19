@@ -316,6 +316,13 @@ describe("HeaderFormPreview", () => {
     expect(screen.getByText(/"Home" shown as active to preview link styles/)).toBeTruthy();
   });
 
+  it("brand text span has overflow:hidden and text-overflow:ellipsis for narrow preview widths", () => {
+    render(<HeaderFormPreview header={mockHeader} brandKit={mockBrandKit} workspaceName="A Very Long Workspace Name That Could Overflow" />);
+    const brandSpan = screen.getByText("A Very Long Workspace Name That Could Overflow");
+    expect(brandSpan.style.overflow).toBe("hidden");
+    expect(brandSpan.style.textOverflow).toBe("ellipsis");
+  });
+
   it("uses the configured heading and body font variables", () => {
     render(<HeaderFormPreview header={mockHeader} brandKit={mockBrandKit} workspaceName="Studio" />);
     expect(screen.getByText("Studio").style.fontFamily).toBe("var(--pf-font-heading)");

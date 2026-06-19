@@ -17,6 +17,7 @@ import {
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
+import { padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 
 export type GalleryMasonryProps = {
   _style?: BlockStyle;
@@ -64,18 +65,14 @@ export function GalleryMasonryBlock({
       data-block="gallery-masonry"
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 1.5rem",
+        padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
     >
-      <style>{`
-        @media (max-width: 639px) { .pf-masonry { column-count: 2 !important; } }
-        @media (max-width: 399px) { .pf-masonry { column-count: 1 !important; } }
-      `}</style>
       <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
-        <div className="pf-masonry" style={{ columnCount: columns, columnGap: gapValue }}>
+        <div className="pf-masonry" style={{ columnCount: masonryColsVar(columns) as unknown as number, columnGap: gapValue }}>
           {list.map((img) => {
             const src = imageDeliveryUrl(img.publicId, {
               width: thumbWidth,
@@ -112,7 +109,7 @@ function MasonryEmptyState({ message }: { message: string }) {
       data-empty="true"
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 1.5rem",
+        padding: padVar("4rem 1.5rem"),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
