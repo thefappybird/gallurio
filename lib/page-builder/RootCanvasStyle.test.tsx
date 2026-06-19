@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rootCanvasCssText } from "./RootCanvasStyle";
+import { rootCanvasCssText, buildCanvasCss } from "./RootCanvasStyle";
 
 describe("rootCanvasCssText", () => {
   it("produces a CSS text block for the canvas surface", () => {
@@ -11,5 +11,15 @@ describe("rootCanvasCssText", () => {
 
   it("returns empty string for no style", () => {
     expect(rootCanvasCssText(undefined)).toBe("");
+  });
+});
+
+describe("buildCanvasCss", () => {
+  it("always makes the canvas surface the pfpage container and injects the responsive sheet", () => {
+    const css = buildCanvasCss(undefined);
+    expect(css).toContain("container-type: inline-size");
+    expect(css).toContain("container-name: pfpage");
+    expect(css).toContain("@container pfpage");
+    expect(css).toContain("--pf-pad");
   });
 });

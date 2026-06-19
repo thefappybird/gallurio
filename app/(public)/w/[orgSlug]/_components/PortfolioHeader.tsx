@@ -200,6 +200,8 @@ export function PortfolioHeader({
             display: "flex",
             alignItems: "center",
             gap: "0.625rem",
+            minWidth: 0,
+            overflow: "hidden",
           }}
         >
           {config?.logoUrl && (
@@ -208,13 +210,22 @@ export function PortfolioHeader({
               src={config.logoUrl}
               alt=""
               aria-hidden="true"
-              style={{ height: navbarSize.logoHeight, width: "auto", objectFit: "contain" }}
+              style={{ height: navbarSize.logoHeight, maxWidth: "40vw", width: "auto", objectFit: "contain", flexShrink: 0 }}
             />
           )}
-          {brandText}
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              minWidth: 0,
+            }}
+          >
+            {brandText}
+          </span>
         </Link>
 
-        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: navbarSize.navGap }}>
+        <div className="pf-nav-desktop" style={{ alignItems: "center", gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})` }}>
           <HeaderLink
             href={homeHref}
             isActive={isHomeActive}
@@ -323,6 +334,15 @@ export function PortfolioHeader({
         }
         .pf-nav-link:hover { background-color: color-mix(in srgb, var(--pf-color-fg) 8%, transparent); }
         .pf-nav-contact:hover { opacity: 0.9; }
+        @media (max-width: 400px) {
+          .pf-nav-link { padding-left: 0.375rem !important; padding-right: 0.375rem !important; }
+        }
+        @media (max-width: 375px) {
+          .pf-nav-mobile { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+        }
+        @media (max-width: 768px) {
+          .pf-nav-contact { min-width: 0; padding-left: 0.625rem !important; padding-right: 0.625rem !important; }
+        }
         @media (min-width: 640px) {
           .pf-nav-desktop { display: flex !important; }
           .pf-nav-toggle { display: none !important; }
@@ -405,6 +425,7 @@ function ContactButton({
     alignItems: "center",
     justifyContent: "center",
     minHeight,
+    minWidth: 0,
     padding: "0 1rem",
     marginTop: block ? "0.25rem" : 0,
     backgroundColor: buildColorWithOpacity(contactButtonFill, config?.contactButtonOpacity ?? 100),

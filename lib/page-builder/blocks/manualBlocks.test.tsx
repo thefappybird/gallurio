@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import {
   HeadingBlock,
@@ -61,7 +62,6 @@ describe("HeadingBlock", () => {
 
   it("heading level buttons use fluid clamp font sizes (renderToStaticMarkup checks CSS value)", () => {
     // JSDOM strips clamp() and cqi — use server markup to verify the literal CSS values.
-    const { renderToStaticMarkup } = require("react-dom/server");
     const expected: Array<[HeadingBlockProps["level"], string]> = [
       ["h1", "clamp(2rem, 1.4rem + 4cqi, 3rem)"],
       ["h2", "clamp(1.6rem, 1.2rem + 2.5cqi, 2.25rem)"],
@@ -100,7 +100,6 @@ describe("HeadingBlock", () => {
 
   it("h1 uses a fluid clamp font size when _style.fontSize is not set", () => {
     // JSDOM strips clamp() from font-size (CSS parsing limitation), so use renderToStaticMarkup.
-    const { renderToStaticMarkup } = require("react-dom/server");
     const html = renderToStaticMarkup(<HeadingBlock text="Test" level="h1" />);
     expect(html).toContain("clamp(");
     expect(html).toContain("cqi");

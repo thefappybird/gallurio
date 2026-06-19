@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { GalleryCarouselBlock, galleryCarouselDefaultProps } from "./GalleryCarouselBlock";
 import type { GalleryCarouselProps } from "./GalleryCarouselBlock";
@@ -97,7 +98,6 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
   it("applies Text Padding to the overlay layer using responsive vars (default 1.5rem, overridable)", () => {
     // JSDOM strips var() from CSS shorthand properties (known limitation), so we use
     // renderToStaticMarkup to get the raw HTML string with the literal style attribute value.
-    const { renderToStaticMarkup } = require("react-dom/server");
     const html = renderToStaticMarkup(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
     expect(html).toContain("var(--pf-overlay-py, 1.5rem)");
     expect(html).toContain("var(--pf-overlay-px, 1.5rem)");
