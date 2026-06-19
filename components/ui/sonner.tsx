@@ -15,12 +15,14 @@ export function Toaster(props: ToasterProps) {
       closeButton
       toastOptions={{
         classNames: {
-          toast: "border bg-popover text-popover-foreground shadow-lg !rounded-none animate-toast-in",
+          // Toasts are controls — soften with the control radius (--radius), not
+          // the sharp frame radius. `!` defeats sonner's own injected styles.
+          toast: "border bg-popover text-popover-foreground shadow-lg !rounded-[var(--radius)] animate-toast-in",
           title: "text-sm font-semibold",
           description: "text-xs opacity-90",
-          actionButton: "!rounded-none !bg-primary !text-primary-foreground",
-          cancelButton: "!rounded-none !bg-muted !text-muted-foreground",
-          closeButton: "!rounded-none border border-border bg-background hover:bg-muted",
+          actionButton: "!rounded-[var(--radius)] !bg-primary !text-primary-foreground",
+          cancelButton: "!rounded-[var(--radius)] !bg-muted !text-muted-foreground",
+          closeButton: "!rounded-[var(--radius)] border border-border bg-background hover:bg-muted",
         },
       }}
       {...props}

@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { routing } from "@/lib/i18n/routing";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
+import { appThemeAttributes, DEFAULT_APP_THEME } from "@/lib/theme/appTheme";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -41,6 +42,10 @@ export default async function RootLayout({
     <html
       lang={locale}
       className={`${portfolioFontVariables} h-full antialiased`}
+      // Default corner-style preset (app-shell theming seam). A future
+      // user-theming UI resolves a persisted AppThemeConfig here instead of the
+      // default; components already read the CSS-var seam. See lib/theme/appTheme.ts.
+      {...appThemeAttributes(DEFAULT_APP_THEME)}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
