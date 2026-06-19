@@ -9,9 +9,11 @@ const CANVAS_STYLE_ID = "pf-root-canvas-style";
 
 // Puck's width-clamped preview surface (set by the viewport toggle). Making it the
 // `pfpage` container means blocks respond LIVE to the selected device width in the
-// canvas — the same container-query rules that drive the public page. The selector
-// list is broad on purpose; the harmless extras simply never match.
-const CANVAS_SURFACE_SELECTOR = "[data-puck-preview], .Puck-frame, .PuckLayout-content";
+// canvas — the same container-query rules that drive the public page. Verified
+// in-browser: `[data-puck-preview]` is the single clamped surface (the e2e spec
+// asserts exactly one `pfpage` container lands here), so we scope to it precisely
+// rather than a broad list that could nest containers.
+const CANVAS_SURFACE_SELECTOR = "[data-puck-preview]";
 const PF_CANVAS_CONTAINER_CSS =
   `${CANVAS_SURFACE_SELECTOR} { container-type: inline-size; container-name: ${PF_CONTAINER_NAME}; }`;
 

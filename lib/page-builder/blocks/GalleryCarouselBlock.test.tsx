@@ -101,12 +101,14 @@ describe("GalleryCarouselBlock — isomorphic render", () => {
     const html = renderToStaticMarkup(GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi" }));
     expect(html).toContain("var(--pf-overlay-py, 1.5rem)");
     expect(html).toContain("var(--pf-overlay-px, 1.5rem)");
+  });
 
-    const htmlCustom = renderToStaticMarkup(
+  it("explicit overlay Text Padding wins as a literal over the responsive default", () => {
+    const html = renderToStaticMarkup(
       GalleryCarouselBlock({ ...base, images: imgs(2), heading: "Hi", _style: { textPaddingX: "2rem", textPaddingY: "3rem" } })
     );
-    expect(htmlCustom).toContain("var(--pf-overlay-py, 3rem)");
-    expect(htmlCustom).toContain("var(--pf-overlay-px, 2rem)");
+    expect(html).toContain("padding:3rem 2rem");
+    expect(html).not.toContain("var(--pf-overlay-px, 2rem)");
   });
 
   it("lets _style.headingAlign override the float-derived heading alignment", () => {

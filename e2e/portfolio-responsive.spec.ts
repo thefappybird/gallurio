@@ -34,7 +34,12 @@ test("editor canvas is the pfpage container and the responsive sheet is present"
   console.log("[diag] pfpage containers:", JSON.stringify(containers));
 
   expect(hasSheet, "PF_RESPONSIVE_CSS must be injected into the editor canvas").toBe(true);
-  expect(containers.length, "the clamped preview surface must be a pfpage container").toBeGreaterThan(0);
+  // Exactly one pfpage container — guards against nested containers shadowing the
+  // intended surface (the inner one would win @container/cqi resolution).
+  expect(containers.length, "exactly one pfpage container (the clamped preview surface)").toBe(1);
+  // It must be the width-clamped surface, not the full canvas area.
+  const windowWidth = await page.evaluate(() => window.innerWidth);
+  expect(containers[0].width, "the pfpage container is clamped below the window width").toBeLessThan(windowWidth);
 
   await page.screenshot({ path: "e2e/.artifacts/editor-desktop.png" });
 });

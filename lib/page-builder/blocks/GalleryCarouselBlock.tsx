@@ -118,9 +118,10 @@ export function GalleryCarouselBlock({
             display: "flex",
             alignItems: FLOAT_Y_TO_ALIGN[vertical],
             justifyContent: FLOAT_X_TO_JUSTIFY[horizontal],
-            // Text Padding (toolkit) drives the overlay inset; default keeps the prior 1.5rem.
-            // Responsive vars (--pf-overlay-py/px) kick in at <=600px; explicit toolkit values win.
-            padding: `var(--pf-overlay-py, ${_style?.textPaddingY ?? "1.5rem"}) var(--pf-overlay-px, ${_style?.textPaddingX ?? "1.5rem"})`,
+            // Text Padding (toolkit) drives the overlay inset. An explicit user value is a literal
+            // that wins; only the DEFAULT flows through the responsive var (--pf-overlay-*), which
+            // tightens to 1rem at <=600px. This keeps the "explicit values win" invariant intact.
+            padding: `${_style?.textPaddingY ?? "var(--pf-overlay-py, 1.5rem)"} ${_style?.textPaddingX ?? "var(--pf-overlay-px, 1.5rem)"}`,
             pointerEvents: "none",
           }}
         >
