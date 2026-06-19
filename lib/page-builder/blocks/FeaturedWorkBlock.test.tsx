@@ -157,7 +157,7 @@ describe("FeaturedWorkBlock — tiles render", () => {
 });
 
 describe("FeaturedWorkBlock — columns", () => {
-  it("sets repeat(2, 1fr) for columns=2", () => {
+  it("sets responsive gridColsVar for columns=2", () => {
     const { container } = render(
       <FeaturedWorkBlock
         {...featuredWorkDefaultProps}
@@ -167,10 +167,10 @@ describe("FeaturedWorkBlock — columns", () => {
     );
     const grid = container.querySelector(".pf-featured-grid");
     expect(grid).not.toBeNull();
-    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("repeat(2, 1fr)");
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(2, 1fr))");
   });
 
-  it("sets repeat(4, 1fr) for columns=4", () => {
+  it("sets responsive gridColsVar for columns=4", () => {
     const { container } = render(
       <FeaturedWorkBlock
         {...featuredWorkDefaultProps}
@@ -179,7 +179,7 @@ describe("FeaturedWorkBlock — columns", () => {
       />
     );
     const grid = container.querySelector(".pf-featured-grid");
-    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("repeat(4, 1fr)");
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(4, 1fr))");
   });
 });
 

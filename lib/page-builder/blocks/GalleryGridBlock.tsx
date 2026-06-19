@@ -22,6 +22,7 @@ import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
+import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -68,7 +69,7 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
       data-block="gallery-grid"
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 1.5rem",
+        padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
@@ -78,7 +79,7 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: `repeat(${columns}, 1fr)`,
+            gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
             gap: gapValue,
           }}
         >
@@ -115,7 +116,7 @@ function GalleryEmptyState({ message }: { message: string }) {
       data-empty="true"
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 1.5rem",
+        padding: padVar("4rem 1.5rem"),
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

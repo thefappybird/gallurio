@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CollectionPopup } from "./CollectionPopup";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
+import { gridColsVar } from "@/lib/page-builder/responsive";
 
 // ---------------------------------------------------------------------------
 // Types (exported so the parent block can import and adapt to this shape)
@@ -66,7 +67,7 @@ export function FeaturedCollectionsClient({
         className="pf-featured-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          gridTemplateColumns: gridColsVar(`repeat(${columns}, 1fr)`),
           gap: "1.5rem",
         }}
       >

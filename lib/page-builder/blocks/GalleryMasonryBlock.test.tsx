@@ -29,10 +29,10 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(container.querySelectorAll("img").length).toBe(4);
   });
 
-  it("sets columnCount from the columns prop", () => {
+  it("sets responsive masonryColsVar from the columns prop", () => {
     const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2), columns: 4 }));
     const col = container.querySelector(".pf-masonry") as HTMLElement;
-    expect(col.style.columnCount).toBe("4");
+    expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 4)");
   });
 
   it("renders the empty state (default English label) when images is empty", () => {

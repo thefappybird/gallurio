@@ -127,13 +127,13 @@ describe("FeaturedCollectionsClient", () => {
   });
 
   describe("grid layout", () => {
-    it.each([2, 3, 4] as const)("columns=%i sets repeat(%i, 1fr) on the grid", (cols) => {
+    it.each([2, 3, 4] as const)("columns=%i sets responsive gridColsVar on the grid", (cols) => {
       const { container } = render(
         <FeaturedCollectionsClient {...baseProps} columns={cols} />
       );
       const grid = container.querySelector(".pf-featured-grid") as HTMLElement;
       expect(grid).not.toBeNull();
-      expect(grid.style.gridTemplateColumns).toBe(`repeat(${cols}, 1fr)`);
+      expect(grid.style.gridTemplateColumns).toBe(`var(--pf-grid-cols, repeat(${cols}, 1fr))`);
     });
 
     it("grid uses CSS grid display", () => {
