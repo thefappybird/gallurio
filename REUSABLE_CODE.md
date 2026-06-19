@@ -138,6 +138,7 @@ Composed, app-specific shared components.
 | `lib/server/rateLimit.ts` | `rateLimit`, `__resetRateLimitForTests` | In-memory sliding-window limiter (best-effort, NOT distributed) |
 | `lib/teams/team-colors.ts` | `TEAM_COLOR_PALETTE`, `INACTIVE_TEAM_COLOR` | Client-safe team color presets |
 | `lib/page-builder/brandKitContext.tsx` | `BrandKitProvider`, `useBrandKit` | Workspace brand-kit context |
+| `lib/page-builder/responsive.ts` | `PF_PAGE_CONTAINER`, `PF_PAGE_CONTAINER_CSS`, `PF_RESPONSIVE_CSS`, `padVar`, `gridColsVar`, `masonryColsVar`, `PF_CONTAINER_NAME`, breakpoint consts | Portfolio block responsiveness via a single `pfpage` container scope + custom-property indirection. Mark the page surface with `PF_PAGE_CONTAINER` (public root render) or `PF_PAGE_CONTAINER_CSS` (editor canvas via `RootCanvasStyle`), inject `PF_RESPONSIVE_CSS` once, and have blocks reference `var(--pf-pad/...)` inline so they reflow on the public page AND in the editor viewport toggle. New blocks must reuse these helpers, not re-implement breakpoints. |
 
 ---
 

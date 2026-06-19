@@ -63,4 +63,5 @@ skills-lock.json
 /test-results/
 /playwright-report/
 /e2e/.auth/
+/e2e/.artifacts/
 *.log
