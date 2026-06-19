@@ -43,6 +43,22 @@ describe("buildInquiryCalendarEvents", () => {
     expect(event.colorOverride).toBe("var(--event-inquiry)");
   });
 
+  it("sets colorOverride to var(--danger) for conflicted unbooked inquiries", () => {
+    const inq = makeInquiry("abc123", [
+      { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
+    ], { status: "new", hasConflict: true });
+    const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
+    expect(event.colorOverride).toBe("var(--danger)");
+  });
+
+  it("sets colorOverride to var(--event-inquiry) for non-conflicted unbooked inquiries", () => {
+    const inq = makeInquiry("abc123", [
+      { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
+    ], { status: "new", hasConflict: false });
+    const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
+    expect(event.colorOverride).toBe("var(--event-inquiry)");
+  });
+
   it("omits colorOverride for booked inquiries so they render like bookings", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },

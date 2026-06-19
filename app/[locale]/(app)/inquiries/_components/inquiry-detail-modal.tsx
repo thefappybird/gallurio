@@ -9,6 +9,7 @@ import { InquiryActions } from "../[id]/_components/inquiry-actions";
 import { useTranslations } from "next-intl";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import type { BookingTeamOption } from "../../bookings/_data/team-options";
+import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type InquiryBookingSummary = {
   id: string | null;
@@ -53,6 +54,7 @@ export function InquiryDetailModal({
   teams = [],
   onConverted,
   onConvertFailed,
+  onInquiryChanged,
 }: {
   detail: InquiryDetailModalData | null;
   open: boolean;
@@ -60,6 +62,7 @@ export function InquiryDetailModal({
   teams?: BookingTeamOption[];
   onConverted?: () => void;
   onConvertFailed?: () => void;
+  onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 }) {
   const t = useTranslations("app.inquiries.detail");
 
@@ -111,6 +114,7 @@ export function InquiryDetailModal({
                 phone={detail.phone}
                 preferredContact={detail.preferredContact}
                 status={detail.status}
+                onInquiryChanged={onInquiryChanged}
               />
               <EventRequestCard
                 eventType={detail.eventType}
@@ -135,8 +139,10 @@ export function InquiryDetailModal({
                 initialTeamId={detail.booking?.teamId ?? null}
                 sessions={detail.sessions}
                 locale={detail.locale}
+                hasConflict={detail.hasConflict}
                 onConverted={onConverted}
                 onConvertFailed={onConvertFailed}
+                onInquiryChanged={onInquiryChanged}
               />
 
               <div className="border border-border bg-card">

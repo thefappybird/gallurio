@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Controller,
   type Control,
@@ -24,6 +25,7 @@ import {
   type SupportedCurrency,
 } from "@/lib/validators/workspace";
 import { cn } from "@/lib/utils";
+import { LocationPicker } from "@/components/ui/location-picker";
 import type { WizardValues } from "./types";
 
 type Props = {
@@ -36,6 +38,8 @@ type Props = {
   teams?: { id: string; name: string }[];
   /** Wizard mode — team selector only rendered when teams.length > 1. */
   mode?: "create" | "edit";
+  /** True when the step has been submitted/validated — reveals the location error even before onChange. */
+  locationSubmitted?: boolean;
 };
 
 const Asterisk = () => <span className="ml-0.5 text-destructive">*</span>;
@@ -52,13 +56,19 @@ function safe(t: (k: string) => string, key: string, fallback: string) {
 export function EventPricingStep({
   control,
   register,
+  watch,
   errors,
   teams,
+  locationSubmitted = false,
 }: Props) {
   const t = useTranslations("app.bookings.wizard.event");
   const tWiz = useTranslations("app.bookings.wizard");
   const tEvent = useTranslations("app.bookings.eventTypes");
   const tPricing = useTranslations("app.bookings.wizard.pricing");
+
+  const locationValue = watch("location");
+  const [locationTouched, setLocationTouched] = useState(false);
+  const showLocationError = (locationTouched || locationSubmitted) && !locationValue?.address?.trim();
 
   // A team picker only appears when the caller can choose among >1 writable
   // teams; a single team is auto-applied (seeded into teamId), so no field is
@@ -206,6 +216,41 @@ export function EventPricingStep({
         <p className="sm:col-span-3 text-xs text-muted-foreground">
           {tPricing("hint")}
         </p>
+      </div>
+
+      {/* Location — required, applies to all sessions */}
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="wiz-location">
+          {t("location")}
+          <Asterisk />
+        </Label>
+        <Controller
+          control={control}
+          name="location"
+          render={({ field }) => (
+            <LocationPicker
+              id="wiz-location"
+              editable
+              value={{
+                address: field.value?.address ?? "",
+                lat: field.value?.lat ?? null,
+                lng: field.value?.lng ?? null,
+              }}
+              onChange={(v) => { setLocationTouched(true); field.onChange(v); }}
+              ariaDescribedby={showLocationError ? "wiz-location-required" : undefined}
+            />
+          )}
+        />
+        {showLocationError ? (
+          <p
+            id="wiz-location-required"
+            className="text-xs text-destructive"
+            role="alert"
+            aria-live="polite"
+          >
+            {t("locationRequired")}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -28,9 +28,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
   }
 
-  // Honeypot — a non-empty `company_name` means a bot filled a hidden field.
-  // Reject before doing any work; return a generic 400.
-  if (typeof json.company_name === "string" && json.company_name.trim() !== "") {
+  // Honeypot — a non-empty or non-string `company_name` means a bot filled a
+  // hidden field (or sent a truthy non-string value). Reject before any work.
+  if (json.company_name != null && json.company_name !== "") {
     return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
   }
 

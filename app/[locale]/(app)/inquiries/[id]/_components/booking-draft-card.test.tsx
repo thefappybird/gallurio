@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
+import type { TimeMode } from "@/lib/utils/time-format";
+
+let _timeMode: TimeMode = "24h";
+
+vi.mock("@/lib/time-format/context", () => ({
+  useTimeFormat: vi.fn(() => _timeMode),
+  useTimeFormatContext: vi.fn(() => ({ timeMode: _timeMode, setTimeMode: vi.fn() })),
+  TimeFormatProvider: ({ children }: { children: ReactNode }) => children,
+}));
 
 const approveInquiryBookingAction = vi.fn();
 const saveDraftBookingFieldsAction = vi.fn();
@@ -83,5 +93,56 @@ describe("BookingDraftCard", () => {
       screen.getByText("Only the workspace owner can convert bookings.")
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Convert to booking/i })).not.toBeInTheDocument();
+  });
+
+  it("disables convert button and shows conflict alert when hasConflict is true", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} hasConflict />);
+    const convertBtn = screen.getByRole("button", { name: /Convert to booking/i });
+    expect(convertBtn).toBeDisabled();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("staff does not see the conflict alert even when hasConflict is true", () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} isOwner={false} hasConflict />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("save button is disabled when not dirty and enables after a field change", async () => {
+    renderWithProviders(<BookingDraftCard {...baseProps} initialTotal={1000} />);
+    const saveBtn = screen.getByRole("button", { name: /Save edits/i });
+    expect(saveBtn).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2000" } });
+    expect(saveBtn).not.toBeDisabled();
+  });
+
+  it("calls onInquiryChanged with draft patch after a successful save", async () => {
+    const onInquiryChanged = vi.fn();
+    renderWithProviders(
+      <BookingDraftCard {...baseProps} initialTotal={1000} onInquiryChanged={onInquiryChanged} />
+    );
+    fireEvent.change(screen.getByLabelText(/Total/i), { target: { value: "2500" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save edits/i }));
+    await waitFor(() => expect(saveDraftBookingFieldsAction).toHaveBeenCalledOnce());
+    expect(onInquiryChanged).toHaveBeenCalledWith(
+      "abc",
+      expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
+    );
+  });
+
+  it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {
+    _timeMode = "12h";
+    const session = { startDate: "2026-09-01", startTime: "14:00", endTime: "17:30" };
+    renderWithProviders(
+      <BookingDraftCard
+        {...baseProps}
+        sessions={[session]}
+      />
+    );
+    const expected = formatSessionTimeRange(session, "12h", "UTC");
+    // Must contain am/pm marker — proving the canonical formatter ran, not raw "14:00–17:30"
+    expect(expected).toMatch(/pm/i);
+    expect(screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeInTheDocument();
+    _timeMode = "24h";
   });
 });

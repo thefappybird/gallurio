@@ -80,9 +80,37 @@ export function dateToTzMinutes(d: Date, timeZone: string): number {
 }
 
 /**
+ * Return the wall-clock date (YYYY-MM-DD) and time (HH:MM) for a UTC Date as
+ * seen in `timeZone`. Used to convert a DnD-dropped Date back to the inputs
+ * expected by `rescheduleInquirySessionAction`.
+ */
+export function dateToTzWallClock(
+  d: Date,
+  timeZone: string
+): { date: string; time: string } {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  const date = `${get("year")}-${get("month")}-${get("day")}`;
+  // Some ICU/V8 builds emit "24" for midnight with hour12:false; normalise to "00".
+  const rawHour = get("hour");
+  const hour = rawHour === "24" ? "00" : rawHour;
+  const time = `${hour}:${get("minute")}`;
+  return { date, time };
+}
+
+/**
  * Return the set of CalendarEvent ids that have a time-window overlap with at
  * least one other event from a different booking. Used to render a conflict
- * indicator (⚠) on calendar candles.
+ * indicator (&#9888;) on calendar candles.
  *
  * Overlap test: standard half-open interval — adjacent-exact boundaries do NOT
  * conflict, which matches `overlappingShifts()`.
@@ -94,6 +122,9 @@ export function detectConflictIds(events: CalendarEvent[]): Set<string> {
       const a = events[i];
       const b = events[j];
       if (a.bookingId === b.bookingId) continue;
+      // Two inquiry candles overlapping each other are not a conflict;
+      // only an inquiry vs. a real booking (or booking vs. booking) counts.
+      if (a.kind === "inquiry" && b.kind === "inquiry") continue;
       if (a.start < b.end && b.start < a.end) {
         ids.add(a.id);
         ids.add(b.id);

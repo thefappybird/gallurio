@@ -94,7 +94,10 @@ export const inquirySubmissionSchema = z.object({
     .min(1, "Add at least one session")
     .max(20, "Too many sessions"),
   eventType: z.enum(EVENT_TYPES),
-  location: inquiryLocationSchema,
+  location: inquiryLocationSchema.refine(
+    (v) => !!v.address?.trim(),
+    { message: "Please pick a location before submitting.", path: ["address"] }
+  ),
   description: z.string().trim().min(10, "Tell us a little more (10+ characters)").max(2000),
 
   // Anti-bot honeypot — must be empty.

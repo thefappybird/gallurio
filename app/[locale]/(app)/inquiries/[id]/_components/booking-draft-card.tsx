@@ -27,6 +27,9 @@ import {
   overlappingShifts,
   toMinutes,
 } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
+import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
+import { useTimeFormat } from "@/lib/time-format/context";
+import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
 
 type Props = {
   inquiryId: string;
@@ -42,8 +45,10 @@ type Props = {
   initialTeamId?: string | null;
   sessions?: InquirySessionView[];
   locale?: string;
+  hasConflict?: boolean;
   onConverted?: () => void;
   onConvertFailed?: () => void;
+  onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
 export function BookingDraftCard({
@@ -60,8 +65,10 @@ export function BookingDraftCard({
   initialTeamId = null,
   sessions = [],
   locale,
+  hasConflict = false,
   onConverted,
   onConvertFailed,
+  onInquiryChanged,
 }: Props) {
   const t = useTranslations("app.inquiries.detail.bookingDraft");
   const ta = useTranslations("app.inquiries.detail.actions");
@@ -69,6 +76,7 @@ export function BookingDraftCard({
   const ter = useTranslations("app.inquiries.detail.eventRequest");
   const tTeam = useTranslations("app.bookings.teamPicker");
   const router = useRouter();
+  const timeMode = useTimeFormat();
 
   const [total, setTotal] = useState(String(initialTotal));
   const [deposit, setDeposit] = useState(String(initialDeposit));
@@ -78,6 +86,22 @@ export function BookingDraftCard({
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [approved, setApproved] = useState(false);
+
+  // Dirty tracking: snapshot of the last-saved field values.
+  // After a successful save the snapshot is reset to the saved values
+  // so the Save button disables until the next edit.
+  const [snapshot, setSnapshot] = useState({
+    total: String(initialTotal),
+    deposit: String(initialDeposit),
+    notes: initialNotes,
+    teamId: initialTeamId ?? null,
+  });
+
+  const isDirty =
+    Number(total) !== Number(snapshot.total) ||
+    Number(deposit) !== Number(snapshot.deposit) ||
+    notes.trim() !== snapshot.notes.trim() ||
+    (teamId ?? null) !== (snapshot.teamId ?? null);
 
   // Sessions editor state
   const [editingSessions, setEditingSessions] = useState(false);
@@ -148,9 +172,14 @@ export function BookingDraftCard({
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await saveDraftBookingFieldsAction(inquiryId, currentEdits());
+      const edits = currentEdits();
+      const res = await saveDraftBookingFieldsAction(inquiryId, edits);
       if ("error" in res) { toast.error(t("saveError")); return; }
       toast.success(t("savedToast"));
+      // Reset snapshot so Save button disables until next edit.
+      setSnapshot({ total, deposit, notes, teamId: teamId ?? null });
+      // Propagate optimistic patch to the table row.
+      onInquiryChanged?.(inquiryId, { total: edits.total, deposit: edits.deposit, notes: edits.notes });
     } finally {
       setSaving(false);
     }
@@ -271,7 +300,7 @@ export function BookingDraftCard({
                 {draftSessions.map((s, i) => (
                   <li key={i} className="text-sm tabular-nums">
                     {fmtSessionDate(s.startDate)}
-                    <span className="text-muted-foreground">{" · "}{s.startTime}–{s.endTime}</span>
+                    <span className="text-muted-foreground">{" · "}{formatSessionTimeRange({ startDate: s.startDate, startTime: s.startTime, endTime: s.endTime }, timeMode, "UTC")}</span>
                   </li>
                 ))}
               </ul>
@@ -354,14 +383,34 @@ export function BookingDraftCard({
         {!isOwner ? (
           <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
         ) : (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button onClick={handleApprove} loading={approving} disabled={saving} className="sm:flex-1">
-              {approving ? t("approving") : t("approve")}
-            </Button>
-            <Button variant="outline" onClick={handleSave} loading={saving} disabled={approving}>
-              {saving ? t("saving") : t("save")}
-            </Button>
-          </div>
+          <>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                onClick={handleApprove}
+                loading={approving}
+                disabled={hasConflict || saving || approving}
+                aria-disabled={hasConflict || saving || approving}
+                className="sm:flex-1"
+              >
+                {approving ? t("approving") : t("approve")}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleSave}
+                loading={saving}
+                disabled={!isDirty || saving || approving}
+                aria-disabled={!isDirty || saving || approving}
+              >
+                {saving ? t("saving") : t("save")}
+              </Button>
+            </div>
+
+            {hasConflict && (
+              <p className="text-xs text-destructive" role="alert">
+                {t("conflictBlocks")}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

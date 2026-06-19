@@ -15,7 +15,7 @@ import withDragAndDrop, {
   type DragFromOutsideItemArgs,
 } from "react-big-calendar/lib/addons/dragAndDrop";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon, TriangleAlertIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -26,7 +26,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
-import { STATUS_COLOR_VAR as STATUS_COLOR } from "@/lib/bookings/status-style";
+import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import type { BookingStatus } from "@/lib/validators/booking";
 
@@ -144,6 +144,9 @@ type Props = {
   teamColorMap?: Record<string, string>;
   /** Optional content rendered in the toolbar immediately to the right of the Prev/Today/Next nav buttons. */
   toolbarTrailing?: ReactNode;
+  /** Gate which events are draggable. When absent, all events are draggable
+   *  (preserves current bookings-calendar behavior). */
+  draggableAccessor?: (event: AnyCalendarEvent) => boolean;
 };
 
 /**
@@ -298,34 +301,27 @@ function PastPill({ label }: { label: string }) {
 
 /** Status pill shown at the bottom-right of each candle: a status-color dot +
  *  label. For inquiry candles, `labelOverride` replaces the booking status text.
- *  `hasConflict` renders a warning icon to the right of the chip. */
+ *  Color-based conflict is conveyed via the candle background; the pill always
+ *  shows the status label so color is not the sole signal. */
 function StatusPill({
   status,
   label,
   labelOverride,
-  hasConflict,
 }: {
   status: BookingStatus;
   label: string;
   labelOverride?: string;
-  hasConflict?: boolean;
 }) {
   return (
-    <div className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex items-center gap-0.5">
-      <span className="inline-flex max-w-[85%] items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground">
+    <div className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex items-center">
+      <span className="inline-flex items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground whitespace-nowrap">
         <span
           aria-hidden
           className="size-1.5 shrink-0"
           style={{ backgroundColor: STATUS_COLOR[status] ?? "var(--muted)" }}
         />
-        <span className="truncate">{labelOverride ?? label}</span>
+        {labelOverride ?? label}
       </span>
-      {hasConflict && (
-        <TriangleAlertIcon
-          className="size-2.5 shrink-0 text-red-400"
-          aria-label="Schedule conflict"
-        />
-      )}
     </div>
   );
 }
@@ -383,17 +379,22 @@ export function MonthBookingEvent({
   }
 
   const booking = ev as CalendarEvent;
-  const bg = ctx ? ctx.eventColor(booking) : (STATUS_COLOR[booking.status] ?? "var(--muted)");
+  const baseBg = ctx ? ctx.eventColor(booking) : (STATUS_COLOR[booking.status] ?? "var(--muted)");
+  const bg = booking.hasConflict ? CONFLICT_COLOR_VAR : baseBg;
   const clientDisplay = booking.clientName || "—";
   const timeRange = formatTimeRange(booking.start, booking.end, timeMode);
   const isPast = booking.end < new Date();
   const isStatusMuted =
     booking.status === "cancelled" || booking.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+  const statusLabel = typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status);
+  const labelOverride = booking.kind === "inquiry" && booking.status !== "booked" ? "Inquiry" : undefined;
+  const candleAriaLabel = `${booking.title} · ${labelOverride ?? statusLabel}${booking.hasConflict ? " · conflict" : ""}`;
 
   return (
     <span
       title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
+      aria-label={candleAriaLabel}
       className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
         isStatusMuted
           ? "line-through opacity-80"
@@ -418,9 +419,8 @@ export function MonthBookingEvent({
       {showPastVisual && <PastPill label={t("past")} />}
       <StatusPill
         status={booking.status}
-        label={typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status)}
-        labelOverride={booking.kind === "inquiry" && booking.status !== "booked" ? "Inquiry" : undefined}
-        hasConflict={booking.hasConflict}
+        label={statusLabel}
+        labelOverride={labelOverride}
       />
     </span>
   );
@@ -437,7 +437,8 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   // Guard defensively so the narrowing is correct for TS.
   if ("type" in event && event.type === "overflow") return null;
   const ev = event as CalendarEvent;
-  const bg = ctx ? ctx.eventColor(ev) : (STATUS_COLOR[ev.status] ?? "var(--muted)");
+  const baseBg = ctx ? ctx.eventColor(ev) : (STATUS_COLOR[ev.status] ?? "var(--muted)");
+  const bg = ev.hasConflict ? CONFLICT_COLOR_VAR : baseBg;
   const clientDisplay = ev.clientName || "—";
   // For split overnight halves show the full original session times so the user
   // always sees the real shift boundaries regardless of which half they hover.
@@ -446,10 +447,14 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const isPast = ev.end < new Date();
   const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
+  const statusLabel = typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status);
+  const labelOverride = ev.kind === "inquiry" && ev.status !== "booked" ? "Inquiry" : undefined;
+  const candleAriaLabel = `${ev.title} · ${labelOverride ?? statusLabel}${ev.hasConflict ? " · conflict" : ""}`;
 
   return (
     <div
       title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
+      aria-label={candleAriaLabel}
       className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
         isStatusMuted
           ? "line-through opacity-80"
@@ -488,9 +493,8 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
       {!isContinuation && (
         <StatusPill
           status={ev.status}
-          label={typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status)}
-          labelOverride={ev.kind === "inquiry" && ev.status !== "booked" ? "Inquiry" : undefined}
-          hasConflict={ev.hasConflict}
+          label={statusLabel}
+          labelOverride={labelOverride}
         />
       )}
     </div>
@@ -848,6 +852,7 @@ export function BookingCalendar({
   colorMode = "status",
   teamColorMap,
   toolbarTrailing,
+  draggableAccessor,
 }: Props) {
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
@@ -1003,6 +1008,7 @@ export function BookingCalendar({
           dragFromOutsideItem={
             (dragFromOutsideItem ?? undefined) as (() => AnyCalendarEvent) | undefined
           }
+          draggableAccessor={draggableAccessor as ((event: object) => boolean) | undefined}
           eventPropGetter={(event) => {
             if ("type" in event && (event as OverflowEvent).type === "overflow") {
               return { className: "cursor-pointer overflow-event", style: { padding: 0, background: "transparent", border: "none" } };

@@ -112,6 +112,21 @@ export default async function InquiriesPage({
     getInquiryStatusCounts(workspace._id),
   ]);
 
+  // Compute conflicts for non-booked inquiries in the current page
+  // (hoisted before calendar so candles carry hasConflict).
+  const tz = (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
+  const conflictInputs = items
+    .filter((inq) => !isBookedInquiryStatus(inq.status))
+    .map((inq) => ({
+      _id: inq._id.toString(),
+      sessions: (inq.sessions ?? []).map((s) => ({
+        startDate: (s as { startDate: string }).startDate,
+        startTime: (s as { startTime: string }).startTime,
+        endTime: (s as { endTime: string }).endTime,
+      })),
+    }));
+  const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
+
   // Calendar data: fetch all upcoming bookings + un-converted inquiries.
   let events: CalendarEvent[] = [];
   let calendarTeams: Awaited<ReturnType<typeof getBookingTeamOptions>> = [];
@@ -156,6 +171,7 @@ export default async function InquiriesPage({
           endTime: (s as { endTime: string }).endTime,
         })),
         clientName: q.name ?? null,
+        hasConflict: conflictSet.has(q._id.toString()),
       })),
       { today, tz: (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ }
     );
@@ -169,19 +185,6 @@ export default async function InquiriesPage({
     events = [...inquiryEvents, ...bookingEvents];
   }
 
-  // Compute conflicts for non-booked inquiries in the current page.
-  const tz = (workspace as { timezone?: string | null }).timezone ?? FALLBACK_TZ;
-  const conflictInputs = items
-    .filter((inq) => !isBookedInquiryStatus(inq.status))
-    .map((inq) => ({
-      _id: inq._id.toString(),
-      sessions: (inq.sessions ?? []).map((s) => ({
-        startDate: (s as { startDate: string }).startDate,
-        startTime: (s as { startTime: string }).startTime,
-        endTime: (s as { endTime: string }).endTime,
-      })),
-    }));
-  const conflictSet = await computeInquiryConflicts(workspace._id, conflictInputs, tz);
 
   // Stale/over-range page (e.g. after archiving the last row on a page): send the
   // owner to the last valid page instead of an empty table that looks like a dead end.
@@ -347,6 +350,7 @@ export default async function InquiriesPage({
         events={events}
         teams={calendarTeams}
         isOwner={role === "owner"}
+        workspaceTz={tz}
       />
       {sp.detail ? (
         <BookingDetailModal

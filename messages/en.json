@@ -278,6 +278,8 @@
         "dragHint": "Drag the pin to fine-tune the exact spot.",
         "clear": "Clear location",
         "changeLocation": "Change location",
+        "acceptLocation": "Accept location",
+        "discardLocation": "Discard changes",
         "accept": "Accept",
         "cancel": "Cancel",
         "apply": "Apply",
@@ -490,7 +492,7 @@
           "event": "Event",
           "pricing": "Pricing",
           "eventPricing": "Event & Pricing",
-          "sessionsLocation": "Sessions & Location",
+          "sessionsLocation": "Sessions",
           "review": "Review"
         },
         "client": {
@@ -535,7 +537,8 @@
           "rangeTooLong": "Range too long (max 366 days).",
           "startTimeRequired": "Start time is required.",
           "endTimeRequired": "End time is required.",
-          "endTimeBeforeStart": "End time must be after start time."
+          "endTimeBeforeStart": "End time must be after start time.",
+          "locationRequired": "Pick a location before continuing."
         },
         "pricing": {
           "total": "Total",
@@ -1159,6 +1162,7 @@
           "saveError": "Could not save. Please try again.",
           "savedToast": "Draft saved.",
           "ownerOnly": "Only the workspace owner can convert bookings.",
+          "conflictBlocks": "Resolve the scheduling conflict above before converting.",
           "team": "Team"
         },
         "actions": {
@@ -1197,9 +1201,14 @@
         "calendar": "Calendar"
       },
       "calendar": {
-        "legendInquiry": "Inquiry",
-        "legendBooking": "Booking",
-        "empty": "No inquiries or bookings to show."
+        "empty": "No inquiries or bookings to show.",
+        "filters": {
+          "new": "New",
+          "booked": "Booked",
+          "conflicted": "Conflicted"
+        },
+        "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
+        "rescheduleFailed": "Could not reschedule — please try again"
       }
     },
     "pageBuilder": {
@@ -1778,7 +1787,8 @@
         "anniversary": "Anniversary",
         "other": "Other"
       },
-      "location": "Location (optional)",
+      "location": "Location",
+      "locationRequired": "Please pick a location before submitting.",
       "message": "Tell us more",
       "messagePlaceholder": "Share details about your event…",
       "submit": "Send inquiry",

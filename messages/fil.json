@@ -278,6 +278,8 @@
         "dragHint": "I-drag ang pin para tumpak na itakda ang eksaktong lugar.",
         "clear": "Alisin ang lokasyon",
         "changeLocation": "Baguhin ang lokasyon",
+        "acceptLocation": "Tanggapin ang lokasyon",
+        "discardLocation": "Itapon ang mga pagbabago",
         "accept": "Tanggapin",
         "cancel": "Kanselahin",
         "apply": "Ilapat",
@@ -490,7 +492,7 @@
           "event": "Event",
           "pricing": "Presyo",
           "eventPricing": "Event at Presyo",
-          "sessionsLocation": "Mga Sesyon at Lokasyon",
+          "sessionsLocation": "Mga Sesyon",
           "review": "Suriin"
         },
         "client": {
@@ -535,7 +537,8 @@
           "rangeTooLong": "Masyadong mahaba ang hanay (max 366 araw).",
           "startTimeRequired": "Kailangan ang oras ng simula.",
           "endTimeRequired": "Kailangan ang oras ng katapusan.",
-          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula."
+          "endTimeBeforeStart": "Ang oras ng katapusan ay dapat na pagkatapos ng oras ng simula.",
+          "locationRequired": "Pumili ng lokasyon bago magpatuloy."
         },
         "pricing": {
           "total": "Kabuuan",
@@ -1159,6 +1162,7 @@
           "saveError": "Hindi ma-save. Pakisubukang muli.",
           "savedToast": "Na-save ang draft.",
           "ownerOnly": "Ang may-ari lamang ng workspace ang maaaring mag-convert ng mga booking.",
+          "conflictBlocks": "Ayusin ang salungatan sa iskedyul sa itaas bago mag-convert.",
           "team": "Koponan"
         },
         "actions": {
@@ -1197,9 +1201,14 @@
         "calendar": "Kalendaryo"
       },
       "calendar": {
-        "legendInquiry": "Katanungan",
-        "legendBooking": "Booking",
-        "empty": "Walang mga katanungan o booking na ipapakita."
+        "empty": "Walang mga katanungan o booking na ipapakita.",
+        "filters": {
+          "new": "Bago",
+          "booked": "Naka-book",
+          "conflicted": "May Salungatan"
+        },
+        "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
+        "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli"
       }
     },
     "pageBuilder": {
@@ -1778,7 +1787,8 @@
         "anniversary": "Anibersaryo",
         "other": "Iba pa"
       },
-      "location": "Lokasyon (opsyonal)",
+      "location": "Lokasyon",
+      "locationRequired": "Pumili ng lokasyon bago magsumite.",
       "message": "Sabihin pa sa amin",
       "messagePlaceholder": "Ibahagi ang mga detalye ng iyong kaganapan…",
       "submit": "Ipadala ang katanungan",
@@ -1786,7 +1796,7 @@
       "errorGeneric": "Hindi maipadala — pakisubukang muli mamaya.",
       "requiredHint": "Kinakailangan",
       "eventTitle": "Pamagat ng event",
-      "continue": "Na-book"
+      "continue": "Magpatuloy"
     }
   },
   "notFound": {

@@ -1,16 +1,21 @@
 /**
- * Backfill script — inquiry data migrations.
+ * Backfill script - inquiry data migrations.
  *
- * Runs two idempotent migrations in sequence:
+ * Runs three idempotent migrations in sequence:
  *
  *   1. eventDate backfill
  *      Inquiries created before eventDate was required may have null eventDate.
  *      Sets eventDate to the earliest session.startDate parsed as UTC midnight.
  *      Skips inquiries with no sessions (cannot determine a date).
  *
- *   2. "contacted" -> "approved" status rename
- *      Renames the legacy status value "contacted" to "approved" in bulk.
- *      Idempotent — inquiries already set to "approved" are not touched.
+ *   2. "contacted" -> "booked" status rename
+ *      Renames the legacy status value "contacted" to "booked" in bulk.
+ *      Idempotent -- inquiries already set to "booked" are not touched.
+ *
+ *   3. "approved" -> "booked" status rename
+ *      Renames the stale intermediate value "approved" (was briefly used as
+ *      an intermediate step between "contacted" and "booked") to "booked".
+ *      Idempotent -- inquiries already set to "booked" are not touched.
  *
  * Usage:
  *   pnpm backfill:inquiries
@@ -30,7 +35,7 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-// ── Inline minimal schema (avoids Next.js server-only imports) ──────────────
+// -- Inline minimal schema (avoids Next.js server-only imports) --------------
 
 type SessionDoc = { startDate: string }; // "YYYY-MM-DD"
 
@@ -56,7 +61,7 @@ const inquirySchema = new mongoose.Schema<InquiryRaw>(
   { strict: false }
 );
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// -- Helpers ------------------------------------------------------------------
 
 function earliestDateFromSessions(sessions: SessionDoc[]): Date | null {
   const dates = sessions
@@ -68,7 +73,7 @@ function earliestDateFromSessions(sessions: SessionDoc[]): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// -- Main --------------------------------------------------------------------
 
 async function main() {
   await mongoose.connect(MONGODB_URI!);
@@ -76,9 +81,9 @@ async function main() {
 
   const Inquiry = mongoose.model<InquiryRaw>("Inquiry", inquirySchema);
 
-  // ── Migration 1: eventDate backfill ─────────────────────────────────────
+  // -- Migration 1: eventDate backfill ---------------------------------------
 
-  console.log("[backfill] Migration 1: eventDate backfill…");
+  console.log("[backfill] Migration 1: eventDate backfill...");
 
   const noDate = await Inquiry.find({ eventDate: null }).lean();
   console.log(`[backfill]   Found ${noDate.length} inquiries with null eventDate.`);
@@ -90,7 +95,7 @@ async function main() {
     const earliest = earliestDateFromSessions(inquiry.sessions ?? []);
     if (!earliest) {
       console.warn(
-        `[backfill]   SKIP ${inquiry._id} — no sessions to derive a date from.`
+        `[backfill]   SKIP ${inquiry._id} -- no sessions to derive a date from.`
       );
       eventDateSkipped += 1;
       continue;
@@ -106,17 +111,30 @@ async function main() {
     `[backfill]   eventDate: fixed=${eventDateFixed}, skipped=${eventDateSkipped}`
   );
 
-  // ── Migration 2: "contacted" -> "approved" rename ────────────────────────
+  // -- Migration 2: "contacted" -> "booked" rename ---------------------------
 
-  console.log('[backfill] Migration 2: status "contacted" -> "approved"…');
+  console.log('[backfill] Migration 2: status "contacted" -> "booked"...');
 
-  const result = await Inquiry.updateMany(
+  const result2 = await Inquiry.updateMany(
     { status: "contacted" },
-    { $set: { status: "approved" } }
+    { $set: { status: "booked" } }
   );
 
   console.log(
-    `[backfill]   status rename: matched=${result.matchedCount}, modified=${result.modifiedCount}`
+    `[backfill]   contacted->booked: matched=${result2.matchedCount}, modified=${result2.modifiedCount}`
+  );
+
+  // -- Migration 3: "approved" -> "booked" rename ----------------------------
+
+  console.log('[backfill] Migration 3: status "approved" -> "booked"...');
+
+  const result3 = await Inquiry.updateMany(
+    { status: "approved" },
+    { $set: { status: "booked" } }
+  );
+
+  console.log(
+    `[backfill]   approved->booked: matched=${result3.matchedCount}, modified=${result3.modifiedCount}`
   );
 
   await mongoose.disconnect();

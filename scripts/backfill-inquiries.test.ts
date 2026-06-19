@@ -1,9 +1,10 @@
 /**
  * Integration tests for the backfill-inquiries migration logic.
  *
- * Tests the two migrations in isolation against in-memory MongoDB:
+ * Tests the three migrations in isolation against in-memory MongoDB:
  *  1. eventDate backfill: sets eventDate from earliest session.startDate
- *  2. "contacted" -> "approved" status rename
+ *  2. "contacted" -> "booked" status rename
+ *  3. "approved" -> "booked" status rename
  */
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -23,7 +24,7 @@ beforeEach(async () => {
   await clearCollections();
 });
 
-// ── Helpers that mirror backfill logic (avoids importing the script directly) ─
+// -- Helpers that mirror backfill logic (avoids importing the script directly) -
 
 function earliestDateFromSessions(sessions: { startDate: string }[]): Date | null {
   const dates = sessions
@@ -49,15 +50,23 @@ async function runEventDateBackfill() {
   return fixed;
 }
 
-async function runStatusRename() {
+async function runContactedToBookedRename() {
   const result = await Inquiry.updateMany(
     { status: "contacted" },
-    { $set: { status: "approved" } }
+    { $set: { status: "booked" } }
   );
   return result.modifiedCount;
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+async function runApprovedToBookedRename() {
+  const result = await Inquiry.updateMany(
+    { status: "approved" },
+    { $set: { status: "booked" } }
+  );
+  return result.modifiedCount;
+}
+
+// -- Tests -------------------------------------------------------------------
 
 describe("backfill: eventDate", () => {
   it("sets eventDate to the earliest session.startDate for inquiries with null eventDate", async () => {
@@ -82,7 +91,7 @@ describe("backfill: eventDate", () => {
     expect(updated!.eventDate.toISOString().startsWith("2030-08-15")).toBe(true);
   });
 
-  it("is idempotent — does not modify inquiries that already have an eventDate", async () => {
+  it("is idempotent -- does not modify inquiries that already have an eventDate", async () => {
     const existing = new Date("2030-09-01T00:00:00Z");
     await Inquiry.create({
       workspaceId,
@@ -118,27 +127,27 @@ describe("backfill: eventDate", () => {
   });
 });
 
-describe("backfill: contacted -> approved rename", () => {
-  it("renames contacted inquiries to approved", async () => {
+describe("backfill: contacted -> booked rename", () => {
+  it("renames contacted inquiries to booked", async () => {
     await mongoose.connection.collection("inquiries").insertMany([
       { workspaceId, name: "A", email: "a@x.com", status: "contacted", eventDate: new Date() },
       { workspaceId, name: "B", email: "b@x.com", status: "contacted", eventDate: new Date() },
       { workspaceId, name: "C", email: "c@x.com", status: "new", eventDate: new Date() },
     ]);
 
-    const modified = await runStatusRename();
+    const modified = await runContactedToBookedRename();
     expect(modified).toBe(2);
 
-    const approved = await mongoose.connection.collection("inquiries").countDocuments({ status: "approved" });
+    const booked = await mongoose.connection.collection("inquiries").countDocuments({ status: "booked" });
     const contacted = await mongoose.connection.collection("inquiries").countDocuments({ status: "contacted" });
     const newCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "new" });
 
-    expect(approved).toBe(2);
+    expect(booked).toBe(2);
     expect(contacted).toBe(0);
     expect(newCount).toBe(1);
   });
 
-  it("is idempotent — running twice does not change already-approved inquiries", async () => {
+  it("is idempotent -- running twice does not change already-booked inquiries", async () => {
     await mongoose.connection.collection("inquiries").insertOne({
       workspaceId,
       name: "A",
@@ -147,11 +156,49 @@ describe("backfill: contacted -> approved rename", () => {
       eventDate: new Date(),
     });
 
-    await runStatusRename();
-    const secondRun = await runStatusRename();
+    await runContactedToBookedRename();
+    const secondRun = await runContactedToBookedRename();
     expect(secondRun).toBe(0);
 
     const doc = await mongoose.connection.collection("inquiries").findOne({ email: "a@x.com" });
-    expect(doc?.status).toBe("approved");
+    expect(doc?.status).toBe("booked");
+  });
+});
+
+describe("backfill: approved -> booked rename", () => {
+  it("renames approved inquiries to booked", async () => {
+    await mongoose.connection.collection("inquiries").insertMany([
+      { workspaceId, name: "A", email: "a@x.com", status: "approved", eventDate: new Date() },
+      { workspaceId, name: "B", email: "b@x.com", status: "approved", eventDate: new Date() },
+      { workspaceId, name: "C", email: "c@x.com", status: "new", eventDate: new Date() },
+    ]);
+
+    const modified = await runApprovedToBookedRename();
+    expect(modified).toBe(2);
+
+    const booked = await mongoose.connection.collection("inquiries").countDocuments({ status: "booked" });
+    const approved = await mongoose.connection.collection("inquiries").countDocuments({ status: "approved" });
+    const newCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "new" });
+
+    expect(booked).toBe(2);
+    expect(approved).toBe(0);
+    expect(newCount).toBe(1);
+  });
+
+  it("is idempotent -- running twice does not change already-booked inquiries", async () => {
+    await mongoose.connection.collection("inquiries").insertOne({
+      workspaceId,
+      name: "A",
+      email: "a@x.com",
+      status: "approved",
+      eventDate: new Date(),
+    });
+
+    await runApprovedToBookedRename();
+    const secondRun = await runApprovedToBookedRename();
+    expect(secondRun).toBe(0);
+
+    const doc = await mongoose.connection.collection("inquiries").findOne({ email: "a@x.com" });
+    expect(doc?.status).toBe("booked");
   });
 });

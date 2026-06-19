@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useMemo } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -10,6 +10,7 @@ import { TableSkeleton } from "@/components/app/table-skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { InquiryTable, type InquiryRow } from "./inquiry-table";
+import { applyOptimisticPatch, type InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import type { InquiryStatusCounts } from "@/lib/db/queries/inquiries";
 import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detail-modal";
 import { InquiryViewToggle, type InquiriesView } from "./inquiry-view-toggle";
@@ -39,6 +40,7 @@ type Props = {
   events?: CalendarEvent[];
   teams?: BookingTeamOption[];
   isOwner?: boolean;
+  workspaceTz?: string;
 };
 
 export function InquiriesPageClient({
@@ -58,6 +60,7 @@ export function InquiriesPageClient({
   events = [],
   teams = [],
   isOwner = false,
+  workspaceTz,
 }: Props) {
   const t = useTranslations("app.inquiries");
   const tc = useTranslations("common.pagination");
@@ -78,18 +81,68 @@ export function InquiriesPageClient({
     }
   }
 
-  // Optimistic table updates after conversion
-  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, { status: string }>>({});
+  // Optimistic patch map: covers all editable fields; only status is rendered in the table.
+  // Reconciles automatically when server data arrives via router.refresh().
+  const [optimisticUpdates, setOptimisticUpdates] = useState<Record<string, InquiryOptimisticPatch>>({});
 
-  const localRows = rows.map((row) => ({
-    ...row,
-    ...(optimisticUpdates[row.id] ?? {}),
-  }));
+  // Ref tracks whether any change was made while the modal was open so onClose
+  // can skip router.refresh() when nothing changed.
+  const hasChanges = useRef(false);
+
+  // Prune-on-match: derive the active patch map by dropping entries whose fields
+  // the server row now reflects. Using useMemo instead of useEffect+setState avoids
+  // the react-hooks/set-state-in-effect rule and prevents cascading renders.
+  // The raw optimisticUpdates state is still the write-target; prunedUpdates is the
+  // read-only view used for rendering and for the applyOptimisticPatch call below.
+  const prunedUpdates = useMemo<Record<string, InquiryOptimisticPatch>>(() => {
+    const keys = Object.keys(optimisticUpdates);
+    if (keys.length === 0) return optimisticUpdates;
+
+    const rowMap = new Map(rows.map((r) => [r.id, r]));
+    let changed = false;
+    const next: Record<string, InquiryOptimisticPatch> = {};
+
+    for (const id of keys) {
+      const patch = optimisticUpdates[id];
+      const serverRow = rowMap.get(id) as Record<string, unknown> | undefined;
+
+      if (!serverRow) {
+        next[id] = patch;
+        continue;
+      }
+
+      const allCaughtUp = (Object.keys(patch) as (keyof InquiryOptimisticPatch)[]).every(
+        (field) => !(field in serverRow) || serverRow[field] === patch[field]
+      );
+
+      if (allCaughtUp) {
+        changed = true;
+      } else {
+        next[id] = patch;
+      }
+    }
+
+    // Return the same reference when nothing was pruned — stable identity for deps.
+    return changed ? next : optimisticUpdates;
+  }, [rows, optimisticUpdates]);
+
+  const localRows = applyOptimisticPatch(rows, prunedUpdates);
+
+  function handleInquiryChanged(inquiryId: string, patch: InquiryOptimisticPatch) {
+    setOptimisticUpdates((prev) => ({
+      ...prev,
+      [inquiryId]: { ...(prev[inquiryId] ?? {}), ...patch },
+    }));
+    hasChanges.current = true;
+  }
 
   function handleConverted() {
     if (detail) {
-      setOptimisticUpdates((prev) => ({ ...prev, [detail.inquiryId]: { status: "booked" } }));
+      handleInquiryChanged(detail.inquiryId, { status: "booked" });
     }
+    // Convert closes the modal directly and handles its own refresh path;
+    // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
+    hasChanges.current = false;
     setDetailOpen(false);
   }
 
@@ -186,7 +239,7 @@ export function InquiriesPageClient({
       </div>
 
       {isCalendar ? (
-        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} />
+        <InquiriesCalendarManager events={events} locale={locale} teams={teams} isOwner={isOwner} workspaceTz={workspaceTz} />
       ) : (
         <>
           {/* Status tabs + Date popover tab */}
@@ -327,9 +380,14 @@ export function InquiriesPageClient({
         onClose={() => {
           setDetailOpen(false);
           stripInquiryParam();
+          if (hasChanges.current) {
+            hasChanges.current = false;
+            router.refresh();
+          }
         }}
         onConverted={handleConverted}
         onConvertFailed={handleConvertFailed}
+        onInquiryChanged={handleInquiryChanged}
       />
     </>
   );

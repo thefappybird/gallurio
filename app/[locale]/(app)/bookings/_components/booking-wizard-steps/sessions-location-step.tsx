@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import {
   useFieldArray,
-  Controller,
   type Control,
   type FieldErrors,
   type UseFormRegister,
@@ -19,7 +18,6 @@ import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { LocationPicker } from "@/components/ui/location-picker";
 import type { ShiftHit, WizardValues } from "./types";
 
 type Props = {
@@ -302,7 +300,6 @@ export function SessionsLocationStep({
   conflictCheckError = false,
 }: Props) {
   const tSessions = useTranslations("app.bookings.sessions");
-  const tEvent = useTranslations("app.bookings.wizard.event");
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -360,27 +357,6 @@ export function SessionsLocationStep({
         <PlusIcon className="size-4" />
         {tSessions("add")}
       </Button>
-
-      {/* Location — applies to all sessions */}
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="wiz-location">{tEvent("location")}</Label>
-        <Controller
-          control={control}
-          name="location"
-          render={({ field }) => (
-            <LocationPicker
-              id="wiz-location"
-              editable
-              value={{
-                address: field.value?.address ?? "",
-                lat: field.value?.lat ?? null,
-                lng: field.value?.lng ?? null,
-              }}
-              onChange={field.onChange}
-            />
-          )}
-        />
-      </div>
     </div>
   );
 }

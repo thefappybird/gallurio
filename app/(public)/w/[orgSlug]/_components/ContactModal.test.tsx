@@ -44,6 +44,7 @@ const labels: ContactModalLabels = {
     submitting: "Sending…",
     errorGeneric: "Could not submit.",
     requiredHint: "Required",
+    locationRequired: "Please pick a location before submitting.",
     locationPicker: {
       searchPlaceholder: "Search venue or address",
       searching: "Searching",

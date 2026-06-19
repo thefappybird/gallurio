@@ -46,6 +46,7 @@ export type InquiryFormLabels = {
   submitting: string;
   errorGeneric: string;
   requiredHint: string;
+  locationRequired: string;
   locationPicker: {
     searchPlaceholder: string;
     searching: string;
@@ -229,6 +230,7 @@ export function ContactForm({
       setActiveTab("event");
       return;
     }
+    // location or description errors land on the location tab
     setActiveTab("location");
   }
 
@@ -524,6 +526,7 @@ export function ContactForm({
                   }}
                   compact={compactLocationPicker}
                   applyButtonStyle={buildButtonStyle(submitAppearance, false)}
+                  ariaDescribedby={errors.location?.address ? "cf-location-error" : undefined}
                   onChange={(value) =>
                     field.onChange({
                       label: value.address || null,
@@ -536,6 +539,11 @@ export function ContactForm({
                 />
               )}
             />
+            {errors.location?.address && (
+              <p id="cf-location-error" style={errorStyle} role="alert">
+                {errors.location.address.message ?? labels.locationRequired}
+              </p>
+            )}
           </div>
 
           <div>
@@ -564,7 +572,7 @@ export function ContactForm({
 
       <div aria-live="polite">
         {errors.root && (
-          <p style={{ ...errorStyle, fontSize: "0.8125rem" }} role="alert">
+          <p id="cf-root-error" style={{ ...errorStyle, fontSize: "0.8125rem" }} role="alert">
             {errors.root.message}
           </p>
         )}

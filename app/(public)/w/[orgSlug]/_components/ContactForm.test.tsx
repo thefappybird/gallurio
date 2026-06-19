@@ -81,6 +81,7 @@ const labels: InquiryFormLabels = {
   submitting: "Sending…",
   errorGeneric: "Could not submit — please try again later.",
   requiredHint: "Required",
+  locationRequired: "Please pick a location before submitting.",
   locationPicker: {
     searchPlaceholder: "Search venue or address",
     searching: "Searching",
@@ -333,6 +334,43 @@ describe("ContactForm", () => {
     );
     const clientTab = screen.getByRole("tab", { name: "Your details" });
     expect(clientTab.getAttribute("style")).toContain("font-size: 0.8125rem");
+  });
+  it("blocks submit when no committed location and shows required message", async () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    // Navigate to location tab without setting a location
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Ada Lovelace" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Event title");
+    fireEvent.change(screen.getByLabelText("Event title"), { target: { value: "Ada & Charles Wedding" } });
+    fireEvent.change(screen.getByLabelText("Date"), { target: { value: futureDate() } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByLabelText("Location");
+
+    // Fill description so only location is missing
+    fireEvent.change(screen.getByLabelText("Tell us more"), {
+      target: { value: "A lovely garden wedding, two days." },
+    });
+
+    // Attempt submit without committing a location
+    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/please pick a location/i)).toBeInTheDocument()
+    );
+  });
+
+  it("allows submit when a committed location exists", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const onSuccess = vi.fn();
+
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={onSuccess} />);
+    await fillValidForm();
+    // fillValidForm already sets the Location field value (mocked LocationPicker fires onChange on change)
+    fireEvent.click(screen.getByRole("button", { name: "Send inquiry" }));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
   });
 });
 

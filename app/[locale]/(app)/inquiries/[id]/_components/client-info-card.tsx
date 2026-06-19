@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { PencilIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateInquiryPhoneAction } from "@/app/[locale]/(app)/inquiries/_actions";
+import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 
 type Props = {
   inquiryId: string;
@@ -13,6 +15,7 @@ type Props = {
   phone: string | null;
   preferredContact: string;
   status: string;
+  onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -24,7 +27,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tp = useTranslations("app.inquiries.preferred");
   const preferredLabel = (() => {
@@ -45,6 +48,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       return;
     }
     setEditingPhone(false);
+    onInquiryChanged?.(inquiryId, { phone: draftPhone });
   }
 
   function handleCancelPhone() {
@@ -89,15 +93,16 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
                 </button>
               </div>
             ) : (
-              <dd className="flex items-center gap-2 text-sm break-words">
-                <span>{draftPhone || t("none")}</span>
+              <dd className="mt-1 flex items-center text-sm">
+                <span className="break-words">{draftPhone || t("none")}</span>
                 {!locked && (
                   <button
                     type="button"
+                    aria-label={t("editPhone")}
                     onClick={() => setEditingPhone(true)}
-                    className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:underline"
+                    className="ml-auto shrink-0 p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:bg-accent/70 disabled:pointer-events-none disabled:opacity-50"
                   >
-                    {t("editPhone")}
+                    <PencilIcon className="h-3.5 w-3.5" />
                   </button>
                 )}
               </dd>

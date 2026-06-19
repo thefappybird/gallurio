@@ -81,6 +81,13 @@ describe("POST /api/inquiries", () => {
     expect(submitInquiry).not.toHaveBeenCalled();
   });
 
+  it("returns 400 when the honeypot is a truthy non-string value", async () => {
+    // Bots may send numeric/boolean truthy values instead of a string.
+    const res = await POST(makeReq(makeBody({ company_name: 1 })));
+    expect(res.status).toBe(400);
+    expect(submitInquiry).not.toHaveBeenCalled();
+  });
+
   it("returns 404 when the workspace is not found / unpublished", async () => {
     submitInquiry.mockResolvedValue({ ok: false, error: "workspace_not_found" });
     const res = await POST(makeReq(makeBody()));

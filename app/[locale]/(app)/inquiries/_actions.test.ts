@@ -23,9 +23,13 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   }),
 }));
 
-vi.mock("@/lib/bookings/shift-conflicts", () => ({
-  getShiftsOnDate: vi.fn().mockResolvedValue([]),
-}));
+vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/bookings/shift-conflicts")>();
+  return {
+    ...actual,
+    getShiftsOnDate: vi.fn().mockResolvedValue([]),
+  };
+});
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Inquiry, Booking, Client } from "@/lib/db/models";
@@ -36,6 +40,7 @@ import {
   editInquirySessionsAction,
 } from "./_actions";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
+import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
 
 beforeAll(async () => {
   await startInMemoryMongo();
@@ -77,6 +82,76 @@ async function seedDraft(wid: Types.ObjectId) {
     draftBookingId: booking._id,
   });
   return { client, booking, inquiry };
+}
+
+/**
+ * Seeds an inquiry with wall-clock sessions and a matching draft booking.
+ */
+async function seedDraftWithSessions(
+  wid: Types.ObjectId,
+  sessions: Array<{ startDate: string; startTime: string; endTime: string }>,
+  tz = "Asia/Manila"
+) {
+  const client = await Client.create({
+    workspaceId: wid,
+    name: "Session Client",
+    email: "session@example.com",
+    source: "form",
+  });
+  const first = sessions[0];
+  const utcStart = new Date(wallTimeInTzToUtc(first.startDate, first.startTime, tz));
+  const utcEnd = new Date(wallTimeInTzToUtc(first.startDate, first.endTime, tz));
+  const booking = await Booking.create({
+    workspaceId: wid,
+    clientId: client._id,
+    clientName: "Session Client",
+    title: "Session Client — inquiry",
+    status: "draft",
+    sessions: [{ startAt: utcStart, endAt: utcEnd }],
+    firstSessionStart: utcStart,
+    lastSessionEnd: utcEnd,
+    amount: { total: 0, deposit: 0, currency: "PHP" },
+  });
+  const inquiry = await Inquiry.create({
+    workspaceId: wid,
+    name: "Session Client",
+    email: "session@example.com",
+    status: "new",
+    eventDate: utcStart,
+    clientId: client._id,
+    draftBookingId: booking._id,
+    sessions,
+  });
+  return { client, booking, inquiry };
+}
+
+/** Seed a real (non-draft, non-cancelled) booking that occupies a time slot. */
+async function seedConflictingBooking(
+  wid: Types.ObjectId,
+  startDate: string,
+  startTime: string,
+  endTime: string,
+  tz = "Asia/Manila"
+) {
+  const conflictClient = await Client.create({
+    workspaceId: wid,
+    name: "Conflict Client",
+    email: "conflict@example.com",
+    source: "form",
+  });
+  const startAt = new Date(wallTimeInTzToUtc(startDate, startTime, tz));
+  const endAt = new Date(wallTimeInTzToUtc(startDate, endTime, tz));
+  return Booking.create({
+    workspaceId: wid,
+    clientId: conflictClient._id,
+    clientName: "Conflict Client",
+    title: "Conflict Booking",
+    status: "booked",
+    sessions: [{ startAt, endAt }],
+    firstSessionStart: startAt,
+    lastSessionEnd: endAt,
+    amount: { total: 0, deposit: 0, currency: "PHP" },
+  });
 }
 
 describe("approveInquiryBookingAction", () => {
@@ -156,6 +231,42 @@ describe("approveInquiryBookingAction", () => {
     const { inquiry } = await seedDraft(workspaceId);
     const res = await approveInquiryBookingAction(String(inquiry._id), { total: 100, deposit: 200 });
     expect("error" in res).toBe(true);
+  });
+
+  it("returns { error: 'conflict' } and does NOT convert when the inquiry session conflicts with a real booking", async () => {
+    const { inquiry, booking } = await seedDraftWithSessions(workspaceId, [
+      { startDate: "2035-06-20", startTime: "09:00", endTime: "17:00" },
+    ]);
+    await seedConflictingBooking(workspaceId, "2035-06-20", "08:00", "18:00");
+
+    const res = await approveInquiryBookingAction(String(inquiry._id));
+    expect(res).toEqual({ error: "conflict" });
+
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.status).toBe("draft");
+
+    const freshInquiry = await Inquiry.findById(inquiry._id).lean();
+    expect(freshInquiry?.status).toBe("new");
+    expect(freshInquiry?.convertedBookingId).toBeNull();
+  });
+
+  it("converts successfully when there is no conflict", async () => {
+    const { inquiry, booking } = await seedDraftWithSessions(workspaceId, [
+      { startDate: "2035-07-10", startTime: "09:00", endTime: "17:00" },
+    ]);
+    const res = await approveInquiryBookingAction(String(inquiry._id));
+    expect(res).toMatchObject({ ok: true, bookingId: String(booking._id) });
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.status).toBe("booked");
+  });
+
+  it("does not self-conflict: approval succeeds when only the inquiry's own draft occupies the slot", async () => {
+    // No other booking seeded — only the draft booking itself is on that date.
+    const { inquiry } = await seedDraftWithSessions(workspaceId, [
+      { startDate: "2035-08-05", startTime: "10:00", endTime: "18:00" },
+    ]);
+    const res = await approveInquiryBookingAction(String(inquiry._id));
+    expect(res).toMatchObject({ ok: true });
   });
 });
 

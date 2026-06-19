@@ -2,14 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/navigation";
-import { EyeIcon, MoreHorizontalIcon } from "lucide-react";
+import { EyeIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { InquiryStatusBadge } from "./inquiry-status-badge";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
@@ -73,6 +67,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
 
   return (
     <>
+      {/* Mobile cards */}
       <ul className="flex flex-col gap-2 md:hidden">
         {rows.map((row) => (
           <li key={row.id}>
@@ -90,31 +85,17 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                       ⚠ {t("table.conflict")}
                     </span>
                   )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t("table.actions.menuLabel")}
-                          onClick={(e) => e.preventDefault()}
-                        >
-                          <MoreHorizontalIcon className="size-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
-                          router.push(buildInquiryModalPath(row.id));
-                        }}
-                      >
-                        <EyeIcon className="size-4" />
-                        {t("table.actions.view")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("table.actions.view")}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      router.push(buildInquiryModalPath(row.id));
+                    }}
+                  >
+                    <EyeIcon className="size-4" />
+                  </Button>
                 </div>
               </div>
               <span className="truncate text-xs text-muted-foreground">{row.email}</span>
@@ -129,6 +110,7 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
         ))}
       </ul>
 
+      {/* Desktop table */}
       <div className="hidden overflow-x-auto border border-border bg-card md:block">
         <table className="w-full text-sm">
           <thead>
@@ -149,7 +131,17 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
             {rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-within:bg-accent/40"
+                role="button"
+                tabIndex={0}
+                aria-label={t("table.open", { name: row.name })}
+                className="cursor-pointer border-b border-border transition-colors last:border-b-0 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring"
+                onClick={() => router.push(buildInquiryModalPath(row.id))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(buildInquiryModalPath(row.id));
+                  }
+                }}
               >
                 <td className="px-3 py-2.5 align-middle">
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -162,14 +154,10 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                   </div>
                 </td>
                 <td className="px-3 py-2.5 align-middle">
-                  <Link
-                    href={buildInquiryModalPath(row.id)}
-                    aria-label={t("table.open", { name: row.name })}
-                    className="flex flex-col focus-visible:outline-none focus-visible:underline"
-                  >
+                  <span className="flex flex-col">
                     <span className="font-semibold leading-snug">{row.name}</span>
                     <span className="text-xs text-muted-foreground">{row.email}</span>
-                  </Link>
+                  </span>
                 </td>
                 <td className="px-3 py-2.5 align-middle">{row.eventTitle ?? t("table.noTitle")}</td>
                 <td className="px-3 py-2.5 align-middle">{eventTypeLabel(row.eventType)}</td>
@@ -183,27 +171,14 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex justify-end">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={t("table.actions.menuLabel")}
-                          >
-                            <MoreHorizontalIcon className="size-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => router.push(buildInquiryModalPath(row.id))}
-                        >
-                          <EyeIcon className="size-4" />
-                          {t("table.actions.view")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("table.actions.view")}
+                      onClick={() => router.push(buildInquiryModalPath(row.id))}
+                    >
+                      <EyeIcon className="size-4" />
+                    </Button>
                   </div>
                 </td>
               </tr>

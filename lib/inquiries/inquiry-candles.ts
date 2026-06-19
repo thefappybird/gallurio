@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "@/app/[locale]/(app)/bookings/_components/booking-calendar";
 import { wallTimeInTzToUtc } from "@/lib/utils/timezone";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
+import { CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 
 export type InquiryCalendarInput = {
   _id: string;
@@ -12,6 +13,8 @@ export type InquiryCalendarInput = {
     endTime: string;   // "HH:MM" wall-clock
   }>;
   clientName?: string | null;
+  /** True when this inquiry's sessions overlap another booking/inquiry. */
+  hasConflict?: boolean;
 };
 
 export function buildInquiryCalendarEvents(
@@ -50,7 +53,11 @@ export function buildInquiryCalendarEvents(
         teamId: null,
         kind: "inquiry",
         inquiryId: inq._id,
-        colorOverride: isBookedInquiryStatus(inq.status) ? undefined : "var(--event-inquiry)",
+        colorOverride: isBookedInquiryStatus(inq.status)
+          ? undefined
+          : inq.hasConflict
+          ? CONFLICT_COLOR_VAR
+          : "var(--event-inquiry)",
         workspaceTz: opts.tz,
       });
     });
