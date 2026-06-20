@@ -8,7 +8,7 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon } from "lucide-react";
+import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon, Undo2, Redo2 } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -140,6 +140,10 @@ function EditCanvasControls() {
   const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
   const rightSideBarVisible = usePuckStore((s) => s.appState.ui.rightSideBarVisible);
   const dispatch = usePuckStore((s) => s.dispatch);
+  const hasPast = usePuckStore((s) => s.history.hasPast);
+  const hasFuture = usePuckStore((s) => s.history.hasFuture);
+  const back = usePuckStore((s) => s.history.back);
+  const forward = usePuckStore((s) => s.history.forward);
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
       <Button
@@ -152,6 +156,29 @@ function EditCanvasControls() {
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
+      </Button>
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Undo"
+        title="Undo (Ctrl+Z)"
+        disabled={!hasPast}
+        onClick={back}
+      >
+        <Undo2 className="size-4" aria-hidden />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Redo"
+        title="Redo (Ctrl+Shift+Z)"
+        disabled={!hasFuture}
+        onClick={forward}
+      >
+        <Redo2 className="size-4" aria-hidden />
       </Button>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <Button

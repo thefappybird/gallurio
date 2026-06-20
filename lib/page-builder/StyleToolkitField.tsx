@@ -13,8 +13,9 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
+import { EmojiButton } from "./EmojiTextInput";
 import type { LucideIcon } from "lucide-react";
 import {
   Bold,
@@ -368,7 +369,7 @@ function BannerSection({
   );
 }
 
-function ContentInputs({
+export function ContentInputs({
   type,
   props,
   setProp,
@@ -377,17 +378,28 @@ function ContentInputs({
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
 }) {
+  // Refs for emoji insert-at-caret (declared unconditionally per Rules of Hooks)
+  const headingRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const buttonLabelRef = useRef<HTMLInputElement>(null);
+  const carouselHeadingRef = useRef<HTMLInputElement>(null);
+  const carouselDescRef = useRef<HTMLTextAreaElement>(null);
+
   if (type === "Heading") {
     return (
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Text</span>
-          <input
-            type="text"
-            value={(props.text as string) ?? ""}
-            onChange={(e) => setProp("text", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              ref={headingRef}
+              type="text"
+              value={(props.text as string) ?? ""}
+              onChange={(e) => setProp("text", e.target.value)}
+              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <EmojiButton inputRef={headingRef} onChange={(v) => setProp("text", v)} />
+          </div>
         </label>
         <HeadingLevelButtons
           value={props.level as string}
@@ -400,12 +412,16 @@ function ContentInputs({
     return (
       <label className="flex flex-col gap-1 text-sm">
         <span>Text</span>
-        <textarea
-          rows={4}
-          value={(props.text as string) ?? ""}
-          onChange={(e) => setProp("text", e.target.value)}
-          className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
+        <div className="flex items-start gap-1">
+          <textarea
+            ref={textRef}
+            rows={4}
+            value={(props.text as string) ?? ""}
+            onChange={(e) => setProp("text", e.target.value)}
+            className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <EmojiButton inputRef={textRef} onChange={(v) => setProp("text", v)} />
+        </div>
       </label>
     );
   }
@@ -414,12 +430,16 @@ function ContentInputs({
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Button text</span>
-          <input
-            type="text"
-            value={(props.label as string) ?? ""}
-            onChange={(e) => setProp("label", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              ref={buttonLabelRef}
+              type="text"
+              value={(props.label as string) ?? ""}
+              onChange={(e) => setProp("label", e.target.value)}
+              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <EmojiButton inputRef={buttonLabelRef} onChange={(v) => setProp("label", v)} />
+          </div>
         </label>
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Action</span>
@@ -453,21 +473,29 @@ function ContentInputs({
           <>
             <label className="flex flex-col gap-1 text-sm">
               <span>Heading</span>
-              <input
-                type="text"
-                value={(props.heading as string) ?? ""}
-                onChange={(e) => setProp("heading", e.target.value)}
-                className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  ref={carouselHeadingRef}
+                  type="text"
+                  value={(props.heading as string) ?? ""}
+                  onChange={(e) => setProp("heading", e.target.value)}
+                  className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <EmojiButton inputRef={carouselHeadingRef} onChange={(v) => setProp("heading", v)} />
+              </div>
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span>Description</span>
-              <textarea
-                rows={2}
-                value={(props.description as string) ?? ""}
-                onChange={(e) => setProp("description", e.target.value)}
-                className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
+              <div className="flex items-start gap-1">
+                <textarea
+                  ref={carouselDescRef}
+                  rows={2}
+                  value={(props.description as string) ?? ""}
+                  onChange={(e) => setProp("description", e.target.value)}
+                  className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <EmojiButton inputRef={carouselDescRef} onChange={(v) => setProp("description", v)} />
+              </div>
             </label>
           </>
         )}
@@ -601,6 +629,44 @@ function ChoiceRow<T extends string>({
             )}
           >
             {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const RADIUS_PRESETS: { label: string; value: number }[] = [
+  { label: "None", value: 0 },
+  { label: "S", value: 4 },
+  { label: "M", value: 8 },
+  { label: "L", value: 16 },
+  { label: "Full", value: 9999 },
+];
+
+export function RadiusButtons({
+  value,
+  onChange,
+}: {
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">Corner radius</span>
+      <div className="flex items-center gap-1.5">
+        {RADIUS_PRESETS.map(({ label, value: v }) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={value === v}
+            onClick={() => onChange(value === v ? undefined : v)}
+            className={cn(
+              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === v && "bg-foreground text-background hover:bg-foreground"
+            )}
+          >
+            {label}
           </button>
         ))}
       </div>
@@ -1031,13 +1097,7 @@ export function DesignTab({
               allowNone={false}
             />
           </div>
-          <NumberInputRow
-            label="Corner radius"
-            value={s.radius}
-            min={STYLE_LIMITS.radius.min}
-            max={STYLE_LIMITS.radius.max}
-            onChange={(v) => set({ radius: v })}
-          />
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
           <IconRow
             label="Shadow"
             value={s.shadow ?? "none"}
@@ -1445,10 +1505,6 @@ export function LayoutTabBody({
             <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
           </Drawer>
         )}
-        <Drawer title="Spacing">
-          <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-          <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-        </Drawer>
       </div>
     );
   }
@@ -1458,8 +1514,6 @@ export function LayoutTabBody({
     <div className="flex flex-col gap-px p-3">
       <Drawer title="Spacing">
         {isFlexContainer && <PaddingControls s={s} set={set} />}
-        <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-        <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
       </Drawer>
       <Drawer title="Layout">
         <NumberInputRow

@@ -142,6 +142,8 @@ Composed, app-specific shared components.
 | `lib/teams/team-colors.ts` | `TEAM_COLOR_PALETTE`, `INACTIVE_TEAM_COLOR` | Client-safe team color presets |
 | `lib/page-builder/brandKitContext.tsx` | `BrandKitProvider`, `useBrandKit` | Workspace brand-kit context |
 | `lib/page-builder/responsive.ts` | `PF_PAGE_CONTAINER`, `PF_PAGE_CONTAINER_CSS`, `PF_RESPONSIVE_CSS`, `padVar`, `gridColsVar`, `masonryColsVar`, `PF_CONTAINER_NAME`, breakpoint consts | Portfolio block responsiveness via a single `pfpage` container scope + custom-property indirection. Mark the page surface with `PF_PAGE_CONTAINER` (public root render) or `PF_PAGE_CONTAINER_CSS` (editor canvas via `RootCanvasStyle`), inject `PF_RESPONSIVE_CSS` once, and have blocks reference `var(--pf-pad/...)` inline so they reflow on the public page AND in the editor viewport toggle. New blocks must reuse these helpers, not re-implement breakpoints. |
+| `lib/page-builder/StyleToolkitField.tsx` | `RadiusButtons` | Segmented button row for corner-radius presets (None/0, S/4, M/8, L/16, Full/9999). `aria-pressed` on active preset; clicking active deselects (passes `undefined`). | `value: number \| undefined`, `onChange: (v: number \| undefined) => void` |
+| `lib/page-builder/EmojiTextInput.tsx` | `insertAtCaret`, `EmojiButton` | `insertAtCaret(el, emoji)` — pure helper: inserts emoji at caret or replaces selection, returns new string. `EmojiButton` — trigger button (aria-label "Insert emoji") with a 24-emoji inline picker popover; on select, calls `onChange` with the new caret-inserted value and returns focus to the input. | `insertAtCaret(el: HTMLInputElement \| HTMLTextAreaElement, emoji: string) => string`; `EmojiButton({ inputRef, onChange, className? })` |
 
 ---
 

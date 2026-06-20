@@ -31,6 +31,16 @@ const mockPuckApi = {
   selectedItem: undefined,
   getSelectorForId: vi.fn(),
   getItemById: vi.fn(),
+  history: {
+    back: vi.fn(),
+    forward: vi.fn(),
+    hasPast: false,
+    hasFuture: false,
+    histories: [],
+    index: 0,
+    setHistories: vi.fn(),
+    setHistoryIndex: vi.fn(),
+  },
 };
 
 vi.mock("@measured/puck", () => ({
@@ -652,6 +662,16 @@ describe("EditorShell", () => {
       expect.objectContaining({ id: "server-new", name: "New Draft" })
     );
     expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+  });
+
+  it("renders Undo and Redo buttons; Undo is disabled when history has no past", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const undoBtn = screen.getByRole("button", { name: "Undo" });
+    const redoBtn = screen.getByRole("button", { name: "Redo" });
+    expect(undoBtn).toBeInTheDocument();
+    expect(redoBtn).toBeInTheDocument();
+    // hasPast = false in the mock → Undo must be disabled
+    expect(undoBtn).toBeDisabled();
   });
 
   it("re-seeds the canvas immediately when applying a template (no tab switch required)", async () => {
