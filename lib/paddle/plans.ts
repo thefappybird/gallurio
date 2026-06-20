@@ -62,6 +62,7 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
       "plans.pro.features.everythingStarter",
       "plans.pro.features.storage",
       "plans.pro.features.invoicePdfs",
+      "plans.pro.features.removeBranding",
     ],
     highlight: true,
     entitlements: PLAN_ENTITLEMENTS.pro,

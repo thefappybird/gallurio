@@ -96,7 +96,7 @@ describe("gallery generateMetadata", () => {
     expect(result.title).toBe("Luna Studio — Gallery");
   });
 
-  it("uses seoDescription when set, else falls back to tagline", async () => {
+  it("uses seoDescription when set, else leaves description undefined", async () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
@@ -119,7 +119,7 @@ describe("gallery generateMetadata", () => {
     const fallback = await generateMetadata({
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
-    expect(fallback.description).toBe("Moments captured forever");
+    expect(fallback.description).toBeUndefined();
   });
 
   it("sets the canonical alternates URL to /w/<slug>/gallery", async () => {
