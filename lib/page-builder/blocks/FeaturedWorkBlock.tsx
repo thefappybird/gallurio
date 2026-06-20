@@ -75,6 +75,7 @@ export function FeaturedWorkBlock({
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="featured-work"
       data-empty={list.length === 0 ? "true" : undefined}
       style={{
@@ -118,6 +119,7 @@ export function FeaturedWorkBlock({
 
 export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
   label: "Highlights",
+  inline: true,
   defaultProps: featuredWorkDefaultProps,
   // `collections` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField Content tab. Production <Render> reads collections straight

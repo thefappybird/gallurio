@@ -80,7 +80,12 @@ export type GalleryChromeLabels = {
 export type PortfolioRenderMetadata = { workspace?: RenderWorkspace };
 
 /** The `puck` prop Puck injects into every rendered component. */
-export type BlockPuck = { metadata?: PortfolioRenderMetadata };
+export type BlockPuck = {
+  metadata?: PortfolioRenderMetadata;
+  /** Ref callback from Puck for inline components (`inline: true`). Attach to the
+   *  block's root element so Puck can make it draggable without its own wrapper. */
+  dragRef?: ((element: Element | null) => void) | null;
+};
 
 // ---------------------------------------------------------------------------
 // Client-safe chrome helpers

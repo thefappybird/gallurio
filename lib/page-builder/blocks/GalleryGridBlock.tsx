@@ -61,11 +61,12 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
   const list = Array.isArray(images) ? images : [];
 
   if (list.length === 0) {
-    return <GalleryEmptyState message={getGalleryChromeLabelsFrom(puck).empty} />;
+    return <GalleryEmptyState message={getGalleryChromeLabelsFrom(puck).empty} dragRef={puck?.dragRef} />;
   }
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="gallery-grid"
       style={{
         backgroundColor: "var(--pf-color-bg)",
@@ -109,9 +110,10 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
   );
 }
 
-function GalleryEmptyState({ message }: { message: string }) {
+function GalleryEmptyState({ message, dragRef }: { message: string; dragRef?: ((el: Element | null) => void) | null }) {
   return (
     <section
+      ref={dragRef ?? undefined}
       data-block="gallery-grid"
       data-empty="true"
       style={{
@@ -139,6 +141,7 @@ function GalleryEmptyState({ message }: { message: string }) {
 
 export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   label: "Photo Grid",
+  inline: true,
   defaultProps: galleryGridDefaultProps,
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight

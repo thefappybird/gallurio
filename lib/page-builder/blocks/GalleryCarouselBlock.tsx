@@ -77,7 +77,7 @@ export function GalleryCarouselBlock({
   const list = Array.isArray(images) ? images : [];
 
   if (list.length === 0) {
-    return <CarouselEmptyState message={labels.empty} />;
+    return <CarouselEmptyState message={labels.empty} dragRef={puck?.dragRef} />;
   }
 
   const horizontal: CarouselFloatX = floatX ?? "center";
@@ -94,6 +94,7 @@ export function GalleryCarouselBlock({
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="gallery-carousel"
       style={{
         backgroundColor: "var(--pf-color-bg)",
@@ -166,9 +167,10 @@ export function GalleryCarouselBlock({
   );
 }
 
-function CarouselEmptyState({ message }: { message: string }) {
+function CarouselEmptyState({ message, dragRef }: { message: string; dragRef?: ((el: Element | null) => void) | null }) {
   return (
     <section
+      ref={dragRef ?? undefined}
       data-block="gallery-carousel"
       data-empty="true"
       style={{
@@ -196,6 +198,7 @@ function CarouselEmptyState({ message }: { message: string }) {
 
 export const galleryCarouselBlockConfig: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
+  inline: true,
   defaultProps: galleryCarouselDefaultProps,
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight
