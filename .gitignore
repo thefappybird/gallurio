@@ -63,4 +63,6 @@ skills-lock.json
 /test-results/
 /playwright-report/
 /e2e/.auth/
+# run-gallurio driver screenshots (may capture seeded data)
+/.driver-shots/
 *.log
