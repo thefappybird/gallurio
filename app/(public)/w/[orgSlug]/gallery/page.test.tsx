@@ -55,14 +55,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
-    branding: {
-      logoUrl: "https://res.cloudinary.com/demo/logo.png",
-      logoCloudinaryPublicId: "demo/logo",
-      primaryColor: "#1a1a2e",
-      secondaryColor: "#e9e9e9",
-      tagline: "Moments captured forever",
-      description: "",
-    },
     publicPage: {
       templateId: "minimal",
       data: { home: null, gallery: null },
@@ -74,7 +66,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       seoDescription: "",
       inquiryRecipientEmail: "",
     },
-    customDomain: null,
     plan: "free",
     paddleSubscriptionId: null,
     paddleCustomerId: null,

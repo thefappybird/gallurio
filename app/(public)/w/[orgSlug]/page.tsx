@@ -27,12 +27,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const workspace = await findPublishedWorkspaceBySlug(orgSlug);
   if (!workspace) return {};
 
-  const { publicPage, branding, name } = workspace;
+  const { publicPage, name } = workspace;
 
   const title = publicPage?.seoTitle || name;
-  const description = publicPage?.seoDescription || branding?.tagline || undefined;
-  const logoUrl =
-    typeof branding?.logoUrl === "string" && branding.logoUrl ? branding.logoUrl : undefined;
+  const description = publicPage?.seoDescription || undefined;
 
   return {
     title,
@@ -40,7 +38,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title,
       description: description ?? "",
-      images: logoUrl ? [{ url: logoUrl }] : undefined,
     },
     alternates: {
       canonical: `/w/${workspace.slug}`,
@@ -96,7 +93,7 @@ export default async function PortfolioHomePage({ params, searchParams }: PagePr
     );
   }
 
-  // buildRenderWorkspace copies workspace-level fields (branding, contact, etc.).
+  // buildRenderWorkspace copies workspace-level fields (contact, etc.).
   // When rendering a preview snapshot, block content (data.home) is swapped above,
   // but brand colors, contact config, and header still reflect the published workspace.
   // TODO: apply snapshot.brandKit / snapshot.contact / snapshot.header to renderWorkspace

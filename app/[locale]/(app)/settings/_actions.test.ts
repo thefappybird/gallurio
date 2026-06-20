@@ -101,7 +101,6 @@ vi.mock("@/lib/i18n/routing", () => ({
 
 import {
   updateWorkspaceBusinessAction,
-  updateWorkspaceBrandingAction,
   updatePublicPageSettingsAction,
   togglePublicPagePublishedAction,
   updateTimeFormatAction,
@@ -282,40 +281,6 @@ describe("updateWorkspaceBusinessAction", () => {
 
     const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.name).toBe("Sarah Photography");
-  });
-});
-
-// ---- updateWorkspaceBrandingAction ------------------------------------------
-
-describe("updateWorkspaceBrandingAction", () => {
-  it("updates branding fields", async () => {
-    await seedWorkspaceA();
-
-    const result = await updateWorkspaceBrandingAction({
-      primaryColor: "#222222",
-      secondaryColor: "#eeeeee",
-      tagline: "Moments forever.",
-      description: "We photograph love.",
-    });
-
-    expect(result.ok).toBe(true);
-
-    const ws = await Workspace.findById(WS_A_ID).lean();
-    expect(ws?.branding?.primaryColor).toBe("#222222");
-    expect(ws?.branding?.tagline).toBe("Moments forever.");
-  });
-
-  it("rejects invalid hex color", async () => {
-    await seedWorkspaceA();
-
-    const result = await updateWorkspaceBrandingAction({
-      primaryColor: "not-a-color",
-      secondaryColor: "#eeeeee",
-      tagline: "",
-      description: "",
-    });
-
-    expect(result.error).toBeTruthy();
   });
 });
 

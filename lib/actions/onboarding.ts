@@ -17,9 +17,7 @@ import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import {
   businessStepSchema,
-  brandingStepSchema,
   type BusinessStepInput,
-  type BrandingStepInput,
 } from "@/lib/validators/workspace";
 import mongoose from "mongoose";
 
@@ -130,50 +128,12 @@ export async function businessStepAction(
     await session.endSession();
   }
 
-  await setUserStep(authUser.workosUserId, "branding");
+  await setUserStep(authUser.workosUserId, "plan");
 
   // Set the signed active-workspace cookie so subsequent steps can resolve
   // the workspace without relying on query params.
   await setActiveWorkspace(authUser.workosUserId, workspaceId!);
 
-  return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
-// Branding step
-// ---------------------------------------------------------------------------
-
-export async function brandingStepAction(input: BrandingStepInput): Promise<ActionResult> {
-  const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
-
-  const parsed = brandingStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  await connectDB();
-
-  const user = await User.findOne(
-    { workosUserId: authUser.workosUserId },
-    { memberships: 1 }
-  ).lean();
-  const ownerMembership = user?.memberships.find((m) => m.role === "owner");
-  if (!ownerMembership) return { error: "No active workspace — restart onboarding." };
-
-  await Workspace.updateOne(
-    { _id: ownerMembership.workspaceId },
-    {
-      $set: {
-        "branding.logoUrl": parsed.data.logoUrl ?? null,
-        "branding.logoAssetId": parsed.data.logoAssetId ?? null,
-        "branding.primaryColor": parsed.data.primaryColor,
-        "branding.secondaryColor": parsed.data.secondaryColor,
-        "branding.tagline": parsed.data.tagline ?? "",
-        "branding.description": parsed.data.description ?? "",
-      },
-    }
-  );
-
-  await setUserStep(authUser.workosUserId, "plan");
   return { ok: true };
 }
 

@@ -89,14 +89,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
-    branding: {
-      logoUrl: "https://res.cloudinary.com/demo/logo.png",
-      logoAssetId: "demo/logo",
-      primaryColor: "#1a1a2e",
-      secondaryColor: "#e9e9e9",
-      tagline: "Moments captured forever",
-      description: "",
-    },
     publicPage: {
       templateId: "minimal",
       data: { home: null, gallery: null },
@@ -118,7 +110,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       seoDescription: "",
       inquiryRecipientEmail: "",
     },
-    customDomain: null,
     plan: "free",
     paddleSubscriptionId: null,
     paddleCustomerId: null,
@@ -183,7 +174,7 @@ describe("generateMetadata", () => {
     expect(result.title).toBe("Luna Studio");
   });
 
-  it("falls back to branding.tagline when seoDescription is empty", async () => {
+  it("returns undefined description when seoDescription is empty", async () => {
     const workspace = makePublishedWorkspace();
     mockFind.mockResolvedValueOnce(workspace);
 
@@ -191,40 +182,7 @@ describe("generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.description).toBe("Moments captured forever");
-  });
-
-  it("includes OG image from branding.logoUrl", async () => {
-    const workspace = makePublishedWorkspace();
-    mockFind.mockResolvedValueOnce(workspace);
-
-    const meta = await generateMetadata({
-      params: Promise.resolve({ orgSlug: "luna-studio" }),
-    });
-
-    const og = meta.openGraph as { images?: { url: string }[] };
-    expect(og?.images?.[0]?.url).toBe("https://res.cloudinary.com/demo/logo.png");
-  });
-
-  it("omits OG images when branding.logoUrl is null", async () => {
-    const workspace = makePublishedWorkspace({
-      branding: {
-        logoUrl: null,
-        logoAssetId: null,
-        primaryColor: "#111111",
-        secondaryColor: "#f5f5f5",
-        tagline: "My tagline",
-        description: "",
-      },
-    });
-    mockFind.mockResolvedValueOnce(workspace);
-
-    const meta = await generateMetadata({
-      params: Promise.resolve({ orgSlug: "luna-studio" }),
-    });
-
-    const og = meta.openGraph as { images?: unknown[] };
-    expect(og?.images).toBeUndefined();
+    expect(result.description).toBeUndefined();
   });
 
   it("sets the canonical alternates URL to /w/<slug>", async () => {
@@ -285,12 +243,6 @@ describe("Portfolio page — ComingSoonFallback integration", () => {
     expect(screen.getByText("Luna Studio")).toBeInTheDocument();
   });
 
-  it("renders the tagline from workspace branding", () => {
-    const workspace = makePublishedWorkspace();
-    render(<ComingSoonFallback workspace={workspace} />);
-    expect(screen.getByText("Moments captured forever")).toBeInTheDocument();
-  });
-
   it("renders the 'Coming soon' message", () => {
     const workspace = makePublishedWorkspace();
     render(<ComingSoonFallback workspace={workspace} />);
@@ -329,7 +281,6 @@ describe("buildRenderWorkspace — contact field regression", () => {
     const doc = {
       _id: new Types.ObjectId(),
       name: "Studio",
-      branding: { tagline: "t" },
       publicPage: { inquiryRecipientEmail: "" },
       contact: {
         email: "hello@studio.com",

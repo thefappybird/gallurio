@@ -14,7 +14,6 @@ const REGISTERED_BLOCKS = new Set(Object.keys(puckConfig.components));
 const mockCtx = {
   workspace: {
     name: "Studio Aurora",
-    branding: { tagline: "Light & shadow", description: "We chase good light." },
   },
 };
 
@@ -95,10 +94,10 @@ describe("portfolio template registry", () => {
     });
   }
 
-  it("produces valid Puck data when context branding is missing", () => {
-    const bare = { workspace: { name: "Bare Co" } };
+  it("produces valid Puck data for all templates", () => {
+    const ctx = { workspace: { name: "Bare Co" } };
     for (const template of PORTFOLIO_TEMPLATES) {
-      const data = template.seedData(bare);
+      const data = template.seedData(ctx);
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
       // scratch is an intentionally empty canvas — no first block expected.
       if (template.id === "scratch") continue;

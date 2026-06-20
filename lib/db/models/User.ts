@@ -14,7 +14,6 @@ const membershipSchema = new Schema(
 // and moved to Page Builder / workspace settings.
 export const ONBOARDING_STEPS = [
   "business",
-  "branding",
   "plan",
   "done",
 ] as const;

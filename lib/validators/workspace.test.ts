@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   businessStepSchema,
-  brandingStepSchema,
   slugSchema,
   SUPPORTED_CURRENCIES,
   BILLING_COUNTRY_VALUES,
@@ -133,27 +132,10 @@ describe("currency / country tables stay in sync", () => {
   });
 });
 
-describe("brandingStepSchema", () => {
-  it("requires 6-digit hex colors", () => {
-    const ok = brandingStepSchema.safeParse({
-      primaryColor: "#1a1a1a",
-      secondaryColor: "#f5f5f5",
-    });
-    expect(ok.success).toBe(true);
-
-    const bad = brandingStepSchema.safeParse({
-      primaryColor: "blue",
-      secondaryColor: "#f5f5f5",
-    });
-    expect(bad.success).toBe(false);
-  });
-});
-
 // ---- Post-onboarding settings schemas ----------------------------------------
 
 import {
   updateWorkspaceBusinessSchema,
-  updateWorkspaceBrandingSchema,
   publicPageSettingsSchema,
 } from "./workspace";
 
@@ -198,60 +180,6 @@ describe("updateWorkspaceBusinessSchema", () => {
       updateWorkspaceBusinessSchema.safeParse({ ...validUpdateBusiness, slug: "Sarah-Bell" })
         .success
     ).toBe(false);
-  });
-});
-
-const validUpdateBranding = {
-  primaryColor: "#1a1a1a",
-  secondaryColor: "#f5f5f5",
-};
-
-describe("updateWorkspaceBrandingSchema", () => {
-  it("accepts valid hex colors with no optional fields", () => {
-    expect(updateWorkspaceBrandingSchema.safeParse(validUpdateBranding).success).toBe(true);
-  });
-
-  it("accepts valid hex colors with all optional fields", () => {
-    const ok = updateWorkspaceBrandingSchema.safeParse({
-      ...validUpdateBranding,
-      logoUrl: "https://example.com/logo.png",
-      logoAssetId: "gallurio/ws_123/logo",
-      tagline: "Your perfect moment, captured.",
-      description: "We shoot weddings and portraits across the Philippines.",
-    });
-    expect(ok.success).toBe(true);
-  });
-
-  it("rejects an invalid hex color (no hash)", () => {
-    const bad = updateWorkspaceBrandingSchema.safeParse({
-      ...validUpdateBranding,
-      primaryColor: "blue",
-    });
-    expect(bad.success).toBe(false);
-  });
-
-  it("rejects a 3-digit shorthand hex", () => {
-    const bad = updateWorkspaceBrandingSchema.safeParse({
-      ...validUpdateBranding,
-      secondaryColor: "#fff",
-    });
-    expect(bad.success).toBe(false);
-  });
-
-  it("rejects tagline over 120 characters", () => {
-    const bad = updateWorkspaceBrandingSchema.safeParse({
-      ...validUpdateBranding,
-      tagline: "a".repeat(121),
-    });
-    expect(bad.success).toBe(false);
-  });
-
-  it("accepts tagline of exactly 120 characters", () => {
-    const ok = updateWorkspaceBrandingSchema.safeParse({
-      ...validUpdateBranding,
-      tagline: "a".repeat(120),
-    });
-    expect(ok.success).toBe(true);
   });
 });
 

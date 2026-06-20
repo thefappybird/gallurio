@@ -116,7 +116,7 @@ export function BusinessStepForm({
       toast.error(result.error);
       return;
     }
-    startTransition(() => router.push("/onboarding/branding"));
+    startTransition(() => router.push("/onboarding/plan"));
   }
 
   const businessTypes = [

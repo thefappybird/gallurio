@@ -20,11 +20,6 @@ export type RenderWorkspace = {
   name: string;
   /** Workspace slug — used to build public links (e.g. the Gallery page) inside blocks. */
   slug?: string;
-  branding?: {
-    logoUrl?: string | null;
-    tagline?: string | null;
-    description?: string | null;
-  } | null;
   publicPage?: {
     inquiryRecipientEmail?: string | null;
     collectionsPopup?: PortfolioCollectionsPopupConfig | null;

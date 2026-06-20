@@ -6,10 +6,6 @@
  */
 type WorkspaceShape = {
   name: string;
-  branding?: {
-    logoUrl?: string | null;
-    tagline?: string | null;
-  } | null;
 };
 
 type ComingSoonFallbackProps = {
@@ -21,21 +17,13 @@ type ComingSoonFallbackProps = {
 const DEFAULT_LABELS = { comingSoon: "Coming soon", poweredBy: "Powered by Gallurio" };
 
 /**
- * Branded "Coming soon" fallback shown when a workspace is published but
+ * "Coming soon" fallback shown when a workspace is published but
  * `publicPage.data.home` has not been set via the page builder yet.
  *
  * Uses the `--pf-color-*` CSS variables injected by the layout wrapper so
- * branding is consistent with whatever the workspace owner configured.
+ * styling is consistent with whatever brand kit the owner configured.
  */
 export function ComingSoonFallback({ workspace, labels = DEFAULT_LABELS }: ComingSoonFallbackProps) {
-  const logoUrl =
-    typeof workspace.branding?.logoUrl === "string" && workspace.branding.logoUrl
-      ? workspace.branding.logoUrl
-      : null;
-
-  const tagline =
-    typeof workspace.branding?.tagline === "string" ? workspace.branding.tagline : "";
-
   return (
     <main
       style={{
@@ -52,15 +40,6 @@ export function ComingSoonFallback({ workspace, labels = DEFAULT_LABELS }: Comin
         gap: "1.5rem",
       }}
     >
-      {logoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt={`${workspace.name} logo`}
-          style={{ maxWidth: "120px", maxHeight: "80px", objectFit: "contain" }}
-        />
-      )}
-
       <h1
         style={{
           fontFamily: "var(--pf-font-heading, 'Merriweather', serif)",
@@ -72,19 +51,6 @@ export function ComingSoonFallback({ workspace, labels = DEFAULT_LABELS }: Comin
       >
         {workspace.name}
       </h1>
-
-      {tagline && (
-        <p
-          style={{
-            fontSize: "1.125rem",
-            opacity: 0.75,
-            maxWidth: "480px",
-            margin: 0,
-          }}
-        >
-          {tagline}
-        </p>
-      )}
 
       <p
         style={{
