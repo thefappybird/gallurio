@@ -1,4 +1,9 @@
 allowBuilds:
+  '@ast-grep/lang-go': true
+  '@ast-grep/lang-php': true
+  '@ast-grep/lang-python': true
+  '@ast-grep/lang-ruby': true
+  '@ast-grep/lang-rust': true
   '@clerk/shared': true
   '@nestjs/core': true
   '@parcel/watcher': true

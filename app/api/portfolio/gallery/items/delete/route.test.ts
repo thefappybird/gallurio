@@ -9,8 +9,17 @@ vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 const deleteImage = vi.fn(async (assetId: string) => { void assetId; });
 vi.mock("@/lib/storage/cloudflareImages", () => ({ deleteImage: (id: string) => deleteImage(id) }));
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
-vi.mock("@/lib/auth/requireOrg", () => ({
-  requireOrg: async () => ({ userId: mockCtx.userId, role: mockCtx.role, workspace: mockCtx.workspace }),
+vi.mock("@/lib/auth/apiOrgContext", () => ({
+  requireApiOrg: async () => ({
+    ok: true,
+    ctx: {
+      userId: mockCtx.userId,
+      workspaceId: String(mockCtx.workspace._id),
+      role: mockCtx.role,
+      workspace: mockCtx.workspace,
+      userAvatarUrl: null,
+    },
+  }),
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";

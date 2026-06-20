@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
-import { requireOrg } from "@/lib/auth/requireOrg";
+import { requireApiOrg } from "@/lib/auth/apiOrgContext";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { verifyImageOwnership, imageDeliveryUrl } from "@/lib/storage/cloudflareImages";
@@ -30,7 +30,9 @@ const bodySchema = z.object({
  * Response: { id: string, thumbUrl: string, caption: string | null }
  */
 export async function POST(req: Request) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "owner_only" }, { status: 403 });
   }

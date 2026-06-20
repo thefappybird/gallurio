@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidObjectId } from "mongoose";
-import { requireOrg } from "@/lib/auth/requireOrg";
+import { requireApiOrg } from "@/lib/auth/apiOrgContext";
 import { GalleryCollection } from "@/lib/db/models";
 import { connectDB } from "@/lib/db/mongoose";
 import { copyItemsIntoCollection } from "@/lib/db/queries/gallery";
@@ -12,7 +12,9 @@ type Params = { params: Promise<{ id: string }> };
 const bodySchema = z.object({ sourceItemIds: z.array(z.string().min(1).max(64)).min(1).max(100) });
 
 export async function POST(req: Request, { params }: Params) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
 
   const { id } = await params;

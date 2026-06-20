@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireOrg } from "@/lib/auth/requireOrg";
+import { requireApiOrg } from "@/lib/auth/apiOrgContext";
 import { listCollectionsForPicker, listItemsForPicker } from "@/lib/db/queries/gallery";
 
 export const runtime = "nodejs";
@@ -13,7 +13,9 @@ export const runtime = "nodejs";
  * Response: { collections: PickerCollection[], items: PickerItem[] }
  */
 export async function GET() {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "owner_only" }, { status: 403 });
   }

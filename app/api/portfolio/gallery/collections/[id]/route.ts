@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import mongoose, { isValidObjectId } from "mongoose";
 import { z } from "zod";
-import { requireOrg } from "@/lib/auth/requireOrg";
+import { requireApiOrg } from "@/lib/auth/apiOrgContext";
 import { connectDB } from "@/lib/db/mongoose";
 import { GalleryCollection, GalleryItem } from "@/lib/db/models";
 import { deleteImage } from "@/lib/storage/cloudflareImages";
@@ -23,7 +23,9 @@ type Params = { params: Promise<{ id: string }> };
  * Response: { items: PickerItem[]; nextCursor: string | null }
  */
 export async function GET(req: Request, { params }: Params) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "owner_only" }, { status: 403 });
   }
@@ -70,7 +72,9 @@ export async function GET(req: Request, { params }: Params) {
  * delete is logged but never strands the DB delete or fails the whole request.
  */
 export async function DELETE(_req: Request, { params }: Params) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") {
     return NextResponse.json({ error: "owner_only" }, { status: 403 });
   }
@@ -142,7 +146,9 @@ const patchSchema = z
   .refine((d) => d.name !== undefined || d.coverItemId !== undefined, { message: "no_fields" });
 
 export async function PATCH(req: Request, { params }: Params) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
 
   const { id } = await params;

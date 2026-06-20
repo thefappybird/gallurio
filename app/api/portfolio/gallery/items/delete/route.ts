@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireOrg } from "@/lib/auth/requireOrg";
+import { requireApiOrg } from "@/lib/auth/apiOrgContext";
 import { deleteItemsByAssetId } from "@/lib/db/queries/gallery";
 import { deleteImage } from "@/lib/storage/cloudflareImages";
 
@@ -9,7 +9,9 @@ export const runtime = "nodejs";
 const bodySchema = z.object({ itemIds: z.array(z.string().min(1).max(64)).min(1).max(200) });
 
 export async function POST(req: Request) {
-  const ctx = await requireOrg();
+  const auth = await requireApiOrg();
+  if (!auth.ok) return auth.response;
+  const ctx = auth.ctx;
   if (ctx.role !== "owner") return NextResponse.json({ error: "owner_only" }, { status: 403 });
 
   const json = await req.json().catch(() => ({}));

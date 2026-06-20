@@ -33,12 +33,9 @@ let mockCtx: {
   role: "owner" | "staff";
   workspace: { _id: Types.ObjectId; slug: string };
 };
-vi.mock("@/lib/auth/requireOrg", () => ({
-  requireOrg: async () => ({
-    userId: mockCtx.userId,
-    role: mockCtx.role,
-    workspace: mockCtx.workspace,
-  }),
+const mockRequireApiOrg = vi.fn();
+vi.mock("@/lib/auth/apiOrgContext", () => ({
+  requireApiOrg: () => mockRequireApiOrg(),
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
@@ -90,6 +87,16 @@ beforeEach(async () => {
   });
   workspaceId = ws._id;
   mockCtx = { userId: "user_a", role: "owner", workspace: { _id: workspaceId, slug: "ws-a" } };
+  mockRequireApiOrg.mockResolvedValue({
+    ok: true,
+    ctx: {
+      userId: mockCtx.userId,
+      workspaceId: String(mockCtx.workspace._id),
+      role: mockCtx.role,
+      workspace: mockCtx.workspace,
+      userAvatarUrl: null,
+    },
+  });
 });
 
 describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
@@ -107,6 +114,16 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
   it("rejects a non-owner with 403 and deletes nothing", async () => {
     const col = await seedCollectionWithItems(workspaceId, 2);
     mockCtx.role = "staff";
+    mockRequireApiOrg.mockResolvedValueOnce({
+      ok: true,
+      ctx: {
+        userId: mockCtx.userId,
+        workspaceId: String(mockCtx.workspace._id),
+        role: mockCtx.role,
+        workspace: mockCtx.workspace,
+        userAvatarUrl: null,
+      },
+    });
     const res = (await DELETE(new Request("http://t"), makeParams(String(col._id)))) as unknown as MockResp;
 
     expect(res.status).toBe(403);
@@ -178,9 +195,29 @@ describe("DELETE /api/portfolio/gallery/collections/[id]", () => {
 });
 
 describe("GET /api/portfolio/gallery/collections/[id]", () => {
+  it("returns 401 JSON when the session is missing", async () => {
+    mockRequireApiOrg.mockResolvedValueOnce({
+      ok: false,
+      response: { body: { error: "not_authenticated" }, status: 401 },
+    });
+    const res = (await GET(new Request("http://t/?limit=16"), makeParams("all"))) as unknown as MockResp;
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({ error: "not_authenticated" });
+  });
+
   it("rejects a non-owner with 403", async () => {
     const col = await seedCollectionWithItems(workspaceId, 2);
     mockCtx.role = "staff";
+    mockRequireApiOrg.mockResolvedValueOnce({
+      ok: true,
+      ctx: {
+        userId: mockCtx.userId,
+        workspaceId: String(mockCtx.workspace._id),
+        role: mockCtx.role,
+        workspace: mockCtx.workspace,
+        userAvatarUrl: null,
+      },
+    });
     const res = (await GET(new Request("http://t/?limit=16"), makeParams(String(col._id)))) as unknown as MockResp;
     expect(res.status).toBe(403);
   });

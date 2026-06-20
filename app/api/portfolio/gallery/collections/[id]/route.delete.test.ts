@@ -12,8 +12,17 @@ vi.mock("@/lib/storage/cloudflareImages", () => ({
   imageDeliveryUrl: (assetId: string) => `https://imagedelivery.net/hash/${assetId}/public`,
 }));
 let mockCtx: { userId: string; role: "owner" | "staff"; workspace: { _id: Types.ObjectId; slug: string } };
-vi.mock("@/lib/auth/requireOrg", () => ({
-  requireOrg: async () => ({ userId: mockCtx.userId, role: mockCtx.role, workspace: mockCtx.workspace }),
+vi.mock("@/lib/auth/apiOrgContext", () => ({
+  requireApiOrg: async () => ({
+    ok: true,
+    ctx: {
+      userId: mockCtx.userId,
+      workspaceId: String(mockCtx.workspace._id),
+      role: mockCtx.role,
+      workspace: mockCtx.workspace,
+      userAvatarUrl: null,
+    },
+  }),
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
