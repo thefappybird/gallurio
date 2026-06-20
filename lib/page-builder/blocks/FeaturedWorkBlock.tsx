@@ -23,6 +23,7 @@ import {
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
+import { padVar } from "@/lib/page-builder/responsive";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -78,16 +79,12 @@ export function FeaturedWorkBlock({
       data-empty={list.length === 0 ? "true" : undefined}
       style={{
         backgroundColor: "var(--pf-color-bg)",
-        padding: "4rem 1.5rem",
+        padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {/* Mobile-first: stack to a single column below 640px. */}
-      <style>{`
-        @media (max-width: 639px) { .pf-featured-grid { grid-template-columns: 1fr !important; } }
-      `}</style>
       <div style={{ maxWidth: "72rem", margin: "0 auto" }}>
         {list.length === 0 ? (
           <p

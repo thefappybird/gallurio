@@ -65,4 +65,5 @@ skills-lock.json
 /e2e/.auth/
 # run-gallurio driver screenshots (may capture seeded data)
 /.driver-shots/
+/e2e/.artifacts/
 *.log

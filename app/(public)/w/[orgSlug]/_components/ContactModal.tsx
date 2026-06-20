@@ -114,6 +114,7 @@ export function ContactModal({
           }}
         >
           <div
+            className="pf-contact-popup-header"
             style={{
               display: "flex",
               alignItems: "flex-start",
@@ -164,7 +165,7 @@ export function ContactModal({
             </DialogPrimitive.Close>
           </div>
 
-          <div style={{ padding: "0 1.25rem 1.25rem", overflowY: "auto" }}>
+          <div className="pf-contact-popup-body" style={{ padding: "0 1.25rem 1.25rem", overflowY: "auto" }}>
             {submitted ? (
               <ContactConfirmation
                 title={labels.confirmTitle}
@@ -200,6 +201,10 @@ export function ContactModal({
             width: calc(100% - 2rem); max-width: 32rem;
             max-height: 90dvh;
           }
+        }
+        @media (max-width: 400px) {
+          .pf-contact-popup-header { padding: 1rem 1rem 0.75rem !important; }
+          .pf-contact-popup-body { padding: 0 1rem 1rem !important; }
         }
       `}</style>
     </DialogPrimitive.Root>

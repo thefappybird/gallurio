@@ -39,10 +39,10 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(document.querySelector("[data-block='gallery-grid'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it.each([2, 3, 4] as const)("columns=%i sets grid-template-columns", (cols) => {
+  it.each([2, 3, 4] as const)("columns=%i sets responsive gridColsVar on grid-template-columns", (cols) => {
     const { container } = render(GalleryGridBlock({ ...base, images: imgs(2), columns: cols }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
-    expect(grid.style.gridTemplateColumns).toBe(`repeat(${cols}, 1fr)`);
+    expect(grid.style.gridTemplateColumns).toBe(`var(--pf-grid-cols, repeat(${cols}, 1fr))`);
   });
 
   it("applies the gap value", () => {

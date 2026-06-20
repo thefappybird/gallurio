@@ -145,4 +145,11 @@ describe("PortfolioHeader", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} config={{ brandText: "" }} />);
     expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
   });
+
+  it("brand link has minWidth:0 and overflow:hidden to prevent hamburger push-off at narrow viewports", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const brandLink = screen.getByRole("link", { name: "Luna Studio" });
+    expect(brandLink.style.minWidth).toBe("0");
+    expect(brandLink.style.overflow).toBe("hidden");
+  });
 });

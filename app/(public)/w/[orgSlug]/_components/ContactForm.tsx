@@ -278,6 +278,7 @@ export function ContactForm({
       style={{
         fontFamily: "var(--pf-font-body)",
         color: "inherit",
+        containerType: "inline-size",
         maxHeight: scrollable ? "100%" : undefined,
         overflowY: scrollable ? "auto" : undefined,
         paddingRight: scrollable ? "0.25rem" : undefined,
@@ -285,6 +286,9 @@ export function ContactForm({
     >
       <style>{`
         .pf-cf-btn:focus-visible { outline: 2px solid var(--pf-color-accent); outline-offset: 2px; }
+        @container (max-width: 360px) {
+          .pf-cf-times { grid-template-columns: 1fr !important; }
+        }
         .pf-contact-form,
         .pf-contact-form label,
         .pf-contact-form legend,
@@ -412,8 +416,8 @@ export function ContactForm({
                     gap: "0.5rem",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                    <span style={{ fontSize: "0.8125rem", fontWeight: 600, minWidth: 0, flex: 1 }}>
                       {labels.sessionLabel.replace("{n}", String(index + 1))}
                     </span>
                     {fields.length > 1 && (
@@ -451,7 +455,7 @@ export function ContactForm({
                     {errors.sessions?.[index]?.startDate && <p style={errorStyle} role="alert">{errors.sessions[index]?.startDate?.message}</p>}
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                  <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
                       <input id={`cf-stime-${index}`} type="time" style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />

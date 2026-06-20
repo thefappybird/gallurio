@@ -20,7 +20,8 @@ Last audited: 2026-06-17 (branch `dev`).
 ## 1. UI primitives — `components/ui/`
 
 Base-UI / shadcn-style primitives. Tailwind v4 + CVA variants, `data-slot`
-hooks, ARIA built in. Sharp-cornered per design rules.
+hooks, ARIA built in. Controls use `--radius` (default subtle/0.25rem); structural
+frames use `--radius-surface` (default sharp/0rem) — see Design rules in `CLAUDE.md`.
 
 | Import | Exports | Purpose | Key props / variants |
 |--------|---------|---------|----------------------|
@@ -133,11 +134,14 @@ Composed, app-specific shared components.
 |--------|--------|---------|
 | `lib/plans/entitlements.ts` | `planEntitlements`, `PLAN_ENTITLEMENTS` | Plan-tier limits lookup |
 | `lib/theme/themes.ts` | `resolveScheme`, `THEMES`, `SELECTABLE_THEME_IDS` | Theme defs + light/dark resolution |
+| `lib/theme/appTheme.ts` | `AppRadius`, `AppThemeConfig`, `DEFAULT_APP_THEME`, `appThemeAttributes` | Typed app-shell theming seam: `AppRadius` = "sharp" \| "subtle" \| "rounded"; `appThemeAttributes(config)` returns `{ "data-radius": ... }` spread onto `<html>` in the layout; `DEFAULT_APP_THEME` = `{ radius: "subtle" }`. Extend here when adding accent/base/font presets — no component changes needed, only a new `globals.css` block + cookie resolver. |
+| `app/globals.css` (`html[data-radius]` blocks) | CSS vars `--radius`, `--radius-surface` | Roundness seam: `html[data-radius="sharp"]` / `"subtle"` / `"rounded"` override the two radius tokens. Controls consume `--radius`; structural frames consume `--radius-surface`. Never set these inline — always go through the `data-radius` attribute driven by `appThemeAttributes`. |
 | `lib/i18n/navigation.ts` | `Link`, `redirect`, `usePathname`, `useRouter`, `getPathname` | Locale-aware navigation (next-intl) |
 | `lib/i18n/request.ts` | default | next-intl per-request config |
 | `lib/server/rateLimit.ts` | `rateLimit`, `__resetRateLimitForTests` | In-memory sliding-window limiter (best-effort, NOT distributed) |
 | `lib/teams/team-colors.ts` | `TEAM_COLOR_PALETTE`, `INACTIVE_TEAM_COLOR` | Client-safe team color presets |
 | `lib/page-builder/brandKitContext.tsx` | `BrandKitProvider`, `useBrandKit` | Workspace brand-kit context |
+| `lib/page-builder/responsive.ts` | `PF_PAGE_CONTAINER`, `PF_PAGE_CONTAINER_CSS`, `PF_RESPONSIVE_CSS`, `padVar`, `gridColsVar`, `masonryColsVar`, `PF_CONTAINER_NAME`, breakpoint consts | Portfolio block responsiveness via a single `pfpage` container scope + custom-property indirection. Mark the page surface with `PF_PAGE_CONTAINER` (public root render) or `PF_PAGE_CONTAINER_CSS` (editor canvas via `RootCanvasStyle`), inject `PF_RESPONSIVE_CSS` once, and have blocks reference `var(--pf-pad/...)` inline so they reflow on the public page AND in the editor viewport toggle. New blocks must reuse these helpers, not re-implement breakpoints. |
 
 ---
 

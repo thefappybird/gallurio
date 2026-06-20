@@ -234,10 +234,13 @@ aspirations. The current backlog of known lapses lives in
 - Every new compound index starts with `workspaceId`
 
 ## Design rules
-- App shell is sharp-cornered only; no `rounded-*`
-- Prefer flat UI and borders over shadows/gradients
 - Use semantic tokens only, never raw color utility values
-- App shell uses Merriweather only
+- Prefer flat UI and borders over shadows/gradients
+- Color palette is a softened neutral-cool OKLch ramp — no pure black or pure white in either theme; light base is an off-white (~oklch 0.972), dark base is a charcoal (~oklch 0.205)
+- Brand teal (hue 195) is the deliberate accent outlier — use it for things that should catch the eye: focus rings, active nav/sidebar item, calendar highlights, hover accents; aim for ~10–20% of any view
+- App shell font is **Plus Jakarta Sans** (`--font-jakarta` / `--font-sans`); Merriweather is loaded only as a portfolio brand-kit font option
+- Interactive controls (buttons, inputs, badges, dropdowns, tooltips, toasts) use `--radius` (default 0.25rem, "subtle"); structural frames (cards, dialogs, sidebar, panels) use `--radius-surface` (default 0rem, sharp) — controls soft, frame sharp
+- Roundness is governed by the `data-radius` attribute on `<html>` + `lib/theme/appTheme.ts` (`AppThemeConfig`, `appThemeAttributes`, `DEFAULT_APP_THEME`); extend theming there, not via ad-hoc Tailwind classes
 - Public portfolios may override brand styling only inside the public page wrapper
 
 ## Architecture

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import {
   HeadingBlock,
@@ -59,20 +60,19 @@ describe("HeadingBlock", () => {
     expect(document.querySelector("h6")).not.toBeNull();
   });
 
-  it("heading level buttons control font size (Display=3rem, Title=2.25rem, …)", () => {
-    const levels: Array<[HeadingBlockProps["level"], string]> = [
-      ["h1", "3rem"],
-      ["h2", "2.25rem"],
-      ["h3", "1.75rem"],
-      ["h4", "1.375rem"],
-      ["h5", "1.125rem"],
-      ["h6", "0.875rem"],
+  it("heading level buttons use fluid clamp font sizes (renderToStaticMarkup checks CSS value)", () => {
+    // JSDOM strips clamp() and cqi — use server markup to verify the literal CSS values.
+    const expected: Array<[HeadingBlockProps["level"], string]> = [
+      ["h1", "clamp(2rem, 1.4rem + 4cqi, 3rem)"],
+      ["h2", "clamp(1.6rem, 1.2rem + 2.5cqi, 2.25rem)"],
+      ["h3", "clamp(1.3rem, 1rem + 1.8cqi, 1.75rem)"],
+      ["h4", "clamp(1.1rem, 0.95rem + 1cqi, 1.35rem)"],
+      ["h5", "clamp(1rem, 0.9rem + 0.6cqi, 1.125rem)"],
+      ["h6", "clamp(0.8rem, 0.75rem + 0.3cqi, 0.875rem)"],
     ];
-    for (const [level, expected] of levels) {
-      const { container, unmount } = render(<HeadingBlock text="Test" level={level} />);
-      const tag = container.querySelector(level) as HTMLElement;
-      expect(tag.style.fontSize, `${level} should be ${expected}`).toBe(expected);
-      unmount();
+    for (const [level, clamp] of expected) {
+      const html = renderToStaticMarkup(<HeadingBlock text="Test" level={level} />);
+      expect(html, `${level} should contain ${clamp}`).toContain(clamp);
     }
   });
 
@@ -96,6 +96,13 @@ describe("HeadingBlock", () => {
     render(<HeadingBlock text="Plain heading" level="h2" />);
     expect(document.querySelector("mark")).toBeNull();
     expect(screen.getByText("Plain heading")).toBeTruthy();
+  });
+
+  it("h1 uses a fluid clamp font size when _style.fontSize is not set", () => {
+    // JSDOM strips clamp() from font-size (CSS parsing limitation), so use renderToStaticMarkup.
+    const html = renderToStaticMarkup(<HeadingBlock text="Test" level="h1" />);
+    expect(html).toContain("clamp(");
+    expect(html).toContain("cqi");
   });
 
   it("wraps text in <mark> when _style.highlight is true", () => {

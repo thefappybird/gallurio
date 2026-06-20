@@ -89,6 +89,9 @@ type Props = {
   workspaceName: string;
 };
 
+// NOTE: This is a static mock that duplicates PortfolioHeader's visual structure for the
+// editor preview panel. It does NOT inherit PortfolioHeader's styles or logic. These two
+// components should eventually be de-duplicated into a shared renderer.
 export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
   const bgColorHex = resolveColor(header.backgroundColor, brandKit, brandKit.backgroundColor);
   const opacity = header.backgroundOpacity ?? 100;
@@ -151,6 +154,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
     alignItems: "center",
     justifyContent: "center",
     minHeight: navbarSize.contactMinHeight,
+    minWidth: 0,
     padding: "0 1rem",
     backgroundColor: withOpacity(
       resolveColor(header.contactButtonColor, brandKit, brandKit.primaryColor),
@@ -179,12 +183,6 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
           fontFamily: "var(--pf-font-body)",
         }}
       >
-        {header.logoUrl && (
-          <div style={{ position: "absolute", left: "1.5rem", top: "50%", transform: "translateY(-50%)" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={header.logoUrl} alt="Logo" style={{ height: navbarSize.logoHeight, width: "auto", objectFit: "contain" }} />
-          </div>
-        )}
         <nav
           style={{
             maxWidth: "80rem",
@@ -198,18 +196,38 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
         >
           <span
             style={{
-              color: brandTextColor,
-              fontSize: navbarSize.brandFontSize,
-              fontWeight: 700,
-              fontFamily: "var(--pf-font-heading)",
-              textDecoration: "none",
-              paddingLeft: header.logoUrl ? "2.5rem" : 0,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.625rem",
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
-            {brandText}
+            {header.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={header.logoUrl}
+                alt="Logo"
+                style={{ height: navbarSize.logoHeight, maxWidth: "40%", width: "auto", objectFit: "contain", flexShrink: 0 }}
+              />
+            )}
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+                color: brandTextColor,
+                fontSize: navbarSize.brandFontSize,
+                fontWeight: 700,
+                fontFamily: "var(--pf-font-heading)",
+              }}
+            >
+              {brandText}
+            </span>
           </span>
 
-          <div style={{ display: "flex", alignItems: "center", gap: navbarSize.navGap }}>
+          <div style={{ display: "flex", alignItems: "center", gap: `clamp(0.25rem, 1.5vw, ${navbarSize.navGap})` }}>
             <span style={activeLinkStyle}>Home</span>
             <span style={navLinkBase}>Gallery</span>
             <button type="button" style={contactBtnStyle} tabIndex={-1}>

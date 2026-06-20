@@ -451,3 +451,12 @@ describe("getActiveTabExtraStyle", () => {
     expect(style.color).toBe("var(--pf-color-primary, var(--pf-color-fg))");
   });
 });
+
+describe("ContactForm — responsive container", () => {
+  it("sets container-type: inline-size on the form root for local container queries", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const form = document.querySelector("form.pf-contact-form") as HTMLElement;
+    expect(form).toBeTruthy();
+    expect(form.style.containerType).toBe("inline-size");
+  });
+});
