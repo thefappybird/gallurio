@@ -31,6 +31,24 @@ const inter = localFont({
   src: [{ path: "../../app/fonts/inter-latin-wght-normal.woff2", weight: "100 900", style: "normal" }],
 });
 
+// Plus Jakarta Sans is the app-shell UI font — the friendly, familiar sans that
+// replaced Merriweather as the shell typeface. (Real "Google Sans" / Product
+// Sans is a proprietary Google typeface and not web-licensable, so this is the
+// closest open stand-in.) Self-hosted like the rest so builds stay reproducible
+// offline. One variable woff2 spans the 200–800 weight axis. `preload: false`
+// to match the other shared families: this var rides on `portfolioFontVariables`,
+// which is also applied to the PUBLIC portfolio root, where pages pick their own
+// brand-kit fonts. `display: "swap"` keeps the shell readable during the fetch.
+const plusJakarta = localFont({
+  variable: "--font-jakarta",
+  display: "swap",
+  preload: false,
+  src: [{ path: "../../app/fonts/plus-jakarta-sans-latin-wght-normal.woff2", weight: "200 800", style: "normal" }],
+});
+
+/** The app-shell font CSS-variable class — apply to the authenticated app root. */
+export const appFontVariable = plusJakarta.variable;
+
 const dmSans = localFont({
   variable: "--font-dm-sans",
   display: "swap",
@@ -100,6 +118,7 @@ const dmSerif = localFont({
  * authenticated app root, so the in-editor preview resolves the same families).
  */
 export const portfolioFontVariables = [
+  plusJakarta.variable,
   merriweather.variable,
   playfair.variable,
   inter.variable,

@@ -44,6 +44,13 @@ export default defineConfig({
         find: "server-only",
         replacement: path.resolve(__dirname, "test-utils/server-only-shim.ts"),
       },
+      {
+        // next/font/local is a build-time macro; imported directly under Vitest
+        // its default export is undefined. Stub it so font-registration modules
+        // (lib/fonts/portfolio.ts) are importable in tests.
+        find: /^next\/font\/local$/,
+        replacement: path.resolve(__dirname, "test-utils/next-font-stub.ts"),
+      },
       { find: "@", replacement: path.resolve(__dirname, ".") },
     ],
   },

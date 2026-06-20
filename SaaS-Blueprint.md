@@ -440,7 +440,26 @@ Skip in MVP: free-form canvas, custom CSS injection, custom HTML blocks, nested 
 | Date | **date-fns** (not Moment, not Day.js — date-fns is tree-shakeable) |
 | Rich text (notes) | **TipTap** (only if you need it; otherwise plain textarea + markdown) |
 
-Style: clean SaaS look — neutral grays, single accent color (workspace-configurable), generous whitespace, rounded-md corners, no skeuomorphism. Reference: Linear, Cal.com.
+Style: clean SaaS look — softened neutral-cool palette (no pure black/white), brand teal as the eye-catching accent, generous whitespace, controls softly rounded / structural frames sharp, no skeuomorphism. Reference: Linear, Cal.com.
+
+### Styling & Theming
+
+**Color** — The app shell uses a softened OKLch neutral-cool ramp with no pure black or pure white at either pole. Light theme: off-white base (~oklch 0.972, hue 235) + soft-charcoal text (~oklch 0.26). Dark theme: charcoal base (~oklch 0.205) + off-white text (~oklch 0.92). Three bridging tiers (surface, border/line, muted-text) span the gap in both themes. Raw color utilities are never used — only semantic tokens from `app/globals.css`.
+
+**Brand accent** — Gallurio teal (hue 195) is the deliberate outlier in an otherwise neutral palette. It powers focus rings (`--ring`), the active sidebar/nav item, calendar today/off-range highlights, and hover accents. Target ~10–20% of any view — enough to guide the eye without overwhelming.
+
+**Font** — Plus Jakarta Sans is the app-shell typeface, self-hosted via `next/font/local` (exported as `appFontVariable` / CSS var `--font-jakarta`, wired through `--font-sans` in `globals.css`). Merriweather remains loaded but only as a portfolio brand-kit font option.
+
+**Roundness** — Two CSS-var tokens control shape:
+
+| Token | Default | Applied to |
+|---|---|---|
+| `--radius` | 0.25rem ("subtle") | Controls: buttons, inputs, badges, dropdowns, tooltips, toasts |
+| `--radius-surface` | 0rem (sharp) | Frames: cards, dialogs, sidebar, tables, page panels |
+
+This "controls soft, frame sharp" split keeps the UI approachable without losing structural clarity.
+
+**Theming seam** — `lib/theme/appTheme.ts` exports `AppRadius` ("sharp" | "subtle" | "rounded"), `AppThemeConfig`, `DEFAULT_APP_THEME` (radius: "subtle"), and `appThemeAttributes(config)` → `{ "data-radius": ... }`. The layout spreads `appThemeAttributes(DEFAULT_APP_THEME)` onto `<html>`; `globals.css` has `html[data-radius="..."]` blocks that override the two radius vars. No user-facing theme picker exists yet — future accent/base/font presets add a field here, a CSS block in `globals.css`, and a signed cookie resolved in the layout. Components already read the CSS-var seam and will require no changes.
 
 ---
 
@@ -476,7 +495,7 @@ Do **not** add separate `Portfolio`, `PortfolioPage`, `PortfolioVersion`, `Brand
 
 ### Brand kit (scoped to public pages)
 
-The app shell stays Merriweather + sharp corners + semantic tokens (see `CLAUDE.md` "Design style"). Public portfolios choose from a curated brand kit applied **only** inside the `/w/[orgSlug]` wrapper:
+The app shell uses Plus Jakarta Sans, mixed-radius tokens (`--radius` for controls, `--radius-surface` for frames), and a softened neutral-cool semantic palette (see `CLAUDE.md` "Design rules"). Public portfolios choose from a curated brand kit applied **only** inside the `/w/[orgSlug]` wrapper:
 
 - `themePreset` — one of `minimal | editorial | luxury | bold | romantic | modern`.
 - `fontPair` — curated pairings (Merriweather Only, Playfair + Inter, DM Serif + DM Sans, Cormorant + Montserrat, Fraunces + Inter).
