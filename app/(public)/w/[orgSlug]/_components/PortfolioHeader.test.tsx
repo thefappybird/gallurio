@@ -152,4 +152,37 @@ describe("PortfolioHeader", () => {
     expect(brandLink.style.minWidth).toBe("0");
     expect(brandLink.style.overflow).toBe("hidden");
   });
+
+  it("mobile drawer nav links are horizontally centered", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    fireEvent.click(screen.getByLabelText("Open menu"));
+    const drawerLinks = screen.getAllByRole("link", { name: "Home", hidden: true });
+    // The mobile drawer link is a flex container with justifyContent: center
+    const drawerHomeLink = drawerLinks.find((el) => el.closest(".pf-nav-mobile"));
+    expect(drawerHomeLink).toBeTruthy();
+    expect(drawerHomeLink!.style.justifyContent).toBe("center");
+    expect(drawerHomeLink!.style.display).toBe("flex");
+  });
+
+  it("hamburger toggle inherits contact button fill, text color, and radius from config", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{
+          contactButtonColor: "accent",
+          // opacity 100 → no color-mix(), so happy-dom can parse the CSS var
+          contactButtonOpacity: 100,
+          contactButtonRadius: "rounded",
+          contactButtonTextColor: "foreground",
+        }}
+      />,
+    );
+    const toggle = screen.getByLabelText("Open menu");
+    expect(toggle.style.backgroundColor).toBe("var(--pf-color-accent)");
+    expect(toggle.style.color).toBe("var(--pf-color-fg)");
+    expect(toggle.style.borderRadius).toBe("0.5rem");
+    // no border — the original had a visible border; the new toggle uses border:none
+    expect(toggle.style.borderStyle).not.toBe("solid");
+  });
 });

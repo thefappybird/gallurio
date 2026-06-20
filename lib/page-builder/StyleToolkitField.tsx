@@ -41,8 +41,8 @@ import {
   Layers,
   Minus,
 } from "lucide-react";
-import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
+import { usePuckStore } from "./puckHooks";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
@@ -1639,7 +1639,10 @@ function BlockAwarePanel({
   /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
   onTabChange?: (t: "content" | "design" | "layout") => void;
 }) {
-  const { selectedItem, dispatch, getSelectorForId, getItemById } = usePuck();
+  const selectedItem = usePuckStore((s) => s.selectedItem);
+  const dispatch = usePuckStore((s) => s.dispatch);
+  const getSelectorForId = usePuckStore((s) => s.getSelectorForId);
+  const getItemById = usePuckStore((s) => s.getItemById);
 
   const blockId = (selectedItem?.props?.id as string | undefined) ?? "";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePuck } from "@measured/puck";
+import { usePuckStore } from "./puckHooks";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_CONTAINER_NAME, PF_RESPONSIVE_CSS } from "./responsive";
 
@@ -45,9 +45,10 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
  * the selector in-browser after this lands.
  */
 export function RootCanvasStyle() {
-  const { appState } = usePuck();
-  const rootStyle = (appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)
-    ?._rootStyle;
+  const rootStyle = usePuckStore(
+    (s) =>
+      (s.appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)?._rootStyle,
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;

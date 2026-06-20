@@ -14,7 +14,7 @@
  * Do NOT add --pf-* overrides here. That namespace belongs to resolveBrandKit().
  *
  * Variables mapped (see below for rationale per surface):
- *   --puck-font-family              → Merriweather (app font)
+ *   --puck-font-family              → --font-sans / Plus Jakarta Sans (app shell font)
  *   --puck-color-white              → --card (panel surfaces)
  *   --puck-color-black              → --foreground (primary text)
  *   --puck-color-grey-01..12        → semantic tier ladder
@@ -36,8 +36,8 @@
   height: 100%;
   min-height: 0;
 
-  /* App font for the editor chrome. */
-  --puck-font-family: var(--font-merriweather, Merriweather, serif);
+  /* App font for the editor chrome — Plus Jakarta Sans, not the brand-kit font. */
+  --puck-font-family: var(--font-sans);
 
   /*
    * Grey scale → neutral token ladder.

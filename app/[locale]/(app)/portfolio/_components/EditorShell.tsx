@@ -3,7 +3,9 @@
 import "@measured/puck/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Puck, usePuck, type Config, type Data } from "@measured/puck";
+import { Puck, type Config, type Data } from "@measured/puck";
+import { usePuckStore } from "@/lib/page-builder/puckHooks";
+import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon } from "lucide-react";
@@ -135,8 +137,9 @@ const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon
  * edit canvas. Lives inside Puck so `usePuck` has context.
  */
 function EditCanvasControls() {
-  const { appState, dispatch } = usePuck();
-  const { leftSideBarVisible, rightSideBarVisible } = appState.ui;
+  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
+  const rightSideBarVisible = usePuckStore((s) => s.appState.ui.rightSideBarVisible);
+  const dispatch = usePuckStore((s) => s.dispatch);
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
       <Button
@@ -817,6 +820,14 @@ export function EditorShell({
     void dismissPortfolioGuideAction();
   }
 
+  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S)
+  // from firing while the user is typing in an input or contenteditable inside
+  // the right-side properties panel. Puck registers document-level listeners;
+  // stopping propagation here prevents those handlers from seeing the event.
+  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (isEditableTarget(e.target)) e.stopPropagation();
+  }, []);
+
   const { cssVars, className } = resolveBrandKit(brandKit);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
@@ -1025,6 +1036,7 @@ export function EditorShell({
         className={cn("gallurio-editor min-h-svh", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
+        onKeyDown={handleEditorKeyDown}
       >
         {showPuck ? (
           <Puck
@@ -1058,12 +1070,21 @@ export function EditorShell({
               // `gridArea: header` + the chrome styling replace what the default
               // `._PuckHeader_` wrapper provided — without it the bar collapses
               // into the narrow left grid column.
-              header: ({ actions }) => (
+              header: () => (
                 <header
                   className="border-b border-border bg-card px-3 py-2"
                   style={{ gridArea: "header" }}
                 >
-                  {topBar(<EditCanvasControls />, actions)}
+                  {topBar(
+                    <EditCanvasControls />,
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void handlePublish()}
+                    >
+                      {t("publish")}
+                    </Button>,
+                  )}
                 </header>
               ),
               // Stable memoized override: prevents Puck from re-rendering the

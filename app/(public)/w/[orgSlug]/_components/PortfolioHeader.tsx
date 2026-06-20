@@ -263,10 +263,15 @@ export function PortfolioHeader({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "transparent",
-            color: "var(--pf-color-fg)",
-            border: "1px solid color-mix(in srgb, var(--pf-color-fg) 24%, transparent)",
-            borderRadius: "var(--pf-radius)",
+            backgroundColor: buildColorWithOpacity(
+              resolveColor(config?.contactButtonColor, "var(--pf-color-primary)"),
+              config?.contactButtonOpacity ?? 100,
+            ),
+            color: resolveColor(config?.contactButtonTextColor, "var(--pf-color-bg)"),
+            border: "none",
+            borderRadius: config?.contactButtonRadius
+              ? (RADIUS_MAP[config.contactButtonRadius] ?? "var(--pf-radius)")
+              : "var(--pf-radius)",
             cursor: "pointer",
             fontSize: "1.25rem",
             lineHeight: 1,
@@ -377,8 +382,9 @@ function HeaderLink({
   paddingX: string;
 }) {
   const baseStyle: React.CSSProperties = {
-    display: block ? "block" : "inline-flex",
+    display: block ? "flex" : "inline-flex",
     alignItems: "center",
+    justifyContent: block ? "center" : undefined,
     minHeight,
     padding: `0 ${paddingX}`,
     color: linkColor,

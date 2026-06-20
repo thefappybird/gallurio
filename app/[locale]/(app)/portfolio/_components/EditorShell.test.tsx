@@ -17,7 +17,25 @@ import { toast } from "sonner";
 // Reset in beforeEach. Used by the re-seeds test to assert a remount occurred.
 let __puckMountCount = 0;
 
+// Mock PuckApi shape used by createUsePuck selectors in EditCanvasControls.
+const mockPuckApi = {
+  appState: {
+    ui: {
+      leftSideBarVisible: true,
+      rightSideBarVisible: true,
+      viewports: { current: { width: 1280, height: "auto" }, controlsVisible: true, options: [] },
+    },
+    data: { content: [], root: {} },
+  },
+  dispatch: vi.fn(),
+  selectedItem: undefined,
+  getSelectorForId: vi.fn(),
+  getItemById: vi.fn(),
+};
+
 vi.mock("@measured/puck", () => ({
+  createUsePuck: () => (selector?: (api: typeof mockPuckApi) => unknown) =>
+    selector ? selector(mockPuckApi) : mockPuckApi,
   Puck: ({
     headerTitle,
     overrides,
@@ -26,7 +44,7 @@ vi.mock("@measured/puck", () => ({
     data,
   }: {
     headerTitle?: string;
-    overrides?: { header?: (p: { actions: ReactNode; children: ReactNode }) => ReactNode };
+    overrides?: { header?: (p: { children: ReactNode }) => ReactNode };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
@@ -68,26 +86,11 @@ vi.mock("@measured/puck", () => ({
           Simulate Puck change
         </button>
         {overrides?.header?.({
-          actions: (
-            <button type="button" onClick={onPublish}>
-              PuckPublish
-            </button>
-          ),
           children: null,
         })}
       </div>
     );
   },
-  usePuck: () => ({
-    appState: {
-      ui: {
-        leftSideBarVisible: true,
-        rightSideBarVisible: true,
-        viewports: { current: { width: 1280, height: "auto" }, controlsVisible: true, options: [] },
-      },
-    },
-    dispatch: vi.fn(),
-  }),
 }));
 
 const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
@@ -242,10 +245,27 @@ describe("EditorShell", () => {
     expect(screen.queryByRole("button", { name: "Desktop" })).not.toBeInTheDocument();
   });
 
-  it("opens the publish dialog when Puck's publish fires", async () => {
+  it("stops keydown propagation past the editor root when the target is an input", async () => {
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+    const input = document.createElement("input");
+    editorRoot.appendChild(input);
+
+    let propagated = false;
+    const outerHandler = () => { propagated = true; };
+    document.addEventListener("keydown", outerHandler);
+
+    const event = new KeyboardEvent("keydown", { key: "Backspace", bubbles: true });
+    input.dispatchEvent(event);
+
+    document.removeEventListener("keydown", outerHandler);
+    expect(propagated).toBe(false);
+  });
+
+  it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "PuckPublish" }));
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(screen.getByText("Publish your portfolio?")).toBeInTheDocument();
   });
 
@@ -438,6 +458,14 @@ describe("EditorShell", () => {
 
     expect(await screen.findByText("Choose a template")).toBeInTheDocument();
     expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+  });
+
+  it("Publish button in editor header has the same size (h-7) as Save changes", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const saveBtn = screen.getByRole("button", { name: "Save changes" });
+    const publishBtn = screen.getByRole("button", { name: "Publish" });
+    expect(saveBtn.className).toContain("h-7");
+    expect(publishBtn.className).toContain("h-7");
   });
 
   it("styles Save changes with the brand variant and Preview with the secondary variant", async () => {
