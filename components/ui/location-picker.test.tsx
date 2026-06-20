@@ -139,16 +139,15 @@ describe("LocationPicker", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("clears address and coordinates via the clear button", () => {
-    const onChange = vi.fn();
+  it("does not render an in-field clear button (removed in favour of inline cancel)", () => {
     renderWithProviders(
       <LocationPicker
         value={{ address: "Somewhere", lat: 1, lng: 2 }}
-        onChange={onChange}
+        onChange={() => {}}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
-    expect(onChange).toHaveBeenCalledWith({ address: "", lat: null, lng: null });
+    // The "Clear location" button used to sit inside the input; it has been removed.
+    expect(screen.queryByRole("button", { name: /clear location/i })).toBeNull();
   });
 
   it("shows a no-results message when the search returns nothing", async () => {
@@ -467,6 +466,67 @@ describe("LocationPicker", () => {
       // Now dirty: accept enabled
       expect(screen.getByRole("button", { name: "Accept location" })).not.toBeDisabled();
       expect(screen.getByRole("button", { name: "Discard changes" })).not.toBeDisabled();
+    });
+
+    it("both buttons disabled when no draft and no saved value (fresh empty-origin)", () => {
+      render(
+        <LocationPicker
+          editable
+          value={EMPTY}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // No draft selected, no previously saved location — both should be disabled.
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Discard changes" })).toBeDisabled();
+    });
+
+    it("discard enabled when a saved value exists (even before any change)", () => {
+      render(
+        <LocationPicker
+          editable
+          value={POPULATED}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Enter edit mode
+      fireEvent.click(screen.getByRole("button", { name: /change location/i }));
+
+      // No changes made yet — accept disabled (not dirty), but discard enabled (saved location exists).
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Discard changes" })).not.toBeDisabled();
+    });
+
+    it("apply enabled only when dirty with a draft location selected", async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ display_name: "New Selected Place" }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      render(
+        <LocationPicker
+          editable
+          value={EMPTY}
+          onChange={() => {}}
+          labels={EDITABLE_LABELS}
+        />
+      );
+
+      // Fresh empty-origin: accept disabled (no draft, not dirty).
+      expect(screen.getByRole("button", { name: "Accept location" })).toBeDisabled();
+
+      // Select a location via pin (sets draft to non-empty value and makes it dirty).
+      fireEvent.click(screen.getByTestId("map-pick"));
+      await screen.findByDisplayValue("New Selected Place");
+
+      // Draft is non-empty AND dirty → accept should be enabled.
+      expect(screen.getByRole("button", { name: "Accept location" })).not.toBeDisabled();
     });
 
     it("disabled + editable shows address text, Change-location button is disabled, and edit controls are not shown", () => {
