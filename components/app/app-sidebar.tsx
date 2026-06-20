@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
@@ -14,6 +14,7 @@ import {
   ImageIcon,
   MessageSquareIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { NotificationPopover } from "@/components/notifications/NotificationPopover";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import NextImage from "next/image";
@@ -83,8 +84,16 @@ export function AppSidebar({
   const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
+  const [bellNudge, setBellNudge] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const { unreadCount } = useNotifications();
+  const prevUnreadRef = useRef(unreadCount);
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      setBellNudge(true);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
   const closeOnNav = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -129,12 +138,13 @@ export function AppSidebar({
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {/* Bell / notifications — same structure as nav items */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   render={<button type="button" />}
                   onClick={() => setBellOpen((v) => !v)}
+                  isActive={bellOpen || pathname === "/notifications" || pathname.startsWith("/notifications/")}
                   tooltip={tNotif("bell")}
                   className="group-data-[collapsible=icon]:mx-auto"
                   aria-expanded={bellOpen}
@@ -144,8 +154,11 @@ export function AppSidebar({
                       : tNotif("bell")
                   }
                 >
-                  <span className="relative inline-flex shrink-0">
-                    <BellIcon className="size-5! shrink-0" />
+                  <span className="relative inline-flex shrink-0 group-data-[collapsible=icon]:inline-flex!">
+                    <BellIcon
+                      className={cn("size-5! shrink-0", bellNudge && "animate-bell-nudge")}
+                      onAnimationEnd={() => setBellNudge(false)}
+                    />
                     {unreadCount > 0 && (
                       <span
                         aria-hidden="true"
@@ -181,7 +194,7 @@ export function AppSidebar({
 
       <SidebarFooter>
         <SidebarSeparator />
-        <SidebarMenu>
+        <SidebarMenu className="gap-1">
           <SidebarMenuItem>
             <ThemeToggle />
           </SidebarMenuItem>

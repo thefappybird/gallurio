@@ -55,6 +55,7 @@ export function ThemeToggle() {
               key={opt.id}
               onClick={() => setTheme(opt.id)}
               data-active={theme === opt.id}
+              className="data-[active=true]:bg-brand/12 data-[active=true]:font-medium data-[active=true]:text-brand"
             >
               <Icon className="size-4" />
               {t(opt.labelKey)}

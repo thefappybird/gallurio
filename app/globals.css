@@ -550,6 +550,26 @@ html[data-radius="rounded"] {
   color: var(--popover-foreground);
 }
 
+/* Bell nudge — a quick decaying swing to signal a new notification.
+   Triggered by adding .animate-bell-nudge to the BellIcon svg; removed on
+   animationend so a subsequent notification can re-trigger it. */
+@keyframes bell-nudge {
+  0%   { transform: rotate(0deg); }
+  15%  { transform: rotate(-18deg); }
+  35%  { transform: rotate(16deg); }
+  55%  { transform: rotate(-10deg); }
+  70%  { transform: rotate(6deg); }
+  85%  { transform: rotate(-3deg); }
+  100% { transform: rotate(0deg); }
+}
+.animate-bell-nudge {
+  animation: bell-nudge 600ms ease-in-out;
+  transform-origin: top center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-bell-nudge { animation: none; }
+}
+
 /* Sonner toast entry animation — subtle scale + slide-in with overshoot. */
 @keyframes toast-in {
   0% {
