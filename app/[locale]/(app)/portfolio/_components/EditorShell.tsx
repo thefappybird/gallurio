@@ -152,6 +152,7 @@ function EditCanvasControls() {
         aria-pressed={leftSideBarVisible}
         aria-label="Toggle blocks panel"
         title="Toggle blocks panel"
+        data-tour-id="blocks-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
@@ -187,6 +188,7 @@ function EditCanvasControls() {
         aria-pressed={rightSideBarVisible}
         aria-label="Toggle properties panel"
         title="Toggle properties panel"
+        data-tour-id="properties-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ rightSideBarVisible: !p.rightSideBarVisible }) })}
       >
         <PanelRight className="size-4" aria-hidden />
@@ -204,7 +206,7 @@ function DeviceTogglePreview({
   onChange: (next: PreviewDevice) => void;
 }) {
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Preview device">
+    <div className="flex items-center gap-1" role="group" aria-label="Preview device" data-tour-id="device-toggle">
       {DEVICES.map(({ key, label, Icon }) => (
         <Button
           key={key}
@@ -886,10 +888,10 @@ export function EditorShell({
   const puckCanvasOverride = useMemo(
     () => ({
       puck: ({ children }: { children: ReactNode }) => (
-        <>
+        <div data-tour-id="canvas" className="contents">
           {children}
           <RootCanvasStyle />
-        </>
+        </div>
       ),
     }),
     []
@@ -908,6 +910,16 @@ export function EditorShell({
                 : section === "collectionsPopup"
                   ? "Collections Popup"
                   : t(`zone.${section}`);
+          // Tour anchor: home+gallery share the section-tabs group id on the first
+          // rendered tab; header and contact get dedicated ids.
+          const tourId =
+            section === "header"
+              ? "header-tab"
+              : section === "contact"
+                ? "contact-tab"
+                : section === "home"
+                  ? "section-tabs"
+                  : undefined;
           return (
             <Button
               key={section}
@@ -915,6 +927,7 @@ export function EditorShell({
               size="sm"
               variant={activeSection === section ? "default" : "outline"}
               aria-pressed={activeSection === section}
+              data-tour-id={tourId}
               onClick={() => {
                 if (section === "header") void openHeader();
                 else if (section === "contact") openContact();
@@ -931,6 +944,7 @@ export function EditorShell({
           size="sm"
           variant="secondary"
           aria-pressed={previewMode}
+          data-tour-id="preview-toggle"
           onClick={() => void togglePreview()}
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
@@ -957,6 +971,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-4 lg:order-3"
+          data-tour-id="photos"
           onClick={() => setPhotosOpen(true)}
         >
           {t("photos")}
@@ -966,6 +981,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-5 lg:order-4"
+          data-tour-id="theme"
           onClick={openTheme}
         >
           {t("theme")}
@@ -984,6 +1000,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-7 lg:order-6"
+          data-tour-id="drafts"
           onClick={() => setDraftsOpen(true)}
         >
           Drafts
@@ -1003,6 +1020,7 @@ export function EditorShell({
           size="sm"
           variant="brand"
           className="order-8"
+          data-tour-id="save-changes"
           disabled={saveDisabled}
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
@@ -1078,6 +1096,7 @@ export function EditorShell({
                     <Button
                       type="button"
                       size="sm"
+                      data-tour-id="publish"
                       onClick={() => void handlePublish()}
                     >
                       {t("publish")}
@@ -1100,7 +1119,7 @@ export function EditorShell({
                 sidePanelOpen ? null : (
                   <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
                 ),
-                <Button type="button" size="sm" onClick={() => void handlePublish()}>
+                <Button type="button" size="sm" data-tour-id="publish" onClick={() => void handlePublish()}>
                   {t("publish")}
                 </Button>
               )}
@@ -1109,7 +1128,7 @@ export function EditorShell({
               {contactOpen ? (
                 // Issue 2 fix: ContactPanelDialog is now inline (flex sibling), not a fixed overlay.
                 <div className="flex h-full overflow-hidden">
-                  <div className="flex-1 overflow-auto bg-muted/40">
+                  <div className="flex-1 overflow-auto bg-muted/40" data-tour-id="contact-form-preview">
                     <ContactFormPreview
                       contact={contact}
                       brandKit={brandKit}

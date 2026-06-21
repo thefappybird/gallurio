@@ -377,7 +377,7 @@ export function HeaderPanelDialog({
             </div>
 
             {/* Logo upload */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5" data-tour-id="logo-uploader">
               <Label>{t("logoLabel")}</Label>
               <p className="text-xs text-muted-foreground">{t("logoHelp")}</p>
               {header.logoUrl ? (
@@ -449,6 +449,7 @@ export function HeaderPanelDialog({
         )}
 
         {tab === "design" && (
+          <div data-tour-id="header-nav-style">
           <EditorDrawerGroup>
             {/* ── Banner ─────────────────────────────── */}
             <EditorDrawerSection title={t("sectionBanner")}>
@@ -639,6 +640,7 @@ export function HeaderPanelDialog({
               />
             </EditorDrawerSection>
           </EditorDrawerGroup>
+          </div>
         )}
       </div>
 

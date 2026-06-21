@@ -180,12 +180,18 @@ function TabHeader({
   onTabChange: (t: "content" | "design" | "layout") => void;
 }) {
   const LABELS: Record<string, string> = { content: "Content", design: "Design", layout: "Layout" };
+  const TOUR_IDS: Record<string, string> = {
+    content: "style-tab-content",
+    design: "style-tab-design",
+    layout: "style-tab-layout",
+  };
   return (
     <div className="flex border-b border-border">
       {tabs.map((id) => (
         <button
           key={id}
           type="button"
+          data-tour-id={TOUR_IDS[id]}
           onClick={() => onTabChange(id)}
           className={cn(
             "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
