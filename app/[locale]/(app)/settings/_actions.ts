@@ -8,10 +8,8 @@ import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { Workspace, User } from "@/lib/db/models";
 import {
   updateWorkspaceBusinessSchema,
-  updateWorkspaceBrandingSchema,
   publicPageSettingsSchema,
   type UpdateWorkspaceBusinessInput,
-  type UpdateWorkspaceBrandingInput,
   type PublicPageSettingsInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
@@ -53,50 +51,6 @@ export async function updateWorkspaceBusinessAction(
     { _id: ctx.workspace._id },
     { $set: { name, slug, businessType, country, currency, timezone } },
   );
-
-  revalidatePath("/settings/workspace", "page");
-  return { ok: true };
-}
-
-// ---------------------------------------------------------------------------
-// Workspace branding settings
-// ---------------------------------------------------------------------------
-
-export async function updateWorkspaceBrandingAction(
-  input: UpdateWorkspaceBrandingInput,
-): Promise<ActionResult> {
-  const ctx = await ownerContext();
-  if ("error" in ctx) return { error: ctx.error };
-
-  const parsed = updateWorkspaceBrandingSchema.safeParse(input);
-  if (!parsed.success)
-    return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
-
-  const previousLogoId =
-    ctx.workspace.branding?.logoAssetId ?? null;
-  const nextLogoId = parsed.data.logoAssetId ?? null;
-
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    {
-      $set: {
-        "branding.logoUrl": parsed.data.logoUrl ?? null,
-        "branding.logoAssetId": nextLogoId,
-        "branding.primaryColor": parsed.data.primaryColor,
-        "branding.secondaryColor": parsed.data.secondaryColor,
-        "branding.tagline": parsed.data.tagline ?? "",
-        "branding.description": parsed.data.description ?? "",
-      },
-    },
-  );
-
-  if (previousLogoId && previousLogoId !== nextLogoId) {
-    try {
-      await deleteImage(previousLogoId);
-    } catch (err) {
-      console.warn("[settings] failed to delete old logo asset", err);
-    }
-  }
 
   revalidatePath("/settings/workspace", "page");
   return { ok: true };

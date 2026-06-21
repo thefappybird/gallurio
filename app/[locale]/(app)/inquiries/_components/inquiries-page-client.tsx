@@ -144,6 +144,10 @@ export function InquiriesPageClient({
     // reset hasChanges so the subsequent onClose handler does not fire a duplicate refresh.
     hasChanges.current = false;
     setDetailOpen(false);
+    // Strip the inquiryId param so that the revalidatePath re-render does not
+    // re-supply a truthy initialDetail and re-open the modal via the deep-link
+    // sync block.
+    stripInquiryParam();
   }
 
   function handleConvertFailed() {

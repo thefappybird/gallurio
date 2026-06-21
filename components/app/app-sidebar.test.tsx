@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as React from "react";
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, act } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
@@ -8,6 +8,12 @@ import { AppSidebar } from "./app-sidebar";
 // signOutAction is a server action; stub it to avoid server-only imports.
 vi.mock("@/lib/auth/signOut", () => ({
   signOutAction: vi.fn(),
+}));
+
+// useNotifications is context-bound; stub so tests don't need the full provider.
+const mockUnreadCount = { value: 0 };
+vi.mock("@/lib/hooks/useNotifications", () => ({
+  useNotifications: () => ({ unreadCount: mockUnreadCount.value }),
 }));
 
 vi.mock("@/components/app/theme-toggle", () => ({
@@ -146,6 +152,38 @@ describe("AppSidebar SidebarTrigger", () => {
     const headerChrome = screen.getByTestId("sidebar-workspace-header");
     expect(headerChrome.className).toContain("group-data-[collapsible=icon]:flex-col-reverse");
     expect(headerChrome.className).toContain("group-data-[collapsible=icon]:items-center");
+  });
+});
+
+describe("AppSidebar bell button", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUnreadCount.value = 0;
+  });
+
+  it("bell icon receives animate-bell-nudge class when unreadCount increases", async () => {
+    mockUnreadCount.value = 0;
+    const { rerender } = renderSidebar("owner");
+
+    mockUnreadCount.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+
+    const bellBtn = screen.getByRole("button", { name: /notification/i });
+    const bellSvg = bellBtn.querySelector("svg");
+    expect(bellSvg?.getAttribute("class") ?? "").toContain("animate-bell-nudge");
   });
 });
 

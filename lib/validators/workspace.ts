@@ -80,10 +80,6 @@ export const COUNTRY_TO_CURRENCY: Record<SupportedCountry, SupportedCurrency> = 
   BH: "BHD",
 };
 
-const hexColor = z
-  .string()
-  .regex(/^#[0-9a-fA-F]{6}$/, "Use a 6-digit hex like #1a1a1a");
-
 export const businessStepSchema = z.object({
   firstName: z.string().min(1, "Required").max(40, "At most 40 characters").trim(),
   lastName: z.string().max(40, "At most 40 characters").trim().optional().default(""),
@@ -100,16 +96,6 @@ export const businessStepSchema = z.object({
 });
 export type BusinessStepInput = z.infer<typeof businessStepSchema>;
 
-export const brandingStepSchema = z.object({
-  logoUrl: z.string().url().nullable().optional(),
-  logoAssetId: z.string().nullable().optional(),
-  primaryColor: hexColor,
-  secondaryColor: hexColor,
-  tagline: z.string().max(120, "Keep it under 120 characters").optional().default(""),
-  description: z.string().max(500, "Keep it under 500 characters").optional().default(""),
-});
-export type BrandingStepInput = z.infer<typeof brandingStepSchema>;
-
 // Kept for backwards-compat with the old single-page onboarding action signature.
 export const createWorkspaceSchema = z.object({
   name: businessStepSchema.shape.name,
@@ -119,8 +105,7 @@ export const createWorkspaceSchema = z.object({
 export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 
 // ---- Post-onboarding settings ---------------------------------------------
-// Business + branding fields the owner can change from /settings/workspace.
-// Mirrors the onboarding schemas so validation stays consistent.
+// Business fields the owner can change from /settings/workspace.
 export const updateWorkspaceBusinessSchema = z.object({
   name: businessStepSchema.shape.name,
   slug: businessStepSchema.shape.slug,
@@ -130,9 +115,6 @@ export const updateWorkspaceBusinessSchema = z.object({
   timezone: businessStepSchema.shape.timezone,
 });
 export type UpdateWorkspaceBusinessInput = z.infer<typeof updateWorkspaceBusinessSchema>;
-
-export const updateWorkspaceBrandingSchema = brandingStepSchema;
-export type UpdateWorkspaceBrandingInput = z.infer<typeof updateWorkspaceBrandingSchema>;
 
 // Public-page settings (SEO + inquiry email). Visibility is a separate toggle
 // action so the form here covers free-text fields only.

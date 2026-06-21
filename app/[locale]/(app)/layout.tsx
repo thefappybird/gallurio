@@ -55,7 +55,7 @@ export default async function AppLayout({
           <AppSidebar
             role={role}
             workspaceName={workspace.name}
-            workspaceLogoUrl={workspace.branding?.logoUrl ?? null}
+            workspaceLogoUrl={null}
             userName={authUser?.name ?? null}
             userEmail={authUser?.email ?? ""}
             userAvatarUrl={userAvatarUrl ?? authUser?.avatarUrl ?? null}

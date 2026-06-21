@@ -51,6 +51,14 @@ export default defineConfig({
         find: /^next\/font\/local$/,
         replacement: path.resolve(__dirname, "test-utils/next-font-stub.ts"),
       },
+      {
+        // @workos-inc/authkit-nextjs resolves `next/cache` from its own pnpm
+        // subtree where the path differs from the project root's copy. Force
+        // vitest to use the project-root next/cache so the import resolves.
+        // node_modules lives at the git root, not the worktree directory.
+        find: /^next\/cache$/,
+        replacement: require.resolve("next/cache"),
+      },
       { find: "@", replacement: path.resolve(__dirname, ".") },
     ],
   },

@@ -60,7 +60,6 @@ export const PLAN_CATALOG: ReadonlyArray<PlanCatalogEntry> = [
     taglineKey: "plans.pro.tagline",
     featureKeys: [
       "plans.pro.features.everythingStarter",
-      "plans.pro.features.customDomain",
       "plans.pro.features.storage",
       "plans.pro.features.invoicePdfs",
       "plans.pro.features.removeBranding",

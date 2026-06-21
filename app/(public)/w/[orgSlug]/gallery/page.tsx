@@ -18,11 +18,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const workspace = await findPublishedWorkspaceBySlug(orgSlug);
   if (!workspace) return {};
 
-  const { publicPage, branding, name } = workspace;
+  const { publicPage, name } = workspace;
   const title = `${name} — Gallery`;
-  const description = publicPage?.seoDescription || branding?.tagline || undefined;
-  const logoUrl =
-    typeof branding?.logoUrl === "string" && branding.logoUrl ? branding.logoUrl : undefined;
+  const description = publicPage?.seoDescription || undefined;
 
   return {
     title,
@@ -30,7 +28,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title,
       description: description ?? "",
-      images: logoUrl ? [{ url: logoUrl }] : undefined,
     },
     alternates: {
       canonical: `/w/${workspace.slug}/gallery`,

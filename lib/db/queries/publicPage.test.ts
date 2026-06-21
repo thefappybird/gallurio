@@ -186,10 +186,6 @@ describe("findPublishedWorkspaceBySlug", () => {
         slug: "public-fields-ws",
         name: "Public Fields Studio",
         country: "PH",
-        branding: {
-          tagline: "Your story, beautifully told.",
-          logoUrl: "https://res.cloudinary.com/demo/image/upload/logo.png",
-        },
         publicPage: {
           publishedAt: new Date(),
           seoTitle: "Public Fields Studio — Photography",
@@ -211,7 +207,6 @@ describe("findPublishedWorkspaceBySlug", () => {
     expect(doc.slug).toBe("public-fields-ws");
     expect(doc.name).toBe("Public Fields Studio");
     expect(doc.country).toBe("PH");
-    expect(doc.branding).toBeDefined();
     expect(doc.publicPage).toBeDefined();
     expect(doc.contact).toBeDefined();
   });

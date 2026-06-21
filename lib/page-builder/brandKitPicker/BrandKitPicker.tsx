@@ -20,8 +20,6 @@ import { ThemeGrid } from "./ThemeGrid";
 import { useThemeEditor, type ThemeEditorController, type ThemeNameError } from "./useThemeEditor";
 import { UnsavedEditDialog } from "./UnsavedEditDialog";
 
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
-
 // Quick-pick swatches shown above the spectrum — Gallurio brand shades plus a
 // few versatile neutrals/accents. Owners can still pick any custom color.
 const BRAND_PRESETS = [
@@ -53,8 +51,6 @@ const FONT_SELECTOR_LABELS: Record<"headingFont" | "bodyFont", string> = {
 type Props = {
   value: PortfolioBrandKit;
   onChange: (next: PortfolioBrandKit) => void;
-  /** When provided, enables a "use workspace branding" shortcut for the colors. */
-  workspaceBranding?: { primaryColor?: string; secondaryColor?: string } | null;
   /** Owner's saved named themes, shown in the unified theme grid. */
   savedThemes?: PortfolioSavedTheme[];
   /** Called when user saves the current kit as a named theme. Returns structured result. */
@@ -123,7 +119,6 @@ function FontSelector({
 export function BrandKitPicker({
   value,
   onChange,
-  workspaceBranding,
   savedThemes = [],
   onSaveTheme,
   onDeleteTheme,
@@ -163,18 +158,6 @@ export function BrandKitPicker({
     ctrl.changeControl({ ...workingValue, [slot]: key });
   }
 
-  function useWorkspaceBranding() {
-    if (!workspaceBranding) return;
-    const next = { ...workingValue };
-    if (workspaceBranding.primaryColor && HEX_RE.test(workspaceBranding.primaryColor)) {
-      next.primaryColor = workspaceBranding.primaryColor;
-    }
-    if (workspaceBranding.secondaryColor && HEX_RE.test(workspaceBranding.secondaryColor)) {
-      next.secondaryColor = workspaceBranding.secondaryColor;
-    }
-    ctrl.changeControl(next);
-  }
-
   const nameErrMsg = (c: ThemeNameError | null): string | null =>
     c ? t(({ required: "enterThemeName", tooLong: "nameTooLong", duplicate: "themeNameExists", saveFailed: "saveThemeError" } as Record<ThemeNameError, string>)[c]) : null;
 
@@ -212,15 +195,6 @@ export function BrandKitPicker({
       <fieldset className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <legend className="text-sm font-medium">{t("colors")}</legend>
-          {workspaceBranding && (
-            <button
-              type="button"
-              onClick={useWorkspaceBranding}
-              className="text-xs text-muted-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
-            >
-              {t("useWorkspaceBranding")}
-            </button>
-          )}
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {COLOR_KEYS.map((key) => (

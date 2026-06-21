@@ -34,10 +34,6 @@ export type TemplateBusinessType =
 export type TemplateSeedContext = {
   workspace: {
     name: string;
-    branding?: {
-      tagline?: string | null;
-      description?: string | null;
-    } | null;
   };
 };
 

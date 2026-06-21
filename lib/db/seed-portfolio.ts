@@ -203,12 +203,6 @@ async function main() {
       country: "PH",
       currency: "PHP",
       timezone: "Asia/Manila",
-      branding: {
-        primaryColor: "#1a1a1a",
-        secondaryColor: "#f5f5f5",
-        tagline: "Fine-art wedding & portrait photography",
-        description: "Demo workspace for portfolio-maker testing.",
-      },
       plan: "pro",
       onboardingCompletedAt: now,
     });

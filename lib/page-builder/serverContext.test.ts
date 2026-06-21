@@ -93,7 +93,6 @@ describe("buildRenderWorkspace", () => {
     const doc = {
       _id: oid,
       name: "Luminos Photography",
-      branding: { logoUrl: "https://cdn/logo.png", tagline: "Capture moments", description: "A studio." },
       publicPage: { inquiryRecipientEmail: "owner@luminos.ph" },
       contact: {
         email: "hello@luminos.ph",
@@ -114,11 +113,6 @@ describe("buildRenderWorkspace", () => {
     expect(typeof result._id).toBe("string");
     expect(result.name).toBe("Luminos Photography");
 
-    expect(result.branding).toEqual({
-      logoUrl: "https://cdn/logo.png",
-      tagline: "Capture moments",
-      description: "A studio.",
-    });
     expect(result.publicPage).toEqual({ inquiryRecipientEmail: "owner@luminos.ph", collectionsPopup: null });
     expect(result.contact).toEqual({
       email: "hello@luminos.ph",
@@ -133,37 +127,21 @@ describe("buildRenderWorkspace", () => {
     });
   });
 
-  it("returns branding: null, publicPage: null, contact: null when those fields are absent", () => {
+  it("returns publicPage: null, contact: null when those fields are absent", () => {
     const result = buildRenderWorkspace({ _id: "ws-min", name: "Minimal" });
-    expect(result.branding).toBeNull();
     expect(result.publicPage).toBeNull();
     expect(result.contact).toBeNull();
   });
 
-  it("returns branding: null, publicPage: null, contact: null when those fields are explicitly null", () => {
+  it("returns publicPage: null, contact: null when those fields are explicitly null", () => {
     const result = buildRenderWorkspace({
       _id: "ws-null",
       name: "Null Fields",
-      branding: null,
       publicPage: null,
       contact: null,
     });
-    expect(result.branding).toBeNull();
     expect(result.publicPage).toBeNull();
     expect(result.contact).toBeNull();
-  });
-
-  it("null-coalesces missing nested branding fields to null", () => {
-    const result = buildRenderWorkspace({
-      _id: "ws-partial",
-      name: "Partial Branding",
-      branding: { logoUrl: "https://cdn/logo.png" }, // tagline and description absent
-    });
-    expect(result.branding).toEqual({
-      logoUrl: "https://cdn/logo.png",
-      tagline: null,
-      description: null,
-    });
   });
 
   it("null-coalesces missing contact fields to null, sets socials: null when socials is absent", () => {

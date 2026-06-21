@@ -20,9 +20,9 @@ export type PortfolioSeed = {
 // Build a template's seed data.
 async function buildSeed(
   template: PortfolioTemplate,
-  ctx: { name: string; branding?: { tagline?: string | null; description?: string | null } | null }
+  ctx: { name: string }
 ): Promise<PortfolioSeed> {
-  const data = template.seedData({ workspace: { name: ctx.name, branding: ctx.branding ?? null } });
+  const data = template.seedData({ workspace: { name: ctx.name } });
 
   return {
     templateId: template.id,
@@ -43,16 +43,13 @@ async function buildSeed(
 export async function seedDefaultPortfolio(workspaceId: Types.ObjectId): Promise<PortfolioSeed | null> {
   await connectDB();
   const ws = await Workspace.findById(workspaceId)
-    .select({ name: 1, branding: 1, businessType: 1, "publicPage.data.home": 1 })
+    .select({ name: 1, businessType: 1, "publicPage.data.home": 1 })
     .lean();
   if (!ws) return null;
   if (ws.publicPage?.data?.home) return null; // already seeded
 
   const template = getTemplateForBusinessType(ws.businessType);
-  const seed = await buildSeed(template, {
-    name: ws.name,
-    branding: ws.branding,
-  });
+  const seed = await buildSeed(template, { name: ws.name });
 
   // Idempotent guard: the filter only matches while home is still empty, so a
   // racing first-load that already seeded leaves this a no-op.
@@ -102,14 +99,11 @@ export async function reseedPortfolioFromTemplate(
 
   await connectDB();
   const ws = await Workspace.findById(workspaceId)
-    .select({ name: 1, branding: 1, "publicPage.data": 1 })
+    .select({ name: 1, "publicPage.data": 1 })
     .lean();
   if (!ws) return null;
 
-  const seed = await buildSeed(template, {
-    name: ws.name,
-    branding: ws.branding,
-  });
+  const seed = await buildSeed(template, { name: ws.name });
 
   const set: Record<string, unknown> = {
     "publicPage.templateId": seed.templateId,

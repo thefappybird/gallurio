@@ -30,7 +30,6 @@ import { getAuthUser } from "@/lib/auth/session";
 import { setActiveWorkspace } from "@/lib/auth/activeWorkspace";
 import {
   businessStepAction,
-  brandingStepAction,
   selectFreePlanAction,
   completeOnboardingAction,
 } from "./onboarding";
@@ -209,58 +208,6 @@ describe("businessStepAction", () => {
     // Two distinct workspaces exist.
     const count = await Workspace.countDocuments();
     expect(count).toBe(2);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// brandingStepAction
-// ---------------------------------------------------------------------------
-
-describe("brandingStepAction", () => {
-  it("rejects unauthenticated requests", async () => {
-    mockGetAuthUser.mockResolvedValue(null);
-    const result = await brandingStepAction({
-      primaryColor: "#111111",
-      secondaryColor: "#f5f5f5",
-      tagline: "",
-      description: "",
-    });
-    expect(result.error).toBe("Not authenticated");
-  });
-
-  it("rejects when no owner membership exists", async () => {
-    // User exists but has no memberships.
-    await User.create({
-      workosUserId: "wos_user_001",
-      email: "test@example.com",
-      memberships: [],
-    });
-    mockGetAuthUser.mockResolvedValue(makeAuthUser());
-    const result = await brandingStepAction({
-      primaryColor: "#111111",
-      secondaryColor: "#f5f5f5",
-      tagline: "",
-      description: "",
-    });
-    expect(result.error).toMatch(/no active workspace/i);
-  });
-
-  it("updates branding fields on the owner workspace", async () => {
-    mockGetAuthUser.mockResolvedValue(makeAuthUser());
-    await businessStepAction(validBusinessInput);
-
-    const result = await brandingStepAction({
-      primaryColor: "#ff0000",
-      secondaryColor: "#00ff00",
-      tagline: "Capturing moments",
-      description: "Professional photography",
-    });
-    expect(result.ok).toBe(true);
-
-    const workspace = await Workspace.findOne({ ownerUserId: "wos_user_001" }).lean();
-    expect(workspace).not.toBeNull();
-    expect(workspace?.branding?.primaryColor).toBe("#ff0000");
-    expect(workspace?.branding?.tagline).toBe("Capturing moments");
   });
 });
 

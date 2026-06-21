@@ -49,7 +49,6 @@ export function buildRenderWorkspace(workspace: {
   _id: unknown;
   name: string;
   slug?: string | null;
-  branding?: { logoUrl?: string | null; tagline?: string | null; description?: string | null } | null;
   publicPage?: {
     inquiryRecipientEmail?: string | null;
     collectionsPopup?: PortfolioCollectionsPopupConfig | null;
@@ -70,13 +69,6 @@ export function buildRenderWorkspace(workspace: {
     _id: String(workspace._id),
     name: workspace.name,
     slug: workspace.slug ?? undefined,
-    branding: workspace.branding
-      ? {
-          logoUrl: workspace.branding.logoUrl ?? null,
-          tagline: workspace.branding.tagline ?? null,
-          description: workspace.branding.description ?? null,
-        }
-      : null,
     publicPage: workspace.publicPage
       ? {
           inquiryRecipientEmail: workspace.publicPage.inquiryRecipientEmail ?? null,

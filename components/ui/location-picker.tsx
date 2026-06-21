@@ -136,11 +136,6 @@ function BaseLocationPicker({
   // Mirrors committedRef for render-time dirty computation (refs must not be read during render).
   const [committedValue, setCommittedValue] = useState<LocationValue>(value);
 
-  // Captured once when entering edit mode: was the committed value empty?
-  const [editOriginEmpty, setEditOriginEmpty] = useState<boolean>(() =>
-    editable ? isEmpty(value) : false,
-  );
-
   const dirty = editable ? !sameLocation(draft, committedValue) : false;
 
   // Refs for focus management
@@ -293,15 +288,6 @@ function BaseLocationPicker({
     }
   }
 
-  function clear() {
-    skipNextSearchRef.current = true;
-    setQuery("");
-    setResults([]);
-    setOpen(false);
-    setSearched(false);
-    commit({ address: "", lat: null, lng: null });
-  }
-
   // ── focus: move into search input when entering edit mode ────────────────
   useEffect(() => {
     if (mode === "edit") {
@@ -313,7 +299,6 @@ function BaseLocationPicker({
 
   function handleEnterEdit() {
     const origin = committedRef.current;
-    setEditOriginEmpty(isEmpty(origin));
     setDraft(origin);
     setQuery(origin.address ?? "");
     setMode("edit");
@@ -343,9 +328,6 @@ function BaseLocationPicker({
   // Use draft (state) rather than committedRef.current (ref) so React re-renders
   // when the committed value changes while in display mode.
   const displayValue = editable ? draft : value;
-  const hasValue = editable
-    ? !!draft.address || draft.lat != null
-    : !!value.address || value.lat != null;
 
   // The map always reads from the correct source depending on mode
   const mapValue = editable ? draft : value;
@@ -388,9 +370,12 @@ function BaseLocationPicker({
   }
 
   // ── edit mode rendering ──────────────────────────────────────────────────
+  const hasDraftLocation = !isEmpty(draft);
+  const hasSavedLocation = !isEmpty(committedValue);
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      {/* Search input row */}
+      {/* Search input row — [input][cancel][apply] */}
       <div ref={searchWrapperRef} className="relative">
         <div className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
@@ -410,65 +395,82 @@ function BaseLocationPicker({
               aria-controls={listboxId}
               aria-describedby={ariaDescribedby}
               placeholder={resolvedLabels.searchPlaceholder}
-              className="pl-8 pr-16"
+              className="pl-8 pr-8"
               onChange={(e) => setQuery(e.target.value)}
               onBlur={() => commitAddress(query.trim())}
               onFocus={() => {
                 if (results.length > 0) setOpen(true);
               }}
             />
-            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-              {searching ? (
+            {searching ? (
+              <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center">
                 <Loader2Icon
                   className="size-4 animate-spin text-muted-foreground"
                   aria-label={resolvedLabels.searching}
                 />
-              ) : null}
-              {hasValue && !disabled ? (
-                <button
-                  type="button"
-                  onClick={clear}
-                  aria-label={resolvedLabels.clear}
-                  className="inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </div>
+              </div>
+            ) : null}
 
-        {open && (searched || results.length > 0) ? (
-          <ul
-            id={listboxId}
-            role="listbox"
-            className="absolute z-1100 mt-1 max-h-56 w-full overflow-y-auto border border-border bg-popover text-popover-foreground shadow-md"
-          >
-            {results.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-muted-foreground">
-                {resolvedLabels.noResults}
-              </li>
-            ) : (
-              results.map((r) => (
-                <li key={r.place_id} role="option" aria-selected={false}>
-                  <button
-                    type="button"
-                    // onMouseDown (not onClick) so selection fires before the
-                    // input's onBlur clears/commits and tears down the list.
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectResult(r);
-                    }}
-                    className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:outline-none"
-                  >
-                    <MapPinIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1">{r.display_name}</span>
-                  </button>
-                </li>
-              ))
-            )}
-          </ul>
-        ) : null}
+            {open && (searched || results.length > 0) ? (
+              <ul
+                id={listboxId}
+                role="listbox"
+                className="absolute z-1100 mt-1 max-h-56 w-full overflow-y-auto border border-border bg-popover text-popover-foreground shadow-md"
+              >
+                {results.length === 0 ? (
+                  <li className="px-3 py-2 text-sm text-muted-foreground">
+                    {resolvedLabels.noResults}
+                  </li>
+                ) : (
+                  results.map((r) => (
+                    <li key={r.place_id} role="option" aria-selected={false}>
+                      <button
+                        type="button"
+                        // onMouseDown (not onClick) so selection fires before the
+                        // input's onBlur clears/commits and tears down the list.
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectResult(r);
+                        }}
+                        className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:outline-none"
+                      >
+                        <MapPinIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                        <span className="min-w-0 flex-1">{r.display_name}</span>
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            ) : null}
+          </div>
+
+          {editable ? (
+            <>
+              <button
+                type="button"
+                disabled={disabled || (!hasSavedLocation && !dirty)}
+                onClick={handleCancel}
+                aria-label={discardAriaLabel}
+                className="inline-flex size-8 shrink-0 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent disabled:pointer-events-none disabled:opacity-50"
+              >
+                <XIcon className="size-4" aria-hidden />
+              </button>
+              <button
+                type="button"
+                disabled={disabled || !hasDraftLocation || !dirty}
+                onClick={handleCommit}
+                aria-label={acceptAriaLabel}
+                style={applyButtonStyle}
+                className={cn(
+                  "inline-flex size-8 shrink-0 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
+                  !applyButtonStyle && "bg-primary text-primary-foreground hover:bg-primary/90",
+                )}
+              >
+                <CheckIcon className="size-4" aria-hidden />
+              </button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="overflow-hidden border border-border">
@@ -485,35 +487,6 @@ function BaseLocationPicker({
       <p className={cn("text-xs text-muted-foreground", disabled && "opacity-60")}>
         {resolvedLabels.dragHint}
       </p>
-
-      {/* Accept (check) / Discard (X) icon buttons — shown consistently below the map
-          for both empty-origin and editing-existing cases when in editable mode.
-          onChange fires ONLY on accept (commit); discard reverts to last committed value. */}
-      {editable ? (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={handleCancel}
-            aria-label={discardAriaLabel}
-            className="inline-flex size-8 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:bg-accent disabled:pointer-events-none disabled:opacity-50"
-          >
-            <XIcon className="size-4" aria-hidden />
-          </button>
-          <button
-            type="button"
-            disabled={disabled || (!dirty && !editOriginEmpty)}
-            onClick={handleCommit}
-            aria-label={acceptAriaLabel}
-            className={cn(
-              "inline-flex size-8 items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:opacity-80 disabled:pointer-events-none disabled:opacity-50",
-              !applyButtonStyle && "bg-primary text-primary-foreground hover:bg-primary/90",
-            )}
-          >
-            <CheckIcon className="size-4" aria-hidden />
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

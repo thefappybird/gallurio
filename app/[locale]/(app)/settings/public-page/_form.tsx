@@ -211,21 +211,6 @@ export function PublicPageSettingsForm({
           </div>
         </section>
 
-        {/* Custom domain section (disabled, coming soon) */}
-        <section className="flex flex-col gap-4 border-t border-border pt-8">
-          <div>
-            <h2 className="text-lg font-semibold">{t("customDomainSection")}</h2>
-          </div>
-
-          <div className="opacity-60">
-            <Input
-              disabled
-              placeholder={t("customDomainComingSoon")}
-              className="cursor-not-allowed"
-            />
-          </div>
-        </section>
-
         <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !isDirty}>
             {isSubmitting ? (
