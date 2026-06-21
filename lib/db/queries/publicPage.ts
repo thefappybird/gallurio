@@ -30,7 +30,7 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
     slug: normalized,
     "publicPage.publishedAt": { $ne: null },
   })
-    .select("slug name country branding publicPage contact")
+    .select("slug name country publicPage contact")
     .lean();
 
   return workspace ?? null;

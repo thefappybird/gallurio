@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createElement, type ReactNode } from "react";
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 
 // ── navigation / router ────────────────────────────────────────────────────
@@ -18,8 +18,13 @@ vi.mock("next/navigation", () => ({
 }));
 
 // ── heavy sub-components ───────────────────────────────────────────────────
+// Expose the rendered rows so tests can inspect optimistic patches.
+let lastRenderedRows: InquiryRow[] = [];
 vi.mock("./inquiry-table", () => ({
-  InquiryTable: () => <div data-testid="inquiry-table" />,
+  InquiryTable: ({ rows }: { rows: InquiryRow[] }) => {
+    lastRenderedRows = rows;
+    return <div data-testid="inquiry-table" />;
+  },
 }));
 
 vi.mock("./inquiry-view-toggle", () => ({
@@ -30,17 +35,20 @@ vi.mock("./inquiries-calendar-manager", () => ({
   InquiriesCalendarManager: () => <div />,
 }));
 
-// Capture modal props so tests can call onClose / onInquiryChanged directly
+// Capture modal props so tests can call onClose / onInquiryChanged / onConverted directly
 const capturedProps: Record<string, unknown> = {};
 vi.mock("./inquiry-detail-modal", () => ({
   InquiryDetailModal: (props: {
     onClose: () => void;
+    onConverted?: () => void;
     onInquiryChanged?: (id: string, patch: object) => void;
     open: boolean;
   }) => {
     capturedProps.onClose = props.onClose;
+    capturedProps.onConverted = props.onConverted;
     capturedProps.onInquiryChanged = props.onInquiryChanged;
-    return <div data-testid="inquiry-detail-modal" />;
+    capturedProps.open = props.open;
+    return props.open ? <div data-testid="inquiry-detail-modal" /> : null;
   },
 }));
 
@@ -116,5 +124,29 @@ describe("InquiriesPageClient", () => {
     );
     (capturedProps.onClose as () => void)();
     expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("onConverted closes the modal, strips inquiryId param, and marks row booked optimistically", () => {
+    renderWithProviders(<InquiriesPageClient {...baseProps} />);
+    expect(screen.getByTestId("inquiry-detail-modal")).toBeDefined();
+
+    act(() => {
+      (capturedProps.onConverted as () => void)();
+    });
+
+    // Modal closed
+    expect(screen.queryByTestId("inquiry-detail-modal")).toBeNull();
+
+    // inquiryId param stripped via router.replace
+    expect(replace).toHaveBeenCalledOnce();
+    const replaceArg = (replace.mock.calls[0] as string[])[0];
+    expect(replaceArg).not.toContain("inquiryId");
+
+    // No duplicate refresh (revalidatePath handles the server update)
+    expect(refresh).not.toHaveBeenCalled();
+
+    // Row shows booked optimistically
+    const patchedRow = lastRenderedRows.find((r) => r.id === "inq-1");
+    expect(patchedRow?.status).toBe("booked");
   });
 });

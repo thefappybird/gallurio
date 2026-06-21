@@ -88,21 +88,6 @@ describe("BrandKitPicker", () => {
     );
   });
 
-  it("'use workspace branding' pulls primary/secondary from the prop", () => {
-    const { onChange } = setup({
-      workspaceBranding: { primaryColor: "#123456", secondaryColor: "#654321" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /use workspace branding/i }));
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ primaryColor: "#123456", secondaryColor: "#654321" })
-    );
-  });
-
-  it("hides the workspace-branding shortcut when no branding is provided", () => {
-    setup();
-    expect(screen.queryByRole("button", { name: /use workspace branding/i })).toBeNull();
-  });
-
   it("shows a Current Theme tile with inline name input after a divergent color edit", () => {
     setup({ onSaveTheme: vi.fn().mockResolvedValue({ ok: true, theme: { id: "n", name: "X", brandKit: DEFAULT_BRAND_KIT } }) });
     fireEvent.click(screen.getByRole("button", { name: /accent/i }));

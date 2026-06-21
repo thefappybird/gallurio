@@ -4,7 +4,7 @@ import { getTemplate, PORTFOLIO_TEMPLATES } from "./index";
 
 describe("scratchTemplate", () => {
   it("seeds empty home and gallery zones", () => {
-    const data = scratchTemplate.seedData({ workspace: { name: "X", branding: null } });
+    const data = scratchTemplate.seedData({ workspace: { name: "X" } });
     expect(data.home).toEqual({ content: [], root: {} });
     expect(data.gallery).toEqual({ content: [], root: {} });
   });

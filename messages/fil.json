@@ -707,8 +707,6 @@
       "workspace": {
         "businessSection": "Mga detalye ng negosyo",
         "businessSectionHint": "Ang pagkakakilanlan ng iyong negosyo at kung saan ka nag-ooperate.",
-        "brandingSection": "Branding",
-        "brandingSectionHint": "Logo, mga kulay, at tagline na ginagamit sa iyong pampublikong pahina.",
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
         "savedToast": "Na-update ang workspace.",
@@ -750,8 +748,6 @@
         "inquirySectionHint": "Kung saan ipinapadala ang mga submission mula sa iyong inquiry form.",
         "inquiryRecipientEmail": "Email ng tatanggap",
         "inquiryRecipientEmailPlaceholder": "ikaw@halimbawa.com",
-        "customDomainSection": "Custom domain",
-        "customDomainComingSoon": "Available sa v1.1",
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
         "savedToast": "Na-update ang mga setting ng pampublikong pahina.",
@@ -1230,7 +1226,6 @@
         },
         "fontPair": "Mga font",
         "colors": "Mga kulay",
-        "useWorkspaceBranding": "Gamitin ang branding ng workspace",
         "colorLabels": {
           "primaryColor": "Pangunahin",
           "secondaryColor": "Pangalawa",
@@ -1605,7 +1600,6 @@
     },
     "steps": {
       "business": "Negosyo",
-      "branding": "Branding",
       "plan": "Plano",
       "done": "Tapos"
     },
@@ -1635,29 +1629,6 @@
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
         "other": "Iba pa"
-      }
-    },
-    "branding": {
-      "title": "Gawin itong sariling-sarili mo",
-      "description": "Magdagdag ng logo, pumili ng mga kulay, at magsulat ng isang-pangungusap na tagline. Maaaring baguhin lahat ng ito mamaya.",
-      "noLogo": "Walang logo",
-      "brandLogo": "Logo ng brand",
-      "logoHint": "PNG / JPG / SVG hanggang 5 MB",
-      "uploading": "Ina-upload…",
-      "upload": "Mag-upload",
-      "replace": "Palitan",
-      "remove": "Alisin",
-      "primaryColor": "Pangunahing kulay",
-      "secondaryColor": "Pangalawang kulay",
-      "tagline": "Tagline",
-      "taglinePlaceholder": "Wedding photography sa Maynila",
-      "shortDescription": "Maikling paglalarawan",
-      "descriptionPlaceholder": "Ilang pangungusap tungkol sa iyong negosyo — ipapakita sa iyong pampublikong pahina.",
-      "skipForNow": "Laktawan muna",
-      "errors": {
-        "notImage": "Ang logo ay dapat na imahe.",
-        "tooLarge": "Ang logo ay dapat mas maliit sa 5 MB.",
-        "uploadFailed": "Hindi matagumpay ang pag-upload"
       }
     },
     "plan": {
@@ -1718,11 +1689,10 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Custom domain + invoice.",
-      "tagline": "Custom domain + invoice.",
+      "description": "Mga invoice + alisin ang branding.",
+      "tagline": "Mga invoice + alisin ang branding.",
       "features": {
         "everythingStarter": "Lahat ng nasa Starter",
-        "customDomain": "Custom domain",
         "storage": "50 GB storage",
         "invoicePdfs": "Mga invoice PDF",
         "removeBranding": "Alisin ang branding ng Gallurio"

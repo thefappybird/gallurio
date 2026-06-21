@@ -707,8 +707,6 @@
       "workspace": {
         "businessSection": "Detail bisnis",
         "businessSectionHint": "Identitas bisnis Anda dan tempat Anda beroperasi.",
-        "brandingSection": "Branding",
-        "brandingSectionHint": "Logo, warna, dan tagline yang digunakan di halaman publik Anda.",
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja diperbarui.",
@@ -750,8 +748,6 @@
         "inquirySectionHint": "Ke mana kiriman dari formulir pertanyaan Anda diteruskan.",
         "inquiryRecipientEmail": "Email penerima",
         "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
-        "customDomainSection": "Domain kustom",
-        "customDomainComingSoon": "Tersedia di v1.1",
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Pengaturan halaman publik diperbarui.",
@@ -1230,7 +1226,6 @@
         },
         "fontPair": "Font",
         "colors": "Warna",
-        "useWorkspaceBranding": "Gunakan branding ruang kerja",
         "colorLabels": {
           "primaryColor": "Utama",
           "secondaryColor": "Sekunder",
@@ -1605,7 +1600,6 @@
     },
     "steps": {
       "business": "Bisnis",
-      "branding": "Branding",
       "plan": "Paket",
       "done": "Selesai"
     },
@@ -1635,29 +1629,6 @@
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Band",
         "other": "Lainnya"
-      }
-    },
-    "branding": {
-      "title": "Buat menjadi milik Anda",
-      "description": "Tambahkan logo, pilih warna, dan tulis tagline satu baris. Anda dapat mengubah semuanya nanti.",
-      "noLogo": "Tidak ada logo",
-      "brandLogo": "Logo merek",
-      "logoHint": "PNG / JPG / SVG hingga 5 MB",
-      "uploading": "Mengunggah…",
-      "upload": "Unggah",
-      "replace": "Ganti",
-      "remove": "Hapus",
-      "primaryColor": "Warna utama",
-      "secondaryColor": "Warna sekunder",
-      "tagline": "Tagline",
-      "taglinePlaceholder": "Fotografi pernikahan di Jakarta",
-      "shortDescription": "Deskripsi singkat",
-      "descriptionPlaceholder": "Beberapa kalimat tentang bisnis Anda — ditampilkan di halaman publik Anda.",
-      "skipForNow": "Lewati dulu",
-      "errors": {
-        "notImage": "Logo harus berupa gambar.",
-        "tooLarge": "Logo harus di bawah 5 MB.",
-        "uploadFailed": "Unggah gagal"
       }
     },
     "plan": {
@@ -1718,11 +1689,10 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Domain kustom + faktur.",
-      "tagline": "Domain kustom + faktur.",
+      "description": "Faktur + hilangkan branding.",
+      "tagline": "Faktur + hilangkan branding.",
       "features": {
         "everythingStarter": "Semua di Starter",
-        "customDomain": "Domain kustom",
         "storage": "Penyimpanan 50 GB",
         "invoicePdfs": "PDF faktur",
         "removeBranding": "Hilangkan branding Gallurio"

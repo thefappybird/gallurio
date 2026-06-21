@@ -65,9 +65,6 @@ vi.mock("../_components/settings-user-profile", () => ({
 vi.mock("../workspace/_business-form", () => ({
   WorkspaceBusinessForm: () => null,
 }));
-vi.mock("../workspace/_branding-form", () => ({
-  WorkspaceBrandingForm: () => null,
-}));
 vi.mock("../customize/_panel", () => ({
   CustomizePanel: () => null,
 }));
@@ -132,7 +129,7 @@ vi.mock("@/lib/db/models", () => ({
   Workspace: {
     find: vi.fn().mockReturnValue({
       lean: vi.fn().mockResolvedValue([
-        { _id: "ws_1", name: "Sarah Photography", branding: null },
+        { _id: "ws_1", name: "Sarah Photography" },
       ]),
     }),
   },
@@ -165,7 +162,6 @@ const WORKSPACE_STUB = {
   timezone: "Asia/Manila",
   plan: "starter",
   ownerUserId: "user_owner",
-  branding: null,
   publicPage: null,
 };
 

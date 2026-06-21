@@ -62,14 +62,6 @@ const workspaceSchema = new Schema(
     country: { type: String, default: null },
     currency: { type: String, enum: SUPPORTED_CURRENCIES, default: "PHP", required: true },
     timezone: { type: String, default: null },
-    branding: {
-      logoUrl: { type: String, default: null },
-      logoAssetId: { type: String, default: null },
-      primaryColor: { type: String, default: "#111111" },
-      secondaryColor: { type: String, default: "#f5f5f5" },
-      tagline: { type: String, default: "" },
-      description: { type: String, default: "" },
-    },
     contact: {
       email: { type: String, default: "" },
       phone: { type: String, default: "" },
@@ -217,7 +209,6 @@ const workspaceSchema = new Schema(
         contactButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
       },
     },
-    customDomain: { type: String, default: null },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 
     // Paddle subscription — Gallurio billing the tenant (Merchant of Record).

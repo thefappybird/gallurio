@@ -22,8 +22,7 @@ export type DevPlanActionResult = {
 type ActionResult = { error?: string; ok?: boolean };
 
 // Dev-only escape hatch: flip a workspace's plan without touching Paddle.
-// Useful when iterating on plan-gated UI (custom-domain unlocks, branding
-// removal, invoice PDFs, etc.) without round-tripping Paddle's hosted
+// Useful when iterating on plan-gated UI (invoice PDFs, etc.) without round-tripping Paddle's hosted
 // checkout overlay. Hard-blocked in production by the NODE_ENV gate.
 //
 // The team-cap downgrade guard here mirrors the Paddle webhook's: if the

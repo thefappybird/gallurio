@@ -35,4 +35,19 @@ describe("ThemeToggle", () => {
     expect(screen.getByText("Dark")).toBeInTheDocument();
     expect(screen.getByText("System")).toBeInTheDocument();
   });
+
+  it("selected theme item has data-active=true; others have data-active=false", () => {
+    renderWithProviders(
+      <Wrapper>
+        <ThemeToggle />
+      </Wrapper>
+    );
+    const trigger = screen.getAllByText("Theme")[0];
+    fireEvent.click(trigger);
+    // defaultTheme is "light" in the Wrapper — Light item should be active
+    const lightItem = screen.getByText("Light").closest("[data-active]");
+    expect(lightItem).toHaveAttribute("data-active", "true");
+    const darkItem = screen.getByText("Dark").closest("[data-active]");
+    expect(darkItem).toHaveAttribute("data-active", "false");
+  });
 });

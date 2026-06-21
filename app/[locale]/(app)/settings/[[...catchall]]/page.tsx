@@ -19,7 +19,6 @@ import { connectDB } from "@/lib/db/mongoose";
 import { User, Workspace } from "@/lib/db/models";
 import { SettingsUserProfile } from "../_components/settings-user-profile";
 import { WorkspaceBusinessForm } from "../workspace/_business-form";
-import { WorkspaceBrandingForm } from "../workspace/_branding-form";
 import { CustomizePanel } from "../customize/_panel";
 import { PublicPageSettingsForm } from "../public-page/_form";
 import { DevPlanPanel } from "../dev-plan/_panel";
@@ -27,7 +26,6 @@ import { BillingPanel } from "../billing/_panel";
 import { AccountPanel } from "../account/_panel";
 import type {
   UpdateWorkspaceBusinessInput,
-  UpdateWorkspaceBrandingInput,
   PublicPageSettingsInput,
   SupportedCountry,
   SupportedCurrency,
@@ -81,13 +79,13 @@ export default async function SettingsCatchallPage({
   );
   const memberWorkspaces = await Workspace.find(
     { _id: { $in: membershipWorkspaceIds } },
-    { _id: 1, name: 1, "branding.logoUrl": 1 },
+    { _id: 1, name: 1 },
   ).lean();
 
   const workspaceSwitcherItems = memberWorkspaces.map((w) => ({
     id: String(w._id),
     name: w.name,
-    logoUrl: (w as { branding?: { logoUrl?: string | null } }).branding?.logoUrl ?? null,
+    logoUrl: null,
   }));
 
   const businessDefaults: UpdateWorkspaceBusinessInput = {
@@ -98,15 +96,6 @@ export default async function SettingsCatchallPage({
     country: (workspace.country ?? "PH") as SupportedCountry,
     currency: workspace.currency as SupportedCurrency,
     timezone: workspace.timezone ?? "Asia/Manila",
-  };
-
-  const brandingDefaults: UpdateWorkspaceBrandingInput = {
-    logoUrl: workspace.branding?.logoUrl ?? null,
-    logoAssetId: workspace.branding?.logoAssetId ?? null,
-    primaryColor: workspace.branding?.primaryColor ?? "#111111",
-    secondaryColor: workspace.branding?.secondaryColor ?? "#f5f5f5",
-    tagline: workspace.branding?.tagline ?? "",
-    description: workspace.branding?.description ?? "",
   };
 
   const publicPageDefaults: PublicPageSettingsInput = {
@@ -155,12 +144,7 @@ export default async function SettingsCatchallPage({
           label: t("workspace"),
           icon: <Building2 className="size-4" />,
           ownerOnly: true,
-          body: (
-            <div className="flex flex-col gap-8">
-              <WorkspaceBusinessForm defaults={businessDefaults} />
-              <WorkspaceBrandingForm defaults={brandingDefaults} />
-            </div>
-          ),
+          body: <WorkspaceBusinessForm defaults={businessDefaults} />,
         },
         {
           slug: "public-page",

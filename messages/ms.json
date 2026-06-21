@@ -707,8 +707,6 @@
       "workspace": {
         "businessSection": "Butiran perniagaan",
         "businessSectionHint": "Identiti perniagaan anda dan tempat anda beroperasi.",
-        "brandingSection": "Penjenamaan",
-        "brandingSectionHint": "Logo, warna, dan tagline yang digunakan pada halaman awam anda.",
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja dikemas kini.",
@@ -750,8 +748,6 @@
         "inquirySectionHint": "Ke mana penghantaran dari borang pertanyaan anda dikemukakan.",
         "inquiryRecipientEmail": "E-mel penerima",
         "inquiryRecipientEmailPlaceholder": "anda@contoh.com",
-        "customDomainSection": "Domain tersuai",
-        "customDomainComingSoon": "Tersedia dalam v1.1",
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Tetapan halaman awam dikemas kini.",
@@ -1230,7 +1226,6 @@
         },
         "fontPair": "Fon",
         "colors": "Warna",
-        "useWorkspaceBranding": "Gunakan penjenamaan ruang kerja",
         "colorLabels": {
           "primaryColor": "Utama",
           "secondaryColor": "Sekunder",
@@ -1605,7 +1600,6 @@
     },
     "steps": {
       "business": "Perniagaan",
-      "branding": "Penjenamaan",
       "plan": "Pelan",
       "done": "Selesai"
     },
@@ -1635,29 +1629,6 @@
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Kugiran",
         "other": "Lain-lain"
-      }
-    },
-    "branding": {
-      "title": "Jadikan ia milik anda",
-      "description": "Tambah logo, pilih warna, dan tulis tagline satu baris. Anda boleh mengubah semua ini kemudian.",
-      "noLogo": "Tiada logo",
-      "brandLogo": "Logo jenama",
-      "logoHint": "PNG / JPG / SVG sehingga 5 MB",
-      "uploading": "Memuat naik…",
-      "upload": "Muat naik",
-      "replace": "Ganti",
-      "remove": "Buang",
-      "primaryColor": "Warna utama",
-      "secondaryColor": "Warna kedua",
-      "tagline": "Tagline",
-      "taglinePlaceholder": "Fotografi perkahwinan di Kuala Lumpur",
-      "shortDescription": "Penerangan ringkas",
-      "descriptionPlaceholder": "Beberapa ayat tentang perniagaan anda — ditunjukkan pada halaman awam anda.",
-      "skipForNow": "Langkau dahulu",
-      "errors": {
-        "notImage": "Logo mestilah imej.",
-        "tooLarge": "Logo mestilah kurang daripada 5 MB.",
-        "uploadFailed": "Muat naik gagal"
       }
     },
     "plan": {
@@ -1718,11 +1689,10 @@
     },
     "pro": {
       "name": "Pro",
-      "description": "Domain tersuai + invois.",
-      "tagline": "Domain tersuai + invois.",
+      "description": "Invois + buang penjenamaan.",
+      "tagline": "Invois + buang penjenamaan.",
       "features": {
         "everythingStarter": "Semua dalam Starter",
-        "customDomain": "Domain tersuai",
         "storage": "Storan 50 GB",
         "invoicePdfs": "PDF invois",
         "removeBranding": "Buang penjenamaan Gallurio"

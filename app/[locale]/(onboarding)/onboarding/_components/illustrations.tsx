@@ -106,51 +106,6 @@ export function BusinessIllustration() {
   );
 }
 
-export function BrandingIllustration() {
-  return (
-    <svg viewBox="0 0 320 320" className="h-full w-full max-w-[360px] text-foreground" fill="none">
-      <motion.rect
-        x="60"
-        y="60"
-        width="200"
-        height="200"
-        stroke={stroke}
-        strokeWidth="2"
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration: 0.8 }}
-      />
-      <motion.circle
-        cx="160"
-        cy="130"
-        r="34"
-        stroke={stroke}
-        strokeWidth="2"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1, rotate: 360 }}
-        transition={{ delay: 0.4, duration: 0.8 }}
-        style={{ transformOrigin: "160px 130px" }}
-      />
-      <motion.rect
-        x="100"
-        y="190"
-        width="120"
-        height="10"
-        fill={stroke}
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        style={{ originX: 0.5 }}
-        transition={{ delay: 0.9 }}
-      />
-      <motion.g initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}>
-        <rect x="100" y="216" width="32" height="32" fill="#111111" />
-        <rect x="140" y="216" width="32" height="32" fill="#9ca3af" />
-        <rect x="180" y="216" width="32" height="32" fill="#f5f5f5" stroke={stroke} strokeWidth="1" />
-      </motion.g>
-    </svg>
-  );
-}
-
 export function TemplateIllustration() {
   return (
     <svg viewBox="0 0 320 320" className="h-full w-full max-w-[360px] text-foreground" fill="none">

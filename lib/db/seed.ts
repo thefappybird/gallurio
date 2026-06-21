@@ -161,12 +161,6 @@ async function seedWorkspace(
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
-    branding: {
-      primaryColor: w.primaryColor,
-      secondaryColor: "#f5f5f5",
-      tagline: w.businessType === "venue" ? "Historic venue in Metro Manila" : "Wedding storytelling",
-      description: `${w.name} — sample seeded workspace.`,
-    },
     publicPage: { templateId: "minimal" },
     plan: "starter",
     onboardingCompletedAt: now,

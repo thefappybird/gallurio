@@ -55,14 +55,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
     country: "PH",
     currency: "PHP",
     timezone: "Asia/Manila",
-    branding: {
-      logoUrl: "https://res.cloudinary.com/demo/logo.png",
-      logoCloudinaryPublicId: "demo/logo",
-      primaryColor: "#1a1a2e",
-      secondaryColor: "#e9e9e9",
-      tagline: "Moments captured forever",
-      description: "",
-    },
     publicPage: {
       templateId: "minimal",
       data: { home: null, gallery: null },
@@ -74,7 +66,6 @@ function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWork
       seoDescription: "",
       inquiryRecipientEmail: "",
     },
-    customDomain: null,
     plan: "free",
     paddleSubscriptionId: null,
     paddleCustomerId: null,
@@ -105,7 +96,7 @@ describe("gallery generateMetadata", () => {
     expect(result.title).toBe("Luna Studio — Gallery");
   });
 
-  it("uses seoDescription when set, else falls back to tagline", async () => {
+  it("uses seoDescription when set, else leaves description undefined", async () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
@@ -128,7 +119,7 @@ describe("gallery generateMetadata", () => {
     const fallback = await generateMetadata({
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
-    expect(fallback.description).toBe("Moments captured forever");
+    expect(fallback.description).toBeUndefined();
   });
 
   it("sets the canonical alternates URL to /w/<slug>/gallery", async () => {

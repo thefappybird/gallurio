@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 // lib/db/models/User.ts.
 export const STEP_META = [
   { key: "business", href: "/onboarding/business" },
-  { key: "branding", href: "/onboarding/branding" },
   { key: "plan", href: "/onboarding/plan" },
   { key: "done", href: "/onboarding/done" },
 ] as const;
