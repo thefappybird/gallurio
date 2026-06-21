@@ -682,11 +682,10 @@ describe("ColumnsBlock", () => {
     expect(slot.className).toContain("pf-cols-3");
   });
 
-  it("defaults to 2 columns for unexpected column value", () => {
-    // Cast to test defensive clamping behavior
-    render(<ColumnsBlock columns={5 as 2 | 3} content={stubSlot} />);
+  it("columns=7 clamps to 6 and renders pf-cols-6", () => {
+    render(<ColumnsBlock columns={7} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-2");
+    expect(slot.className).toContain("pf-cols-6");
   });
 
   it("rows=3 adds a rows class to the slot element", () => {
@@ -699,6 +698,33 @@ describe("ColumnsBlock", () => {
     render(<ColumnsBlock columns={2} rows={1} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
     expect(slot.className).not.toContain("pf-cols-rows-");
+  });
+
+  it("columns=1 applies pf-cols-1 class", () => {
+    render(<ColumnsBlock columns={1 as number} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).toContain("pf-cols-1");
+  });
+
+  it("columns=4 applies pf-cols-4 class", () => {
+    render(<ColumnsBlock columns={4} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).toContain("pf-cols-4");
+  });
+
+  it("columns=6 generates repeat(6,...) in the desktop CSS rule", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={6} content={stubSlot} />);
+    expect(html).toContain("repeat(6,minmax(0,1fr))");
+  });
+
+  it("rows=undefined produces no grid-template-rows rule (auto-flow)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} rows={undefined} content={stubSlot} />);
+    expect(html).not.toContain("grid-template-rows");
+  });
+
+  it("rows=3 produces grid-template-rows:repeat(3,...) in the style tag", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
+    expect(html).toContain("grid-template-rows:repeat(3,minmax(0,auto))");
   });
 });
 

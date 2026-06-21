@@ -72,6 +72,7 @@ import {
   type HighlightSize,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
+import { CountControl } from "./CountControl";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -527,32 +528,26 @@ export function ContentInputs({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
-          <div className="flex items-center gap-1.5">
-            {([2, 3] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={(props.columns as number) === v}
-                onClick={() => setProp("columns", v)}
-                className={cn(
-                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (props.columns as number) === v &&
-                    "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <CountControl
+            value={props.columns as number | undefined}
+            onChange={(v) => setProp("columns", v ?? 1)}
+            quickValues={[1, 2, 3]}
+            min={1}
+            max={6}
+            allowAuto={false}
+          />
         </div>
-        <NumberInputRow
-          label="Rows"
-          value={props.rows as number | undefined}
-          min={1}
-          max={12}
-          suffix="rows"
-          onChange={(v) => setProp("rows", v)}
-        />
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Rows</span>
+          <CountControl
+            value={props.rows as number | undefined}
+            onChange={(v) => setProp("rows", v)}
+            quickValues={[1, 2, 3]}
+            min={1}
+            max={6}
+            allowAuto
+          />
+        </div>
       </div>
     );
   }

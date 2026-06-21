@@ -480,10 +480,11 @@ export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
 
 export type ColumnsBlockProps = {
   _style?: BlockStyle;
-  columns: 2 | 3;
-  /** Explicit row count. When set to 2 or more, the grid defines that many rows so
-   *  child `rowSpan` values are meaningful. Unset (or 1) keeps the current auto-row
-   *  behaviour so existing layouts are unaffected. */
+  /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
+  columns: number;
+  /** Explicit row count 1–6. When set to 2 or more, the grid defines that many
+   *  rows so child `rowSpan` values are meaningful. Unset (or 1) keeps the
+   *  current auto-row behaviour so existing layouts are unaffected. */
   rows?: number;
   content: Slot;
 };
@@ -508,29 +509,38 @@ export function ColumnsBlock({
   puck,
 }: {
   _style?: BlockStyle;
-  columns: 2 | 3;
+  columns: number;
   rows?: number;
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
-  const cols = columns === 3 ? 3 : 2;
+  // Clamp columns to 1–6; accept legacy 2|3 values as-is.
+  const cols = Math.min(6, Math.max(1, Math.floor(columns ?? 2)));
+  // Tablet breakpoint shows min(2, cols) columns; desktop shows the full count.
+  const tabletCols = Math.min(2, cols);
   const rowCount =
     rows !== undefined && Number.isFinite(rows)
-      ? Math.min(12, Math.max(1, Math.floor(rows)))
+      ? Math.min(6, Math.max(1, Math.floor(rows)))
       : undefined;
   const hasRows = rowCount !== undefined && rowCount > 1;
+  // Build per-instance scoped CSS rules for this column/row count.
+  const colsRule = cols === 1
+    ? "" // 1-col: stays 1fr on all breakpoints (no extra rule needed)
+    : `@media (min-width:640px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+      (cols > 2
+        ? `@media (min-width:1024px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        : "");
   const rowsRule = hasRows
     ? `@media (min-width:640px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
   return (
     <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
-      {/* Responsive: 1 column on phones, 2 on tablets, the chosen count on
-          desktop. Inline styles can't hold media queries, so scoped classes +
-          a <style> drive the breakpoints. */}
+      {/* Responsive: 1 column on phones, tablet min(2,cols), desktop=cols.
+          Inline styles can't hold media queries, so scoped classes + a <style>
+          drive the breakpoints. */}
       <style>{`
         .pf-cols{display:grid;gap:1rem;max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
-        @media (min-width:640px){.pf-cols-2,.pf-cols-3{grid-template-columns:repeat(2,minmax(0,1fr));}}
-        @media (min-width:1024px){.pf-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}}
+        ${colsRule}
         ${rowsRule}
       `}</style>
       {Content({
@@ -548,14 +558,12 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   fields: {
     _style: productionStyleField,
     columns: {
-      type: "select",
+      type: "number",
       label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
-    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
+      min: 1,
+      max: 6,
+    } as Field<number>,
+    rows: { type: "number", label: "Rows", min: 1, max: 6 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,

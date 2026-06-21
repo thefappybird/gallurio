@@ -777,14 +777,12 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   fields: {
     _style: styleField,
     columns: {
-      type: "select",
+      type: "number",
       label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
-    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
+      min: 1,
+      max: 6,
+    } as Field<number>,
+    rows: { type: "number", label: "Rows", min: 1, max: 6 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   resolveFields: (_data, { fields }) => {
