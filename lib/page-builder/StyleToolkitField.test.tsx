@@ -120,10 +120,11 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
   });
 
-  it("hides Frame and Typography for image-only gallery blocks (GalleryGrid)", () => {
+  it("hides Typography but shows Frame and Effects for image-only gallery blocks (GalleryGrid — container-like)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Frame")).toBeNull();
+    // Gallery container blocks now get Frame (container-like) but no Typography (images-only).
+    expect(screen.getByText("Frame")).toBeTruthy();
     expect(screen.queryByText("Typography")).toBeNull();
     // Effects drawer remains available for entrance animations.
     expect(screen.getByText("Effects")).toBeTruthy();
@@ -365,5 +366,19 @@ describe("ContentInputs — emoji button integration", () => {
   it("Heading block shows Insert emoji button beside the text input", () => {
     render(<ContentInputs type="Heading" props={{ text: "Hello", level: "h2" }} setProp={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Insert emoji" })).toBeTruthy();
+  });
+});
+
+describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMasonry/FeaturedWork)", () => {
+  it("GalleryGrid shows Frame drawer on Design tab (container-like)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.getByText("Frame")).toBeTruthy();
+  });
+
+  it("GalleryGrid Content tab shows Banner section (no fieldId standalone mode)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    // Content tab is shown by default
+    expect(screen.getByText("Banner")).toBeTruthy();
   });
 });

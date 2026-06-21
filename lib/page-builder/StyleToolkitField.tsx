@@ -88,12 +88,16 @@ export const CONTAINER_TYPES = new Set([
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
-// Frame (border/radius/shadow) is hidden for text/spacer leaf blocks and for all
-// gallery blocks (the gallery frame chrome was removed).
+// Frame (border/radius/shadow) is hidden for text/spacer leaf blocks and for the
+// GalleryCarousel (no outer frame needed — it manages its own chrome). The three
+// image gallery blocks (GalleryGrid, GalleryMasonry, FeaturedWork) are now
+// container-like and DO show Frame — they are NOT in this set.
 const NO_FRAME_BLOCKS = new Set([
   "Heading", "Text", "Divider", "Spacer",
-  "GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork",
+  "GalleryCarousel",
 ]);
+// Gallery blocks that support banner/container props: same tab set as Container minus Typography.
+export const GALLERY_CONTAINER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
 const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
 // Gallery blocks that render images only (no on-page text) — their typography /
 // text-align controls are hidden since there is nothing to style. The carousel
@@ -582,10 +586,14 @@ function ContentTabBody({
           onSpeedChange: (v) => setProp("bgSpeed", v),
         }
       : null;
+  // Gallery container blocks need both the banner AND their gallery-specific content inputs
+  // (collections picker / photo picker) — unlike true containers (slots), they have
+  // direct gallery content controlled via ContentInputs.
+  const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
   return (
     <div className="flex flex-col gap-4 p-3">
       {showBanner && <BannerSection s={s} set={set} container={container} />}
-      {!isContainer && p && <ContentInputs type={type} props={p} setProp={setProp} />}
+      {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} />}
     </div>
   );
 }
@@ -1421,10 +1429,66 @@ export function LayoutTabBody({
   parentRowsCount?: number;
 }) {
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
+  const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
 
   const isCarousel = blockType === "GalleryCarousel";
   if (isGalleryLayout && p && setProp) {
+    if (isGalleryContainer) {
+      // Gallery container blocks: gallery-specific controls (columns/gap) + container
+      // layout drawers (Spacing with padding, Layout with gap/min-height/align).
+      return (
+        <EditorDrawerGroup>
+          <EditorDrawerSection title="Gallery">
+            <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Spacing">
+            <PaddingControls s={s} set={set} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Layout">
+            <NumberInputRow
+              label="Gap"
+              value={s.gap}
+              min={0}
+              max={96}
+              suffix="px"
+              onChange={(v) => set({ gap: v })}
+            />
+            {p !== undefined && (
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
+                <div className="flex items-center gap-1.5">
+                  {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={(p.minHeight as string) === value}
+                      onClick={() => setProp("minHeight", value)}
+                      className={cn(
+                        "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {isGridChild ? (
+              <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+            ) : (
+              <IconRow
+                label="Align"
+                value={s.alignItems}
+                options={ALIGN_OPTIONS}
+                onChange={(v) => set({ alignItems: v })}
+              />
+            )}
+          </EditorDrawerSection>
+        </EditorDrawerGroup>
+      );
+    }
     return (
       <div className="flex flex-col gap-4 p-3">
         <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
@@ -1434,6 +1498,21 @@ export function LayoutTabBody({
   }
   // Standalone (no Puck provider — tests): the carousel still exposes Text padding.
   if (isGalleryLayout) {
+    if (isGalleryContainer) {
+      return (
+        <EditorDrawerGroup>
+          <EditorDrawerSection title="Gallery">
+            <GalleryLayoutControls type={blockType} p={{}} setProp={() => {}} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Spacing">
+            <PaddingControls s={s} set={set} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Layout">
+            <NumberInputRow label="Gap" value={s.gap} min={0} max={96} suffix="px" onChange={(v) => set({ gap: v })} />
+          </EditorDrawerSection>
+        </EditorDrawerGroup>
+      );
+    }
     return <div className="flex flex-col gap-4 p-3">{isCarousel && <CarouselTextPadding s={s} set={set} />}</div>;
   }
 
@@ -1713,6 +1792,10 @@ function BlockAwarePanel({
   const type = (selectedItem?.type ?? "") as string;
   const isGallery = GALLERY_BLOCKS.has(type);
   const isContainer = CONTAINER_TYPES.has(type);
+  // Gallery container blocks (GalleryGrid, GalleryMasonry, FeaturedWork) get the same
+  // Content/Design/Layout drawers as Container, minus Typography. They are NOT true
+  // containers (no slot), so ContentInputs still shows their gallery-specific controls.
+  const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(type);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
   const availableTabs = ["content", "design", "layout"] as const;
@@ -1784,8 +1867,8 @@ function BlockAwarePanel({
           type={type}
           p={p}
           setProp={setProp}
-          showBanner={isContainer}
-          isContainer={isContainer}
+          showBanner={isContainer || isGalleryContainer}
+          isContainer={isContainer || isGalleryContainer}
         />
       )}
       {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}

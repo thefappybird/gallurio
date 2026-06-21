@@ -59,3 +59,15 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(puckConfig.components.GalleryMasonry.defaultProps).toHaveProperty("images");
   });
 });
+
+describe("GalleryMasonryBlock — banner/container props", () => {
+  it("renders a background image when backgroundImages has one entry", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: imgs(1), backgroundImages: bgImages })
+    );
+    const bgImg = container.querySelector("img[aria-hidden='true']");
+    expect(bgImg).toBeTruthy();
+    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
+  });
+});

@@ -392,7 +392,8 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
   inline: true,
   defaultProps: galleryGridDefaultProps,
   // `images` is intentionally absent — the editor drives it via StyleToolkitField
-  // (Task 7). The cast is required because Puck's Fields<T> demands all keys.
+  // (Task 7). Banner fields are hidden (visible: false) and managed by StyleToolkitField;
+  // resolveFields strips them so they never appear in the standard Puck sidebar.
   fields: {
     _style: styleField,
     columns: {
@@ -413,9 +414,15 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
         { label: "Loose (16px)", value: "loose" },
       ],
     },
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<GalleryGridProps>,
   resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: GalleryGridBlock,
 };
@@ -425,6 +432,7 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   inline: true,
   defaultProps: galleryMasonryDefaultProps,
   // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
     columns: {
@@ -445,9 +453,15 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
         { label: "Loose", value: "loose" },
       ],
     },
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<GalleryMasonryProps>,
   resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: GalleryMasonryBlock,
 };
@@ -507,7 +521,7 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   inline: true,
   defaultProps: featuredWorkDefaultProps,
   // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
-  // This matches the production featuredWorkBlockConfig field keys exactly.
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
     columns: {
@@ -519,10 +533,15 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
         { label: "4 columns", value: 4 },
       ],
     } as Field<2 | 3 | 4>,
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<FeaturedWorkProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<FeaturedWorkProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<FeaturedWorkProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<FeaturedWorkProps>,
   resolveFields: (_data, { fields }) => {
-    // collections and columns are managed by the StyleToolkitField Content/Layout tabs
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: FeaturedWorkBlock,
 };

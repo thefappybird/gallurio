@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { puckConfig } from "@/lib/page-builder/config";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
+import type { GalleryImage } from "./GalleryGridBlock";
 
 // ---------------------------------------------------------------------------
 // CF Images env
@@ -213,5 +214,21 @@ describe("FeaturedWorkBlock — client safety", () => {
     } finally {
       process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = prev;
     }
+  });
+});
+
+describe("FeaturedWorkBlock — banner/container props", () => {
+  it("renders a background image when backgroundImages has one entry", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+        backgroundImages={bgImages}
+      />
+    );
+    const bgImg = container.querySelector("img[aria-hidden='true']");
+    expect(bgImg).toBeTruthy();
+    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
   });
 });

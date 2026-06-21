@@ -65,3 +65,41 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(puckConfig.components.GalleryGrid.defaultProps).toHaveProperty("images");
   });
 });
+
+describe("GalleryGridBlock — banner/container props", () => {
+  it("renders a background image when backgroundImages has one entry", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), backgroundImages: bgImages })
+    );
+    // A background <img> with aria-hidden is injected for a single bg image
+    const bgImg = container.querySelector("img[aria-hidden='true']");
+    expect(bgImg).toBeTruthy();
+    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
+  });
+
+  it("renders an overlay scrim when overlayOpacity > 0 and backgroundImages present", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), backgroundImages: bgImages, overlayOpacity: 50 })
+    );
+    const scrim = container.querySelector("[aria-hidden='true'][style*='rgba']");
+    expect(scrim).toBeTruthy();
+  });
+
+  it("applies minHeight css when minHeight='medium'", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), minHeight: "medium" })
+    );
+    const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
+    expect(section.style.minHeight).toBe("60vh");
+  });
+
+  it("back-compat: no background image, no scrim, no minHeight when banner props absent", () => {
+    const { container } = render(GalleryGridBlock({ ...base, images: imgs(1) }));
+    expect(container.querySelector("img[aria-hidden='true']")).toBeNull();
+    expect(container.querySelector("[aria-hidden='true'][style*='rgba']")).toBeNull();
+    const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
+    expect(section.style.minHeight).toBe("");
+  });
+});
