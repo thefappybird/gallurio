@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { BrandKitPicker } from "@/lib/page-builder/brandKitPicker/BrandKitPicker";
 import { useThemeEditor } from "@/lib/page-builder/brandKitPicker/useThemeEditor";
 import { ConfirmDialog } from "@/lib/page-builder/brandKitPicker/ConfirmDialog";
+import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import {
   type PortfolioBrandKit,
   type PortfolioSavedTheme,
@@ -128,6 +129,7 @@ export function ThemePanelDialog({
               onSaveTheme={onSaveTheme}
               onDeleteTheme={handleDeleteTheme}
               onUpdateTheme={updateThemeAction}
+              onAddNew={() => controller.requestAddNew()}
             />
           </div>
           <DialogFooter>
@@ -153,6 +155,22 @@ export function ThemePanelDialog({
           if (ok) persistPage();
         }}
         onCancel={() => { setCloseGuardOpen(false); onCancel(); }}
+      />
+
+      <UnsavedChangesDialog
+        open={controller.addNewGuardOpen}
+        saving={controller.addNewGuardSaving}
+        title={tk("addNewGuardTitle")}
+        body={tk("addNewGuardBody")}
+        name={controller.addNewGuardName}
+        onNameChange={controller.setAddNewGuardName}
+        nameLabel={tk("addNewGuardNameLabel")}
+        nameError={controller.addNewGuardNameError
+          ? tk(({ required: "enterThemeName", tooLong: "nameTooLong", duplicate: "themeNameExists", saveFailed: "saveThemeError" } as Record<string, string>)[controller.addNewGuardNameError])
+          : null}
+        onSave={() => void controller.saveAndAddNew()}
+        onDiscard={controller.discardAndAddNew}
+        onCancel={controller.cancelAddNew}
       />
     </>
   );

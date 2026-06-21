@@ -1266,7 +1266,12 @@
         "saveAndCloseAction": "Simpan & tutup",
         "themeNameExists": "Sudah wujud tema dengan nama ini.",
         "applyAction": "Guna",
-        "saveThemeName": "Simpan tema"
+        "saveThemeName": "Simpan tema",
+        "cancelThemeEdit": "Batal edit tema",
+        "addNewTheme": "Tambah tema baharu",
+        "addNewGuardTitle": "Simpan sebelum mula yang baharu?",
+        "addNewGuardBody": "Anda mempunyai perubahan yang belum disimpan. Simpan tema semasa dahulu, atau buang untuk mula semula.",
+        "addNewGuardNameLabel": "Nama tema"
       },
       "editor": {
         "zone": {

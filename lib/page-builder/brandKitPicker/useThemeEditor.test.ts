@@ -196,4 +196,120 @@ describe("useThemeEditor", () => {
     // must revert to the active saved tile's kit, NOT the stale DEFAULT/earlier kit
     expect(onChange).toHaveBeenCalledWith(savedNine.brandKit);
   });
+
+  it("color change while a saved tile is active (no unsaved draft) creates a new unsaved variant, leaving saved themes untouched", () => {
+    const saved: PortfolioSavedTheme = { id: "s1", name: "Studio", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#222222" } };
+    const h = harness(DEFAULT_BRAND_KIT, [saved]);
+    // Apply the saved tile
+    act(() => h.result.current.applyTile({ key: "saved:s1", name: "Studio", brandKit: saved.brandKit, variant: "saved", savedThemeId: "s1" }));
+    expect(h.result.current.selection).toEqual({ kind: "tile", key: "saved:s1" });
+    expect(h.result.current.hasUnsavedCurrent).toBe(false);
+    // Change a color
+    act(() => h.result.current.changeControl({ ...saved.brandKit, primaryColor: "#ff0000" }));
+    // A new unsaved current theme is created (not a silent overwrite of saved theme)
+    expect(h.result.current.hasUnsavedCurrent).toBe(true);
+    expect(h.result.current.selection.kind).toBe("current");
+    // The saved theme is untouched
+    expect(saved.brandKit.primaryColor).not.toBe("#ff0000");
+  });
+
+  it("requestAddNew opens the add-new guard when there is an unsaved draft (hasUnsavedCurrent)", () => {
+    const h = harness();
+    act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+    expect(h.result.current.hasUnsavedCurrent).toBe(true);
+    act(() => h.result.current.requestAddNew());
+    expect(h.result.current.addNewGuardOpen).toBe(true);
+  });
+
+  it("discardCurrentTheme clears the unsaved draft and reverts the canvas to the last applied tile kit", () => {
+    const h = harness();
+    // create an unsaved draft
+    act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+    expect(h.result.current.hasUnsavedCurrent).toBe(true);
+    h.onChange.mockClear();
+    act(() => h.result.current.discardCurrentTheme());
+    expect(h.result.current.hasUnsavedCurrent).toBe(false);
+    // canvas reverted to the last applied tile kit (DEFAULT_BRAND_KIT before any changeControl)
+    expect(h.onChange).toHaveBeenCalledWith(DEFAULT_BRAND_KIT);
+  });
+
+  describe("requestAddNew guard", () => {
+    it("requestAddNew with NO unsaved state starts a blank new theme immediately (no guard)", () => {
+      const h = harness();
+      act(() => h.result.current.requestAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(false);
+      // currentTheme is already null, selection remains none — no error
+      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+    });
+
+    it("requestAddNew while editing a saved theme with a dirty diff opens the guard", () => {
+      const saved: PortfolioSavedTheme = { id: "s1", name: "Studio", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#222222" } };
+      const h = harness(DEFAULT_BRAND_KIT, [saved]);
+      act(() => h.result.current.enterEdit(saved));
+      act(() => h.result.current.changeEditName("Studio X"));
+      expect(h.result.current.editDiff).toBe(true);
+      act(() => h.result.current.requestAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(true);
+    });
+
+    it("requestAddNew while editing a saved theme with NO diff starts new theme immediately", () => {
+      const saved: PortfolioSavedTheme = { id: "s1", name: "Studio", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#222222" } };
+      const h = harness(DEFAULT_BRAND_KIT, [saved]);
+      act(() => h.result.current.enterEdit(saved));
+      // no name change, no kit change — no diff
+      expect(h.result.current.editDiff).toBe(false);
+      act(() => h.result.current.requestAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(false);
+      expect(h.result.current.editing).toBeNull();
+    });
+
+    it("Save in the add-new guard with a DUPLICATE name keeps the modal open with the inline error", async () => {
+      const existing = savedTheme("e1", "Taken");
+      const h = harness(DEFAULT_BRAND_KIT, [existing]);
+      // create an unsaved draft
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.requestAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(true);
+      // type the duplicate name
+      act(() => h.result.current.setAddNewGuardName("Taken"));
+      await act(async () => { await h.result.current.saveAndAddNew(); });
+      // modal stays open, error is set, no theme was started
+      expect(h.result.current.addNewGuardOpen).toBe(true);
+      expect(h.result.current.addNewGuardNameError).toBe("duplicate");
+      expect(h.result.current.hasUnsavedCurrent).toBe(true);
+    });
+
+    it("Save in the add-new guard with a unique name persists the draft and starts the new theme", async () => {
+      const h = harness();
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.requestAddNew());
+      act(() => h.result.current.setAddNewGuardName("Brand New"));
+      await act(async () => { await h.result.current.saveAndAddNew(); });
+      expect(h.onSaveTheme).toHaveBeenCalledWith("Brand New");
+      expect(h.result.current.addNewGuardOpen).toBe(false);
+      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      expect(h.result.current.editing).toBeNull();
+    });
+
+    it("Discard in the add-new guard drops the unsaved draft and reverts the canvas", () => {
+      const h = harness();
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.requestAddNew());
+      h.onChange.mockClear();
+      act(() => h.result.current.discardAndAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(false);
+      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      expect(h.onChange).toHaveBeenCalledWith(DEFAULT_BRAND_KIT);
+    });
+
+    it("Keep editing (cancelAddNew) closes the guard and stays on the current theme", () => {
+      const h = harness();
+      act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
+      act(() => h.result.current.requestAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(true);
+      act(() => h.result.current.cancelAddNew());
+      expect(h.result.current.addNewGuardOpen).toBe(false);
+      expect(h.result.current.hasUnsavedCurrent).toBe(true);
+    });
+  });
 });

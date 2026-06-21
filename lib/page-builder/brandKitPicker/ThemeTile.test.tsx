@@ -164,6 +164,19 @@ describe("ThemeTile name editing", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("A theme already exists with this name.");
   });
 
+  it("renders a cancel (✕) button in name-editing row that calls onCancelName", () => {
+    const onCancelName = vi.fn();
+    render(
+      <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"
+        nameEditing nameValue="Draft" saveNameLabel="Save theme" cancelNameLabel="Cancel theme edit"
+        onCancelName={onCancelName} onApply={() => {}} />
+    );
+    const cancelBtn = screen.getByRole("button", { name: "Cancel theme edit" });
+    expect(cancelBtn).toBeInTheDocument();
+    fireEvent.click(cancelBtn);
+    expect(onCancelName).toHaveBeenCalledTimes(1);
+  });
+
   it("omits edit and delete buttons in name-editing mode", () => {
     render(
       <ThemeTile tile={currentTile} selected applyLabel="Apply theme: Current Theme"

@@ -1266,7 +1266,12 @@
         "saveAndCloseAction": "I-save at isara",
         "themeNameExists": "May tema nang umiiral na may ganitong pangalan.",
         "applyAction": "Ilapat",
-        "saveThemeName": "I-save ang tema"
+        "saveThemeName": "I-save ang tema",
+        "cancelThemeEdit": "Kanselahin ang pag-edit ng tema",
+        "addNewTheme": "Magdagdag ng bagong tema",
+        "addNewGuardTitle": "I-save bago magsimula ng bago?",
+        "addNewGuardBody": "May mga hindi naka-save na pagbabago. I-save muna ang kasalukuyang tema, o itapon para magsimula ng panibago.",
+        "addNewGuardNameLabel": "Pangalan ng tema"
       },
       "editor": {
         "zone": {

@@ -26,9 +26,11 @@ type Props = {
   savedThemes: PortfolioSavedTheme[];
   controller: ThemeEditorController;
   onDeleteTheme?: (id: string) => Promise<void>;
+  /** Called when user clicks "Add new theme"; parent handles the guard. */
+  onAddNew?: () => void;
 };
 
-export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme }: Props) {
+export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme, onAddNew }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
@@ -108,6 +110,8 @@ export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme }: Pro
                   onNameChange={controller.setCurrentThemeName}
                   onSaveName={() => void controller.saveCurrentTheme()}
                   saveNameLabel={t("saveThemeName")}
+                  cancelNameLabel={t("cancelThemeEdit")}
+                  onCancelName={controller.discardCurrentTheme}
                   namePlaceholder={t("themeNamePlaceholder")}
                   savingName={controller.savingCurrentTheme}
                   nameError={nameErrMsg(controller.currentThemeNameError)}
@@ -183,6 +187,14 @@ export function ThemeGrid({ value, savedThemes, controller, onDeleteTheme }: Pro
           </button>
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={onAddNew}
+        className="flex w-full items-center justify-center gap-2 border border-dashed border-border py-2 text-sm text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      >
+        {t("addNewTheme")}
+      </button>
 
       <ConfirmDialog
         open={controller.overrideOpen}

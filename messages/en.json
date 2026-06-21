@@ -1263,7 +1263,12 @@
         "saveAndCloseAction": "Save & close",
         "themeNameExists": "A theme already exists with this name.",
         "applyAction": "Apply",
-        "saveThemeName": "Save theme"
+        "saveThemeName": "Save theme",
+        "cancelThemeEdit": "Cancel theme edit",
+        "addNewTheme": "Add new theme",
+        "addNewGuardTitle": "Save before starting new?",
+        "addNewGuardBody": "You have unsaved changes. Save your current theme first, or discard to start fresh.",
+        "addNewGuardNameLabel": "Theme name"
       },
       "editor": {
         "zone": {
