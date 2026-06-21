@@ -48,7 +48,8 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
-import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
+import { SpotlightGuide } from "./SpotlightGuide";
+import { SPOTLIGHT_STEPS } from "./spotlightSteps";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -225,6 +226,28 @@ function DeviceTogglePreview({
   );
 }
 
+/**
+ * Reads Puck state that the spotlight guide needs for gate detection.
+ * Must be rendered inside a <Puck> tree (has Puck context).
+ * Reports values up via the `onState` callback after each render.
+ */
+function PuckGateReader({
+  onState,
+}: {
+  onState: (state: { contentCount: number; hasSelection: boolean; panelOpen: boolean }) => void;
+}) {
+  const contentCount = usePuckStore((s) => s.appState.data.content?.length ?? 0);
+  const selectedItem = usePuckStore((s) => s.selectedItem);
+  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
+  const hasSelection = selectedItem !== null;
+
+  useEffect(() => {
+    onState({ contentCount, hasSelection, panelOpen: leftSideBarVisible });
+  });
+
+  return null;
+}
+
 // The editor is uncontrolled per zone — Puck owns the live edit state and emits
 // it via onChange. Each content item needs a stable props.id; seeded template
 // data has none, so add deterministic ids before handing data to <Puck>.
@@ -296,6 +319,13 @@ export function EditorShell({
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
+  const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
+  // Puck gate state (populated by PuckGateReader when Puck is mounted)
+  const [puckContentCount, setPuckContentCount] = useState(0);
+  const [puckHasSelection, setPuckHasSelection] = useState(false);
+  const [puckPanelOpen, setPuckPanelOpen] = useState(false);
+  // Baseline content count captured when the drag-block step becomes active
+  const [dragBaseline, setDragBaseline] = useState<number | null>(null);
 
   // ---- Draft state ----
   const [drafts, setDrafts] = useState<DraftSummary[]>(initialDrafts);
@@ -839,13 +869,47 @@ export function EditorShell({
     setTemplatesOpen(true);
   }
 
-  // The guide's "Don't show again" persists the dismissal; closing/skipping is
-  // session-only so it can be reopened from the Guide button without re-showing
-  // on the next load.
-  function dismissGuideForever() {
+  // ---- Spotlight guide helpers ----
+
+  function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
-    void dismissPortfolioGuideAction();
+    if (dontShowAgain) void dismissPortfolioGuideAction();
   }
+
+  function handleGuideFinish(dontShowAgain: boolean) {
+    setGuideOpen(false);
+    if (dontShowAgain) void dismissPortfolioGuideAction();
+  }
+
+  function handleGuideStepChange(next: number) {
+    // Capture baseline content count when entering the drag-block step
+    const currentId = SPOTLIGHT_STEPS[next]?.id;
+    if (currentId === "drag-block") {
+      setDragBaseline(puckContentCount);
+    }
+    setSpotlightStepIndex(next);
+  }
+
+  // Compute whether the current gated step's condition is satisfied.
+  const currentStepId = SPOTLIGHT_STEPS[spotlightStepIndex]?.id ?? "";
+  const gateSatisfied: boolean = (() => {
+    switch (currentStepId) {
+      case "blocks-panel-toggle":
+        return puckPanelOpen;
+      case "drag-block":
+        return dragBaseline !== null
+          ? puckContentCount > dragBaseline
+          : false;
+      case "select-block":
+        return puckHasSelection;
+      case "header-tab":
+        return headerOpen;
+      case "contact-tab":
+        return contactOpen;
+      default:
+        return false;
+    }
+  })();
 
   // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S)
   // from firing while the user is typing in an input or contenteditable inside
@@ -991,7 +1055,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-6 lg:order-5"
-          onClick={() => setGuideOpen(true)}
+          onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
         >
           {t("guide")}
         </Button>
@@ -1091,6 +1155,13 @@ export function EditorShell({
                   className="border-b border-border bg-card px-3 py-2"
                   style={{ gridArea: "header" }}
                 >
+                  <PuckGateReader
+                    onState={({ contentCount, hasSelection, panelOpen }) => {
+                      setPuckContentCount(contentCount);
+                      setPuckHasSelection(hasSelection);
+                      setPuckPanelOpen(panelOpen);
+                    }}
+                  />
                   {topBar(
                     <EditCanvasControls />,
                     <Button
@@ -1236,10 +1307,14 @@ export function EditorShell({
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id))}
       />
-      <PortfolioGuideOverlay
+      <SpotlightGuide
         open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        onDontShowAgain={dismissGuideForever}
+        steps={SPOTLIGHT_STEPS}
+        stepIndex={spotlightStepIndex}
+        onStepChange={handleGuideStepChange}
+        gateSatisfied={gateSatisfied}
+        onSkip={handleGuideSkip}
+        onFinish={handleGuideFinish}
       />
 
       {/* Draft system dialogs */}

@@ -785,4 +785,80 @@ describe("EditorShell", () => {
     // ensuring no network/action mock was invoked for that path.)
     openSpy.mockRestore();
   });
+
+  // ---- Spotlight guide ----
+
+  it("renders the spotlight guide on load when guideDismissed=false", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={false} />
+    );
+    // SpotlightGuide renders a tooltip card with the welcome step title.
+    // The guide is a portal into document.body; screen queries search the full document.
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    // Progress text confirms we're on the first step
+    expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
+  });
+
+  it("does NOT render the spotlight guide when guideDismissed=true", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={true} />
+    );
+    // Give async effects a chance to settle before asserting absence
+    await screen.findByText("Welcome back");
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
+  it("Guide button reopens the spotlight guide after Skip", async () => {
+    // Dismiss the entry dialog first so its aria-modal doesn't filter the
+    // accessibility tree when querying buttons in the SpotlightGuide portal.
+    await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={false} />);
+    // Wait for guide to appear
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    // Click Skip to close the guide. Use within(document.body) to bypass any modal focus.
+    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
+    fireEvent.click(skipBtn);
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+
+    // Guide button reopens the tour from step 0
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
+  });
+
+  it("gated spotlight steps show Skip this step button", async () => {
+    // The Puck mock has leftSideBarVisible=true, which would immediately satisfy the
+    // blocks-panel-toggle gate and auto-advance. Override it to false for this test.
+    const origLeftSideBarVisible = mockPuckApi.appState.ui.leftSideBarVisible;
+    mockPuckApi.appState.ui.leftSideBarVisible = false;
+
+    try {
+      // Dismiss the entry dialog first so its aria-modal doesn't hide guide elements
+      // from accessibility-tree role queries.
+      await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={false} />);
+      // Guide is open at step 0 after entry dismissed
+      expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+
+      // Find the guide card by role now that entry dialog is gone
+      const guideCard = screen.getByRole("dialog", { name: "Welcome to your portfolio editor" });
+
+      // Click Next within the guide card to go to step 1 (gated blocks-panel-toggle)
+      fireEvent.click(within(guideCard).getByRole("button", { name: "Next" }));
+
+      // Step 1 is gated — must show "Skip this step"
+      const step1Card = await screen.findByRole("dialog", { name: "Open the blocks panel" });
+      expect(step1Card).toBeInTheDocument();
+      expect(within(step1Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
+
+      // Skip this step advances to step 2 (drag-block, also gated)
+      fireEvent.click(within(step1Card).getByRole("button", { name: "Skip this step" }));
+      const step2Card = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
+      expect(within(step2Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
+
+      // Back goes to step 1
+      fireEvent.click(within(step2Card).getByRole("button", { name: "Back" }));
+      expect(await screen.findByRole("dialog", { name: "Open the blocks panel" })).toBeInTheDocument();
+    } finally {
+      mockPuckApi.appState.ui.leftSideBarVisible = origLeftSideBarVisible;
+    }
+  });
 });
