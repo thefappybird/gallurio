@@ -23,7 +23,7 @@ export const plannerTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "accent",
   },
-  seedData: (ctx) => ({
+  seedData: () => ({
     home: zone([
       heroPreset("pl-home-hero"),
       servicesPreset("pl-home-services"),

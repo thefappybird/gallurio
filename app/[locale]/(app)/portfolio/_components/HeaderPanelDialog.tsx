@@ -471,7 +471,7 @@ export function HeaderPanelDialog({
 
         {tab === "design" && (
           <div data-tour-id="header-nav-style">
-          <EditorDrawerGroup>
+          <EditorDrawerGroup plain>
             {/* ── Banner ─────────────────────────────── */}
             <EditorDrawerSection title={t("sectionBanner")}>
               <ColorSwatchRow

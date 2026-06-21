@@ -404,7 +404,7 @@ export function ContactPanelDialog({
         )}
 
         {tab === "design" && (
-          <EditorDrawerGroup>
+          <EditorDrawerGroup plain>
             {/* ── Popup section ─────────────────────────── */}
             <EditorDrawerSection title={t("sectionPopup")}>
               <ColorSwatchRow

@@ -74,7 +74,24 @@ export function EditorDrawerSection({
  * Fragments are flattened so `<>...</>` wrapping two sections still counts
  * as two separate sections.
  */
-export function EditorDrawerGroup({ children }: { children: React.ReactNode }) {
+export function EditorDrawerGroup({
+  children,
+  plain = false,
+}: {
+  children: React.ReactNode;
+  /**
+   * When true, render the classic accordion: every section is a collapsible
+   * drawer, all closed by default, with no single-section flattening. Used by
+   * the Header/Contact config panels which intentionally start fully collapsed.
+   * The default (false) applies the block-property-tab behavior: flatten a lone
+   * section and auto-open the first of several.
+   */
+  plain?: boolean;
+}) {
+  if (plain) {
+    return <div className="border border-border divide-y divide-border">{children}</div>;
+  }
+
   const sections = flattenSectionChildren(children);
   const count = sections.length;
 

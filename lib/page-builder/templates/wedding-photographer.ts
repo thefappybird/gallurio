@@ -22,7 +22,7 @@ export const weddingPhotographerTemplate: PortfolioTemplate = {
     buttonStyle: "soft",
     buttonColor: "accent",
   },
-  seedData: (ctx) => ({
+  seedData: () => ({
     home: zone([
       heroPreset("wp-home-hero"),
       aboutPreset("wp-home-about"),

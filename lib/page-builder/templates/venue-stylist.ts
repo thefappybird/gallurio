@@ -23,7 +23,7 @@ export const venueStylistTemplate: PortfolioTemplate = {
     buttonStyle: "outline",
     buttonColor: "accent",
   },
-  seedData: (ctx) => ({
+  seedData: () => ({
     home: zone([
       heroPreset("vs-home-hero"),
       servicesPreset("vs-home-services"),

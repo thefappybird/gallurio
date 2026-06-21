@@ -22,7 +22,7 @@ export const eventPhotographerTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "primary",
   },
-  seedData: (ctx) => ({
+  seedData: () => ({
     home: zone([
       heroPreset("ep-home-hero"),
       servicesPreset("ep-home-services"),
