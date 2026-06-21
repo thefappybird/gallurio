@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, isValidElement, useState } from "react";
+import { Children, cloneElement, Fragment, isValidElement, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,7 +83,10 @@ export function EditorDrawerGroup({ children }: { children: React.ReactNode }) {
     rendered = cloneSection(sections[0], { flat: true });
   } else if (count > 1) {
     rendered = sections.map((child, i) =>
-      i === 0 ? cloneSection(child, { defaultOpen: true }) : child
+      cloneElement(child as React.ReactElement<Record<string, unknown>>, {
+        key: i,
+        ...(i === 0 ? { defaultOpen: true } : {}),
+      })
     );
   } else {
     rendered = children;
@@ -104,7 +107,7 @@ function flattenSectionChildren(node: React.ReactNode): React.ReactElement[] {
 
   Children.forEach(node, (child) => {
     if (!isValidElement(child)) return;
-    if (child.type === Symbol.for("react.fragment")) {
+    if (child.type === Fragment) {
       result.push(
         ...flattenSectionChildren(
           (child as React.ReactElement<{ children?: React.ReactNode }>).props.children
@@ -124,5 +127,5 @@ function cloneSection(
   el: React.ReactElement,
   overrides: { flat?: boolean; defaultOpen?: boolean }
 ): React.ReactElement {
-  return { ...el, props: { ...el.props, ...overrides } };
+  return cloneElement(el as React.ReactElement<Record<string, unknown>>, overrides);
 }
