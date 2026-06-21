@@ -80,3 +80,43 @@ describe("TemplatePickerDialog", () => {
     expect(screen.getByRole("button", { name: "Use this template" })).toBeDisabled();
   });
 });
+
+describe("TemplatePickerDialog — welcome mode", () => {
+  const welcomeProps = {
+    ...defaultProps,
+    welcome: true,
+    onStartScratch: vi.fn(),
+  };
+
+  it("shows welcome heading and subtitle instead of the regular title", () => {
+    renderWithProviders(<TemplatePickerDialog {...welcomeProps} />);
+    expect(screen.getByText("Pick a template to start")).toBeTruthy();
+    expect(screen.queryByText("Choose a template")).toBeNull();
+  });
+
+  it("shows Start from scratch button instead of Cancel", () => {
+    renderWithProviders(<TemplatePickerDialog {...welcomeProps} />);
+    expect(screen.getByRole("button", { name: "Start from scratch" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+  });
+
+  it("calls onStartScratch when Start from scratch is clicked", () => {
+    const onStartScratch = vi.fn();
+    renderWithProviders(<TemplatePickerDialog {...welcomeProps} onStartScratch={onStartScratch} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
+    expect(onStartScratch).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not show the Current badge on any template card in welcome mode", () => {
+    renderWithProviders(<TemplatePickerDialog {...welcomeProps} currentTemplateId="minimal" />);
+    expect(screen.queryByText(/current/i)).toBeNull();
+  });
+
+  it("calls onConfirm with the selected template id when Use this template is pressed", () => {
+    const onConfirm = vi.fn();
+    renderWithProviders(<TemplatePickerDialog {...welcomeProps} onConfirm={onConfirm} />);
+    fireEvent.click(screen.getByRole("button", { name: /Bold/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+    expect(onConfirm).toHaveBeenCalledWith("bold");
+  });
+});

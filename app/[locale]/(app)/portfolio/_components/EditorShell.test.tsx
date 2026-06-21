@@ -183,10 +183,20 @@ const basePro = baseProps;
  * Seed localStorage so `hasRecoverableBuffer` is true, enabling the
  * "Continue where you left off" option in the entry dialog. Then render and
  * dismiss the entry dialog so toolbar controls are accessible.
+ *
+ * When the SpotlightGuide is open (guideDismissed=false), it gates the entry
+ * dialog. This helper skips the guide first so the entry dialog then appears.
  */
 async function renderAndDismissEntry(ui: ReactElement) {
   window.localStorage.setItem(DRAFT_KEY, JSON.stringify(LOCAL_DRAFT_V2));
   const result = renderWithProviders(ui);
+
+  // If the guide is open, skip it first so the entry dialog becomes visible.
+  const skipBtn = screen.queryByRole("button", { name: "Skip" });
+  if (skipBtn) {
+    fireEvent.click(skipBtn);
+  }
+
   // "Continue where you left off" is now enabled; clicking it closes the dialog
   // without opening any secondary dialog, keeping the test environment clean.
   const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
@@ -406,9 +416,11 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
   });
 
-  it("entry dialog shows on first render when no active draft", async () => {
+  it("brand-new user (no drafts, no buffer) sees the welcome template modal instead of PortfolioEntryDialog", async () => {
+    // No localStorage buffer set, no drafts, guideDismissed=true → welcome template modal.
     renderWithProviders(<EditorShell {...baseProps} initialActiveDraftId={null} initialActiveDraftName={undefined} initialDrafts={[]} />);
-    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
   });
 
   it("does not call the save API when the draft name duplicates another draft", async () => {
@@ -811,18 +823,95 @@ describe("EditorShell", () => {
   it("Guide button reopens the spotlight guide after Skip", async () => {
     // Dismiss the entry dialog first so its aria-modal doesn't filter the
     // accessibility tree when querying buttons in the SpotlightGuide portal.
+    // renderAndDismissEntry skips the guide (since guideDismissed=false gates entry)
+    // and then dismisses the entry dialog — guide is closed at this point.
     await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={false} />);
-    // Wait for guide to appear
-    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
-    // Click Skip to close the guide. Use within(document.body) to bypass any modal focus.
-    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
-    fireEvent.click(skipBtn);
+    // Guide was skipped by renderAndDismissEntry and is now closed.
     expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
 
     // Guide button reopens the tour from step 0
     fireEvent.click(screen.getByRole("button", { name: "Guide" }));
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
     expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
+  });
+
+  // ---- First-load sequencing (#4) ----
+
+  it("guide open: entry/template-welcome NOT in document until guide is skipped", async () => {
+    // guideDismissed=false, returning user (has drafts) — entry must be hidden while guide is open.
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={false} />
+    );
+    // Guide is visible
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    // Entry dialog must NOT be open yet
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
+  });
+
+  it("guide skipped → brand-new user sees welcome template modal", async () => {
+    // No localStorage buffer, no drafts, guideDismissed=false.
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={false} initialDrafts={[]} initialActiveDraftId={null} initialActiveDraftName={undefined} />
+    );
+    // Guide shows first
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
+
+    // Skip the guide
+    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
+    fireEvent.click(skipBtn);
+
+    // After skip, brand-new user gets the welcome template modal
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+  });
+
+  it("guide skipped → returning user (has drafts) sees PortfolioEntryDialog", async () => {
+    // baseProps has initialDrafts with one draft, guideDismissed=false.
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={false} />
+    );
+    // Guide shows first
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+
+    // Skip the guide
+    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
+    fireEvent.click(skipBtn);
+
+    // Returning user gets the normal PortfolioEntryDialog
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
+  });
+
+  it("guideDismissed=true, returning user: entry opens immediately without guide", async () => {
+    // baseProps: guideDismissed=true, has drafts → PortfolioEntryDialog opens on load.
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={true} />
+    );
+    expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
+  it("guideDismissed=true, brand-new user: welcome template modal opens immediately", async () => {
+    // guideDismissed=true, no drafts, no buffer → welcome template modal on load.
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={true} initialDrafts={[]} initialActiveDraftId={null} initialActiveDraftName={undefined} />
+    );
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome back")).not.toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
+  });
+
+  it("welcome template modal: Start from scratch closes it and drops user on canvas", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} guideDismissed={true} initialDrafts={[]} initialActiveDraftId={null} initialActiveDraftName={undefined} />
+    );
+    expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start from scratch" }));
+    await waitFor(() => expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument());
+    // Canvas is accessible after dismissal
+    expect(screen.getByTestId("portfolio-editor-shell")).toBeInTheDocument();
   });
 
   it("gated spotlight steps show Skip this step button", async () => {
@@ -832,10 +921,14 @@ describe("EditorShell", () => {
     mockPuckApi.appState.ui.leftSideBarVisible = false;
 
     try {
-      // Dismiss the entry dialog first so its aria-modal doesn't hide guide elements
-      // from accessibility-tree role queries.
-      await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={false} />);
-      // Guide is open at step 0 after entry dismissed
+      // Dismiss the entry dialog first (guideDismissed=true so entry opens directly).
+      // Then reopen the guide via the Guide button.
+      await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={true} />);
+
+      // Reopen the guide at step 0 via the Guide button (same behavior as first-run).
+      fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+
+      // Guide is open at step 0
       expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
 
       // Find the guide card by role now that entry dialog is gone

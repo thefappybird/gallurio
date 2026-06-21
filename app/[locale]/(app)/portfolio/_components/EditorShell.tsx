@@ -334,8 +334,41 @@ export function EditorShell({
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingChanges, setSavingChanges] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
-  // Entry dialog shown on every load; options are gated by canContinue / hasDrafts.
-  const [entryOpen, setEntryOpen] = useState(true);
+
+  // Entry dialog shown on load; deferred until after the guide when guide is not dismissed.
+  // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
+  // drafts AND no recoverable buffer) go to the welcome template modal instead.
+  // When guideDismissed=false, both stay closed until guide finishes/skips.
+  const [entryOpen, setEntryOpen] = useState(() => {
+    if (!guideDismissed) return false;
+    // Brand-new check: no saved drafts AND no localStorage buffer.
+    const hasDrafts = initialDrafts.length > 0;
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
+    return hasDrafts || hasBuffer;
+  });
+  // Welcome template modal for brand-new users (no buffer AND no saved drafts).
+  const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
+    if (!guideDismissed) return false;
+    const hasDrafts = initialDrafts.length > 0;
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
+    return !hasDrafts && !hasBuffer;
+  });
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
@@ -871,14 +904,28 @@ export function EditorShell({
 
   // ---- Spotlight guide helpers ----
 
+  /** Open the correct entry flow after the guide finishes or is skipped. */
+  function openEntryAfterGuide() {
+    // Brand-new = no recoverable local buffer AND no saved drafts.
+    const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
+    if (isNewUser) {
+      setWelcomeTemplatesOpen(true);
+    } else {
+      setEntryOpen(true);
+    }
+  }
+
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
     if (dontShowAgain) void dismissPortfolioGuideAction();
+    // Open entry only when the guide was gating it (i.e. it was not already open).
+    if (!guideDismissed) openEntryAfterGuide();
   }
 
   function handleGuideFinish(dontShowAgain: boolean) {
     setGuideOpen(false);
     if (dontShowAgain) void dismissPortfolioGuideAction();
+    if (!guideDismissed) openEntryAfterGuide();
   }
 
   function handleGuideStepChange(next: number) {
@@ -1306,6 +1353,18 @@ export function EditorShell({
         switching={switching}
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id))}
+      />
+      {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. */}
+      <TemplatePickerDialog
+        open={welcomeTemplatesOpen}
+        onOpenChange={() => {/* non-dismissible in welcome mode */}}
+        templates={templates}
+        currentTemplateId={templateId}
+        switching={switching}
+        error={switchError}
+        onConfirm={(id) => { void applyTemplate(id); setWelcomeTemplatesOpen(false); }}
+        welcome
+        onStartScratch={() => setWelcomeTemplatesOpen(false)}
       />
       <SpotlightGuide
         open={guideOpen}
