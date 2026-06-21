@@ -99,12 +99,12 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByRole("button", { name: "Large" })).toBeTruthy();
   });
 
-  it("Layout tab shows Top spacing and Bottom spacing controls", () => {
+  it("Layout tab Spacing drawer does not show Top or Bottom spacing (removed from standard drawer)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     fireEvent.click(screen.getByRole("button", { name: "Spacing" }));
-    expect(screen.getByText("Top spacing")).toBeTruthy();
-    expect(screen.getByText("Bottom spacing")).toBeTruthy();
+    expect(screen.queryByText("Top spacing")).toBeNull();
+    expect(screen.queryByText("Bottom spacing")).toBeNull();
   });
 
   it("Design tab does not show Margin section", () => {
@@ -305,5 +305,47 @@ describe("gallery section presets are container-typed", () => {
   }
   it("does not treat the standalone GalleryCarousel as a container", () => {
     expect(CONTAINER_TYPES.has("GalleryCarousel")).toBe(false);
+  });
+});
+
+import { RadiusButtons } from "./StyleToolkitField";
+
+describe("RadiusButtons", () => {
+  it("renders 5 preset buttons (None, S, M, L, Full)", () => {
+    render(<RadiusButtons value={undefined} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "None" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "S" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "M" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "L" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Full" })).toBeTruthy();
+  });
+
+  it("marks the matching preset as pressed when value matches", () => {
+    render(<RadiusButtons value={8} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("calls onChange with the preset value when a button is clicked", () => {
+    const onChange = vi.fn();
+    render(<RadiusButtons value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "L" }));
+    expect(onChange).toHaveBeenCalledWith(16);
+  });
+
+  it("calls onChange with undefined when the active preset is clicked again (deselect)", () => {
+    const onChange = vi.fn();
+    render(<RadiusButtons value={4} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "S" }));
+    expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+});
+
+import { ContentInputs } from "./StyleToolkitField";
+
+describe("ContentInputs — emoji button integration", () => {
+  it("Heading block shows Insert emoji button beside the text input", () => {
+    render(<ContentInputs type="Heading" props={{ text: "Hello", level: "h2" }} setProp={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Insert emoji" })).toBeTruthy();
   });
 });

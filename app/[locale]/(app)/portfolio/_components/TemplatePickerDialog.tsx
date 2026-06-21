@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,8 +18,12 @@ const L = {
   title: "Choose a template",
   subtitle:
     "Switching applies a starter layout, colors, and fonts. Your photos and collections stay; only the page layout and theme change.",
+  welcomeTitle: "Pick a template to start",
+  welcomeSubtitle:
+    "Choose a starter layout to kick off your portfolio. You can switch templates any time.",
   current: "Current",
   use: "Use this template",
+  startScratch: "Start from scratch",
   cancel: "Cancel",
   switching: "Switching…",
   error: "Could not switch the template. Please try again.",
@@ -32,6 +37,8 @@ export function TemplatePickerDialog({
   switching,
   error,
   onConfirm,
+  welcome = false,
+  onStartScratch,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +47,10 @@ export function TemplatePickerDialog({
   switching: boolean;
   error: string | null;
   onConfirm: (templateId: string) => void;
+  /** When true, shows welcome heading/copy for brand-new users and a "Start from scratch" option. */
+  welcome?: boolean;
+  /** Called when the user picks "Start from scratch" (only visible when welcome=true). */
+  onStartScratch?: () => void;
 }) {
   const [pending, setPending] = useState<EditorTemplateSummary | null>(null);
 
@@ -53,19 +64,32 @@ export function TemplatePickerDialog({
     if (!open) setPending(null);
   }
 
+  const title = welcome ? L.welcomeTitle : L.title;
+  const subtitle = welcome ? L.welcomeSubtitle : L.subtitle;
+
   return (
-    <Dialog open={open} onOpenChange={(next) => (switching ? undefined : onOpenChange(next))}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-3xl">
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        // In welcome mode the dialog is non-dismissible (user must pick a template
+        // or start from scratch). In normal switcher mode, allow close unless switching.
+        if (welcome) return;
+        if (!switching) onOpenChange(next);
+      }}
+    >
+      <DialogContent
+        className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-3xl"
+        showCloseButton={!welcome}
+      >
         <DialogHeader>
-          <DialogTitle>{L.title}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{subtitle}</DialogDescription>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-          <p className="text-sm text-muted-foreground">{L.subtitle}</p>
-
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {templates.map((tpl) => {
-              const isCurrent = tpl.id === currentTemplateId;
+              const isCurrent = !welcome && tpl.id === currentTemplateId;
               const bk = tpl.defaultBrandKit;
               return (
                 <li key={tpl.id}>
@@ -116,17 +140,40 @@ export function TemplatePickerDialog({
           </p>
         )}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={switching}>
-            {L.cancel}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => pending && onConfirm(pending.id)}
-            loading={switching}
-            disabled={switching || pending === null}
-          >
-            {switching ? L.switching : L.use}
-          </Button>
+          {welcome ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onStartScratch?.()}
+                disabled={switching}
+              >
+                {L.startScratch}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => pending && onConfirm(pending.id)}
+                loading={switching}
+                disabled={switching || pending === null}
+              >
+                {switching ? L.switching : L.use}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={switching}>
+                {L.cancel}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => pending && onConfirm(pending.id)}
+                loading={switching}
+                disabled={switching || pending === null}
+              >
+                {switching ? L.switching : L.use}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

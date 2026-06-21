@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { toast } from "sonner";
-import { ChevronDown, RotateCcw, Upload } from "lucide-react";
+import { RotateCcw, Upload } from "lucide-react";
+import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -21,7 +23,6 @@ import {
 } from "@/lib/page-builder/types";
 
 type Tab = "setup" | "design";
-type DrawerId = "banner" | "links" | "active" | "contactButton";
 const COLOR_TOKENS = CONTACT_BUTTON_COLORS;
 const LOGO_MAX_BYTES = 250 * 1024;
 const LOGO_MAX_WIDTH = 512;
@@ -67,6 +68,13 @@ function ColorSwatchRow({
     active.startsWith("#") &&
     !(COLOR_TOKENS as readonly string[]).includes(active);
 
+  // Local display value for the spectrum input so the swatch stays visually live
+  // during a drag; the debounced commit coalesces rapid changes into one update.
+  const [liveColor, setLiveColor] = useState<string | null>(null);
+  const { debounced: debouncedToggle, flush } = useDebounce<string>(onToggle);
+
+  const displayColor = liveColor ?? (isCustomHex ? active : "#000000");
+
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -80,7 +88,10 @@ function ColorSwatchRow({
               type="button"
               aria-label={colorToken}
               aria-pressed={isActive}
-              onClick={() => onToggle(isActive ? undefined : colorToken)}
+              onClick={() => {
+                setLiveColor(null);
+                onToggle(isActive ? undefined : colorToken);
+              }}
               style={{ backgroundColor: hex }}
               className={cn(
                 "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -92,7 +103,10 @@ function ColorSwatchRow({
         {allowNone && (
           <button
             type="button"
-            onClick={() => onToggle(undefined)}
+            onClick={() => {
+              setLiveColor(null);
+              onToggle(undefined);
+            }}
             title="Reset"
             aria-label="Reset color"
             className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -100,24 +114,31 @@ function ColorSwatchRow({
             <RotateCcw className="size-3.5" aria-hidden />
           </button>
         )}
-        {/* Spectrum / custom hex picker */}
+        {/* Spectrum / custom hex picker — onChange is debounced; swatch shows live local value */}
         <label
           title="Custom color"
           aria-label="Custom color"
           className={cn(
             "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
-            isCustomHex && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+            (liveColor !== null || isCustomHex) && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
           )}
-          style={{ background: isCustomHex ? active : undefined }}
+          style={{ background: liveColor ?? (isCustomHex ? active : undefined) }}
         >
           <input
             type="color"
-            value={isCustomHex ? active : "#000000"}
-            onChange={(e) => onToggle(e.target.value)}
+            value={displayColor ?? "#000000"}
+            onChange={(e) => {
+              setLiveColor(e.target.value);
+              debouncedToggle(e.target.value);
+            }}
+            onBlur={() => {
+              flush();
+              setLiveColor(null);
+            }}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             aria-label="Pick custom color"
           />
-          {!isCustomHex && (
+          {liveColor === null && !isCustomHex && (
             <span
               aria-hidden
               className="absolute inset-0"
@@ -238,32 +259,6 @@ function getImageSize(file: File): Promise<{ width: number; height: number }> {
   });
 }
 
-function DesignDrawer({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border border-border bg-background">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={onToggle}
-        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <span>{title}</span>
-        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden />
-      </button>
-      {open && <div className="flex flex-col gap-4 border-t border-border p-3">{children}</div>}
-    </section>
-  );
-}
 
 export function HeaderPanelDialog({
   header,
@@ -276,7 +271,6 @@ export function HeaderPanelDialog({
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("setup");
-  const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) {
@@ -342,7 +336,7 @@ export function HeaderPanelDialog({
     >
       {/* Header */}
       <div className="flex items-center border-b border-border px-4 py-3">
-        <span className="text-sm font-semibold text-foreground">{t("title")}</span>
+        <span className="text-sm font-medium text-foreground">{t("title")}</span>
       </div>
 
       {/* Tab bar */}
@@ -363,7 +357,7 @@ export function HeaderPanelDialog({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         {tab === "setup" && (
           <>
             {/* Brand text */}
@@ -404,7 +398,7 @@ export function HeaderPanelDialog({
             </div>
 
             {/* Logo upload */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5" data-tour-id="logo-uploader">
               <Label>{t("logoLabel")}</Label>
               <p className="text-xs text-muted-foreground">{t("logoHelp")}</p>
               {header.logoUrl ? (
@@ -456,7 +450,9 @@ export function HeaderPanelDialog({
                   <span>{t("logoRequirements")}</span>
                 </button>
               )}
-              {logoError ? <p className="text-xs text-destructive">{logoError}</p> : null}
+              {logoError ? (
+                <p role="alert" className="text-xs text-destructive">{logoError}</p>
+              ) : null}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -474,14 +470,10 @@ export function HeaderPanelDialog({
         )}
 
         {tab === "design" && (
-          <div className="flex flex-col gap-6">
+          <div data-tour-id="header-nav-style">
+          <EditorDrawerGroup>
             {/* ── Banner ─────────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionBanner")}
-              open={openDrawer === "banner"}
-              onToggle={() => setOpenDrawer((current) => current === "banner" ? null : "banner")}
-            >
-
+            <EditorDrawerSection title={t("sectionBanner")}>
               <ColorSwatchRow
                 label={t("bgColorLabel")}
                 active={header.backgroundColor}
@@ -532,15 +524,10 @@ export function HeaderPanelDialog({
                   })}
                 </div>
               </div>
-            </DesignDrawer>
+            </EditorDrawerSection>
 
             {/* ── Links ──────────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionLinks")}
-              open={openDrawer === "links"}
-              onToggle={() => setOpenDrawer((current) => current === "links" ? null : "links")}
-            >
-
+            <EditorDrawerSection title={t("sectionLinks")}>
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("fontSizeLabel")}</span>
                 <div className="flex">
@@ -585,15 +572,10 @@ export function HeaderPanelDialog({
                 brandKit={brandKit}
                 onToggle={(c) => set("activeLinkColor", c)}
               />
-            </DesignDrawer>
+            </EditorDrawerSection>
 
             {/* ── Active link style ──────────────────── */}
-            <DesignDrawer
-              title={t("sectionActiveStyle")}
-              open={openDrawer === "active"}
-              onToggle={() => setOpenDrawer((current) => current === "active" ? null : "active")}
-            >
-
+            <EditorDrawerSection title={t("sectionActiveStyle")}>
               {/* Multi-select: Scale / Highlight / Underline */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("activeStyleLabel")}</span>
@@ -647,14 +629,10 @@ export function HeaderPanelDialog({
                   onToggle={(c) => set("underlineColor", c)}
                 />
               )}
-            </DesignDrawer>
+            </EditorDrawerSection>
 
-            <DesignDrawer
-              title={t("sectionContactButton")}
-              open={openDrawer === "contactButton"}
-              onToggle={() => setOpenDrawer((current) => current === "contactButton" ? null : "contactButton")}
-            >
-
+            {/* ── Contact button ──────────────────────── */}
+            <EditorDrawerSection title={t("sectionContactButton")}>
               <ColorSwatchRow
                 label={t("contactButtonColorLabel")}
                 active={header.contactButtonColor}
@@ -681,7 +659,8 @@ export function HeaderPanelDialog({
                 onToggle={(radius) => set("contactButtonRadius", radius)}
                 getLabel={(radius) => t(`radius.${radius}`)}
               />
-            </DesignDrawer>
+            </EditorDrawerSection>
+          </EditorDrawerGroup>
           </div>
         )}
       </div>

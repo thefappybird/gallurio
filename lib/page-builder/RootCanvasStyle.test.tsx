@@ -22,4 +22,13 @@ describe("buildCanvasCss", () => {
     expect(css).toContain("@container pfpage");
     expect(css).toContain("--pf-pad");
   });
+
+  it("sets a theme-independent default text color on the canvas surface using the app foreground token", () => {
+    const css = buildCanvasCss(undefined);
+    // Must contain a rule that resets text color on [data-puck-preview] to the
+    // stable app-shell token (--foreground), NOT any --pf-* brand variable.
+    expect(css).toContain("[data-puck-preview]");
+    expect(css).toContain("color: var(--foreground)");
+    expect(css).not.toContain("color: var(--pf-color-fg)");
+  });
 });

@@ -17,4 +17,45 @@ describe("UnsavedChangesDialog", () => {
     expect(onDiscard).toHaveBeenCalled();
     expect(onCancel).toHaveBeenCalled();
   });
+
+  it("renders the name Input seeded with the provided name when name and onNameChange are supplied", () => {
+    const onNameChange = vi.fn();
+    render(
+      <UnsavedChangesDialog
+        open
+        saving={false}
+        onSave={vi.fn()}
+        onDiscard={vi.fn()}
+        onCancel={vi.fn()}
+        name="My Draft"
+        onNameChange={onNameChange}
+        nameLabel="Draft name"
+      />
+    );
+    const input = screen.getByLabelText("Draft name");
+    expect(input).toBeInTheDocument();
+    expect((input as HTMLInputElement).value).toBe("My Draft");
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    expect(onNameChange).toHaveBeenCalledWith("Renamed");
+  });
+
+  it("renders a role=alert error above Save and disables Save when nameError is set", () => {
+    render(
+      <UnsavedChangesDialog
+        open
+        saving={false}
+        onSave={vi.fn()}
+        onDiscard={vi.fn()}
+        onCancel={vi.fn()}
+        name="My Draft"
+        onNameChange={vi.fn()}
+        nameLabel="Draft name"
+        nameError="A draft with this name already exists"
+      />
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("A draft with this name already exists");
+    const saveBtn = screen.getByRole("button", { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+  });
 });

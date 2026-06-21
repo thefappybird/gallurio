@@ -57,11 +57,12 @@ export function GalleryMasonryBlock({
   const list = Array.isArray(images) ? images : [];
 
   if (list.length === 0) {
-    return <MasonryEmptyState message={labels.empty} />;
+    return <MasonryEmptyState message={labels.empty} dragRef={puck?.dragRef} />;
   }
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="gallery-masonry"
       style={{
         backgroundColor: "var(--pf-color-bg)",
@@ -102,9 +103,10 @@ export function GalleryMasonryBlock({
   );
 }
 
-function MasonryEmptyState({ message }: { message: string }) {
+function MasonryEmptyState({ message, dragRef }: { message: string; dragRef?: ((el: Element | null) => void) | null }) {
   return (
     <section
+      ref={dragRef ?? undefined}
       data-block="gallery-masonry"
       data-empty="true"
       style={{
@@ -132,6 +134,7 @@ function MasonryEmptyState({ message }: { message: string }) {
 
 export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   label: "Masonry",
+  inline: true,
   defaultProps: galleryMasonryDefaultProps,
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight

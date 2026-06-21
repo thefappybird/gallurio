@@ -1261,7 +1261,12 @@
         "saveAndCloseAction": "I-save at isara",
         "themeNameExists": "May tema nang umiiral na may ganitong pangalan.",
         "applyAction": "Ilapat",
-        "saveThemeName": "I-save ang tema"
+        "saveThemeName": "I-save ang tema",
+        "cancelThemeEdit": "Kanselahin ang pag-edit ng tema",
+        "addNewTheme": "Magdagdag ng bagong tema",
+        "addNewGuardTitle": "I-save bago magsimula ng bago?",
+        "addNewGuardBody": "May mga hindi naka-save na pagbabago. I-save muna ang kasalukuyang tema, o itapon para magsimula ng panibago.",
+        "addNewGuardNameLabel": "Pangalan ng tema"
       },
       "editor": {
         "zone": {
@@ -1380,13 +1385,13 @@
           "brandTextLabel": "Heading",
           "brandTextHelp": "Nagsisimula sa pangalan ng workspace. Burahin ito para logo lang ang ipakita.",
           "logoLabel": "Logo",
-          "logoHelp": "Ipinapakita sa tabi ng pangalan ng negosyo sa header.",
+          "logoHelp": "I-upload ang logo ng iyong negosyo para ipakita sa tabi ng iyong pangalan sa header.",
           "logoUpload": "Mag-upload ng logo",
           "logoUploading": "Ina-upload…",
           "logoRemove": "Alisin ang logo",
-          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoRequirements": "PNG, JPEG o WEBP · maks. 250 KB · hanggang 512×256",
           "logoErrors": {
-            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "type": "Ang logo ay dapat na larawang PNG, JPEG, o WEBP. Hindi suportado ang SVG.",
             "size": "Logo must be 250 KB or smaller.",
             "dimensions": "Logo must be 512 x 256 px or smaller.",
             "image": "This logo image could not be read.",

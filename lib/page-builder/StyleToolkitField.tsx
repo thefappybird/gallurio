@@ -13,8 +13,9 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
+import { EmojiButton } from "./EmojiTextInput";
 import type { LucideIcon } from "lucide-react";
 import {
   Bold,
@@ -41,8 +42,8 @@ import {
   Layers,
   Minus,
 } from "lucide-react";
-import { usePuck } from "@measured/puck";
 import type { ComponentData } from "@measured/puck";
+import { usePuckStore } from "./puckHooks";
 import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
@@ -56,6 +57,7 @@ import {
   ResetButton,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
+import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
 import {
   STYLE_LIMITS,
   ANIMATION_TYPES,
@@ -178,12 +180,18 @@ function TabHeader({
   onTabChange: (t: "content" | "design" | "layout") => void;
 }) {
   const LABELS: Record<string, string> = { content: "Content", design: "Design", layout: "Layout" };
+  const TOUR_IDS: Record<string, string> = {
+    content: "style-tab-content",
+    design: "style-tab-design",
+    layout: "style-tab-layout",
+  };
   return (
     <div className="flex border-b border-border">
       {tabs.map((id) => (
         <button
           key={id}
           type="button"
+          data-tour-id={TOUR_IDS[id]}
           onClick={() => onTabChange(id)}
           className={cn(
             "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -368,7 +376,7 @@ function BannerSection({
   );
 }
 
-function ContentInputs({
+export function ContentInputs({
   type,
   props,
   setProp,
@@ -377,17 +385,28 @@ function ContentInputs({
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
 }) {
+  // Refs for emoji insert-at-caret (declared unconditionally per Rules of Hooks)
+  const headingRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  const buttonLabelRef = useRef<HTMLInputElement>(null);
+  const carouselHeadingRef = useRef<HTMLInputElement>(null);
+  const carouselDescRef = useRef<HTMLTextAreaElement>(null);
+
   if (type === "Heading") {
     return (
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Text</span>
-          <input
-            type="text"
-            value={(props.text as string) ?? ""}
-            onChange={(e) => setProp("text", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              ref={headingRef}
+              type="text"
+              value={(props.text as string) ?? ""}
+              onChange={(e) => setProp("text", e.target.value)}
+              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <EmojiButton inputRef={headingRef} onChange={(v) => setProp("text", v)} />
+          </div>
         </label>
         <HeadingLevelButtons
           value={props.level as string}
@@ -400,12 +419,16 @@ function ContentInputs({
     return (
       <label className="flex flex-col gap-1 text-sm">
         <span>Text</span>
-        <textarea
-          rows={4}
-          value={(props.text as string) ?? ""}
-          onChange={(e) => setProp("text", e.target.value)}
-          className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
+        <div className="flex items-start gap-1">
+          <textarea
+            ref={textRef}
+            rows={4}
+            value={(props.text as string) ?? ""}
+            onChange={(e) => setProp("text", e.target.value)}
+            className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          <EmojiButton inputRef={textRef} onChange={(v) => setProp("text", v)} />
+        </div>
       </label>
     );
   }
@@ -414,12 +437,16 @@ function ContentInputs({
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Button text</span>
-          <input
-            type="text"
-            value={(props.label as string) ?? ""}
-            onChange={(e) => setProp("label", e.target.value)}
-            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
+          <div className="flex items-center gap-1">
+            <input
+              ref={buttonLabelRef}
+              type="text"
+              value={(props.label as string) ?? ""}
+              onChange={(e) => setProp("label", e.target.value)}
+              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <EmojiButton inputRef={buttonLabelRef} onChange={(v) => setProp("label", v)} />
+          </div>
         </label>
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Action</span>
@@ -453,21 +480,29 @@ function ContentInputs({
           <>
             <label className="flex flex-col gap-1 text-sm">
               <span>Heading</span>
-              <input
-                type="text"
-                value={(props.heading as string) ?? ""}
-                onChange={(e) => setProp("heading", e.target.value)}
-                className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
+              <div className="flex items-center gap-1">
+                <input
+                  ref={carouselHeadingRef}
+                  type="text"
+                  value={(props.heading as string) ?? ""}
+                  onChange={(e) => setProp("heading", e.target.value)}
+                  className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <EmojiButton inputRef={carouselHeadingRef} onChange={(v) => setProp("heading", v)} />
+              </div>
             </label>
             <label className="flex flex-col gap-1 text-sm">
               <span>Description</span>
-              <textarea
-                rows={2}
-                value={(props.description as string) ?? ""}
-                onChange={(e) => setProp("description", e.target.value)}
-                className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              />
+              <div className="flex items-start gap-1">
+                <textarea
+                  ref={carouselDescRef}
+                  rows={2}
+                  value={(props.description as string) ?? ""}
+                  onChange={(e) => setProp("description", e.target.value)}
+                  className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <EmojiButton inputRef={carouselDescRef} onChange={(v) => setProp("description", v)} />
+              </div>
             </label>
           </>
         )}
@@ -489,25 +524,35 @@ function ContentInputs({
   }
   if (type === "Columns") {
     return (
-      <div className="flex flex-col gap-2">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
-        <div className="flex items-center gap-1.5">
-          {([2, 3] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={(props.columns as number) === v}
-              onClick={() => setProp("columns", v)}
-              className={cn(
-                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                (props.columns as number) === v &&
-                  "bg-foreground text-background hover:bg-foreground"
-              )}
-            >
-              {v}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
+          <div className="flex items-center gap-1.5">
+            {([2, 3] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={(props.columns as number) === v}
+                onClick={() => setProp("columns", v)}
+                className={cn(
+                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  (props.columns as number) === v &&
+                    "bg-foreground text-background hover:bg-foreground"
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
+        <NumberInputRow
+          label="Rows"
+          value={props.rows as number | undefined}
+          min={1}
+          max={12}
+          suffix="rows"
+          onChange={(v) => setProp("rows", v)}
+        />
       </div>
     );
   }
@@ -556,23 +601,6 @@ function ContentTabBody({
 // GalleryHeader by GalleryCarouselBlock.
 // ---------------------------------------------------------------------------
 
-function Drawer({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-border">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        {title}
-        {open ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
-      </button>
-      {open && <div className="flex flex-col gap-3 border-t border-border p-3">{children}</div>}
-    </div>
-  );
-}
 
 function ChoiceRow<T extends string>({
   label,
@@ -601,6 +629,44 @@ function ChoiceRow<T extends string>({
             )}
           >
             {l}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const RADIUS_PRESETS: { label: string; value: number }[] = [
+  { label: "None", value: 0 },
+  { label: "S", value: 4 },
+  { label: "M", value: 8 },
+  { label: "L", value: 16 },
+  { label: "Full", value: 9999 },
+];
+
+export function RadiusButtons({
+  value,
+  onChange,
+}: {
+  value: number | undefined;
+  onChange: (v: number | undefined) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs text-muted-foreground">Corner radius</span>
+      <div className="flex items-center gap-1.5">
+        {RADIUS_PRESETS.map(({ label, value: v }) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={value === v}
+            onClick={() => onChange(value === v ? undefined : v)}
+            className={cn(
+              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === v && "bg-foreground text-background hover:bg-foreground"
+            )}
+          >
+            {label}
           </button>
         ))}
       </div>
@@ -879,10 +945,10 @@ export function DesignTab({
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
 
   return (
-    <div className="flex flex-col gap-px p-3">
+    <EditorDrawerGroup>
       {/* Typography drawer */}
       {showTypography && (
-        <Drawer title="Typography">
+        <EditorDrawerSection title="Typography">
           <div className="flex flex-wrap items-center gap-1.5">
             {blockType !== "Heading" && (
               <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
@@ -998,24 +1064,24 @@ export function DesignTab({
               )}
             </div>
           )}
-        </Drawer>
+        </EditorDrawerSection>
       )}
 
       {/* Carousel per-target typography drawers */}
       {isCarousel && (
         <>
-          <Drawer title="Heading">
+          <EditorDrawerSection title="Heading">
             <CarouselTargetControls target="heading" s={s} set={set} />
-          </Drawer>
-          <Drawer title="Description">
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Description">
             <CarouselTargetControls target="description" s={s} set={set} />
-          </Drawer>
+          </EditorDrawerSection>
         </>
       )}
 
       {/* Frame drawer — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (
-        <Drawer title="Frame">
+        <EditorDrawerSection title="Frame">
           <NumberInputRow
             label="Border width"
             value={s.borderWidth}
@@ -1031,24 +1097,18 @@ export function DesignTab({
               allowNone={false}
             />
           </div>
-          <NumberInputRow
-            label="Corner radius"
-            value={s.radius}
-            min={STYLE_LIMITS.radius.min}
-            max={STYLE_LIMITS.radius.max}
-            onChange={(v) => set({ radius: v })}
-          />
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
           <IconRow
             label="Shadow"
             value={s.shadow ?? "none"}
             options={SHADOW_OPTIONS}
             onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
           />
-        </Drawer>
+        </EditorDrawerSection>
       )}
 
       {/* Effects drawer — entrance animation + hover */}
-      <Drawer title="Effects">
+      <EditorDrawerSection title="Effects">
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Entrance</span>
           <div className="flex items-center gap-1">
@@ -1091,8 +1151,8 @@ export function DesignTab({
             <ResetButton onClick={() => set({ hover: "none" })} label="Hover effect" />
           </div>
         </div>
-      </Drawer>
-    </div>
+      </EditorDrawerSection>
+    </EditorDrawerGroup>
   );
 }
 
@@ -1104,10 +1164,12 @@ function ColSpanRowSpanControls({
   s,
   set,
   parentColumnsCount = 12,
+  parentRowsCount = 12,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
   parentColumnsCount?: number;
+  parentRowsCount?: number;
 }) {
   return (
     <>
@@ -1123,7 +1185,7 @@ function ColSpanRowSpanControls({
         label="Row span"
         value={s.rowSpan}
         min={1}
-        max={parentColumnsCount}
+        max={parentRowsCount}
         suffix="rows"
         onChange={(v) => set({ rowSpan: v })}
       />
@@ -1351,6 +1413,7 @@ export function LayoutTabBody({
   p,
   setProp,
   parentColumnsCount = 12,
+  parentRowsCount = 12,
 }: {
   s: BlockStyle;
   set: (patch: Partial<BlockStyle>) => void;
@@ -1360,6 +1423,7 @@ export function LayoutTabBody({
   p?: Record<string, unknown>;
   setProp?: (key: string, val: unknown) => void;
   parentColumnsCount?: number;
+  parentRowsCount?: number;
 }) {
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
@@ -1382,9 +1446,9 @@ export function LayoutTabBody({
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
     return (
-      <div className="flex flex-col gap-px p-3">
+      <EditorDrawerGroup>
         {isButton && p && setProp && (
-          <Drawer title="Layout">
+          <EditorDrawerSection title="Layout">
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
               <div className="flex items-center gap-1.5">
@@ -1431,10 +1495,10 @@ export function LayoutTabBody({
               onChange={(v) => set({ selfAlign: v })}
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
-          </Drawer>
+          </EditorDrawerSection>
         )}
         {!isButton && (
-          <Drawer title="Layout">
+          <EditorDrawerSection title="Layout">
             <IconRow
               label="Block position"
               value={s.selfAlign}
@@ -1443,25 +1507,19 @@ export function LayoutTabBody({
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
             <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
-          </Drawer>
+          </EditorDrawerSection>
         )}
-        <Drawer title="Spacing">
-          <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-          <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-        </Drawer>
-      </div>
+      </EditorDrawerGroup>
     );
   }
 
   // Container / generic block layout
   return (
-    <div className="flex flex-col gap-px p-3">
-      <Drawer title="Spacing">
+    <EditorDrawerGroup>
+      <EditorDrawerSection title="Spacing">
         {isFlexContainer && <PaddingControls s={s} set={set} />}
-        <DimensionInput label="Top spacing" value={s.marginTop} onChange={(v) => set({ marginTop: v })} />
-        <DimensionInput label="Bottom spacing" value={s.marginBottom} onChange={(v) => set({ marginBottom: v })} />
-      </Drawer>
-      <Drawer title="Layout">
+      </EditorDrawerSection>
+      <EditorDrawerSection title="Layout">
         <NumberInputRow
           label="Gap"
           value={s.gap}
@@ -1493,7 +1551,7 @@ export function LayoutTabBody({
           </div>
         )}
         {isGridChild ? (
-          <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} />
+          <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
         ) : (
           <>
             <IconRow
@@ -1512,8 +1570,8 @@ export function LayoutTabBody({
             )}
           </>
         )}
-      </Drawer>
-    </div>
+      </EditorDrawerSection>
+    </EditorDrawerGroup>
   );
 }
 
@@ -1639,7 +1697,10 @@ function BlockAwarePanel({
   /** @deprecated kept for call-site compatibility; ignored in favour of the block-tab store */
   onTabChange?: (t: "content" | "design" | "layout") => void;
 }) {
-  const { selectedItem, dispatch, getSelectorForId, getItemById } = usePuck();
+  const selectedItem = usePuckStore((s) => s.selectedItem);
+  const dispatch = usePuckStore((s) => s.dispatch);
+  const getSelectorForId = usePuckStore((s) => s.getSelectorForId);
+  const getItemById = usePuckStore((s) => s.getItemById);
 
   const blockId = (selectedItem?.props?.id as string | undefined) ?? "";
 
@@ -1675,6 +1736,19 @@ function BlockAwarePanel({
     const parentId = sel.zone.split(":")[0];
     const parent = getItemById(parentId);
     if (parent?.type === "Columns") return (parent.props.columns as number) ?? 2;
+    return 12;
+  })();
+
+  const parentRowsCount = (() => {
+    if (!selectedItem) return 12;
+    const sel = getSelectorForId(selectedItem.props.id as string);
+    if (!sel?.zone) return 12;
+    const parentId = sel.zone.split(":")[0];
+    const parent = getItemById(parentId);
+    if (parent?.type === "Columns") {
+      const r = parent.props.rows as number | undefined;
+      return r !== undefined && Number.isFinite(r) ? Math.min(12, Math.max(1, Math.floor(r))) : 12;
+    }
     return 12;
   })();
 
@@ -1729,6 +1803,7 @@ function BlockAwarePanel({
           p={p}
           setProp={setProp}
           parentColumnsCount={parentColumnsCount}
+          parentRowsCount={parentRowsCount}
         />
       )}
     </div>

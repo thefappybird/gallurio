@@ -111,6 +111,32 @@ describe("HeaderPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
 
+  it("shows limits copy near the logo uploader", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    expect(screen.getByText("PNG, JPEG or WEBP · max 250 KB · up to 512×256")).toBeInTheDocument();
+  });
+
+  it("shows inline role=alert error for oversized file (dimension violation)", async () => {
+    installImageMock(600, 300); // exceeds 512x256
+    const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const file = new File(["img"], "big.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Logo must be 512 x 256 px or smaller.");
+  });
+
+  it("rejects SVG with an inline role=alert type error", async () => {
+    const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const svgFile = new File(["<svg/>"], "logo.svg", { type: "image/svg+xml" });
+    fireEvent.change(input, { target: { files: [svgFile] } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Logo must be a PNG, JPEG, or WEBP image.");
+  });
+
   it("keeps navbar size on Setup and heading color on Design", () => {
     renderWithProviders(<HeaderPanelDialog {...baseProps} />);
 
@@ -121,6 +147,39 @@ describe("HeaderPanelDialog", () => {
 
     expect(screen.getByText("Heading color")).toBeInTheDocument();
     expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
+  });
+
+  it("debounces the color spectrum input — multiple rapid changes produce one committed call", () => {
+    vi.useFakeTimers();
+    const onHeaderChange = vi.fn();
+    renderWithProviders(<HeaderPanelDialog {...baseProps} onHeaderChange={onHeaderChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Banner" }));
+
+    const colorInput = screen.getByLabelText("Pick custom color");
+
+    // Simulate three rapid drag ticks
+    fireEvent.change(colorInput, { target: { value: "#ff0000" } });
+    fireEvent.change(colorInput, { target: { value: "#ff8800" } });
+    fireEvent.change(colorInput, { target: { value: "#ffcc00" } });
+
+    // The debounce has NOT fired yet — no backgroundColor commit
+    const callsBeforeFlush = onHeaderChange.mock.calls.filter((c) =>
+      JSON.stringify(c[0]).includes("Color"),
+    );
+    expect(callsBeforeFlush).toHaveLength(0);
+
+    // Advance past the 120 ms debounce window
+    vi.advanceTimersByTime(200);
+
+    // Exactly one commit with the final color
+    const callsAfterFlush = onHeaderChange.mock.calls.filter((c) =>
+      JSON.stringify(c[0]).includes("ffcc00"),
+    );
+    expect(callsAfterFlush).toHaveLength(1);
+
+    vi.useRealTimers();
   });
 
   it("shows percent suffixes for opacity controls", () => {

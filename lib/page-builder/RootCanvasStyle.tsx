@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePuck } from "@measured/puck";
+import { usePuckStore } from "./puckHooks";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_CONTAINER_NAME, PF_RESPONSIVE_CSS } from "./responsive";
 
@@ -25,6 +25,17 @@ export function rootCanvasCssText(style?: RootPageStyle | null): string {
     .join("; ");
 }
 
+// Isolate canvas text from the brand theme: blocks that use `color: inherit` would
+// otherwise pick up `--pf-color-fg` (set by the active brand kit). This rule
+// anchors the default to the stable app-shell foreground token instead, which is
+// always legible against the canvas background regardless of the chosen brand theme.
+// Specificity is intentionally low (one attribute selector) so an inline `style`
+// attribute written by a block color picker always wins — explicit overrides are
+// unaffected. This rule is emitted only by the editor-side RootCanvasStyle
+// component and is never present on the public `/w/[orgSlug]` route.
+const CANVAS_COLOR_ISOLATION_CSS =
+  `${CANVAS_SURFACE_SELECTOR} { color: var(--foreground); }`;
+
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
  * (always present, so the canvas reflows with the viewport toggle) with the
@@ -35,7 +46,7 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
 }
 
 /**
@@ -45,9 +56,10 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
  * the selector in-browser after this lands.
  */
 export function RootCanvasStyle() {
-  const { appState } = usePuck();
-  const rootStyle = (appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)
-    ?._rootStyle;
+  const rootStyle = usePuckStore(
+    (s) =>
+      (s.appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)?._rootStyle,
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;

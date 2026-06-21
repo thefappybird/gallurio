@@ -61,6 +61,58 @@ describe("ThemePanelDialog close guard", () => {
   });
 });
 
+describe("ThemePanelDialog add-new guard", () => {
+  it("clicking 'Add new theme' with an unsaved draft opens the guard modal", () => {
+    setup();
+    // create a current (unsaved) theme
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    // click add new theme
+    fireEvent.click(screen.getByRole("button", { name: "Add new theme" }));
+    expect(screen.getByText("Save before starting new?")).toBeInTheDocument();
+  });
+
+  it("'Keep editing' (cancel) in the add-new guard closes the modal and preserves the draft", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add new theme" }));
+    expect(screen.getByText("Save before starting new?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    expect(screen.queryByText("Save before starting new?")).not.toBeInTheDocument();
+    // The draft is still active — the current tile's name input should still exist
+    expect(screen.getByRole("textbox", { name: "Theme name" })).toBeInTheDocument();
+  });
+
+  it("'Discard' in the add-new guard drops the draft and closes the modal", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add new theme" }));
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+    expect(screen.queryByText("Save before starting new?")).not.toBeInTheDocument();
+    // current theme tile should be gone (no name input)
+    expect(screen.queryByRole("textbox", { name: "Theme name" })).not.toBeInTheDocument();
+  });
+
+  it("Save in the add-new guard with a duplicate name keeps the modal open with an error", async () => {
+    const savedThemes = [{ id: "t1", name: "Taken", brandKit: DEFAULT_BRAND_KIT }];
+    setup({ savedThemes });
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add new theme" }));
+    // type duplicate name
+    const nameInput = screen.getByRole("textbox", { name: "Theme name" });
+    fireEvent.change(nameInput, { target: { value: "Taken" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toBeInTheDocument()
+    );
+    // modal is still open
+    expect(screen.getByText("Save before starting new?")).toBeInTheDocument();
+  });
+});
+
 describe("ThemePanelDialog Apply button", () => {
   it("footer button is labeled Apply", () => {
     setup();

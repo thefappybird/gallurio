@@ -3,10 +3,12 @@
 import "@measured/puck/puck.css";
 import "./editor.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Puck, usePuck, type Config, type Data } from "@measured/puck";
+import { Puck, type Config, type Data } from "@measured/puck";
+import { usePuckStore } from "@/lib/page-builder/puckHooks";
+import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon } from "lucide-react";
+import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -34,7 +36,6 @@ import {
   listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
-  createPreviewSnapshotAction,
   type DraftSummary,
 } from "../_draftActions";
 import { PublishDialog } from "./PublishDialog";
@@ -47,7 +48,8 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
-import { PortfolioGuideOverlay } from "./PortfolioGuideOverlay";
+import { SpotlightGuide } from "./SpotlightGuide";
+import { SPOTLIGHT_STEPS } from "./spotlightSteps";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -135,8 +137,13 @@ const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon
  * edit canvas. Lives inside Puck so `usePuck` has context.
  */
 function EditCanvasControls() {
-  const { appState, dispatch } = usePuck();
-  const { leftSideBarVisible, rightSideBarVisible } = appState.ui;
+  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
+  const rightSideBarVisible = usePuckStore((s) => s.appState.ui.rightSideBarVisible);
+  const dispatch = usePuckStore((s) => s.dispatch);
+  const hasPast = usePuckStore((s) => s.history.hasPast);
+  const hasFuture = usePuckStore((s) => s.history.hasFuture);
+  const back = usePuckStore((s) => s.history.back);
+  const forward = usePuckStore((s) => s.history.forward);
   return (
     <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
       <Button
@@ -146,9 +153,33 @@ function EditCanvasControls() {
         aria-pressed={leftSideBarVisible}
         aria-label="Toggle blocks panel"
         title="Toggle blocks panel"
+        data-tour-id="blocks-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
+      </Button>
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Undo"
+        title="Undo (Ctrl+Z)"
+        disabled={!hasPast}
+        onClick={back}
+      >
+        <Undo2 className="size-4" aria-hidden />
+      </Button>
+      <Button
+        type="button"
+        size="icon-sm"
+        variant="outline"
+        aria-label="Redo"
+        title="Redo (Ctrl+Shift+Z)"
+        disabled={!hasFuture}
+        onClick={forward}
+      >
+        <Redo2 className="size-4" aria-hidden />
       </Button>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <Button
@@ -158,6 +189,7 @@ function EditCanvasControls() {
         aria-pressed={rightSideBarVisible}
         aria-label="Toggle properties panel"
         title="Toggle properties panel"
+        data-tour-id="properties-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ rightSideBarVisible: !p.rightSideBarVisible }) })}
       >
         <PanelRight className="size-4" aria-hidden />
@@ -175,7 +207,7 @@ function DeviceTogglePreview({
   onChange: (next: PreviewDevice) => void;
 }) {
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Preview device">
+    <div className="flex items-center gap-1" role="group" aria-label="Preview device" data-tour-id="device-toggle">
       {DEVICES.map(({ key, label, Icon }) => (
         <Button
           key={key}
@@ -192,6 +224,28 @@ function DeviceTogglePreview({
       ))}
     </div>
   );
+}
+
+/**
+ * Reads Puck state that the spotlight guide needs for gate detection.
+ * Must be rendered inside a <Puck> tree (has Puck context).
+ * Reports values up via the `onState` callback after each render.
+ */
+function PuckGateReader({
+  onState,
+}: {
+  onState: (state: { contentCount: number; hasSelection: boolean; panelOpen: boolean }) => void;
+}) {
+  const contentCount = usePuckStore((s) => s.appState.data.content?.length ?? 0);
+  const selectedItem = usePuckStore((s) => s.selectedItem);
+  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
+  const hasSelection = selectedItem !== null;
+
+  useEffect(() => {
+    onState({ contentCount, hasSelection, panelOpen: leftSideBarVisible });
+  });
+
+  return null;
 }
 
 // The editor is uncontrolled per zone — Puck owns the live edit state and emits
@@ -265,6 +319,13 @@ export function EditorShell({
   // The guide auto-opens on first run (until the owner persisted a dismissal),
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
+  const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
+  // Puck gate state (populated by PuckGateReader when Puck is mounted)
+  const [puckContentCount, setPuckContentCount] = useState(0);
+  const [puckHasSelection, setPuckHasSelection] = useState(false);
+  const [puckPanelOpen, setPuckPanelOpen] = useState(false);
+  // Baseline content count captured when the drag-block step becomes active
+  const [dragBaseline, setDragBaseline] = useState<number | null>(null);
 
   // ---- Draft state ----
   const [drafts, setDrafts] = useState<DraftSummary[]>(initialDrafts);
@@ -273,11 +334,43 @@ export function EditorShell({
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingChanges, setSavingChanges] = useState(false);
   const [draftsOpen, setDraftsOpen] = useState(false);
-  // Entry dialog shown on every load; options are gated by canContinue / hasDrafts.
-  const [entryOpen, setEntryOpen] = useState(true);
+
+  // Entry dialog shown on load; deferred until after the guide when guide is not dismissed.
+  // When guideDismissed=true, open the entry immediately — but brand-new users (no saved
+  // drafts AND no recoverable buffer) go to the welcome template modal instead.
+  // When guideDismissed=false, both stay closed until guide finishes/skips.
+  const [entryOpen, setEntryOpen] = useState(() => {
+    if (!guideDismissed) return false;
+    // Brand-new check: no saved drafts AND no localStorage buffer.
+    const hasDrafts = initialDrafts.length > 0;
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
+    return hasDrafts || hasBuffer;
+  });
+  // Welcome template modal for brand-new users (no buffer AND no saved drafts).
+  const [welcomeTemplatesOpen, setWelcomeTemplatesOpen] = useState(() => {
+    if (!guideDismissed) return false;
+    const hasDrafts = initialDrafts.length > 0;
+    const hasBuffer = (() => {
+      if (typeof window === "undefined") return false;
+      try {
+        const raw = window.localStorage.getItem(`gallurio:portfolio-draft:${slug}`);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
+        return parsed.version === LOCAL_DRAFT_VERSION && Boolean(parsed.data);
+      } catch { return false; }
+    })();
+    return !hasDrafts && !hasBuffer;
+  });
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
-  const [openingPreview, setOpeningPreview] = useState(false);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
   // path). Controls whether the dashed "Unsaved" row appears in DraftsDialog.
@@ -809,13 +902,69 @@ export function EditorShell({
     setTemplatesOpen(true);
   }
 
-  // The guide's "Don't show again" persists the dismissal; closing/skipping is
-  // session-only so it can be reopened from the Guide button without re-showing
-  // on the next load.
-  function dismissGuideForever() {
-    setGuideOpen(false);
-    void dismissPortfolioGuideAction();
+  // ---- Spotlight guide helpers ----
+
+  /** Open the correct entry flow after the guide finishes or is skipped. */
+  function openEntryAfterGuide() {
+    // Brand-new = no recoverable local buffer AND no saved drafts.
+    const isNewUser = !hasRecoverableBuffer && drafts.length === 0;
+    if (isNewUser) {
+      setWelcomeTemplatesOpen(true);
+    } else {
+      setEntryOpen(true);
+    }
   }
+
+  function handleGuideSkip(dontShowAgain: boolean) {
+    setGuideOpen(false);
+    if (dontShowAgain) void dismissPortfolioGuideAction();
+    // Open entry only when the guide was gating it (i.e. it was not already open).
+    if (!guideDismissed) openEntryAfterGuide();
+  }
+
+  function handleGuideFinish(dontShowAgain: boolean) {
+    setGuideOpen(false);
+    if (dontShowAgain) void dismissPortfolioGuideAction();
+    if (!guideDismissed) openEntryAfterGuide();
+  }
+
+  function handleGuideStepChange(next: number) {
+    // Capture baseline content count when entering the drag-block step
+    const currentId = SPOTLIGHT_STEPS[next]?.id;
+    if (currentId === "drag-block") {
+      setDragBaseline(puckContentCount);
+    }
+    setSpotlightStepIndex(next);
+  }
+
+  // Compute whether the current gated step's condition is satisfied.
+  const currentStepId = SPOTLIGHT_STEPS[spotlightStepIndex]?.id ?? "";
+  const gateSatisfied: boolean = (() => {
+    switch (currentStepId) {
+      case "blocks-panel-toggle":
+        return puckPanelOpen;
+      case "drag-block":
+        return dragBaseline !== null
+          ? puckContentCount > dragBaseline
+          : false;
+      case "select-block":
+        return puckHasSelection;
+      case "header-tab":
+        return headerOpen;
+      case "contact-tab":
+        return contactOpen;
+      default:
+        return false;
+    }
+  })();
+
+  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S)
+  // from firing while the user is typing in an input or contenteditable inside
+  // the right-side properties panel. Puck registers document-level listeners;
+  // stopping propagation here prevents those handlers from seeing the event.
+  const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (isEditableTarget(e.target)) e.stopPropagation();
+  }, []);
 
   const { cssVars, className } = resolveBrandKit(brandKit);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
@@ -850,36 +999,14 @@ export function EditorShell({
   const puckCanvasOverride = useMemo(
     () => ({
       puck: ({ children }: { children: ReactNode }) => (
-        <>
+        <div data-tour-id="canvas" className="contents">
           {children}
           <RootCanvasStyle />
-        </>
+        </div>
       ),
     }),
     []
   );
-
-  async function handleOpenPublicPreview() {
-    setOpeningPreview(true);
-    try {
-      const result = await createPreviewSnapshotAction({
-        data: zoneDataRef.current,
-        brandKit,
-        contact,
-        header: headerConfig,
-        collectionsPopup,
-        formLocale,
-      });
-      const base = `${publicOrigin}/w/${slug}`;
-      window.open(
-        "error" in result ? base : `${base}?preview=${result.token}`,
-        "_blank",
-        "noopener,noreferrer",
-      );
-    } finally {
-      setOpeningPreview(false);
-    }
-  }
 
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
@@ -894,6 +1021,16 @@ export function EditorShell({
                 : section === "collectionsPopup"
                   ? "Collections Popup"
                   : t(`zone.${section}`);
+          // Tour anchor: home+gallery share the section-tabs group id on the first
+          // rendered tab; header and contact get dedicated ids.
+          const tourId =
+            section === "header"
+              ? "header-tab"
+              : section === "contact"
+                ? "contact-tab"
+                : section === "home"
+                  ? "section-tabs"
+                  : undefined;
           return (
             <Button
               key={section}
@@ -901,6 +1038,7 @@ export function EditorShell({
               size="sm"
               variant={activeSection === section ? "default" : "outline"}
               aria-pressed={activeSection === section}
+              data-tour-id={tourId}
               onClick={() => {
                 if (section === "header") void openHeader();
                 else if (section === "contact") openContact();
@@ -917,23 +1055,19 @@ export function EditorShell({
           size="sm"
           variant="secondary"
           aria-pressed={previewMode}
+          data-tour-id="preview-toggle"
           onClick={() => void togglePreview()}
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
         </Button>
         <button
           type="button"
-          disabled={openingPreview}
           title={t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
-          onClick={() => void handleOpenPublicPreview()}
+          onClick={() => window.open(previewBasePath, "_blank", "noopener,noreferrer")}
           className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          {openingPreview ? (
-            <Loader2Icon className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <ExternalLinkIcon className="size-4" aria-hidden />
-          )}
+          <ExternalLinkIcon className="size-4" aria-hidden />
         </button>
       </div>
     );
@@ -948,6 +1082,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-4 lg:order-3"
+          data-tour-id="photos"
           onClick={() => setPhotosOpen(true)}
         >
           {t("photos")}
@@ -957,6 +1092,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-5 lg:order-4"
+          data-tour-id="theme"
           onClick={openTheme}
         >
           {t("theme")}
@@ -966,7 +1102,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-6 lg:order-5"
-          onClick={() => setGuideOpen(true)}
+          onClick={() => { setSpotlightStepIndex(0); setGuideOpen(true); }}
         >
           {t("guide")}
         </Button>
@@ -975,6 +1111,7 @@ export function EditorShell({
           size="sm"
           variant="outline"
           className="order-7 lg:order-6"
+          data-tour-id="drafts"
           onClick={() => setDraftsOpen(true)}
         >
           Drafts
@@ -985,7 +1122,7 @@ export function EditorShell({
         >
           <DraftNameEditor
             name={draftName}
-            error={nameError}
+            error={pendingAction !== null ? null : nameError}
             onCommit={(n) => { setDraftName(n); setNameError(null); }}
           />
         </div>
@@ -994,6 +1131,7 @@ export function EditorShell({
           size="sm"
           variant="brand"
           className="order-8"
+          data-tour-id="save-changes"
           disabled={saveDisabled}
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
@@ -1025,6 +1163,7 @@ export function EditorShell({
         className={cn("gallurio-editor min-h-svh", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
+        onKeyDown={handleEditorKeyDown}
       >
         {showPuck ? (
           <Puck
@@ -1058,12 +1197,29 @@ export function EditorShell({
               // `gridArea: header` + the chrome styling replace what the default
               // `._PuckHeader_` wrapper provided — without it the bar collapses
               // into the narrow left grid column.
-              header: ({ actions }) => (
+              header: () => (
                 <header
                   className="border-b border-border bg-card px-3 py-2"
                   style={{ gridArea: "header" }}
                 >
-                  {topBar(<EditCanvasControls />, actions)}
+                  <PuckGateReader
+                    onState={({ contentCount, hasSelection, panelOpen }) => {
+                      setPuckContentCount(contentCount);
+                      setPuckHasSelection(hasSelection);
+                      setPuckPanelOpen(panelOpen);
+                    }}
+                  />
+                  {topBar(
+                    <EditCanvasControls />,
+                    <Button
+                      type="button"
+                      size="sm"
+                      data-tour-id="publish"
+                      onClick={() => void handlePublish()}
+                    >
+                      {t("publish")}
+                    </Button>,
+                  )}
                 </header>
               ),
               // Stable memoized override: prevents Puck from re-rendering the
@@ -1081,7 +1237,7 @@ export function EditorShell({
                 sidePanelOpen ? null : (
                   <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
                 ),
-                <Button type="button" size="sm" onClick={() => void handlePublish()}>
+                <Button type="button" size="sm" data-tour-id="publish" onClick={() => void handlePublish()}>
                   {t("publish")}
                 </Button>
               )}
@@ -1090,7 +1246,7 @@ export function EditorShell({
               {contactOpen ? (
                 // Issue 2 fix: ContactPanelDialog is now inline (flex sibling), not a fixed overlay.
                 <div className="flex h-full overflow-hidden">
-                  <div className="flex-1 overflow-auto bg-muted/40">
+                  <div className="flex-1 overflow-auto bg-muted/40" data-tour-id="contact-form-preview">
                     <ContactFormPreview
                       contact={contact}
                       brandKit={brandKit}
@@ -1198,10 +1354,26 @@ export function EditorShell({
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id))}
       />
-      <PortfolioGuideOverlay
+      {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. */}
+      <TemplatePickerDialog
+        open={welcomeTemplatesOpen}
+        onOpenChange={() => {/* non-dismissible in welcome mode */}}
+        templates={templates}
+        currentTemplateId={templateId}
+        switching={switching}
+        error={switchError}
+        onConfirm={(id) => { void applyTemplate(id); setWelcomeTemplatesOpen(false); }}
+        welcome
+        onStartScratch={() => setWelcomeTemplatesOpen(false)}
+      />
+      <SpotlightGuide
         open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        onDontShowAgain={dismissGuideForever}
+        steps={SPOTLIGHT_STEPS}
+        stepIndex={spotlightStepIndex}
+        onStepChange={handleGuideStepChange}
+        gateSatisfied={gateSatisfied}
+        onSkip={handleGuideSkip}
+        onFinish={handleGuideFinish}
       />
 
       {/* Draft system dialogs */}
@@ -1227,6 +1399,10 @@ export function EditorShell({
       <UnsavedChangesDialog
         open={pendingAction !== null}
         saving={savingChanges}
+        name={draftName}
+        onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
+        nameLabel="Draft name"
+        nameError={nameError}
         onSave={async () => {
           const ok = await handleSaveChanges();
           if (ok) {
@@ -1237,9 +1413,8 @@ export function EditorShell({
         }}
         onDiscard={() => {
           window.localStorage.removeItem(draftKey);
-          const run = pendingAction;
           setPendingAction(null);
-          run?.();
+          setPublishOpen(false);
         }}
         onCancel={() => setPendingAction(null)}
       />

@@ -90,12 +90,13 @@ const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
   h6: "clamp(0.8rem, 0.75rem + 0.3cqi, 0.875rem)",
 };
 
-export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
+export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & { puck?: BlockPuck }) {
   const textContent = asText(text);
   const Tag = level;
   const hl = _style?.highlight;
   return (
     <div
+      ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
@@ -126,6 +127,7 @@ export function HeadingBlock({ _style, text, level }: HeadingBlockProps) {
 
 export const headingBlockConfig: ComponentConfig<HeadingBlockProps> = {
   label: "Heading",
+  inline: true,
   defaultProps: headingDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -156,11 +158,12 @@ export const textDefaultProps: TextBlockProps = {
   text: "Write anything here. Line breaks are preserved.",
 };
 
-export function TextBlock({ _style, text }: TextBlockProps) {
+export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: BlockPuck }) {
   const textContent = asText(text);
   const hl = _style?.highlight;
   return (
     <div
+      ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
         ...resolveBlockStyle(_style),
@@ -182,6 +185,7 @@ export function TextBlock({ _style, text }: TextBlockProps) {
 
 export const textBlockConfig: ComponentConfig<TextBlockProps> = {
   label: "Text",
+  inline: true,
   defaultProps: textDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -204,10 +208,10 @@ export type ImageBlockProps = {
 
 export const imageDefaultProps: ImageBlockProps = { imagePublicId: "", imageUrl: "", alt: "", fit: "cover" };
 
-export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit }: ImageBlockProps) {
+export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit, puck }: ImageBlockProps & { puck?: BlockPuck }) {
   const src = (imagePublicId ? cfImageUrl(imagePublicId) : null) || imageUrl || null;
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -240,6 +244,7 @@ export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit }: ImageB
 
 export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   label: "Image",
+  inline: true,
   defaultProps: imageDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -365,7 +370,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   };
 
   return (
-    <div style={wrapperStyle} {...resolveBlockAttrs(_style)}>
+    <div ref={puck?.dragRef ?? undefined} style={wrapperStyle} {...resolveBlockAttrs(_style)}>
       <a href={href} role="button" data-cta={dataCta} style={aStyle}>
         {label}
       </a>
@@ -375,6 +380,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
 
 export const buttonBlockConfig: ComponentConfig<ButtonBlockProps> = {
   label: "Button",
+  inline: true,
   defaultProps: buttonDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -417,13 +423,14 @@ export type SpacerBlockProps = { height: number };
 
 export const spacerDefaultProps: SpacerBlockProps = { height: 48 };
 
-export function SpacerBlock({ height }: SpacerBlockProps) {
+export function SpacerBlock({ height, puck }: SpacerBlockProps & { puck?: BlockPuck }) {
   const h = Math.min(400, Math.max(4, Number.isFinite(height) ? height : 48));
-  return <div aria-hidden="true" style={{ height: `${h}px` }} />;
+  return <div ref={puck?.dragRef ?? undefined} aria-hidden="true" style={{ height: `${h}px` }} />;
 }
 
 export const spacerBlockConfig: ComponentConfig<SpacerBlockProps> = {
   label: "Spacer",
+  inline: true,
   defaultProps: spacerDefaultProps,
   fields: {
     height: { type: "number", label: "Height (px)", min: 4, max: 400 } as Field<number>,
@@ -439,10 +446,10 @@ export type DividerBlockProps = { _style?: BlockStyle; thickness: number };
 
 export const dividerDefaultProps: DividerBlockProps = { thickness: 1 };
 
-export function DividerBlock({ _style, thickness }: DividerBlockProps) {
+export function DividerBlock({ _style, thickness, puck }: DividerBlockProps & { puck?: BlockPuck }) {
   const t = Math.min(12, Math.max(1, Number.isFinite(thickness) ? thickness : 1));
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       <hr
         style={{
           border: 0,
@@ -458,6 +465,7 @@ export function DividerBlock({ _style, thickness }: DividerBlockProps) {
 
 export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
   label: "Divider",
+  inline: true,
   defaultProps: dividerDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -473,11 +481,16 @@ export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
 export type ColumnsBlockProps = {
   _style?: BlockStyle;
   columns: 2 | 3;
+  /** Explicit row count. When set to 2 or more, the grid defines that many rows so
+   *  child `rowSpan` values are meaningful. Unset (or 1) keeps the current auto-row
+   *  behaviour so existing layouts are unaffected. */
+  rows?: number;
   content: Slot;
 };
 
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
+  rows: undefined,
   content: [],
   _style: {
     paddingTop: "1rem",
@@ -490,15 +503,27 @@ export const columnsDefaultProps: ColumnsBlockProps = {
 export function ColumnsBlock({
   _style,
   columns,
+  rows,
   content: Content,
+  puck,
 }: {
   _style?: BlockStyle;
   columns: 2 | 3;
+  rows?: number;
   content: SlotComponent;
+  puck?: BlockPuck;
 }) {
   const cols = columns === 3 ? 3 : 2;
+  const rowCount =
+    rows !== undefined && Number.isFinite(rows)
+      ? Math.min(12, Math.max(1, Math.floor(rows)))
+      : undefined;
+  const hasRows = rowCount !== undefined && rowCount > 1;
+  const rowsRule = hasRows
+    ? `@media (min-width:640px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    : "";
   return (
-    <div style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
       {/* Responsive: 1 column on phones, 2 on tablets, the chosen count on
           desktop. Inline styles can't hold media queries, so scoped classes +
           a <style> drive the breakpoints. */}
@@ -506,14 +531,19 @@ export function ColumnsBlock({
         .pf-cols{display:grid;gap:1rem;max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
         @media (min-width:640px){.pf-cols-2,.pf-cols-3{grid-template-columns:repeat(2,minmax(0,1fr));}}
         @media (min-width:1024px){.pf-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}}
+        ${rowsRule}
       `}</style>
-      {Content({ className: `pf-cols pf-cols-${cols}`, style: {} })}
+      {Content({
+        className: `pf-cols pf-cols-${cols}${hasRows ? ` pf-cols-rows-${rowCount}` : ""}`,
+        style: {},
+      })}
     </div>
   );
 }
 
 export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   label: "Columns",
+  inline: true,
   defaultProps: columnsDefaultProps,
   fields: {
     _style: productionStyleField,
@@ -525,6 +555,7 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
         { label: "3 columns", value: 3 },
       ],
     } as Field<2 | 3>,
+    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,
@@ -593,6 +624,7 @@ export function ContainerBlock({
   alignX,
   alignY,
   content: Content,
+  puck,
 }: {
   _style?: BlockStyle;
   backgroundImages?: GalleryImage[];
@@ -603,6 +635,7 @@ export function ContainerBlock({
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
   content: SlotComponent;
+  puck?: BlockPuck;
 }) {
   const ax = alignX ?? "left";
   const ay = alignY ?? "top";
@@ -643,6 +676,7 @@ export function ContainerBlock({
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="container"
       style={{
         position: "relative",
@@ -754,6 +788,7 @@ export const containerFields = {
 
 export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
+  inline: true,
   defaultProps: containerDefaultProps,
   fields: containerFields,
   render: ContainerBlock,

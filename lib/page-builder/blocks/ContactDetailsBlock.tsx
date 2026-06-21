@@ -38,6 +38,7 @@ export function ContactDetailsBlock({
 
   return (
     <dl
+      ref={puck?.dragRef ?? undefined}
       data-block="contact-details"
       style={{
         display: "flex",
@@ -168,6 +169,7 @@ const showField = (label: string) =>
 
 export const contactDetailsBlockConfig: ComponentConfig<ContactDetailsProps> = {
   label: "Contact Details",
+  inline: true,
   defaultProps: contactDetailsDefaultProps,
   fields: {
     _style: productionStyleField,

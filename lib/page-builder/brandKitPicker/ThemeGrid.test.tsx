@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { ThemeGrid } from "./ThemeGrid";
@@ -19,11 +19,14 @@ function Harness({
   onSaveTheme,
   onDeleteTheme,
   onChangeSpy,
+  initialKit,
 }: {
   savedThemes?: PortfolioSavedTheme[];
   onSaveTheme?: (n: string) => Promise<{ ok: true; theme: PortfolioSavedTheme } | { error: string }>;
   onDeleteTheme?: (id: string) => Promise<void>;
   onChangeSpy?: (k: PortfolioBrandKit) => void;
+  /** When provided, triggers changeControl on mount to create an unsaved current theme. */
+  initialKit?: PortfolioBrandKit;
 }) {
   const [value, setValue] = useState<PortfolioBrandKit>(DEFAULT_BRAND_KIT);
   const controller = useThemeEditor({
@@ -36,6 +39,10 @@ function Harness({
     onSaveTheme,
     onUpdateTheme: async () => ({ ok: true, theme: { id: "x", name: "x", brandKit: value } }),
   });
+  useEffect(() => {
+    if (initialKit) controller.changeControl(initialKit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <ThemeGrid
       value={value}
@@ -102,6 +109,21 @@ describe("ThemeGrid", () => {
       "aria-pressed",
       "true"
     );
+  });
+
+  it("renders the 'Add new theme' button at all times (including when a saved theme is active)", () => {
+    const saved = [{ id: "t1", name: "Ocean", brandKit: { ...DEFAULT_BRAND_KIT, accentColor: "#5fb3a8" } }];
+    setup({ savedThemes: saved });
+    expect(screen.getByRole("button", { name: "Add new theme" })).toBeInTheDocument();
+  });
+
+  it("current tile name row includes a cancel button that clears the unsaved draft", () => {
+    const draftKit = { ...DEFAULT_BRAND_KIT, accentColor: "#aabbcc" };
+    renderWithProviders(
+      <Harness initialKit={draftKit} />
+    );
+    // The current tile (nameEditing) should now show a cancel button
+    expect(screen.getByRole("button", { name: "Cancel theme edit" })).toBeInTheDocument();
   });
 
   it("editing a saved tile shows inline name input; saving calls onUpdateTheme and exits edit mode", async () => {

@@ -9,6 +9,7 @@
  */
 
 import type { ComponentConfig } from "@measured/puck";
+import type { BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -69,13 +70,14 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // Component
 // ---------------------------------------------------------------------------
 
-export function VideoBlock({ _style, description, videoUrl, footer }: VideoBlockProps) {
+export function VideoBlock({ _style, description, videoUrl, footer, puck }: VideoBlockProps & { puck?: BlockPuck }) {
   const descriptionText = asText(description);
   const footerText = asText(footer);
   const embed = parseVideoEmbed(videoUrl);
 
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       data-block="video"
       data-empty={embed ? undefined : "true"}
       style={{
@@ -170,6 +172,7 @@ export function VideoBlock({ _style, description, videoUrl, footer }: VideoBlock
 
 export const videoBlockConfig: ComponentConfig<VideoBlockProps> = {
   label: "Video",
+  inline: true,
   defaultProps: videoDefaultProps,
   fields: {
     _style: productionStyleField,

@@ -25,4 +25,3 @@ export {
   type InvitationStatus,
 } from "./Invitation";
 export { PortfolioDraft, type PortfolioDraftDoc } from "./PortfolioDraft";
-export { PreviewSnapshot } from "./PreviewSnapshot";

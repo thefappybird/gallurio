@@ -389,6 +389,7 @@ const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Photo Grid",
+  inline: true,
   defaultProps: galleryGridDefaultProps,
   // `images` is intentionally absent — the editor drives it via StyleToolkitField
   // (Task 7). The cast is required because Puck's Fields<T> demands all keys.
@@ -421,6 +422,7 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
 
 const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Masonry",
+  inline: true,
   defaultProps: galleryMasonryDefaultProps,
   // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
   fields: {
@@ -452,6 +454,7 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
 
 const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
   label: "Gallery Carousel",
+  inline: true,
   defaultProps: galleryCarouselDefaultProps,
   fields: {
     _style: styleField,
@@ -501,6 +504,7 @@ const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   label: "Highlights",
+  inline: true,
   defaultProps: featuredWorkDefaultProps,
   // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
   // This matches the production featuredWorkBlockConfig field keys exactly.
@@ -529,6 +533,7 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
 
 const video: ComponentConfig<VideoBlockProps> = {
   label: "Video",
+  inline: true,
   defaultProps: videoDefaultProps,
   fields: {
     _style: styleField,
@@ -550,6 +555,7 @@ const video: ComponentConfig<VideoBlockProps> = {
 
 const contactDetails: ComponentConfig<ContactDetailsProps> = {
   label: "Contact Details",
+  inline: true,
   defaultProps: contactDetailsDefaultProps,
   fields: {
     _style: styleField,
@@ -609,6 +615,7 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
 
 const heading: ComponentConfig<HeadingBlockProps> = {
   label: "Heading",
+  inline: true,
   defaultProps: headingDefaultProps,
   fields: {
     _style: styleField,
@@ -636,6 +643,7 @@ const heading: ComponentConfig<HeadingBlockProps> = {
 
 const text: ComponentConfig<TextBlockProps> = {
   label: "Text",
+  inline: true,
   defaultProps: textDefaultProps,
   fields: {
     _style: styleField,
@@ -651,6 +659,7 @@ const text: ComponentConfig<TextBlockProps> = {
 
 const image: ComponentConfig<ImageBlockProps> = {
   label: "Image",
+  inline: true,
   defaultProps: imageDefaultProps,
   fields: {
     _style: styleField,
@@ -675,6 +684,7 @@ const image: ComponentConfig<ImageBlockProps> = {
 
 const button: ComponentConfig<ButtonBlockProps> = {
   label: "Button",
+  inline: true,
   defaultProps: { ...buttonDefaultProps, size: "md" },
   fields: {
     _style: styleField,
@@ -716,6 +726,7 @@ const button: ComponentConfig<ButtonBlockProps> = {
 
 const spacer: ComponentConfig<SpacerBlockProps> = {
   label: "Spacer",
+  inline: true,
   defaultProps: spacerDefaultProps,
   fields: {
     height: {
@@ -738,6 +749,7 @@ const spacer: ComponentConfig<SpacerBlockProps> = {
 
 const divider: ComponentConfig<DividerBlockProps> = {
   label: "Divider",
+  inline: true,
   defaultProps: dividerDefaultProps,
   fields: {
     _style: styleField,
@@ -752,6 +764,7 @@ const divider: ComponentConfig<DividerBlockProps> = {
 
 const columns: ComponentConfig<ColumnsBlockProps> = {
   label: "Columns",
+  inline: true,
   defaultProps: {
     ...columnsDefaultProps,
     _style: {
@@ -771,11 +784,12 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
         { label: "3 columns", value: 3 },
       ],
     } as Field<2 | 3>,
+    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   resolveFields: (_data, { fields }) => {
-    const { columns: _c, ...rest } = fields as Record<string, unknown>;
-    void _c;
+    const { columns: _c, rows: _r, ...rest } = fields as Record<string, unknown>;
+    void _c; void _r;
     return rest as typeof fields;
   },
   render: ColumnsBlock,
@@ -783,6 +797,7 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
 
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
+  inline: true,
   defaultProps: {
     ...containerDefaultProps,
     _style: {

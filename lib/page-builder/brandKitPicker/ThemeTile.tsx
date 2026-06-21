@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Trash2Icon, Loader2Icon, PencilIcon, SaveIcon } from "lucide-react";
+import { Trash2Icon, Loader2Icon, PencilIcon, SaveIcon, XIcon } from "lucide-react";
 import type { ThemeTileModel } from "./themeTiles";
 
 type Props = {
@@ -31,6 +31,10 @@ type Props = {
   savingName?: boolean;
   /** Inline error message (already localized) shown under the input. */
   nameError?: string | null;
+  /** Localized label for the ✕ cancel button in name-editing row; presence renders the button. */
+  cancelNameLabel?: string;
+  /** Called when the ✕ cancel button is clicked. */
+  onCancelName?: () => void;
 };
 
 /**
@@ -57,6 +61,8 @@ export function ThemeTile({
   namePlaceholder,
   savingName = false,
   nameError,
+  cancelNameLabel,
+  onCancelName,
 }: Props) {
   const isCurrent = tile.variant === "current";
   const containerClass = cn(
@@ -95,6 +101,17 @@ export function ThemeTile({
             aria-label={namePlaceholder ?? saveNameLabel}
             className="h-7 min-w-0 flex-1 border border-border bg-background px-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+          {cancelNameLabel && onCancelName && (
+            <button
+              type="button"
+              aria-label={cancelNameLabel}
+              onClick={onCancelName}
+              disabled={savingName}
+              className="inline-flex size-7 shrink-0 items-center justify-center border border-border text-muted-foreground transition-colors hover:bg-accent/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+            >
+              <XIcon className="size-3.5" aria-hidden />
+            </button>
+          )}
           <button
             type="button"
             aria-label={saveNameLabel}

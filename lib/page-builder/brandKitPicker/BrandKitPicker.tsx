@@ -65,6 +65,8 @@ type Props = {
     name: string,
     brandKit: PortfolioBrandKit
   ) => Promise<{ ok: true; theme: PortfolioSavedTheme } | { error: string }>;
+  /** Called when user clicks "Add new theme"; parent handles the guard if needed. */
+  onAddNew?: () => void;
 };
 
 /** A single font-family selector — heading or body. */
@@ -124,6 +126,7 @@ export function BrandKitPicker({
   onDeleteTheme,
   controller,
   onUpdateTheme,
+  onAddNew,
 }: Props) {
   const t = useTranslations("app.pageBuilder.brandKit");
 
@@ -171,6 +174,7 @@ export function BrandKitPicker({
           savedThemes={savedThemes}
           controller={ctrl}
           onDeleteTheme={onDeleteTheme}
+          onAddNew={onAddNew}
         />
       </fieldset>
 

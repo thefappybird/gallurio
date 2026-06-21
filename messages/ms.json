@@ -1261,7 +1261,12 @@
         "saveAndCloseAction": "Simpan & tutup",
         "themeNameExists": "Sudah wujud tema dengan nama ini.",
         "applyAction": "Guna",
-        "saveThemeName": "Simpan tema"
+        "saveThemeName": "Simpan tema",
+        "cancelThemeEdit": "Batal edit tema",
+        "addNewTheme": "Tambah tema baharu",
+        "addNewGuardTitle": "Simpan sebelum mula yang baharu?",
+        "addNewGuardBody": "Anda mempunyai perubahan yang belum disimpan. Simpan tema semasa dahulu, atau buang untuk mula semula.",
+        "addNewGuardNameLabel": "Nama tema"
       },
       "editor": {
         "zone": {
@@ -1380,13 +1385,13 @@
           "brandTextLabel": "Heading",
           "brandTextHelp": "Bermula dengan nama ruang kerja. Kosongkan untuk memaparkan logo sahaja.",
           "logoLabel": "Logo",
-          "logoHelp": "Dipaparkan di sebelah nama perniagaan dalam pengepala.",
+          "logoHelp": "Muat naik logo perniagaan anda untuk dipaparkan di sebelah nama anda dalam pengepala.",
           "logoUpload": "Muat naik logo",
           "logoUploading": "Memuat naik…",
           "logoRemove": "Alih keluar logo",
-          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoRequirements": "PNG, JPEG atau WEBP · maks. 250 KB · sehingga 512×256",
           "logoErrors": {
-            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "type": "Logo mestilah imej PNG, JPEG, atau WEBP. SVG tidak disokong.",
             "size": "Logo must be 250 KB or smaller.",
             "dimensions": "Logo must be 512 x 256 px or smaller.",
             "image": "This logo image could not be read.",

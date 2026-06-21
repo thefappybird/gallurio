@@ -684,6 +684,27 @@ describe("ColumnsBlock", () => {
     const slot = screen.getByTestId("slot");
     expect(slot.className).toContain("pf-cols-2");
   });
+
+  it("rows=3 adds a rows class to the slot element", () => {
+    render(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).toContain("pf-cols-rows-3");
+  });
+
+  it("rows=1 does NOT add a rows class (auto-row behaviour preserved)", () => {
+    render(<ColumnsBlock columns={2} rows={1} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).not.toContain("pf-cols-rows-");
+  });
+});
+
+describe("HeadingBlock — dragRef forwarding", () => {
+  it("forwards puck.dragRef to the root div element", () => {
+    let capturedEl: Element | null = null;
+    const dragRef = (el: Element | null) => { capturedEl = el; };
+    render(<HeadingBlock text="Test" level="h2" puck={{ dragRef }} />);
+    expect(capturedEl).not.toBeNull();
+  });
 });
 
 
@@ -860,5 +881,25 @@ describe("ContainerBlock background images", () => {
     );
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.zIndex).toBe("1");
+  });
+});
+
+describe("ColumnsBlock — dragRef forwarding", () => {
+  it("forwards puck.dragRef to the root div element", () => {
+    let capturedEl: Element | null = null;
+    const dragRef = (el: Element | null) => { capturedEl = el; };
+    const stubSlot: SlotComponent = () => <div />;
+    render(<ColumnsBlock columns={2} content={stubSlot} puck={{ dragRef }} />);
+    expect(capturedEl).not.toBeNull();
+  });
+});
+
+describe("ContainerBlock — dragRef forwarding", () => {
+  it("forwards puck.dragRef to the root section element", () => {
+    let capturedEl: Element | null = null;
+    const dragRef = (el: Element | null) => { capturedEl = el; };
+    const stubSlot: SlotComponent = () => <div />;
+    render(<ContainerBlock content={stubSlot} puck={{ dragRef }} />);
+    expect(capturedEl).not.toBeNull();
   });
 });
