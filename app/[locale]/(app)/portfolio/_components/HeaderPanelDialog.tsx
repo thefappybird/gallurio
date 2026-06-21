@@ -429,7 +429,9 @@ export function HeaderPanelDialog({
                   <span>{t("logoRequirements")}</span>
                 </button>
               )}
-              {logoError ? <p className="text-xs text-destructive">{logoError}</p> : null}
+              {logoError ? (
+                <p role="alert" className="text-xs text-destructive">{logoError}</p>
+              ) : null}
               <input
                 ref={fileInputRef}
                 type="file"

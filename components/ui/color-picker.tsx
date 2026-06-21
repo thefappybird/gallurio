@@ -38,11 +38,15 @@ export function ColorPicker({
 }: ColorPickerProps) {
   const normalized = normalizeHex(value);
   // Local state drives the visible picker — updates on every drag tick.
-  const [liveColor, setLiveColor] = useState(normalized);
-  // Keep liveColor in sync when the controlled value changes from outside.
-  useEffect(() => {
-    setLiveColor(normalizeHex(value));
-  }, [value]);
+  // [prevNorm, liveColor] pair: when the controlled value changes from outside,
+  // we reset liveColor during render using React's recommended derived-state
+  // pattern (store previous prop, update during render if it changes).
+  const [[prevNorm, liveColor], setLiveState] = useState<[string, string]>(
+    [normalized, normalized],
+  );
+  if (prevNorm !== normalized) {
+    setLiveState([normalized, normalized]);
+  }
 
   // Debounce timer refs — kept outside useCallback so they survive re-renders.
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,7 +82,7 @@ export function ColorPicker({
   // Spectrum drags: update the live display immediately; debounce the commit.
   function emitDebounced(next: string) {
     const hex = normalizeHex(next);
-    setLiveColor(hex);
+    setLiveState([normalized, hex]);
     pendingHexRef.current = hex;
     if (timerRef.current !== null) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -94,7 +98,7 @@ export function ColorPicker({
   // Preset swatches and hex input: commit immediately.
   function emitImmediate(next: string) {
     const hex = normalizeHex(next);
-    setLiveColor(hex);
+    setLiveState([normalized, hex]);
     // Cancel any pending debounced commit.
     flush();
     onChange(hex);

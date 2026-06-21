@@ -568,10 +568,7 @@
       "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
       "logOutConfirmCancel": "Cancel",
       "portfolio": "Portfolio",
-      "accountMenu": "Account menu",
-      "logOutConfirmTitle": "Log out?",
-      "logOutConfirmBody": "You’ll need to sign in again to get back into your workspace.",
-      "logOutConfirmCancel": "Cancel"
+      "accountMenu": "Account menu"
     },
     "theme": {
       "label": "Theme",
@@ -1385,13 +1382,13 @@
           "brandTextLabel": "Heading",
           "brandTextHelp": "Displayed next to your logo in the navigation bar. Leave empty to show the logo only.",
           "logoLabel": "Logo",
-          "logoHelp": "Shown beside your business name in the header.",
+          "logoHelp": "Upload your business logo to display beside your name in the header.",
           "logoUpload": "Upload logo",
           "logoUploading": "Uploading…",
           "logoRemove": "Remove logo",
-          "logoRequirements": "PNG, JPG, or WebP. Max 512 x 256 px and 250 KB.",
+          "logoRequirements": "PNG, JPEG or WEBP · max 250 KB · up to 512×256",
           "logoErrors": {
-            "type": "Logo must be a PNG, JPG, or WebP image.",
+            "type": "Logo must be a PNG, JPEG, or WEBP image. SVG is not supported.",
             "size": "Logo must be 250 KB or smaller.",
             "dimensions": "Logo must be 512 x 256 px or smaller.",
             "image": "This logo image could not be read.",

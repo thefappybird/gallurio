@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ColorPicker } from "./color-picker";
 

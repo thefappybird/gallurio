@@ -111,6 +111,32 @@ describe("HeaderPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
 
+  it("shows limits copy near the logo uploader", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    expect(screen.getByText("PNG, JPEG or WEBP · max 250 KB · up to 512×256")).toBeInTheDocument();
+  });
+
+  it("shows inline role=alert error for oversized file (dimension violation)", async () => {
+    installImageMock(600, 300); // exceeds 512x256
+    const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const file = new File(["img"], "big.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Logo must be 512 x 256 px or smaller.");
+  });
+
+  it("rejects SVG with an inline role=alert type error", async () => {
+    const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const svgFile = new File(["<svg/>"], "logo.svg", { type: "image/svg+xml" });
+    fireEvent.change(input, { target: { files: [svgFile] } });
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Logo must be a PNG, JPEG, or WEBP image.");
+  });
+
   it("keeps navbar size on Setup and heading color on Design", () => {
     renderWithProviders(<HeaderPanelDialog {...baseProps} />);
 
