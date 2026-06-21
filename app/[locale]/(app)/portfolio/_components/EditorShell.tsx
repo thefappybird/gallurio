@@ -50,6 +50,7 @@ import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS } from "./spotlightSteps";
+import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -103,6 +104,16 @@ type Props = {
   initialDrafts?: DraftSummary[];
   initialActiveDraftId?: string | null;
   initialActiveDraftName?: string;
+  /**
+   * When true the shell runs in sandbox/guide mode: all persistence (localStorage,
+   * server drafts, publish, dismiss-guide) is disabled so the real editor's data
+   * is never touched during the interactive tour.
+   */
+  guideMode?: boolean;
+  /** Called when the sandbox guide finishes (user completed all steps). */
+  onGuideFinish?: (dontShowAgain: boolean) => void;
+  /** Called when the sandbox guide is skipped mid-tour. */
+  onGuideSkipClose?: (dontShowAgain: boolean) => void;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
@@ -284,6 +295,9 @@ export function EditorShell({
   initialDrafts = [],
   initialActiveDraftId = null,
   initialActiveDraftName,
+  guideMode = false,
+  onGuideFinish,
+  onGuideSkipClose,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
@@ -455,6 +469,7 @@ export function EditorShell({
       savedSnapshot;
 
   const persistLocalDraft = useCallback(() => {
+    if (guideMode) return;
     if (typeof window === "undefined") return;
     const draft: PortfolioBrowserDraft = {
       version: LOCAL_DRAFT_VERSION,
@@ -473,7 +488,7 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, headerConfig, activeDraftId, draftName]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
 
   // Compute on mount whether a recoverable localStorage buffer exists.
   const [hasRecoverableBuffer] = useState<boolean>(() => {
@@ -489,6 +504,7 @@ export function EditorShell({
   });
 
   useEffect(() => {
+    if (guideMode) return;
     if (typeof window === "undefined") return;
     const raw = window.localStorage.getItem(draftKey);
     if (!raw) return;
@@ -517,11 +533,12 @@ export function EditorShell({
     } catch {
       window.localStorage.removeItem(draftKey);
     }
-  }, [draftKey]);
+  }, [draftKey, guideMode]);
 
   useEffect(() => {
+    if (guideMode) return;
     persistLocalDraft();
-  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, headerConfig, persistLocalDraft]);
+  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, guideMode, headerConfig, persistLocalDraft]);
 
   // beforeunload guard while dirty.
   useEffect(() => {
@@ -568,6 +585,7 @@ export function EditorShell({
 
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
+    if (guideMode) return false;
     const shouldToastValidationError = templatesOpen;
     const validationError = validateDraftName(draftName);
     if (validationError) {
@@ -766,6 +784,7 @@ export function EditorShell({
 
   // ---- Publish from draft ----
   async function doPublish() {
+    if (guideMode) return;
     if (!activeDraftId) return;
     setSavingChanges(true);
     try {
@@ -864,6 +883,7 @@ export function EditorShell({
 
   // ---- Apply template as a new unsaved draft ----
   async function applyTemplate(nextTemplateId: string) {
+    if (guideMode) return;
     setSwitching(true);
     setSwitchError(null);
     const res = await seedTemplateAction(nextTemplateId);
@@ -917,6 +937,10 @@ export function EditorShell({
 
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (guideMode) {
+      onGuideSkipClose?.(dontShowAgain);
+      return;
+    }
     if (dontShowAgain) void dismissPortfolioGuideAction();
     // Open entry only when the guide was gating it (i.e. it was not already open).
     if (!guideDismissed) openEntryAfterGuide();
@@ -924,6 +948,10 @@ export function EditorShell({
 
   function handleGuideFinish(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (guideMode) {
+      onGuideFinish?.(dontShowAgain);
+      return;
+    }
     if (dontShowAgain) void dismissPortfolioGuideAction();
     if (!guideDismissed) openEntryAfterGuide();
   }
@@ -999,7 +1027,7 @@ export function EditorShell({
   const puckCanvasOverride = useMemo(
     () => ({
       puck: ({ children }: { children: ReactNode }) => (
-        <div data-tour-id="canvas" className="contents">
+        <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
           {children}
           <RootCanvasStyle />
         </div>
@@ -1366,15 +1394,28 @@ export function EditorShell({
         welcome
         onStartScratch={() => setWelcomeTemplatesOpen(false)}
       />
-      <SpotlightGuide
-        open={guideOpen}
-        steps={SPOTLIGHT_STEPS}
-        stepIndex={spotlightStepIndex}
-        onStepChange={handleGuideStepChange}
-        gateSatisfied={gateSatisfied}
-        onSkip={handleGuideSkip}
-        onFinish={handleGuideFinish}
-      />
+      {/* In sandbox (guideMode) the guide runs directly in this shell. In the
+          real editor it opens a full-screen sandbox so the live data is never
+          touched during the tour. */}
+      {guideMode ? (
+        <SpotlightGuide
+          open={guideOpen}
+          steps={SPOTLIGHT_STEPS}
+          stepIndex={spotlightStepIndex}
+          onStepChange={handleGuideStepChange}
+          gateSatisfied={gateSatisfied}
+          onSkip={handleGuideSkip}
+          onFinish={handleGuideFinish}
+        />
+      ) : (
+        guideOpen && (
+          <SandboxEditorGuide
+            templates={templates}
+            onFinished={handleGuideFinish}
+            onSkipped={handleGuideSkip}
+          />
+        )
+      )}
 
       {/* Draft system dialogs */}
       <DraftsDialog

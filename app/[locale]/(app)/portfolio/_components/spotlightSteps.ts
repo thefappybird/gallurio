@@ -58,12 +58,12 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "left",
   },
 
-  // 4.1 — Layout tab (passive — tab changes happen inside the panel)
+  // 4.1 — Content tab (passive — tab changes happen inside the panel)
   {
-    id: "style-tab-layout",
-    anchorId: "style-tab-layout",
-    title: "Layout: size, spacing, and position",
-    body: "The Layout tab controls gap, min-height, alignment, and grid placement.",
+    id: "style-tab-content",
+    anchorId: "style-tab-content",
+    title: "Content: the block's text and media",
+    body: "The Content tab is where you edit the block's actual text, images, and links.",
     placement: "bottom",
   },
 
@@ -76,12 +76,12 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 4.3 — Content tab (passive)
+  // 4.3 — Layout tab (passive)
   {
-    id: "style-tab-content",
-    anchorId: "style-tab-content",
-    title: "Content: the block's text and media",
-    body: "The Content tab is where you edit the block's actual text, images, and links.",
+    id: "style-tab-layout",
+    anchorId: "style-tab-layout",
+    title: "Layout: size, spacing, and position",
+    body: "The Layout tab controls gap, min-height, alignment, and grid placement.",
     placement: "bottom",
   },
 

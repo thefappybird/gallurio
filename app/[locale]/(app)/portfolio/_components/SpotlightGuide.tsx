@@ -346,21 +346,19 @@ function TooltipCard({
         ))}
       </div>
 
-      {/* Footer row */}
-      <div className="flex items-center justify-between gap-2">
-        {/* Don't show again on left */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs text-muted-foreground"
-          onClick={() => (isLast ? onFinish(true) : onSkip(true))}
-        >
-          {L.dontShow}
-        </Button>
-
-        {/* Navigation on right */}
-        <div className="flex items-center gap-1.5">
+      {/* Footer */}
+      <div className="flex flex-col gap-1.5">
+        {/* Secondary actions — Don't show again + Skip this step */}
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground"
+            onClick={() => (isLast ? onFinish(true) : onSkip(true))}
+          >
+            {L.dontShow}
+          </Button>
           {isGated && (
             <Button
               type="button"
@@ -372,8 +370,11 @@ function TooltipCard({
               {L.skipStep}
             </Button>
           )}
+        </div>
 
-          {!isFirst && (
+        {/* Primary nav — Back/Skip + Next/Finish always fit on one row */}
+        <div className="flex items-center justify-between gap-1.5">
+          {!isFirst ? (
             <Button
               type="button"
               variant="outline"
@@ -383,9 +384,7 @@ function TooltipCard({
             >
               {L.back}
             </Button>
-          )}
-
-          {isFirst && !isGated && (
+          ) : !isGated ? (
             <Button
               type="button"
               variant="outline"
@@ -395,6 +394,8 @@ function TooltipCard({
             >
               {L.skip}
             </Button>
+          ) : (
+            <span />
           )}
 
           {isLast ? (

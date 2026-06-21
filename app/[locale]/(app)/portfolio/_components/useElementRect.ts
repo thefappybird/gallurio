@@ -56,6 +56,11 @@ export function useElementRect(id: string | undefined): ElementRect | null {
 
     const el = document.querySelector<Element>(`[data-tour-id="${id}"]`);
 
+    // Scroll the anchor into view so it has a real bounding rect before measuring.
+    if (el) {
+      el.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+    }
+
     // Initial measurement via rAF so we are past the browser layout phase.
     const raf = requestAnimationFrame(() => update(el));
 

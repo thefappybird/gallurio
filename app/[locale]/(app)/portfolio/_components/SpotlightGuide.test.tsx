@@ -289,4 +289,16 @@ describe("SpotlightGuide", () => {
     expect(screen.getByText("Anchor step")).toBeInTheDocument();
     expect(screen.queryByText("Welcome to the tour")).toBeNull();
   });
+
+  // ── Footer layout: gated step with all 4 buttons ─────────────────────────────
+
+  it("gated non-first step shows Don't show again, Skip this step, Back, and Next — all present", () => {
+    // STEPS[2] is gated; stepIndex=2 → not first, not last, gated
+    renderGuide({ stepIndex: 2, gateSatisfied: false });
+
+    expect(screen.getByRole("button", { name: /Don't show again/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Skip this step/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Back$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Next$/i })).toBeInTheDocument();
+  });
 });
