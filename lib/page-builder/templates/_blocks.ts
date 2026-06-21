@@ -99,6 +99,25 @@ export function heading(
   };
 }
 
+/**
+ * Columns block factory — creates a Columns layout block.
+ * Pass pre-built slot content via `content` (defaults to empty []).
+ */
+export function columns(
+  id: string,
+  props: { columns: number; rows?: number; content?: unknown[] }
+): PuckBlockEntry {
+  return {
+    type: "Columns",
+    props: {
+      id,
+      columns: props.columns,
+      rows: props.rows,
+      content: props.content ?? [],
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Zone wrapper — wraps a content array in the PuckData envelope
 // ---------------------------------------------------------------------------

@@ -8,6 +8,8 @@ import {
 import { portfolioPuckDataSchema } from "@/lib/validators/publicPage";
 import { brandKitSchema, portfolioContactConfigSchema } from "@/lib/validators/publicPage";
 import { puckConfig } from "@/lib/page-builder/config";
+import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
+import { columns } from "./_blocks";
 
 const REGISTERED_BLOCKS = new Set(Object.keys(puckConfig.components));
 
@@ -104,6 +106,68 @@ describe("portfolio template registry", () => {
       // The first home block must still be a HeroPreset in all templates.
       expect(data.home?.content[0]?.type).toBe("HeroPreset");
     }
+  });
+});
+
+describe("template theme presets", () => {
+  it("minimal carries the 'minimal' theme preset", () => {
+    const t = getTemplate("minimal")!;
+    expect(t.defaultBrandKit.themePreset).toBe("minimal");
+  });
+
+  it("wedding-photographer carries the 'romantic' theme preset", () => {
+    const t = getTemplate("wedding-photographer")!;
+    expect(t.defaultBrandKit.themePreset).toBe("romantic");
+  });
+
+  it("venue-stylist carries the 'luxury' theme preset", () => {
+    const t = getTemplate("venue-stylist")!;
+    expect(t.defaultBrandKit.themePreset).toBe("luxury");
+  });
+
+  it("event-photographer carries the 'bold' theme preset", () => {
+    const t = getTemplate("event-photographer")!;
+    expect(t.defaultBrandKit.themePreset).toBe("bold");
+  });
+
+  it("planner carries the 'modern' theme preset", () => {
+    const t = getTemplate("planner")!;
+    expect(t.defaultBrandKit.themePreset).toBe("modern");
+  });
+
+  it("minimal brand kit exactly matches THEME_PRESET_DEFINITIONS.minimal", () => {
+    const t = getTemplate("minimal")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.minimal.brandKit);
+  });
+
+  it("event-photographer brand kit exactly matches THEME_PRESET_DEFINITIONS.bold", () => {
+    const t = getTemplate("event-photographer")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.bold.brandKit);
+  });
+
+  it("planner brand kit exactly matches THEME_PRESET_DEFINITIONS.modern", () => {
+    const t = getTemplate("planner")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.modern.brandKit);
+  });
+
+  it("venue-stylist brand kit exactly matches THEME_PRESET_DEFINITIONS.luxury", () => {
+    const t = getTemplate("venue-stylist")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.luxury.brandKit);
+  });
+
+  it("wedding-photographer brand kit exactly matches THEME_PRESET_DEFINITIONS.romantic", () => {
+    const t = getTemplate("wedding-photographer")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.romantic.brandKit);
+  });
+});
+
+describe("_blocks factory helpers", () => {
+  it("columns() produces a Columns block entry with the given column count", () => {
+    const block = columns("c-1", { columns: 3 });
+    expect(block.type).toBe("Columns");
+    expect(block.props.id).toBe("c-1");
+    expect(block.props.columns).toBe(3);
+    expect(block.props.content).toEqual([]);
   });
 });
 

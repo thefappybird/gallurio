@@ -134,7 +134,7 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Gallery highlights" }),
     child("Text", { text: "A curated selection from one collection." }),
-    child("GalleryGrid", { collectionId: "", columns: 3, gap: "normal", maxItems: 12 }),
+    child("GalleryGrid", { images: [], columns: 3, gap: "normal" }),
   ]),
 };
 
@@ -147,7 +147,7 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Story gallery" }),
     child("Text", { text: "A more editorial layout for one collection." }),
-    child("GalleryMasonry", { collectionId: "", columns: 3, gap: "normal", maxItems: 18 }),
+    child("GalleryMasonry", { images: [], columns: 3, gap: "normal" }),
   ]),
 };
 
