@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 import { cn } from "@/lib/utils";
 
@@ -18,11 +19,13 @@ export type ColorPickerProps = {
 // 6-digit value so the stored color matches the validator and compares cleanly
 // against preset swatches.
 function normalizeHex(hex: string): string {
-  const v = hex.trim().toLowerCase();
+  const v = (hex ?? "").trim().toLowerCase();
   const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/.exec(v);
   if (short) return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`;
   return v;
 }
+
+const DEBOUNCE_MS = 120;
 
 export function ColorPicker({
   value,
@@ -33,8 +36,69 @@ export function ColorPicker({
   customLabel,
   hexLabel,
 }: ColorPickerProps) {
-  const current = normalizeHex(value);
-  const emit = (next: string) => onChange(normalizeHex(next));
+  const normalized = normalizeHex(value);
+  // Local state drives the visible picker — updates on every drag tick.
+  const [liveColor, setLiveColor] = useState(normalized);
+  // Keep liveColor in sync when the controlled value changes from outside.
+  useEffect(() => {
+    setLiveColor(normalizeHex(value));
+  }, [value]);
+
+  // Debounce timer refs — kept outside useCallback so they survive re-renders.
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingHexRef = useRef<string | null>(null);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
+
+  const flush = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (pendingHexRef.current !== null) {
+      const hex = pendingHexRef.current;
+      pendingHexRef.current = null;
+      onChangeRef.current(hex);
+    }
+  }, []);
+
+  // Flush any pending debounced value on unmount (popover close) so no change is lost.
+  useEffect(() => () => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (pendingHexRef.current !== null) {
+      const h = pendingHexRef.current;
+      pendingHexRef.current = null;
+      onChangeRef.current(h);
+    }
+  }, []);
+
+  // Spectrum drags: update the live display immediately; debounce the commit.
+  function emitDebounced(next: string) {
+    const hex = normalizeHex(next);
+    setLiveColor(hex);
+    pendingHexRef.current = hex;
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      if (pendingHexRef.current !== null) {
+        const h = pendingHexRef.current;
+        pendingHexRef.current = null;
+        onChangeRef.current(h);
+      }
+    }, DEBOUNCE_MS);
+  }
+
+  // Preset swatches and hex input: commit immediately.
+  function emitImmediate(next: string) {
+    const hex = normalizeHex(next);
+    setLiveColor(hex);
+    // Cancel any pending debounced commit.
+    flush();
+    onChange(hex);
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -50,13 +114,13 @@ export function ColorPicker({
           >
             {presets.map((hex) => {
               const h = normalizeHex(hex);
-              const selected = h === current;
+              const selected = h === normalizeHex(liveColor);
               return (
                 <button
                   key={hex}
                   type="button"
                   disabled={disabled}
-                  onClick={() => emit(h)}
+                  onClick={() => emitImmediate(h)}
                   className="size-8 cursor-pointer border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:opacity-50"
                   style={{
                     backgroundColor: h,
@@ -81,20 +145,20 @@ export function ColorPicker({
             disabled && "pointer-events-none opacity-50",
           )}
         >
-          <HexColorPicker color={current} onChange={emit} />
+          <HexColorPicker color={liveColor} onChange={emitDebounced} />
           <div className="flex items-center gap-2">
             <span
               aria-hidden="true"
               className="size-9 shrink-0 border border-border"
-              style={{ backgroundColor: current }}
+              style={{ backgroundColor: liveColor }}
             />
             <label className="flex flex-1 items-center gap-1.5 border border-input bg-background px-2.5 focus-within:ring-2 focus-within:ring-ring">
               <span aria-hidden="true" className="text-sm text-muted-foreground">
                 #
               </span>
               <HexColorInput
-                color={current}
-                onChange={emit}
+                color={liveColor}
+                onChange={emitImmediate}
                 disabled={disabled}
                 className="w-full bg-transparent py-2.5 text-sm uppercase outline-none disabled:opacity-50"
                 aria-label={hexLabel}

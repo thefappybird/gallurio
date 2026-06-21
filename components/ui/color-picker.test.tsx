@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { ColorPicker } from "./color-picker";
 
 // react-colorful relies on pointer/DOM geometry that happy-dom doesn't model,
@@ -49,10 +49,17 @@ describe("ColorPicker", () => {
   });
 
   it("normalizes a 3-digit spectrum value to 6 digits lowercase", () => {
-    const onChange = vi.fn();
-    render(<ColorPicker value="#0d7377" onChange={onChange} presets={PRESETS} />);
-    fireEvent.click(screen.getByTestId("spectrum"));
-    expect(onChange).toHaveBeenCalledWith("#aabbcc");
+    vi.useFakeTimers();
+    try {
+      const onChange = vi.fn();
+      render(<ColorPicker value="#0d7377" onChange={onChange} presets={PRESETS} />);
+      fireEvent.click(screen.getByTestId("spectrum"));
+      // Spectrum uses debounce; advance past the 120ms window to flush.
+      act(() => { vi.advanceTimersByTime(120); });
+      expect(onChange).toHaveBeenCalledWith("#aabbcc");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("normalizes typed hex casing", () => {
@@ -68,5 +75,57 @@ describe("ColorPicker", () => {
     );
     expect(screen.getByRole("button", { name: "#0d7377" })).toBeDisabled();
     expect(screen.getByTestId("hexinput")).toBeDisabled();
+  });
+
+  it("flushes pending debounced value on unmount so no change is lost on popover close", () => {
+    vi.useFakeTimers();
+    try {
+      const onChange = vi.fn();
+      const { unmount } = render(<ColorPicker value="#0d7377" onChange={onChange} presets={PRESETS} />);
+
+      act(() => { fireEvent.click(screen.getByTestId("spectrum")); });
+      expect(onChange).not.toHaveBeenCalled();
+
+      // Unmount before timer fires — simulates popover close mid-drag
+      act(() => { unmount(); });
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith("#aabbcc");
+
+      // Timer should not fire a second time after unmount
+      act(() => { vi.advanceTimersByTime(200); });
+      expect(onChange).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("debounces spectrum drags: multiple rapid onChange calls commit once after 120ms", () => {
+    vi.useFakeTimers();
+    try {
+      const onChange = vi.fn();
+      render(<ColorPicker value="#0d7377" onChange={onChange} presets={PRESETS} />);
+      const spectrum = screen.getByTestId("spectrum");
+
+      // Simulate 3 rapid drag ticks
+      act(() => {
+        fireEvent.click(spectrum); // emits #ABC (normalized to #aabbcc)
+        fireEvent.click(spectrum);
+        fireEvent.click(spectrum);
+      });
+
+      // Not committed yet — still within the debounce window
+      expect(onChange).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(120);
+      });
+
+      // Only one commit with the last value
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith("#aabbcc");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
