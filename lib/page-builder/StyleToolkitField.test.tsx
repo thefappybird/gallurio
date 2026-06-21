@@ -31,8 +31,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.getByText("Typography")).toBeTruthy();
-    // Typography controls live inside the collapsed drawer — expand it first.
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — it opens automatically (no click needed).
     expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Underline" })).toBeTruthy();
@@ -51,7 +50,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={undefined} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(true);
@@ -61,7 +60,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={{ bold: true }} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(false);
@@ -116,7 +115,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("hides the Bold control for Heading blocks", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Heading" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
   });
@@ -135,7 +134,8 @@ describe("StyleToolkitField — 3-tab panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.queryByText("Frame")).toBeNull();
     expect(screen.queryByText("Typography")).toBeNull();
-    expect(screen.getByRole("button", { name: "Heading" })).toBeTruthy();
+    // Per-target drawer headers are present (accordion buttons with aria-expanded).
+    expect(screen.getAllByRole("button", { name: "Heading" }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole("button", { name: "Description" })).toBeTruthy();
   });
 });
@@ -194,16 +194,17 @@ describe("ContainerBackgroundControls — animation gating", () => {
 });
 
 describe("StyleToolkitField — carousel per-target drawers", () => {
-  it("keeps both drawers collapsed by default (inner controls hidden)", () => {
+  it("Heading drawer is open by default (first section auto-opens)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
+    // Heading is the first section — it opens automatically. Bold is visible.
+    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
   });
 
-  it("expanding the Heading drawer reveals B/I/U, Level and the heading highlight", () => {
+  it("Heading drawer reveals B/I/U, Level and the heading highlight when open", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    // Heading is already open — controls visible without extra click.
     expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
     expect(screen.getByText("Level")).toBeTruthy();
     expect(screen.getByLabelText("Heading highlight")).toBeTruthy();
@@ -221,7 +222,7 @@ describe("StyleToolkitField — carousel per-target drawers", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryCarousel" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    // Heading drawer is already open — click the highlight toggle directly.
     fireEvent.click(screen.getByLabelText("Heading highlight"));
     expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlight).toBe(true);
   });
@@ -230,7 +231,7 @@ describe("StyleToolkitField — carousel per-target drawers", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={{ headingHighlight: true }} onChange={onChange} blockType="GalleryCarousel" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
+    // Heading drawer is already open — Shape and Size are visible.
     expect(screen.getByText("Shape")).toBeTruthy();
     expect(screen.getByText("Size")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Rounded" }));
@@ -271,7 +272,7 @@ describe("CarouselTextPadding heading gap control", () => {
 });
 
 describe("padding lives in the Layout tab", () => {
-  it("LayoutTabBody shows Padding for a Container", () => {
+  it("LayoutTabBody shows Padding for a Container — Spacing drawer auto-opens", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -283,8 +284,7 @@ describe("padding lives in the Layout tab", () => {
         setProp={() => {}}
       />,
     );
-    // Padding lives inside the collapsed Spacing drawer — expand it first.
-    fireEvent.click(screen.getByRole("button", { name: "Spacing" }));
+    // Spacing is the first drawer and opens automatically — Padding is visible.
     expect(screen.getByText("Padding")).toBeInTheDocument();
   });
 
@@ -342,7 +342,7 @@ describe("RadiusButtons", () => {
 });
 
 describe("Button style section — corner radius picker", () => {
-  it("LayoutTabBody for Button shows a Corner radius picker after expanding the drawer", () => {
+  it("LayoutTabBody for Button shows a Corner radius picker (flat single-section, always visible)", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -354,7 +354,7 @@ describe("Button style section — corner radius picker", () => {
         setProp={() => {}}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    // Button has one Layout section — rendered flat (no accordion), Corner radius always visible.
     expect(screen.getByText("Corner radius")).toBeTruthy();
   });
 });

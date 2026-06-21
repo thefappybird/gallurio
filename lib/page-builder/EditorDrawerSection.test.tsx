@@ -37,6 +37,39 @@ describe("EditorDrawerSection", () => {
 });
 
 describe("EditorDrawerGroup", () => {
+  it("(e) single-section group renders flat — no accordion button, children always visible", () => {
+    render(
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="Only Section">
+          <span>flat content</span>
+        </EditorDrawerSection>
+      </EditorDrawerGroup>,
+    );
+    // No accordion toggle button
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // Children always visible
+    expect(screen.getByText("flat content")).toBeInTheDocument();
+  });
+
+  it("(d) multi-section group — first section expanded by default, second collapsed", () => {
+    render(
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="First">
+          <span>first content</span>
+        </EditorDrawerSection>
+        <EditorDrawerSection title="Second">
+          <span>second content</span>
+        </EditorDrawerSection>
+      </EditorDrawerGroup>,
+    );
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("first content")).toBeInTheDocument();
+    expect(buttons[1]).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("second content")).not.toBeInTheDocument();
+  });
+
   it("(c) two sections render exactly one divider between them (flush, no gap)", () => {
     const { container } = render(
       <EditorDrawerGroup>
