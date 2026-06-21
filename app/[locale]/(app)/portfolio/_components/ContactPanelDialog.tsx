@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,9 +25,6 @@ const selectClass =
   "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 type Tab = "setup" | "design";
-type DrawerId = "popup" | "button" | "tabs";
-type ButtonDrawerId = "submit" | "addSession";
-type TabDrawerId = "inactiveTabs" | "activeTab";
 
 type Props = {
   open: boolean;
@@ -284,32 +282,6 @@ function ActiveTabRadiusRow({
   );
 }
 
-function DesignDrawer({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border border-border bg-background">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={onToggle}
-        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <span>{title}</span>
-        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden />
-      </button>
-      {open && <div className="flex flex-col gap-4 border-t border-border p-3">{children}</div>}
-    </section>
-  );
-}
 
 export function ContactPanelDialog({
   open,
@@ -321,9 +293,6 @@ export function ContactPanelDialog({
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const [tab, setTab] = useState<Tab>("setup");
-  const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
-  const [openButtonDrawer, setOpenButtonDrawer] = useState<ButtonDrawerId | null>(null);
-  const [openTabDrawer, setOpenTabDrawer] = useState<TabDrawerId | null>(null);
 
   if (!open) return null;
 
@@ -364,7 +333,7 @@ export function ContactPanelDialog({
     >
       {/* Header */}
       <div className="flex items-center border-b border-border px-4 py-3">
-        <span className="text-sm font-semibold text-foreground">{t("title")}</span>
+        <span className="text-sm font-medium text-foreground">{t("title")}</span>
       </div>
 
       {/* Tab bar */}
@@ -387,7 +356,7 @@ export function ContactPanelDialog({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         {tab === "setup" && (
           <>
             <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
@@ -435,14 +404,9 @@ export function ContactPanelDialog({
         )}
 
         {tab === "design" && (
-          <div className="flex flex-col gap-6">
+          <EditorDrawerGroup>
             {/* ── Popup section ─────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionPopup")}
-              open={openDrawer === "popup"}
-              onToggle={() => setOpenDrawer((current) => current === "popup" ? null : "popup")}
-            >
-
+            <EditorDrawerSection title={t("sectionPopup")}>
               <ColorSwatchRow
                 label={t("textColorLabel")}
                 active={contact.textColor}
@@ -484,20 +448,12 @@ export function ContactPanelDialog({
                 onColorChange={(v) => set("popupBorderColor", v)}
                 getColorLabel={(c) => t(`buttonColors.${c}`)}
               />
-            </DesignDrawer>
-
-            <div className="border-t border-border" />
+            </EditorDrawerSection>
 
             {/* ── Button section ────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionButton")}
-              open={openDrawer === "button"}
-              onToggle={() => setOpenDrawer((current) => current === "button" ? null : "button")}
-            >
+            <EditorDrawerSection title={t("sectionButton")}>
               <ButtonControlsSection
                 title={t("submitButtonSection")}
-                open={openButtonDrawer === "submit"}
-                onToggle={() => setOpenButtonDrawer((current) => current === "submit" ? null : "submit")}
                 styleValue={contact.buttonStyle}
                 onStyleToggle={(style) => toggleColor("buttonStyle", style)}
                 textColorValue={contact.buttonTextColor}
@@ -516,8 +472,6 @@ export function ContactPanelDialog({
 
               <ButtonControlsSection
                 title={t("addSessionButtonSection")}
-                open={openButtonDrawer === "addSession"}
-                onToggle={() => setOpenButtonDrawer((current) => current === "addSession" ? null : "addSession")}
                 styleValue={contact.addSessionButtonStyle}
                 onStyleToggle={(style) => toggleColor("addSessionButtonStyle", style)}
                 textColorValue={contact.addSessionButtonTextColor}
@@ -533,22 +487,12 @@ export function ContactPanelDialog({
                 brandKit={brandKit}
                 t={t}
               />
-            </DesignDrawer>
-
-            <div className="border-t border-border" />
+            </EditorDrawerSection>
 
             {/* ── Tabs section ──────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionTabs")}
-              open={openDrawer === "tabs"}
-              onToggle={() => setOpenDrawer((current) => current === "tabs" ? null : "tabs")}
-            >
-              {/* Inactive tabs sub-drawer */}
-              <DesignDrawer
-                title={t("inactiveTabsSection")}
-                open={openTabDrawer === "inactiveTabs"}
-                onToggle={() => setOpenTabDrawer((current) => current === "inactiveTabs" ? null : "inactiveTabs")}
-              >
+            <EditorDrawerSection title={t("sectionTabs")}>
+              {/* Inactive tabs sub-section */}
+              <EditorDrawerSection title={t("inactiveTabsSection")}>
                 {/* Font size */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
@@ -581,14 +525,10 @@ export function ContactPanelDialog({
                   onToggle={(c) => set("tabColor", c)}
                   getLabel={(c) => t(`buttonColors.${c}`)}
                 />
-              </DesignDrawer>
+              </EditorDrawerSection>
 
-              {/* Active tab sub-drawer */}
-              <DesignDrawer
-                title={t("activeTabSection")}
-                open={openTabDrawer === "activeTab"}
-                onToggle={() => setOpenTabDrawer((current) => current === "activeTab" ? null : "activeTab")}
-              >
+              {/* Active tab sub-section */}
+              <EditorDrawerSection title={t("activeTabSection")}>
                 <ColorSwatchRow
                   label={t("activeTabColorLabel")}
                   active={contact.activeTabColor}
@@ -652,9 +592,9 @@ export function ContactPanelDialog({
                     getLabel={(c) => t(`buttonColors.${c}`)}
                   />
                 )}
-              </DesignDrawer>
-            </DesignDrawer>
-          </div>
+              </EditorDrawerSection>
+            </EditorDrawerSection>
+          </EditorDrawerGroup>
         )}
       </div>
 
@@ -664,8 +604,6 @@ export function ContactPanelDialog({
 
 function ButtonControlsSection({
   title,
-  open,
-  onToggle,
   styleValue,
   onStyleToggle,
   textColorValue,
@@ -682,8 +620,6 @@ function ButtonControlsSection({
   t,
 }: {
   title: string;
-  open: boolean;
-  onToggle: () => void;
   styleValue: PortfolioContactConfig["buttonStyle"] | PortfolioContactConfig["addSessionButtonStyle"];
   onStyleToggle: (style: (typeof BRAND_KIT_BUTTON_STYLES)[number]) => void;
   textColorValue: string | undefined;
@@ -700,7 +636,7 @@ function ButtonControlsSection({
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
-    <DesignDrawer title={title} open={open} onToggle={onToggle}>
+    <EditorDrawerSection title={title}>
       <div className="flex flex-col gap-1.5">
         <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
         <div className="flex">
@@ -758,6 +694,6 @@ function ButtonControlsSection({
         onColorChange={onBorderColorChange}
         getColorLabel={(c) => t(`buttonColors.${c}`)}
       />
-    </DesignDrawer>
+    </EditorDrawerSection>
   );
 }

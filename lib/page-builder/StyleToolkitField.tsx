@@ -57,6 +57,7 @@ import {
   ResetButton,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
+import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
 import {
   STYLE_LIMITS,
   ANIMATION_TYPES,
@@ -594,23 +595,6 @@ function ContentTabBody({
 // GalleryHeader by GalleryCarouselBlock.
 // ---------------------------------------------------------------------------
 
-function Drawer({ title, children }: { title: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-border">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        {title}
-        {open ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
-      </button>
-      {open && <div className="flex flex-col gap-3 border-t border-border p-3">{children}</div>}
-    </div>
-  );
-}
 
 function ChoiceRow<T extends string>({
   label,
@@ -955,10 +939,10 @@ export function DesignTab({
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
 
   return (
-    <div className="flex flex-col gap-px p-3">
+    <EditorDrawerGroup>
       {/* Typography drawer */}
       {showTypography && (
-        <Drawer title="Typography">
+        <EditorDrawerSection title="Typography">
           <div className="flex flex-wrap items-center gap-1.5">
             {blockType !== "Heading" && (
               <ToolbarToggle active={!!s.bold} title="Bold" Icon={Bold} onClick={() => set({ bold: !s.bold })} />
@@ -1074,24 +1058,24 @@ export function DesignTab({
               )}
             </div>
           )}
-        </Drawer>
+        </EditorDrawerSection>
       )}
 
       {/* Carousel per-target typography drawers */}
       {isCarousel && (
         <>
-          <Drawer title="Heading">
+          <EditorDrawerSection title="Heading">
             <CarouselTargetControls target="heading" s={s} set={set} />
-          </Drawer>
-          <Drawer title="Description">
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Description">
             <CarouselTargetControls target="description" s={s} set={set} />
-          </Drawer>
+          </EditorDrawerSection>
         </>
       )}
 
       {/* Frame drawer — hidden for text/button leaf blocks and gallery blocks */}
       {showFrame && (
-        <Drawer title="Frame">
+        <EditorDrawerSection title="Frame">
           <NumberInputRow
             label="Border width"
             value={s.borderWidth}
@@ -1114,11 +1098,11 @@ export function DesignTab({
             options={SHADOW_OPTIONS}
             onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
           />
-        </Drawer>
+        </EditorDrawerSection>
       )}
 
       {/* Effects drawer — entrance animation + hover */}
-      <Drawer title="Effects">
+      <EditorDrawerSection title="Effects">
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Entrance</span>
           <div className="flex items-center gap-1">
@@ -1161,8 +1145,8 @@ export function DesignTab({
             <ResetButton onClick={() => set({ hover: "none" })} label="Hover effect" />
           </div>
         </div>
-      </Drawer>
-    </div>
+      </EditorDrawerSection>
+    </EditorDrawerGroup>
   );
 }
 
@@ -1456,9 +1440,9 @@ export function LayoutTabBody({
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
     return (
-      <div className="flex flex-col gap-px p-3">
+      <EditorDrawerGroup>
         {isButton && p && setProp && (
-          <Drawer title="Layout">
+          <EditorDrawerSection title="Layout">
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
               <div className="flex items-center gap-1.5">
@@ -1505,10 +1489,10 @@ export function LayoutTabBody({
               onChange={(v) => set({ selfAlign: v })}
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
-          </Drawer>
+          </EditorDrawerSection>
         )}
         {!isButton && (
-          <Drawer title="Layout">
+          <EditorDrawerSection title="Layout">
             <IconRow
               label="Block position"
               value={s.selfAlign}
@@ -1517,19 +1501,19 @@ export function LayoutTabBody({
             />
             <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
             <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
-          </Drawer>
+          </EditorDrawerSection>
         )}
-      </div>
+      </EditorDrawerGroup>
     );
   }
 
   // Container / generic block layout
   return (
-    <div className="flex flex-col gap-px p-3">
-      <Drawer title="Spacing">
+    <EditorDrawerGroup>
+      <EditorDrawerSection title="Spacing">
         {isFlexContainer && <PaddingControls s={s} set={set} />}
-      </Drawer>
-      <Drawer title="Layout">
+      </EditorDrawerSection>
+      <EditorDrawerSection title="Layout">
         <NumberInputRow
           label="Gap"
           value={s.gap}
@@ -1580,8 +1564,8 @@ export function LayoutTabBody({
             )}
           </>
         )}
-      </Drawer>
-    </div>
+      </EditorDrawerSection>
+    </EditorDrawerGroup>
   );
 }
 

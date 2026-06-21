@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ChevronDown, RotateCcw, Upload } from "lucide-react";
+import { RotateCcw, Upload } from "lucide-react";
+import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
@@ -21,7 +22,6 @@ import {
 } from "@/lib/page-builder/types";
 
 type Tab = "setup" | "design";
-type DrawerId = "banner" | "links" | "active" | "contactButton";
 const COLOR_TOKENS = CONTACT_BUTTON_COLORS;
 const LOGO_MAX_BYTES = 250 * 1024;
 const LOGO_MAX_WIDTH = 512;
@@ -238,32 +238,6 @@ function getImageSize(file: File): Promise<{ width: number; height: number }> {
   });
 }
 
-function DesignDrawer({
-  title,
-  open,
-  onToggle,
-  children,
-}: {
-  title: string;
-  open: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border border-border bg-background">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={onToggle}
-        className="flex min-h-11 w-full cursor-pointer items-center justify-between px-3 text-left text-xs font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      >
-        <span>{title}</span>
-        <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} aria-hidden />
-      </button>
-      {open && <div className="flex flex-col gap-4 border-t border-border p-3">{children}</div>}
-    </section>
-  );
-}
 
 export function HeaderPanelDialog({
   header,
@@ -276,7 +250,6 @@ export function HeaderPanelDialog({
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("setup");
-  const [openDrawer, setOpenDrawer] = useState<DrawerId | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function set<K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) {
@@ -342,7 +315,7 @@ export function HeaderPanelDialog({
     >
       {/* Header */}
       <div className="flex items-center border-b border-border px-4 py-3">
-        <span className="text-sm font-semibold text-foreground">{t("title")}</span>
+        <span className="text-sm font-medium text-foreground">{t("title")}</span>
       </div>
 
       {/* Tab bar */}
@@ -363,7 +336,7 @@ export function HeaderPanelDialog({
       </div>
 
       {/* Scrollable content */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         {tab === "setup" && (
           <>
             {/* Brand text */}
@@ -474,14 +447,9 @@ export function HeaderPanelDialog({
         )}
 
         {tab === "design" && (
-          <div className="flex flex-col gap-6">
+          <EditorDrawerGroup>
             {/* ── Banner ─────────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionBanner")}
-              open={openDrawer === "banner"}
-              onToggle={() => setOpenDrawer((current) => current === "banner" ? null : "banner")}
-            >
-
+            <EditorDrawerSection title={t("sectionBanner")}>
               <ColorSwatchRow
                 label={t("bgColorLabel")}
                 active={header.backgroundColor}
@@ -532,15 +500,10 @@ export function HeaderPanelDialog({
                   })}
                 </div>
               </div>
-            </DesignDrawer>
+            </EditorDrawerSection>
 
             {/* ── Links ──────────────────────────────── */}
-            <DesignDrawer
-              title={t("sectionLinks")}
-              open={openDrawer === "links"}
-              onToggle={() => setOpenDrawer((current) => current === "links" ? null : "links")}
-            >
-
+            <EditorDrawerSection title={t("sectionLinks")}>
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("fontSizeLabel")}</span>
                 <div className="flex">
@@ -585,15 +548,10 @@ export function HeaderPanelDialog({
                 brandKit={brandKit}
                 onToggle={(c) => set("activeLinkColor", c)}
               />
-            </DesignDrawer>
+            </EditorDrawerSection>
 
             {/* ── Active link style ──────────────────── */}
-            <DesignDrawer
-              title={t("sectionActiveStyle")}
-              open={openDrawer === "active"}
-              onToggle={() => setOpenDrawer((current) => current === "active" ? null : "active")}
-            >
-
+            <EditorDrawerSection title={t("sectionActiveStyle")}>
               {/* Multi-select: Scale / Highlight / Underline */}
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs text-muted-foreground">{t("activeStyleLabel")}</span>
@@ -647,14 +605,10 @@ export function HeaderPanelDialog({
                   onToggle={(c) => set("underlineColor", c)}
                 />
               )}
-            </DesignDrawer>
+            </EditorDrawerSection>
 
-            <DesignDrawer
-              title={t("sectionContactButton")}
-              open={openDrawer === "contactButton"}
-              onToggle={() => setOpenDrawer((current) => current === "contactButton" ? null : "contactButton")}
-            >
-
+            {/* ── Contact button ──────────────────────── */}
+            <EditorDrawerSection title={t("sectionContactButton")}>
               <ColorSwatchRow
                 label={t("contactButtonColorLabel")}
                 active={header.contactButtonColor}
@@ -681,8 +635,8 @@ export function HeaderPanelDialog({
                 onToggle={(radius) => set("contactButtonRadius", radius)}
                 getLabel={(radius) => t(`radius.${radius}`)}
               />
-            </DesignDrawer>
-          </div>
+            </EditorDrawerSection>
+          </EditorDrawerGroup>
         )}
       </div>
 
