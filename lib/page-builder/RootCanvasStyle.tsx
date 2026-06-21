@@ -36,6 +36,15 @@ export function rootCanvasCssText(style?: RootPageStyle | null): string {
 const CANVAS_COLOR_ISOLATION_CSS =
   `${CANVAS_SURFACE_SELECTOR} { color: var(--foreground); }`;
 
+// Allow the canvas page to GROW with its content. Puck's layout system gives
+// [data-puck-preview] a height derived from the scroll pane (typically `height:100%`
+// of the viewport-height layout area). Blocks that use `min-height: Xvh` inline
+// extend beyond that fixed height — the block overflows the page background frame
+// rather than stretching it. Overriding with `min-height: fit-content` makes the
+// surface content-driven: the page/background always wraps the tallest content.
+const CANVAS_GROWTH_CSS =
+  `${CANVAS_SURFACE_SELECTOR} { min-height: fit-content; }`;
+
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
  * (always present, so the canvas reflows with the viewport toggle) with the
@@ -46,7 +55,7 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
 }
 
 /**
