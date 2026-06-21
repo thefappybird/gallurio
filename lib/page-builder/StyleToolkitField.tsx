@@ -1488,6 +1488,7 @@ export function LayoutTabBody({
                 ))}
               </div>
             </div>
+            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
             <IconRow
               label="Block position"
               value={s.selfAlign}

@@ -437,12 +437,16 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.borderWidth).toBe("");
   });
 
-  it("button borderRadius always comes from var(--pf-radius), not _style.radius", () => {
+  it("_style.radius set → button uses px borderRadius (not var(--pf-radius))", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    const wrapper = a.parentElement as HTMLElement;
+    expect(a.style.borderRadius).toBe("8px");
+  });
+
+  it("_style.radius unset → button falls back to var(--pf-radius) brand-kit radius", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.borderRadius).toBe("var(--pf-radius)");
-    expect(wrapper.style.borderRadius).toBe("");
   });
 
   it("_style.shadow applies boxShadow to the <a> not the wrapper div", () => {

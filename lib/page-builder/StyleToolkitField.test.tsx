@@ -341,6 +341,24 @@ describe("RadiusButtons", () => {
   });
 });
 
+describe("Button style section — corner radius picker", () => {
+  it("LayoutTabBody for Button shows a Corner radius picker after expanding the drawer", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Button"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    expect(screen.getByText("Corner radius")).toBeTruthy();
+  });
+});
+
 import { ContentInputs } from "./StyleToolkitField";
 
 describe("ContentInputs — emoji button integration", () => {

@@ -300,7 +300,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
-  const tkBorderRadius = "var(--pf-radius)";
+  const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
   const customTextColor = colorTokenToVar(_style?.textColorToken);
   const colorVar = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-primary)";
 
