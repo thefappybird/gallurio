@@ -50,7 +50,7 @@ export function UnsavedChangesDialog({
         </AlertDialogHeader>
 
         {name !== undefined && onNameChange !== undefined && (
-          <div className="flex flex-col gap-1.5 py-1">
+          <div className="flex flex-col gap-1.5 px-4 pt-2">
             <Label htmlFor="unsaved-dialog-name">{nameLabel}</Label>
             <Input
               id="unsaved-dialog-name"
