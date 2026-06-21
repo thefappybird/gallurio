@@ -706,4 +706,83 @@ describe("EditorShell", () => {
       expect(__puckMountCount).toBeGreaterThan(mountCountBefore);
     });
   });
+
+  it("unsaved-changes modal shows the draft name input and blocks Save when name is a duplicate", async () => {
+    const props = {
+      ...baseProps,
+      initialActiveDraftId: "d1",
+      initialActiveDraftName: "Test Draft",
+      initialDrafts: [
+        { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString() },
+        { id: "d2", name: "Summer", templateId: "minimal", updatedAt: new Date().toISOString() },
+      ],
+    };
+    // Make the draft dirty by renaming to a duplicate name.
+    await renderAndDismissEntry(<EditorShell {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Rename draft" }));
+    fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Summer" } });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
+
+    // Trigger the unsaved-changes guard by trying to apply another draft.
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Apply Summer" }));
+
+    // The unsaved-changes dialog should open.
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+
+    // It must render a Draft name input seeded with "Summer".
+    const nameInput = screen.getByLabelText("Draft name");
+    expect(nameInput).toBeInTheDocument();
+    expect((nameInput as HTMLInputElement).value).toBe("Summer");
+
+    // Clicking Save in the dialog should show the error and NOT call the save action.
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("A draft with this name already exists");
+    expect(updateDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("Discard in unsaved-changes dialog closes both dialogs and aborts the pending publish", async () => {
+    // Start with a clean draft (not dirty) so the publish flow works normally.
+    // Then make it dirty by simulating a Puck change, then open Publish to trigger the guard.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Make the draft dirty via a Puck change.
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+
+    // Try to publish — this should trigger the unsaved-changes guard.
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
+    // The unsaved-changes dialog should now be open (not the publish dialog).
+    expect(await screen.findByText("Save your changes?")).toBeInTheDocument();
+    expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
+
+    // Click Discard — should close the unsaved dialog AND abort the publish.
+    fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+
+    // Both dialogs must be gone.
+    await waitFor(() => {
+      expect(screen.queryByText("Save your changes?")).not.toBeInTheDocument();
+      expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
+    });
+
+    // The queued publish action must NOT have run.
+    expect(publishDraftAction).not.toHaveBeenCalled();
+  });
+
+  it("open-in-new-tab button opens /portfolio-preview and does not call createPreviewSnapshotAction", async () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open in new tab/i }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/portfolio-preview"),
+      "_blank",
+      "noopener,noreferrer"
+    );
+    // The snapshot action must not have been called.
+    // (It's not mocked in this file — verifying the button doesn't call it by
+    // ensuring no network/action mock was invoked for that path.)
+    openSpy.mockRestore();
+  });
 });

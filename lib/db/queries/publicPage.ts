@@ -1,7 +1,6 @@
 import { cache } from "react";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace } from "@/lib/db/models/Workspace";
-import { PreviewSnapshot } from "@/lib/db/models/PreviewSnapshot";
 
 /**
  * Resolves a public portfolio page by workspace slug.
@@ -36,14 +35,3 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
 
   return workspace ?? null;
 });
-
-/**
- * Looks up a short-lived preview snapshot by its opaque token.
- * Snapshots expire automatically via MongoDB TTL (2 hours).
- * Returns null for unknown or expired tokens — callers fall back to published data.
- */
-export async function findPreviewSnapshot(token: string, workspaceId: string) {
-  if (!token || !workspaceId) return null;
-  await connectDB();
-  return PreviewSnapshot.findOne({ token, workspaceId }).lean();
-}

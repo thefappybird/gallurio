@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { PortfolioDraft, Workspace, PreviewSnapshot, type PortfolioDraftDoc } from "@/lib/db/models";
+import { PortfolioDraft, Workspace, type PortfolioDraftDoc } from "@/lib/db/models";
 import type { PlanTier } from "@/lib/db/models/Workspace";
 import { createDraftSchema, updateDraftSchema } from "@/lib/validators/portfolioDraft";
 import { draftCapForPlan } from "@/lib/page-builder/drafts";
@@ -302,43 +302,3 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   return { ok: true };
 }
 
-// ---------------------------------------------------------------------------
-// Preview snapshot — short-lived (2h TTL) snapshot for "open in new tab" preview
-// ---------------------------------------------------------------------------
-
-export type CreatePreviewSnapshotResult = { ok: true; token: string } | { error: string };
-
-// Surface-level shape check — full deep validation of PuckData is impractical;
-// auth (requireOrg + owner_only) already prevents cross-tenant writes.
-const previewSnapshotSchema = z.object({
-  data: z.object({ home: z.unknown(), gallery: z.unknown() }),
-  brandKit: z.unknown(),
-  contact: z.unknown(),
-  header: z.unknown(),
-  collectionsPopup: z.unknown(),
-  formLocale: z.string().max(10),
-});
-
-export async function createPreviewSnapshotAction(
-  payload: unknown,
-): Promise<CreatePreviewSnapshotResult> {
-  const ctx = await requireOrg();
-  if (ctx.role !== "owner") return { error: "owner_only" };
-
-  const parsed = previewSnapshotSchema.safeParse(payload);
-  if (!parsed.success) return { error: "invalid_payload" };
-
-  await connectDB();
-
-  const token = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
-
-  await PreviewSnapshot.create({
-    workspaceId: ctx.workspace._id,
-    token,
-    ...parsed.data,
-    expiresAt,
-  });
-
-  return { ok: true, token };
-}

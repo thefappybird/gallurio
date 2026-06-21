@@ -8,7 +8,7 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Loader2Icon, Undo2, Redo2 } from "lucide-react";
+import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -36,7 +36,6 @@ import {
   listDraftsAction,
   publishDraftAction,
   seedTemplateAction,
-  createPreviewSnapshotAction,
   type DraftSummary,
 } from "../_draftActions";
 import { PublishDialog } from "./PublishDialog";
@@ -307,7 +306,6 @@ export function EditorShell({
   const [entryOpen, setEntryOpen] = useState(true);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
-  const [openingPreview, setOpeningPreview] = useState(false);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
   // path). Controls whether the dashed "Unsaved" row appears in DraftsDialog.
@@ -897,28 +895,6 @@ export function EditorShell({
     []
   );
 
-  async function handleOpenPublicPreview() {
-    setOpeningPreview(true);
-    try {
-      const result = await createPreviewSnapshotAction({
-        data: zoneDataRef.current,
-        brandKit,
-        contact,
-        header: headerConfig,
-        collectionsPopup,
-        formLocale,
-      });
-      const base = `${publicOrigin}/w/${slug}`;
-      window.open(
-        "error" in result ? base : `${base}?preview=${result.token}`,
-        "_blank",
-        "noopener,noreferrer",
-      );
-    } finally {
-      setOpeningPreview(false);
-    }
-  }
-
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
@@ -961,17 +937,12 @@ export function EditorShell({
         </Button>
         <button
           type="button"
-          disabled={openingPreview}
           title={t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
-          onClick={() => void handleOpenPublicPreview()}
+          onClick={() => window.open(previewBasePath, "_blank", "noopener,noreferrer")}
           className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
-          {openingPreview ? (
-            <Loader2Icon className="size-4 animate-spin" aria-hidden />
-          ) : (
-            <ExternalLinkIcon className="size-4" aria-hidden />
-          )}
+          <ExternalLinkIcon className="size-4" aria-hidden />
         </button>
       </div>
     );
@@ -1023,7 +994,7 @@ export function EditorShell({
         >
           <DraftNameEditor
             name={draftName}
-            error={nameError}
+            error={pendingAction !== null ? null : nameError}
             onCommit={(n) => { setDraftName(n); setNameError(null); }}
           />
         </div>
@@ -1275,6 +1246,10 @@ export function EditorShell({
       <UnsavedChangesDialog
         open={pendingAction !== null}
         saving={savingChanges}
+        name={draftName}
+        onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
+        nameLabel="Draft name"
+        nameError={nameError}
         onSave={async () => {
           const ok = await handleSaveChanges();
           if (ok) {
@@ -1285,9 +1260,8 @@ export function EditorShell({
         }}
         onDiscard={() => {
           window.localStorage.removeItem(draftKey);
-          const run = pendingAction;
           setPendingAction(null);
-          run?.();
+          setPublishOpen(false);
         }}
         onCancel={() => setPendingAction(null)}
       />
