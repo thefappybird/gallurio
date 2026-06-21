@@ -69,6 +69,7 @@ These two items both target the same dialog and ship together.
 - **Title input (#20):** render a labeled `Input` (`components/ui/input.tsx`, which auto-styles `aria-invalid`) between the description and the footer. `value={draftName}`, `onChange → onDraftNameChange`, `aria-invalid={!!nameError}`, accessible label "Draft name".
 - **Error above Save (#18):** when `nameError` is set, render it as `<p role="alert" className="text-xs text-destructive">` immediately above the footer/Save button (consistent with `DraftNameEditor` / `TemplatePickerDialog` error styling).
 - **Gate the API:** Save remains blocked / no-ops while `nameError !== null` (folds into the existing `handleSaveChanges` early-return + disabled state). Editing the title in the dialog runs `validateDraftName` and updates `nameError` live.
+- **Build it generic (reuse by Batch 5).** The same dialog is reused by Batch 5's theme save-guard, so build it parameterized rather than draft-specific. Keep the prop shape neutral — e.g. `name` / `onNameChange` / `nameError` / `onSave` / `onDiscard` / `onKeepEditing`, plus optional `title` and `nameLabel` — so one consumer can pass draft-name + `validateDraftName` + the draft duplicate set, and another can pass theme-name + theme-name validation + the existing-theme-names set. Do not hardcode "draft" copy into the component; pass it in. See `2026-06-21-theme-color-logo-design.md` → "Dependency on Batch 3+4".
 
 ---
 
