@@ -149,6 +149,39 @@ describe("HeaderPanelDialog", () => {
     expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
   });
 
+  it("debounces the color spectrum input — multiple rapid changes produce one committed call", () => {
+    vi.useFakeTimers();
+    const onHeaderChange = vi.fn();
+    renderWithProviders(<HeaderPanelDialog {...baseProps} onHeaderChange={onHeaderChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Banner" }));
+
+    const colorInput = screen.getByLabelText("Pick custom color");
+
+    // Simulate three rapid drag ticks
+    fireEvent.change(colorInput, { target: { value: "#ff0000" } });
+    fireEvent.change(colorInput, { target: { value: "#ff8800" } });
+    fireEvent.change(colorInput, { target: { value: "#ffcc00" } });
+
+    // The debounce has NOT fired yet — no backgroundColor commit
+    const callsBeforeFlush = onHeaderChange.mock.calls.filter((c) =>
+      JSON.stringify(c[0]).includes("Color"),
+    );
+    expect(callsBeforeFlush).toHaveLength(0);
+
+    // Advance past the 120 ms debounce window
+    vi.advanceTimersByTime(200);
+
+    // Exactly one commit with the final color
+    const callsAfterFlush = onHeaderChange.mock.calls.filter((c) =>
+      JSON.stringify(c[0]).includes("ffcc00"),
+    );
+    expect(callsAfterFlush).toHaveLength(1);
+
+    vi.useRealTimers();
+  });
+
   it("shows percent suffixes for opacity controls", () => {
     renderWithProviders(
       <HeaderPanelDialog

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { toast } from "sonner";
 import { RotateCcw, Upload } from "lucide-react";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
@@ -67,6 +68,13 @@ function ColorSwatchRow({
     active.startsWith("#") &&
     !(COLOR_TOKENS as readonly string[]).includes(active);
 
+  // Local display value for the spectrum input so the swatch stays visually live
+  // during a drag; the debounced commit coalesces rapid changes into one update.
+  const [liveColor, setLiveColor] = useState<string | null>(null);
+  const { debounced: debouncedToggle, flush } = useDebounce<string>(onToggle);
+
+  const displayColor = liveColor ?? (isCustomHex ? active : "#000000");
+
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -80,7 +88,10 @@ function ColorSwatchRow({
               type="button"
               aria-label={colorToken}
               aria-pressed={isActive}
-              onClick={() => onToggle(isActive ? undefined : colorToken)}
+              onClick={() => {
+                setLiveColor(null);
+                onToggle(isActive ? undefined : colorToken);
+              }}
               style={{ backgroundColor: hex }}
               className={cn(
                 "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -92,7 +103,10 @@ function ColorSwatchRow({
         {allowNone && (
           <button
             type="button"
-            onClick={() => onToggle(undefined)}
+            onClick={() => {
+              setLiveColor(null);
+              onToggle(undefined);
+            }}
             title="Reset"
             aria-label="Reset color"
             className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -100,24 +114,31 @@ function ColorSwatchRow({
             <RotateCcw className="size-3.5" aria-hidden />
           </button>
         )}
-        {/* Spectrum / custom hex picker */}
+        {/* Spectrum / custom hex picker — onChange is debounced; swatch shows live local value */}
         <label
           title="Custom color"
           aria-label="Custom color"
           className={cn(
             "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
-            isCustomHex && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+            (liveColor !== null || isCustomHex) && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
           )}
-          style={{ background: isCustomHex ? active : undefined }}
+          style={{ background: liveColor ?? (isCustomHex ? active : undefined) }}
         >
           <input
             type="color"
-            value={isCustomHex ? active : "#000000"}
-            onChange={(e) => onToggle(e.target.value)}
+            value={displayColor ?? "#000000"}
+            onChange={(e) => {
+              setLiveColor(e.target.value);
+              debouncedToggle(e.target.value);
+            }}
+            onBlur={() => {
+              flush();
+              setLiveColor(null);
+            }}
             className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             aria-label="Pick custom color"
           />
-          {!isCustomHex && (
+          {liveColor === null && !isCustomHex && (
             <span
               aria-hidden
               className="absolute inset-0"
