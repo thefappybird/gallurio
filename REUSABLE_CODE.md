@@ -64,6 +64,7 @@ Composed, app-specific shared components.
 | `components/app/clear-filters-button.tsx` | `ClearFiltersButton` | Clears filter params from URL; hidden when none active | `paramKeys`, `defaultValues?` |
 | `components/app/sign-out-confirm.tsx` | `SignOutConfirmDialog` | Controlled logout confirm dialog | `open`, `onOpenChange` |
 | `components/app/sign-out-link.tsx` | `SignOutLink` | Sign-out button form wrapper | children |
+| `components/app/slug-status-indicator.tsx` | `SlugStatusIndicator` | Workspace slug availability indicator — single persistent `aria-live="polite"` live region; text + icon (never color-only); statuses: idle/checking/available/taken/invalid | `status: SlugStatus`, `t: ReturnType<typeof useTranslations>` (must expose `slugChecking`, `slugAvailable`, `slugTaken`, `slugInvalid` keys) |
 
 ## 3. Hooks
 

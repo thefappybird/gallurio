@@ -5,7 +5,8 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import {
@@ -24,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
-import { useSlugAvailability, type SlugStatus } from "@/hooks/useSlugAvailability";
+import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -80,42 +81,6 @@ function toSlug(val: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .slice(0, 50);
-}
-
-function SlugStatusIndicator({
-  status,
-  t,
-}: {
-  status: SlugStatus;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  if (status === "idle") return null;
-  if (status === "checking") {
-    return (
-      <p className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
-        <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-        {t("slugChecking")}
-      </p>
-    );
-  }
-  if (status === "available") {
-    return (
-      <p className="flex items-center gap-1 text-xs text-[var(--success)]" aria-live="polite">
-        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-        {t("slugAvailable")}
-      </p>
-    );
-  }
-  return (
-    <p className="flex items-center gap-1 text-xs text-destructive" aria-live="polite">
-      {status === "taken" ? (
-        <XCircle className="h-3 w-3" aria-hidden="true" />
-      ) : (
-        <AlertCircle className="h-3 w-3" aria-hidden="true" />
-      )}
-      {status === "taken" ? t("slugTaken") : t("slugInvalid")}
-    </p>
-  );
 }
 
 export function BusinessStepForm({
