@@ -16,6 +16,8 @@ import { User } from "@/lib/db/models/User";
 import { Invitation } from "@/lib/db/models/Invitation";
 import { TeamMembership } from "@/lib/db/models/teamMembership";
 import { sendTeamInviteEmail } from "@/lib/email/teamInvite";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
+import { emailLocale } from "@/lib/email/messages";
 import { sendNotification } from "@/lib/notifications/send";
 import {
   inviteMemberSchema,
@@ -201,14 +203,10 @@ export async function inviteMemberAction(
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   const acceptUrl = `${appUrl}/invite/accept?token=${encodeURIComponent(raw)}`;
 
-  // Determine locale from workspace. Default to "en"; use workspace country as hint.
   const wsCountry = ((ctx.workspace as Record<string, unknown>).country as string | undefined) ?? "";
-  const emailLocale = wsCountry.toLowerCase() === "ph" ? "fil"
-    : wsCountry.toLowerCase() === "my" ? "ms"
-    : wsCountry.toLowerCase() === "id" ? "id"
-    : "en";
-
   const wsName = ((ctx.workspace as Record<string, unknown>).name as string | undefined) ?? "Gallurio workspace";
+  const inviteLocale = emailLocale(wsCountry);
+  const workspaceBrand = resolveWorkspaceBrand(ctx.workspace as Parameters<typeof resolveWorkspaceBrand>[0]);
 
   const emailResult = await sendTeamInviteEmail({
     to: email,
@@ -216,7 +214,8 @@ export async function inviteMemberAction(
     workspaceName: wsName,
     teamNames: teams.map((t) => t.name),
     acceptUrl,
-    locale: emailLocale,
+    locale: inviteLocale,
+    brand: workspaceBrand,
   });
 
   if (!emailResult.ok) {
