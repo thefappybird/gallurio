@@ -11,7 +11,7 @@ Gallurio is a multi-tenant CRM SaaS for event businesses. Each workspace has boo
 - Zod
 - react-hook-form
 - Puck
-- Cloudinary
+- Cloudflare Images
 - Paddle
 - Vercel Workflow DevKit (`workflow`, `@workflow/next`) for durable subscription checkout
 - next-intl
@@ -292,11 +292,13 @@ aspirations. The current backlog of known lapses lives in
 - Inquiry submission creates `Inquiry` + match/create `Client` + inquiry-status `Booking` in one transaction
 - Owner converts inquiry into booked work from the app; no in-app quote negotiation flow in MVP
 
-## Cloudinary
-- Browser uploads go direct via signed endpoint
-- Store both `url` and `cloudinaryPublicId`
-- Thumbnails are derived from URL transforms
-- Delete remote asset when deleting image-bearing docs
+## Cloudflare Images
+- Browser uploads go direct via Cloudflare Images Direct Creator Upload (`requestDirectUpload`, `lib/storage/cloudflareImages.ts`); the API token never reaches the client
+- Tenant scoping is by upload metadata `workspaceId` (no folders); every create route calls `verifyImageOwnership(imageId, workspaceId)` to reject cross-tenant image ids
+- Store the Cloudflare asset id (`GalleryItem.assetId`, `assetProvider: "cloudflare"`) plus the delivery `url`; thumbnails are URL variants built via `imageDeliveryUrl()` (imagedelivery.net, width/height/fit)
+- Delete the remote image (`deleteImage`) when deleting image-bearing docs
+- Format/size are enforced app-side (`lib/page-builder/photoSpec.ts`), not by a provider upload preset
+- Env: `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_IMAGES_API_TOKEN`, `CLOUDFLARE_IMAGES_ACCOUNT_HASH`, `NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH`
 
 ## Billing
 - Paddle replaces HitPay for Gallurio subscription billing
