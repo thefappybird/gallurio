@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { checkSlugAvailabilityAction } from "@/lib/actions/slug";
@@ -8,11 +8,11 @@ export type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid"
 /**
  * Debounced slug availability hook.
  *
- * @param slug       - Current slug value from the input.
- * @param currentSlug - The workspace's already-saved slug (settings path).
- *                      When `slug === currentSlug` the check is skipped and
- *                      status stays `"idle"` so the indicator does not fire on
- *                      the initial form render.
+ * @param slug        Current slug value from the input.
+ * @param currentSlug The workspace already-saved slug (settings path).
+ *                    When slug === currentSlug the check is skipped and
+ *                    status stays "idle" so the indicator does not fire on
+ *                    the initial form render.
  */
 export function useSlugAvailability(
   slug: string,
@@ -23,17 +23,16 @@ export function useSlugAvailability(
   const seqRef = useRef(0);
 
   useEffect(() => {
-    // Skip: empty value or equals the already-saved slug
-    if (!slug || slug === currentSlug) {
-      setStatus("idle");
-      return;
-    }
-
+    const skip = !slug || slug === currentSlug;
     const id = seqRef.current + 1;
     seqRef.current = id;
-    setStatus("checking");
 
     const timer = setTimeout(async () => {
+      if (skip) {
+        setStatus("idle");
+        return;
+      }
+      setStatus("checking");
       try {
         const result = await checkSlugAvailabilityAction(slug);
         // Ignore stale responses (another slug was typed after this request fired)
@@ -49,7 +48,7 @@ export function useSlugAvailability(
         if (seqRef.current !== id) return;
         setStatus("idle");
       }
-    }, 400);
+    }, skip ? 0 : 400);
 
     return () => clearTimeout(timer);
   }, [slug, currentSlug]);

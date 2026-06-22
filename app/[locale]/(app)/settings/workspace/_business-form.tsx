@@ -1,9 +1,9 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   updateWorkspaceBusinessSchema,
@@ -19,6 +19,7 @@ import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSlugAvailability, type SlugStatus } from "@/hooks/useSlugAvailability";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -58,6 +59,45 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   BHD: "Bahraini Dinar (.د.ب)",
 };
 
+/**
+ * Inline indicator for slug availability. Text + icon — state never by color alone (a11y).
+ */
+function SlugStatusIndicator({
+  status,
+  t,
+}: {
+  status: SlugStatus;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  if (status === "idle") return null;
+  if (status === "checking") {
+    return (
+      <p className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
+        <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+        {t("slugChecking")}
+      </p>
+    );
+  }
+  if (status === "available") {
+    return (
+      <p className="flex items-center gap-1 text-xs text-[var(--success)]" aria-live="polite">
+        <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+        {t("slugAvailable")}
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center gap-1 text-xs text-destructive" aria-live="polite">
+      {status === "taken" ? (
+        <XCircle className="h-3 w-3" aria-hidden="true" />
+      ) : (
+        <AlertCircle className="h-3 w-3" aria-hidden="true" />
+      )}
+      {status === "taken" ? t("slugTaken") : t("slugInvalid")}
+    </p>
+  );
+}
+
 export function WorkspaceBusinessForm({
   defaults,
 }: {
@@ -71,11 +111,15 @@ export function WorkspaceBusinessForm({
     handleSubmit,
     setValue,
     reset,
+    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<UpdateWorkspaceBusinessInput>({
     resolver: zodResolver(updateWorkspaceBusinessSchema),
     defaultValues: defaults,
   });
+
+  const slugValue = useWatch({ control, name: "slug" });
+  const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -106,8 +150,13 @@ export function WorkspaceBusinessForm({
             <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
               gallurio.com/w/
             </span>
-            <Input id="slug" {...register("slug")} />
+            <Input
+              id="slug"
+              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+              {...register("slug")}
+            />
           </div>
+          <SlugStatusIndicator status={slugStatus} t={tOnb} />
           {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
         </div>
 
@@ -203,7 +252,16 @@ export function WorkspaceBusinessForm({
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button
+            type="submit"
+            disabled={
+              isSubmitting ||
+              !isDirty ||
+              slugStatus === "checking" ||
+              slugStatus === "taken" ||
+              slugStatus === "invalid"
+            }
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

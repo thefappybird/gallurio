@@ -568,10 +568,7 @@
       "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
       "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akun",
-      "logOutConfirmTitle": "Keluar?",
-      "logOutConfirmBody": "Anda perlu masuk lagi untuk kembali ke ruang kerja Anda.",
-      "logOutConfirmCancel": "Batal"
+      "accountMenu": "Menu akun"
     },
     "theme": {
       "label": "Tema",
@@ -1629,7 +1626,11 @@
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Band",
         "other": "Lainnya"
-      }
+      },
+      "slugChecking": "Memeriksa…",
+      "slugAvailable": "Tersedia",
+      "slugTaken": "Sudah digunakan",
+      "slugInvalid": "Format tidak valid"
     },
     "plan": {
       "title": "Pilih paket yang sesuai",

@@ -73,6 +73,7 @@ Composed, app-specific shared components.
 | `hooks/use-guarded-action.ts` | `useGuardedAction` | `(action, { onError? }) => { loading, trigger }` | Wrap async action: loading state, blocks concurrent invocations |
 | `lib/hooks/useGlobalContactTrigger.ts` | `useGlobalContactTrigger` | `(open: () => void) => void` | Register global contact-modal opener; cleans up on unmount |
 | `lib/page-builder/brandKitContext.tsx` | `useBrandKit` | `() => PortfolioBrandKit` | Read current workspace brand kit (throws outside provider) |
+| `hooks/useSlugAvailability.ts` | `useSlugAvailability`, `SlugStatus` | `(slug: string, currentSlug?: string) => { status: SlugStatus }` | Debounced (400ms) slug availability check via `checkSlugAvailabilityAction`; stale-response-safe via monotonic seq counter; statuses: idle/checking/available/taken/invalid; idle when slug is empty or equals currentSlug (own workspace) |
 
 ## 4. Helpers / utilities
 
