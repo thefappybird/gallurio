@@ -5,8 +5,9 @@ import { getTeamsForUser } from "@/lib/auth/teamContext";
 import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog, Client, Team, TeamMembership, User } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
 import { sendNotification } from "@/lib/notifications/send";
+import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
@@ -437,21 +438,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
     if (shouldNotifyTeamAssigned) {
       const assignedTeamId = teamReassignment!.to;
-      const teamMemberships = await TeamMembership.find(
-        { workspaceId: ctx.workspace._id, teamId: assignedTeamId },
-        { workosUserId: 1 },
-      ).lean();
-      if (teamMemberships.length > 0) {
-        const memberIds = teamMemberships.map((m) => m.workosUserId);
-        const memberUsers = await User.find(
-          { workosUserId: { $in: memberIds } },
-          { workosUserId: 1, email: 1, name: 1 },
-        ).lean();
-        const recipients = memberUsers.map((u) => ({
-          workosUserId: u.workosUserId,
-          email: u.email,
-          name: u.name || undefined,
-        }));
+      const recipients = await resolveTeamRecipients(ctx.workspace._id, assignedTeamId);
+      if (recipients.length > 0) {
         // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({
           workspaceId: ctx.workspaceId,
@@ -469,41 +457,14 @@ export async function PATCH(req: Request, { params }: Params) {
     }
 
     if (shouldNotifyStatusChanged) {
-      // Collect recipients: team members (if booking has a team) + workspace owner.
-      const recipientMap = new Map<string, { workosUserId: string; email: string; name?: string }>();
-
       const bookingTeamId = updated?.teamId ?? existing.teamId;
-      if (bookingTeamId) {
-        const teamMemberships = await TeamMembership.find(
-          { workspaceId: ctx.workspace._id, teamId: bookingTeamId },
-          { workosUserId: 1 },
-        ).lean();
-        if (teamMemberships.length > 0) {
-          const memberIds = teamMemberships.map((m) => m.workosUserId);
-          const memberUsers = await User.find(
-            { workosUserId: { $in: memberIds } },
-            { workosUserId: 1, email: 1, name: 1 },
-          ).lean();
-          for (const u of memberUsers) {
-            recipientMap.set(u.workosUserId, {
-              workosUserId: u.workosUserId,
-              email: u.email,
-              name: u.name || undefined,
-            });
-          }
-        }
-      }
-
-      // Include workspace owner.
       const ownerEmail = ctx.workspace.contact?.email;
-      if (ownerEmail) {
-        recipientMap.set(ctx.workspace.ownerUserId, {
-          workosUserId: ctx.workspace.ownerUserId,
-          email: ownerEmail,
-        });
-      }
-
-      const recipients = [...recipientMap.values()];
+      const recipients = await resolveStatusChangeRecipients({
+        workspaceId: ctx.workspace._id,
+        teamId: bookingTeamId ?? null,
+        ownerUserId: ctx.workspace.ownerUserId,
+        ownerEmail: ownerEmail ?? null,
+      });
       if (recipients.length > 0) {
         // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({

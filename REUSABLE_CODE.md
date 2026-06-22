@@ -138,6 +138,11 @@ Composed, app-specific shared components.
 | `lib/email/brand.ts` | `Brand`, `gallurioBrand()`, `resolveWorkspaceBrand(ws)`, `ctaTextColor(accentHex)` | Typed brand struct + factory functions. `gallurioBrand()` returns the platform brand; `resolveWorkspaceBrand(ws)` derives a partner brand from a workspace doc; `ctaTextColor` picks `#ffffff` or `#1a1a1a` for readable CTA button text via WCAG relative luminance. |
 | `lib/email/layout.ts` | `EmailBlock`, `RenderEmailOpts`, `renderBrandedEmail(opts) => { html, text }` | Branded transactional email renderer. Table-based, 600px, fully inline styles, platform (teal header) and partner (white header + accent CTA) modes, dark-mode `@media` block, bulletproof CTA buttons, plain-text fallback. Every caller string is HTML-escaped internally — callers pass raw strings. |
 
+### `lib/notifications/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/notifications/recipients.ts` | `resolveTeamRecipients(workspaceId, teamId)`, `resolveStatusChangeRecipients({ workspaceId, teamId, ownerUserId, ownerEmail })` | Resolve `NotificationRecipient[]` for `sendNotification`. `resolveTeamRecipients` does the `TeamMembership`→`User` lookup scoped by `workspaceId`+`teamId` (deduped, tenant-isolated). `resolveStatusChangeRecipients` merges team members + the workspace owner, deduped by `workosUserId`. Use these instead of re-implementing the lookup at booking/notification call sites. |
+
 ### Other lib
 | Import | Export | Purpose |
 |--------|--------|---------|
