@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+﻿import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const sendEmail = vi.fn();
 vi.mock("./send", () => ({ sendEmail: (...args: unknown[]) => sendEmail(...args) }));
@@ -62,5 +62,22 @@ describe("sendTeamInviteEmail", () => {
     const arg = sendEmail.mock.calls[0][0];
     expect(arg.replyTo).toBe("hello@captured.ph");
     expect(arg.html).toContain("Captured Moments");
+  });
+
+  it("uses inviterName distinct from workspaceName in the email body", async () => {
+    await sendTeamInviteEmail({
+      to: "staff@example.com",
+      inviterName: "Juan dela Cruz",
+      workspaceName: "Studio Luz",
+      teamNames: ["Photography"],
+      acceptUrl: "https://app.gallurio.com/invite/accept?token=test",
+      locale: "en",
+    });
+
+    const arg = sendEmail.mock.calls[0][0];
+    // inviterName should appear in the rendered HTML body
+    expect(arg.html).toContain("Juan dela Cruz");
+    // plain text should also carry the inviter name
+    expect(arg.text).toContain("Juan dela Cruz");
   });
 });

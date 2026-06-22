@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import crypto from "crypto";
 import mongoose from "mongoose";
@@ -208,9 +208,15 @@ export async function inviteMemberAction(
   const inviteLocale = emailLocale(wsCountry);
   const workspaceBrand = resolveWorkspaceBrand(ctx.workspace as Parameters<typeof resolveWorkspaceBrand>[0]);
 
+  const invitingUser = await User.findOne(
+    { workosUserId: ctx.userId },
+    { name: 1 },
+  ).lean();
+  const inviterName = invitingUser?.name || wsName;
+
   const emailResult = await sendTeamInviteEmail({
     to: email,
-    inviterName: wsName,
+    inviterName,
     workspaceName: wsName,
     teamNames: teams.map((t) => t.name),
     acceptUrl,
