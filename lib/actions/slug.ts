@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace, User } from "@/lib/db/models";
@@ -21,7 +21,7 @@ export async function checkSlugAvailabilityAction(
   slug: string,
 ): Promise<SlugAvailability> {
   const authUser = await getAuthUser();
-  if (!authUser) return { available: false, reason: "taken" };
+  if (!authUser) return { available: false, reason: "invalid" };
 
   // Rate-limit by user id to blunt abuse (cheap probe).
   const rl = rateLimit(`slug-check:${authUser.workosUserId}`, {

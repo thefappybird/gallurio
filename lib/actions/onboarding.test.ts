@@ -158,7 +158,7 @@ describe("businessStepAction", () => {
 
     mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_001"));
     const result = await businessStepAction(validBusinessInput);
-    expect(result.error).toMatch(/slug.*taken/i);
+    expect(result.error).toMatch(/already taken/i);
   });
 
   it("maps E11000 duplicate-key error on slug to a friendly taken message", async () => {
@@ -209,7 +209,7 @@ describe("businessStepAction", () => {
     // clash check to miss (simulate race) by using the fact that the action
     // excludes the user's OWN workspace. Create user's workspace with one slug,
     // then try to switch to the race-slug (taken by other). The pre-check will
-    // catch this and return { error: "That slug is already taken" } too, which
+    // catch this and return { error: "That URL is already taken — try another." } too, which
     // also satisfies the intent (E11000 is the fallback for the race window).
     // This tests the E11000-mapped message is the same friendly string.
 

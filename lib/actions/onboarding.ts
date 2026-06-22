@@ -78,7 +78,7 @@ export async function businessStepAction(
     slug,
     ...(ownedWorkspaceId ? { _id: { $ne: ownedWorkspaceId } } : {}),
   }).lean();
-  if (slugClash) return { error: "That slug is already taken — try another." };
+  if (slugClash) return { error: "That URL is already taken — try another." };
 
   let workspaceId: string;
   let session: mongoose.ClientSession | null = null;

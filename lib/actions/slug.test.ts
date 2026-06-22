@@ -121,9 +121,9 @@ describe("checkSlugAvailabilityAction", () => {
     expect(result).toEqual({ available: true });
   });
 
-  it("returns taken for unauthenticated requests", async () => {
+  it("returns invalid for unauthenticated requests (cannot check without session)", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await checkSlugAvailabilityAction("some-slug");
-    expect(result).toEqual({ available: false, reason: "taken" });
+    expect(result).toEqual({ available: false, reason: "invalid" });
   });
 });
