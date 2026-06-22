@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 export function UnsavedChangesDialog({
   open,
   saving,
+  discarding = false,
   onSave,
   onDiscard,
   onCancel,
@@ -31,6 +32,8 @@ export function UnsavedChangesDialog({
 }: {
   open: boolean;
   saving: boolean;
+  /** True while discarding (fetching the clean draft to restore). */
+  discarding?: boolean;
   onSave: () => void;
   onDiscard: () => void;
   onCancel: () => void;
@@ -41,8 +44,9 @@ export function UnsavedChangesDialog({
   title?: string;
   body?: string;
 }) {
+  const busy = saving || discarding;
   return (
-    <AlertDialog open={open} onOpenChange={(next) => (!next && !saving ? onCancel() : undefined)}>
+    <AlertDialog open={open} onOpenChange={(next) => (!next && !busy ? onCancel() : undefined)}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -57,16 +61,16 @@ export function UnsavedChangesDialog({
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
               aria-invalid={!!nameError}
-              disabled={saving}
+              disabled={busy}
             />
           </div>
         )}
 
         <AlertDialogFooter className="gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
             Keep editing
           </Button>
-          <Button type="button" variant="outline" onClick={onDiscard} disabled={saving}>
+          <Button type="button" variant="outline" onClick={onDiscard} loading={discarding} disabled={busy}>
             Discard
           </Button>
           <div className="flex flex-col items-stretch gap-1">
@@ -79,7 +83,7 @@ export function UnsavedChangesDialog({
               type="button"
               onClick={onSave}
               loading={saving}
-              disabled={saving || !!nameError}
+              disabled={busy || !!nameError}
             >
               Save changes
             </Button>

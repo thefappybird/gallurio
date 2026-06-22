@@ -65,6 +65,7 @@ import { DraftNameEditor } from "./DraftNameEditor";
 import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
+import { resolveDiscardTarget } from "./draftDiscard";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -379,6 +380,7 @@ export function EditorShell({
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
@@ -700,6 +702,51 @@ export function EditorShell({
     }));
     persistLocalDraft();
     setDraftsOpen(false);
+  }
+
+  // ---- Reset canvas to an empty scratch state (no backing draft) ----
+  function resetToScratchCanvas() {
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    setRenderDraftData(zoneDataRef.current);
+    setActiveDraftId(null);
+    setIsNewUnsavedDraft(true);
+    setDraftName(DEFAULT_DRAFT_NAME);
+    setNameError(null);
+    setSavedSnapshot(null);
+    ignoreNextChange.current = true;
+    setPuckSeed(ensureIds(EMPTY_ZONE));
+    setSeedNonce((n) => n + 1);
+    setActiveZone("home");
+  }
+
+  // ---- Discard unsaved changes ----
+  // Scrap the in-memory edits, restore a clean canvas (see resolveDiscardTarget),
+  // then perform the action the user was attempting. The pending action runs
+  // last, so when it loads its own data (apply draft/template) that target wins.
+  async function handleDiscardChanges() {
+    const run = pendingAction;
+    setPendingAction(null);
+    setPublishOpen(false);
+    setDiscarding(true);
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
+      if (activeDraftId !== null) {
+        // 5.2 — saved draft: re-fetch its stored data into the canvas.
+        await applyDraft(activeDraftId);
+      } else {
+        // 5.1 — new, never-saved draft: drop it and open the next available
+        // draft (resolved from a fresh list), or an empty canvas when none.
+        const list = await listDraftsAction();
+        setDrafts(list);
+        setIsNewUnsavedDraft(false);
+        const target = resolveDiscardTarget(null, list);
+        if (target.type === "open") await applyDraft(target.id);
+        else resetToScratchCanvas();
+      }
+      run?.();
+    } finally {
+      setDiscarding(false);
+    }
   }
 
   // ---- Delete draft ----
@@ -1436,6 +1483,7 @@ export function EditorShell({
       <UnsavedChangesDialog
         open={pendingAction !== null}
         saving={savingChanges}
+        discarding={discarding}
         name={draftName}
         onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
         nameLabel="Draft name"
@@ -1448,11 +1496,7 @@ export function EditorShell({
             run?.();
           }
         }}
-        onDiscard={() => {
-          window.localStorage.removeItem(draftKey);
-          setPendingAction(null);
-          setPublishOpen(false);
-        }}
+        onDiscard={() => void handleDiscardChanges()}
         onCancel={() => setPendingAction(null)}
       />
 

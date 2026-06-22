@@ -914,44 +914,30 @@ describe("EditorShell", () => {
     expect(screen.getByTestId("portfolio-editor-shell")).toBeInTheDocument();
   });
 
-  it("gated spotlight steps show Skip this step button", async () => {
-    // The Puck mock has leftSideBarVisible=true, which would immediately satisfy the
-    // blocks-panel-toggle gate and auto-advance. Override it to false for this test.
-    const origLeftSideBarVisible = mockPuckApi.appState.ui.leftSideBarVisible;
-    mockPuckApi.appState.ui.leftSideBarVisible = false;
+  it("actionable (gated) steps hide Next and never show 'Skip this step'; Back still works", async () => {
+    // Dismiss the entry dialog first (guideDismissed=true so entry opens directly),
+    // then reopen the guide via the Guide button.
+    await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={true} />);
 
-    try {
-      // Dismiss the entry dialog first (guideDismissed=true so entry opens directly).
-      // Then reopen the guide via the Guide button.
-      await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={true} />);
+    // Reopen the guide at step 0 via the Guide button (same behavior as first-run).
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
 
-      // Reopen the guide at step 0 via the Guide button (same behavior as first-run).
-      fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    // Guide is open at the welcome step.
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    const welcomeCard = screen.getByRole("dialog", { name: "Welcome to your portfolio editor" });
 
-      // Guide is open at step 0
-      expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    // Next advances to the first actionable step: drag a block (gated, unsatisfied).
+    fireEvent.click(within(welcomeCard).getByRole("button", { name: "Next" }));
+    const dragCard = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
 
-      // Find the guide card by role now that entry dialog is gone
-      const guideCard = screen.getByRole("dialog", { name: "Welcome to your portfolio editor" });
+    // Unsatisfied gated step: no Skip-this-step, no Next escape hatch, but the
+    // "Try it…" hint and a working Back button are present.
+    expect(within(dragCard).queryByRole("button", { name: "Skip this step" })).toBeNull();
+    expect(within(dragCard).queryByRole("button", { name: "Next" })).toBeNull();
+    expect(within(dragCard).getByText(/Try it/i)).toBeInTheDocument();
 
-      // Click Next within the guide card to go to step 1 (gated blocks-panel-toggle)
-      fireEvent.click(within(guideCard).getByRole("button", { name: "Next" }));
-
-      // Step 1 is gated — must show "Skip this step"
-      const step1Card = await screen.findByRole("dialog", { name: "Open the blocks panel" });
-      expect(step1Card).toBeInTheDocument();
-      expect(within(step1Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
-
-      // Skip this step advances to step 2 (drag-block, also gated)
-      fireEvent.click(within(step1Card).getByRole("button", { name: "Skip this step" }));
-      const step2Card = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
-      expect(within(step2Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
-
-      // Back goes to step 1
-      fireEvent.click(within(step2Card).getByRole("button", { name: "Back" }));
-      expect(await screen.findByRole("dialog", { name: "Open the blocks panel" })).toBeInTheDocument();
-    } finally {
-      mockPuckApi.appState.ui.leftSideBarVisible = origLeftSideBarVisible;
-    }
+    // Back returns to the welcome step.
+    fireEvent.click(within(dragCard).getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeInTheDocument();
   });
 });
