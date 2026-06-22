@@ -342,6 +342,7 @@ export function ContactPanelDialog({
           <button
             key={id}
             type="button"
+            data-tour-id={`contact-${id}-tab`}
             onClick={() => setTab(id)}
             className={cn(
               "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",

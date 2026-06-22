@@ -1,64 +1,48 @@
 import type { SpotlightStep } from "./SpotlightGuide";
 
 /**
- * 14-stop spotlight tour steps for the portfolio editor.
+ * Spotlight tour steps for the portfolio editor.
  * Editor chrome is English-only (RELEASE-CHECKLIST §4f).
  *
- * Gate ids used by EditorShell to compute `gateSatisfied`:
+ * Gate ids used by EditorShell to compute `gateSatisfied` (actionable steps —
+ * Next is hidden until the action is performed):
  *   "drag-block"   — a block was dropped (content count increased)
- *   "select-block" — a block is selected (selectedItem non-null)
- *   "open-header"  — header panel is open (headerOpen === true)
- *   "open-contact" — contact panel is open (contactOpen === true)
- *   (style-tab steps are PASSIVE — no gate; tab changes happen inside the panel)
+ *   "header-tab"   — Navigation panel is open (headerOpen === true)
+ *   "contact-tab"  — contact panel is open (contactOpen === true)
+ * All other steps are passive (advance with Next).
+ *
+ * Panels (blocks list, properties) are open by default, so there is no
+ * "open the panel" step. Dropping a block auto-selects it and reveals its
+ * properties, so there is no separate "select a block" step.
  */
 export const SPOTLIGHT_STEPS: SpotlightStep[] = [
-  // 0 — Welcome (centred, no anchor)
+  // Welcome (centred, no anchor)
   {
     id: "welcome",
     title: "Welcome to your portfolio editor",
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
 
-  // 1 — Blocks panel
-  {
-    id: "blocks-panel-toggle",
-    anchorId: "blocks-panel",
-    title: "Open the blocks panel",
-    body: "Click this to open the panel of blocks you can drag onto your page.",
-    placement: "bottom",
-    gated: true,
-  },
-
-  // 2 — Drag a block
+  // Drag a block (actionable)
   {
     id: "drag-block",
     anchorId: "canvas",
     title: "Drag a block onto your page",
-    body: "Try it: drag any block from the left panel and drop it onto the canvas here.",
+    body: "Drag any block from the blocks panel on the left and drop it onto the canvas.",
     placement: "right",
     gated: true,
   },
 
-  // 3 — Select a block
-  {
-    id: "select-block",
-    anchorId: "canvas",
-    title: "Click a block to select it",
-    body: "Now click the block you just added. Selecting a block reveals its properties.",
-    placement: "right",
-    gated: true,
-  },
-
-  // 4 — Properties panel
+  // Properties panel
   {
     id: "properties-panel",
-    anchorId: "properties-panel",
-    title: "Block properties appear here",
-    body: "When a block is selected, its settings show up in this panel on the right.",
+    anchorId: "properties-panel-body",
+    title: "Block properties live here",
+    body: "Dropping a block selects it automatically — its settings appear in this panel on the right.",
     placement: "left",
   },
 
-  // 4.1 — Content tab (passive — tab changes happen inside the panel)
+  // Content tab (passive — tab changes happen inside the panel)
   {
     id: "style-tab-content",
     anchorId: "style-tab-content",
@@ -67,7 +51,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 4.2 — Design tab (passive)
+  // Design tab (passive)
   {
     id: "style-tab-design",
     anchorId: "style-tab-design",
@@ -76,7 +60,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 4.3 — Layout tab (passive)
+  // Layout tab (passive)
   {
     id: "style-tab-layout",
     anchorId: "style-tab-layout",
@@ -85,7 +69,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 5 — Section tabs
+  // Section tabs
   {
     id: "section-tabs",
     anchorId: "section-tabs",
@@ -94,54 +78,72 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 6 — Header tab (gated: open header panel)
+  // Navigation tab (actionable: open the Navigation panel)
   {
     id: "header-tab",
     anchorId: "header-tab",
-    title: "Customize your header",
-    body: "Try it: click Header to open the header settings — logo, navigation links, and styling.",
+    title: "Open Navigation",
+    body: "Click Navigation to set up your site's header — brand, logo, menu links, and styling.",
     placement: "bottom",
     gated: true,
   },
 
-  // 6.1 — Logo uploader
+  // Navigation · Setup tab
+  {
+    id: "header-setup-tab",
+    anchorId: "header-setup-tab",
+    title: "Navigation · Setup",
+    body: "The Setup tab is where you set your brand text, navbar size, logo, and menu links.",
+    placement: "left",
+  },
+
+  // Logo uploader (passive detail)
   {
     id: "logo-uploader",
     anchorId: "logo-uploader",
-    title: "Upload your logo",
-    body: "Upload a PNG, JPEG, or WEBP logo. It will appear in the header on your live page.",
-    placement: "right",
+    title: "Your logo lives here",
+    body: "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page.",
+    placement: "left",
   },
 
-  // 6.2 — Header nav/style
+  // Navigation · Design tab
   {
-    id: "header-nav-style",
-    anchorId: "header-nav-style",
-    title: "Navigation links and header style",
-    body: "The Design tab lets you set colors, borders, and typography for your header and nav links.",
-    placement: "right",
+    id: "header-design-tab",
+    anchorId: "header-design-tab",
+    title: "Navigation · Design",
+    body: "The Design tab controls header colors, borders, and typography for your nav links.",
+    placement: "left",
   },
 
-  // 7 — Contact tab (gated: open contact panel)
+  // Contact tab (actionable: open the contact panel)
   {
     id: "contact-tab",
     anchorId: "contact-tab",
     title: "Your inquiry form",
-    body: "Try it: click Contact to open the contact settings. Visitors use this form to reach you.",
+    body: "Click Contact Form to set up the form visitors use to reach you.",
     placement: "bottom",
     gated: true,
   },
 
-  // 7.1 — Contact form preview
+  // Contact · Setup tab
   {
-    id: "contact-form-preview",
-    anchorId: "contact-form-preview",
-    title: "Choose fields and styling",
-    body: "Select which fields to show and how they look. The form layout itself is fixed.",
-    placement: "right",
+    id: "contact-setup-tab",
+    anchorId: "contact-setup-tab",
+    title: "Contact · Setup",
+    body: "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed.",
+    placement: "left",
   },
 
-  // 8 — Photos
+  // Contact · Design tab
+  {
+    id: "contact-design-tab",
+    anchorId: "contact-design-tab",
+    title: "Contact · Design",
+    body: "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look.",
+    placement: "left",
+  },
+
+  // Photos
   {
     id: "photos",
     anchorId: "photos",
@@ -150,7 +152,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 9 — Theme
+  // Theme
   {
     id: "theme",
     anchorId: "theme",
@@ -159,7 +161,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 10 — Preview + device toggle
+  // Preview + device toggle
   {
     id: "preview-device",
     anchorId: "preview-toggle",
@@ -168,7 +170,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 10.1 — Publish
+  // Publish
   {
     id: "publish",
     anchorId: "publish",
@@ -177,7 +179,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 11 — Save + Drafts
+  // Save + Drafts
   {
     id: "save-drafts",
     anchorId: "save-changes",

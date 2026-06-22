@@ -245,15 +245,12 @@ function DeviceTogglePreview({
 function PuckGateReader({
   onState,
 }: {
-  onState: (state: { contentCount: number; hasSelection: boolean; panelOpen: boolean }) => void;
+  onState: (state: { contentCount: number }) => void;
 }) {
   const contentCount = usePuckStore((s) => s.appState.data.content?.length ?? 0);
-  const selectedItem = usePuckStore((s) => s.selectedItem);
-  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
-  const hasSelection = selectedItem !== null;
 
   useEffect(() => {
-    onState({ contentCount, hasSelection, panelOpen: leftSideBarVisible });
+    onState({ contentCount });
   });
 
   return null;
@@ -336,8 +333,6 @@ export function EditorShell({
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
   // Puck gate state (populated by PuckGateReader when Puck is mounted)
   const [puckContentCount, setPuckContentCount] = useState(0);
-  const [puckHasSelection, setPuckHasSelection] = useState(false);
-  const [puckPanelOpen, setPuckPanelOpen] = useState(false);
   // Baseline content count captured when the drag-block step becomes active
   const [dragBaseline, setDragBaseline] = useState<number | null>(null);
 
@@ -969,14 +964,10 @@ export function EditorShell({
   const currentStepId = SPOTLIGHT_STEPS[spotlightStepIndex]?.id ?? "";
   const gateSatisfied: boolean = (() => {
     switch (currentStepId) {
-      case "blocks-panel-toggle":
-        return puckPanelOpen;
       case "drag-block":
         return dragBaseline !== null
           ? puckContentCount > dragBaseline
           : false;
-      case "select-block":
-        return puckHasSelection;
       case "header-tab":
         return headerOpen;
       case "contact-tab":
@@ -1231,10 +1222,8 @@ export function EditorShell({
                   style={{ gridArea: "header" }}
                 >
                   <PuckGateReader
-                    onState={({ contentCount, hasSelection, panelOpen }) => {
+                    onState={({ contentCount }) => {
                       setPuckContentCount(contentCount);
-                      setPuckHasSelection(hasSelection);
-                      setPuckPanelOpen(panelOpen);
                     }}
                   />
                   {topBar(
@@ -1255,6 +1244,13 @@ export function EditorShell({
               // Defined above with useMemo([]); RootCanvasStyle reads from Puck
               // context directly so needs no props passed here.
               ...puckCanvasOverride,
+              // Tour anchor on the actual properties panel (not the toggle button)
+              // so the guide highlights where a selected block's settings appear.
+              fields: ({ children }: { children: ReactNode }) => (
+                <div data-tour-id="properties-panel-body" className="flex min-h-0 flex-1 flex-col">
+                  {children}
+                </div>
+              ),
             }}
           />
         ) : (

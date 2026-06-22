@@ -198,17 +198,15 @@ describe("SpotlightGuide", () => {
 
   // ── Gated step ───────────────────────────────────────────────────────────────
 
-  it("renders 'Skip this step' and 'Try it…' on a gated step", () => {
+  it("shows the 'Try it…' hint and never renders a 'Skip this step' button on a gated step", () => {
     renderGuide({ stepIndex: 2 }); // STEPS[2] is gated
-    expect(screen.getByRole("button", { name: /Skip this step/i })).toBeInTheDocument();
     expect(screen.getByText(/Try it/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
   });
 
-  it("'Skip this step' on a gated step calls onStepChange with next index", () => {
-    const onStepChange = vi.fn();
-    renderGuide({ stepIndex: 2, onStepChange });
-    fireEvent.click(screen.getByRole("button", { name: /Skip this step/i }));
-    expect(onStepChange).toHaveBeenCalledWith(3);
+  it("shows Next on a gated step once its gate is already satisfied (e.g. stepped Back onto a completed step)", () => {
+    renderGuide({ stepIndex: 2, gateSatisfied: true });
+    expect(screen.getByRole("button", { name: /^Next$/i })).toBeInTheDocument();
   });
 
   it("auto-advances when gateSatisfied flips to true on a gated step", () => {
@@ -292,13 +290,13 @@ describe("SpotlightGuide", () => {
 
   // ── Footer layout: gated step with all 4 buttons ─────────────────────────────
 
-  it("gated non-first step shows Don't show again, Skip this step, Back, and Next — all present", () => {
-    // STEPS[2] is gated; stepIndex=2 → not first, not last, gated
+  it("unsatisfied gated non-first step shows Don't show again + Back, but no Skip-this-step and no Next", () => {
+    // STEPS[2] is gated; stepIndex=2 → not first, not last, gated, unsatisfied
     renderGuide({ stepIndex: 2, gateSatisfied: false });
 
     expect(screen.getByRole("button", { name: /Don't show again/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Skip this step/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Back$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Next$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
   });
 });

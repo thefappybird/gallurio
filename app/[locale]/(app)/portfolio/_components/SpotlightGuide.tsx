@@ -41,7 +41,6 @@ const L = {
   next: "Next",
   finish: "Finish",
   skip: "Skip",
-  skipStep: "Skip this step",
   dontShow: "Don't show again",
   tryIt: "Try it…",
   progress: (n: number, total: number) => `${n} of ${total}`,
@@ -245,11 +244,11 @@ type TooltipCardProps = {
   stepIndex: number;
   total: number;
   rect: ElementRect | null;
+  gateSatisfied: boolean;
   onBack: () => void;
   onNext: () => void;
   onSkip: (dontShowAgain: boolean) => void;
   onFinish: (dontShowAgain: boolean) => void;
-  onSkipStep: () => void;
   onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => void;
   cardRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -259,17 +258,21 @@ function TooltipCard({
   stepIndex,
   total,
   rect,
+  gateSatisfied,
   onBack,
   onNext,
   onSkip,
   onFinish,
-  onSkipStep,
   onKeyDown,
   cardRef,
 }: TooltipCardProps) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === total - 1;
   const isGated = step.gated === true;
+  // On an actionable (gated) step, Next is hidden until the user performs the
+  // action. Once satisfied (incl. when stepping Back onto a completed step) the
+  // Next button reappears so the user is never stuck.
+  const hideNext = isGated && !gateSatisfied && !isLast;
 
   // Determine position
   const hasMeaningfulRect =
@@ -348,7 +351,7 @@ function TooltipCard({
 
       {/* Footer */}
       <div className="flex flex-col gap-1.5">
-        {/* Secondary actions — Don't show again + Skip this step */}
+        {/* Secondary actions — Don't show again (overall exit) */}
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -359,17 +362,6 @@ function TooltipCard({
           >
             {L.dontShow}
           </Button>
-          {isGated && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={onSkipStep}
-            >
-              {L.skipStep}
-            </Button>
-          )}
         </div>
 
         {/* Primary nav — Back/Skip + Next/Finish always fit on one row */}
@@ -384,7 +376,7 @@ function TooltipCard({
             >
               {L.back}
             </Button>
-          ) : !isGated ? (
+          ) : (
             <Button
               type="button"
               variant="outline"
@@ -394,8 +386,6 @@ function TooltipCard({
             >
               {L.skip}
             </Button>
-          ) : (
-            <span />
           )}
 
           {isLast ? (
@@ -407,6 +397,10 @@ function TooltipCard({
             >
               {L.finish}
             </Button>
+          ) : hideNext ? (
+            // Actionable step, gate not yet satisfied: no Next — the "Try it…"
+            // hint tells the user what to do; Back stays available.
+            <span />
           ) : (
             <Button
               type="button"
@@ -484,10 +478,6 @@ export function SpotlightGuide({
     if (stepIndex < steps.length - 1) onStepChange(stepIndex + 1);
   }, [stepIndex, steps.length, onStepChange]);
 
-  const handleSkipStep = useCallback(() => {
-    if (stepIndex < steps.length - 1) onStepChange(stepIndex + 1);
-  }, [stepIndex, steps.length, onStepChange]);
-
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLDivElement>) => {
       if (e.key === "Escape") {
@@ -512,11 +502,11 @@ export function SpotlightGuide({
         stepIndex={stepIndex}
         total={steps.length}
         rect={rect}
+        gateSatisfied={gateSatisfied}
         onBack={handleBack}
         onNext={handleNext}
         onSkip={onSkip}
         onFinish={onFinish}
-        onSkipStep={handleSkipStep}
         onKeyDown={handleKeyDown}
         cardRef={cardRef}
       />
