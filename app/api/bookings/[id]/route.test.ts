@@ -837,6 +837,22 @@ describe("PATCH /api/bookings/[id] — cancellation emails", () => {
     // Owner sender receives ownerEmail
     const ownerArg = cancelledMocks.sendBookingCancelledOwner.mock.calls[0][0];
     expect(ownerArg.ownerEmail).toBe("owner@studio.test");
+    // Booking Date sessions are formatted to the string-tuple shape in the
+    // workspace timezone (no tz override -> Asia/Manila, UTC+8): 10:00Z -> 18:00.
+    expect(clientArg.sessions).toEqual([
+      { startDate: "2026-08-15", startTime: "18:00", endTime: "18:00" },
+    ]);
+  });
+
+  it("does NOT fire cancellation senders when an already-cancelled booking is re-patched to cancelled", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { status: "cancelled" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ status: "cancelled" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(cancelledMocks.sendBookingCancelledClient).not.toHaveBeenCalled();
+    expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
   });
 
   it("fires both senders when a completed booking is cancelled", async () => {

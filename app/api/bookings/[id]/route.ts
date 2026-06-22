@@ -512,10 +512,18 @@ export async function PATCH(req: Request, { params }: Params) {
     });
 
     const eventTitle = (updated?.title ?? existing.title) as string;
-    // Sessions on the DB doc use startAt/endAt (Date), not the string-tuple shape
-    // the email template expects. Pass an empty array; the cancellation notice
-    // does not need to list sessions to be useful.
-    const sessions: Array<{ startDate: string; startTime: string; endTime: string }> = [];
+    // Booking sessions store startAt/endAt as Dates; the email template wants the
+    // string-tuple shape. Format in the workspace timezone so dates/times match
+    // what the owner and client see in-app (server TZ would be wrong).
+    const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+    const dateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
+    const timeFmt = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+    const rawSessions = (updated?.sessions ?? existing.sessions ?? []) as Array<{ startAt: Date; endAt: Date }>;
+    const sessions = rawSessions.map((s) => ({
+      startDate: dateFmt.format(s.startAt),
+      startTime: timeFmt.format(s.startAt),
+      endTime: timeFmt.format(s.endAt),
+    }));
 
     if (cancelClient?.email) {
       void sendBookingCancelledClient({
