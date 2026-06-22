@@ -1431,6 +1431,9 @@ export function LayoutTabBody({
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
   const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
+  // Columns is a grid container (not flex), but it shares the same spacing
+  // (padding) + gap controls as Container.
+  const isColumns = blockType === "Columns";
 
   const isCarousel = blockType === "GalleryCarousel";
   if (isGalleryLayout && p && setProp) {
@@ -1592,7 +1595,7 @@ export function LayoutTabBody({
   return (
     <EditorDrawerGroup>
       <EditorDrawerSection title="Spacing">
-        {isFlexContainer && <PaddingControls s={s} set={set} />}
+        {(isFlexContainer || isColumns) && <PaddingControls s={s} set={set} />}
       </EditorDrawerSection>
       <EditorDrawerSection title="Layout">
         <NumberInputRow

@@ -533,13 +533,20 @@ export function ColumnsBlock({
   const rowsRule = hasRows
     ? `@media (min-width:640px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
+  // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
+  const gapValue =
+    _style?.gap != null ? `${Math.min(96, Math.max(0, Math.floor(_style.gap)))}px` : "1rem";
+  // Don't let the resolved `gap` (meant for flex/grid children) leak onto the
+  // outer wrapper — it's applied to the grid below.
+  const outerStyle = resolveBlockStyle(_style);
+  delete (outerStyle as Record<string, unknown>).gap;
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
+    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...outerStyle }} {...resolveBlockAttrs(_style)}>
       {/* Responsive: 1 column on phones, tablet min(2,cols), desktop=cols.
           Inline styles can't hold media queries, so scoped classes + a <style>
           drive the breakpoints. */}
       <style>{`
-        .pf-cols{display:grid;gap:1rem;max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        .pf-cols{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
         ${colsRule}
         ${rowsRule}
       `}</style>

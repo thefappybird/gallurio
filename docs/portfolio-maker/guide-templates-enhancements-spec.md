@@ -167,6 +167,35 @@ a small read step against Mongo (no schema changes expected).
 - **Q2 (Item 1):** Remove the blocks-panel step (panels open by default).
 - **Q3 (Item 5.1):** No-draft fallback = empty scratch canvas.
 
+## Added backlog (during session — block builder + preview bugs)
+
+Status: 0–5 code done & committed; these are new items raised after.
+
+- **B1 — Color picker drag lag:** the color picker applies on every drag tick,
+  causing lag. Debounce the apply so dragging stays smooth. (color swatch / brand
+  color input in the style toolkit.)
+- **B2 — Columns spacing drawer empty:** the Columns block's spacing drawer has no
+  controls; it should expose the same spacing (padding) styles as Container.
+- **B3 — Columns gap broken:** the column gap is hard-coded (`1rem`) and not
+  configurable/applied. Add a working `gap` control.
+- **B4 — Button frame border bug:** the Button block's border width + color do not
+  apply.
+- **B5 — Preview logo nav:** clicking the logo in preview mode navigates to a
+  non-existent/published page; it should go to the preview-mode Home page.
+- **B6 — Carousel rework:** drop the dedicated GalleryCarousel/carousel blocks; a
+  Hero/Container with multiple images already behaves like a carousel (slideshow).
+  Use a buttonless Hero for that instead. (DECISION NEEDED — see below.)
+- **B7 — Canvas doesn't grow with content:** when content is taller than the
+  viewport, the page/canvas doesn't grow — tall content is left behind/clipped.
+- **B8 — Column/row span broken:** a child with colSpan 2 inside a 3-column
+  Columns block does not occupy 2 columns; rowSpan likewise ignored. Blocks
+  template creation.
+
+Decisions: B6 → remove GalleryCarousel block, add a medium-size buttonless Hero
+variant preset ("gallery landing"). Discard+publish → revert then open Publish
+(current behavior, keep). Verification/Playwright/test sweep deferred until all
+scope is implemented (per user).
+
 ## Done criteria (per CLAUDE.md)
 
 Implementation complete; tests added/passing (guide nav/gating, discard cases,
