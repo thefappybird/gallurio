@@ -93,4 +93,28 @@ describe("sendInquiryNotification", () => {
       "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_42"
     );
   });
+
+  it("html is a full branded document with <!DOCTYPE html> and client name in rows", async () => {
+    await sendInquiryNotification(makeData({ clientName: "Emma Carter" }));
+    const { html } = sendEmail.mock.calls[0][0];
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("Emma Carter");
+  });
+
+  it("html contains the inquiry deep-link href when NEXT_PUBLIC_APP_URL is set", async () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test";
+    await sendInquiryNotification(makeData({ inquiryId: "inq_77" }));
+    const { html } = sendEmail.mock.calls[0][0];
+    expect(html).toContain(
+      "https://app.gallurio.test/sign-in?redirect_url=%2Finquiries%3FinquiryId%3Dinq_77"
+    );
+  });
+
+  it("omits the CTA and deep-link when NEXT_PUBLIC_APP_URL is unset", async () => {
+    delete process.env.NEXT_PUBLIC_APP_URL;
+    await sendInquiryNotification(makeData({ inquiryId: "inq_55" }));
+    const { html, text } = sendEmail.mock.calls[0][0];
+    expect(html).not.toContain("/inquiries");
+    expect(text).not.toContain("/inquiries");
+  });
 });
