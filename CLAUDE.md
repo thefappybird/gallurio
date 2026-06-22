@@ -280,6 +280,7 @@ aspirations. The current backlog of known lapses lives in
 - `WORKOS_COOKIE_PASSWORD` (>=32 chars; seals `wos-session`)
 - `ACTIVE_WORKSPACE_COOKIE_SECRET` (signs `gw_active_ws` and the OAuth `state` param)
 - `NEXT_PUBLIC_WORKOS_REDIRECT_URI`
+- `WORKOS_WEBHOOK_SECRET` (HMAC secret for the `/api/webhooks/workos` route; verifies WorkOS event signatures via `workos.webhooks.constructEvent`)
 - `WORKOS_COOKIE_NAME` (optional; defaults to `wos-session`)
 - `AUTHKIT_DEBUG` (optional; `"true"` enables middleware session logging)
 

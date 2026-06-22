@@ -114,26 +114,28 @@ describe("WorkOS webhook — valid signature → 200", () => {
 
 describe("WorkOS webhook — handler throws but route returns 200", () => {
   it("returns 200 and logs the error even when the dispatch block throws", async () => {
-    // Simulate a verified event for an unknown type that the switch default logs.
-    // We make the event type something that would cause the handler path to throw
-    // by spying on console.error and verifying the 200 still comes back.
     mockConstructEvent.mockResolvedValue({
       event: "unknown.event_that_causes_error",
       data: {},
     } as never);
 
-    // Spy on console.error to confirm it's called on handler errors
+    // Force the dispatch block to actually throw: the default branch calls
+    // console.log, so making console.log throw exercises the outer try/catch
+    // (the real contract — a handler failure must still ack 200).
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {
+      throw new Error("boom");
+    });
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const { POST } = await loadRoute();
-    // Force the dispatch to throw by temporarily overriding the switch default
-    // We test the contract: even if we fake-throw in the try block, we still get 200.
-    // Since the default switch case only logs (no throw), we verify 200 is returned
-    // for a valid-but-unhandled event.
     const res = await POST(makeReq());
 
+    // Verified → handler threw → still 200, and the failure was logged via console.error.
     expect(res.status).toBe(200);
-    // console.error was available (spy works) — handler errors would reach it
+    expect(consoleErrorSpy).toHaveBeenCalledOnce();
+    expect(consoleErrorSpy.mock.calls[0][0]).toContain("unknown.event_that_causes_error");
+
+    consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
   });
 });
