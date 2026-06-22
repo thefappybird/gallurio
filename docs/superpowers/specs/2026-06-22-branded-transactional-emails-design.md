@@ -137,6 +137,27 @@ render step (light strip / white-mark variant). `LOGO_URL` defaults to
    colors) for un-takeover-able mail; **own Google OAuth credentials** (chooser
    shows "Gallurio"); optional custom sending domain.
 
+## Notification delivery (actor-silent)
+
+`sendNotification` currently **drops the actor** entirely
+(`recipients.filter(r => r.workosUserId !== triggeredByWorkosUserId)`). Change it
+so the actor still gets an in-app record, but **silently**:
+
+- **Actor** → notification is inserted **pre-read / non-counting** (`read: true`
+  + a `silent: true` flag on `Notification`) and is **not** delivered loud: no
+  unread-badge increment and no bell animation. It either isn't socket-emitted or
+  is emitted with `silent: true` so the client adds it to the list without
+  animating/incrementing.
+- **Everyone else** → unchanged loud path: `read: false`, `notification:new`
+  socket emit → bell animation + unread counter.
+- Applies to **all** notification types (single chokepoint), not just booking.
+- **Email** is unchanged from the decisions below and continues to **skip the
+  actor** (no self-email); client emails always send (a client is never the actor).
+
+Touches: `Notification` model (`silent` flag), `lib/notifications/send.ts`
+(stop excluding the actor; branch loud vs silent), and the client bell/unread
+logic (ignore `silent`/already-read items for the animation + counter).
+
 ## Booking-lifecycle layer (emails + notifications)
 
 Hooked best-effort, post-transaction (never roll back on failure), recipient-guarded.
@@ -184,8 +205,10 @@ New: `lib/email/{layout,escapeHtml,brand,messages}.ts`, `lib/email/booking/*`
 Modified: existing email builders; `app/[locale]/(auth)/_actions.ts`;
 `app/[locale]/(app)/inquiries/_actions.ts` (approve notification + decline +
 archive orphan fix); `app/api/bookings/[id]/route.ts` (status-aware email + client
-cancel email, using the extracted recipients helper); `.env.example`;
-`REUSABLE_CODE.md`.
+cancel email, using the extracted recipients helper); `lib/notifications/send.ts`
+(actor-silent delivery); `lib/db/models/Notification.ts` (`silent` flag); the
+client notification bell/unread component (ignore silent/read items for animation
++ counter); `.env.example`; `REUSABLE_CODE.md`.
 Deleted: `lib/email/resend.ts`; per-file `escapeHtml`; obsolete quote-negotiation
 content in `docs/paddle-integration/deferred-scope/resend-email.md`.
 
@@ -195,6 +218,8 @@ content in `docs/paddle-integration/deferred-scope/resend-email.md`.
 - Lifecycle emails fire at the right transitions, best-effort, recipient-guarded.
 - Approve fans the notification out to all assigned-team members; cancellation
   continues to; decline emails the client and cancels the orphan draft.
+- The actor gets a silent in-app record (no bell animation, no unread-count bump);
+  every other recipient gets the loud notification. Actor is not self-emailed.
 - CTA variants render; partner CTA text readable on any accent (luminance); 375px
   tap-friendly; color never the sole signal; light + dark legible; all locales.
 - `escapeHtml` once; XSS escaping preserved. WorkOS verification via our
