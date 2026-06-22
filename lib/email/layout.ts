@@ -1,4 +1,4 @@
-﻿import { escapeHtml } from "./escapeHtml";
+import { escapeHtml } from "./escapeHtml";
 import { Brand, ctaTextColor } from "./brand";
 
 // ---------------------------------------------------------------------------
@@ -107,7 +107,7 @@ function blockText(block: EmailBlock): string {
 // ---------------------------------------------------------------------------
 
 export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text: string } {
-  const { brand, preheader, title, subtitle, blocks, cta, secondaryCta, supportLine } = opts;
+  const { brand, locale, preheader, title, subtitle, blocks, cta, secondaryCta, supportLine } = opts;
   const isPlatform = brand.kind === "platform";
   const accentHex = brand.accentHex;
   const year = new Date().getFullYear();
@@ -170,7 +170,7 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
 
   const html = [
     "<!DOCTYPE html>",
-    '<html lang="en">',
+    `<html lang="${locale}">`,
     "<head>",
     '<meta charset="UTF-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
