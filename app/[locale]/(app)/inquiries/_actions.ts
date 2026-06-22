@@ -350,27 +350,47 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
   }).lean();
   if (!inquiry) return { error: "not_found" };
 
-  const res = await Inquiry.updateOne(
-    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
-    { $set: { status: "archived" } }
-  );
-  if (res.matchedCount === 0) return { error: "not_found" };
+  // Archive (silent dismiss) and the orphan-draft cancel commit together so an
+  // archived inquiry never leaves a dangling "draft" booking. No email.
+  let archived = false;
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const res = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
+        { $set: { status: "archived" } },
+        { session }
+      );
+      if (res.matchedCount === 0) return;
+      archived = true;
 
-  if (inquiry.draftBookingId) {
-    await Booking.updateOne(
-      { _id: inquiry.draftBookingId, workspaceId: ctx.workspace._id, status: "draft" },
-      { $set: { status: "cancelled" } }
-    );
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId: ctx.workspace._id, status: "draft" },
+          { $set: { status: "cancelled" } },
+          { session }
+        );
+      }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId: ctx.workspace._id,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "status_changed",
+            meta: { from: inquiry.status, to: "archived" },
+          },
+        ],
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
   }
 
-  await ActivityLog.create({
-    workspaceId: ctx.workspace._id,
-    actorUserId: ctx.userId,
-    entity: "inquiry",
-    entityId: inquiry._id,
-    action: "status_changed",
-    meta: { from: inquiry.status, to: "archived" },
-  });
+  if (!archived) return { error: "not_found" };
 
   revalidateInquiry(inquiryId);
   return { ok: true };
@@ -397,6 +417,10 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
   }).lean();
   if (!inquiry) return { error: "not_found" };
 
+  // Did THIS call archive the inquiry? A concurrent archive/decline/approval can
+  // win the status guard (matchedCount === 0); only the winner emails the client
+  // and reports success, so the loser must not double-notify.
+  let declined = false;
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -406,6 +430,7 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
         { session }
       );
       if (res.matchedCount === 0) return;
+      declined = true;
 
       if (inquiry.draftBookingId) {
         await Booking.updateOne(
@@ -432,6 +457,10 @@ export async function declineInquiryAction(inquiryId: string): Promise<InquiryAc
   } finally {
     await session.endSession();
   }
+
+  // A concurrent archive/decline/approval already resolved this inquiry — report
+  // not_found without emailing (this call did not decline it).
+  if (!declined) return { error: "not_found" };
 
   // Best-effort decline email — never throws, never rolls back.
   const ownerEmail = ctx.workspace.contact?.email ?? null;

@@ -325,9 +325,8 @@ describe("approveInquiryBookingAction", () => {
   it("fires sendNotification with booking.team_assigned and the booking id", async () => {
     const { inquiry, booking } = await seedDraft(workspaceId);
     await approveInquiryBookingAction(String(inquiry._id));
-    // Wait a tick so the void async completes
-    await new Promise((r) => setTimeout(r, 20));
-    expect(sendNotificationMock).toHaveBeenCalledOnce();
+    // Poll until the fire-and-forget notification settles (robust under load).
+    await vi.waitFor(() => expect(sendNotificationMock).toHaveBeenCalledOnce());
     const arg = sendNotificationMock.mock.calls[0][0];
     expect(arg.type).toBe("booking.team_assigned");
     expect(arg.entityId).toBe(String(booking._id));
@@ -337,8 +336,7 @@ describe("approveInquiryBookingAction", () => {
     const { inquiry } = await seedDraft(workspaceId);
     mockCtx.ownerUserId = "user_owner";
     await approveInquiryBookingAction(String(inquiry._id));
-    await new Promise((r) => setTimeout(r, 20));
-    expect(sendNotificationMock).toHaveBeenCalledOnce();
+    await vi.waitFor(() => expect(sendNotificationMock).toHaveBeenCalledOnce());
     const arg = sendNotificationMock.mock.calls[0][0];
     // Owner fallback: single recipient with the owner's workosUserId
     expect(arg.recipients).toHaveLength(1);
@@ -433,9 +431,8 @@ describe("declineInquiryAction", () => {
   it("calls the decline email sender with the client email", async () => {
     const { inquiry } = await seedDraft(workspaceId);
     await declineInquiryAction(String(inquiry._id));
-    // allow async best-effort email to settle
-    await new Promise((r) => setTimeout(r, 20));
-    expect(sendInquiryDeclineClientMock).toHaveBeenCalledOnce();
+    // Poll until the fire-and-forget email settles (robust under load).
+    await vi.waitFor(() => expect(sendInquiryDeclineClientMock).toHaveBeenCalledOnce());
     const arg = sendInquiryDeclineClientMock.mock.calls[0][0];
     expect(arg.clientEmail).toBe("emma@example.com");
     expect(arg.clientName).toBe("Emma Carter");
