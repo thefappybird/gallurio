@@ -22,9 +22,17 @@ type InquiryConfirmationCopy = {
   body3: (ws: string) => string;
 };
 
+type PasswordResetCopy = {
+  subject: string;
+  intro: string;
+  cta: string;
+  expiry: string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
+  passwordReset: Record<Locale, PasswordResetCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -103,6 +111,32 @@ export const EMAIL_COPY = {
       body1: (ws: string) => `Terima kasih telah menghubungi ${ws}.`,
       body2: (ws: string) => `Pertanyaan Anda telah dikirimkan ke ${ws}.`,
       body3: (ws: string) => `${ws} akan segera merespons.`,
+    },
+  },
+  passwordReset: {
+    en: {
+      subject: "Reset your Gallurio password",
+      intro: "We received a request to reset the password for your account. Click the button below to choose a new password.",
+      cta: "Reset password",
+      expiry: "This link expires soon. If you did not request a password reset, you can safely ignore this email.",
+    },
+    fil: {
+      subject: "I-reset ang iyong Gallurio password",
+      intro: "Nakatanggap kami ng kahilingan na i-reset ang password ng iyong account. I-click ang button sa ibaba upang pumili ng bagong password.",
+      cta: "I-reset ang password",
+      expiry: "Mag-eexpire ang link na ito sa lalong madaling panahon. Kung hindi mo hiniling ang pag-reset ng password, maaari mong balewalain ang email na ito.",
+    },
+    ms: {
+      subject: "Tetapkan semula kata laluan Gallurio anda",
+      intro: "Kami menerima permintaan untuk menetapkan semula kata laluan akaun anda. Klik butang di bawah untuk memilih kata laluan baharu.",
+      cta: "Tetapkan semula kata laluan",
+      expiry: "Pautan ini akan tamat tempoh tidak lama lagi. Jika anda tidak meminta penetapan semula kata laluan, anda boleh mengabaikan e-mel ini.",
+    },
+    id: {
+      subject: "Reset kata sandi Gallurio Anda",
+      intro: "Kami menerima permintaan untuk mereset kata sandi akun Anda. Klik tombol di bawah untuk memilih kata sandi baru.",
+      cta: "Reset kata sandi",
+      expiry: "Tautan ini akan segera kedaluwarsa. Jika Anda tidak meminta reset kata sandi, Anda bisa mengabaikan email ini.",
     },
   },
 } as const satisfies EmailCopyMap;
