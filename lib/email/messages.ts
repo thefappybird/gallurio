@@ -27,15 +27,16 @@ type EmailCopyMap = {
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
 };
 
+// Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
 export const EMAIL_COPY = {
   teamInvite: {
     en: {
       subject: (ws: string) => `You've been invited to join ${ws}`,
       greeting: `Hi there,`,
       body: (inviter: string, ws: string) =>
-        `${inviter} has invited you to join the workspace <strong>${ws}</strong> on Gallurio.`,
+        `${inviter} has invited you to join the workspace ${ws} on Gallurio.`,
       teamsIntro: (teamsJoined: string, plural: boolean) =>
-        `You'll be added to the following team${plural ? "s" : ""}: <strong>${teamsJoined}</strong>.`,
+        `You'll be added to the following team${plural ? "s" : ""}: ${teamsJoined}.`,
       cta: "Accept invite",
       expiry: "This invite expires in 7 days.",
       footer: "If you did not expect this invitation, you can safely ignore this email.",
@@ -44,9 +45,9 @@ export const EMAIL_COPY = {
       subject: (ws: string) => `Iniimbitahan ka na sumali sa ${ws}`,
       greeting: `Kumusta,`,
       body: (inviter: string, ws: string) =>
-        `Inimbitahan ka ni ${inviter} na sumali sa workspace na <strong>${ws}</strong> sa Gallurio.`,
+        `Inimbitahan ka ni ${inviter} na sumali sa workspace na ${ws} sa Gallurio.`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Idadagdag ka sa sumusunod na koponan: <strong>${teamsJoined}</strong>.`,
+        `Idadagdag ka sa sumusunod na koponan: ${teamsJoined}.`,
       cta: "Tanggapin ang imbitasyon",
       expiry: "Mag-eexpire ang imbitasyong ito sa loob ng 7 araw.",
       footer: "Kung hindi mo inaasahan ang imbitasyong ito, maaari mong balewalain ang email na ito.",
@@ -55,9 +56,9 @@ export const EMAIL_COPY = {
       subject: (ws: string) => `Anda dijemput untuk menyertai ${ws}`,
       greeting: `Hai,`,
       body: (inviter: string, ws: string) =>
-        `${inviter} telah menjemput anda untuk menyertai ruang kerja <strong>${ws}</strong> di Gallurio.`,
+        `${inviter} telah menjemput anda untuk menyertai ruang kerja ${ws} di Gallurio.`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Anda akan ditambahkan ke pasukan berikut: <strong>${teamsJoined}</strong>.`,
+        `Anda akan ditambahkan ke pasukan berikut: ${teamsJoined}.`,
       cta: "Terima jemputan",
       expiry: "Jemputan ini akan tamat tempoh dalam 7 hari.",
       footer: "Jika anda tidak menjangka jemputan ini, anda boleh mengabaikan e-mel ini.",
@@ -66,9 +67,9 @@ export const EMAIL_COPY = {
       subject: (ws: string) => `Anda diundang untuk bergabung dengan ${ws}`,
       greeting: `Halo,`,
       body: (inviter: string, ws: string) =>
-        `${inviter} mengundang Anda untuk bergabung dengan workspace <strong>${ws}</strong> di Gallurio.`,
+        `${inviter} mengundang Anda untuk bergabung dengan workspace ${ws} di Gallurio.`,
       teamsIntro: (teamsJoined: string, _plural: boolean) =>
-        `Anda akan ditambahkan ke tim berikut: <strong>${teamsJoined}</strong>.`,
+        `Anda akan ditambahkan ke tim berikut: ${teamsJoined}.`,
       cta: "Terima undangan",
       expiry: "Undangan ini akan kedaluwarsa dalam 7 hari.",
       footer: "Jika Anda tidak mengharapkan undangan ini, Anda bisa mengabaikan email ini.",
