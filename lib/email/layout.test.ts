@@ -31,4 +31,22 @@ describe("renderBrandedEmail", () => {
     expect(html).toContain("prefers-color-scheme: dark");
     expect(html).toContain("pre");
   });
+  it("dark-mode media block overrides text with !important and text elements carry email-text class", () => {
+    const { html } = renderBrandedEmail({
+      brand: gallurioBrand(),
+      ...base,
+      subtitle: "A subtitle",
+      blocks: [
+        { type: "p", text: "paragraph" },
+        { type: "heading", text: "Section" },
+        { type: "rows", rows: [{ label: "Date", value: "2026-01-01" }] },
+      ],
+    });
+    // Dark-mode rules must use !important so they win over inline color styles
+    expect(html).toMatch(/\.email-text\s*\{[^}]*!important/);
+    expect(html).toMatch(/\.email-label\s*\{[^}]*!important/);
+    // All text-bearing elements must carry the class the dark rule targets
+    expect(html).toContain('class="email-text"'); // h1, p, h2, td value
+    expect(html).toContain('class="email-label"'); // td label
+  });
 });

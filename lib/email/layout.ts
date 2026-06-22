@@ -72,14 +72,14 @@ function ctaButton(
 function renderBlock(block: EmailBlock): string {
   switch (block.type) {
     case "p":
-      return `<p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${LIGHT_TEXT};">${e(block.text)}</p>`;
+      return `<p class="email-text" style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${LIGHT_TEXT};">${e(block.text)}</p>`;
     case "heading":
-      return `<h2 style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:${LIGHT_TEXT};">${e(block.text)}</h2>`;
+      return `<h2 class="email-text" style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:${LIGHT_TEXT};">${e(block.text)}</h2>`;
     case "rows": {
       const rowsHtml = block.rows
         .map(
           (row) =>
-            `  <tr>\n    <td style="padding:6px 8px;font-family:Arial,sans-serif;font-size:13px;color:#6b6b6b;white-space:nowrap;vertical-align:top;">${e(row.label)}</td>\n    <td style="padding:6px 8px;font-family:Arial,sans-serif;font-size:13px;color:${LIGHT_TEXT};vertical-align:top;">${e(row.value)}</td>\n  </tr>`,
+            `  <tr>\n    <td class="email-label" style="padding:6px 8px;font-family:Arial,sans-serif;font-size:13px;color:#6b6b6b;white-space:nowrap;vertical-align:top;">${e(row.label)}</td>\n    <td class="email-text" style="padding:6px 8px;font-family:Arial,sans-serif;font-size:13px;color:${LIGHT_TEXT};vertical-align:top;">${e(row.value)}</td>\n  </tr>`,
         )
         .join("\n");
       return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;border-collapse:collapse;">\n${rowsHtml}\n</table>`;
@@ -162,6 +162,7 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
     `  .email-body { background-color: ${DARK_BG} !important; }`,
     `  .email-card { background-color: #2a2a2a !important; border-color: ${DARK_BORDER} !important; }`,
     `  .email-text { color: ${DARK_TEXT} !important; }`,
+    `  .email-label { color: #aaaaaa !important; }`,
     `  .email-footer { background-color: ${FOOTER_CHARCOAL} !important; }`,
     `  a { color: ${DARK_TEAL} !important; }`,
     "}",
@@ -201,8 +202,8 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
     "        <!-- Body -->",
     "        <tr>",
     `          <td style="padding:32px 32px 24px;" class="email-text">`,
-    `            <h1 style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${LIGHT_TEXT};">${e(title)}</h1>`,
-    subtitle ? `            <p style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;color:#777777;">${e(subtitle)}</p>` : "",
+    `            <h1 class="email-text" style="margin:0 0 8px;font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:${LIGHT_TEXT};">${e(title)}</h1>`,
+    subtitle ? `            <p class="email-text" style="margin:0 0 20px;font-family:Arial,sans-serif;font-size:15px;color:#777777;">${e(subtitle)}</p>` : "",
     `            <div style="height:1px;background-color:${LIGHT_BORDER};margin:0 0 24px;"></div>`,
     `            ${blocksHtml}`,
     `            ${ctasHtml}`,
