@@ -54,7 +54,19 @@ teal accent `#0d8fa1`, teal-on-dark surfaces use `#ffffff` text.
 Dark (`prefers-color-scheme: dark`): bg `#353535`, text `#eaeaea`, teal `#2fb3d9`.
 Font stack: `'Plus Jakarta Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif`
 (web fonts don't load in most mail clients; the stack degrades gracefully).
-No logo asset exists yet → header/footer render a **text wordmark "Gallurio"**.
+
+**Logo (interim assets supplied 2026-06-22):** brand mark is a camera glyph.
+- `app/icon.svg` + `app/favicon.ico` — app favicon/icon (Next.js auto-served).
+- `public/brand/gallurio-mark.svg` (square camera mark) and
+  `public/brand/gallurio-wordmark.svg` (camera + "Gallurio" wordmark) — canonical
+  sources.
+- `public/brand/email-mark.png` (360×251 raster, extracted from the mark SVG) —
+  emails can't render SVG, so the header uses this PNG. **The mark is dark
+  (#4d4d4d) on transparent**, so it cannot sit on the teal header band as-is;
+  the build resolves contrast by either a light header strip or a white mark
+  variant — settled at the render/screenshot step. The header pairs the mark
+  with the styled **"Gallurio"** wordmark text. These are placeholders; the user
+  will finalize the logo later (swap is a one-line `LOGO_URL` change).
 
 ## Target architecture
 
@@ -63,8 +75,10 @@ Export `renderBrandedEmail(opts): { html; text }`. Hand-rolled, table-based,
 600px max width, fully inline styles (email-client safe). **No new dependency**
 (do not add `@react-email`); keep the existing string-builder pattern, just
 centralized. Structure mirrors the reference design:
-- **Header band** (teal `#0d8fa1`): left = "Gallurio" wordmark; right = title +
-  optional subtitle.
+- **Header band**: left = camera mark (`public/brand/email-mark.png`, hosted at
+  `${NEXT_PUBLIC_APP_URL}/brand/email-mark.png`) + "Gallurio" wordmark text;
+  right = title + optional subtitle. Band color vs mark contrast resolved at the
+  render step (light strip or white-mark variant).
 - **Preheader** (hidden preview text) from `opts.preheader`.
 - **Body**: ordered blocks — paragraphs, an optional section heading, optional
   key/value rows (for inquiry details), CTA(s).
@@ -74,8 +88,9 @@ centralized. Structure mirrors the reference design:
 - **Footer** (charcoal `#353535`): wordmark, tagline "Bookings, simplified.",
   support link (`support@gallurio.com`), `© <year> Gallurio. All rights reserved.`
   **Minimal** — no address, no social icons, no unsubscribe (transactional).
-- `LOGO_URL` constant (empty/undefined → wordmark). Swapping to a real logo later
-  is a one-line change: set `LOGO_URL` and the header renders `<img>`.
+- `LOGO_URL` constant defaults to `${NEXT_PUBLIC_APP_URL}/brand/email-mark.png`
+  (the interim camera mark). Swapping to the user's final logo later is a
+  one-line change.
 - `prefers-color-scheme: dark` block in a `<style>` head + dark-safe inline
   fallbacks.
 
