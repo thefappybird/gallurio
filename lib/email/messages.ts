@@ -47,12 +47,20 @@ type BookingCancelledClientCopy = {
   body3: (ws: string) => string;
 };
 
+export type InquiryDeclineCopy = {
+  subject: (ws: string) => string;
+  greeting: (name: string) => string;
+  body1: (ws: string) => string;
+  body2: string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
   passwordReset: Record<Locale, PasswordResetCopy>;
   bookingConfirmedClient: Record<Locale, BookingConfirmedClientCopy>;
   bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
+  inquiryDecline: Record<Locale, InquiryDeclineCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -225,6 +233,32 @@ export const EMAIL_COPY = {
       body2: (eventTitle: string) => `Acara: ${eventTitle}`,
       sessions: (dates: string) => `Tanggal: ${dates}`,
       body3: (ws: string) => `Jika Anda memiliki pertanyaan, silakan hubungi ${ws}.`,
+    },
+  },
+  inquiryDecline: {
+    en: {
+      subject: (ws: string) => `An update on your inquiry - ${ws}`,
+      greeting: (name: string) => `Hi ${name},`,
+      body1: (ws: string) => `Thank you for reaching out to ${ws}. Unfortunately, we are unable to accommodate your request at this time.`,
+      body2: `We wish you all the best and hope to work together in the future.`,
+    },
+    fil: {
+      subject: (ws: string) => `Isang update sa iyong katanungan - ${ws}`,
+      greeting: (name: string) => `Kumusta ${name},`,
+      body1: (ws: string) => `Salamat sa pagkomunika sa ${ws}. Sa kasamaang-palad, hindi namin matutugunan ang iyong kahilingan sa ngayon.`,
+      body2: `Nagnanais kami sa inyo ng lahat ng pinakamabuti at umaasa kaming magtrabaho nang magkasama sa hinaharap.`,
+    },
+    ms: {
+      subject: (ws: string) => `Kemaskini mengenai pertanyaan anda - ${ws}`,
+      greeting: (name: string) => `Hai ${name},`,
+      body1: (ws: string) => `Terima kasih kerana menghubungi ${ws}. Malangnya, kami tidak dapat memenuhi permintaan anda pada masa ini.`,
+      body2: `Kami mengucapkan yang terbaik untuk anda dan berharap dapat bekerjasama pada masa hadapan.`,
+    },
+    id: {
+      subject: (ws: string) => `Pembaruan mengenai pertanyaan Anda - ${ws}`,
+      greeting: (name: string) => `Halo ${name},`,
+      body1: (ws: string) => `Terima kasih telah menghubungi ${ws}. Sayangnya, kami tidak dapat memenuhi permintaan Anda saat ini.`,
+      body2: `Kami mengucapkan semoga sukses dan berharap dapat bekerja sama di masa depan.`,
     },
   },
 } as const satisfies EmailCopyMap;

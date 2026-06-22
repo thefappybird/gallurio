@@ -1159,6 +1159,8 @@
           "team": "Pasukan"
         },
         "actions": {
+          "decline": "Tolak & maklumkan",
+          "declinedToast": "Pertanyaan ditolak — pelanggan telah dimaklumkan.",
           "archive": "Arkib",
           "working": "Menyimpan…",
           "archivedToast": "Pertanyaan diarkib.",

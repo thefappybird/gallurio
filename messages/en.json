@@ -1159,6 +1159,8 @@
           "team": "Team"
         },
         "actions": {
+          "decline": "Decline & notify",
+          "declinedToast": "Inquiry declined — the client has been notified.",
           "archive": "Archive",
           "working": "Saving…",
           "archivedToast": "Inquiry archived.",

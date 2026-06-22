@@ -55,10 +55,16 @@ vi.mock("@/lib/bookings/shift-conflicts", async (importOriginal) => {
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Inquiry, Booking, Client } from "@/lib/db/models";
+const sendInquiryDeclineClientMock = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/email/booking/inquiryDecline", () => ({
+  sendInquiryDeclineClient: (...args: unknown[]) => sendInquiryDeclineClientMock(...args),
+}));
+
 import {
   approveInquiryBookingAction,
   saveDraftBookingFieldsAction,
   archiveInquiryAction,
+  declineInquiryAction,
   editInquirySessionsAction,
 } from "./_actions";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
@@ -76,9 +82,11 @@ beforeEach(async () => {
   sendBookingConfirmedClientMock.mockReset();
   sendBookingConfirmedOwnerMock.mockReset();
   sendNotificationMock.mockReset();
+  sendInquiryDeclineClientMock.mockReset();
   sendBookingConfirmedClientMock.mockResolvedValue(undefined);
   sendBookingConfirmedOwnerMock.mockResolvedValue(undefined);
   sendNotificationMock.mockResolvedValue(undefined);
+  sendInquiryDeclineClientMock.mockResolvedValue(undefined);
 });
 
 async function seedDraft(wid: Types.ObjectId) {
@@ -394,6 +402,55 @@ describe("archiveInquiryAction", () => {
   it("cannot archive across workspaces", async () => {
     const { inquiry } = await seedDraft(otherWorkspaceId);
     const res = await archiveInquiryAction(String(inquiry._id));
+    expect(res).toEqual({ error: "not_found" });
+  });
+
+  it("cancels the orphan draft booking when archiving", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    const res = await archiveInquiryAction(String(inquiry._id));
+    expect(res).toEqual({ ok: true });
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.status).toBe("cancelled");
+  });
+
+  it("does NOT call the decline email sender when archiving", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await archiveInquiryAction(String(inquiry._id));
+    expect(sendInquiryDeclineClientMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("declineInquiryAction", () => {
+  it("sets inquiry to archived and draft booking to cancelled", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    const res = await declineInquiryAction(String(inquiry._id));
+    expect(res).toEqual({ ok: true });
+    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("archived");
+    const freshBooking = await Booking.findById(booking._id).lean();
+    expect(freshBooking?.status).toBe("cancelled");
+  });
+
+  it("calls the decline email sender with the client email", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await declineInquiryAction(String(inquiry._id));
+    // allow async best-effort email to settle
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sendInquiryDeclineClientMock).toHaveBeenCalledOnce();
+    const arg = sendInquiryDeclineClientMock.mock.calls[0][0];
+    expect(arg.clientEmail).toBe("emma@example.com");
+    expect(arg.clientName).toBe("Emma Carter");
+  });
+
+  it("refuses to decline a booked inquiry", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await Inquiry.updateOne({ _id: inquiry._id }, { $set: { status: "booked" } });
+    const res = await declineInquiryAction(String(inquiry._id));
+    expect(res).toEqual({ error: "not_found" });
+  });
+
+  it("cannot decline across workspaces", async () => {
+    const { inquiry } = await seedDraft(otherWorkspaceId);
+    const res = await declineInquiryAction(String(inquiry._id));
     expect(res).toEqual({ error: "not_found" });
   });
 });

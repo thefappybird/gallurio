@@ -1159,6 +1159,8 @@
           "team": "Tim"
         },
         "actions": {
+          "decline": "Tolak & beritahu",
+          "declinedToast": "Pertanyaan ditolak — klien telah diberitahu.",
           "archive": "Arsipkan",
           "working": "Menyimpan…",
           "archivedToast": "Pertanyaan diarsipkan.",

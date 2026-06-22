@@ -1159,6 +1159,8 @@
           "team": "Koponan"
         },
         "actions": {
+          "decline": "Tanggihan at abisuhan",
+          "declinedToast": "Tinanggihan ang katanungan — naabisuhan na ang kliyente.",
           "archive": "I-archive",
           "working": "Sino-save…",
           "archivedToast": "Naka-archive na ang katanungan.",

@@ -14,6 +14,7 @@ import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
 import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
+import { sendInquiryDeclineClient } from "@/lib/email/booking/inquiryDecline";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { emailLocale } from "@/lib/email/messages";
 import { resolveTeamRecipients } from "@/lib/notifications/recipients";
@@ -355,6 +356,13 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
   );
   if (res.matchedCount === 0) return { error: "not_found" };
 
+  if (inquiry.draftBookingId) {
+    await Booking.updateOne(
+      { _id: inquiry.draftBookingId, workspaceId: ctx.workspace._id, status: "draft" },
+      { $set: { status: "cancelled" } }
+    );
+  }
+
   await ActivityLog.create({
     workspaceId: ctx.workspace._id,
     actorUserId: ctx.userId,
@@ -363,6 +371,104 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
     action: "status_changed",
     meta: { from: inquiry.status, to: "archived" },
   });
+
+  revalidateInquiry(inquiryId);
+  return { ok: true };
+}
+
+/**
+ * Decline an inquiry: set it archived, cancel the orphan draft booking,
+ * and send a polite decline email to the client.
+ * Booked/converted inquiries cannot be declined.
+ */
+export async function declineInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  await connectDB();
+
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({
+    _id: inquiryId,
+    workspaceId,
+    status: { $nin: ["booked", "converted"] },
+  }).lean();
+  if (!inquiry) return { error: "not_found" };
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const res = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId, status: { $nin: ["booked", "converted"] } },
+        { $set: { status: "archived" } },
+        { session }
+      );
+      if (res.matchedCount === 0) return;
+
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
+          { $set: { status: "cancelled" } },
+          { session }
+        );
+      }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "status_changed",
+            meta: { from: inquiry.status, to: "archived", via: "decline" },
+          },
+        ],
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  // Best-effort decline email — never throws, never rolls back.
+  const ownerEmail = ctx.workspace.contact?.email ?? null;
+  void (async () => {
+    try {
+      const client = await Client.findOne(
+        { _id: inquiry.clientId, workspaceId },
+        { email: 1, name: 1 }
+      )
+        .lean()
+        .catch(() => null);
+
+      if (client?.email) {
+        const brand = resolveWorkspaceBrand({
+          name: ctx.workspace.name,
+          publicPage: ctx.workspace.publicPage
+            ? {
+                header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+                brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+              }
+            : undefined,
+          contact: ownerEmail ? { email: ownerEmail } : undefined,
+        });
+
+        await sendInquiryDeclineClient({
+          brand,
+          locale: ctx.workspace.country ?? null,
+          clientName: client.name,
+          clientEmail: client.email,
+          businessName: ctx.workspace.name,
+          replyTo: ownerEmail,
+        });
+      }
+    } catch {
+      // Best-effort: ignore errors
+    }
+  })();
 
   revalidateInquiry(inquiryId);
   return { ok: true };
