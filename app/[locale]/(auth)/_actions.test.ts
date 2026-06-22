@@ -675,4 +675,16 @@ describe("resendVerificationEmailAction", () => {
     const result = await resendVerificationEmailAction(null, new FormData());
     expect(result).toMatchObject({ error: "Something went wrong. Please try again." });
   });
+
+  it("rejects on rate-limit breach (IP)", async () => {
+    mockWorkos.userManagement.sendVerificationEmail.mockResolvedValue(undefined);
+    // Exhaust the IP limit (20 per window) using distinct calls.
+    for (let i = 0; i < 20; i++) {
+      await resendVerificationEmailAction(null, new FormData()).catch(() => null);
+    }
+    const result = await resendVerificationEmailAction(null, new FormData());
+    expect(result).toMatchObject({ error: expect.stringContaining("Too many attempts") });
+    // WorkOS must not have been called on the rate-limited request.
+    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledTimes(20);
+  });
 });

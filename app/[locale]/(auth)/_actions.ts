@@ -535,10 +535,18 @@ export async function resendVerificationEmailAction(
   formData: FormData, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): Promise<ActionResult> {
   const t = await getTranslations("auth");
+  const ip = await getIp();
 
   const authUser = await getAuthUser();
   if (!authUser) {
     return { error: t("errors.sessionExpired") };
+  }
+
+  // Rate limit — prevents inbox spam / WorkOS 429s. Keyed by IP only
+  // (session already proves identity; no email dimension needed here).
+  const rl = await checkAuthRateLimit({ ip });
+  if (!rl.ok) {
+    return { error: t("errors.tooManyAttempts", { seconds: rl.retryAfterSec }) };
   }
 
   try {
