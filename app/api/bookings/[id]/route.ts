@@ -11,6 +11,8 @@ import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/noti
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
+import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
 export const runtime = "nodejs";
 
@@ -483,6 +485,60 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   }
   // --- End Notifications ---
+
+  // Cancellation emails: fire when a previously-active booking is cancelled.
+  if (
+    newStatus === "cancelled" &&
+    (existing.status === "booked" || existing.status === "completed")
+  ) {
+    const cancelClient = await Client.findOne({
+      _id: updated?.clientId ?? existing.clientId,
+      workspaceId: ctx.workspace._id,
+    })
+      .select({ _id: 1, name: 1, email: 1 })
+      .lean()
+      .catch(() => null);
+
+    const ownerEmail = ctx.workspace.contact?.email;
+    const brand = resolveWorkspaceBrand({
+      name: ctx.workspace.name,
+      publicPage: ctx.workspace.publicPage
+        ? {
+            header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+            brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+          }
+        : undefined,
+      contact: ownerEmail ? { email: ownerEmail } : undefined,
+    });
+
+    const eventTitle = (updated?.title ?? existing.title) as string;
+    // Sessions on the DB doc use startAt/endAt (Date), not the string-tuple shape
+    // the email template expects. Pass an empty array; the cancellation notice
+    // does not need to list sessions to be useful.
+    const sessions: Array<{ startDate: string; startTime: string; endTime: string }> = [];
+
+    if (cancelClient?.email) {
+      void sendBookingCancelledClient({
+        brand,
+        locale: ctx.workspace.country ?? null,
+        clientName: cancelClient.name as string,
+        clientEmail: cancelClient.email as string,
+        businessName: ctx.workspace.name,
+        eventTitle,
+        sessions,
+        replyTo: ownerEmail ?? null,
+      }).catch(() => {});
+    }
+
+    if (ownerEmail) {
+      void sendBookingCancelledOwner({
+        ownerEmail,
+        clientName: (cancelClient?.name ?? existing.clientName ?? "") as string,
+        eventTitle,
+        bookingId: existing._id.toString(),
+      }).catch(() => {});
+    }
+  }
 
   return NextResponse.json({ ...updated, client });
 }

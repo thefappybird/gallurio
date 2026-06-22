@@ -17,6 +17,14 @@ const teamId = new Types.ObjectId();
 const auth = vi.hoisted(() => ({
   role: "owner" as "owner" | "staff",
   memberships: [] as { teamId: string; role: "member" | "lead" }[],
+  workspaceOverrides: {} as Record<string, unknown>,
+}));
+
+// Mutable spy holders for cancellation email senders.
+const cancelledMocks = vi.hoisted(() => ({
+  sendBookingCancelledClient: vi.fn(),
+  sendBookingCancelledOwner: vi.fn(),
+  resolveWorkspaceBrand: vi.fn((_arg: unknown) => ({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false })),
 }));
 
 vi.mock("@/lib/db/mongoose", () => ({
@@ -27,12 +35,22 @@ vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
     userId,
     role: auth.role,
-    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t" },
+    workspace: { _id: workspaceId, currency: "PHP", name: "Test", slug: "t", ...auth.workspaceOverrides },
   }),
 }));
 
 vi.mock("@/lib/auth/teamContext", () => ({
   getTeamsForUser: async () => auth.memberships,
+}));
+
+vi.mock("@/lib/email/booking/bookingCancelled", () => ({
+  sendBookingCancelledClient: (arg: unknown) => cancelledMocks.sendBookingCancelledClient(arg),
+  sendBookingCancelledOwner: (arg: unknown) => cancelledMocks.sendBookingCancelledOwner(arg),
+}));
+
+vi.mock("@/lib/email/brand", () => ({
+  resolveWorkspaceBrand: (arg: unknown) => cancelledMocks.resolveWorkspaceBrand(arg as never),
+  gallurioBrand: () => ({ kind: "platform", name: "Gallurio", accentHex: null, poweredByGallurio: false }),
 }));
 
 beforeAll(async () => {
@@ -45,6 +63,13 @@ beforeEach(async () => {
   await clearCollections();
   auth.role = "owner";
   auth.memberships = [];
+  auth.workspaceOverrides = {};
+  cancelledMocks.sendBookingCancelledClient.mockReset();
+  cancelledMocks.sendBookingCancelledClient.mockResolvedValue(undefined);
+  cancelledMocks.sendBookingCancelledOwner.mockReset();
+  cancelledMocks.sendBookingCancelledOwner.mockResolvedValue(undefined);
+  cancelledMocks.resolveWorkspaceBrand.mockReset();
+  cancelledMocks.resolveWorkspaceBrand.mockReturnValue({ kind: "partner", name: "Test", accentHex: null, poweredByGallurio: false });
   await Team.create({
     _id: teamId,
     workspaceId,
@@ -792,5 +817,58 @@ describe("PATCH team reassignment", () => {
     const res = await PATCH(makePatch({ teamId: String(target._id) }, b._id.toString()), ctx(b._id.toString()));
     expect(res.status).toBe(403);
     expect(String((await Booking.findById(b._id).lean())?.teamId)).toBe(String(teamId));
+  });
+});
+
+describe("PATCH /api/bookings/[id] — cancellation emails", () => {
+  it("fires sendBookingCancelledClient and sendBookingCancelledOwner when a booked booking is cancelled", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId, { email: "emma@example.com" });
+    const b = await seedBooking(workspaceId, c._id, { status: "booked" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ status: "cancelled" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    // Both senders must have been called
+    expect(cancelledMocks.sendBookingCancelledClient).toHaveBeenCalledOnce();
+    expect(cancelledMocks.sendBookingCancelledOwner).toHaveBeenCalledOnce();
+    // Client sender receives correct clientEmail
+    const clientArg = cancelledMocks.sendBookingCancelledClient.mock.calls[0][0];
+    expect(clientArg.clientEmail).toBe("emma@example.com");
+    // Owner sender receives ownerEmail
+    const ownerArg = cancelledMocks.sendBookingCancelledOwner.mock.calls[0][0];
+    expect(ownerArg.ownerEmail).toBe("owner@studio.test");
+  });
+
+  it("fires both senders when a completed booking is cancelled", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId, { email: "ali@example.com" });
+    const b = await seedBooking(workspaceId, c._id, { status: "completed" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ status: "cancelled" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(cancelledMocks.sendBookingCancelledClient).toHaveBeenCalledOnce();
+    expect(cancelledMocks.sendBookingCancelledOwner).toHaveBeenCalledOnce();
+  });
+
+  it("does NOT fire cancellation senders when status changes to something other than cancelled", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { status: "booked" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ status: "completed" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(cancelledMocks.sendBookingCancelledClient).not.toHaveBeenCalled();
+    expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire cancellation senders when only a non-status field is patched", async () => {
+    auth.workspaceOverrides = { contact: { email: "owner@studio.test" } };
+    const c = await seedClient(workspaceId);
+    const b = await seedBooking(workspaceId, c._id, { status: "booked" });
+    const { PATCH } = await load();
+    const res = await PATCH(makePatch({ title: "Renamed" }, b._id.toString()), ctx(b._id.toString()));
+    expect(res.status).toBe(200);
+    expect(cancelledMocks.sendBookingCancelledClient).not.toHaveBeenCalled();
+    expect(cancelledMocks.sendBookingCancelledOwner).not.toHaveBeenCalled();
   });
 });

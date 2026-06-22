@@ -38,11 +38,21 @@ type BookingConfirmedClientCopy = {
   body3: (ws: string) => string;
 };
 
+type BookingCancelledClientCopy = {
+  subject: (ws: string) => string;
+  greeting: (name: string) => string;
+  body1: (ws: string) => string;
+  body2: (eventTitle: string) => string;
+  sessions: (dates: string) => string;
+  body3: (ws: string) => string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
   passwordReset: Record<Locale, PasswordResetCopy>;
   bookingConfirmedClient: Record<Locale, BookingConfirmedClientCopy>;
+  bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -181,6 +191,40 @@ export const EMAIL_COPY = {
       body2: (eventTitle: string) => `Acara: ${eventTitle}`,
       sessions: (dates: string) => `Tanggal: ${dates}`,
       body3: (ws: string) => `Kami menantikan untuk bekerja bersama Anda. Jika Anda memiliki pertanyaan, silakan hubungi ${ws}.`,
+    },
+  },
+  bookingCancelledClient: {
+    en: {
+      subject: (ws: string) => `Your booking has been cancelled - ${ws}`,
+      greeting: (name: string) => `Hi ${name},`,
+      body1: (ws: string) => `We wanted to let you know that your booking with ${ws} has been cancelled.`,
+      body2: (eventTitle: string) => `Event: ${eventTitle}`,
+      sessions: (dates: string) => `Dates: ${dates}`,
+      body3: (ws: string) => `If you have any questions, please reach out to ${ws}.`,
+    },
+    fil: {
+      subject: (ws: string) => `Nakansela na ang iyong booking - ${ws}`,
+      greeting: (name: string) => `Kumusta ${name},`,
+      body1: (ws: string) => `Nais naming ipaalam sa iyo na ang iyong booking sa ${ws} ay nakansela na.`,
+      body2: (eventTitle: string) => `Event: ${eventTitle}`,
+      sessions: (dates: string) => `Mga Petsa: ${dates}`,
+      body3: (ws: string) => `Kung mayroon kang mga katanungan, makipag-ugnayan sa ${ws}.`,
+    },
+    ms: {
+      subject: (ws: string) => `Tempahan anda telah dibatalkan - ${ws}`,
+      greeting: (name: string) => `Hai ${name},`,
+      body1: (ws: string) => `Kami ingin memaklumkan bahawa tempahan anda dengan ${ws} telah dibatalkan.`,
+      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
+      sessions: (dates: string) => `Tarikh: ${dates}`,
+      body3: (ws: string) => `Jika anda mempunyai sebarang soalan, sila hubungi ${ws}.`,
+    },
+    id: {
+      subject: (ws: string) => `Pemesanan Anda telah dibatalkan - ${ws}`,
+      greeting: (name: string) => `Halo ${name},`,
+      body1: (ws: string) => `Kami ingin memberitahu Anda bahwa pemesanan Anda dengan ${ws} telah dibatalkan.`,
+      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
+      sessions: (dates: string) => `Tanggal: ${dates}`,
+      body3: (ws: string) => `Jika Anda memiliki pertanyaan, silakan hubungi ${ws}.`,
     },
   },
 } as const satisfies EmailCopyMap;
