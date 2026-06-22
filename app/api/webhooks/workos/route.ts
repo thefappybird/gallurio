@@ -25,6 +25,7 @@ async function handleEmailVerificationCreated(data: { id: string }) {
     blocks: [
       { type: "p", text: copy.greeting },
       { type: "p", text: copy.intro },
+      { type: "p", text: copy.codeLabel },
       { type: "heading", text: verification.code },
       { type: "p", text: copy.expiry },
       { type: "spacer" },

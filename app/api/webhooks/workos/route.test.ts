@@ -22,6 +22,7 @@ vi.mock("@/lib/email/send", () => ({
 
 import { workos } from "@/lib/workos";
 import { sendEmail } from "@/lib/email/send";
+import { EMAIL_COPY } from "@/lib/email/messages";
 
 const mockConstructEvent = vi.mocked(workos.webhooks.constructEvent);
 const mockGetEmailVerification = vi.mocked(workos.userManagement.getEmailVerification);
@@ -183,5 +184,7 @@ describe("WorkOS webhook — email_verification.created → branded email sent",
     expect(sendArgs.html).toContain("123456");
     // Plain text must also carry the code
     expect(sendArgs.text).toContain("123456");
+    // The codeLabel must appear in the rendered html (was a dead field before the fix)
+    expect(sendArgs.html).toContain(EMAIL_COPY.verification.en.codeLabel);
   });
 });
