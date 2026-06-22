@@ -54,6 +54,15 @@ export type InquiryDeclineCopy = {
   body2: string;
 };
 
+type VerificationCopy = {
+  subject: string;
+  greeting: string;
+  intro: string;
+  codeLabel: string;
+  expiry: string;
+  ignore: string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
@@ -61,6 +70,7 @@ type EmailCopyMap = {
   bookingConfirmedClient: Record<Locale, BookingConfirmedClientCopy>;
   bookingCancelledClient: Record<Locale, BookingCancelledClientCopy>;
   inquiryDecline: Record<Locale, InquiryDeclineCopy>;
+  verification: Record<Locale, VerificationCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -259,6 +269,45 @@ export const EMAIL_COPY = {
       greeting: (name: string) => `Halo ${name},`,
       body1: (ws: string) => `Terima kasih telah menghubungi ${ws}. Sayangnya, kami tidak dapat memenuhi permintaan Anda saat ini.`,
       body2: `Kami mengucapkan semoga sukses dan berharap dapat bekerja sama di masa depan.`,
+    },
+  },
+  // email_verification.created fires during sign-up, before the user has any
+  // workspace, so there is no reliable locale signal. Resolve to "en" — the
+  // established convention for platform emails (see sendInquiryNotification /
+  // sendBookingConfirmedOwner). All 4 locales are defined to satisfy the type
+  // but "en" is always used for this platform-level flow.
+  verification: {
+    en: {
+      subject: "Verify your email - Gallurio",
+      greeting: "Hi there,",
+      intro: "Use this code to verify your email address:",
+      codeLabel: "Verification code",
+      expiry: "This code expires soon. Do not share it with anyone.",
+      ignore: "If you didn't create a Gallurio account, you can ignore this email.",
+    },
+    fil: {
+      subject: "I-verify ang iyong email - Gallurio",
+      greeting: "Kumusta,",
+      intro: "Gamitin ang code na ito upang i-verify ang iyong email address:",
+      codeLabel: "Verification code",
+      expiry: "Mag-eexpire ang code na ito sa lalong madaling panahon. Huwag itong ibahagi sa iba.",
+      ignore: "Kung hindi ka gumawa ng Gallurio account, maaari mong balewalain ang email na ito.",
+    },
+    ms: {
+      subject: "Sahkan e-mel anda - Gallurio",
+      greeting: "Hai,",
+      intro: "Gunakan kod ini untuk mengesahkan alamat e-mel anda:",
+      codeLabel: "Kod pengesahan",
+      expiry: "Kod ini akan tamat tempoh tidak lama lagi. Jangan kongsi dengan sesiapa.",
+      ignore: "Jika anda tidak mencipta akaun Gallurio, anda boleh mengabaikan e-mel ini.",
+    },
+    id: {
+      subject: "Verifikasi email Anda - Gallurio",
+      greeting: "Halo,",
+      intro: "Gunakan kode ini untuk memverifikasi alamat email Anda:",
+      codeLabel: "Kode verifikasi",
+      expiry: "Kode ini akan segera kedaluwarsa. Jangan bagikan kepada siapapun.",
+      ignore: "Jika Anda tidak membuat akun Gallurio, Anda bisa mengabaikan email ini.",
     },
   },
 } as const satisfies EmailCopyMap;

@@ -10,12 +10,22 @@ vi.mock("@/lib/workos", () => ({
     webhooks: {
       constructEvent: vi.fn(),
     },
+    userManagement: {
+      getEmailVerification: vi.fn(),
+    },
   },
 }));
 
+vi.mock("@/lib/email/send", () => ({
+  sendEmail: vi.fn().mockResolvedValue({ ok: true, id: "msg_test" }),
+}));
+
 import { workos } from "@/lib/workos";
+import { sendEmail } from "@/lib/email/send";
 
 const mockConstructEvent = vi.mocked(workos.webhooks.constructEvent);
+const mockGetEmailVerification = vi.mocked(workos.userManagement.getEmailVerification);
+const mockSendEmail = vi.mocked(sendEmail);
 
 // ---------------------------------------------------------------------------
 // Request builder
@@ -137,5 +147,41 @@ describe("WorkOS webhook — handler throws but route returns 200", () => {
 
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe("WorkOS webhook — email_verification.created → branded email sent", () => {
+  it("fetches the verification, renders a branded email containing the code, and sends it", async () => {
+    mockConstructEvent.mockResolvedValue({
+      event: "email_verification.created",
+      data: { id: "emv_abc123", userId: "user_xyz", email: "new@user.test" },
+    } as never);
+
+    mockGetEmailVerification.mockResolvedValue({
+      id: "emv_abc123",
+      userId: "user_xyz",
+      email: "new@user.test",
+      code: "123456",
+      expiresAt: "2099-01-01T00:00:00.000Z",
+    } as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq({ body: '{"event":"email_verification.created"}' }));
+
+    expect(res.status).toBe(200);
+
+    // Fetched the verification record by id
+    expect(mockGetEmailVerification).toHaveBeenCalledOnce();
+    expect(mockGetEmailVerification).toHaveBeenCalledWith("emv_abc123");
+
+    // Sent email to the verification recipient
+    expect(mockSendEmail).toHaveBeenCalledOnce();
+    const sendArgs = mockSendEmail.mock.calls[0][0];
+    expect(sendArgs.to).toBe("new@user.test");
+    expect(sendArgs.subject).toBe("Verify your email - Gallurio");
+    // The rendered html must contain the verification code
+    expect(sendArgs.html).toContain("123456");
+    // Plain text must also carry the code
+    expect(sendArgs.text).toContain("123456");
   });
 });
