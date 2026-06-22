@@ -16,6 +16,7 @@ import { checkAuthRateLimit } from "@/lib/server/authRateLimit";
 import { signOAuthState } from "@/lib/auth/oauthState";
 import { authCookieSecure } from "@/lib/auth/cookies";
 import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
+import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -401,30 +402,15 @@ export async function forgotPasswordAction(
   }
 
   // Fire-and-forget — NEVER reveal whether the email exists.
-  // createPasswordReset returns a token + URL; we send it via the app email provider.
   try {
     const reset = await workos.userManagement.createPasswordReset({ email });
-    // Send the reset URL by email. Use the reset URL returned by WorkOS directly —
-    // it already points to WorkOS hosted flow. For first-party flow, override the URL:
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${reset.passwordResetToken}`;
-    // Attempt to send via Resend if configured; failure is intentionally swallowed.
-    const resendKey = process.env.RESEND_API_KEY;
-    if (resendKey) {
-      const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Gallurio";
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: `${appName} <noreply@${new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://gallurio.app").hostname}>`,
-          to: [email],
-          subject: `Reset your ${appName} password`,
-          html: `<p>Click the link below to reset your password. It expires soon.</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
-        }),
-      });
-    }
+    const locale = await getLocale();
+    const safeLocale = (["en", "fil", "ms", "id"] as const).includes(
+      locale as "en" | "fil" | "ms" | "id",
+    )
+      ? (locale as "en" | "fil" | "ms" | "id")
+      : "en";
+    await sendPasswordResetEmail(email, reset.passwordResetToken, safeLocale);
   } catch {
     // Swallow intentionally — no enumeration
   }
