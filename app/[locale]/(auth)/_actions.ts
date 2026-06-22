@@ -542,6 +542,14 @@ export async function resendVerificationEmailAction(
   }
 
   try {
+    // Calling sendVerificationEmail tells WorkOS to create a new email
+    // verification, which fires the `email_verification.created` webhook
+    // (`app/api/webhooks/workos/route.ts`). That handler renders and sends
+    // the branded Gallurio verification email via Resend. The WorkOS default
+    // verification email must be disabled in the dashboard (release-checklist
+    // §4g) so the user does not receive two emails. Note: this path relies on
+    // WorkOS re-emitting `email_verification.created` on resend — the
+    // §4g "re-test the resend path end-to-end" step verifies this live.
     await workos.userManagement.sendVerificationEmail({
       userId: authUser.workosUserId,
     });
