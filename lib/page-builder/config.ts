@@ -21,7 +21,6 @@ import { PF_PAGE_CONTAINER, PF_RESPONSIVE_CSS } from "./responsive";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 import { galleryGridBlockConfig } from "./blocks/GalleryGridBlock";
 import { galleryMasonryBlockConfig } from "./blocks/GalleryMasonryBlock";
-import { galleryCarouselBlockConfig } from "./blocks/GalleryCarouselBlock";
 import { featuredWorkBlockConfig } from "./blocks/FeaturedWorkBlock";
 import { videoBlockConfig } from "./blocks/VideoBlock";
 import { contactDetailsBlockConfig } from "./blocks/ContactDetailsBlock";
@@ -41,7 +40,6 @@ import {
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
-import type { GalleryCarouselProps } from "./blocks/GalleryCarouselBlock";
 import type { FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 import type { VideoBlockProps } from "./blocks/VideoBlock";
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
@@ -69,10 +67,10 @@ type Components = {
   GalleryGridPreset: ContainerBlockProps;
   GalleryMasonryPreset: ContainerBlockProps;
   FeaturedWorkPreset: ContainerBlockProps;
+  GalleryLandingPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
-  GalleryCarousel: GalleryCarouselProps;
   FeaturedWork: FeaturedWorkProps;
   Video: VideoBlockProps;
   ContactDetails: ContactDetailsProps;
@@ -107,9 +105,9 @@ export const puckConfig: Config<Components> = {
     GalleryGridPreset: presetConfig(SECTION_PRESETS.GalleryGridPreset.label, SECTION_PRESETS.GalleryGridPreset.defaultProps),
     GalleryMasonryPreset: presetConfig(SECTION_PRESETS.GalleryMasonryPreset.label, SECTION_PRESETS.GalleryMasonryPreset.defaultProps),
     FeaturedWorkPreset: presetConfig(SECTION_PRESETS.FeaturedWorkPreset.label, SECTION_PRESETS.FeaturedWorkPreset.defaultProps),
+    GalleryLandingPreset: presetConfig(SECTION_PRESETS.GalleryLandingPreset.label, SECTION_PRESETS.GalleryLandingPreset.defaultProps),
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
-    GalleryCarousel: galleryCarouselBlockConfig,
     FeaturedWork: featuredWorkBlockConfig,
     Video: videoBlockConfig,
     ContactDetails: contactDetailsBlockConfig,

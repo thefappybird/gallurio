@@ -3,6 +3,7 @@ import {
   SECTION_PRESETS,
   GALLERY_GRID_PRESET,
   GALLERY_MASONRY_PRESET,
+  GALLERY_LANDING_PRESET,
 } from "./sectionPresets";
 
 describe("SECTION_PRESETS labels", () => {
@@ -35,5 +36,21 @@ describe("section preset stale props", () => {
     expect(masonryChild!.props).not.toHaveProperty("collectionId");
     expect(masonryChild!.props).not.toHaveProperty("maxItems");
     expect(masonryChild!.props.images).toEqual([]);
+  });
+});
+
+describe("GalleryLandingPreset", () => {
+  it("is registered in SECTION_PRESETS with label 'Gallery landing'", () => {
+    expect(SECTION_PRESETS.GalleryLandingPreset.label).toBe("Gallery landing");
+  });
+
+  it("has minHeight 'medium' and no Button child", () => {
+    expect(GALLERY_LANDING_PRESET.minHeight).toBe("medium");
+    const children = GALLERY_LANDING_PRESET.content as Array<{ type: string }>;
+    expect(children.some((c) => c.type === "Button")).toBe(false);
+  });
+
+  it("has backgroundImages: [] (multi-image slideshow capable)", () => {
+    expect(GALLERY_LANDING_PRESET.backgroundImages).toEqual([]);
   });
 });

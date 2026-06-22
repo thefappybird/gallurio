@@ -45,6 +45,25 @@ const CANVAS_COLOR_ISOLATION_CSS =
 const CANVAS_GROWTH_CSS =
   `${CANVAS_SURFACE_SELECTOR} { min-height: fit-content; }`;
 
+// Puck's _PuckPreview_ component (the direct child of our canvas wrapper) has
+// `height: 100%` in its CSS module, which pins it to the fixed grid-row height
+// inherited from `._PuckLayout-inner_` (height: 100dvh). When iframe mode is
+// disabled, this clips or freezes scroll position for content taller than the
+// viewport. Targeting it via the stable `[data-tour-id="canvas"] > *` selector
+// overrides `height: 100%` → `height: auto` so it can grow with content.
+const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
+  `[data-tour-id="canvas"] > * { height: auto; min-height: 100%; }`;
+
+// Puck's `._PuckLayout-inner_` grid has `height: 100dvh`, which caps the entire
+// editor shell at viewport height. Our canvas wrapper lives in the "editor" grid
+// area (grid-template-rows: min-content auto). Converting the grid height to
+// `min-height: 100dvh` + `height: auto` lets the grid grow when the preview
+// surface (and its content) is taller than the viewport. The `:has()` selector
+// targets the grid by its stable structural relationship to our canvas wrapper —
+// avoiding the hashed CSS-module class name (_PuckLayout-inner_HASH_) entirely.
+const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
+  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; }`;
+
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
  * (always present, so the canvas reflows with the viewport toggle) with the
@@ -55,7 +74,7 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
 }
 
 /**

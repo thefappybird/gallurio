@@ -130,14 +130,11 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByText("Effects")).toBeTruthy();
   });
 
-  it("hides Frame and the shared Typography for the GalleryCarousel (uses drawers)", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+  it("shows Frame and Typography for GalleryLandingPreset (container-typed)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryLandingPreset" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Frame")).toBeNull();
-    expect(screen.queryByText("Typography")).toBeNull();
-    // Per-target drawer headers are present (accordion buttons with aria-expanded).
-    expect(screen.getAllByRole("button", { name: "Heading" }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole("button", { name: "Description" })).toBeTruthy();
+    expect(screen.getByText("Typography")).toBeTruthy();
+    expect(screen.getByText("Frame")).toBeTruthy();
   });
 });
 
@@ -194,65 +191,7 @@ describe("ContainerBackgroundControls — animation gating", () => {
   });
 });
 
-describe("StyleToolkitField — carousel per-target drawers", () => {
-  it("Heading drawer is open by default (first section auto-opens)", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Heading is the first section — it opens automatically. Bold is visible.
-    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
-  });
 
-  it("Heading drawer reveals B/I/U, Level and the heading highlight when open", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Heading is already open — controls visible without extra click.
-    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
-    expect(screen.getByText("Level")).toBeTruthy();
-    expect(screen.getByLabelText("Heading highlight")).toBeTruthy();
-  });
-
-  it("expanding the Description drawer reveals a Font size control", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Description" }));
-    expect(screen.getByText("Font size")).toBeTruthy();
-    expect(screen.getByLabelText("Description highlight")).toBeTruthy();
-  });
-
-  it("toggling the heading highlight writes headingHighlight: true", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Heading drawer is already open — click the highlight toggle directly.
-    fireEvent.click(screen.getByLabelText("Heading highlight"));
-    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlight).toBe(true);
-  });
-
-  it("shows Shape and Size rows once a highlight is on and writes the picked shape", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={{ headingHighlight: true }} onChange={onChange} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    // Heading drawer is already open — Shape and Size are visible.
-    expect(screen.getByText("Shape")).toBeTruthy();
-    expect(screen.getByText("Size")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Rounded" }));
-    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlightShape).toBe("rounded");
-  });
-});
-
-describe("StyleToolkitField — carousel Layout tab", () => {
-  it("shows the shared Text padding control on the Layout tab", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
-    expect(screen.getByText("Text padding")).toBeTruthy();
-  });
-
-  it("does not show Text padding on the Design tab for the carousel", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Text padding")).toBeNull();
-  });
-});
 
 import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab } from "./StyleToolkitField";
 
@@ -306,6 +245,10 @@ describe("gallery section presets are container-typed", () => {
   }
   it("does not treat the standalone GalleryCarousel as a container", () => {
     expect(CONTAINER_TYPES.has("GalleryCarousel")).toBe(false);
+  });
+  it("GalleryLandingPreset is a CONTAINER_TYPE and FLEX_CONTAINER_BLOCK", () => {
+    expect(CONTAINER_TYPES.has("GalleryLandingPreset")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("GalleryLandingPreset")).toBe(true);
   });
 });
 

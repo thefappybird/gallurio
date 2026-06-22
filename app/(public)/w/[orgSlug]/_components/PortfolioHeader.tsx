@@ -100,11 +100,16 @@ export function PortfolioHeader({
   labels,
   config,
   activePath,
+  homeHref: homeHrefProp,
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
   config?: PortfolioHeaderConfig | null;
   activePath?: string;
+  /** Override for the logo + Home nav href. Pass the preview route URL when
+   * rendering inside the editor preview iframe so the logo does not navigate
+   * to the published public site. */
+  homeHref?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -117,7 +122,7 @@ export function PortfolioHeader({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const homeHref = `/w/${slug}`;
+  const homeHref = homeHrefProp ?? `/w/${slug}`;
   const galleryHref = `/w/${slug}/gallery`;
   const currentPath = activePath ?? pathname;
   const navbarSize = NAVBAR_SIZE_MAP[config?.navbarSize || "balanced"];

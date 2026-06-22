@@ -6,7 +6,7 @@ import {
   servicesPreset,
   ctaPreset,
   galleryGrid,
-  galleryCarousel,
+  galleryLandingPreset,
   zone,
 } from "./_blocks";
 
@@ -31,8 +31,8 @@ export const venueStylistTemplate: PortfolioTemplate = {
       ctaPreset("vs-home-cta"),
     ]),
     gallery: zone([
+      galleryLandingPreset("vs-gallery-landing"),
       galleryGrid("vs-gallery-grid", { columns: 3 }),
-      galleryCarousel("vs-gallery-carousel", { aspect: "landscape" }),
     ]),
   }),
 };

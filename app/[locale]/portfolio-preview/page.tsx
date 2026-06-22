@@ -65,6 +65,9 @@ export default async function PortfolioPreviewPage({
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
   const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
   const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
+  // Keep the logo + Home link within the preview iframe; do not navigate to the
+  // published public site.
+  const previewHomeHref = `/${locale}/portfolio-preview`;
 
   let body: React.ReactNode;
 
@@ -129,6 +132,7 @@ export default async function PortfolioPreviewPage({
       <PortfolioHeader
         slug={workspace.slug}
         activePath={activePath}
+        homeHref={previewHomeHref}
         labels={{
           brand: workspace.name,
           navLandmark: tNav("navLandmark"),

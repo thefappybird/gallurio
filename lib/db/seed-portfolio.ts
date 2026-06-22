@@ -24,7 +24,6 @@ import { buildSeedGalleryItem } from "./seedGalleryItem";
 import { HERO_PRESET, CTA_PRESET } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
-import { galleryCarouselDefaultProps } from "@/lib/page-builder/blocks/GalleryCarouselBlock";
 import { featuredWorkDefaultProps } from "@/lib/page-builder/blocks/FeaturedWorkBlock";
 
 const SLUG = process.env.SEED_PORTFOLIO_SLUG || "portfolio-demo";
@@ -164,17 +163,6 @@ function buildGalleryData(opts: {
           columns: 3,
           gap: "normal",
           maxItems: 18,
-        },
-      },
-      {
-        type: "GalleryCarousel",
-        props: {
-          id: "seed-carousel",
-          ...galleryCarouselDefaultProps,
-          collectionId: opts.portraitsCollectionId,
-          aspect: "portrait",
-          autoplay: false,
-          maxItems: 12,
         },
       },
     ],

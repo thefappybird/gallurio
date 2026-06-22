@@ -37,8 +37,29 @@ describe("buildCanvasCss", () => {
     // The canvas surface must have min-height set to allow content-driven growth.
     // A fixed `height` without min-height would clip tall viewport-height blocks.
     expect(css).toContain("min-height");
-    // Must not use a bare `height:` that overrides content size (only min-height allowed).
-    // We check the container CSS rule specifically does not set a fixed height.
-    expect(css).not.toMatch(/[^-]height\s*:\s*(?!auto)[^;]+;/);
+    // Must not use a bare `height:` with a non-auto value that overrides content size.
+    // `height: auto` is allowed (content-driven); `min-height` is always allowed.
+    // The lookbehind `(?<![-\w])` excludes `min-height`/`max-height` prefixes; the
+    // fixed space after `:` avoids the \s* backtracking hole that causes false negatives
+    // for `height: auto` (where the engine can skip the space and succeed the lookahead).
+    expect(css).not.toMatch(/(?<![-\w])height: (?!auto)[^;]+;/);
+  });
+
+  it("overrides PuckPreview wrapper height so tall content is not clipped by the grid row", () => {
+    const css = buildCanvasCss(undefined);
+    // Puck's _PuckPreview_ element has `height: 100%` which pins it to the fixed
+    // grid row height. We target it as the direct child of our canvas wrapper and
+    // give it `height: auto` so content can push it taller.
+    expect(css).toContain("[data-tour-id=\"canvas\"] > *");
+    expect(css).toContain("height: auto");
+  });
+
+  it("overrides the Puck layout grid min-height so the grid itself grows with content", () => {
+    const css = buildCanvasCss(undefined);
+    // Puck's _PuckLayout-inner_ has `height: 100dvh` which caps the grid at viewport
+    // height. We target its ancestor relationship with our canvas wrapper via :has()
+    // and convert it to min-height so the grid can grow when content is taller.
+    expect(css).toContain(":has(> [data-tour-id=\"canvas\"])");
+    expect(css).toContain("min-height: 100dvh");
   });
 });

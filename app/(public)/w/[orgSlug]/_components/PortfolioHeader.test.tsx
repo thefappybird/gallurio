@@ -146,6 +146,20 @@ describe("PortfolioHeader", () => {
     expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
   });
 
+  it("preview mode: uses homeHref prop for logo and Home nav instead of /w/slug", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        homeHref="/en/portfolio-preview"
+      />
+    );
+    const logoLink = screen.getByRole("link", { name: "Luna Studio" });
+    expect(logoLink).toHaveAttribute("href", "/en/portfolio-preview");
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).toHaveAttribute("href", "/en/portfolio-preview");
+  });
+
   it("brand link has minWidth:0 and overflow:hidden to prevent hamburger push-off at narrow viewports", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const brandLink = screen.getByRole("link", { name: "Luna Studio" });

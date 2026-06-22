@@ -318,12 +318,22 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
     buttonText = customTextColor ?? colorVar;
     tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
-    tkBorderColor = "transparent";
+    // Honor an explicit user border color; if only width was set (>0), use a visible fallback.
+    tkBorderColor = _style?.borderColorToken
+      ? (colorTokenToVar(_style.borderColorToken) ?? "var(--pf-color-fg)")
+      : _style?.borderWidth && _style.borderWidth > 0
+      ? "var(--pf-color-fg)"
+      : "transparent";
   } else if (_style?.buttonStyle === "solid") {
     buttonBg = colorVar;
     buttonText = customTextColor ?? "var(--pf-color-bg)";
     tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
-    tkBorderColor = "transparent";
+    // Honor an explicit user border color; if only width was set (>0), use a visible fallback.
+    tkBorderColor = _style?.borderColorToken
+      ? (colorTokenToVar(_style.borderColorToken) ?? "var(--pf-color-fg)")
+      : _style?.borderWidth && _style.borderWidth > 0
+      ? "var(--pf-color-fg)"
+      : "transparent";
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
     const hasColor = _style?.buttonColorToken !== undefined;
@@ -524,14 +534,19 @@ export function ColumnsBlock({
       : undefined;
   const hasRows = rowCount !== undefined && rowCount > 1;
   // Build per-instance scoped CSS rules for this column/row count.
+  // Container queries (keyed off the block's own width via `container-type:inline-size`
+  // on the outer div) are used instead of viewport min-width media queries. This is
+  // critical for colSpan/rowSpan: a child can only span N tracks if the parent grid
+  // actually defines N tracks. Viewport media queries fail when the editor canvas is
+  // narrower than the breakpoint even though the page would render at desktop width.
   const colsRule = cols === 1
-    ? "" // 1-col: stays 1fr on all breakpoints (no extra rule needed)
-    : `@media (min-width:640px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+    ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
+    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
       (cols > 2
-        ? `@media (min-width:1024px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
         : "");
   const rowsRule = hasRows
-    ? `@media (min-width:640px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
   // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
   const gapValue =
@@ -541,9 +556,15 @@ export function ColumnsBlock({
   const outerStyle = resolveBlockStyle(_style);
   delete (outerStyle as Record<string, unknown>).gap;
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...outerStyle }} {...resolveBlockAttrs(_style)}>
-      {/* Responsive: 1 column on phones, tablet min(2,cols), desktop=cols.
-          Inline styles can't hold media queries, so scoped classes + a <style>
+    <div
+      ref={puck?.dragRef ?? undefined}
+      style={{ padding: "1rem 1.5rem", containerType: "inline-size", containerName: "pf-cols", ...outerStyle }}
+      {...resolveBlockAttrs(_style)}
+    >
+      {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.
+          Container queries (not viewport min-width) are used so colSpan/rowSpan
+          work correctly when the editor canvas is narrower than the viewport.
+          Inline styles can't hold @container rules, so scoped classes + a <style>
           drive the breakpoints. */}
       <style>{`
         .pf-cols{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}

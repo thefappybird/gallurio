@@ -17,10 +17,10 @@ import {
   SERVICES_PRESET,
   CTA_PRESET,
   CONTACT_PRESET,
+  GALLERY_LANDING_PRESET,
 } from "@/lib/page-builder/blocks/sectionPresets";
 import { galleryGridDefaultProps } from "@/lib/page-builder/blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "@/lib/page-builder/blocks/GalleryMasonryBlock";
-import { galleryCarouselDefaultProps } from "@/lib/page-builder/blocks/GalleryCarouselBlock";
 
 // ---------------------------------------------------------------------------
 // Preset section factories
@@ -70,14 +70,8 @@ export function galleryMasonry(
   };
 }
 
-export function galleryCarousel(
-  id: string,
-  props?: { aspect?: "square" | "landscape" | "portrait" }
-): PuckBlockEntry {
-  return {
-    type: "GalleryCarousel",
-    props: { id, ...galleryCarouselDefaultProps, aspect: props?.aspect ?? "landscape" },
-  };
+export function galleryLandingPreset(id: string): PuckBlockEntry {
+  return { type: "GalleryLandingPreset", props: { id, ...GALLERY_LANDING_PRESET } };
 }
 
 // ---------------------------------------------------------------------------

@@ -437,6 +437,20 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.borderWidth).toBe("");
   });
 
+  it("a solid button honors an explicit border width + color", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", borderWidth: 3, borderColorToken: "primary" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("3px");
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+  });
+
   it("_style.radius set → button uses px borderRadius (not var(--pf-radius))", () => {
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
@@ -557,6 +571,20 @@ describe("ButtonBlock", () => {
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.color).toBe("var(--pf-color-secondary)");
+  });
+
+  it("a soft button honors an explicit border width + color", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", borderWidth: 2, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("2px");
+    expect(a.style.borderColor).toBe("var(--pf-color-accent)");
   });
 });
 
@@ -725,6 +753,16 @@ describe("ColumnsBlock", () => {
   it("rows=3 produces grid-template-rows:repeat(3,...) in the style tag", () => {
     const html = renderToStaticMarkup(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
     expect(html).toContain("grid-template-rows:repeat(3,minmax(0,auto))");
+  });
+
+  it("multi-column grid uses container queries (not viewport media queries) so colSpan works inside narrow editor canvases", () => {
+    // colSpan only takes effect when the parent defines N tracks. If the grid uses
+    // viewport min-width, an editor canvas narrower than the breakpoint never fires the
+    // desktop rule, so span N has no tracks to span. Container queries key off the
+    // block's own width instead of the viewport.
+    const html = renderToStaticMarkup(<ColumnsBlock columns={3} content={stubSlot} />);
+    expect(html).toContain("@container");
+    expect(html).not.toMatch(/@media\s*\(min-width/);
   });
 });
 

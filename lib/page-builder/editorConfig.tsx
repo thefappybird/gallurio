@@ -45,15 +45,12 @@ import { GalleryGridBlock } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import { GalleryMasonryBlock } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
-import { GalleryCarouselBlock } from "./blocks/GalleryCarouselBlock";
-import type { GalleryCarouselProps } from "./blocks/GalleryCarouselBlock";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
 
 // Inlined copies of the data blocks' defaultProps (kept in sync; the parity
 // test compares these against the real server-block defaults).
 const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal" };
 const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal" };
-const galleryCarouselDefaultProps: GalleryCarouselProps = { images: [], heading: "", description: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
@@ -101,10 +98,10 @@ type EditorComponents = {
   GalleryGridPreset: ContainerBlockProps;
   GalleryMasonryPreset: ContainerBlockProps;
   FeaturedWorkPreset: ContainerBlockProps;
+  GalleryLandingPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
-  GalleryCarousel: GalleryCarouselProps;
   FeaturedWork: FeaturedWorkProps;
   Video: VideoBlockProps;
   ContactDetails: ContactDetailsProps;
@@ -381,6 +378,14 @@ const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
   render: ContainerBlock,
 };
 
+const galleryLandingPreset: ComponentConfig<ContainerBlockProps> = {
+  label: SECTION_PRESETS.GalleryLandingPreset.label,
+  fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
+  defaultProps: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
+  render: ContainerBlock,
+};
+
 // ---------------------------------------------------------------------------
 // Gallery data blocks — now ISOMORPHIC. Editor renders the REAL component for
 // true WYSIWYG; all content/layout editing flows through the StyleToolkitField
@@ -464,56 +469,6 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
     return rest as typeof fields;
   },
   render: GalleryMasonryBlock,
-};
-
-const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
-  label: "Gallery Carousel",
-  inline: true,
-  defaultProps: galleryCarouselDefaultProps,
-  fields: {
-    _style: styleField,
-    heading: richTextField("Heading (optional)"),
-    description: richTextField("Description (optional)", true),
-    aspect: {
-      type: "select",
-      label: "Image shape",
-      options: [
-        { label: "Square", value: "square" },
-        { label: "Landscape", value: "landscape" },
-        { label: "Portrait", value: "portrait" },
-      ],
-    },
-    floatX: {
-      type: "select",
-      label: "Floating header — horizontal",
-      options: [
-        { label: "Left", value: "left" },
-        { label: "Center", value: "center" },
-        { label: "Right", value: "right" },
-      ],
-    } as Field<"left" | "center" | "right">,
-    floatY: {
-      type: "select",
-      label: "Floating header — vertical",
-      options: [
-        { label: "Top", value: "top" },
-        { label: "Middle", value: "center" },
-        { label: "Bottom", value: "bottom" },
-      ],
-    } as Field<"top" | "center" | "bottom">,
-    autoplay: {
-      type: "select",
-      label: "Autoplay",
-      options: [
-        { label: "Off", value: false },
-        { label: "On", value: true },
-      ],
-    } as Field<boolean>,
-  } as unknown as Fields<GalleryCarouselProps>,
-  resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
-  },
-  render: GalleryCarouselBlock,
 };
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
@@ -843,9 +798,9 @@ export const editorPuckConfig: Config<EditorComponents> = {
     GalleryGridPreset: galleryGridPreset,
     GalleryMasonryPreset: galleryMasonryPreset,
     FeaturedWorkPreset: featuredWorkPreset,
+    GalleryLandingPreset: galleryLandingPreset,
     GalleryGrid: galleryGrid,
     GalleryMasonry: galleryMasonry,
-    GalleryCarousel: galleryCarousel,
     FeaturedWork: featuredWork,
     Video: video,
     ContactDetails: contactDetails,
