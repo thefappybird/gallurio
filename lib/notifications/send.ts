@@ -6,15 +6,13 @@ import { sendNotificationEmail } from '@/lib/email/notifications'
 import type { SendNotificationOptions } from './types'
 
 export async function sendNotification(opts: SendNotificationOptions): Promise<void> {
-  const recipients = opts.recipients.filter(
-    (r) => r.workosUserId !== opts.triggeredByWorkosUserId,
-  )
-  if (recipients.length === 0) return
+  if (opts.recipients.length === 0) return
 
   await connectDB()
 
   const payloads = await Promise.all(
-    recipients.map(async (r) => {
+    opts.recipients.map(async (r) => {
+      const isActor = r.workosUserId === opts.triggeredByWorkosUserId
       const { title, body, href } = await buildNotificationContent(
         opts.type,
         opts.locale,
@@ -29,8 +27,9 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         entityId: opts.entityId,
         entityType: opts.entityType,
         triggeredByWorkosUserId: opts.triggeredByWorkosUserId,
-        read: false,
-        readAt: null,
+        read: isActor,
+        readAt: isActor ? new Date() : null,
+        silent: isActor,
         title,
         body,
         href,
@@ -45,7 +44,11 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
   const io = getIO()
 
   inserted.forEach((doc, i) => {
-    if (io) {
+    const recipient = opts.recipients[i]
+    const isActor = recipient.workosUserId === opts.triggeredByWorkosUserId
+
+    // Actors get a silent record in DB but no loud socket emit — they see it on next fetch.
+    if (!isActor && io) {
       console.log(`[notifications] emit notification:new -> user:${doc.recipientWorkosUserId}`)
       io.to(`user:${doc.recipientWorkosUserId}`).emit('notification:new', {
         _id: String(doc._id),
@@ -57,15 +60,20 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         entityType: doc.entityType,
         read: false,
         readAt: null,
+        silent: false,
         createdAt: doc.createdAt,
       })
     }
-    void sendNotificationEmail({
-      recipient: recipients[i],
-      title: doc.title,
-      body: doc.body,
-      href: doc.href,
-      type: doc.type,
-    }).catch(() => {})
+
+    // Email only for non-actors.
+    if (!isActor) {
+      void sendNotificationEmail({
+        recipient,
+        title: doc.title,
+        body: doc.body,
+        href: doc.href,
+        type: doc.type,
+      }).catch(() => {})
+    }
   })
 }

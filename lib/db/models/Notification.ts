@@ -21,6 +21,7 @@ const notificationSchema = new Schema(
     triggeredByWorkosUserId: { type: String, required: true },
     read: { type: Boolean, default: false },
     readAt: { type: Date, default: null },
+    silent: { type: Boolean, default: false },
     title: { type: String, required: true },
     body: { type: String, required: true },
     href: { type: String, required: true },

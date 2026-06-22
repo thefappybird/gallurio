@@ -17,6 +17,7 @@ export interface SerializedNotification {
   entityType: string
   read: boolean
   readAt: string | null
+  silent?: boolean
   createdAt: string
 }
 
@@ -75,7 +76,11 @@ export function NotificationProvider({
 
     socket.on('notification:new', (notification: SerializedNotification) => {
       setNotifications((prev) => [notification, ...prev])
-      setUnreadCount((n) => n + 1)
+      // Silent or pre-read notifications (actor's own actions) must not increment
+      // the unread badge or trigger the bell animation.
+      if (!notification.silent && !notification.read) {
+        setUnreadCount((n) => n + 1)
+      }
     })
 
     socket.on('notification:read', ({ id }: { id: string }) => {

@@ -33,3 +33,17 @@ export interface SendNotificationOptions {
   locale: string
   vars?: NotificationVars
 }
+
+export interface SerializedNotificationPayload {
+  _id: string
+  type: string
+  title: string
+  body: string
+  href: string
+  entityId: string
+  entityType: string
+  read: boolean
+  readAt: string | null
+  silent?: boolean
+  createdAt: Date | string
+}
