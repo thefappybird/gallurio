@@ -3,7 +3,7 @@ import { Notification } from '@/lib/db/models/Notification'
 import { getIO } from '@/lib/sockets/io'
 import { buildNotificationContent } from './messages'
 import { sendNotificationEmail } from '@/lib/email/notifications'
-import type { SendNotificationOptions } from './types'
+import type { SendNotificationOptions, SerializedNotificationPayload } from './types'
 
 export async function sendNotification(opts: SendNotificationOptions): Promise<void> {
   if (opts.recipients.length === 0) return
@@ -50,7 +50,7 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
     // Actors get a silent record in DB but no loud socket emit — they see it on next fetch.
     if (!isActor && io) {
       console.log(`[notifications] emit notification:new -> user:${doc.recipientWorkosUserId}`)
-      io.to(`user:${doc.recipientWorkosUserId}`).emit('notification:new', {
+      const payload: SerializedNotificationPayload = {
         _id: String(doc._id),
         type: doc.type,
         title: doc.title,
@@ -62,7 +62,8 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         readAt: null,
         silent: false,
         createdAt: doc.createdAt,
-      })
+      }
+      io.to(`user:${doc.recipientWorkosUserId}`).emit('notification:new', payload)
     }
 
     // Email only for non-actors.
