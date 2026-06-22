@@ -15,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
+import { BlockIdContext } from "./drawerOpenStore";
 import { EmojiButton } from "./EmojiTextInput";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -1561,34 +1562,36 @@ function BlockAwarePanel({
   if (type === "ContactDetails") return <ContactDetailsPanel p={p} setProp={setProp} />;
 
   return (
-    <div className="flex flex-col">
-      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
-      {activeTab === "content" && (
-        <ContentTabBody
-          s={s}
-          set={set}
-          type={type}
-          p={p}
-          setProp={setProp}
-          showBanner={isContainer || isGalleryContainer}
-          isContainer={isContainer || isGalleryContainer}
-        />
-      )}
-      {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}
-      {activeTab === "layout" && (
-        <LayoutTabBody
-          s={s}
-          set={set}
-          isGridChild={isGridChild}
-          showJustify={isFlexContainer && !isGallery}
-          blockType={type}
-          p={p}
-          setProp={setProp}
-          parentColumnsCount={parentColumnsCount}
-          parentRowsCount={parentRowsCount}
-        />
-      )}
-    </div>
+    <BlockIdContext.Provider value={blockId}>
+      <div className="flex flex-col">
+        <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
+        {activeTab === "content" && (
+          <ContentTabBody
+            s={s}
+            set={set}
+            type={type}
+            p={p}
+            setProp={setProp}
+            showBanner={isContainer || isGalleryContainer}
+            isContainer={isContainer || isGalleryContainer}
+          />
+        )}
+        {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}
+        {activeTab === "layout" && (
+          <LayoutTabBody
+            s={s}
+            set={set}
+            isGridChild={isGridChild}
+            showJustify={isFlexContainer && !isGallery}
+            blockType={type}
+            p={p}
+            setProp={setProp}
+            parentColumnsCount={parentColumnsCount}
+            parentRowsCount={parentRowsCount}
+          />
+        )}
+      </div>
+    </BlockIdContext.Provider>
   );
 }
 

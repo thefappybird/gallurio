@@ -8,7 +8,7 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
+import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -382,6 +382,7 @@ export function EditorShell({
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
   // path). Controls whether the dashed "Unsaved" row appears in DraftsDialog.
@@ -805,23 +806,28 @@ export function EditorShell({
   }
 
   async function togglePreview() {
-    if (previewMode) {
-      // Back to editing — remount Puck from the freshest data; ignore its echo.
-      ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
-      setPreviewMode(false);
-      return;
+    setPreviewLoading(true);
+    try {
+      if (previewMode) {
+        // Back to editing — remount Puck from the freshest data; ignore its echo.
+        ignoreNextChange.current = true;
+        setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+        setPreviewMode(false);
+        return;
+      }
+      // Entering preview — guarantee the iframe shows the latest edits.
+      await flushPendingSave(activeZone);
+      if (sidePanelOpen) {
+        hideEditorPanels();
+        ignoreNextChange.current = true;
+        setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setActiveZone("home");
+      }
+      setPreviewNonce((n) => n + 1);
+      setPreviewMode(true);
+    } finally {
+      setPreviewLoading(false);
     }
-    // Entering preview — guarantee the iframe shows the latest edits.
-    await flushPendingSave(activeZone);
-    if (sidePanelOpen) {
-      hideEditorPanels();
-      ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current.home));
-      setActiveZone("home");
-    }
-    setPreviewNonce((n) => n + 1);
-    setPreviewMode(true);
   }
 
   // ---- Publish from draft ----
@@ -1024,12 +1030,37 @@ export function EditorShell({
     }
   })();
 
-  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S)
-  // from firing while the user is typing in an input or contenteditable inside
-  // the right-side properties panel. Puck registers document-level listeners;
-  // stopping propagation here prevents those handlers from seeing the event.
+  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S,
+  // and single-key shortcuts like I=interactive-preview and Y=redo) from firing
+  // while the user is typing in any text input, textarea, select, or contenteditable.
+  //
+  // Two-layer defence:
+  //  1. React onKeyDown (bubble): stops propagation so Puck's document-level
+  //     bubble-phase listener never sees the event for most cases.
+  //  2. Native capture-phase listener on document: fires before ANY bubble-phase
+  //     listener (including ones registered before React mounts), so it catches
+  //     the edge case where Puck's registration order beats React's delegation.
+  //     stopImmediatePropagation() is used so no subsequent same-phase handler
+  //     on document can see the event either.
+  //     We do NOT preventDefault — normal typing must reach the input.
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (isEditableTarget(e.target)) e.stopPropagation();
+  }, []);
+
+  useEffect(() => {
+    function interceptPuckHotkeys(e: KeyboardEvent) {
+      const target = e.target ?? document.activeElement;
+      if (isEditableTarget(target)) {
+        // stopImmediatePropagation prevents all other listeners — same phase
+        // (capture) and all subsequent phases — from seeing this event.
+        // Do NOT preventDefault: typing characters must still reach the input.
+        e.stopImmediatePropagation();
+      }
+    }
+    document.addEventListener("keydown", interceptPuckHotkeys, true);
+    return () => {
+      document.removeEventListener("keydown", interceptPuckHotkeys, true);
+    };
   }, []);
 
   const { cssVars, className } = resolveBrandKit(brandKit);
@@ -1122,6 +1153,8 @@ export function EditorShell({
           variant="secondary"
           aria-pressed={previewMode}
           data-tour-id="preview-toggle"
+          loading={previewLoading}
+          disabled={previewLoading}
           onClick={() => void togglePreview()}
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
@@ -1226,11 +1259,29 @@ export function EditorShell({
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
-        className={cn("gallurio-editor min-h-svh", className)}
+        className={cn("gallurio-editor relative min-h-svh", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}
       >
+        {/* Page-wide loading overlay shown during draft discard/load transitions.
+            Positioned to cover the editor canvas area; when Puck is visible the
+            left sidebar (~260px) is excluded by the left offset so only the
+            canvas + properties panel area is covered. */}
+        {discarding && (
+          <div
+            role="status"
+            aria-live="polite"
+            aria-label="Loading draft"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            style={{ left: showPuck ? "260px" : 0 }}
+          >
+            <div className="flex flex-col items-center gap-3 rounded-lg bg-card px-8 py-6 shadow-lg border border-border">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
+              <p className="text-sm font-medium text-foreground">Loading draft…</p>
+            </div>
+          </div>
+        )}
         {showPuck ? (
           <Puck
             key={`${activeZone}-${seedNonce}`}
@@ -1285,6 +1336,13 @@ export function EditorShell({
                     </Button>,
                   )}
                 </header>
+              ),
+              // Tour anchor on the blocks panel (left sidebar drawer) so the guide
+              // highlights it on the "drag a block" step with placement "right".
+              drawer: ({ children }: { children: ReactNode }) => (
+                <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
+                  {children}
+                </div>
               ),
               // Stable memoized override: prevents Puck from re-rendering the
               // canvas wrapper on every EditorShell re-render (keystroke → onChange).

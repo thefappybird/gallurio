@@ -105,7 +105,11 @@ export function ColorPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div
+      className="flex flex-col gap-3"
+      // Marker read by popover wrappers to prevent dismiss on spectrum drag.
+      data-color-picker=""
+    >
       {presets && presets.length > 0 && (
         <div className="flex flex-col gap-1.5">
           {presetsLabel && (

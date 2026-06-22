@@ -62,4 +62,22 @@ describe("buildCanvasCss", () => {
     expect(css).toContain(":has(> [data-tour-id=\"canvas\"])");
     expect(css).toContain("min-height: 100dvh");
   });
+
+  it("makes the Puck canvas column a scroll-through surface so edit-mode content pushes the layout", () => {
+    const css = buildCanvasCss(undefined);
+    // In edit mode, _PuckCanvas_ (the grid-area:editor flex column) has overflow:auto
+    // which traps content in a local scroll rather than letting the page grow.
+    // We target it via :has(> [data-tour-id="canvas"]) — same selector as the
+    // min-height rule — and override overflow to clip (clips width overflows only)
+    // so tall content can push the grid row taller instead of scrolling inside.
+    expect(css).toContain("overflow: clip");
+  });
+
+  it("removes absolute pinning from Puck canvas-root so edit-mode content is not height-clamped", () => {
+    const css = buildCanvasCss(undefined);
+    // _PuckCanvas-root_ has position:absolute; top:0; bottom:0 which pins its height to
+    // its positioned parent (_PuckCanvas-inner_). Targeting the grandchild of our canvas
+    // wrapper overrides this with position:relative so it grows with content.
+    expect(css).toContain("[data-tour-id=\"canvas\"] > * > *");
+  });
 });

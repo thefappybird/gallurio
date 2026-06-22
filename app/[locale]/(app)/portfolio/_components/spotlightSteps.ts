@@ -14,6 +14,10 @@ import type { SpotlightStep } from "./SpotlightGuide";
  * Panels (blocks list, properties) are open by default, so there is no
  * "open the panel" step. Dropping a block auto-selects it and reveals its
  * properties, so there is no separate "select a block" step.
+ *
+ * Steps with `passthrough: true` render the dim for visual context but make
+ * all overlay layers pointer-events:none so the user can drag freely across
+ * the full viewport (needed for drag-block: grab from panel, drop on canvas).
  */
 export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Welcome (centred, no anchor)
@@ -23,14 +27,16 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
 
-  // Drag a block (actionable)
+  // Drag a block (actionable) — anchors the blocks panel so the modal sits to
+  // its right. passthrough allows free drag from the panel across the canvas.
   {
     id: "drag-block",
-    anchorId: "canvas",
+    anchorId: "blocks-panel",
     title: "Drag a block onto your page",
     body: "Drag any block from the blocks panel on the left and drop it onto the canvas.",
     placement: "right",
     gated: true,
+    passthrough: true,
   },
 
   // Properties panel

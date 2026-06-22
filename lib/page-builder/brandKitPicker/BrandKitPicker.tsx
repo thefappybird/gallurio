@@ -202,7 +202,21 @@ export function BrandKitPicker({
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {COLOR_KEYS.map((key) => (
-            <Popover key={key}>
+            <Popover
+              key={key}
+              onOpenChange={(open, eventDetails) => {
+                // Prevent the popover from closing when the dismiss event
+                // originates from within the color picker (react-colorful
+                // spectrum drag — pointer-up/click can land outside the popup
+                // bounds while the interaction started inside).
+                if (!open && eventDetails.reason === "outside-press") {
+                  const target = eventDetails.event.target;
+                  if (target instanceof Element && target.closest("[data-color-picker]")) {
+                    eventDetails.cancel();
+                  }
+                }
+              }}
+            >
               <PopoverTrigger
                 className="flex min-h-11 items-center gap-2 border border-border px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 aria-label={t(`colorLabels.${key}`)}

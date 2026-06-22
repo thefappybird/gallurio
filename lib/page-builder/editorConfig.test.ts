@@ -124,6 +124,20 @@ describe("editorPuckConfig parity with production puckConfig", () => {
   });
 });
 
+describe("GalleryLandingPreset carousel hint", () => {
+  it("GalleryLandingPreset carries a backgroundImages carousel hint accessible via component metadata", () => {
+    const cfg = editorPuckConfig.components.GalleryLandingPreset as Record<string, unknown>;
+    const meta = cfg?.metadata as Record<string, unknown> | undefined;
+    // metadata.backgroundImagesHint must mention multiple images and carousel or slideshow
+    // so editor tooling (e.g. a help popover) can surface the hint without polluting
+    // Puck field keys (which must stay in sync with the production config).
+    expect(meta?.backgroundImagesHint).toBeDefined();
+    const hint = String(meta?.backgroundImagesHint ?? "").toLowerCase();
+    expect(hint).toMatch(/multiple/i);
+    expect(hint).toMatch(/carousel|slideshow/i);
+  });
+});
+
 describe("block label renames", () => {
   const label = (cfg: { components: Record<string, { label?: string }> }, key: string) =>
     cfg.components[key]?.label;

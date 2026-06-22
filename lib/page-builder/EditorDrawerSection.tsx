@@ -1,8 +1,9 @@
 "use client";
 
-import { Children, cloneElement, Fragment, isValidElement, useState } from "react";
+import { Children, cloneElement, Fragment, isValidElement, useContext, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BlockIdContext, getDrawerOpen, setDrawerOpen } from "./drawerOpenStore";
 
 /**
  * EditorDrawerSection — a single collapsible section for the editor side-panel.
@@ -26,7 +27,15 @@ export function EditorDrawerSection({
   flat?: boolean;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  // Persist open/closed across StyleToolkitField remounts (Puck re-renders the
+  // field on every value change) keyed by `${blockId}::${title}`. Without a block
+  // context (standalone / tests) the key is null and behavior is local-only —
+  // identical to before this store existed.
+  const blockId = useContext(BlockIdContext);
+  const persistKey = blockId ? `${blockId}::${title}` : null;
+  const [open, setOpen] = useState(() =>
+    persistKey ? getDrawerOpen(persistKey, defaultOpen) : defaultOpen
+  );
 
   if (flat) {
     return (
@@ -44,7 +53,13 @@ export function EditorDrawerSection({
       <button
         type="button"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() =>
+          setOpen((o) => {
+            const next = !o;
+            if (persistKey) setDrawerOpen(persistKey, next);
+            return next;
+          })
+        }
         className="flex min-h-11 w-full items-center justify-between px-3 text-left text-xs font-medium uppercase tracking-wide text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
       >
         <span>{title}</span>

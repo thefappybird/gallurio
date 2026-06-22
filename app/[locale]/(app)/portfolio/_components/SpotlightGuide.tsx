@@ -21,6 +21,13 @@ export type SpotlightStep = {
   placement?: "top" | "bottom" | "left" | "right";
   /** When true the highlighted element is interactive; parent tracks satisfaction. */
   gated?: boolean;
+  /**
+   * When true, the dim/cutout is rendered for visual context but ALL overlay
+   * layers are pointer-events:none so the user can freely drag from one region
+   * to another (e.g. drag from the blocks panel to the canvas). Only use on
+   * drag-interaction steps where the drop target would otherwise be blocked.
+   */
+  passthrough?: boolean;
 };
 
 export type SpotlightGuideProps = {
@@ -126,13 +133,20 @@ function calcTooltipPosition(
  *
  * When `gated` is true, pointer-events are disabled on the cutout region so
  * clicks pass through to the element below; the scrim still blocks elsewhere.
+ *
+ * When `passthrough` is true, ALL overlay layers are pointer-events:none so
+ * the user can freely drag from any region (e.g. blocks panel) to any other
+ * region (e.g. canvas) without being blocked by the dim. The dim is still
+ * rendered for visual context.
  */
 function DimWithCutout({
   rect,
   gated,
+  passthrough,
 }: {
   rect: ElementRect | null;
   gated: boolean;
+  passthrough: boolean;
 }) {
   const hasCutout = rect !== null && (rect.width > 0 || rect.height > 0);
   const pad = CUTOUT_PADDING;
@@ -178,8 +192,10 @@ function DimWithCutout({
 
       {/* Transparent interaction-blocking layer over everything EXCEPT the cutout.
           This lets pointer events reach the real element in the cutout when gated,
-          while blocking clicks on the dimmed region. */}
-      {hasCutout ? (
+          while blocking clicks on the dimmed region.
+          Skipped entirely when passthrough is true (drag steps need free pointer
+          access across all regions — blocks panel → canvas). */}
+      {!passthrough && (hasCutout ? (
         <>
           {/* Block: above cutout */}
           <rect
@@ -232,7 +248,7 @@ function DimWithCutout({
       ) : (
         /* No cutout: block entire viewport */
         <rect className="pointer-events-auto" x="0" y="0" width="100%" height="100%" fill="transparent" />
-      )}
+      ))}
     </svg>
   );
 }
@@ -331,9 +347,16 @@ function TooltipCard({
         {step.body}
       </p>
 
-      {/* Gated hint */}
+      {/* Gated hint — visually prominent so users notice the call to action */}
       {isGated && (
-        <p className="text-xs font-medium text-foreground/70">{L.tryIt}</p>
+        <div className="flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-[color:var(--accent)] px-2 py-1">
+          {/* Pulsing dot: color + animation carry the "action needed" signal */}
+          <span
+            aria-hidden
+            className="size-2 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)]"
+          />
+          <p className="text-xs font-semibold text-[color:var(--accent)]">{L.tryIt}</p>
+        </div>
       )}
 
       {/* Progress bar */}
@@ -496,6 +519,7 @@ export function SpotlightGuide({
       <DimWithCutout
         rect={hasMeaningfulRect ? rect : null}
         gated={step.gated === true}
+        passthrough={step.passthrough === true}
       />
       <TooltipCard
         step={step}

@@ -27,8 +27,12 @@ function domRectToPlain(r: DOMRect): ElementRect {
 /**
  * Returns the bounding rect (in viewport coordinates) of the nearest element
  * matching `[data-tour-id="${id}"]`, or null when `id` is undefined/falsy.
- * Re-measures on window resize and scroll (via ResizeObserver + event listeners).
- * Returns a zero-area rect when the element is found but has no visible size.
+ *
+ * While an anchor id is set, a requestAnimationFrame loop continuously
+ * re-measures the element each frame so the cutout tracks the live position
+ * even when a sibling in the same toolbar shifts (e.g. after async load),
+ * which a ResizeObserver on the element itself would miss. The loop is
+ * cancelled on cleanup or when the id becomes falsy.
  *
  * `useState` setter is guaranteed stable across renders, so it is safe to
  * close over it inside effect callbacks without stale-closure risk.
@@ -43,14 +47,10 @@ export function useElementRect(id: string | undefined): ElementRect | null {
   });
 
   useEffect(() => {
-    // `setRect` from useState is stable — safe to close over in callbacks.
-    const update = (el: Element | null) =>
-      setRect(el ? domRectToPlain(el.getBoundingClientRect()) : null);
-
     if (!id) {
-      // No anchor requested — clear any stale rect via rAF callback so the
-      // call is not synchronous inside the effect body.
-      const raf = requestAnimationFrame(() => update(null));
+      // No anchor requested — clear any stale rect via rAF so the call is not
+      // synchronous inside the effect body.
+      const raf = requestAnimationFrame(() => setRect(null));
       return () => cancelAnimationFrame(raf);
     }
 
@@ -61,25 +61,36 @@ export function useElementRect(id: string | undefined): ElementRect | null {
       el.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
     }
 
-    // Initial measurement via rAF so we are past the browser layout phase.
-    const raf = requestAnimationFrame(() => update(el));
+    if (!el) {
+      // Element not found — schedule a deferred clear so no synchronous setState
+      // occurs inside the effect body (satisfies react-hooks/set-state-in-effect).
+      const rafId = requestAnimationFrame(() => setRect(null));
+      return () => cancelAnimationFrame(rafId);
+    }
 
-    if (!el) return () => cancelAnimationFrame(raf);
+    // Track the last measured values to skip redundant state updates.
+    let lastTop = NaN;
+    let lastLeft = NaN;
+    let lastWidth = NaN;
+    let lastHeight = NaN;
+    let rafId: number;
 
-    // Re-measure when the element resizes or the viewport changes.
-    const ro = new ResizeObserver(() => update(el));
-    ro.observe(el);
+    function loop() {
+      const r = el!.getBoundingClientRect();
+      // Only call setRect when something actually changed to avoid render churn.
+      if (r.top !== lastTop || r.left !== lastLeft || r.width !== lastWidth || r.height !== lastHeight) {
+        lastTop = r.top;
+        lastLeft = r.left;
+        lastWidth = r.width;
+        lastHeight = r.height;
+        setRect(domRectToPlain(r));
+      }
+      rafId = requestAnimationFrame(loop);
+    }
 
-    const onExternalChange = () => update(el);
-    window.addEventListener("scroll", onExternalChange, { passive: true, capture: true });
-    window.addEventListener("resize", onExternalChange, { passive: true });
+    rafId = requestAnimationFrame(loop);
 
-    return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener("scroll", onExternalChange, { capture: true });
-      window.removeEventListener("resize", onExternalChange);
-    };
+    return () => cancelAnimationFrame(rafId);
   }, [id]);
 
   return rect;

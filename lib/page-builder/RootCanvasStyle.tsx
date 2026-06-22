@@ -61,8 +61,29 @@ const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
 // surface (and its content) is taller than the viewport. The `:has()` selector
 // targets the grid by its stable structural relationship to our canvas wrapper —
 // avoiding the hashed CSS-module class name (_PuckLayout-inner_HASH_) entirely.
+//
+// `overflow: clip` is added to remove the scroll-container behavior of
+// `._PuckCanvas_` (grid-area: editor, overflow: auto by default). Unlike
+// `overflow: hidden`, `overflow: clip` does NOT establish a BFC scroll container,
+// so the grid row can grow vertically as content gets taller in edit mode.
+// Width clipping is preserved so horizontal overflow is still hidden.
 const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
-  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; }`;
+  `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow: clip; }`;
+
+// In edit mode, Puck renders a three-level structure inside our canvas wrapper:
+//   [data-tour-id="canvas"]
+//     > ._PuckCanvas-inner_ (height: 100%; position: relative)
+//       > ._PuckCanvas-root_ (position: absolute; top: 0; bottom: 0)
+//
+// `._PuckCanvas-root_` is absolutely positioned and stretches between top/bottom
+// of its positioned parent. This pins the content area to the parent's explicit
+// height instead of growing with block content. Overriding with `position: relative`
+// and `height: auto` makes it content-driven. `min-height: 100dvh` ensures the
+// canvas is never shorter than the viewport (blank-canvas experience is preserved).
+// The selector targets exactly the grandchild of our wrapper — stable across Puck
+// version bumps since the hashed class names change but this structural depth does not.
+const CANVAS_PUCK_CANVAS_ROOT_CSS =
+  `[data-tour-id="canvas"] > * > * { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
 
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
@@ -74,7 +95,7 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
 }
 
 /**

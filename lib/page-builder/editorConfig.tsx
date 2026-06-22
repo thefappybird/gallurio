@@ -384,6 +384,13 @@ const galleryLandingPreset: ComponentConfig<ContainerBlockProps> = {
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
   render: ContainerBlock,
+  // Editor hint: uploading multiple background images activates the auto-playing
+  // carousel/slideshow (ContainerBackgroundControls shows animation controls at
+  // images.length >= 2). Stored in metadata so field key parity with the production
+  // config is preserved — editor tooling reads this to surface help text.
+  metadata: {
+    backgroundImagesHint: "Upload multiple background images to turn this into an auto-playing carousel.",
+  },
 };
 
 // ---------------------------------------------------------------------------

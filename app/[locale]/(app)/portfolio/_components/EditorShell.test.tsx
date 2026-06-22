@@ -282,6 +282,28 @@ describe("EditorShell", () => {
     expect(propagated).toBe(false);
   });
 
+  it("blocks document-level bubble-phase keydown listeners (e.g. Puck hotkeys) when typing in an input — capture-phase interceptor", async () => {
+    // Simulate a Puck-style listener registered on document in bubble phase
+    // BEFORE the component mounts. The capture-phase interceptor added by EditorShell
+    // must call stopImmediatePropagation so this listener never fires for editable targets.
+    let puckHotkeyFired = false;
+    const puckStyleListener = () => { puckHotkeyFired = true; };
+    document.addEventListener("keydown", puckStyleListener);
+
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+    const input = document.createElement("input");
+    editorRoot.appendChild(input);
+    input.focus();
+
+    // Type a character that Puck shortcuts on (e.g. "i" for toggle-interactive, "y" for redo)
+    const event = new KeyboardEvent("keydown", { key: "i", code: "KeyI", bubbles: true });
+    input.dispatchEvent(event);
+
+    document.removeEventListener("keydown", puckStyleListener);
+    expect(puckHotkeyFired).toBe(false);
+  });
+
   it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...basePro} />);
     expect(screen.queryByText("Publish your portfolio?")).not.toBeInTheDocument();
