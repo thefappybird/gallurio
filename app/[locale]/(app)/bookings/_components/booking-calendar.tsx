@@ -28,6 +28,7 @@ import { formatTime, formatTimeRange, TIME_INPUT_LANG } from "@/lib/utils/time-f
 import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import { escapeHtml } from "@/lib/email/escapeHtml";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type OverflowEvent = {
@@ -199,15 +200,6 @@ function buildDragGhost(args: {
   `;
   document.body.appendChild(ghost);
   return ghost;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
 
 /** A single draggable row inside the overflow popover.
