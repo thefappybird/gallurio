@@ -29,10 +29,20 @@ type PasswordResetCopy = {
   expiry: string;
 };
 
+type BookingConfirmedClientCopy = {
+  subject: (ws: string) => string;
+  greeting: (name: string) => string;
+  body1: (ws: string) => string;
+  body2: (eventTitle: string) => string;
+  sessions: (dates: string) => string;
+  body3: (ws: string) => string;
+};
+
 type EmailCopyMap = {
   teamInvite: Record<Locale, TeamInviteCopy>;
   inquiryConfirmation: Record<Locale, InquiryConfirmationCopy>;
   passwordReset: Record<Locale, PasswordResetCopy>;
+  bookingConfirmedClient: Record<Locale, BookingConfirmedClientCopy>;
 };
 
 // Plain text only — never embed HTML here; renderBrandedEmail escapes all interpolated values.
@@ -137,6 +147,40 @@ export const EMAIL_COPY = {
       intro: "Kami menerima permintaan untuk mereset kata sandi akun Anda. Klik tombol di bawah untuk memilih kata sandi baru.",
       cta: "Reset kata sandi",
       expiry: "Tautan ini akan segera kedaluwarsa. Jika Anda tidak meminta reset kata sandi, Anda bisa mengabaikan email ini.",
+    },
+  },
+  bookingConfirmedClient: {
+    en: {
+      subject: (ws: string) => `Your booking is confirmed - ${ws}`,
+      greeting: (name: string) => `Hi ${name},`,
+      body1: (ws: string) => `Great news! ${ws} has confirmed your booking.`,
+      body2: (eventTitle: string) => `Event: ${eventTitle}`,
+      sessions: (dates: string) => `Dates: ${dates}`,
+      body3: (ws: string) => `We look forward to working with you. If you have any questions, please reach out to ${ws}.`,
+    },
+    fil: {
+      subject: (ws: string) => `Nakumpirma na ang iyong booking - ${ws}`,
+      greeting: (name: string) => `Kumusta ${name},`,
+      body1: (ws: string) => `Magandang balita! Kinumpirma na ng ${ws} ang iyong booking.`,
+      body2: (eventTitle: string) => `Event: ${eventTitle}`,
+      sessions: (dates: string) => `Mga Petsa: ${dates}`,
+      body3: (ws: string) => `Inaabangan namin ang pagtatrabaho para sa iyo. Kung mayroon kang mga katanungan, makipag-ugnayan sa ${ws}.`,
+    },
+    ms: {
+      subject: (ws: string) => `Tempahan anda telah disahkan - ${ws}`,
+      greeting: (name: string) => `Hai ${name},`,
+      body1: (ws: string) => `Berita baik! ${ws} telah mengesahkan tempahan anda.`,
+      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
+      sessions: (dates: string) => `Tarikh: ${dates}`,
+      body3: (ws: string) => `Kami menanti untuk bekerja bersama anda. Jika anda mempunyai sebarang soalan, sila hubungi ${ws}.`,
+    },
+    id: {
+      subject: (ws: string) => `Pemesanan Anda telah dikonfirmasi - ${ws}`,
+      greeting: (name: string) => `Halo ${name},`,
+      body1: (ws: string) => `Kabar baik! ${ws} telah mengkonfirmasi pemesanan Anda.`,
+      body2: (eventTitle: string) => `Acara: ${eventTitle}`,
+      sessions: (dates: string) => `Tanggal: ${dates}`,
+      body3: (ws: string) => `Kami menantikan untuk bekerja bersama Anda. Jika Anda memiliki pertanyaan, silakan hubungi ${ws}.`,
     },
   },
 } as const satisfies EmailCopyMap;

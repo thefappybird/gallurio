@@ -4,9 +4,29 @@ import { Types } from "mongoose";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/db/mongoose", () => ({ connectDB: async () => undefined }));
 
+const sendBookingConfirmedClientMock = vi.fn().mockResolvedValue(undefined);
+const sendBookingConfirmedOwnerMock = vi.fn().mockResolvedValue(undefined);
+const sendNotificationMock = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@/lib/email/booking/bookingConfirmed", () => ({
+  sendBookingConfirmedClient: (...args: unknown[]) => sendBookingConfirmedClientMock(...args),
+  sendBookingConfirmedOwner: (...args: unknown[]) => sendBookingConfirmedOwnerMock(...args),
+}));
+
+vi.mock("@/lib/notifications/send", () => ({
+  sendNotification: (...args: unknown[]) => sendNotificationMock(...args),
+}));
+
 const workspaceId = new Types.ObjectId();
 const otherWorkspaceId = new Types.ObjectId();
-let mockCtx: { userId: string; role: "owner" | "staff"; workspaceId: Types.ObjectId; timezone?: string };
+let mockCtx: {
+  userId: string;
+  role: "owner" | "staff";
+  workspaceId: Types.ObjectId;
+  timezone?: string;
+  ownerUserId?: string;
+  contactEmail?: string;
+};
 
 vi.mock("@/lib/auth/requireOrg", () => ({
   requireOrg: async () => ({
@@ -19,6 +39,8 @@ vi.mock("@/lib/auth/requireOrg", () => ({
       name: "Test",
       slug: "t",
       timezone: mockCtx.timezone ?? "Asia/Manila",
+      ownerUserId: mockCtx.ownerUserId ?? "user_owner",
+      contact: { email: mockCtx.contactEmail ?? "owner@studio.test" },
     },
   }),
 }));
@@ -51,6 +73,12 @@ afterAll(async () => {
 beforeEach(async () => {
   await clearCollections();
   mockCtx = { userId: "user_owner", role: "owner", workspaceId };
+  sendBookingConfirmedClientMock.mockReset();
+  sendBookingConfirmedOwnerMock.mockReset();
+  sendNotificationMock.mockReset();
+  sendBookingConfirmedClientMock.mockResolvedValue(undefined);
+  sendBookingConfirmedOwnerMock.mockResolvedValue(undefined);
+  sendNotificationMock.mockResolvedValue(undefined);
 });
 
 async function seedDraft(wid: Types.ObjectId) {
@@ -267,6 +295,59 @@ describe("approveInquiryBookingAction", () => {
     ]);
     const res = await approveInquiryBookingAction(String(inquiry._id));
     expect(res).toMatchObject({ ok: true });
+  });
+
+  it("fires sendBookingConfirmedClient with the client email after successful approval", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await approveInquiryBookingAction(String(inquiry._id));
+    expect(sendBookingConfirmedClientMock).toHaveBeenCalledOnce();
+    const arg = sendBookingConfirmedClientMock.mock.calls[0][0];
+    expect(arg.clientEmail).toBe("emma@example.com");
+  });
+
+  it("fires sendBookingConfirmedOwner with the booking id after successful approval", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    await approveInquiryBookingAction(String(inquiry._id));
+    expect(sendBookingConfirmedOwnerMock).toHaveBeenCalledOnce();
+    const arg = sendBookingConfirmedOwnerMock.mock.calls[0][0];
+    expect(arg.bookingId).toBe(String(booking._id));
+    expect(arg.ownerEmail).toBe("owner@studio.test");
+  });
+
+  it("fires sendNotification with booking.team_assigned and the booking id", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    await approveInquiryBookingAction(String(inquiry._id));
+    // Wait a tick so the void async completes
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sendNotificationMock).toHaveBeenCalledOnce();
+    const arg = sendNotificationMock.mock.calls[0][0];
+    expect(arg.type).toBe("booking.team_assigned");
+    expect(arg.entityId).toBe(String(booking._id));
+  });
+
+  it("falls back to owner notification when booking has no teamId", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    mockCtx.ownerUserId = "user_owner";
+    await approveInquiryBookingAction(String(inquiry._id));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(sendNotificationMock).toHaveBeenCalledOnce();
+    const arg = sendNotificationMock.mock.calls[0][0];
+    // Owner fallback: single recipient with the owner's workosUserId
+    expect(arg.recipients).toHaveLength(1);
+    expect(arg.recipients[0].workosUserId).toBe("user_owner");
+  });
+
+  it("does not fire email side-effects on idempotent re-approval", async () => {
+    const { inquiry } = await seedDraft(workspaceId);
+    await approveInquiryBookingAction(String(inquiry._id));
+    sendBookingConfirmedClientMock.mockReset();
+    sendBookingConfirmedOwnerMock.mockReset();
+    sendNotificationMock.mockReset();
+    // Re-approve — hits the early idempotent return
+    await approveInquiryBookingAction(String(inquiry._id));
+    expect(sendBookingConfirmedClientMock).not.toHaveBeenCalled();
+    expect(sendBookingConfirmedOwnerMock).not.toHaveBeenCalled();
+    expect(sendNotificationMock).not.toHaveBeenCalled();
   });
 });
 

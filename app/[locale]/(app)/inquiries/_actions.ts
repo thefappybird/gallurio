@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Inquiry, Booking, ActivityLog, Team } from "@/lib/db/models";
+import { Inquiry, Booking, ActivityLog, Team, Client } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
@@ -13,6 +13,11 @@ import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
+import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
+import { emailLocale } from "@/lib/email/messages";
+import { resolveTeamRecipients } from "@/lib/notifications/recipients";
+import { sendNotification } from "@/lib/notifications/send";
 
 // The status a draft is promoted to on approval. Approval skips the old
 // "inquiry" pipeline state and lands directly on "booked". Drafts are the
@@ -174,6 +179,83 @@ export async function approveInquiryBookingAction(
   } finally {
     await session.endSession();
   }
+
+  // --- Post-commit side-effects (best-effort, never throw, never roll back) ---
+  const locale = emailLocale(ctx.workspace.country ?? null);
+  const ownerEmail = ctx.workspace.contact?.email || null;
+
+  // Load the booking's client for the confirmation email.
+  const client = await Client.findOne(
+    { _id: booking.clientId, workspaceId },
+    { email: 1, name: 1 },
+  ).lean().catch(() => null);
+
+  if (client?.email) {
+    const brand = resolveWorkspaceBrand({
+      name: ctx.workspace.name,
+      publicPage: ctx.workspace.publicPage
+        ? {
+            header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+            brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+          }
+        : undefined,
+      contact: ownerEmail ? { email: ownerEmail } : undefined,
+    });
+
+    void sendBookingConfirmedClient({
+      brand,
+      locale: ctx.workspace.country ?? null,
+      clientName: client.name,
+      clientEmail: client.email,
+      businessName: ctx.workspace.name,
+      eventTitle: booking.title,
+      sessions: inquiry.sessions as Array<{ startDate: string; startTime: string; endTime: string }>,
+      replyTo: ownerEmail,
+    }).catch(() => {});
+  }
+
+  if (ownerEmail) {
+    void sendBookingConfirmedOwner({
+      locale,
+      ownerEmail,
+      clientName: booking.clientName,
+      eventTitle: booking.title,
+      bookingId: booking._id.toString(),
+    }).catch(() => {});
+  }
+
+  // Team notification (or owner fallback).
+  const notifEntityId = booking._id.toString();
+  const clientName = booking.clientName;
+
+  void (async () => {
+    try {
+      let recipients;
+      if (booking.teamId) {
+        recipients = await resolveTeamRecipients(workspaceId, booking.teamId);
+      }
+      if (!recipients || recipients.length === 0) {
+        // No team or empty team — notify the owner.
+        recipients = ownerEmail
+          ? [{ workosUserId: ctx.workspace.ownerUserId, email: "" }]
+          : [];
+      }
+      if (recipients.length > 0) {
+        await sendNotification({
+          workspaceId: String(workspaceId),
+          recipients,
+          type: "booking.team_assigned",
+          entityId: notifEntityId,
+          entityType: "booking",
+          triggeredByWorkosUserId: ctx.userId,
+          locale,
+          vars: { clientName },
+        });
+      }
+    } catch (err) {
+      console.error("[inquiry] approve notification failed (non-fatal):", err);
+    }
+  })();
 
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
