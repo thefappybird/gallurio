@@ -1626,7 +1626,11 @@
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
         "other": "Other"
-      }
+      },
+      "slugChecking": "Checking…",
+      "slugAvailable": "Available",
+      "slugTaken": "Already taken",
+      "slugInvalid": "Invalid format"
     },
     "plan": {
       "title": "Pick the plan that fits",

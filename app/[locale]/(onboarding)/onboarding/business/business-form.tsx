@@ -1,11 +1,12 @@
 "use client";
 
 import { useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
+import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
 import {
@@ -24,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
+import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -97,11 +99,15 @@ export function BusinessStepForm({
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<BusinessStepInput>({
     resolver: zodResolver(businessStepSchema),
     defaultValues: defaults,
   });
+
+  const slugValue = useWatch({ control, name: "slug" });
+  const { status: slugStatus } = useSlugAvailability(slugValue);
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     setValue("name", e.target.value);
@@ -178,8 +184,14 @@ export function BusinessStepForm({
             <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
               gallurio.com/w/
             </span>
-            <Input id="slug" placeholder={t("slugPlaceholder")} {...register("slug")} />
+            <Input
+              id="slug"
+              placeholder={t("slugPlaceholder")}
+              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+              {...register("slug")}
+            />
           </div>
+          <SlugStatusIndicator status={slugStatus} t={t} />
           {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
         </div>
 
@@ -276,7 +288,11 @@ export function BusinessStepForm({
           <div>
             <StepBackButton from="business" />
           </div>
-          <Button type="submit" disabled={isSubmitting} className="min-w-40">
+          <Button
+            type="submit"
+            disabled={isSubmitting || slugStatus === "checking" || slugStatus === "taken" || slugStatus === "invalid"}
+            className="min-w-40"
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

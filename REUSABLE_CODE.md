@@ -64,6 +64,7 @@ Composed, app-specific shared components.
 | `components/app/clear-filters-button.tsx` | `ClearFiltersButton` | Clears filter params from URL; hidden when none active | `paramKeys`, `defaultValues?` |
 | `components/app/sign-out-confirm.tsx` | `SignOutConfirmDialog` | Controlled logout confirm dialog | `open`, `onOpenChange` |
 | `components/app/sign-out-link.tsx` | `SignOutLink` | Sign-out button form wrapper | children |
+| `components/app/slug-status-indicator.tsx` | `SlugStatusIndicator` | Workspace slug availability indicator — single persistent `aria-live="polite"` live region; text + icon (never color-only); statuses: idle/checking/available/taken/invalid | `status: SlugStatus`, `t: ReturnType<typeof useTranslations>` (must expose `slugChecking`, `slugAvailable`, `slugTaken`, `slugInvalid` keys) |
 
 ## 3. Hooks
 
@@ -73,6 +74,7 @@ Composed, app-specific shared components.
 | `hooks/use-guarded-action.ts` | `useGuardedAction` | `(action, { onError? }) => { loading, trigger }` | Wrap async action: loading state, blocks concurrent invocations |
 | `lib/hooks/useGlobalContactTrigger.ts` | `useGlobalContactTrigger` | `(open: () => void) => void` | Register global contact-modal opener; cleans up on unmount |
 | `lib/page-builder/brandKitContext.tsx` | `useBrandKit` | `() => PortfolioBrandKit` | Read current workspace brand kit (throws outside provider) |
+| `hooks/useSlugAvailability.ts` | `useSlugAvailability`, `SlugStatus` | `(slug: string, currentSlug?: string) => { status: SlugStatus }` | Debounced (400ms) slug availability check via `checkSlugAvailabilityAction`; stale-response-safe via monotonic seq counter; statuses: idle/checking/available/taken/invalid; idle when slug is empty or equals currentSlug (own workspace) |
 
 ## 4. Helpers / utilities
 

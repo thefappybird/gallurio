@@ -568,10 +568,7 @@
       "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
       "logOutConfirmCancel": "Kanselahin",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account",
-      "logOutConfirmTitle": "Mag-log out?",
-      "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
-      "logOutConfirmCancel": "Kanselahin"
+      "accountMenu": "Menu ng account"
     },
     "theme": {
       "label": "Tema",
@@ -1629,7 +1626,11 @@
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
         "other": "Iba pa"
-      }
+      },
+      "slugChecking": "Tinitingnan…",
+      "slugAvailable": "Available",
+      "slugTaken": "Hindi available",
+      "slugInvalid": "Hindi tamang format"
     },
     "plan": {
       "title": "Pumili ng planong angkop",
