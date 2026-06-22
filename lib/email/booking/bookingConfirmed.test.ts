@@ -61,8 +61,10 @@ describe("sendBookingConfirmedClient", () => {
 
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
-    // ms locale copy should appear
-    expect(arg.html).toContain("Studio Aurora");
+    // MY country resolves to ms locale — assert ms-specific copy, not just the name
+    expect(arg.html).toContain("Berita baik!");
+    expect(arg.html).toContain("Hai Ali Hassan,");
+    expect(arg.subject).toContain("Tempahan anda telah disahkan");
   });
 
   it("shows Powered by Gallurio in the footer", async () => {
@@ -137,7 +139,6 @@ describe("sendBookingConfirmedOwner", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.gallurio.test";
 
     await sendBookingConfirmedOwner({
-      locale: "en",
       ownerEmail: "owner@studio.test",
       clientName: "Emma Carter",
       eventTitle: "Emma & Noah Wedding",
@@ -154,7 +155,6 @@ describe("sendBookingConfirmedOwner", () => {
     delete process.env.NEXT_PUBLIC_APP_URL;
 
     await sendBookingConfirmedOwner({
-      locale: "en",
       ownerEmail: "owner@studio.test",
       clientName: "Emma Carter",
       eventTitle: "Event",
@@ -167,7 +167,6 @@ describe("sendBookingConfirmedOwner", () => {
 
   it("includes the client name in the owner email body", async () => {
     await sendBookingConfirmedOwner({
-      locale: "en",
       ownerEmail: "owner@studio.test",
       clientName: "Emma Carter",
       eventTitle: "Emma & Noah Wedding",
@@ -180,7 +179,6 @@ describe("sendBookingConfirmedOwner", () => {
 
   it("uses Gallurio platform brand (no Powered by Gallurio footer for platform brand)", async () => {
     await sendBookingConfirmedOwner({
-      locale: "en",
       ownerEmail: "owner@studio.test",
       clientName: "Emma Carter",
       eventTitle: "Event",
@@ -197,7 +195,6 @@ describe("sendBookingConfirmedOwner", () => {
 
     await expect(
       sendBookingConfirmedOwner({
-        locale: "en",
         ownerEmail: "owner@studio.test",
         clientName: "Emma Carter",
         eventTitle: "Event",

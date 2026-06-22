@@ -115,6 +115,10 @@ export async function approveInquiryBookingAction(
   };
   const newNotes = edits.data.notes ?? booking.notes ?? "";
 
+  // Did THIS call perform the promotion? A concurrent approval can win the
+  // `status: "draft"` race (matchedCount === 0); only the winner fires the
+  // post-commit emails/notification, so the loser must not double-send.
+  let promotedThisCall = false;
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -134,6 +138,7 @@ export async function approveInquiryBookingAction(
       );
 
       if (promoted.matchedCount === 0) return;
+      promotedThisCall = true;
 
       await recordBookingForClient({
         workspaceId,
@@ -180,6 +185,15 @@ export async function approveInquiryBookingAction(
     await session.endSession();
   }
 
+  // A concurrent approval already promoted this booking and owns its
+  // side-effects — return the booked result without re-sending anything.
+  if (!promotedThisCall) {
+    revalidateInquiry(inquiryId);
+    revalidatePath("/bookings");
+    revalidatePath("/dashboard");
+    return { ok: true, bookingId: booking._id.toString() };
+  }
+
   // --- Post-commit side-effects (best-effort, never throw, never roll back) ---
   const locale = emailLocale(ctx.workspace.country ?? null);
   const ownerEmail = ctx.workspace.contact?.email || null;
@@ -216,7 +230,6 @@ export async function approveInquiryBookingAction(
 
   if (ownerEmail) {
     void sendBookingConfirmedOwner({
-      locale,
       ownerEmail,
       clientName: booking.clientName,
       eventTitle: booking.title,
@@ -235,7 +248,9 @@ export async function approveInquiryBookingAction(
         recipients = await resolveTeamRecipients(workspaceId, booking.teamId);
       }
       if (!recipients || recipients.length === 0) {
-        // No team or empty team — notify the owner.
+        // No team or empty team — notify the owner. email:"" is intentional:
+        // the owner's confirmation email is sent separately above, so this
+        // recipient only drives the in-app/DB notification, not a second email.
         recipients = ownerEmail
           ? [{ workosUserId: ctx.workspace.ownerUserId, email: "" }]
           : [];

@@ -16,7 +16,7 @@ export type BookingConfirmedClientParams = {
 };
 
 export type BookingConfirmedOwnerParams = {
-  locale: string;
+  // Platform owner emails are English-only by convention (see sendInquiryNotification).
   ownerEmail: string;
   clientName: string;
   eventTitle: string;
