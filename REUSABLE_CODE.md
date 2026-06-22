@@ -131,6 +131,13 @@ Composed, app-specific shared components.
 | `lib/db/clientTransactions.ts` | `recordBookingForClient`, `reassignBookingBetweenClients` | Atomic client financial-footprint writes |
 | `lib/db/queries/inquiry-conflicts.ts` | `computeInquiryConflicts(workspaceId, inquiries, tz)`, `sessionConflictsWithBookings(workspaceId, tz, session, excludeBookingId?)` | Booking-only conflict detection for inquiries: bulk check across all inquiries (calendar list view) or single-session check (reschedule action); one Booking query per call |
 
+### `lib/email/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/email/escapeHtml.ts` | `escapeHtml(value) => string` | HTML-escape any value (handles null/undefined, escapes `&<>"'`). Use for all user-supplied strings in HTML output. |
+| `lib/email/brand.ts` | `Brand`, `gallurioBrand()`, `resolveWorkspaceBrand(ws)`, `ctaTextColor(accentHex)` | Typed brand struct + factory functions. `gallurioBrand()` returns the platform brand; `resolveWorkspaceBrand(ws)` derives a partner brand from a workspace doc; `ctaTextColor` picks `#ffffff` or `#1a1a1a` for readable CTA button text via WCAG relative luminance. |
+| `lib/email/layout.ts` | `EmailBlock`, `RenderEmailOpts`, `renderBrandedEmail(opts) => { html, text }` | Branded transactional email renderer. Table-based, 600px, fully inline styles, platform (teal header) and partner (white header + accent CTA) modes, dark-mode `@media` block, bulletproof CTA buttons, plain-text fallback. Every caller string is HTML-escaped internally — callers pass raw strings. |
+
 ### Other lib
 | Import | Export | Purpose |
 |--------|--------|---------|
