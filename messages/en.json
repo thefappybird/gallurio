@@ -1560,8 +1560,8 @@
             "body": "{assignerName} assigned a booking to your team."
           },
           "status_changed": {
-            "title": "Booking status updated",
-            "body": "{actorName} changed a booking status to {newStatus}."
+            "title": "{newStatus, select, cancelled {Booking cancelled} completed {Booking completed} booked {Booking confirmed} other {Booking status updated}}",
+            "body": "{newStatus, select, cancelled {{actorName} cancelled a booking.} completed {{actorName} marked a booking completed.} booked {{actorName} confirmed a booking.} other {{actorName} changed a booking status to {newStatus}.}}"
           }
         },
         "team": {

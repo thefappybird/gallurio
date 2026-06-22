@@ -1560,8 +1560,8 @@
             "body": "{assignerName} memberikan tempahan kepada pasukan anda."
           },
           "status_changed": {
-            "title": "Status tempahan dikemas kini",
-            "body": "{actorName} menukar tempahan kepada {newStatus}."
+            "title": "{newStatus, select, cancelled {Tempahan dibatalkan} completed {Tempahan selesai} booked {Tempahan disahkan} other {Status tempahan dikemas kini}}",
+            "body": "{newStatus, select, cancelled {{actorName} membatalkan tempahan.} completed {{actorName} menandakan tempahan selesai.} booked {{actorName} mengesahkan tempahan.} other {{actorName} menukar status tempahan kepada {newStatus}.}}"
           }
         },
         "team": {

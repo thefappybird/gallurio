@@ -1560,8 +1560,8 @@
             "body": "Itinalaga ni {assignerName} ang isang booking sa iyong koponan."
           },
           "status_changed": {
-            "title": "Na-update ang status ng booking",
-            "body": "Binago ni {actorName} ang booking sa {newStatus}."
+            "title": "{newStatus, select, cancelled {Booking na-cancel} completed {Booking nakumpleto} booked {Booking nakumpirma} other {Na-update ang status ng booking}}",
+            "body": "{newStatus, select, cancelled {Kinansela ni {actorName} ang isang booking.} completed {Minarkahan ni {actorName} na kumpleto ang booking.} booked {Kinumpirma ni {actorName} ang isang booking.} other {Binago ni {actorName} ang status ng booking sa {newStatus}.}}"
           }
         },
         "team": {

@@ -1560,8 +1560,8 @@
             "body": "{assignerName} menugaskan pemesanan ke tim Anda."
           },
           "status_changed": {
-            "title": "Status pemesanan diperbarui",
-            "body": "{actorName} mengubah status pemesanan menjadi {newStatus}."
+            "title": "{newStatus, select, cancelled {Pemesanan dibatalkan} completed {Pemesanan selesai} booked {Pemesanan dikonfirmasi} other {Status pemesanan diperbarui}}",
+            "body": "{newStatus, select, cancelled {{actorName} membatalkan pemesanan.} completed {{actorName} menandai pemesanan selesai.} booked {{actorName} mengonfirmasi pemesanan.} other {{actorName} mengubah status pemesanan menjadi {newStatus}.}}"
           }
         },
         "team": {

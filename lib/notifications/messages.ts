@@ -23,7 +23,7 @@ export async function buildNotificationContent(
   vars: NotificationVars,
 ): Promise<{ title: string; body: string; href: string }> {
   const t = await getTranslations({ locale, namespace: 'app.notifications' })
-  const title = t(`types.${type}.title`)
+  const title = t(`types.${type}.title`, vars as Record<string, string>)
   const body = t(`types.${type}.body`, vars as Record<string, string>)
   const href = buildHref(locale, type, entityId)
   return { title, body, href }
