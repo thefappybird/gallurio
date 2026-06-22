@@ -80,10 +80,11 @@ export async function businessStepAction(
   }).lean();
   if (slugClash) return { error: "That slug is already taken — try another." };
 
-  const session = await mongoose.startSession();
   let workspaceId: string;
+  let session: mongoose.ClientSession | null = null;
 
   try {
+    session = await mongoose.startSession();
     await session.withTransaction(async () => {
       // Upsert workspace — keyed by ownerUserId (the WorkOS user id).
       const workspace = await Workspace.findOneAndUpdate(
@@ -124,8 +125,21 @@ export async function businessStepAction(
         { upsert: true, session }
       );
     });
+  } catch (err) {
+    // Race-safe: if two concurrent requests slip through the pre-write check
+    // simultaneously, the second hits the unique index on `slug` (E11000).
+    // Map this to the same friendly message instead of propagating the error.
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "That URL is already taken — try another." };
+    }
+    throw err;
   } finally {
-    await session.endSession();
+    if (session) await session.endSession();
   }
 
   await setUserStep(authUser.workosUserId, "plan");
