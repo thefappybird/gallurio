@@ -162,6 +162,25 @@ describe("SpotlightGuide", () => {
     expect(onFinish).toHaveBeenCalledWith(false);
   });
 
+  // ── Overlay click-blocking (gated robustness) ────────────────────────────────
+  // A gated step asks the user to act on the real UI, so the dim must be
+  // visual-only (no click-blocking layer) — otherwise an imperfect anchor rect
+  // lets the blocker cover the real control and the gate can never be satisfied.
+
+  it("passive anchor step renders click-blocking rects around the cutout", () => {
+    const removeAnchor = injectAnchor("my-anchor");
+    renderGuide({ stepIndex: 1 }); // anchor-step (non-gated)
+    expect(document.querySelectorAll("rect.pointer-events-auto").length).toBeGreaterThan(0);
+    removeAnchor();
+  });
+
+  it("gated step renders NO click-blocking rects so the target stays clickable", () => {
+    const removeAnchor = injectAnchor("gated-anchor");
+    renderGuide({ stepIndex: 2 }); // gated-step
+    expect(document.querySelectorAll("rect.pointer-events-auto").length).toBe(0);
+    removeAnchor();
+  });
+
   // ── Skip ─────────────────────────────────────────────────────────────────────
 
   it("Skip (first step) calls onSkip(false)", () => {

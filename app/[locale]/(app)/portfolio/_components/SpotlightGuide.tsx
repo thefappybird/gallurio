@@ -199,11 +199,15 @@ function DimWithCutout({
       />
 
       {/* Transparent interaction-blocking layer over everything EXCEPT the cutout.
-          This lets pointer events reach the real element in the cutout when gated,
-          while blocking clicks on the dimmed region.
-          Skipped entirely when passthrough is true (drag steps need free pointer
-          access across all regions — blocks panel → canvas). */}
-      {!passthrough && (hasCutout ? (
+          Rendered ONLY for passive steps (advance via Next), to keep the user from
+          clicking the dimmed UI while reading.
+          Skipped for `passthrough` steps (drag needs free pointer access) AND for
+          `gated` steps: a gated step asks the user to act on the real UI, so the
+          dim is visual-only and ALL clicks pass through. Blocking everything except
+          the cutout made gated completion depend on a pixel-perfect anchor rect —
+          if the rect was off, the blocker covered the real control and ate the
+          click. Visual-only dim makes the gate robust regardless of rect accuracy. */}
+      {!passthrough && !gated && (hasCutout ? (
         <>
           {/* Block: above cutout */}
           <rect
