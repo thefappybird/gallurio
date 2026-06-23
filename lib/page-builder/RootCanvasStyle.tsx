@@ -36,14 +36,17 @@ export function rootCanvasCssText(style?: RootPageStyle | null): string {
 const CANVAS_COLOR_ISOLATION_CSS =
   `${CANVAS_SURFACE_SELECTOR} { color: var(--foreground); }`;
 
-// Allow the canvas page to GROW with its content. Puck's layout system gives
-// [data-puck-preview] a height derived from the scroll pane (typically `height:100%`
-// of the viewport-height layout area). Blocks that use `min-height: Xvh` inline
-// extend beyond that fixed height — the block overflows the page background frame
-// rather than stretching it. Overriding with `min-height: fit-content` makes the
-// surface content-driven: the page/background always wraps the tallest content.
+// Allow the canvas page to GROW with its content. Puck's CSS module pins
+// `[data-puck-preview]` to `height: 100%` of the (viewport-height) scroll pane, so
+// taller content — including blocks with `min-height: Xvh` — overflows the page
+// background frame instead of stretching it. `min-height: fit-content` does NOT
+// fix this: in the block axis `fit-content` resolves against the *available*
+// height (~viewport), not the content size, so the surface stays viewport-tall.
+// `height: auto` lets the surface take its natural content height (normal flow),
+// and `min-height: 100dvh` keeps a blank canvas filling the viewport — together
+// the page background always wraps the tallest content.
 const CANVAS_GROWTH_CSS =
-  `${CANVAS_SURFACE_SELECTOR} { min-height: fit-content; }`;
+  `${CANVAS_SURFACE_SELECTOR} { height: auto; min-height: 100dvh; }`;
 
 // Puck's _PuckPreview_ component (the direct child of our canvas wrapper) has
 // `height: 100%` in its CSS module, which pins it to the fixed grid-row height
@@ -70,20 +73,20 @@ const CANVAS_PUCK_PREVIEW_HEIGHT_CSS =
 const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
   `:has(> [data-tour-id="canvas"]) { height: auto; min-height: 100dvh; overflow: clip; }`;
 
-// In edit mode, Puck renders a three-level structure inside our canvas wrapper:
-//   [data-tour-id="canvas"]
-//     > ._PuckCanvas-inner_ (height: 100%; position: relative)
-//       > ._PuckCanvas-root_ (position: absolute; top: 0; bottom: 0)
+// In edit mode Puck wraps the preview surface (`[data-puck-preview]`) in an
+// absolutely-positioned `._PuckCanvas-root_` (top: 0; bottom: 0), which pins the
+// surface to its parent's explicit height instead of letting it grow with block
+// content — so a page background set on the surface stops at the viewport height
+// and taller content spills outside the colored frame.
 //
-// `._PuckCanvas-root_` is absolutely positioned and stretches between top/bottom
-// of its positioned parent. This pins the content area to the parent's explicit
-// height instead of growing with block content. Overriding with `position: relative`
-// and `height: auto` makes it content-driven. `min-height: 100dvh` ensures the
-// canvas is never shorter than the viewport (blank-canvas experience is preserved).
-// The selector targets exactly the grandchild of our wrapper — stable across Puck
-// version bumps since the hashed class names change but this structural depth does not.
+// We target that wrapper by its STABLE structural relationship — it is the direct
+// parent of `[data-puck-preview]` — via `:has(> [data-puck-preview])`. (An earlier
+// fixed-depth selector `[data-tour-id="canvas"] > * > *` missed it: Puck nests the
+// surface ~5 levels deep, not 2.) Overriding to `position: relative` + `height: auto`
+// makes the surface content-driven so the page background wraps the tallest content;
+// `min-height: 100dvh` keeps the blank canvas filling the viewport.
 const CANVAS_PUCK_CANVAS_ROOT_CSS =
-  `[data-tour-id="canvas"] > * > * { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
+  `:has(> [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
 
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet

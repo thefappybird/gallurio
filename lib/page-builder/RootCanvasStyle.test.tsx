@@ -76,8 +76,12 @@ describe("buildCanvasCss", () => {
   it("removes absolute pinning from Puck canvas-root so edit-mode content is not height-clamped", () => {
     const css = buildCanvasCss(undefined);
     // _PuckCanvas-root_ has position:absolute; top:0; bottom:0 which pins its height to
-    // its positioned parent (_PuckCanvas-inner_). Targeting the grandchild of our canvas
-    // wrapper overrides this with position:relative so it grows with content.
-    expect(css).toContain("[data-tour-id=\"canvas\"] > * > *");
+    // its positioned parent, so the page surface ([data-puck-preview]) can't grow. We
+    // target that wrapper by its STABLE relationship — it is the direct parent of
+    // [data-puck-preview] — and override to position:relative + height:auto so the
+    // surface grows with content. (A fixed-depth `> * > *` selector missed it: Puck
+    // nests the surface several levels deep, not two.)
+    expect(css).toContain(":has(> [data-puck-preview])");
+    expect(css).toMatch(/:has\(> \[data-puck-preview\]\)\s*{[^}]*position: relative/);
   });
 });

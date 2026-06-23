@@ -56,12 +56,13 @@ test.describe("Item 8 — canvas page grows to fit tall content", () => {
     console.log("[item8-desktop] metrics:", JSON.stringify(metrics));
     expect(metrics, "[data-puck-preview] must exist").not.toBeNull();
 
-    // The canvas surface scrollHeight must exceed the viewport height because
-    // the sentinel is 200vh tall and min-height: fit-content allows growth.
-    expect(metrics!.scrollHeight).toBeGreaterThan(metrics!.viewportHeight);
-
-    // Confirm the computed min-height is fit-content (not auto or 0px).
-    expect(metrics!.computedMinHeight).toMatch(/fit-content/);
+    // The page surface FRAME itself (clientHeight, where the page background
+    // paints) must grow to wrap the 200vh sentinel — not merely become
+    // scrollable. Before the fix clientHeight stayed pinned at the viewport
+    // height while only scrollHeight grew, so the background clipped content.
+    expect(metrics!.clientHeight).toBeGreaterThan(metrics!.viewportHeight);
+    // Frame wraps content exactly (no overflow beyond the painted background).
+    expect(metrics!.clientHeight).toBe(metrics!.scrollHeight);
 
     await page.screenshot({
       path: "e2e/.artifacts/item8-canvas-overflow-desktop.png",
@@ -96,8 +97,9 @@ test.describe("Item 8 — canvas page grows to fit tall content", () => {
 
     console.log("[item8-mobile] metrics:", JSON.stringify(metrics));
     expect(metrics, "[data-puck-preview] must exist").not.toBeNull();
-    expect(metrics!.scrollHeight).toBeGreaterThan(metrics!.viewportHeight);
-    expect(metrics!.computedMinHeight).toMatch(/fit-content/);
+    // The page surface frame grows to wrap content (background does not clip).
+    expect(metrics!.clientHeight).toBeGreaterThan(metrics!.viewportHeight);
+    expect(metrics!.clientHeight).toBe(metrics!.scrollHeight);
 
     await page.screenshot({
       path: "e2e/.artifacts/item8-canvas-overflow-mobile-375.png",
