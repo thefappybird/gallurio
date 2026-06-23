@@ -318,6 +318,14 @@ export function ContactForm({
         .pf-contact-form .pf-contact-location [data-slot="input"] {
           color: inherit;
         }
+        .pf-contact-form .pf-contact-location [data-slot="input"] {
+          background-color: var(--pf-color-bg);
+          border-color: color-mix(in srgb, currentColor 28%, transparent);
+        }
+        .pf-contact-form .pf-contact-location button {
+          background-color: var(--pf-color-bg);
+          border-color: color-mix(in srgb, currentColor 28%, transparent);
+        }
         .pf-contact-form .pf-contact-location .text-muted-foreground,
         .pf-contact-form .pf-contact-location svg,
         .pf-contact-form .pf-contact-phone .PhoneInputCountrySelectArrow {
