@@ -156,7 +156,24 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
     if (location) {
       try {
         const locUrl = new URL(location, req.nextUrl.origin);
-        if (locUrl.pathname === "/sign-in") {
+        // Intercept two cases where authkitMiddleware signals "unauthenticated":
+        //   a) A redirect to the local /sign-in path (test/mock environments).
+        //   b) A redirect to the external WorkOS hosted AuthKit UI (real usage:
+        //      authkitMiddleware calls workos.userManagement.getAuthorizationUrl
+        //      and returns an authkit.app redirect directly — it never routes
+        //      through the local /sign-in page).
+        // In both cases we redirect to the local sign-in page with ?returnTo so
+        // the user lands back on their original deep-linked page after auth.
+        const isLocalSignIn = locUrl.origin === req.nextUrl.origin && locUrl.pathname === "/sign-in";
+        // authkitMiddleware redirects unauthenticated users to the WorkOS-hosted
+        // authorization endpoint (api.workos.com or *.authkit.app). Intercept any
+        // redirect that leaves the app origin so we can route via the local
+        // sign-in page with returnTo instead of passing the user off to WorkOS directly.
+        const isWorkOsHostedAuth =
+          locUrl.hostname.endsWith(".authkit.app") ||
+          locUrl.hostname === "api.workos.com" ||
+          locUrl.hostname.endsWith(".workos.com");
+        if (isLocalSignIn || isWorkOsHostedAuth) {
           // Localize the sign-in redirect based on the incoming request locale.
           const localeMatch = pathname.match(LOCALE_PREFIX_RE);
           const prefix = localeMatch ? localeMatch[0] : "";
