@@ -399,6 +399,13 @@ A task is done only when:
 - After the final review passes and all findings are fixed, automatically open a PR for the branch. The PR description must list the completed tasks as a checklist (`- [ ]`) so each can be tested easily later. Only open the PR once there are no remaining tasks on the branch.
 - Merge to `dev` only after review and explicit approval
 
+## Docs hygiene (minimize doc bloat)
+- Treat docs created during a task/PR (spec, plan, audit notes, code-review markdown) as scratch — keep them only for the duration of the work.
+- Before opening the PR, CONSOLIDATE everything into a SINGLE summary doc under `docs/<area>/` describing what the PR did: problem, changes per scope item, key decisions, and verification/test results. Delete every other doc created during that run — they stay recoverable in git history.
+- Net result of any PR: at most ONE new/changed doc file. Do not leave behind separate spec/plan/review files alongside the summary.
+- This overrides "Save review as markdown" above: fold the review outcome into the single summary instead of a standalone review file.
+- Pre-existing durable references (README, master-plan, product-spec-reference, blueprint, backend-audit-findings, RELEASE-CHECKLIST, REUSABLE_CODE) are NOT run-created — never delete them as part of this cleanup.
+
 ## Commands
 - `pnpm dev`
 - `pnpm start`

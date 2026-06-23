@@ -168,41 +168,46 @@ plus the page-load normalization (`normalizePublicPageData` and the editor load 
    default is a clamp/responsive expression (e.g. Heading fluid size), surface the resolved
    base value the control can represent, and document the lossy edge in a `ponytail:` note.
 
-### Scope boundary (decide design vs plumbing)
-**IN scope (surface as pre-filled control values):** typography (fontSize, fontWeight,
-lineHeight, letterSpacing), colors (text/bg/border tokens), spacing (padding, gap, margin),
-radius, alignment, gallery columns/gap, background animation/speed, button style/size — i.e.
-anything a user would recognize as a *design choice*.
+### Scope boundary (LOCKED)
+**Rule: surface defaults ONLY where a control already exists.** Do NOT add new controls in
+this PR. For every property that already has a control, make that control display the
+block's real default as a pre-filled, editable value (via `defaultProps` + normalization).
+Properties whose defaults render but have NO control today stay exactly as they are
+(hardcoded) — they are explicitly out of scope here.
 
-**OUT of scope (structural plumbing — do NOT add inputs for these):** `display:grid/flex`,
+**OUT of scope (no new inputs):** structural plumbing (`display:grid/flex`,
 `flex-direction`, `position:relative`, `overflow:hidden`, z-index stacking, internal
-`max-width:80rem` content clamps, empty-state/iframe aspect ratios. These are layout
-internals, not design knobs; leave them hardcoded.
+`max-width:80rem` content clamps, empty-state/iframe aspect ratios) AND control-less design
+hardcodes (Heading fluid `fontSize`/`fontWeight 700`/`lineHeight 1.2`, Button
+`letterSpacing 0.04em` and size-derived `min-height/min-width`, Text `lineHeight 1.7` /
+`whiteSpace`). Leave all of these hardcoded; the rendered look is authoritative.
 
-**BORDERLINE — confirm during spec review:** Columns/Container inner `max-width: 80rem`
-(expose as a "content width" control or leave fixed?), Button `letterSpacing 0.04em` and
-size-derived `min-height/min-width` (expose or keep size-preset-driven?), Heading fluid
-`fontSize`/`fontWeight 700`/`lineHeight 1.2` (add a Heading typography control, or leave the
-level presets authoritative and just expose fontWeight?).
+This narrows item 4 to: wire existing-control defaults into `defaultProps`, remove the
+matching render fallbacks (output unchanged), and add load-time normalization — nothing
+that introduces new UI.
 
-### Per-block worklist (from audit — A = control exists, just wire default into defaultProps;
-B = design default with no/hidden control, needs a control decision)
+### Per-block worklist (LOCKED — only properties whose control already exists)
+Each row: wire the render default into the block's `*DefaultProps`, drop the matching
+render fallback (output unchanged), and rely on normalization to surface it on old pages.
+Verify the named control pre-fills for a new AND an existing block.
 
-| Block | Property | Render default | Type |
-|-------|----------|----------------|------|
-| Columns | gap | `1rem` (px 16) | A |
-| Container / GalleryGrid / GalleryMasonry / FeaturedWork / all presets | bgAnimation | `crossfade` | A |
-| Container / Gallery* / FeaturedWork / presets | bgSpeed | `medium` | A |
-| Container | outer padding `1.5rem` duplicated vs `_style` padding | reconcile to one source (`_style`) | A |
-| Button | buttonStyle | (dynamic, not in defaults) | A |
-| Button | fontSize / minHeight / minWidth (size-derived) | per `size` | B (borderline) |
-| Button | letterSpacing `0.04em`, fontWeight 600/700 | hardcoded | B (borderline) |
-| Heading | fontSize (clamp by level), fontWeight 700, lineHeight 1.2 | hardcoded | B (borderline) |
-| Text | lineHeight 1.7, whiteSpace pre-line | hardcoded | B (lineHeight = design; whiteSpace = plumbing/out) |
-| Image | wrapper padding `1rem 1.5rem` | hardcoded | A (padding control) |
-| Divider | wrapper padding `1rem 1.5rem`; borderTopColor `color-mix(fg 20%)` | hardcoded | A (padding) / B (color) |
-| Video | padding `4rem 1.5rem`; bg/fg/font vars; desc/footer type | hardcoded | A (padding) / B (type) ; aspect ratio OUT |
-| Spacer / Divider thickness / ContactDetails | — | already surfaced | none |
+| Block(s) | Property | Render default | Existing control |
+|----------|----------|----------------|------------------|
+| Columns | gap | `1rem` -> px 16 | Layout tab gap (NumberInputRow) |
+| Container, GalleryGrid, GalleryMasonry, FeaturedWork, all presets | bgAnimation | `crossfade` | Content tab select |
+| Container, GalleryGrid, GalleryMasonry, FeaturedWork, all presets | bgSpeed | `medium` | Content tab select |
+| Container | padding (outer `1.5rem` duplicated vs `_style`) | reconcile to `_style` only | Layout tab padding controls |
+| Button | buttonStyle | dynamic default -> add to defaultProps | Layout tab buttonStyle toggle |
+
+**Sweep, don't assume the table is exhaustive:** during implementation, for every block
+diff each control against its render default and fix any *other* "control exists but shows
+blank" cases the same way. Anything without an existing control is OUT (see Scope boundary).
+
+**Explicitly OUT (control-less hardcodes, leave as-is):** Image/Divider/Video wrapper
+padding, Divider border color, Video typography & aspect ratios, Heading fluid size/weight/
+line-height, Button letter-spacing & size-derived min sizes, Text line-height/whiteSpace.
+**Already surfaced (no work):** Spacer height, Divider thickness, ContactDetails toggles,
+overlayOpacity, minHeight, alignment, gallery columns/gap.
 
 ### Item 4 acceptance
 - For every IN-scope property, the control shows the block's default as a pre-filled,
