@@ -116,6 +116,32 @@ describe("sendBookingCancelledClient", () => {
       })
     ).resolves.not.toThrow();
   });
+
+  it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
+    await sendBookingCancelledClient({
+      brand: partnerBrand,
+      locale: "MY",
+      clientName: "Ali Hassan",
+      clientEmail: "ali@example.com",
+      businessName: "Studio Aurora",
+      eventTitle: "Ali Wedding",
+      sessions: [],
+      replyTo: null,
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // English section
+    expect(arg.html).toContain("We wanted to let you know");
+    // Localized (ms) section
+    expect(arg.html).toContain("Kami ingin memaklumkan");
+    // Divider
+    expect(arg.html).toContain("email-divider");
+    // Bilingual subject
+    expect(arg.subject).toContain("·");
+    expect(arg.subject).toContain("Your booking has been cancelled");
+    expect(arg.subject).toContain("Tempahan anda telah dibatalkan");
+  });
 });
 
 describe("sendBookingCancelledOwner", () => {

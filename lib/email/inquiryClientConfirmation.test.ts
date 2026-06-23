@@ -76,6 +76,29 @@ describe("sendInquiryClientConfirmation", () => {
     expect(arg.html).toContain("Powered by Gallurio");
   });
 
+  it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
+    await sendInquiryClientConfirmation({
+      workspaceName: "Studio Aurora",
+      clientEmail: "emma@example.com",
+      clientName: "Emma Carter",
+      ownerEmail: "owner@studio.test",
+      country: "MY",
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // English section
+    expect(arg.html).toContain("Thanks for reaching out");
+    // Localized (ms) section
+    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    // Divider
+    expect(arg.html).toContain("email-divider");
+    // Bilingual subject
+    expect(arg.subject).toContain("·");
+    expect(arg.subject).toContain("We received your inquiry");
+    expect(arg.subject).toContain("Kami telah menerima pertanyaan anda");
+  });
+
   it("is best-effort: returns error result without throwing when render fails", async () => {
     // Pass a bad brand that will cause no throw but returns error gracefully
     // Simulate by passing invalid brand kind to force an unusual path

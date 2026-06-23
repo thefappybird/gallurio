@@ -1,6 +1,6 @@
 import "server-only";
 import { sendEmail } from "../send";
-import { renderBrandedEmail } from "../layout";
+import { renderBrandedEmail, renderBilingualEmail, bilingualSubject } from "../layout";
 import { gallurioBrand, type Brand } from "../brand";
 import { EMAIL_COPY, emailLocale } from "../messages";
 
@@ -48,31 +48,39 @@ export async function sendBookingConfirmedClient(
 
   try {
     const locale = emailLocale(params.locale ?? null);
-    const copy = EMAIL_COPY.bookingConfirmedClient[locale];
     const sessionsText = formatSessions(params.sessions);
 
-    const blocks: Parameters<typeof renderBrandedEmail>[0]["blocks"] = [
-      { type: "p", text: copy.greeting(params.clientName) },
-      { type: "p", text: copy.body1(params.businessName) },
-      { type: "p", text: copy.body2(params.eventTitle) },
-      ...(sessionsText
-        ? [{ type: "p" as const, text: copy.sessions(sessionsText) }]
-        : []),
-      { type: "p", text: copy.body3(params.businessName) },
-    ];
-
-    const { html, text } = renderBrandedEmail({
+    const { html, text } = renderBilingualEmail({
       brand: params.brand,
-      locale,
-      preheader: copy.body1(params.businessName),
-      title: copy.subject(params.businessName),
-      blocks,
+      preheader: EMAIL_COPY.bookingConfirmedClient.en.body1(params.businessName),
+      secondaryLocale: locale,
+      build: (loc) => {
+        const copy = EMAIL_COPY.bookingConfirmedClient[loc];
+        return {
+          title: copy.subject(params.businessName),
+          blocks: [
+            { type: "p", text: copy.greeting(params.clientName) },
+            { type: "p", text: copy.body1(params.businessName) },
+            { type: "p", text: copy.body2(params.eventTitle) },
+            ...(sessionsText
+              ? [{ type: "p" as const, text: copy.sessions(sessionsText) }]
+              : []),
+            { type: "p", text: copy.body3(params.businessName) },
+          ],
+        };
+      },
     });
+
+    const subject = bilingualSubject(
+      EMAIL_COPY.bookingConfirmedClient.en.subject(params.businessName),
+      EMAIL_COPY.bookingConfirmedClient[locale].subject(params.businessName),
+      locale,
+    );
 
     await sendEmail({
       to: params.clientEmail,
       replyTo: params.replyTo ?? undefined,
-      subject: copy.subject(params.businessName),
+      subject,
       html,
       text,
     });

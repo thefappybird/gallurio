@@ -1,6 +1,6 @@
 import "server-only";
 import { sendEmail } from "../send";
-import { renderBrandedEmail } from "../layout";
+import { renderBilingualEmail, bilingualSubject } from "../layout";
 import type { Brand } from "../brand";
 import { EMAIL_COPY, emailLocale } from "../messages";
 
@@ -25,24 +25,34 @@ export async function sendInquiryDeclineClient(
 
   try {
     const locale = emailLocale(params.locale ?? null);
-    const copy = EMAIL_COPY.inquiryDecline[locale];
 
-    const { html, text } = renderBrandedEmail({
+    const { html, text } = renderBilingualEmail({
       brand: params.brand,
-      locale,
-      preheader: copy.body1(params.businessName),
-      title: copy.subject(params.businessName),
-      blocks: [
-        { type: "p", text: copy.greeting(params.clientName) },
-        { type: "p", text: copy.body1(params.businessName) },
-        { type: "p", text: copy.body2 },
-      ],
+      preheader: EMAIL_COPY.inquiryDecline.en.body1(params.businessName),
+      secondaryLocale: locale,
+      build: (loc) => {
+        const copy = EMAIL_COPY.inquiryDecline[loc];
+        return {
+          title: copy.subject(params.businessName),
+          blocks: [
+            { type: "p", text: copy.greeting(params.clientName) },
+            { type: "p", text: copy.body1(params.businessName) },
+            { type: "p", text: copy.body2 },
+          ],
+        };
+      },
     });
+
+    const subject = bilingualSubject(
+      EMAIL_COPY.inquiryDecline.en.subject(params.businessName),
+      EMAIL_COPY.inquiryDecline[locale].subject(params.businessName),
+      locale,
+    );
 
     await sendEmail({
       to: params.clientEmail,
       replyTo: params.replyTo ?? undefined,
-      subject: copy.subject(params.businessName),
+      subject,
       html,
       text,
     });

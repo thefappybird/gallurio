@@ -98,4 +98,28 @@ describe("sendInquiryDeclineClient", () => {
     expect(arg.html).toContain("tidak dapat memenuhi");
     expect(arg.subject).toContain("Kemaskini mengenai pertanyaan anda");
   });
+
+  it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
+    await sendInquiryDeclineClient({
+      brand: partnerBrand,
+      locale: "MY",
+      clientName: "Ali Hassan",
+      clientEmail: "ali@example.com",
+      businessName: "Studio Lumen",
+      replyTo: null,
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // English section
+    expect(arg.html).toContain("Thank you for reaching out");
+    // Localized (ms) section
+    expect(arg.html).toContain("tidak dapat memenuhi");
+    // Divider
+    expect(arg.html).toContain("email-divider");
+    // Bilingual subject
+    expect(arg.subject).toContain("·");
+    expect(arg.subject).toContain("An update on your inquiry");
+    expect(arg.subject).toContain("Kemaskini mengenai pertanyaan anda");
+  });
 });

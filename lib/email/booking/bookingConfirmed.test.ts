@@ -132,6 +132,32 @@ describe("sendBookingConfirmedClient", () => {
       })
     ).resolves.not.toThrow();
   });
+
+  it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
+    await sendBookingConfirmedClient({
+      brand: partnerBrand,
+      locale: "MY",
+      clientName: "Ali Hassan",
+      clientEmail: "ali@example.com",
+      businessName: "Studio Aurora",
+      eventTitle: "Ali Wedding",
+      sessions: [],
+      replyTo: null,
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // English section must appear
+    expect(arg.html).toContain("Great news!");
+    // Localized (ms) section must appear
+    expect(arg.html).toContain("Berita baik!");
+    // Divider separating the two sections
+    expect(arg.html).toContain("email-divider");
+    // Subject must be bilingual (contains middot ·)
+    expect(arg.subject).toContain("·");
+    expect(arg.subject).toContain("Your booking is confirmed");
+    expect(arg.subject).toContain("Tempahan anda telah disahkan");
+  });
 });
 
 describe("sendBookingConfirmedOwner", () => {

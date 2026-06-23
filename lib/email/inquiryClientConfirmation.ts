@@ -1,6 +1,6 @@
 import "server-only";
 import { sendEmail, type SendEmailResult } from "./send";
-import { renderBrandedEmail } from "./layout";
+import { renderBilingualEmail, bilingualSubject } from "./layout";
 import { resolveWorkspaceBrand, type Brand } from "./brand";
 import { EMAIL_COPY, emailLocale } from "./messages";
 
@@ -19,25 +19,35 @@ export async function sendInquiryClientConfirmation(
   try {
     const locale = emailLocale(data.country ?? null);
     const brand = data.brand ?? resolveWorkspaceBrand({ name: data.workspaceName });
-    const copy = EMAIL_COPY.inquiryConfirmation[locale];
 
-    const { html, text } = renderBrandedEmail({
+    const { html, text } = renderBilingualEmail({
       brand,
-      locale,
-      preheader: copy.body1(brand.name),
-      title: copy.subject(brand.name),
-      blocks: [
-        { type: "p", text: copy.greeting(data.clientName) },
-        { type: "p", text: copy.body1(brand.name) },
-        { type: "p", text: copy.body2(brand.name) },
-        { type: "p", text: copy.body3(brand.name) },
-      ],
+      preheader: EMAIL_COPY.inquiryConfirmation.en.body1(brand.name),
+      secondaryLocale: locale,
+      build: (loc) => {
+        const copy = EMAIL_COPY.inquiryConfirmation[loc];
+        return {
+          title: copy.subject(brand.name),
+          blocks: [
+            { type: "p", text: copy.greeting(data.clientName) },
+            { type: "p", text: copy.body1(brand.name) },
+            { type: "p", text: copy.body2(brand.name) },
+            { type: "p", text: copy.body3(brand.name) },
+          ],
+        };
+      },
     });
+
+    const subject = bilingualSubject(
+      EMAIL_COPY.inquiryConfirmation.en.subject(brand.name),
+      EMAIL_COPY.inquiryConfirmation[locale].subject(brand.name),
+      locale,
+    );
 
     return await sendEmail({
       to: data.clientEmail,
       replyTo: data.ownerEmail ?? undefined,
-      subject: copy.subject(brand.name),
+      subject,
       html,
       text,
     });
