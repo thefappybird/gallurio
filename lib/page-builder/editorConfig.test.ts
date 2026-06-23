@@ -138,6 +138,33 @@ describe("GalleryLandingPreset carousel hint", () => {
   });
 });
 
+describe("preset section blocks are inline so grid placement applies", () => {
+  // Preset sections render via ContainerBlock, whose root carries the resolved
+  // colSpan/rowSpan (grid-column/grid-row: span N). For that to take effect when
+  // the section is a child of a Columns grid in the EDITOR canvas, Puck must treat
+  // the block as `inline` — otherwise Puck wraps it in its own drag <div> which
+  // becomes the grid child, and the span lands on the inner section (ignored).
+  // Plain Container and Columns are already inline; the presets must match.
+  const PRESET_KEYS = [
+    "HeroPreset",
+    "AboutPreset",
+    "ServicesPreset",
+    "CtaPreset",
+    "ContactPreset",
+    "GalleryGridPreset",
+    "GalleryMasonryPreset",
+    "FeaturedWorkPreset",
+    "GalleryLandingPreset",
+  ] as const;
+
+  for (const key of PRESET_KEYS) {
+    it(`${key} is inline: true`, () => {
+      const cfg = (editorPuckConfig.components as Record<string, { inline?: boolean }>)[key];
+      expect(cfg?.inline).toBe(true);
+    });
+  }
+});
+
 describe("block label renames", () => {
   const label = (cfg: { components: Record<string, { label?: string }> }, key: string) =>
     cfg.components[key]?.label;

@@ -316,6 +316,10 @@ const resolveContainerFieldsTyped = resolveContainerFields as unknown as Compone
 
 const heroPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.HeroPreset.label,
+  // inline so the section root (which carries colSpan/rowSpan grid placement) is
+  // the grid child in the editor canvas, matching the public render. Without it
+  // Puck wraps the block and the span lands on the inner section (ignored).
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.HeroPreset.defaultProps,
@@ -324,6 +328,7 @@ const heroPreset: ComponentConfig<ContainerBlockProps> = {
 
 const aboutPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.AboutPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.AboutPreset.defaultProps,
@@ -332,6 +337,7 @@ const aboutPreset: ComponentConfig<ContainerBlockProps> = {
 
 const servicesPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ServicesPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ServicesPreset.defaultProps,
@@ -340,6 +346,7 @@ const servicesPreset: ComponentConfig<ContainerBlockProps> = {
 
 const ctaPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.CtaPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.CtaPreset.defaultProps,
@@ -348,6 +355,7 @@ const ctaPreset: ComponentConfig<ContainerBlockProps> = {
 
 const contactPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ContactPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ContactPreset.defaultProps,
@@ -356,6 +364,7 @@ const contactPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryGridPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.GalleryGridPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryGridPreset.defaultProps,
@@ -364,6 +373,7 @@ const galleryGridPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryMasonryPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.GalleryMasonryPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
@@ -372,6 +382,7 @@ const galleryMasonryPreset: ComponentConfig<ContainerBlockProps> = {
 
 const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.FeaturedWorkPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
@@ -380,6 +391,7 @@ const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryLandingPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.GalleryLandingPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
