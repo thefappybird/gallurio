@@ -134,7 +134,7 @@ describe("platform emails", () => {
     const html = capturedHtml();
     expect(html).toContain("<!DOCTYPE html>");
     expect(html).toContain("Emma Carter");
-    expect(html).toContain("sign-in?redirect_url");
+    expect(html).toContain("/inquiries?inquiryId=inq_42");
     expect(html).toContain("@media (prefers-color-scheme: dark)");
     expect(html).toContain("min-height:44px");
     writeHtml("platform-inquiry-notification-en-cta.html", html, {

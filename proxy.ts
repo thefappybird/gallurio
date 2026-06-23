@@ -163,6 +163,11 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
           const redirectUrl = req.nextUrl.clone();
           redirectUrl.pathname = `${prefix}/sign-in`;
           redirectUrl.search = "";
+          // Preserve the originally-requested destination so email deep links /
+          // bookmarks return the user to the right page+modal after sign-in. This is a
+          // local path; signInAction (sanitizeReturnTo) and the OAuth callback both
+          // re-validate it before redirecting, so it cannot be an open redirect.
+          redirectUrl.searchParams.set("returnTo", `${pathname}${req.nextUrl.search}`);
           return NextResponse.redirect(redirectUrl);
         }
       } catch {

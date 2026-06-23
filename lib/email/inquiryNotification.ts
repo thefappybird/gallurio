@@ -2,7 +2,7 @@
 import { sendEmail, type SendEmailResult } from "./send";
 import { renderBrandedEmail } from "./layout";
 import { gallurioBrand } from "./brand";
-import { buildInquiryAuthPath } from "@/lib/inquiries/links";
+import { buildInquiryModalPath } from "@/lib/inquiries/links";
 
 type InquiryLocation = {
   label?: string | null;
@@ -31,7 +31,7 @@ export type InquiryNotificationData = {
 function inboxUrl(inquiryId: string): string | null {
   const base = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   if (!base) return null;
-  return buildInquiryAuthPath(base, inquiryId);
+  return `${base}${buildInquiryModalPath(inquiryId)}`;
 }
 
 function formatSessions(sessions: InquiryNotificationData["sessions"]): string {
