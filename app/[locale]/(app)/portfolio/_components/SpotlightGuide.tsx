@@ -16,6 +16,11 @@ import { useElementRect, type ElementRect } from "./useElementRect";
 export type SpotlightStep = {
   id: string;
   anchorId?: string;
+  /**
+   * Optional second region highlighted alongside the primary anchor.
+   * The tooltip still positions relative to the primary anchor.
+   */
+  secondaryAnchorId?: string;
   title: string;
   body: string;
   placement?: "top" | "bottom" | "left" | "right";
@@ -146,23 +151,35 @@ function calcTooltipPosition(
  * the user can freely drag from any region (e.g. blocks panel) to any other
  * region (e.g. canvas) without being blocked by the dim. The dim is still
  * rendered for visual context.
+ *
+ * When `secondaryRect` is provided, a second transparent hole is punched in
+ * the mask alongside the primary cutout (tooltip positioning is unaffected —
+ * it stays relative to the primary rect).
  */
 function DimWithCutout({
   rect,
+  secondaryRect,
   gated,
   passthrough,
 }: {
   rect: ElementRect | null;
+  secondaryRect: ElementRect | null;
   gated: boolean;
   passthrough: boolean;
 }) {
   const hasCutout = rect !== null && (rect.width > 0 || rect.height > 0);
+  const hasSecondaryCutout = secondaryRect !== null && (secondaryRect.width > 0 || secondaryRect.height > 0);
   const pad = CUTOUT_PADDING;
 
   const cutoutX = hasCutout ? rect!.left - pad : 0;
   const cutoutY = hasCutout ? rect!.top - pad : 0;
   const cutoutW = hasCutout ? rect!.width + pad * 2 : 0;
   const cutoutH = hasCutout ? rect!.height + pad * 2 : 0;
+
+  const secCutoutX = hasSecondaryCutout ? secondaryRect!.left - pad : 0;
+  const secCutoutY = hasSecondaryCutout ? secondaryRect!.top - pad : 0;
+  const secCutoutW = hasSecondaryCutout ? secondaryRect!.width + pad * 2 : 0;
+  const secCutoutH = hasSecondaryCutout ? secondaryRect!.height + pad * 2 : 0;
 
   return (
     <svg
@@ -174,13 +191,24 @@ function DimWithCutout({
         <mask id="spotlight-mask">
           {/* White = visible (the dim) */}
           <rect x="0" y="0" width="100%" height="100%" fill="white" />
-          {/* Black = transparent (the hole) */}
+          {/* Black = transparent (the primary hole) */}
           {hasCutout && (
             <rect
               x={cutoutX}
               y={cutoutY}
               width={cutoutW}
               height={cutoutH}
+              fill="black"
+              rx={4}
+            />
+          )}
+          {/* Black = transparent (the secondary hole) */}
+          {hasSecondaryCutout && (
+            <rect
+              x={secCutoutX}
+              y={secCutoutY}
+              width={secCutoutW}
+              height={secCutoutH}
               fill="black"
               rx={4}
             />
@@ -480,6 +508,10 @@ export function SpotlightGuide({
   // avoid resolving to a sibling editor shell's element with the same tour id.
   const rect = useElementRect(open ? step?.anchorId : undefined, queryRoot);
 
+  // Measure the secondary anchor (unconditional hook call; id is undefined when
+  // the step has no secondaryAnchorId, which makes useElementRect return null).
+  const secondaryRect = useElementRect(open ? step?.secondaryAnchorId : undefined, queryRoot);
+
   // Auto-advance when a gated step becomes satisfied *while the user stays on it*.
   // Must NOT fire when the step itself just changed (e.g. the user clicked Back
   // onto an already-satisfied gated step — the panel it opened is still open, so
@@ -533,11 +565,13 @@ export function SpotlightGuide({
   if (!open || !step) return null;
 
   const hasMeaningfulRect = rect !== null && (rect.width > 0 || rect.height > 0);
+  const hasMeaningfulSecondaryRect = secondaryRect !== null && (secondaryRect.width > 0 || secondaryRect.height > 0);
 
   return createPortal(
     <>
       <DimWithCutout
         rect={hasMeaningfulRect ? rect : null}
+        secondaryRect={hasMeaningfulSecondaryRect ? secondaryRect : null}
         gated={step.gated === true}
         passthrough={step.passthrough === true}
       />

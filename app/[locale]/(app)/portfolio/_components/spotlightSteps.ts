@@ -29,9 +29,11 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
 
   // Blocks panel — gated: user must drag a block to the canvas to advance.
   // passthrough lets pointer events reach the real editor so the drag works.
+  // secondaryAnchorId highlights the canvas as the drop target alongside the panel.
   {
     id: "drag-block",
     anchorId: "blocks-panel",
+    secondaryAnchorId: "canvas",
     title: "Drag a block onto your page",
     body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
     placement: "right",
