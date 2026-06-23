@@ -765,16 +765,41 @@ describe("ColumnsBlock", () => {
     expect(html).not.toMatch(/@media\s*\(min-width/);
   });
 
-  it("first container-query breakpoint is ≤400px so it fires in the ~428px editor canvas", () => {
-    // The Puck editor canvas is ~428px wide when both panels are open at 1280px viewport.
-    // Breakpoints above 428px would prevent multi-column grids from showing in the editor.
+  it("PUBLIC breakpoints keep a 375px phone single-column: first breakpoint is >327px", () => {
+    // A 375px phone has ~327px of available container width inside typical page padding.
+    // The first @container breakpoint must be above 327px so the grid stays 1 column
+    // on phones. The editor handles its narrow canvas separately via puck.isEditing,
+    // not by lowering these public breakpoints.
     const html = renderToStaticMarkup(<ColumnsBlock columns={2} content={stubSlot} />);
-    // Extract all min-width values from @container rules.
     const breakpoints = [...html.matchAll(/@container[^{]+\(min-width:\s*(\d+)px\)/g)]
       .map((m) => parseInt(m[1], 10));
     expect(breakpoints.length).toBeGreaterThan(0);
-    // All breakpoints must be small enough for a ~428px editor canvas.
-    breakpoints.forEach((bp) => expect(bp).toBeLessThanOrEqual(400));
+    // All public breakpoints must be above the phone container width (~327px).
+    breakpoints.forEach((bp) => expect(bp).toBeGreaterThan(327));
+  });
+
+  it("editor-mode (puck.isEditing=true): 2-col block gets inline grid-template-columns for direct column preview", () => {
+    // When isEditing=true, the block injects a direct gridTemplateColumns so the user
+    // sees the actual column count in the narrow editor canvas (~428px), bypassing the
+    // container-query breakpoints which require the container to be >=480px.
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    // React serializes { gridTemplateColumns: "..." } as "grid-template-columns:..." in HTML.
+    expect(html).toContain("grid-template-columns");
+    expect(html).toContain("repeat(2,minmax(0,1fr))");
+  });
+
+  it("render-mode (puck.isEditing=false): 2-col block does NOT inject inline grid-template-columns (uses @container rules)", () => {
+    // On the public page puck.isEditing is false; the grid relies on container queries
+    // so it is responsive (1-col on mobile, multi-col on wider containers).
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} puck={{ isEditing: false }} />
+    );
+    // The @container rule is in the <style> tag but the slot element should have no
+    // inline grid-template-columns style (style prop is empty object → no style attr).
+    // The ONLY occurrence of grid-template-columns should be inside the <style> tag.
+    expect(html).not.toMatch(/class="pf-cols[^"]*"[^>]*style="[^"]*grid-template-columns/);
   });
 });
 

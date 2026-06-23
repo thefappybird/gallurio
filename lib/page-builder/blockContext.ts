@@ -80,6 +80,11 @@ export type BlockPuck = {
   /** Ref callback from Puck for inline components (`inline: true`). Attach to the
    *  block's root element so Puck can make it draggable without its own wrapper. */
   dragRef?: ((element: Element | null) => void) | null;
+  /** True when the block is rendering inside the Puck editor canvas (not in the
+   *  public `<Render>` output). Puck sets this automatically — blocks can use it
+   *  to diverge editor-only appearance (e.g. show real column count in a narrow
+   *  canvas) without affecting the published page. */
+  isEditing?: boolean;
 };
 
 // ---------------------------------------------------------------------------

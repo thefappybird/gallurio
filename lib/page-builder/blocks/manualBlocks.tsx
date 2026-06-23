@@ -533,25 +533,37 @@ export function ColumnsBlock({
       ? Math.min(6, Math.max(1, Math.floor(rows)))
       : undefined;
   const hasRows = rowCount !== undefined && rowCount > 1;
+  // Whether we are inside the Puck editor canvas. Puck injects `isEditing: true`
+  // into the puck prop during editing; it is false (or absent) during public render.
+  const isEditing = puck?.isEditing === true;
   // Build per-instance scoped CSS rules for this column/row count.
   // Container queries (keyed off the block's own width via `container-type:inline-size`
   // on the outer div) are used instead of viewport min-width media queries. This is
   // critical for colSpan/rowSpan: a child can only span N tracks if the parent grid
-  // actually defines N tracks. Viewport media queries fail when the editor canvas is
-  // narrower than the breakpoint even though the page would render at desktop width.
+  // actually defines N tracks.
   //
-  // Breakpoints are container-width-relative (not viewport):
-  //   320px → tablet (min(2,cols) tracks) — fires in the editor canvas (~428px) and on mobile/tablet
-  //   640px → desktop (full cols tracks)  — fires on public pages at wider widths
+  // PUBLIC BREAKPOINTS (mobile-first design):
+  //   480px → tablet (min(2,cols) tracks) — keeps 375px phones at 1 column (~327px container)
+  //   720px → desktop (full cols tracks)
+  //
+  // The editor canvas is only ~428px wide (both panels open at 1280px viewport), so the
+  // 480px breakpoint never fires there — which would make the editor always look 1-column.
+  // Instead, when isEditing is true we inject a direct inline gridTemplateColumns so the
+  // editor always shows the actual configured column count (bypassing the media queries).
   const colsRule = cols === 1
     ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
-    : `@container pf-cols (min-width:320px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
       (cols > 2
-        ? `@container pf-cols (min-width:640px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
         : "");
   const rowsRule = hasRows
-    ? `@container pf-cols (min-width:320px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
+  // Editor-only: show the real column count regardless of canvas width.
+  // This is an inline override so it outranks the container-query class rules.
+  const editorGridCols = isEditing && cols > 1
+    ? `repeat(${cols},minmax(0,1fr))`
+    : undefined;
   // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
   const gapValue =
     _style?.gap != null ? `${Math.min(96, Math.max(0, Math.floor(_style.gap)))}px` : "1rem";
@@ -577,7 +589,10 @@ export function ColumnsBlock({
       `}</style>
       {Content({
         className: `pf-cols pf-cols-${cols}${hasRows ? ` pf-cols-rows-${rowCount}` : ""}`,
-        style: {},
+        // In the editor, bypass the container-query breakpoints so the chosen
+        // column count is visible in the narrow (~428px) canvas. On the public
+        // page this stays empty and the @container rules drive the layout.
+        style: editorGridCols ? { gridTemplateColumns: editorGridCols } : {},
       })}
     </div>
   );
