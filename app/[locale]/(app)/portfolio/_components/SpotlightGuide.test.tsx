@@ -359,4 +359,37 @@ describe("SpotlightGuide", () => {
     expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
   });
+
+  // ── Secondary anchor: two cutout holes ───────────────────────────────────────
+
+  it("renders two black mask rects when a step has both anchorId and secondaryAnchorId with non-zero rects", () => {
+    const removeA = injectAnchor("a", { top: 100, left: 50, width: 80, height: 60, bottom: 160, right: 130 });
+    const removeB = injectAnchor("b", { top: 300, left: 400, width: 200, height: 100, bottom: 400, right: 600 });
+
+    const twoAnchorStep: SpotlightStep = {
+      id: "two-anchor",
+      anchorId: "a",
+      secondaryAnchorId: "b",
+      title: "Two anchors",
+      body: "Primary and secondary highlighted.",
+      passthrough: true,
+    };
+
+    render(
+      <SpotlightGuide
+        open={true}
+        steps={[twoAnchorStep]}
+        stepIndex={0}
+        onStepChange={vi.fn()}
+        gateSatisfied={false}
+        onSkip={vi.fn()}
+        onFinish={vi.fn()}
+      />
+    );
+
+    expect(document.querySelectorAll('mask rect[fill="black"]').length).toBe(2);
+
+    removeA();
+    removeB();
+  });
 });
