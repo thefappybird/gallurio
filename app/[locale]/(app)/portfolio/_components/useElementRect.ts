@@ -24,6 +24,11 @@ function domRectToPlain(r: DOMRect): ElementRect {
   return { top: r.top, left: r.left, width: r.width, height: r.height, bottom: r.bottom, right: r.right };
 }
 
+// Number of consecutive frames an anchor may be absent before the tooltip
+// falls back to viewport centre (~0.5 s at 60 fps). Keeps the cutout stable
+// while a panel is still mounting after a step change.
+const MAX_ABSENT_FRAMES = 30;
+
 /**
  * Returns the bounding rect (in viewport coordinates) of the nearest element
  * matching `[data-tour-id="${id}"]`, or null when `id` is undefined/falsy.
@@ -47,13 +52,11 @@ function domRectToPlain(r: DOMRect): ElementRect {
  * rather than falling back to a zero rect that would cause the tooltip to jump
  * to viewport centre.
  *
- * **Detached-node handling:** within the rAF loop, if `el.isConnected` becomes
- * false (the element was removed from the document between frames — e.g. a Puck
- * re-render unmounted the sidebar), the rect is cleared to null and the loop
- * stops immediately. This is distinct from the transient-zero case above, where
- * the element is still connected but momentarily has no size. The rect is only
- * cleared to null via the initial DOM-lookup path (element not found on effect
- * re-run) or via the isConnected guard inside the loop.
+ * **Absent-anchor grace window:** when the anchor element is absent or detached,
+ * the hook retains the prior rect and keeps polling for up to MAX_ABSENT_FRAMES
+ * frames before falling back to null (tooltip centres). This bridges the gap
+ * while a panel is still mounting after a step change (steps 9/12/15/17), and
+ * still centres when the anchor is genuinely gone for good.
  *
  * `useState` setter is guaranteed stable across renders, so it is safe to
  * close over it inside effect callbacks without stale-closure risk.
@@ -93,36 +96,42 @@ export function useElementRect(
       el.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
     }
 
-    if (!el) {
-      // Element truly absent from the DOM — clear the rect so the tooltip
-      // centres (correct fallback when there is genuinely no anchor).
-      const rafId = requestAnimationFrame(() => setRect(null));
-      return () => cancelAnimationFrame(rafId);
-    }
-
     // Track the last measured values to skip redundant state updates.
     let lastTop = NaN;
     let lastLeft = NaN;
     let lastWidth = NaN;
     let lastHeight = NaN;
     let rafId: number;
+    // Counts consecutive frames where the anchor is absent. Reset to 0 when
+    // the anchor is found or re-acquired. Triggers centre fallback at MAX_ABSENT_FRAMES.
+    let absentFrames = 0;
 
     function loop() {
-      // If the element was removed from the document between frames, try to
-      // re-acquire a live node with the same tour id first: an inline Puck
-      // override remount replaces the node (old removed, new inserted) but the
-      // anchor still exists, so the cutout should track the new node rather than
-      // vanish. Only clear+stop when the anchor is genuinely gone from the scope
-      // (e.g. a panel that owned it closed) — distinct from a transient zero-size
-      // frame (element still connected, mid-layout) which we retain the rect for.
+      // If the anchor is absent or detached, try to re-acquire it first.
+      // An inline Puck override remount replaces the node (old removed, new
+      // inserted) in the same commit — re-acquiring tracks the new node rather
+      // than centering.
       if (!el || !el.isConnected) {
         const next = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
-        if (!next) {
-          setRect(null);
-          return; // do NOT reschedule — element is gone
+        if (next) {
+          // Re-acquired: reset the grace counter and start tracking the new node.
+          el = next;
+          absentFrames = 0;
+          el.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+          // Fall through to measure this frame.
+        } else {
+          // Still absent: count the frame. Centre only after the grace window.
+          absentFrames++;
+          if (absentFrames > MAX_ABSENT_FRAMES) {
+            setRect(null);
+            return; // give up — anchor is genuinely gone
+          }
+          // Retain the current rect and keep polling.
+          rafId = requestAnimationFrame(loop);
+          return;
         }
-        el = next;
       }
+
       const r = el.getBoundingClientRect();
       // Skip zero-size readings: the element may be momentarily off-screen or
       // mid-layout (e.g. the properties panel re-flowing after a tab switch).

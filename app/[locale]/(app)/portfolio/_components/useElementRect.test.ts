@@ -183,19 +183,27 @@ describe("useElementRect", () => {
 
   // ── detached-node hardening ───────────────────────────────────────────────
 
-  it("clears to null and stops looping when element is detached mid-loop (isConnected → false)", () => {
-    const el = insertAnchor("detach-anchor", () => ({
+  it("retains the last valid rect for a grace window after detach, then centers (null) only after the window elapses", () => {
+    const el = insertAnchor("grace-anchor", () => ({
       top: 10, left: 20, width: 80, height: 30,
     }));
 
-    const { result } = renderHook(() => useElementRect("detach-anchor"));
+    const { result } = renderHook(() => useElementRect("grace-anchor"));
     flushRaf(); // picks up valid rect
     expect(result.current?.width).toBe(80);
 
-    // Remove from DOM — simulates Puck re-rendering and unmounting the sidebar.
+    // Remove from DOM — grace window starts.
     el.remove();
-    // el.isConnected is now false; the next rAF loop iteration should clear.
+
+    // One frame after detach: rect must still be retained (not null yet).
     flushRaf();
+    expect(result.current).not.toBeNull();
+    expect(result.current?.width).toBe(80);
+
+    // Flush ~40 more frames (beyond MAX_ABSENT_FRAMES = 30): must center.
+    for (let i = 0; i < 40; i++) {
+      flushRaf();
+    }
     expect(result.current).toBeNull();
   });
 
