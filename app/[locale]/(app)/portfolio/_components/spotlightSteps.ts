@@ -103,7 +103,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "header-setup-tab",
     title: "Navigation · Setup",
     body: "The Setup tab is where you set your brand text, navbar size, logo, and menu links.",
-    placement: "left",
+    placement: "bottom",
   },
 
   // Logo uploader (passive detail)
@@ -121,7 +121,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "header-design-tab",
     title: "Navigation · Design",
     body: "The Design tab controls header colors, borders, and typography for your nav links.",
-    placement: "left",
+    placement: "bottom",
   },
 
   // Contact tab (actionable: open the contact panel)
@@ -140,7 +140,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "contact-setup-tab",
     title: "Contact · Setup",
     body: "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed.",
-    placement: "left",
+    placement: "bottom",
   },
 
   // Contact · Design tab
@@ -149,7 +149,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "contact-design-tab",
     title: "Contact · Design",
     body: "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look.",
-    placement: "left",
+    placement: "bottom",
   },
 
   // Photos

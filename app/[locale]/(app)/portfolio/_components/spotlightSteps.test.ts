@@ -44,6 +44,17 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.anchorId).toBe("header-tab");
   });
 
+  it("panel inner-tab steps use bottom placement; logo-uploader keeps left", () => {
+    const bottomIds = ["header-setup-tab", "header-design-tab", "contact-setup-tab", "contact-design-tab"];
+    for (const id of bottomIds) {
+      const step = SPOTLIGHT_STEPS.find((s) => s.id === id);
+      expect(step).toBeDefined();
+      expect(step?.placement).toBe("bottom");
+    }
+    const logo = SPOTLIGHT_STEPS.find((s) => s.id === "logo-uploader");
+    expect(logo?.placement).toBe("left");
+  });
+
   it("step 3 (properties-panel) uses properties-panel-full anchor for full right sidebar (1c fix)", () => {
     const step = SPOTLIGHT_STEPS.find((s) => s.id === "properties-panel");
     expect(step).toBeDefined();
