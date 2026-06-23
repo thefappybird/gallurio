@@ -314,7 +314,7 @@ export function ContactForm({
         }
         .pf-contact-form .pf-contact-phone input,
         .pf-contact-form .pf-contact-location input,
-        .pf-contact-form .pf-contact-location button,
+        .pf-contact-form .pf-contact-location button:not(li button),
         .pf-contact-form .pf-contact-location [data-slot="input"] {
           color: inherit;
         }
