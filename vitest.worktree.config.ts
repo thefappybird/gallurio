@@ -6,6 +6,9 @@
  *
  * Usage:
  *   pnpm exec vitest run --config vitest.worktree.config.ts <filter>
+ *
+ * NOTE: This file is intentionally NOT tracked in git (removed by git rm).
+ * It is only needed for local worktree development.
  */
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";

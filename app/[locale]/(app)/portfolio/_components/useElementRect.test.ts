@@ -181,6 +181,42 @@ describe("useElementRect", () => {
     el.remove();
   });
 
+  // ── detached-node hardening ───────────────────────────────────────────────
+
+  it("clears to null and stops looping when element is detached mid-loop (isConnected → false)", () => {
+    const el = insertAnchor("detach-anchor", () => ({
+      top: 10, left: 20, width: 80, height: 30,
+    }));
+
+    const { result } = renderHook(() => useElementRect("detach-anchor"));
+    flushRaf(); // picks up valid rect
+    expect(result.current?.width).toBe(80);
+
+    // Remove from DOM — simulates Puck re-rendering and unmounting the sidebar.
+    el.remove();
+    // el.isConnected is now false; the next rAF loop iteration should clear.
+    flushRaf();
+    expect(result.current).toBeNull();
+  });
+
+  it("does NOT clear to null when element has zero size but is still connected (transient zero)", () => {
+    let currentRect = { top: 10, left: 20, width: 80, height: 30 };
+    const el = insertAnchor("connected-zero-anchor", () => ({ ...currentRect }));
+
+    const { result } = renderHook(() => useElementRect("connected-zero-anchor"));
+    flushRaf();
+    expect(result.current?.width).toBe(80);
+
+    // Zero-size but still connected (mid-layout, not detached).
+    currentRect = { top: 0, left: 0, width: 0, height: 0 };
+    flushRaf();
+    // Must retain the last valid rect, NOT clear to null.
+    expect(result.current).not.toBeNull();
+    expect(result.current?.width).toBe(80);
+
+    el.remove();
+  });
+
   it("does NOT skip a zero-size rect on the very first measurement if no prior valid rect exists", () => {
     // If the element starts at zero size and never had a valid measurement,
     // the hook should stay at null (no stale positive-size rect to retain).

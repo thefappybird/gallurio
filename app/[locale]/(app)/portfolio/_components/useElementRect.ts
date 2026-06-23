@@ -38,8 +38,15 @@ function domRectToPlain(r: DOMRect): ElementRect {
  * width/height (which happens for a frame or two while the properties panel
  * re-lays-out after a style-tab switch), the last valid non-zero rect is kept
  * rather than falling back to a zero rect that would cause the tooltip to jump
- * to viewport centre. The rect is only cleared to null when the anchor element
- * is truly absent from the DOM (element not found on effect re-run).
+ * to viewport centre.
+ *
+ * **Detached-node handling:** within the rAF loop, if `el.isConnected` becomes
+ * false (the element was removed from the document between frames — e.g. a Puck
+ * re-render unmounted the sidebar), the rect is cleared to null and the loop
+ * stops immediately. This is distinct from the transient-zero case above, where
+ * the element is still connected but momentarily has no size. The rect is only
+ * cleared to null via the initial DOM-lookup path (element not found on effect
+ * re-run) or via the isConnected guard inside the loop.
  *
  * `useState` setter is guaranteed stable across renders, so it is safe to
  * close over it inside effect callbacks without stale-closure risk.
@@ -85,6 +92,14 @@ export function useElementRect(id: string | undefined): ElementRect | null {
     let rafId: number;
 
     function loop() {
+      // If the element was removed from the document between frames (e.g. a
+      // Puck re-render unmounted the sidebar), clear the rect and stop looping.
+      // This is distinct from a transient zero-size frame (element still in DOM
+      // but mid-layout), which we retain the last valid rect for instead.
+      if (!el!.isConnected) {
+        setRect(null);
+        return; // do NOT reschedule — element is gone
+      }
       const r = el!.getBoundingClientRect();
       // Skip zero-size readings: the element may be momentarily off-screen or
       // mid-layout (e.g. the properties panel re-flowing after a tab switch).
