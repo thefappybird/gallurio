@@ -142,9 +142,9 @@ describe("SpotlightGuide", () => {
     expect(screen.queryByRole("button", { name: /^Back$/i })).toBeNull();
   });
 
-  it("renders Skip (not Back) on the first step", () => {
+  it("renders 'Skip Guide' button on the first step", () => {
     renderGuide({ stepIndex: 0 });
-    expect(screen.getByRole("button", { name: /^Skip$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Skip Guide$/i })).toBeInTheDocument();
   });
 
   // ── Last step: Finish ────────────────────────────────────────────────────────
@@ -183,10 +183,10 @@ describe("SpotlightGuide", () => {
 
   // ── Skip ─────────────────────────────────────────────────────────────────────
 
-  it("Skip (first step) calls onSkip(false)", () => {
+  it("'Skip Guide' on the first step calls onSkip(false)", () => {
     const onSkip = vi.fn();
     renderGuide({ stepIndex: 0, onSkip });
-    fireEvent.click(screen.getByRole("button", { name: /^Skip$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
     expect(onSkip).toHaveBeenCalledWith(false);
   });
 
@@ -335,6 +335,17 @@ describe("SpotlightGuide", () => {
     );
     expect(screen.getByText("Anchor step")).toBeInTheDocument();
     expect(screen.queryByText("Welcome to the tour")).toBeNull();
+  });
+
+  // ── Skip Guide (persistent) ──────────────────────────────────────────────────
+
+  it("renders 'Skip Guide' button on a non-first step and clicking it calls onSkip(false)", () => {
+    const onSkip = vi.fn();
+    renderGuide({ stepIndex: 2, onSkip });
+    const btn = screen.getByRole("button", { name: /^Skip Guide$/i });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(onSkip).toHaveBeenCalledWith(false);
   });
 
   // ── Footer layout: gated step with all 4 buttons ─────────────────────────────

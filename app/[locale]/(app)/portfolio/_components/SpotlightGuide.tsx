@@ -55,7 +55,7 @@ const L = {
   back: "Back",
   next: "Next",
   finish: "Finish",
-  skip: "Skip",
+  skip: "Skip Guide",
   dontShow: "Don't show again",
   tryIt: "Try it to continue to the next step",
   progress: (n: number, total: number) => `${n} of ${total}`,
@@ -386,8 +386,17 @@ function TooltipCard({
 
       {/* Footer */}
       <div className="flex flex-col gap-1.5">
-        {/* Secondary actions — Don't show again (overall exit) */}
+        {/* Secondary actions — Skip Guide (always visible) + Don't show again */}
         <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground"
+            onClick={() => onSkip(false)}
+          >
+            {L.skip}
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -399,7 +408,7 @@ function TooltipCard({
           </Button>
         </div>
 
-        {/* Primary nav — Back/Skip + Next/Finish always fit on one row */}
+        {/* Primary nav — Back + Next/Finish always fit on one row */}
         <div className="flex items-center justify-between gap-1.5">
           {!isFirst ? (
             <Button
@@ -412,15 +421,7 @@ function TooltipCard({
               {L.back}
             </Button>
           ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={() => onSkip(false)}
-            >
-              {L.skip}
-            </Button>
+            <span />
           )}
 
           {isLast ? (
