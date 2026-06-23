@@ -15,14 +15,14 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(designIdx).toBeLessThan(layoutIdx);
   });
 
-  it("step 2 (drag-block) is non-gated and has no passthrough (1b fix)", () => {
+  it("step 2 (drag-block) is gated (requires drag) with passthrough and anchors to blocks-panel", () => {
     const step = SPOTLIGHT_STEPS.find((s) => s.id === "drag-block");
     expect(step).toBeDefined();
-    // Must not be gated — user can press Next without performing a drag
-    expect(step?.gated).toBeFalsy();
-    // Must not require passthrough — no drag gate needed
-    expect(step?.passthrough).toBeFalsy();
-    // Should still anchor to the blocks panel
+    // Gated: user must drag a block to canvas before Next appears
+    expect(step?.gated).toBe(true);
+    // passthrough: pointer events reach the real editor so the drag works
+    expect(step?.passthrough).toBe(true);
+    // Anchors to the full left blocks/components panel
     expect(step?.anchorId).toBe("blocks-panel");
   });
 

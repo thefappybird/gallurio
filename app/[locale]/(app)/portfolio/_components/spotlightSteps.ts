@@ -27,14 +27,16 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
 
-  // Blocks panel — informational, non-gated. The panel on the left lists every
-  // available block; drag any block onto the canvas to add it to your page.
+  // Blocks panel — gated: user must drag a block to the canvas to advance.
+  // passthrough lets pointer events reach the real editor so the drag works.
   {
     id: "drag-block",
     anchorId: "blocks-panel",
     title: "Drag a block onto your page",
     body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
     placement: "right",
+    gated: true,
+    passthrough: true,
   },
 
   // Properties panel — anchor targets the full right sidebar column

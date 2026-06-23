@@ -29,20 +29,18 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
   `text-foreground` + `border-border` (keep the pulsing `--accent` dot as the accent).
   Verify visible in both themes. Change copy from "Try it…" to
   **"Try it to continue to the next step"**.
-- **Note:** The pill only appears on *gated* (interactive) steps. After 1b/1e below,
-  step 2 and step 7 are no longer gated, so the pill remains relevant for the still-gated
-  steps (e.g. step 8 "Open Navigation", step 12 "Open Contact"). Fix the pill styling for
-  those.
+- **Note:** The pill only appears on *gated* (interactive) steps. Step 2 and step 7 remain
+  gated (see updated §1b/1e below). Fix the pill styling so it is visible for all gated
+  steps (step 2 "Drag a block", step 8 "Open Navigation", step 12 "Open Contact").
 
-### 1b. Step 2 ("Drag a block") — wrong target + should be non-interactive
-- **Problem:** Cutout sits on the panel-toggle button, not the left components panel; the
-  step is currently gated/interactive (requires a drag + shows the Try-it pill).
+### 1b. Step 2 ("Drag a block") — wrong target (anchor fix only; gate stays)
+- **Problem:** Cutout sits on the panel-toggle button, not the left components panel.
 - **Target:** Anchor step 2 to the **full left blocks/components panel**
-  (`data-tour-id="blocks-panel"` container, `EditorShell.tsx` ~168/1343), and use the same
-  modal placement profile approved on step 3. **Make it a regular, non-gated step**
-  (`gated: false`, no `passthrough`/drag requirement, plain Back/Next, no Try-it pill).
-  Keep the copy informational about the components panel; the drag is no longer required to
-  advance.
+  (`data-tour-id="blocks-panel"` container, `EditorShell.tsx` ~168/1343).
+  Keep `gated: true` + `passthrough: true` — the drag requirement and Try-it pill stay.
+  Keep the copy informational about dragging a block from the components panel.
+- **[Verbal override 2026-06-23]:** Step 2 must remain gated; user must drag a block to
+  advance. The prior non-gated instruction in this doc is superseded.
 
 ### 1c. Step 3 ("Block properties live here")
 - **Problem:** Highlight should be the full right panel; placement is already good.
@@ -82,8 +80,7 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
 
 ### Item 1 acceptance
 - Try-it pill visible in light + dark; copy updated (still-gated steps only).
-- Step 2 highlights the full LEFT panel, step-3 placement, and is non-gated (plain Next, no
-  Try-it/drag requirement).
+- Step 2 highlights the full LEFT panel and remains gated (drag required; Try-it pill visible).
 - Step 3 highlights the full RIGHT panel.
 - Steps 4-6 remain anchored to their Style tab (no center flicker) for the full step.
 - Step 7 highlights all five page tabs; copy updated; non-gated (plain Next).
