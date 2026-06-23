@@ -539,14 +539,18 @@ export function ColumnsBlock({
   // critical for colSpan/rowSpan: a child can only span N tracks if the parent grid
   // actually defines N tracks. Viewport media queries fail when the editor canvas is
   // narrower than the breakpoint even though the page would render at desktop width.
+  //
+  // Breakpoints are container-width-relative (not viewport):
+  //   320px → tablet (min(2,cols) tracks) — fires in the editor canvas (~428px) and on mobile/tablet
+  //   640px → desktop (full cols tracks)  — fires on public pages at wider widths
   const colsRule = cols === 1
     ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
-    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+    : `@container pf-cols (min-width:320px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
       (cols > 2
-        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        ? `@container pf-cols (min-width:640px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
         : "");
   const rowsRule = hasRows
-    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container pf-cols (min-width:320px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
   // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
   const gapValue =
@@ -558,7 +562,7 @@ export function ColumnsBlock({
   return (
     <div
       ref={puck?.dragRef ?? undefined}
-      style={{ padding: "1rem 1.5rem", containerType: "inline-size", containerName: "pf-cols", ...outerStyle }}
+      style={{ padding: "1rem 1.5rem", ...outerStyle, containerType: "inline-size", containerName: "pf-cols" }}
       {...resolveBlockAttrs(_style)}
     >
       {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.

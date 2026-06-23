@@ -173,4 +173,36 @@ describe("flex layout fields", () => {
     expect(FLEX_ALIGN_MAP.end).toBe("flex-end");
     expect(FLEX_ALIGN_MAP.stretch).toBe("stretch");
   });
+
+  // Grid placement (colSpan / rowSpan) — these are the CSS properties that make
+  // col-span and row-span controls actually work inside a Columns grid.
+  it("colSpan=1 does NOT emit gridColumn (no-op — single cell is default)", () => {
+    const css = resolveBlockStyle({ colSpan: 1 });
+    expect((css as Record<string, unknown>).gridColumn).toBeUndefined();
+  });
+
+  it("colSpan=2 emits gridColumn: 'span 2'", () => {
+    expect(resolveBlockStyle({ colSpan: 2 }).gridColumn).toBe("span 2");
+  });
+
+  it("colSpan=3 emits gridColumn: 'span 3'", () => {
+    expect(resolveBlockStyle({ colSpan: 3 }).gridColumn).toBe("span 3");
+  });
+
+  it("colSpan=13 clamps to span 12 (max grid span)", () => {
+    expect(resolveBlockStyle({ colSpan: 13 }).gridColumn).toBe("span 12");
+  });
+
+  it("rowSpan=1 does NOT emit gridRow", () => {
+    const css = resolveBlockStyle({ rowSpan: 1 });
+    expect((css as Record<string, unknown>).gridRow).toBeUndefined();
+  });
+
+  it("rowSpan=2 emits gridRow: 'span 2'", () => {
+    expect(resolveBlockStyle({ rowSpan: 2 }).gridRow).toBe("span 2");
+  });
+
+  it("rowSpan=4 emits gridRow: 'span 4'", () => {
+    expect(resolveBlockStyle({ rowSpan: 4 }).gridRow).toBe("span 4");
+  });
 });

@@ -764,6 +764,18 @@ describe("ColumnsBlock", () => {
     expect(html).toContain("@container");
     expect(html).not.toMatch(/@media\s*\(min-width/);
   });
+
+  it("first container-query breakpoint is ≤400px so it fires in the ~428px editor canvas", () => {
+    // The Puck editor canvas is ~428px wide when both panels are open at 1280px viewport.
+    // Breakpoints above 428px would prevent multi-column grids from showing in the editor.
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} content={stubSlot} />);
+    // Extract all min-width values from @container rules.
+    const breakpoints = [...html.matchAll(/@container[^{]+\(min-width:\s*(\d+)px\)/g)]
+      .map((m) => parseInt(m[1], 10));
+    expect(breakpoints.length).toBeGreaterThan(0);
+    // All breakpoints must be small enough for a ~428px editor canvas.
+    breakpoints.forEach((bp) => expect(bp).toBeLessThanOrEqual(400));
+  });
 });
 
 describe("HeadingBlock — dragRef forwarding", () => {
