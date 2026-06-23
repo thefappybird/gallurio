@@ -479,23 +479,28 @@ export function SpotlightGuide({
   // avoid resolving to a sibling editor shell's element with the same tour id.
   const rect = useElementRect(open ? step?.anchorId : undefined, queryRoot);
 
-  // Auto-advance when a gated step becomes satisfied
+  // Auto-advance when a gated step becomes satisfied *while the user stays on it*.
+  // Must NOT fire when the step itself just changed (e.g. the user clicked Back
+  // onto an already-satisfied gated step — the panel it opened is still open, so
+  // gateSatisfied is true, but stepping back should not bounce them forward).
   const prevGateSatisfied = useRef(gateSatisfied);
+  const prevStepIndex = useRef(stepIndex);
   useEffect(() => {
+    const justChangedStep = prevStepIndex.current !== stepIndex;
     const wasUnsatisfied = !prevGateSatisfied.current;
+    prevStepIndex.current = stepIndex;
     prevGateSatisfied.current = gateSatisfied;
 
     if (!open || !step?.gated) return;
-    if (gateSatisfied && wasUnsatisfied && stepIndex < steps.length - 1) {
+    if (
+      gateSatisfied &&
+      wasUnsatisfied &&
+      !justChangedStep &&
+      stepIndex < steps.length - 1
+    ) {
       onStepChange(stepIndex + 1);
     }
   }, [gateSatisfied, open, step, stepIndex, steps.length, onStepChange]);
-
-  // Reset gate tracking when step changes
-  useEffect(() => {
-    prevGateSatisfied.current = gateSatisfied;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepIndex]);
 
   // Focus the tooltip card when the step changes
   useEffect(() => {

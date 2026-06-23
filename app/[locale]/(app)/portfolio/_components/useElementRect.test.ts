@@ -199,6 +199,34 @@ describe("useElementRect", () => {
     expect(result.current).toBeNull();
   });
 
+  it("re-acquires a replacement node with the same tour id when the original is detached mid-loop (Puck override remount)", () => {
+    // Puck re-renders an inline override → the old anchor node is removed and a
+    // NEW node with the same data-tour-id is inserted in the same commit. The
+    // hook must keep tracking the live node, not clear to null permanently.
+    const first = insertAnchor("remount-anchor", () => ({
+      top: 10, left: 20, width: 80, height: 30,
+    }));
+
+    const { result } = renderHook(() => useElementRect("remount-anchor"));
+    flushRaf();
+    expect(result.current?.width).toBe(80);
+
+    // Simulate Puck remount: remove the old node, insert a fresh one at a new
+    // position with the same tour id.
+    first.remove();
+    const second = insertAnchor("remount-anchor", () => ({
+      top: 40, left: 50, width: 120, height: 60,
+    }));
+    flushRaf();
+
+    // Must re-acquire the replacement node, not stay null.
+    expect(result.current).not.toBeNull();
+    expect(result.current?.width).toBe(120);
+    expect(result.current?.top).toBe(40);
+
+    second.remove();
+  });
+
   it("does NOT clear to null when element has zero size but is still connected (transient zero)", () => {
     let currentRect = { top: 10, left: 20, width: 80, height: 30 };
     const el = insertAnchor("connected-zero-anchor", () => ({ ...currentRect }));

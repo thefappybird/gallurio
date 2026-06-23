@@ -82,7 +82,11 @@ export function useElementRect(
     }
 
     const scope = root ?? document;
-    const el = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
+    // `el` is re-assignable: when an inline Puck override remounts, the original
+    // anchor node is removed and a NEW node with the same data-tour-id is
+    // inserted in the same commit. The loop below re-acquires it instead of
+    // permanently clearing the rect (which would jump the tooltip to centre).
+    let el = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
 
     // Scroll the anchor into view so it has a real bounding rect before measuring.
     if (el) {
@@ -104,15 +108,22 @@ export function useElementRect(
     let rafId: number;
 
     function loop() {
-      // If the element was removed from the document between frames (e.g. a
-      // Puck re-render unmounted the sidebar), clear the rect and stop looping.
-      // This is distinct from a transient zero-size frame (element still in DOM
-      // but mid-layout), which we retain the last valid rect for instead.
-      if (!el!.isConnected) {
-        setRect(null);
-        return; // do NOT reschedule — element is gone
+      // If the element was removed from the document between frames, try to
+      // re-acquire a live node with the same tour id first: an inline Puck
+      // override remount replaces the node (old removed, new inserted) but the
+      // anchor still exists, so the cutout should track the new node rather than
+      // vanish. Only clear+stop when the anchor is genuinely gone from the scope
+      // (e.g. a panel that owned it closed) — distinct from a transient zero-size
+      // frame (element still connected, mid-layout) which we retain the rect for.
+      if (!el || !el.isConnected) {
+        const next = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
+        if (!next) {
+          setRect(null);
+          return; // do NOT reschedule — element is gone
+        }
+        el = next;
       }
-      const r = el!.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
       // Skip zero-size readings: the element may be momentarily off-screen or
       // mid-layout (e.g. the properties panel re-flowing after a tab switch).
       // Retaining the previous valid rect prevents the tooltip from jumping to

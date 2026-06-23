@@ -256,6 +256,35 @@ describe("SpotlightGuide", () => {
     expect(onStepChange).toHaveBeenCalledWith(3);
   });
 
+  it("does NOT auto-advance when stepping Back onto an already-satisfied gated step (Back must work)", () => {
+    // Real flow: the gated step opened a panel; the user advances, then clicks
+    // Back. The gate is still satisfied, but stepping back must NOT bounce the
+    // user forward again — auto-advance only fires when the gate flips while the
+    // user stays on the same step, not when the step itself changes.
+    const onStepChange = vi.fn();
+    const { rerender } = renderGuide({
+      stepIndex: 3, // last-step (non-gated); gate for step 2 is satisfied behind the scenes
+      gateSatisfied: false,
+      onStepChange,
+    });
+
+    act(() => {
+      rerender(
+        <SpotlightGuide
+          open={true}
+          steps={STEPS}
+          stepIndex={2} // stepped Back onto the gated step
+          onStepChange={onStepChange}
+          gateSatisfied={true} // gate still satisfied (panel still open)
+          onSkip={vi.fn()}
+          onFinish={vi.fn()}
+        />
+      );
+    });
+
+    expect(onStepChange).not.toHaveBeenCalled();
+  });
+
   it("does NOT auto-advance if gateSatisfied is already true on mount (no prev-false transition)", () => {
     const onStepChange = vi.fn();
     // Render with gateSatisfied true from the start — prevGateSatisfied.current
