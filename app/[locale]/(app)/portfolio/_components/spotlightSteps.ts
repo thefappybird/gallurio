@@ -244,3 +244,23 @@ export function guidePanelActions(
   }
   return { openHeader: false, openContact: false, closeHeader: state.headerOpen, closeContact: state.contactOpen };
 }
+
+/**
+ * Dispatches the computed panel actions to concrete callbacks. All branching
+ * is isolated here so the EditorShell call site is a single non-branching
+ * expression.
+ */
+export function applyGuidePanelActions(
+  actions: GuidePanelActions,
+  cb: {
+    openHeader: () => void;
+    openContact: () => void;
+    closeHeader: () => void;
+    closeContact: () => void;
+  },
+): void {
+  if (actions.openHeader) cb.openHeader();
+  if (actions.openContact) cb.openContact();
+  if (actions.closeHeader) cb.closeHeader();
+  if (actions.closeContact) cb.closeContact();
+}

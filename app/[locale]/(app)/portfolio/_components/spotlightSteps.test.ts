@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SPOTLIGHT_STEPS, guideStepPanel, guidePanelActions } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guideStepPanel, guidePanelActions, applyGuidePanelActions } from "./spotlightSteps";
 
 describe("SPOTLIGHT_STEPS", () => {
   it("style tab steps appear in Content → Design → Layout order", () => {
@@ -85,5 +85,32 @@ describe("guidePanelActions", () => {
     // none step + both closed -> all false
     expect(guidePanelActions("drag-block", { headerOpen: false, contactOpen: false }))
       .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
+  });
+});
+
+describe("applyGuidePanelActions", () => {
+  it("invokes only the callbacks that correspond to true flags", () => {
+    const calls: string[] = [];
+    const cbs = {
+      openHeader: () => calls.push("openHeader"),
+      openContact: () => calls.push("openContact"),
+      closeHeader: () => calls.push("closeHeader"),
+      closeContact: () => calls.push("closeContact"),
+    };
+
+    // openHeader true — only openHeader should fire
+    applyGuidePanelActions(
+      { openHeader: true, openContact: false, closeHeader: false, closeContact: false },
+      cbs,
+    );
+    expect(calls).toEqual(["openHeader"]);
+
+    // closeHeader + closeContact true — opens must not fire
+    calls.length = 0;
+    applyGuidePanelActions(
+      { openHeader: false, openContact: false, closeHeader: true, closeContact: true },
+      cbs,
+    );
+    expect(calls).toEqual(["closeHeader", "closeContact"]);
   });
 });

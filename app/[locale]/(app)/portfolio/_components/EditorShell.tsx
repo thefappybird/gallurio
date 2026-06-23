@@ -50,7 +50,7 @@ import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { SpotlightGuide } from "./SpotlightGuide";
-import { SPOTLIGHT_STEPS } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
@@ -1060,6 +1060,19 @@ export function EditorShell({
     if (currentId === "drag-block") {
       setDragBaseline(puckContentCount);
     }
+
+    // Rewind: restore the side-panel context the target step expects so its
+    // anchor exists (and Back works across panels).
+    applyGuidePanelActions(
+      guidePanelActions(currentId, { headerOpen, contactOpen }),
+      {
+        openHeader: () => { void openHeader(); },
+        openContact: () => { void openContact(); },
+        closeHeader: () => closeHeader(false),
+        closeContact: () => closeContact(false),
+      },
+    );
+
     setSpotlightStepIndex(next);
   }
 
