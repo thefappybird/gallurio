@@ -29,12 +29,20 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
   `text-foreground` + `border-border` (keep the pulsing `--accent` dot as the accent).
   Verify visible in both themes. Change copy from "Try it…" to
   **"Try it to continue to the next step"**.
+- **Note:** The pill only appears on *gated* (interactive) steps. After 1b/1e below,
+  step 2 and step 7 are no longer gated, so the pill remains relevant for the still-gated
+  steps (e.g. step 8 "Open Navigation", step 12 "Open Contact"). Fix the pill styling for
+  those.
 
-### 1b. Step 2 ("Drag a block") anchors the wrong target
-- **Problem:** Cutout sits on the panel-toggle button, not the left components panel.
+### 1b. Step 2 ("Drag a block") — wrong target + should be non-interactive
+- **Problem:** Cutout sits on the panel-toggle button, not the left components panel; the
+  step is currently gated/interactive (requires a drag + shows the Try-it pill).
 - **Target:** Anchor step 2 to the **full left blocks/components panel**
-  (`data-tour-id="blocks-panel"` container, `EditorShell.tsx` ~168/1343). Use the same
-  modal placement profile the user approved on step 3.
+  (`data-tour-id="blocks-panel"` container, `EditorShell.tsx` ~168/1343), and use the same
+  modal placement profile approved on step 3. **Make it a regular, non-gated step**
+  (`gated: false`, no `passthrough`/drag requirement, plain Back/Next, no Try-it pill).
+  Keep the copy informational about the components panel; the drag is no longer required to
+  advance.
 
 ### 1c. Step 3 ("Block properties live here")
 - **Problem:** Highlight should be the full right panel; placement is already good.
@@ -53,13 +61,14 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
   `StyleToolkitField.tsx` ~184-188) are mounted (not unmounted) while inactive so the
   rect stays measurable. Steps 4-6 must stay pinned to their tab for the whole step.
 
-### 1e. Step 7 ("Switch between pages")
+### 1e. Step 7 ("Switch between pages") — wrong span + should be non-interactive
 - **Problem:** Cutout covers only the Navigation/first tab; copy names only Home/Gallery.
 - **Target:** Anchor step 7 to span **the five page tabs Home -> Contact Form**
   (Home, Gallery, Collections Popup, Navigation, Contact Form — excluding Preview). Either
   add a wrapper `data-tour-id="section-tabs"` around those five tabs in
   `EditorShell.tsx` (navCluster ~1109-1173) or compute a union rect. Copy ->
-  **"Switch between the different parts of your portfolio website."**
+  **"Switch between the different parts of your portfolio website."** Keep it a **regular,
+  non-gated step** (plain Back/Next, no Try-it pill) — confirm `gated` is false.
 
 ### 1f. Step 8 ("Open Navigation") not anchored -> gate unsatisfiable
 - **Problem:** Modal isn't pointing at the Navigation tab, so the gated "open header"
@@ -72,10 +81,12 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
   `EditorShell.tsx` ~1016-1031, `headerOpen`). Verify Next unlocks after clicking it.
 
 ### Item 1 acceptance
-- Try-it pill visible in light + dark; copy updated.
-- Steps 2,3 highlight the full left/right panels.
+- Try-it pill visible in light + dark; copy updated (still-gated steps only).
+- Step 2 highlights the full LEFT panel, step-3 placement, and is non-gated (plain Next, no
+  Try-it/drag requirement).
+- Step 3 highlights the full RIGHT panel.
 - Steps 4-6 remain anchored to their Style tab (no center flicker) for the full step.
-- Step 7 highlights all five page tabs; copy updated.
+- Step 7 highlights all five page tabs; copy updated; non-gated (plain Next).
 - Step 8 highlights Navigation and its gate can be satisfied by clicking it.
 - Playwright: walk the tour start->finish at desktop and 375px; assert each cutout
   target and the gate transitions.
