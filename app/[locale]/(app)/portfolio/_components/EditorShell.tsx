@@ -1140,15 +1140,36 @@ export function EditorShell({
     `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
     `&v=${previewNonce}`;
 
-  // Stable reference for the Puck canvas override: prevents Puck from re-rendering
-  // the canvas container on every EditorShell re-render (e.g. keystroke → onChange
-  // → setRenderDraftData), which would otherwise trigger a canvas scroll-to-top.
-  const puckCanvasOverride = useMemo(
+  // Stable references for Puck overrides that must not change identity on every
+  // re-render. Puck treats a new function reference as a reason to unmount and
+  // remount the subtree — causing canvas scroll-to-top for `puck`, and focus loss
+  // on every keystroke for `drawer`/`fields` (Puck onChange → re-render → new
+  // inline arrow → remounted right panel → focused input destroyed).
+  // All three are stable because none of their JSX closes over changing values:
+  // RootCanvasStyle and RightPanelTourMarker are module-level components.
+  const puckStableOverrides = useMemo(
     () => ({
+      // Canvas wrapper — also carries RootCanvasStyle for the iframe background.
       puck: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
           {children}
           <RootCanvasStyle />
+        </div>
+      ),
+      // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
+      drawer: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
+          {children}
+        </div>
+      ),
+      // Right properties panel — tour anchor for the "block settings" spotlight step.
+      // RightPanelTourMarker climbs to the sidebar column (grid-area: right) and
+      // marks it as "properties-panel-full" so the step-3 cutout frames the full
+      // column, not just the inner fields wrapper.
+      fields: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="properties-panel-body" className="flex min-h-0 flex-1 flex-col">
+          <RightPanelTourMarker />
+          {children}
         </div>
       ),
     }),
@@ -1389,29 +1410,12 @@ export function EditorShell({
                   )}
                 </header>
               ),
-              // Tour anchor on the blocks panel (left sidebar drawer) so the guide
-              // highlights it on the "drag a block" step with placement "right".
-              drawer: ({ children }: { children: ReactNode }) => (
-                <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
-                  {children}
-                </div>
-              ),
-              // Stable memoized override: prevents Puck from re-rendering the
-              // canvas wrapper on every EditorShell re-render (keystroke → onChange).
-              // Defined above with useMemo([]); RootCanvasStyle reads from Puck
-              // context directly so needs no props passed here.
-              ...puckCanvasOverride,
-              // Tour anchor on the actual properties panel (not the toggle button)
-              // so the guide highlights where a selected block's settings appear.
-              // RightPanelTourMarker climbs to the sidebar column (grid-area: right)
-              // and marks it as "properties-panel-full" so the step-3 cutout frames
-              // the full column, not just the inner fields wrapper.
-              fields: ({ children }: { children: ReactNode }) => (
-                <div data-tour-id="properties-panel-body" className="flex min-h-0 flex-1 flex-col">
-                  <RightPanelTourMarker />
-                  {children}
-                </div>
-              ),
+              // Stable memoized overrides: canvas (`puck`), left drawer, and right
+              // fields panel. All three are defined in `puckStableOverrides` above
+              // with useMemo([]) so their identities never change between renders,
+              // preventing Puck from remounting the subtrees (scroll-to-top on canvas;
+              // focus loss on every keystroke in the right-panel inputs).
+              ...puckStableOverrides,
             }}
           />
         ) : (
