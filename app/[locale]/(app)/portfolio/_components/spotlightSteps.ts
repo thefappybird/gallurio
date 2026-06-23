@@ -27,16 +27,14 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
 
-  // Drag a block (actionable) — anchors the blocks panel so the modal sits to
-  // its right. passthrough allows free drag from the panel across the canvas.
+  // Blocks panel — informational, non-gated. The panel on the left lists every
+  // available block; drag any block onto the canvas to add it to your page.
   {
     id: "drag-block",
     anchorId: "blocks-panel",
     title: "Drag a block onto your page",
-    body: "Drag any block from the blocks panel on the left and drop it onto the canvas.",
+    body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
     placement: "right",
-    gated: true,
-    passthrough: true,
   },
 
   // Properties panel
@@ -75,12 +73,12 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // Section tabs
+  // Section tabs — spans all five page tabs (Home → Contact Form), non-gated.
   {
     id: "section-tabs",
     anchorId: "section-tabs",
     title: "Switch between pages",
-    body: "Use these tabs to switch between your Home page and your Gallery page.",
+    body: "Switch between the different parts of your portfolio website.",
     placement: "bottom",
   },
 

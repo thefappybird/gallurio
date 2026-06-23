@@ -34,6 +34,13 @@ function domRectToPlain(r: DOMRect): ElementRect {
  * which a ResizeObserver on the element itself would miss. The loop is
  * cancelled on cleanup or when the id becomes falsy.
  *
+ * **Transient-zero retention:** if `getBoundingClientRect()` reports a zero
+ * width/height (which happens for a frame or two while the properties panel
+ * re-lays-out after a style-tab switch), the last valid non-zero rect is kept
+ * rather than falling back to a zero rect that would cause the tooltip to jump
+ * to viewport centre. The rect is only cleared to null when the anchor element
+ * is truly absent from the DOM (element not found on effect re-run).
+ *
  * `useState` setter is guaranteed stable across renders, so it is safe to
  * close over it inside effect callbacks without stale-closure risk.
  */
@@ -43,7 +50,9 @@ export function useElementRect(id: string | undefined): ElementRect | null {
   const [rect, setRect] = useState<ElementRect | null>(() => {
     if (typeof document === "undefined" || !id) return null;
     const el = document.querySelector<Element>(`[data-tour-id="${id}"]`);
-    return el ? domRectToPlain(el.getBoundingClientRect()) : null;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return (r.width > 0 || r.height > 0) ? domRectToPlain(r) : null;
   });
 
   useEffect(() => {
@@ -62,8 +71,8 @@ export function useElementRect(id: string | undefined): ElementRect | null {
     }
 
     if (!el) {
-      // Element not found — schedule a deferred clear so no synchronous setState
-      // occurs inside the effect body (satisfies react-hooks/set-state-in-effect).
+      // Element truly absent from the DOM — clear the rect so the tooltip
+      // centres (correct fallback when there is genuinely no anchor).
       const rafId = requestAnimationFrame(() => setRect(null));
       return () => cancelAnimationFrame(rafId);
     }
@@ -77,6 +86,15 @@ export function useElementRect(id: string | undefined): ElementRect | null {
 
     function loop() {
       const r = el!.getBoundingClientRect();
+      // Skip zero-size readings: the element may be momentarily off-screen or
+      // mid-layout (e.g. the properties panel re-flowing after a tab switch).
+      // Retaining the previous valid rect prevents the tooltip from jumping to
+      // viewport centre for that one frame. Only update when the element has a
+      // real, non-zero size again.
+      if (r.width === 0 && r.height === 0) {
+        rafId = requestAnimationFrame(loop);
+        return;
+      }
       // Only call setRect when something actually changed to avoid render churn.
       if (r.top !== lastTop || r.left !== lastLeft || r.width !== lastWidth || r.height !== lastHeight) {
         lastTop = r.top;

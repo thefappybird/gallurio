@@ -165,7 +165,6 @@ function EditCanvasControls() {
         aria-pressed={leftSideBarVisible}
         aria-label="Toggle blocks panel"
         title="Toggle blocks panel"
-        data-tour-id="blocks-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
@@ -1109,44 +1108,46 @@ export function EditorShell({
   function navCluster() {
     return (
       <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-        {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
-          const label =
-            section === "header"
-              ? t("headerSettings")
-              : section === "contact"
-                ? t("contactSettingsShort")
-                : section === "collectionsPopup"
-                  ? "Collections Popup"
-                  : t(`zone.${section}`);
-          // Tour anchor: home+gallery share the section-tabs group id on the first
-          // rendered tab; header and contact get dedicated ids.
-          const tourId =
-            section === "header"
-              ? "header-tab"
-              : section === "contact"
-                ? "contact-tab"
-                : section === "home"
-                  ? "section-tabs"
+        {/* section-tabs wrapper: spans all five page tabs (Home → Contact Form)
+            for the spotlight tour step 7 cutout. Excludes Preview. */}
+        <div className="flex flex-wrap items-center gap-1" data-tour-id="section-tabs">
+          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
+            const label =
+              section === "header"
+                ? t("headerSettings")
+                : section === "contact"
+                  ? t("contactSettingsShort")
+                  : section === "collectionsPopup"
+                    ? "Collections Popup"
+                    : t(`zone.${section}`);
+            // Tour anchor: header and contact get dedicated ids for their own
+            // gated steps (step 8 and step 12); page tabs have no individual id.
+            const tourId =
+              section === "header"
+                ? "header-tab"
+                : section === "contact"
+                  ? "contact-tab"
                   : undefined;
-          return (
-            <Button
-              key={section}
-              type="button"
-              size="sm"
-              variant={activeSection === section ? "default" : "outline"}
-              aria-pressed={activeSection === section}
-              data-tour-id={tourId}
-              onClick={() => {
-                if (section === "header") void openHeader();
-                else if (section === "contact") openContact();
-                else if (section === "collectionsPopup") void openCollectionsPopup();
-                else void selectZone(section);
-              }}
-            >
-              {label}
-            </Button>
-          );
-        })}
+            return (
+              <Button
+                key={section}
+                type="button"
+                size="sm"
+                variant={activeSection === section ? "default" : "outline"}
+                aria-pressed={activeSection === section}
+                data-tour-id={tourId}
+                onClick={() => {
+                  if (section === "header") void openHeader();
+                  else if (section === "contact") openContact();
+                  else if (section === "collectionsPopup") void openCollectionsPopup();
+                  else void selectZone(section);
+                }}
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
         <Button
           type="button"
           size="sm"

@@ -198,9 +198,10 @@ describe("SpotlightGuide", () => {
 
   // ── Gated step ───────────────────────────────────────────────────────────────
 
-  it("shows the 'Try it…' hint and never renders a 'Skip this step' button on a gated step", () => {
+  it("shows the 'Try it to continue' hint and never renders a 'Skip this step' button on a gated step (1a fix)", () => {
     renderGuide({ stepIndex: 2 }); // STEPS[2] is gated
-    expect(screen.getByText(/Try it/i)).toBeInTheDocument();
+    // Updated copy: "Try it to continue to the next step"
+    expect(screen.getByText(/Try it to continue to the next step/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
   });
 

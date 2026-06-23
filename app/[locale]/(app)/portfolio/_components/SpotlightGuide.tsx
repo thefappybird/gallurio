@@ -49,7 +49,7 @@ const L = {
   finish: "Finish",
   skip: "Skip",
   dontShow: "Don't show again",
-  tryIt: "Try it…",
+  tryIt: "Try it to continue to the next step",
   progress: (n: number, total: number) => `${n} of ${total}`,
 };
 
@@ -349,13 +349,13 @@ function TooltipCard({
 
       {/* Gated hint — visually prominent so users notice the call to action */}
       {isGated && (
-        <div className="flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-[color:var(--accent)] px-2 py-1">
-          {/* Pulsing dot: color + animation carry the "action needed" signal */}
+        <div className="flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-border px-2 py-1">
+          {/* Pulsing dot: accent color + animation carry the "action needed" signal */}
           <span
             aria-hidden
             className="size-2 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)]"
           />
-          <p className="text-xs font-semibold text-[color:var(--accent)]">{L.tryIt}</p>
+          <p className="text-xs font-semibold text-foreground">{L.tryIt}</p>
         </div>
       )}
 
