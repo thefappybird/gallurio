@@ -14,6 +14,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import {
   buildButtonStyle,
+  buildButtonVisualStyle,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
@@ -535,7 +536,7 @@ export function ContactForm({
                     lng: field.value.lng ?? null,
                   }}
                   compact={compactLocationPicker}
-                  applyButtonStyle={buildButtonStyle(submitAppearance, false)}
+                  applyButtonStyle={buildButtonVisualStyle(submitAppearance, false)}
                   ariaDescribedby={errors.location?.address ? "cf-location-error" : undefined}
                   onChange={(value) =>
                     field.onChange({

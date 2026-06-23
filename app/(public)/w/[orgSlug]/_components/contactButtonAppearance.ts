@@ -68,6 +68,27 @@ export function buildButtonStyle(
   return style;
 }
 
+/**
+ * Visual-only subset of a contact button's style — color/background/border/
+ * radius WITHOUT layout sizing (width / min-height / font). Use when a
+ * differently-sized control (e.g. the location picker's small square "apply"
+ * icon-button) should adopt the submit button's *look* without being forced to
+ * the full-width 48px submit size.
+ */
+export function buildButtonVisualStyle(
+  appearance: ButtonAppearance,
+  disabled: boolean
+): CSSProperties {
+  const {
+    width: _width,
+    minHeight: _minHeight,
+    fontSize: _fontSize,
+    fontFamily: _fontFamily,
+    ...visual
+  } = buildButtonStyle(appearance, disabled);
+  return visual;
+}
+
 export function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): ButtonAppearance {
   const border = contact?.buttonBorderWidth
     ? `${contact.buttonBorderWidth}px solid ${resolveContactColor(contact.buttonBorderColor, "currentColor")}`
