@@ -88,7 +88,8 @@ Guide shows "N of 19"; user's "step N" == displayed number == array index N-1.
 - Steps 4-6 remain anchored to their Style tab (no center flicker) for the full step.
 - Step 7 highlights all five page tabs; copy updated; non-gated (plain Next).
 - Step 8 highlights Navigation and its gate can be satisfied by clicking it.
-- Playwright: walk the tour start->finish at desktop and 375px; assert each cutout
+- Playwright: walk the tour start->finish at tablet 768px + desktop 1280px (editor is a
+  desktop-only surface; 375px skipped per task scope); assert each cutout
   target and the gate transitions.
 
 ---
@@ -112,8 +113,9 @@ shared `components/ui/location-picker.tsx` (read-only reference; do not regress 
   bookings selector's search row (icon inside, placeholder visible, clear + confirm
   buttons aligned). Do not change the shared component (bookings must stay correct).
 - **Acceptance:** Contact form location search renders as a normal field in light + dark
-  editor context and in published preview; bookings selector unchanged; verified at 375px
-  and full width via Playwright (idle/focus/typing states).
+  editor context and in published preview; bookings selector unchanged; verified at tablet
+  768px + desktop 1280px via Playwright (idle/focus/typing states). (Contact form is public
+  surface; 375px is a nice-to-have but out of this task's tablet+desktop scope.)
 
 ---
 
@@ -242,9 +244,9 @@ overlayOpacity, minHeight, alignment, gallery columns/gap.
   `StyleToolkitField.tsx`) -> runs **after** item 3 merges, as its own sequenced pass
   (per-block tasks can fan out once the mechanism + normalization land).
 - Each item: tests added; `pnpm typecheck` + `pnpm lint` + relevant tests pass; UI items
-  verified via Playwright CLI at 375px + desktop before done.
+  verified via Playwright CLI at tablet 768px + desktop 1280px before done.
 
 ## Done criteria (whole batch)
 Implementation complete; tests added & passing; typecheck + lint pass; locales updated
-(public copy only, none expected); mobile 375px checked; errors surfaced; no rendered-output
+(public copy only, none expected); tablet 768px + desktop 1280px checked; errors surfaced; no rendered-output
 regressions for item 4; guide walkthrough verified end-to-end.
