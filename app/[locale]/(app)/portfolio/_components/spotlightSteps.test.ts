@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SPOTLIGHT_STEPS, guideStepPanel } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guideStepPanel, guidePanelActions } from "./spotlightSteps";
 
 describe("SPOTLIGHT_STEPS", () => {
   it("style tab steps appear in Content → Design → Layout order", () => {
@@ -65,5 +65,25 @@ describe("guideStepPanel", () => {
     expect(guideStepPanel("contact-tab")).toBe("none");
     expect(guideStepPanel("drag-block")).toBe("none");
     expect(guideStepPanel(undefined)).toBe("none");
+  });
+});
+
+describe("guidePanelActions", () => {
+  it("returns the correct open/close flags given step id and current panel state", () => {
+    // nav step + header closed -> openHeader
+    expect(guidePanelActions("header-setup-tab", { headerOpen: false, contactOpen: false }))
+      .toEqual({ openHeader: true, openContact: false, closeHeader: false, closeContact: false });
+    // nav step + header already open -> all false (no-op)
+    expect(guidePanelActions("logo-uploader", { headerOpen: true, contactOpen: false }))
+      .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
+    // contact step + contact closed -> openContact
+    expect(guidePanelActions("contact-setup-tab", { headerOpen: false, contactOpen: false }))
+      .toEqual({ openHeader: false, openContact: true, closeHeader: false, closeContact: false });
+    // none step + header open -> closeHeader
+    expect(guidePanelActions("drag-block", { headerOpen: true, contactOpen: false }))
+      .toEqual({ openHeader: false, openContact: false, closeHeader: true, closeContact: false });
+    // none step + both closed -> all false
+    expect(guidePanelActions("drag-block", { headerOpen: false, contactOpen: false }))
+      .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
   });
 });

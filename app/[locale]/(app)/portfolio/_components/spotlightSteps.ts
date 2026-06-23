@@ -215,3 +215,32 @@ export function guideStepPanel(stepId: string | undefined): GuidePanel {
   if (CONTACT_STEPS.has(stepId)) return "contact";
   return "none";
 }
+
+/** Computed open/close flags for EditorShell panel state on each guide step. */
+export type GuidePanelActions = {
+  openHeader: boolean;
+  openContact: boolean;
+  closeHeader: boolean;
+  closeContact: boolean;
+};
+
+/**
+ * Given the current step id and the current open/close state of both side
+ * panels, returns which panels need to be opened or closed so the step's
+ * anchor is present. openHeader/openContact each close the other internally,
+ * so only the relevant open flag is set; closeHeader/closeContact are only
+ * set for the "none" bucket when a panel is actually open.
+ */
+export function guidePanelActions(
+  stepId: string | undefined,
+  state: { headerOpen: boolean; contactOpen: boolean }
+): GuidePanelActions {
+  const panel = guideStepPanel(stepId);
+  if (panel === "nav") {
+    return { openHeader: !state.headerOpen, openContact: false, closeHeader: false, closeContact: false };
+  }
+  if (panel === "contact") {
+    return { openHeader: false, openContact: !state.contactOpen, closeHeader: false, closeContact: false };
+  }
+  return { openHeader: false, openContact: false, closeHeader: state.headerOpen, closeContact: state.contactOpen };
+}
