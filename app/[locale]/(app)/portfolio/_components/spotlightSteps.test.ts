@@ -43,4 +43,13 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.gated).toBe(true);
     expect(step?.anchorId).toBe("header-tab");
   });
+
+  it("step 3 (properties-panel) uses properties-panel-full anchor for full right sidebar (1c fix)", () => {
+    const step = SPOTLIGHT_STEPS.find((s) => s.id === "properties-panel");
+    expect(step).toBeDefined();
+    // Must target the full sidebar column, not the inner fields wrapper
+    expect(step?.anchorId).toBe("properties-panel-full");
+    // Tooltip should be placed to the left of the right panel
+    expect(step?.placement).toBe("left");
+  });
 });

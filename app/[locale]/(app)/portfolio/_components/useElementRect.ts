@@ -34,6 +34,13 @@ function domRectToPlain(r: DOMRect): ElementRect {
  * which a ResizeObserver on the element itself would miss. The loop is
  * cancelled on cleanup or when the id becomes falsy.
  *
+ * **Scoped query:** the optional `root` parameter scopes the querySelector to a
+ * specific subtree. This is used by SpotlightGuide when it runs inside a
+ * SandboxEditorGuide overlay that coexists with the real editor shell — both
+ * shells render the same `data-tour-id` attributes, so `document.querySelector`
+ * would find the outer shell's element first. Passing the sandbox container as
+ * `root` constrains the lookup to the correct subtree.
+ *
  * **Transient-zero retention:** if `getBoundingClientRect()` reports a zero
  * width/height (which happens for a frame or two while the properties panel
  * re-lays-out after a style-tab switch), the last valid non-zero rect is kept
@@ -51,12 +58,16 @@ function domRectToPlain(r: DOMRect): ElementRect {
  * `useState` setter is guaranteed stable across renders, so it is safe to
  * close over it inside effect callbacks without stale-closure risk.
  */
-export function useElementRect(id: string | undefined): ElementRect | null {
+export function useElementRect(
+  id: string | undefined,
+  root?: Element | null
+): ElementRect | null {
   // Initialise lazily so the very first render already has a measurement when
   // the element is already in the DOM (e.g. SSR-hydration / test environment).
   const [rect, setRect] = useState<ElementRect | null>(() => {
     if (typeof document === "undefined" || !id) return null;
-    const el = document.querySelector<Element>(`[data-tour-id="${id}"]`);
+    const scope = root ?? document;
+    const el = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
     if (!el) return null;
     const r = el.getBoundingClientRect();
     return (r.width > 0 || r.height > 0) ? domRectToPlain(r) : null;
@@ -70,7 +81,8 @@ export function useElementRect(id: string | undefined): ElementRect | null {
       return () => cancelAnimationFrame(raf);
     }
 
-    const el = document.querySelector<Element>(`[data-tour-id="${id}"]`);
+    const scope = root ?? document;
+    const el = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
 
     // Scroll the anchor into view so it has a real bounding rect before measuring.
     if (el) {
@@ -124,7 +136,7 @@ export function useElementRect(id: string | undefined): ElementRect | null {
     rafId = requestAnimationFrame(loop);
 
     return () => cancelAnimationFrame(rafId);
-  }, [id]);
+  }, [id, root]);
 
   return rect;
 }

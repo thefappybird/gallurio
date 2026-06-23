@@ -115,6 +115,14 @@ type Props = {
   onGuideFinish?: (dontShowAgain: boolean) => void;
   /** Called when the sandbox guide is skipped mid-tour. */
   onGuideSkipClose?: (dontShowAgain: boolean) => void;
+  /**
+   * Scopes spotlight anchor queries to a specific DOM subtree. Only needed in
+   * sandbox (guideMode) when a second EditorShell coexists with the real one —
+   * both render the same data-tour-id attributes, so an unscoped querySelector
+   * resolves to the outer shell's element. Pass the sandbox overlay container
+   * element here to constrain the lookup to the guide's own subtree.
+   */
+  guideQueryRoot?: Element | null;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
@@ -132,6 +140,41 @@ type PortfolioBrowserDraft = {
   draftId: string | null;
   draftName: string;
 };
+
+/**
+ * Mounts inside Puck's `fields` override and climbs the DOM to find the
+ * outermost sidebar column (identified by `grid-area: right` in its computed
+ * style — stable regardless of Puck's minified class names). Adds
+ * `data-tour-id="properties-panel-full"` to that column so the spotlight
+ * guide can frame the *entire* right panel for step 3.
+ *
+ * The attribute is added and removed in a useEffect so it never leaks
+ * into the DOM after unmount.
+ */
+function RightPanelTourMarker() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let marked: Element | null = null;
+    let el: Element | null = ref.current?.parentElement ?? null;
+    // Walk up at most 8 levels to find the Puck sidebar column.
+    // Puck sets `grid-area: right` (CSS) on the right sidebar column. The
+    // computed `gridRowStart` returns the named area identifier "right" reliably
+    // across browsers (unlike the `gridArea` shorthand whose computed form varies).
+    for (let i = 0; i < 8 && el; i++) {
+      const style = window.getComputedStyle(el);
+      if (style.gridRowStart === "right") {
+        el.setAttribute("data-tour-id", "properties-panel-full");
+        marked = el;
+        break;
+      }
+      el = el.parentElement;
+    }
+    return () => {
+      marked?.removeAttribute("data-tour-id");
+    };
+  }, []);
+  return <div ref={ref} style={{ display: "none" }} aria-hidden />;
+}
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
 // standalone iframe preview. Mirrors the <Puck viewports> prop.
@@ -295,6 +338,7 @@ export function EditorShell({
   guideMode = false,
   onGuideFinish,
   onGuideSkipClose,
+  guideQueryRoot,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
@@ -1352,8 +1396,12 @@ export function EditorShell({
               ...puckCanvasOverride,
               // Tour anchor on the actual properties panel (not the toggle button)
               // so the guide highlights where a selected block's settings appear.
+              // RightPanelTourMarker climbs to the sidebar column (grid-area: right)
+              // and marks it as "properties-panel-full" so the step-3 cutout frames
+              // the full column, not just the inner fields wrapper.
               fields: ({ children }: { children: ReactNode }) => (
                 <div data-tour-id="properties-panel-body" className="flex min-h-0 flex-1 flex-col">
+                  <RightPanelTourMarker />
                   {children}
                 </div>
               ),
@@ -1508,6 +1556,7 @@ export function EditorShell({
           gateSatisfied={gateSatisfied}
           onSkip={handleGuideSkip}
           onFinish={handleGuideFinish}
+          queryRoot={guideQueryRoot}
         />
       ) : (
         guideOpen && (

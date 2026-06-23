@@ -39,6 +39,14 @@ export type SpotlightGuideProps = {
   gateSatisfied: boolean;
   onSkip: (dontShowAgain: boolean) => void;
   onFinish: (dontShowAgain: boolean) => void;
+  /**
+   * Optional scope element for anchor queries. When the guide runs inside a
+   * SandboxEditorGuide overlay that coexists with the real editor shell, both
+   * shells render the same `data-tour-id` attributes. Passing the sandbox
+   * container element here scopes `useElementRect`'s querySelector to that
+   * subtree, ensuring the cutout targets the correct (guide's own) element.
+   */
+  queryRoot?: Element | null;
 };
 
 // ─── Labels ─────────────────────────────────────────────────────────────────
@@ -458,12 +466,14 @@ export function SpotlightGuide({
   gateSatisfied,
   onSkip,
   onFinish,
+  queryRoot,
 }: SpotlightGuideProps) {
   const step = steps[stepIndex];
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Measure the active anchor element
-  const rect = useElementRect(open ? step?.anchorId : undefined);
+  // Measure the active anchor element, scoped to queryRoot when provided to
+  // avoid resolving to a sibling editor shell's element with the same tour id.
+  const rect = useElementRect(open ? step?.anchorId : undefined, queryRoot);
 
   // Auto-advance when a gated step becomes satisfied
   const prevGateSatisfied = useRef(gateSatisfied);

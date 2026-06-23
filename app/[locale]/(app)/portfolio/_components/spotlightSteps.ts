@@ -37,10 +37,11 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "right",
   },
 
-  // Properties panel
+  // Properties panel — anchor targets the full right sidebar column
+  // (marked by RightPanelTourMarker inside the fields override in EditorShell).
   {
     id: "properties-panel",
-    anchorId: "properties-panel-body",
+    anchorId: "properties-panel-full",
     title: "Block properties live here",
     body: "Dropping a block selects it automatically — its settings appear in this panel on the right.",
     placement: "left",
