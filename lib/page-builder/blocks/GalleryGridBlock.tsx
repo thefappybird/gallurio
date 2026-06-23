@@ -49,6 +49,9 @@ export const galleryGridDefaultProps: GalleryGridProps = {
   images: [],
   columns: 3,
   gap: "normal",
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
 };
 
 const GAP_MAP: Record<GalleryGridProps["gap"], string> = {

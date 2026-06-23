@@ -11,6 +11,8 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  columnsDefaultProps,
+  containerDefaultProps,
   type HeadingBlockProps,
 } from "./manualBlocks";
 import type { SlotComponent } from "@measured/puck";
@@ -1006,5 +1008,40 @@ describe("ContainerBlock — dragRef forwarding", () => {
     const stubSlot: SlotComponent = () => <div />;
     render(<ContainerBlock content={stubSlot} puck={{ dragRef }} />);
     expect(capturedEl).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Item 4: defaultProps gap default
+// ---------------------------------------------------------------------------
+
+describe("defaultProps gap default (Item 4)", () => {
+  it("columnsDefaultProps._style.gap is 16 (16px = 1rem, matches fallback)", () => {
+    expect(columnsDefaultProps._style?.gap).toBe(16);
+  });
+
+  it("ColumnsBlock renders 16px gap (same as old 1rem fallback) when gap=16 is set", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "1rem", gap: 16 }} />,
+    );
+    expect(html).toContain("gap:16px");
+  });
+
+  it("ColumnsBlock still renders 1rem gap via fallback when _style.gap is undefined (old saved pages)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{}} />,
+    );
+    expect(html).toContain("gap:1rem");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Item 4: defaultProps bgAnimation/bgSpeed
+// ---------------------------------------------------------------------------
+
+describe("defaultProps bgAnimation/bgSpeed (Item 4)", () => {
+  it("containerDefaultProps has bgAnimation='crossfade' and bgSpeed='medium'", () => {
+    expect(containerDefaultProps.bgAnimation).toBe("crossfade");
+    expect(containerDefaultProps.bgSpeed).toBe("medium");
   });
 });

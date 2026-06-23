@@ -39,6 +39,9 @@ export const galleryMasonryDefaultProps: GalleryMasonryProps = {
   images: [],
   columns: 3,
   gap: "normal",
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
 };
 
 const GAP_MAP: Record<GalleryMasonryProps["gap"], string> = {

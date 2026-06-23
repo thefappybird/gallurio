@@ -508,6 +508,7 @@ export const columnsDefaultProps: ColumnsBlockProps = {
     paddingRight: "1.5rem",
     paddingBottom: "1rem",
     paddingLeft: "1.5rem",
+    gap: 16,
   },
 };
 
@@ -642,6 +643,8 @@ export type ContainerBlockProps = {
 
 export const containerDefaultProps: ContainerBlockProps = {
   backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",

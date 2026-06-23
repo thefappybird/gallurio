@@ -49,8 +49,8 @@ import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } f
 
 // Inlined copies of the data blocks' defaultProps (kept in sync; the parity
 // test compares these against the real server-block defaults).
-const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal" };
-const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal" };
+const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal", backgroundImages: [], bgAnimation: "crossfade", bgSpeed: "medium" };
+const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal", backgroundImages: [], bgAnimation: "crossfade", bgSpeed: "medium" };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {

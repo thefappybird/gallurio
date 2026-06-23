@@ -55,6 +55,9 @@ export type FeaturedWorkProps = {
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
   collections: [],
   columns: 3,
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
 };
 
 // ---------------------------------------------------------------------------

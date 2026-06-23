@@ -25,6 +25,7 @@ import type {
 } from "@/lib/page-builder/types";
 import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
+import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import {
   dismissPortfolioGuideAction,
 } from "../_actions";
@@ -317,6 +318,12 @@ function ensureIds(data: PuckData): Data {
   } as Data;
 }
 
+/** Fill missing defaultProps into every block, then assign stable ids. */
+function prepareForEditor(data: PuckData): Data {
+  const withDefaults = fillBlockDefaults(data as unknown as PuckDataLike) as unknown as PuckData;
+  return ensureIds(withDefaults);
+}
+
 export function EditorShell({
   slug,
   workspaceName,
@@ -439,8 +446,8 @@ export function EditorShell({
       name: initialActiveDraftName || DEFAULT_DRAFT_NAME,
       templateId: currentTemplateId,
       data: {
-        home: ensureIds(initialData.home ?? EMPTY_ZONE),
-        gallery: ensureIds(initialData.gallery ?? EMPTY_ZONE),
+        home: prepareForEditor(initialData.home ?? EMPTY_ZONE),
+        gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE),
       },
       brandKit: initialBrandKit,
       contact: initialContact,
@@ -481,7 +488,7 @@ export function EditorShell({
   // re-renders never reset the editor mid-edit, and full re-seeds (applyTemplate,
   // applyDraft) force a remount by bumping seedNonce.
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
-    ensureIds(initialData.home ?? EMPTY_ZONE)
+    prepareForEditor(initialData.home ?? EMPTY_ZONE)
   );
   const [seedNonce, setSeedNonce] = useState(0);
   const draftKey = `gallurio:portfolio-draft:${slug}`;
@@ -557,8 +564,8 @@ export function EditorShell({
         const gallery = draft.data?.gallery ?? zoneDataRef.current.gallery;
         zoneDataRef.current = { home, gallery };
         setRenderDraftData({
-          home: ensureIds(home) as unknown as PuckData,
-          gallery: ensureIds(gallery) as unknown as PuckData,
+          home: prepareForEditor(home) as unknown as PuckData,
+          gallery: prepareForEditor(gallery) as unknown as PuckData,
         });
         if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
@@ -568,7 +575,7 @@ export function EditorShell({
         if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
         if (draft.draftName) setDraftName(draft.draftName);
         ignoreNextChange.current = true;
-        setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
         setSeedNonce((n) => n + 1);
       });
     } catch {
@@ -731,7 +738,7 @@ export function EditorShell({
     setDraftName(d.name);
     setNameError(null);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(homeData));
+    setPuckSeed(prepareForEditor(homeData));
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
@@ -758,7 +765,7 @@ export function EditorShell({
     setNameError(null);
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(EMPTY_ZONE));
+    setPuckSeed(prepareForEditor(EMPTY_ZONE));
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
   }
@@ -838,12 +845,12 @@ export function EditorShell({
     if (sidePanelOpen) {
       hideEditorPanels();
       ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current.home));
+      setPuckSeed(prepareForEditor(zoneDataRef.current.home));
       setActiveZone("home");
     }
     await flushPendingSave(activeZone);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[zone]));
+    setPuckSeed(prepareForEditor(zoneDataRef.current[zone]));
     setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
@@ -854,7 +861,7 @@ export function EditorShell({
       if (previewMode) {
         // Back to editing — remount Puck from the freshest data; ignore its echo.
         ignoreNextChange.current = true;
-        setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+        setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
         setPreviewMode(false);
         return;
       }
@@ -863,7 +870,7 @@ export function EditorShell({
       if (sidePanelOpen) {
         hideEditorPanels();
         ignoreNextChange.current = true;
-        setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
         setActiveZone("home");
       }
       setPreviewNonce((n) => n + 1);
@@ -1000,7 +1007,7 @@ export function EditorShell({
     setNameError(null);
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+    setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
