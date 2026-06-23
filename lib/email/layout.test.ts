@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { renderBrandedEmail } from "./layout";
+import { renderBrandedEmail, bilingualSubject, renderBilingualEmail } from "./layout";
 import { gallurioBrand, resolveWorkspaceBrand } from "./brand";
 
 describe("renderBrandedEmail", () => {
@@ -48,5 +48,65 @@ describe("renderBrandedEmail", () => {
     // All text-bearing elements must carry the class the dark rule targets
     expect(html).toContain('class="email-text"'); // h1, p, h2, td value
     expect(html).toContain('class="email-label"'); // td label
+  });
+});
+
+describe("divider block", () => {
+  it("renders email-divider class, label text, and plain-text marker", () => {
+    const { html, text } = renderBrandedEmail({
+      brand: gallurioBrand(),
+      locale: "en",
+      preheader: "pre",
+      title: "T",
+      blocks: [{ type: "divider", label: "Filipino" }],
+    });
+    expect(html).toContain("Filipino");
+    expect(html).toContain("email-divider");
+    expect(text).toContain("--- Filipino ---");
+  });
+});
+
+describe("bilingualSubject", () => {
+  it("returns en unchanged when locale is en, same when strings match, and middot-joined when locale differs", () => {
+    expect(bilingualSubject("Hello", "Hello", "en")).toBe("Hello");
+    expect(bilingualSubject("Hello", "Kumusta", "en")).toBe("Hello");
+    expect(bilingualSubject("Hello", "Hello", "fil")).toBe("Hello");
+    expect(bilingualSubject("A", "B", "fil")).toBe("A · B");
+    expect(bilingualSubject("A", "B", "ms")).toBe("A · B");
+    expect(bilingualSubject("A", "B", "id")).toBe("A · B");
+  });
+});
+
+describe("renderBilingualEmail", () => {
+  it("with secondaryLocale en renders single pass (no divider element)", () => {
+    const { html } = renderBilingualEmail({
+      brand: gallurioBrand(),
+      preheader: "pre",
+      secondaryLocale: "en",
+      build: () => ({ title: "English Only", blocks: [{ type: "p", text: "content" }] }),
+    });
+    expect(html).toContain("English Only");
+    // The CSS rule for .email-divider is always present, but no divider <td class="email-divider"> element should be rendered
+    expect(html).not.toMatch(/class="email-divider"/);
+  });
+
+  it("with secondaryLocale fil renders both sections with divider, English first", () => {
+    const { html } = renderBilingualEmail({
+      brand: gallurioBrand(),
+      preheader: "pre",
+      secondaryLocale: "fil",
+      build: (loc) => ({
+        title: loc === "en" ? "Hello" : "Kumusta",
+        blocks: [{ type: "p", text: loc === "en" ? "Hi there" : "Kumusta po" }],
+      }),
+    });
+    expect(html).toContain("Hello");
+    expect(html).toContain("Kumusta");
+    expect(html).toContain("Hi there");
+    expect(html).toContain("Kumusta po");
+    expect(html).toMatch(/class="email-divider"/);
+    expect(html).toContain("Filipino");
+    // English content must appear before Filipino content
+    expect(html.indexOf("Hello")).toBeLessThan(html.indexOf("Kumusta po"));
   });
 });

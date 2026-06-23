@@ -9,7 +9,8 @@ export type EmailBlock =
   | { type: "p"; text: string }
   | { type: "heading"; text: string }
   | { type: "rows"; rows: Array<{ label: string; value: string }> }
-  | { type: "spacer" };
+  | { type: "spacer" }
+  | { type: "divider"; label?: string };
 
 export type RenderEmailOpts = {
   brand: Brand;
@@ -22,6 +23,30 @@ export type RenderEmailOpts = {
   secondaryCta?: { label: string; url: string };
   supportLine?: string;
 };
+
+export type LocaleContent = {
+  title: string;
+  subtitle?: string;
+  blocks: EmailBlock[];
+  cta?: { label: string; url: string };
+  secondaryCta?: { label: string; url: string };
+  supportLine?: string;
+};
+
+export const LANGUAGE_NAME: Record<"en" | "fil" | "ms" | "id", string> = {
+  en: "English",
+  fil: "Filipino",
+  ms: "Bahasa Melayu",
+  id: "Bahasa Indonesia",
+};
+
+export function bilingualSubject(
+  en: string,
+  localized: string,
+  locale: "en" | "fil" | "ms" | "id",
+): string {
+  return locale === "en" || en === localized ? en : `${en} · ${localized}`;
+}
 
 // ---------------------------------------------------------------------------
 // Color tokens
@@ -86,6 +111,12 @@ function renderBlock(block: EmailBlock): string {
     }
     case "spacer":
       return `<div style="height:16px;">&nbsp;</div>`;
+    case "divider": {
+      if (!block.label) {
+        return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td class="email-divider" style="border-top:1px solid #e6e6e6;font-size:0;line-height:0;">&nbsp;</td></tr></table>`;
+      }
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;"><tr><td class="email-divider" style="border-top:1px solid #e6e6e6;padding-top:12px;text-align:center;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#9a9a9a;">${e(block.label)}</td></tr></table>`;
+    }
   }
 }
 
@@ -99,6 +130,8 @@ function blockText(block: EmailBlock): string {
       return block.rows.map((r) => `${r.label}: ${r.value}`).join("\n");
     case "spacer":
       return "";
+    case "divider":
+      return block.label ? `--- ${block.label} ---` : "---";
   }
 }
 
@@ -164,6 +197,7 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
     `  .email-text { color: ${DARK_TEXT} !important; }`,
     `  .email-label { color: #aaaaaa !important; }`,
     `  .email-footer { background-color: ${FOOTER_CHARCOAL} !important; }`,
+    `  .email-divider { border-color:#4a4a4a !important;color:#bdbdbd !important; }`,
     `  a { color: ${DARK_TEAL} !important; }`,
     "}",
     "</style>",
@@ -243,4 +277,56 @@ export function renderBrandedEmail(opts: RenderEmailOpts): { html: string; text:
   textParts.push("", footerText);
 
   return { html, text: textParts.join("\n") };
+}
+
+// ---------------------------------------------------------------------------
+// Bilingual helper
+// ---------------------------------------------------------------------------
+
+export function renderBilingualEmail(opts: {
+  brand: Brand;
+  preheader: string;
+  secondaryLocale: "en" | "fil" | "ms" | "id";
+  build: (locale: "en" | "fil" | "ms" | "id") => LocaleContent;
+}): { html: string; text: string } {
+  const { brand, preheader, secondaryLocale, build } = opts;
+  const primary = build("en");
+
+  if (secondaryLocale === "en") {
+    return renderBrandedEmail({
+      brand,
+      locale: "en",
+      preheader,
+      title: primary.title,
+      subtitle: primary.subtitle,
+      blocks: primary.blocks,
+      cta: primary.cta,
+      secondaryCta: primary.secondaryCta,
+      supportLine: primary.supportLine,
+    });
+  }
+
+  const secondary = build(secondaryLocale);
+
+  // ponytail: the single action button stays English (primary) by design;
+  // localize per-section CTA later only if needed.
+  const combinedBlocks: EmailBlock[] = [
+    ...primary.blocks,
+    { type: "divider", label: LANGUAGE_NAME[secondaryLocale] },
+    { type: "heading", text: secondary.title },
+    ...(secondary.subtitle ? [{ type: "p" as const, text: secondary.subtitle }] : []),
+    ...secondary.blocks,
+  ];
+
+  return renderBrandedEmail({
+    brand,
+    locale: "en",
+    preheader,
+    title: primary.title,
+    subtitle: primary.subtitle,
+    blocks: combinedBlocks,
+    cta: primary.cta,
+    secondaryCta: primary.secondaryCta,
+    supportLine: primary.supportLine,
+  });
 }
