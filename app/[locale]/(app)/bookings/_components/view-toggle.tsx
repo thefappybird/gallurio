@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarIcon, TableIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  BOOKINGS_VIEW_COOKIE_NAME,
+  BOOKINGS_VIEW_STORAGE_KEY,
+  persistViewPreference,
+} from "@/lib/view-preferences";
 
 export type BookingsView = "table" | "calendar";
-
-const STORAGE_KEY = "gallurio.bookings.view";
 
 type Props = {
   view: BookingsView;
@@ -21,35 +23,15 @@ export function ViewToggle({ view }: Props) {
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.view");
 
-  // On first paint, if the URL didn't specify a view but localStorage has a
-  // saved preference, redirect to that view so the user lands where they left
-  // off. The server-side default (table) renders first, then this snaps over.
-  useEffect(() => {
-    const urlHasView = searchParams.get("view") !== null;
-    if (urlHasView) return;
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved === "calendar" && view !== "calendar") {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("view", "calendar");
-        router.replace(`${pathname}?${params.toString()}`);
-      }
-    } catch {
-      // localStorage may be unavailable (privacy mode); silently fall through.
-    }
-    // Only want to run on mount — not when searchParams change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function setView(next: BookingsView) {
     if (next === view) return;
-    // Save the preference so the next visit (without ?view in the URL) lands
-    // here automatically.
+
     try {
-      window.localStorage.setItem(STORAGE_KEY, next);
+      persistViewPreference(BOOKINGS_VIEW_STORAGE_KEY, BOOKINGS_VIEW_COOKIE_NAME, next);
     } catch {
       // ignore
     }
+
     const params = new URLSearchParams(searchParams.toString());
     if (next === "table") {
       params.delete("view");
