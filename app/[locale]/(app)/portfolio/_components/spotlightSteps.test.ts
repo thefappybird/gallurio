@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SPOTLIGHT_STEPS } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guideStepPanel } from "./spotlightSteps";
 
 describe("SPOTLIGHT_STEPS", () => {
   it("style tab steps appear in Content → Design → Layout order", () => {
@@ -51,5 +51,19 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.anchorId).toBe("properties-panel-full");
     // Tooltip should be placed to the left of the right panel
     expect(step?.placement).toBe("left");
+  });
+});
+
+describe("guideStepPanel", () => {
+  it("returns the correct panel for each step bucket", () => {
+    expect(guideStepPanel("header-setup-tab")).toBe("nav");
+    expect(guideStepPanel("logo-uploader")).toBe("nav");
+    expect(guideStepPanel("header-design-tab")).toBe("nav");
+    expect(guideStepPanel("contact-setup-tab")).toBe("contact");
+    expect(guideStepPanel("contact-design-tab")).toBe("contact");
+    expect(guideStepPanel("header-tab")).toBe("none");
+    expect(guideStepPanel("contact-tab")).toBe("none");
+    expect(guideStepPanel("drag-block")).toBe("none");
+    expect(guideStepPanel(undefined)).toBe("none");
   });
 });

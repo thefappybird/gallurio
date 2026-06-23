@@ -197,3 +197,21 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 ];
+
+/** Which side panel must be open for a given tour step id. */
+export type GuidePanel = "nav" | "contact" | "none";
+
+const NAV_STEPS = new Set(["header-setup-tab", "logo-uploader", "header-design-tab"]);
+const CONTACT_STEPS = new Set(["contact-setup-tab", "contact-design-tab"]);
+
+/**
+ * Returns which side panel must be open when the tour is on the step with
+ * `stepId`. Used by EditorShell to restore panel context on every step change
+ * so anchors exist (and Back works across panels).
+ */
+export function guideStepPanel(stepId: string | undefined): GuidePanel {
+  if (!stepId) return "none";
+  if (NAV_STEPS.has(stepId)) return "nav";
+  if (CONTACT_STEPS.has(stepId)) return "contact";
+  return "none";
+}
