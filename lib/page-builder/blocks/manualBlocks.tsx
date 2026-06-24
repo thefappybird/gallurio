@@ -78,7 +78,7 @@ export type HeadingBlockProps = {
   level: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 };
 
-export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
+export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2", _style: { textColorToken: "foreground" } };
 
 /** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
@@ -156,6 +156,7 @@ export type TextBlockProps = { _style?: BlockStyle; text: string };
 
 export const textDefaultProps: TextBlockProps = {
   text: "Write anything here. Line breaks are preserved.",
+  _style: { textColorToken: "foreground" },
 };
 
 export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: BlockPuck }) {

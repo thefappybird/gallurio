@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
+import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
 describe("highlight option constants", () => {
   it("exposes the three band shapes in order", () => {
@@ -224,5 +225,28 @@ describe("flex layout fields", () => {
     // flex-only values do not produce justifySelf
     expect(resolveBlockStyle({ justifyContent: "between" }).justifySelf).toBeUndefined();
     expect(resolveBlockStyle({ justifyContent: "around" }).justifySelf).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B1: headingDefaultProps and textDefaultProps ship textColorToken:"foreground"
+// so the canvas and preview/public render the same color (var(--pf-color-fg)).
+// ---------------------------------------------------------------------------
+
+describe("default textColorToken on Heading and Text blocks", () => {
+  it("headingDefaultProps has textColorToken set to 'foreground'", () => {
+    expect(headingDefaultProps._style?.textColorToken).toBe("foreground");
+  });
+
+  it("textDefaultProps has textColorToken set to 'foreground'", () => {
+    expect(textDefaultProps._style?.textColorToken).toBe("foreground");
+  });
+
+  it("resolveBlockStyle(headingDefaultProps._style) yields color: var(--pf-color-fg)", () => {
+    expect(resolveBlockStyle(headingDefaultProps._style).color).toBe("var(--pf-color-fg)");
+  });
+
+  it("resolveBlockStyle(textDefaultProps._style) yields color: var(--pf-color-fg)", () => {
+    expect(resolveBlockStyle(textDefaultProps._style).color).toBe("var(--pf-color-fg)");
   });
 });
