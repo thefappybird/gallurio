@@ -1149,6 +1149,8 @@ export function EditorShell({
     background: brandKit.backgroundColor,
     foreground: brandKit.foregroundColor,
     brandRadius: brandKit.radius,
+    headingFont: brandKit.headingFont,
+    bodyFont: brandKit.bodyFont,
   };
   const activeSectionTitle =
     activeSection === "header"
