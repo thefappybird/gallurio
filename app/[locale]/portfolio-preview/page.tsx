@@ -19,6 +19,7 @@ import {
 } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewClient } from "./_components/PreviewClient";
+import { PreviewBrandShell } from "./_components/PreviewBrandShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
 // current (possibly unpublished) draft.
@@ -125,9 +126,10 @@ export default async function PortfolioPreviewPage({
   }
 
   return (
-    <div
-      style={{ ...(cssVars as React.CSSProperties), minHeight: "100dvh", backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)" }}
-      className={className}
+    <PreviewBrandShell
+      slug={workspace.slug}
+      fallbackCssVars={cssVars}
+      fallbackClassName={className}
     >
       <PortfolioHeader
         slug={workspace.slug}
@@ -145,6 +147,6 @@ export default async function PortfolioPreviewPage({
         config={headerConfig}
       />
       {body}
-    </div>
+    </PreviewBrandShell>
   );
 }
