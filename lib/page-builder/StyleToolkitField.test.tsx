@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
 import React from "react";
-import { StyleToolkitField } from "./StyleToolkitField";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
-import { BrandColorsContext } from "./brandColors";
+import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 
 const mockFetch = vi.fn();
@@ -141,8 +142,6 @@ describe("StyleToolkitField — 3-tab panel", () => {
   });
 });
 
-import { ContainerBackgroundControls } from "./StyleToolkitField";
-
 describe("ContainerBackgroundControls — animation gating", () => {
   const noop = () => {};
 
@@ -193,10 +192,6 @@ describe("ContainerBackgroundControls — animation gating", () => {
     expect(onAnimationChange).toHaveBeenCalledWith("slide");
   });
 });
-
-
-
-import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab } from "./StyleToolkitField";
 
 describe("CarouselTextPadding heading gap control", () => {
   it("renders a heading gap input and writes _style.headingGap", () => {
@@ -254,8 +249,6 @@ describe("gallery section presets are container-typed", () => {
     expect(FLEX_CONTAINER_BLOCKS.has("GalleryLandingPreset")).toBe(true);
   });
 });
-
-import { RadiusButtons } from "./StyleToolkitField";
 
 describe("RadiusButtons", () => {
   it("renders 5 preset buttons (None, S, M, L, Full)", () => {
@@ -337,8 +330,6 @@ describe("Button style section — corner radius picker", () => {
   });
 });
 
-import { ContentInputs } from "./StyleToolkitField";
-
 describe("ContentInputs — emoji button integration", () => {
   it("Heading block shows Insert emoji button beside the text input", () => {
     render(<ContentInputs type="Heading" props={{ text: "Hello", level: "h2" }} setProp={vi.fn()} />);
@@ -359,8 +350,6 @@ describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMas
     expect(screen.getByText("Banner")).toBeTruthy();
   });
 });
-
-import { BRAND_RADIUS_TO_PRESET } from "./StyleToolkitField";
 
 describe("BRAND_RADIUS_TO_PRESET mapping", () => {
   it("maps sharp to 0 (None preset)", () => {
@@ -399,9 +388,6 @@ describe("DesignTab — RadiusButtons shows brand theme radius when block radius
   });
 });
 
-import { renderHook } from "@testing-library/react";
-import { useBrandRadius } from "./brandColors";
-
 describe("useBrandRadius hook", () => {
   it("returns brandRadius from BrandColorsContext", () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -415,6 +401,20 @@ describe("useBrandRadius hook", () => {
 
   it("returns undefined when no brandRadius in context", () => {
     const { result } = renderHook(() => useBrandRadius());
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("useEffectiveBrandRadius hook", () => {
+  it("returns undefined when brandRadius is '' (empty string)", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      // Cast needed: BrandColorMap.brandRadius is BrandKitRadius | undefined at the type level,
+      // but at runtime it can arrive as "" from PortfolioBrandKit fields that allow BrandKitRadius | "".
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "" as never }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandRadius(), { wrapper });
     expect(result.current).toBeUndefined();
   });
 });

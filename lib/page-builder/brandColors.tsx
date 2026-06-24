@@ -41,3 +41,18 @@ export function useBrandColors(): BrandColorMap {
 export function useBrandRadius(): BrandKitRadius | undefined {
   return useContext(BrandColorsContext).brandRadius;
 }
+
+/**
+ * Maps the brand kit radius token to its corresponding RADIUS_PRESETS number.
+ * Returns undefined when the token is absent, "" (empty string runtime value
+ * that PortfolioBrandKit fields can produce), or any unrecognised value.
+ * Display-only — does not write to block props.
+ */
+const BRAND_RADIUS_MAP: Record<string, number> = { sharp: 0, subtle: 4, rounded: 8 };
+
+export function useEffectiveBrandRadius(): number | undefined {
+  const brandRadius = useContext(BrandColorsContext).brandRadius;
+  if (!brandRadius) return undefined;
+  const mapped = BRAND_RADIUS_MAP[brandRadius];
+  return mapped !== undefined ? mapped : undefined;
+}

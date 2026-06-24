@@ -73,7 +73,7 @@ import {
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
-import { useBrandRadius } from "./brandColors";
+import { useEffectiveBrandRadius } from "./brandColors";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -800,8 +800,7 @@ export function DesignTab({
 }) {
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
-  const brandRadius = useBrandRadius();
-  const effectiveRadius = brandRadius !== undefined ? BRAND_RADIUS_TO_PRESET[brandRadius] : undefined;
+  const effectiveRadius = useEffectiveBrandRadius();
   // Image-only gallery blocks have no on-page text — hide typography controls.
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
 
@@ -1166,9 +1165,7 @@ export function LayoutTabBody({
   // Columns is a grid container (not flex), but it shares the same spacing
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
-  const layoutBrandRadius = useBrandRadius();
-  const layoutEffectiveRadius =
-    layoutBrandRadius !== undefined ? BRAND_RADIUS_TO_PRESET[layoutBrandRadius] : undefined;
+  const layoutEffectiveRadius = useEffectiveBrandRadius();
 
   if (isGalleryLayout && p && setProp) {
     if (isGalleryContainer) {
