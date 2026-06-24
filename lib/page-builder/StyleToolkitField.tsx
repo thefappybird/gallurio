@@ -1181,7 +1181,15 @@ export function LayoutTabBody({
               </div>
             )}
             {isGridChild ? (
-              <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+              <>
+                <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+                <IconRow
+                  label="Align"
+                  value={s.alignItems}
+                  options={ALIGN_OPTIONS}
+                  onChange={(v) => set({ alignItems: v })}
+                />
+              </>
             ) : (
               <IconRow
                 label="Align"
@@ -1330,7 +1338,21 @@ export function LayoutTabBody({
           </div>
         )}
         {isGridChild ? (
-          <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+          <>
+            <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+            <IconRow
+              label="Align"
+              value={s.alignItems}
+              options={ALIGN_OPTIONS}
+              onChange={(v) => set({ alignItems: v })}
+            />
+            <IconRow
+              label="Justify"
+              value={s.justifyContent}
+              options={JUSTIFY_OPTIONS}
+              onChange={(v) => set({ justifyContent: v })}
+            />
+          </>
         ) : (
           <>
             <IconRow

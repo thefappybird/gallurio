@@ -205,4 +205,24 @@ describe("flex layout fields", () => {
   it("rowSpan=4 emits gridRow: 'span 4'", () => {
     expect(resolveBlockStyle({ rowSpan: 4 }).gridRow).toBe("span 4");
   });
+
+  // Grid self-alignment: alignItems -> alignSelf so a block positions itself
+  // within its Columns grid cell (not just textAlign for leaf text).
+  it("alignItems maps to alignSelf for grid cell placement", () => {
+    expect(resolveBlockStyle({ alignItems: "start" }).alignSelf).toBe("start");
+    expect(resolveBlockStyle({ alignItems: "center" }).alignSelf).toBe("center");
+    expect(resolveBlockStyle({ alignItems: "end" }).alignSelf).toBe("end");
+    expect(resolveBlockStyle({ alignItems: "stretch" }).alignSelf).toBe("stretch");
+  });
+
+  // justifyContent -> justifySelf for inline axis positioning in the grid cell.
+  // Flex-only values (between/around) have no justifySelf equivalent — skip them.
+  it("justifyContent maps to justifySelf for grid cell inline-axis placement", () => {
+    expect(resolveBlockStyle({ justifyContent: "start" }).justifySelf).toBe("start");
+    expect(resolveBlockStyle({ justifyContent: "center" }).justifySelf).toBe("center");
+    expect(resolveBlockStyle({ justifyContent: "end" }).justifySelf).toBe("end");
+    // flex-only values do not produce justifySelf
+    expect(resolveBlockStyle({ justifyContent: "between" }).justifySelf).toBeUndefined();
+    expect(resolveBlockStyle({ justifyContent: "around" }).justifySelf).toBeUndefined();
+  });
 });

@@ -320,12 +320,26 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   // block (Heading, Text, etc.) responds to the Layout-tab Align control. Flex
   // container blocks (Container, Flex) also apply align-items:stretch on their
   // inner wrapper so children fill width — both mechanisms are consistent.
+  // Additionally, alignSelf is emitted so the block positions itself within its
+  // grid cell when nested inside a Columns block (harmless in normal flow).
   if (style.alignItems) {
     const ta: Record<string, string | undefined> = {
       start: "left", center: "center", end: "right", stretch: undefined,
     };
     const v = ta[style.alignItems];
     if (v) css.textAlign = v;
+    css.alignSelf = style.alignItems;
+  }
+
+  // justifyContent -> justifySelf for grid cell inline-axis placement. Flex-only
+  // values (between/around) have no CSS grid equivalent, so they are skipped.
+  if (style.justifyContent) {
+    const jsSelf: Record<string, string | undefined> = {
+      start: "start", center: "center", end: "end",
+      between: undefined, around: undefined,
+    };
+    const js = jsSelf[style.justifyContent];
+    if (js) css.justifySelf = js;
   }
 
   // Gap between children — emitted here so it applies on any flex/grid container.
