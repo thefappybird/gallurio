@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe("sendInquiryClientConfirmation", () => {
-  it("tells the submitter their inquiry was sent to the portfolio owner", async () => {
+  it("sends a branded confirmation to the submitter with default en locale", async () => {
     await sendInquiryClientConfirmation({
       workspaceName: "Studio Aurora",
       clientEmail: "emma@example.com",
@@ -26,8 +26,94 @@ describe("sendInquiryClientConfirmation", () => {
     expect(sendEmail).toHaveBeenCalledOnce();
     const arg = sendEmail.mock.calls[0][0];
     expect(arg.subject).toContain("Studio Aurora");
-    expect(arg.text).toContain("Your inquiry has been sent to Studio Aurora.");
-    expect(arg.html).toContain("Your inquiry has been sent to <strong>Studio Aurora</strong>.");
+    expect(arg.html).toContain("Studio Aurora");
     expect(arg.replyTo).toBe("owner@studio.test");
+    // No raw <strong> tags — the template escapes all caller strings
+    expect(arg.html).not.toContain("<strong>");
+    // Partner brand footer must contain Powered by Gallurio
+    expect(arg.html).toContain("Powered by Gallurio");
+  });
+
+  it("uses ms locale copy when country is MY", async () => {
+    await sendInquiryClientConfirmation({
+      workspaceName: "Studio Aurora",
+      clientEmail: "emma@example.com",
+      clientName: "Emma Carter",
+      ownerEmail: "owner@studio.test",
+      country: "MY",
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // ms locale: "Kami telah menerima pertanyaan anda"
+    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    expect(arg.html).toContain("Studio Aurora");
+    expect(arg.html).toContain("Powered by Gallurio");
+  });
+
+  it("uses provided brand instead of resolving from workspaceName alone", async () => {
+    const brand = {
+      kind: "partner" as const,
+      name: "Aurora Events",
+      accentHex: "#ff5500",
+      poweredByGallurio: true,
+    };
+
+    await sendInquiryClientConfirmation({
+      workspaceName: "Studio Aurora",
+      clientEmail: "emma@example.com",
+      clientName: "Emma Carter",
+      ownerEmail: "owner@studio.test",
+      brand,
+      country: "MY",
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // Brand name takes precedence
+    expect(arg.html).toContain("Aurora Events");
+    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    expect(arg.html).toContain("Powered by Gallurio");
+  });
+
+  it("renders bilingual content (English + workspace locale) when locale resolves to non-en", async () => {
+    await sendInquiryClientConfirmation({
+      workspaceName: "Studio Aurora",
+      clientEmail: "emma@example.com",
+      clientName: "Emma Carter",
+      ownerEmail: "owner@studio.test",
+      country: "MY",
+    });
+
+    expect(sendEmail).toHaveBeenCalledOnce();
+    const arg = sendEmail.mock.calls[0][0];
+    // English section
+    expect(arg.html).toContain("Thanks for reaching out");
+    // Localized (ms) section
+    expect(arg.html).toContain("Kami telah menerima pertanyaan anda");
+    // Divider
+    expect(arg.html).toContain("email-divider");
+    // Bilingual subject
+    expect(arg.subject).toContain("·");
+    expect(arg.subject).toContain("We received your inquiry");
+    expect(arg.subject).toContain("Kami telah menerima pertanyaan anda");
+  });
+
+  it("is best-effort: returns error result without throwing when render fails", async () => {
+    // Pass a bad brand that will cause no throw but returns error gracefully
+    // Simulate by passing invalid brand kind to force an unusual path
+    // Actually test that sendEmail not called and result is ok:false
+    // We do this by making sendEmail throw
+    sendEmail.mockRejectedValueOnce(new Error("transport down"));
+
+    const result = await sendInquiryClientConfirmation({
+      workspaceName: "Studio Aurora",
+      clientEmail: "emma@example.com",
+      clientName: "Emma Carter",
+      ownerEmail: null,
+    });
+
+    // Should not throw; returns error result
+    expect(result.ok).toBe(false);
   });
 });

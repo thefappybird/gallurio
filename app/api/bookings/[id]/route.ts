@@ -5,11 +5,14 @@ import { getTeamsForUser } from "@/lib/auth/teamContext";
 import { canEditBooking, canWriteBookingForTeam } from "@/lib/auth/canEditBooking";
 import { resolveBookingTeamScope } from "@/lib/auth/bookingTeamScope";
 import { connectDB } from "@/lib/db/mongoose";
-import { Booking, ActivityLog, Client, Team, TeamMembership, User } from "@/lib/db/models";
+import { Booking, ActivityLog, Client, Team, User } from "@/lib/db/models";
 import { sendNotification } from "@/lib/notifications/send";
+import { resolveTeamRecipients, resolveStatusChangeRecipients } from "@/lib/notifications/recipients";
 import { bookingPatchSchema, type EditableKey } from "@/lib/validators/booking";
 import { reassignBookingBetweenClients } from "@/lib/db/clientTransactions";
 import { sessionsAreSameDayInTz, FALLBACK_TZ } from "@/lib/bookings/session-validation";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
+import { sendBookingCancelledClient, sendBookingCancelledOwner } from "@/lib/email/booking/bookingCancelled";
 
 export const runtime = "nodejs";
 
@@ -437,21 +440,8 @@ export async function PATCH(req: Request, { params }: Params) {
 
     if (shouldNotifyTeamAssigned) {
       const assignedTeamId = teamReassignment!.to;
-      const teamMemberships = await TeamMembership.find(
-        { workspaceId: ctx.workspace._id, teamId: assignedTeamId },
-        { workosUserId: 1 },
-      ).lean();
-      if (teamMemberships.length > 0) {
-        const memberIds = teamMemberships.map((m) => m.workosUserId);
-        const memberUsers = await User.find(
-          { workosUserId: { $in: memberIds } },
-          { workosUserId: 1, email: 1, name: 1 },
-        ).lean();
-        const recipients = memberUsers.map((u) => ({
-          workosUserId: u.workosUserId,
-          email: u.email,
-          name: u.name || undefined,
-        }));
+      const recipients = await resolveTeamRecipients(ctx.workspace._id, assignedTeamId);
+      if (recipients.length > 0) {
         // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({
           workspaceId: ctx.workspaceId,
@@ -469,41 +459,14 @@ export async function PATCH(req: Request, { params }: Params) {
     }
 
     if (shouldNotifyStatusChanged) {
-      // Collect recipients: team members (if booking has a team) + workspace owner.
-      const recipientMap = new Map<string, { workosUserId: string; email: string; name?: string }>();
-
       const bookingTeamId = updated?.teamId ?? existing.teamId;
-      if (bookingTeamId) {
-        const teamMemberships = await TeamMembership.find(
-          { workspaceId: ctx.workspace._id, teamId: bookingTeamId },
-          { workosUserId: 1 },
-        ).lean();
-        if (teamMemberships.length > 0) {
-          const memberIds = teamMemberships.map((m) => m.workosUserId);
-          const memberUsers = await User.find(
-            { workosUserId: { $in: memberIds } },
-            { workosUserId: 1, email: 1, name: 1 },
-          ).lean();
-          for (const u of memberUsers) {
-            recipientMap.set(u.workosUserId, {
-              workosUserId: u.workosUserId,
-              email: u.email,
-              name: u.name || undefined,
-            });
-          }
-        }
-      }
-
-      // Include workspace owner.
       const ownerEmail = ctx.workspace.contact?.email;
-      if (ownerEmail) {
-        recipientMap.set(ctx.workspace.ownerUserId, {
-          workosUserId: ctx.workspace.ownerUserId,
-          email: ownerEmail,
-        });
-      }
-
-      const recipients = [...recipientMap.values()];
+      const recipients = await resolveStatusChangeRecipients({
+        workspaceId: ctx.workspace._id,
+        teamId: bookingTeamId ?? null,
+        ownerUserId: ctx.workspace.ownerUserId,
+        ownerEmail: ownerEmail ?? null,
+      });
       if (recipients.length > 0) {
         // Non-fatal: booking update already committed; don't 500 the response.
         await sendNotification({
@@ -522,6 +485,68 @@ export async function PATCH(req: Request, { params }: Params) {
     }
   }
   // --- End Notifications ---
+
+  // Cancellation emails: fire when a previously-active booking is cancelled.
+  if (
+    newStatus === "cancelled" &&
+    (existing.status === "booked" || existing.status === "completed")
+  ) {
+    const cancelClient = await Client.findOne({
+      _id: updated?.clientId ?? existing.clientId,
+      workspaceId: ctx.workspace._id,
+    })
+      .select({ _id: 1, name: 1, email: 1 })
+      .lean()
+      .catch(() => null);
+
+    const ownerEmail = ctx.workspace.contact?.email;
+    const brand = resolveWorkspaceBrand({
+      name: ctx.workspace.name,
+      publicPage: ctx.workspace.publicPage
+        ? {
+            header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+            brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+          }
+        : undefined,
+      contact: ownerEmail ? { email: ownerEmail } : undefined,
+    });
+
+    const eventTitle = (updated?.title ?? existing.title) as string;
+    // Booking sessions store startAt/endAt as Dates; the email template wants the
+    // string-tuple shape. Format in the workspace timezone so dates/times match
+    // what the owner and client see in-app (server TZ would be wrong).
+    const tz = ctx.workspace.timezone ?? FALLBACK_TZ;
+    const dateFmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
+    const timeFmt = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+    const rawSessions = (updated?.sessions ?? existing.sessions ?? []) as Array<{ startAt: Date; endAt: Date }>;
+    const sessions = rawSessions.map((s) => ({
+      startDate: dateFmt.format(s.startAt),
+      startTime: timeFmt.format(s.startAt),
+      endTime: timeFmt.format(s.endAt),
+    }));
+
+    if (cancelClient?.email) {
+      void sendBookingCancelledClient({
+        brand,
+        locale: ctx.workspace.country ?? null,
+        clientName: cancelClient.name as string,
+        clientEmail: cancelClient.email as string,
+        businessName: ctx.workspace.name,
+        eventTitle,
+        sessions,
+        replyTo: ownerEmail ?? null,
+      }).catch(() => {});
+    }
+
+    if (ownerEmail) {
+      void sendBookingCancelledOwner({
+        ownerEmail,
+        clientName: (cancelClient?.name ?? existing.clientName ?? "") as string,
+        eventTitle,
+        bookingId: existing._id.toString(),
+      }).catch(() => {});
+    }
+  }
 
   return NextResponse.json({ ...updated, client });
 }

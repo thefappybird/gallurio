@@ -2,7 +2,7 @@
 
 Run through this list before promoting to production. It covers the parts of the codebase that are easy to miss in a feature-review pass and the dev-mode shortcuts that must be removed or replaced with real flows.
 
-Last updated: 2026-05-28 (post teams-enhancements: standalone /teams page)
+Last updated: 2026-06-22 (provider audit: Clerk→WorkOS, Cloudinary→Cloudflare Images; added branded-email + auth-email branding section)
 
 ## 1. Dev-mode escape hatches
 
@@ -27,7 +27,7 @@ Billing has been migrated from HitPay to Paddle. The items below supersede the o
 - [ ] **Owner-initiated downgrades** must be flow-tested end-to-end: create a live subscription → owner downgrades from Pro to Starter while over the Starter team cap → confirm the webhook refuses the plan change AND the user sees the downgrade-block-modal pointing at teams to delete.
 - [ ] **Cancellation while over-cap** must be flow-tested: workspace on Pro with 8 teams → cancel subscription → confirm `Workspace.plan` flips to `free`, `paddleSubscriptionStatus` flips to `"canceled"`, and the next session render shows the `DowngradeBlockModal` listing the teams to delete.
 - [ ] **Webhook signature** must use a real `PADDLE_WEBHOOK_SECRET` (destination secret from live Paddle Notifications). Confirm `verifyAndParsePaddleEvent` returns `null` for unsigned/tampered bodies.
-- [ ] **Real prices** in `lib/paddle/plans.ts` match the live Paddle dashboard (free 0, Starter ₱250, Pro ₱500). The `priceId` fields must reference live `pri_…` IDs, not sandbox ones. See §12 above for the full Paddle pre-launch checklist.
+- [ ] **Real prices** in `lib/paddle/plans.ts` match the live Paddle dashboard (free 0, Starter ₱250, Pro ₱500). The `priceId` fields must reference live `pri_…` IDs, not sandbox ones. See §14 for the full Paddle pre-launch checklist.
 
 ## 3. Pending-invite seat lifecycle
 
@@ -35,12 +35,11 @@ These checks belong on the production deploy, not just code review. The atomicit
 
 - [ ] **Indexes built** — connect to the production Mongo and confirm:
   - `Team` has the partial-unique index `{ workspaceId: 1 }` where `isDefault: true`.
-  - `TeamMembership` has the compound unique index `{ workspaceId: 1, teamId: 1, clerkUserId: 1 }`.
+  - `TeamMembership` has the compound unique index `{ workspaceId: 1, teamId: 1, workosUserId: 1 }`.
   - `PendingTeamAssignment` has `{ workspaceId: 1, email: 1 }` unique and `{ createdAt: 1, claimedAt: 1 }`.
   - `PendingTeamAssignment` does NOT have a TTL on `createdAt` (the cleanup cron owns deletion so seats get refunded; a TTL would skip the refund).
   - Mongoose calls `syncIndexes()` on boot via the model setup, but verify post-deploy.
-- [ ] **Vercel cron** — confirm `/api/cron/release-expired-invite-seats` is registered (`vercel.json`) and that `CRON_SECRET` is set as a production env var. Hit the endpoint manually with the bearer token once to confirm it returns 200 with a JSON report.
-- [ ] **Clerk webhook secret** — `CLERK_WEBHOOK_SECRET` is set in production env. The webhook must verify svix signatures or it returns 400.
+- [ ] **Cron registered** — confirm `/api/cron/release-expired-invite-seats` is scheduled (`vercel.json` on Vercel, or the systemd/pm2 timer if on Hetzner) and that `CRON_SECRET` is set as a production env var. Hit the endpoint manually with the bearer token once to confirm it returns 200 with a JSON report.
 
 ## 4. Phase 2 deferrals
 
@@ -61,24 +60,24 @@ The public inquiry form sends a best-effort notification email to the workspace 
 
 ## 4c. Public inquiry endpoint hardening (Portfolio maker Phase 6)
 
-`POST /api/inquiries` is public and unauthenticated. It ships with a honeypot, Zod validation, and an in-process per-IP rate limiter (`lib/server/rateLimit.ts`, 5 / 10 min). The limiter is **best-effort** — it holds only within a warm Fluid Compute instance and keys on the client IP.
+`POST /api/inquiries` is public and unauthenticated. It ships with a honeypot, Zod validation, and an in-process per-IP rate limiter (`lib/server/rateLimit.ts`, 5 / 10 min). The limiter is **best-effort** — it holds only within a warm instance and keys on the client IP.
 
-- [ ] **Trusted client IP** — `getClientIp` in `app/api/inquiries/route.ts` prefers `x-vercel-forwarded-for` (platform-set, tamper-resistant) and only falls back to the client-controllable `X-Forwarded-For`. Confirm the production proxy actually sets a trusted header; if the deployment topology differs, update `getClientIp` accordingly. Without this, an attacker rotating `X-Forwarded-For` bypasses the per-IP limiter.
-- [ ] **Edge/WAF rate limit** — add a platform-level rate limit (Vercel WAF / Firewall) on `/api/inquiries` for real abuse protection; the in-process limiter is only a first line against accidental double-submits and casual spam.
+- [ ] **Trusted client IP** — `getClientIp` in `app/api/inquiries/route.ts` prefers `x-vercel-forwarded-for` (platform-set, tamper-resistant) and only falls back to the client-controllable `X-Forwarded-For`. Confirm the production proxy actually sets a trusted header; if the deployment topology differs (e.g. Hetzner behind Caddy/Nginx), update `getClientIp` to read the proxy's trusted header. Without this, an attacker rotating `X-Forwarded-For` bypasses the per-IP limiter.
+- [ ] **Edge/WAF rate limit** — add a platform-level rate limit on `/api/inquiries` for real abuse protection; the in-process limiter is only a first line against accidental double-submits and casual spam. Note prod runs on Hetzner with no edge WAF, so plan a reverse-proxy (Caddy/Nginx) or app-level distributed limiter.
 - [ ] **Referrer field** — `lib/validators/inquiry.ts` accepts `referrer` as a freeform string (not URL-validated) so non-URL referrers survive. It is HTML-escaped before email rendering and stored verbatim; decide whether to tighten to `z.string().url()` if analytics hygiene matters more than capturing odd referrers.
 
 ## 4d. Page-builder editor (Portfolio maker Phases 8–9)
 
-The wizard was removed: first visit seeds the closest starter template inline (`lib/page-builder/seedPortfolio.ts`) and the editor opens directly. Starter photos are now added through the **Photos → Add new collection** dialog (`CreateCollectionDialog`), which uploads to Cloudinary before the create POST runs.
+The wizard was removed: first visit seeds the closest starter template inline (`lib/page-builder/seedPortfolio.ts`) and the editor opens directly. Starter photos are now added through the **Photos → Add new collection** dialog (`CreateCollectionDialog`), which uploads to **Cloudflare Images** (direct creator upload) before the create POST runs.
 
-- [ ] **Orphaned Cloudinary assets** — photos are uploaded to Cloudinary *before* the create-collection POST runs. If the owner uploads then cancels the dialog (or removes a photo from the staging grid), those assets are never written to a `GalleryItem` and leak in Cloudinary. Add a pre-prod cleanup job (cron sweeping `gallurio/{workspaceId}/portfolio` for public IDs with no matching `GalleryItem`), or destroy un-persisted public IDs client-side on remove/cancel. Tracked, not blocking MVP.
-- [ ] **Cloudinary upload preset limits** — confirm the Cloudinary account enforces `allowed_formats` (images only) and a max file size on the signed-upload path, to bound abuse of the public-ish upload surface. The server already scopes the folder to `gallurio/{workspaceId}/…` and every create-route rejects any `cloudinaryPublicId` outside the caller's workspace folder (incl. `..` traversal), so cross-tenant asset references are blocked — but format/size limits are a Cloudinary-dashboard config item.
+- [ ] **Orphaned Cloudflare Images assets** — photos are uploaded to Cloudflare Images *before* the create-collection POST runs. If the owner uploads then cancels the dialog (or removes a photo from the staging grid), those images are never written to a `GalleryItem` and leak in Cloudflare Images. Add a pre-prod cleanup job (sweep CF images whose `metadata.workspaceId` matches but have no corresponding `GalleryItem`), or call `deleteImage(imageId)` client-side on remove/cancel. Tracked, not blocking MVP.
+- [ ] **Cloudflare Images upload constraints** — Cloudflare Images has no Cloudinary-style upload presets; format and size are enforced **app-side** (`lib/page-builder/photoSpec.ts`: JPEG/PNG/WebP/AVIF, ≤10 MB, ≥600 px shorter side). Cross-tenant isolation is by metadata, not folders: each direct upload stamps `metadata.workspaceId` and every create route calls `verifyImageOwnership(imageId, workspaceId)` (`lib/storage/cloudflareImages.ts`) to reject any `imageId` whose CF metadata workspace ≠ caller's. Before prod, confirm the Cloudflare Images plan's per-image size limit accommodates the 10 MB app cap, and that `requireSignedURLs: false` (public `imagedelivery.net` delivery) is the intended posture.
 - [ ] **Template preview assets** — `lib/page-builder/templates/*` reference `/template-previews/*.svg`; the in-editor template switcher renders a CSS palette preview instead, so these files are optional. Add real preview thumbnails under `public/template-previews/` if/when the picker switches to image previews.
 
 ## 4e. Page-builder editor (Portfolio maker Phase 9)
 
 - [ ] **`socials.website` settings-side validation** — the public ContactCardBlock now sanitizes the website href at render (rejects `javascript:`/`data:`, https-prefixes bare domains), so a stored bad value can't become a clickable XSS link. Belt-and-suspenders: also validate `website` with `z.string().url()` (or empty) in the settings action that writes `workspace.contact.socials`, mirroring the handle validation already there.
-- [ ] **Block image-URL fields bypass Cloudinary** — `HeroBlock.backgroundImageUrl` and `CTABannerBlock.backgroundImageUrl` accept any URL (designed fallback for non-Cloudinary images). No script execution risk (`<img src>`), but a public visitor's browser will fetch the third-party origin (IP/UA leak). Before prod, decide whether to drop the raw-URL fallback once Cloudinary upload is the standard path, or constrain to `https://res.cloudinary.com` / Next `images.remotePatterns`.
+- [ ] **Block image-URL fields bypass Cloudflare Images** — `HeroBlock.backgroundImageUrl` and `CTABannerBlock.backgroundImageUrl` accept any URL (designed fallback for non-uploaded images). No script execution risk (`<img src>`), but a public visitor's browser will fetch the third-party origin (IP/UA leak). Before prod, decide whether to drop the raw-URL fallback now that Cloudflare Images upload is the standard path, or constrain to `imagedelivery.net` / Next `images.remotePatterns`.
 - [ ] **Puck zone payload cap** — `savePortfolioDraftAction` rejects a single-zone Puck payload over 512 KB to keep the embedded Workspace doc well under MongoDB's 16 MB limit. Confirm the cap is comfortable for the largest real portfolios before launch.
 
 ## 4f. Page-builder editor follow-ups (Portfolio maker phases 6–9 review round)
@@ -86,7 +85,18 @@ The wizard was removed: first visit seeds the closest starter template inline (`
 - [ ] **In-editor gallery picker strings are English** — `lib/page-builder/galleryPicker/*` (CollectionPicker, FeaturedItemsPicker) use inline English labels, matching Puck's own (un-localized) editor chrome rather than `useTranslations`. The owner-facing app shell is otherwise fully localized. If we localize the Puck editor chrome before launch, localize these panels in the same pass.
 - [ ] **`/portfolio-preview` is an authenticated draft preview** — owner-only (`requireOrg` + `role === "owner"`, `notFound` otherwise), `robots: noindex`, `dynamic = "force-dynamic"`. It renders the unpublished draft. Confirm it stays out of sitemaps/indexing and is never linked publicly.
 - [ ] **FeaturedItemsPicker uploads create uncollected `GalleryItem`s** (`collectionId: null`). If the owner later deletes such an item from the Gallery module, FeaturedWork Puck props referencing it are silently dropped by `getItemsByIds` (expected). Revisit if a "manage uncollected photos" surface is added.
-- [ ] **Photo spec** — uploads enforce JPEG/PNG/WebP/AVIF · ≤10 MB · ≥600 px shorter side (`lib/page-builder/photoSpec.ts`). Confirm these limits suit launch (esp. the 10 MB cap vs. Cloudinary plan limits).
+- [ ] **Photo spec** — uploads enforce JPEG/PNG/WebP/AVIF · ≤10 MB · ≥600 px shorter side (`lib/page-builder/photoSpec.ts`). Confirm these limits suit launch (esp. the 10 MB cap vs. Cloudflare Images plan limits).
+
+## 4g. Branded transactional emails + auth-email branding (enhance/branded-transactional-emails)
+
+All transactional mail renders through one shared branded template (`lib/email/layout.ts` → `renderBrandedEmail`). The only email WorkOS sends today (signup verification) is taken over via a signed webhook so it matches our template; everything else (password reset, team invites, inquiries, notifications) is already sent by us via Resend. See `docs/superpowers/specs/2026-06-22-branded-transactional-emails-design.md`.
+
+- [ ] **`WORKOS_WEBHOOK_SECRET`** set; the WorkOS webhook destination `https://[domain]/api/webhooks/workos` is registered in the WorkOS dashboard subscribed to `email_verification.created`. Confirm signature verification rejects unsigned/tampered bodies and the handler acks 200 even when the Resend send fails (no 500 into WorkOS retries).
+- [ ] **Disable WorkOS default verification email** (WorkOS Dashboard → Emails → Configuration) so users don't receive both the WorkOS template and ours. Re-test signup + the in-app "resend verification" path end-to-end after disabling.
+- [ ] **WorkOS Branding configured** (Dashboard → Branding): upload the Gallurio logo + set the 4 colors for light & dark, so any mail WorkOS still composes (MFA factor emails, Admin Portal) stays on-brand. This is the fallback for the emails we cannot take over.
+- [ ] **Own Google OAuth credentials**: a Gallurio-branded Google Cloud OAuth client (OAuth consent screen name + logo) is configured in WorkOS → Authentication → Google OAuth, so the Google account chooser shows "Gallurio", not "WorkOS". Repeat for Microsoft/Apple if/when those providers are enabled.
+- [ ] **Custom sending domain** (optional but recommended): verify `gallurio.com` (or a `mail.` subdomain) in Resend, set `EMAIL_FROM` to it, and add SPF/DKIM/DMARC. Optionally configure the matching WorkOS custom email domain for any WorkOS-composed mail.
+- [ ] **Logo swap** — once a real logo asset exists, set `LOGO_URL` in `lib/email/layout.ts` (renders `<img>` instead of the interim text wordmark). One-line change; no template rework.
 
 ## 5. Multi-tenant isolation spot-checks
 
@@ -109,43 +119,45 @@ Run: `rg "Team(Membership|)\.(find|update|delete)" app lib --type ts` and audit 
 ## 7. Locale parity
 
 - [ ] All four active locales (`en, fil, ms, id`) have every `app.teams.*` key (the block moved out of `app.settings.teams` when Teams became a standalone page) and the `app.sidebar.teams` nav label. The dev-plan strings intentionally remain English in all locales because the panel is dev-only.
+- [ ] Email copy parity: every transactional email's strings exist in all four locales (`lib/email/messages.ts`); locale is derived from workspace country.
 - [ ] When a new locale is added, copy the entire `app` block first, then translate values.
 
 ## 8. Routing / proxy
 
-- [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, `/teams`, and `/settings` (except `/settings/account` for the Clerk profile area). Verify manually by signing in as a member.
+- [ ] `proxy.ts` redirects members away from `/dashboard`, `/clients`, `/inquiries`, `/gallery`, `/teams`, and `/settings` (except `/settings/account` for the account/profile area). Verify manually by signing in as a member.
 - [ ] AppSidebar shows `[Bookings]` only for members and hides the footer Settings link. The `/teams` link only appears for owners.
 
-## 8a. Invitation email delivery (NO email service wired yet)
+## 8a. Invitation email delivery (Resend)
 
-The invite flow (`inviteMemberAction`) creates the `PendingTeamAssignment` row and calls Clerk's `createOrganizationInvitation`, but **no invitation email is delivered in the current dev setup** — Clerk's org-invitation email is not configured. The owner sees the pending invite in the team's Details drawer, but the invitee receives nothing. Before production:
+The invite flow (`inviteMemberAction`) creates the `PendingTeamAssignment` / `Invitation` row and sends the invite email itself via **Resend** (`lib/email/teamInvite.ts`, localized en/fil/ms/id). There is no Clerk/WorkOS org-invitation — invitations are fully Gallurio-owned (single-use SHA-256 token hash).
 
-- [ ] **Enable Clerk organization-invitation emails** in the Clerk dashboard (Organizations → invitations), OR wire a transactional email provider and send the invite link yourself. Confirm a real email lands in the invitee's inbox in a staging environment.
-- [ ] Consider passing a `redirectUrl` to `createOrganizationInvitation` so accepted invites land directly in the in-app accept flow rather than Clerk's default page.
-- [ ] Re-test the full accept → webhook drain → `TeamMembership` creation path once emails actually send.
+- [ ] **`RESEND_API_KEY` + `EMAIL_FROM`** set (see §4b) so the invite email actually delivers. Without a key the transport logs to console and the invitee receives nothing.
+- [ ] Confirm a real invite email lands in a staging inbox and the accept link resolves to the in-app accept page, then re-test the full accept → transactional `TeamMembership` + `User.memberships` write end-to-end.
+- [ ] The invite email uses the shared branded template (§4g); spot-check it renders in a real client (light + dark) before launch.
 
 ## 9. Env-var matrix
 
-Confirm these are set in the production Vercel project:
+Confirm these are set in the production environment:
 
-- [ ] `DATABASE_URL`
-- [ ] `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY`
-- [ ] `CLERK_WEBHOOK_SECRET`
-- [ ] `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
-- [ ] `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV=production`, `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID` (all live values — see §12)
+- [ ] `DATABASE_URL` (MongoDB Atlas connection string)
+- [ ] **WorkOS:** `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD` (≥32 chars), `ACTIVE_WORKSPACE_COOKIE_SECRET`, `NEXT_PUBLIC_WORKOS_REDIRECT_URI`, `WORKOS_WEBHOOK_SECRET` (for the email-verification webhook, §4g)
+- [ ] **Cloudflare Images:** `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_IMAGES_API_TOKEN`, `CLOUDFLARE_IMAGES_ACCOUNT_HASH`, `NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH`
+- [ ] **Paddle:** `PADDLE_API_KEY`, `PADDLE_WEBHOOK_SECRET`, `NEXT_PUBLIC_PADDLE_CLIENT_TOKEN`, `NEXT_PUBLIC_PADDLE_ENV=production`, `PADDLE_PRICE_STARTER_ID`, `PADDLE_PRICE_PRO_ID` (all live values — see §14)
+- [ ] **Email (Resend):** `RESEND_API_KEY`, `EMAIL_FROM` (verified domain), `EMAIL_REPLY_TO` (optional)
 - [ ] `CRON_SECRET`
 
-`NODE_ENV=production` is set automatically by Vercel.
+`NODE_ENV=production` is set automatically by the platform (Vercel) or must be set explicitly in the process manager (Hetzner pm2/systemd).
 
 ## 10. Smoke after deploy
 
-In production with live Paddle credentials (see §12 for Paddle-specific billing smoke tests):
+In production with live credentials (see §14 for Paddle-specific billing smoke tests):
 
-- [ ] Sign up a new workspace — gets a Main team.
-- [ ] Owner invites a teammate (from the `/teams` toolbar, a team's 3-dot menu, or its Details drawer) — they get an email (requires §8a), accept, and land at `/bookings` with the reduced sidebar.
+- [ ] Sign up a new workspace — gets a Main team. The verification email arrives using our branded template (§4g), not the WorkOS default.
+- [ ] Owner invites a teammate (from the `/teams` toolbar, a team's 3-dot menu, or its Details drawer) — they get a branded Resend email (§8a), accept, and land at `/bookings` with the reduced sidebar.
 - [ ] Owner revokes a pending invite from the team's Details drawer — the row disappears and the team's member count shows the seat back.
 - [ ] Owner deletes a non-default team from the `/teams` 3-dot menu — TeamMembership rows for that team disappear and team count drops; a member who was only on that team becomes teamless and can be re-added via another team's "Add existing member" dropdown.
 - [ ] Sign in as a member and try to navigate to `/settings` — proxy redirects to `/bookings`.
+- [ ] Sign in with Google — the account chooser shows "Gallurio" (requires the own-OAuth-credentials task in §4g).
 
 ## 11. Location pin picker — geocoding provider
 

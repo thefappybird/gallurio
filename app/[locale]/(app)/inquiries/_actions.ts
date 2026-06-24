@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import { Inquiry, Booking, ActivityLog, Team } from "@/lib/db/models";
+import { Inquiry, Booking, ActivityLog, Team, Client } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
@@ -13,6 +13,12 @@ import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
 import { computeInquiryConflicts, sessionConflictsWithBookings } from "@/lib/db/queries/inquiry-conflicts";
+import { sendBookingConfirmedClient, sendBookingConfirmedOwner } from "@/lib/email/booking/bookingConfirmed";
+import { sendInquiryDeclineClient } from "@/lib/email/booking/inquiryDecline";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
+import { emailLocale } from "@/lib/email/messages";
+import { resolveTeamRecipients } from "@/lib/notifications/recipients";
+import { sendNotification } from "@/lib/notifications/send";
 
 // The status a draft is promoted to on approval. Approval skips the old
 // "inquiry" pipeline state and lands directly on "booked". Drafts are the
@@ -110,6 +116,10 @@ export async function approveInquiryBookingAction(
   };
   const newNotes = edits.data.notes ?? booking.notes ?? "";
 
+  // Did THIS call perform the promotion? A concurrent approval can win the
+  // `status: "draft"` race (matchedCount === 0); only the winner fires the
+  // post-commit emails/notification, so the loser must not double-send.
+  let promotedThisCall = false;
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
@@ -129,6 +139,7 @@ export async function approveInquiryBookingAction(
       );
 
       if (promoted.matchedCount === 0) return;
+      promotedThisCall = true;
 
       await recordBookingForClient({
         workspaceId,
@@ -174,6 +185,93 @@ export async function approveInquiryBookingAction(
   } finally {
     await session.endSession();
   }
+
+  // A concurrent approval already promoted this booking and owns its
+  // side-effects — return the booked result without re-sending anything.
+  if (!promotedThisCall) {
+    revalidateInquiry(inquiryId);
+    revalidatePath("/bookings");
+    revalidatePath("/dashboard");
+    return { ok: true, bookingId: booking._id.toString() };
+  }
+
+  // --- Post-commit side-effects (best-effort, never throw, never roll back) ---
+  const locale = emailLocale(ctx.workspace.country ?? null);
+  const ownerEmail = ctx.workspace.contact?.email || null;
+
+  // Load the booking's client for the confirmation email.
+  const client = await Client.findOne(
+    { _id: booking.clientId, workspaceId },
+    { email: 1, name: 1 },
+  ).lean().catch(() => null);
+
+  if (client?.email) {
+    const brand = resolveWorkspaceBrand({
+      name: ctx.workspace.name,
+      publicPage: ctx.workspace.publicPage
+        ? {
+            header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+            brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+          }
+        : undefined,
+      contact: ownerEmail ? { email: ownerEmail } : undefined,
+    });
+
+    void sendBookingConfirmedClient({
+      brand,
+      locale: ctx.workspace.country ?? null,
+      clientName: client.name,
+      clientEmail: client.email,
+      businessName: ctx.workspace.name,
+      eventTitle: booking.title,
+      sessions: inquiry.sessions as Array<{ startDate: string; startTime: string; endTime: string }>,
+      replyTo: ownerEmail,
+    }).catch(() => {});
+  }
+
+  if (ownerEmail) {
+    void sendBookingConfirmedOwner({
+      ownerEmail,
+      clientName: booking.clientName,
+      eventTitle: booking.title,
+      bookingId: booking._id.toString(),
+    }).catch(() => {});
+  }
+
+  // Team notification (or owner fallback).
+  const notifEntityId = booking._id.toString();
+  const clientName = booking.clientName;
+
+  void (async () => {
+    try {
+      let recipients;
+      if (booking.teamId) {
+        recipients = await resolveTeamRecipients(workspaceId, booking.teamId);
+      }
+      if (!recipients || recipients.length === 0) {
+        // No team or empty team — notify the owner. email:"" is intentional:
+        // the owner's confirmation email is sent separately above, so this
+        // recipient only drives the in-app/DB notification, not a second email.
+        recipients = ownerEmail
+          ? [{ workosUserId: ctx.workspace.ownerUserId, email: "" }]
+          : [];
+      }
+      if (recipients.length > 0) {
+        await sendNotification({
+          workspaceId: String(workspaceId),
+          recipients,
+          type: "booking.team_assigned",
+          entityId: notifEntityId,
+          entityType: "booking",
+          triggeredByWorkosUserId: ctx.userId,
+          locale,
+          vars: { clientName },
+        });
+      }
+    } catch (err) {
+      console.error("[inquiry] approve notification failed (non-fatal):", err);
+    }
+  })();
 
   revalidateInquiry(inquiryId);
   revalidatePath("/bookings");
@@ -252,20 +350,154 @@ export async function archiveInquiryAction(inquiryId: string): Promise<InquiryAc
   }).lean();
   if (!inquiry) return { error: "not_found" };
 
-  const res = await Inquiry.updateOne(
-    { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
-    { $set: { status: "archived" } }
-  );
-  if (res.matchedCount === 0) return { error: "not_found" };
+  // Archive (silent dismiss) and the orphan-draft cancel commit together so an
+  // archived inquiry never leaves a dangling "draft" booking. No email.
+  let archived = false;
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const res = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId: ctx.workspace._id, status: { $nin: ["booked", "converted"] } },
+        { $set: { status: "archived" } },
+        { session }
+      );
+      if (res.matchedCount === 0) return;
+      archived = true;
 
-  await ActivityLog.create({
-    workspaceId: ctx.workspace._id,
-    actorUserId: ctx.userId,
-    entity: "inquiry",
-    entityId: inquiry._id,
-    action: "status_changed",
-    meta: { from: inquiry.status, to: "archived" },
-  });
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId: ctx.workspace._id, status: "draft" },
+          { $set: { status: "cancelled" } },
+          { session }
+        );
+      }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId: ctx.workspace._id,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "status_changed",
+            meta: { from: inquiry.status, to: "archived" },
+          },
+        ],
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  if (!archived) return { error: "not_found" };
+
+  revalidateInquiry(inquiryId);
+  return { ok: true };
+}
+
+/**
+ * Decline an inquiry: set it archived, cancel the orphan draft booking,
+ * and send a polite decline email to the client.
+ * Booked/converted inquiries cannot be declined.
+ */
+export async function declineInquiryAction(inquiryId: string): Promise<InquiryActionResult> {
+  const ctx = await requireOrg();
+
+  if (!mongoose.isValidObjectId(inquiryId)) return { error: "not_found" };
+
+  await connectDB();
+
+  const workspaceId = ctx.workspace._id;
+
+  const inquiry = await Inquiry.findOne({
+    _id: inquiryId,
+    workspaceId,
+    status: { $nin: ["booked", "converted"] },
+  }).lean();
+  if (!inquiry) return { error: "not_found" };
+
+  // Did THIS call archive the inquiry? A concurrent archive/decline/approval can
+  // win the status guard (matchedCount === 0); only the winner emails the client
+  // and reports success, so the loser must not double-notify.
+  let declined = false;
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const res = await Inquiry.updateOne(
+        { _id: inquiryId, workspaceId, status: { $nin: ["booked", "converted"] } },
+        { $set: { status: "archived" } },
+        { session }
+      );
+      if (res.matchedCount === 0) return;
+      declined = true;
+
+      if (inquiry.draftBookingId) {
+        await Booking.updateOne(
+          { _id: inquiry.draftBookingId, workspaceId, status: "draft" },
+          { $set: { status: "cancelled" } },
+          { session }
+        );
+      }
+
+      await ActivityLog.create(
+        [
+          {
+            workspaceId,
+            actorUserId: ctx.userId,
+            entity: "inquiry",
+            entityId: inquiry._id,
+            action: "status_changed",
+            meta: { from: inquiry.status, to: "archived", via: "decline" },
+          },
+        ],
+        { session }
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  // A concurrent archive/decline/approval already resolved this inquiry — report
+  // not_found without emailing (this call did not decline it).
+  if (!declined) return { error: "not_found" };
+
+  // Best-effort decline email — never throws, never rolls back.
+  const ownerEmail = ctx.workspace.contact?.email ?? null;
+  void (async () => {
+    try {
+      const client = await Client.findOne(
+        { _id: inquiry.clientId, workspaceId },
+        { email: 1, name: 1 }
+      )
+        .lean()
+        .catch(() => null);
+
+      if (client?.email) {
+        const brand = resolveWorkspaceBrand({
+          name: ctx.workspace.name,
+          publicPage: ctx.workspace.publicPage
+            ? {
+                header: { logoUrl: ctx.workspace.publicPage.header?.logoUrl },
+                brandKit: { accentColor: ctx.workspace.publicPage.brandKit?.accentColor },
+              }
+            : undefined,
+          contact: ownerEmail ? { email: ownerEmail } : undefined,
+        });
+
+        await sendInquiryDeclineClient({
+          brand,
+          locale: ctx.workspace.country ?? null,
+          clientName: client.name,
+          clientEmail: client.email,
+          businessName: ctx.workspace.name,
+          replyTo: ownerEmail,
+        });
+      }
+    } catch {
+      // Best-effort: ignore errors
+    }
+  })();
 
   revalidateInquiry(inquiryId);
   return { ok: true };

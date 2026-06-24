@@ -128,6 +128,7 @@ import {
   forgotPasswordAction,
   resetPasswordAction,
   verifyEmailAction,
+  resendVerificationEmailAction,
   mfaChallengeAction,
   googleSignInAction,
 } from "@/app/[locale]/(auth)/_actions";
@@ -641,5 +642,49 @@ describe("googleSignInAction", () => {
     expect(vi.mocked(signOAuthState)).toHaveBeenCalledWith(
       expect.objectContaining({ nonce }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resendVerificationEmailAction
+// ---------------------------------------------------------------------------
+
+describe("resendVerificationEmailAction", () => {
+  it("calls sendVerificationEmail with the session user id and returns ok", async () => {
+    mockWorkos.userManagement.sendVerificationEmail.mockResolvedValue(undefined);
+    const result = await resendVerificationEmailAction(null, new FormData());
+    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledOnce();
+    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledWith({
+      userId: "wos-user-123",
+    });
+    expect(result).toMatchObject({ ok: true });
+  });
+
+  it("returns sessionExpired error and skips sendVerificationEmail when no session", async () => {
+    const { getAuthUser } = await import("@/lib/auth/session");
+    vi.mocked(getAuthUser).mockResolvedValueOnce(null);
+    const result = await resendVerificationEmailAction(null, new FormData());
+    expect(mockWorkos.userManagement.sendVerificationEmail).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ error: "Your session has expired. Please sign in again." });
+  });
+
+  it("returns generic error when sendVerificationEmail rejects", async () => {
+    mockWorkos.userManagement.sendVerificationEmail.mockRejectedValue(
+      new Error("WorkOS API error"),
+    );
+    const result = await resendVerificationEmailAction(null, new FormData());
+    expect(result).toMatchObject({ error: "Something went wrong. Please try again." });
+  });
+
+  it("rejects on rate-limit breach (IP)", async () => {
+    mockWorkos.userManagement.sendVerificationEmail.mockResolvedValue(undefined);
+    // Exhaust the IP limit (20 per window) using distinct calls.
+    for (let i = 0; i < 20; i++) {
+      await resendVerificationEmailAction(null, new FormData()).catch(() => null);
+    }
+    const result = await resendVerificationEmailAction(null, new FormData());
+    expect(result).toMatchObject({ error: expect.stringContaining("Too many attempts") });
+    // WorkOS must not have been called on the rate-limited request.
+    expect(mockWorkos.userManagement.sendVerificationEmail).toHaveBeenCalledTimes(20);
   });
 });

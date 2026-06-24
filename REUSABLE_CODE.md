@@ -13,7 +13,7 @@ See `CLAUDE.md` → **DRY & code reuse (cross-agent)** for the full policy.
 > instead of re-reading source. Prefer it, then the codebase-memory graph
 > (`search_code` / `SIMILAR_TO`), then file reads — in that order.
 
-Last audited: 2026-06-17 (branch `dev`).
+Last audited: 2026-06-22 (branch `enhance/branded-transactional-emails`).
 
 ---
 
@@ -130,6 +130,31 @@ Composed, app-specific shared components.
 | `lib/db/mongoose.ts` | `connectDB` | Lazy cached connection (pool 10, bufferCommands off) |
 | `lib/db/clientTransactions.ts` | `recordBookingForClient`, `reassignBookingBetweenClients` | Atomic client financial-footprint writes |
 | `lib/db/queries/inquiry-conflicts.ts` | `computeInquiryConflicts(workspaceId, inquiries, tz)`, `sessionConflictsWithBookings(workspaceId, tz, session, excludeBookingId?)` | Booking-only conflict detection for inquiries: bulk check across all inquiries (calendar list view) or single-session check (reschedule action); one Booking query per call |
+
+### `lib/email/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/email/escapeHtml.ts` | `escapeHtml(value) => string` | HTML-escape any value (handles null/undefined, escapes `&<>"'`). Use for all user-supplied strings in HTML output. |
+| `lib/email/brand.ts` | `Brand`, `gallurioBrand()`, `resolveWorkspaceBrand(ws)`, `ctaTextColor(accentHex)` | Typed brand struct + factory functions. `gallurioBrand()` returns the platform brand; `resolveWorkspaceBrand(ws)` derives a partner brand from a workspace doc; `ctaTextColor` picks `#ffffff` or `#1a1a1a` for readable CTA button text via WCAG relative luminance. |
+| `lib/email/layout.ts` | `EmailBlock` (incl. `divider` variant), `RenderEmailOpts`, `LocaleContent`, `LANGUAGE_NAME`, `renderBrandedEmail(opts) => { html, text }`, `bilingualSubject(en, localized, locale)`, `renderBilingualEmail({ brand, preheader, secondaryLocale, build }) => { html, text }` | Branded transactional email renderer. Table-based, 600px, fully inline styles, platform/partner modes, dark-mode `@media` block, bulletproof CTA buttons, plain-text fallback. `divider` block renders a thin rule with optional uppercase label. `renderBilingualEmail` builds English-first then appends workspace-locale section separated by a divider (no-op when `secondaryLocale === "en"`). `bilingualSubject` produces `"EN · LOC"` subject or plain English when locale matches. Every caller string is HTML-escaped internally. |
+| `lib/email/messages.ts` | `EMAIL_COPY`, `emailLocale` | Typed, multi-locale (en/fil/ms/id) copy map for all transactional emails. Always add new email copy here; never hardcode strings in senders. `emailLocale` wraps `localeForCountry` for workspace-locale resolution. |
+| `lib/email/send.ts` | `sendEmail(input)`, `SendEmailInput`, `SendEmailResult` | Low-level Resend gateway. All email senders must go through this; handles API key guard, timeout, and error logging. |
+| `lib/email/teamInvite.ts` | `sendTeamInviteEmail(input)`, `TeamInviteEmailInput` | Branded team-invite email (workspace-branded, locale-aware, with teams list). |
+| `lib/email/inquiryNotification.ts` | `sendInquiryNotification(data)`, `InquiryNotificationData` | Branded internal notification email to the workspace owner when a new inquiry arrives. Platform-branded (teal). |
+| `lib/email/inquiryClientConfirmation.ts` | `sendInquiryClientConfirmation(data)`, `InquiryClientConfirmationData` | Branded confirmation email to the client after they submit an inquiry. |
+| `lib/email/sendPasswordResetEmail.ts` | `sendPasswordResetEmail(email, token, locale)` | Branded password-reset email with locale-aware copy from `EMAIL_COPY.passwordReset`. |
+| `lib/email/notifications.ts` | `sendNotificationEmail(opts)` | Sends an in-app notification as a branded email digest when the recipient has email notifications enabled. |
+| `lib/email/booking/bookingConfirmed.ts` | `sendBookingConfirmedClient(params)`, `sendBookingConfirmedOwner(params)`, `BookingConfirmedClientParams`, `BookingConfirmedOwnerParams` | Branded booking-confirmed emails: client copy (workspace-branded) and owner copy (platform-branded). |
+| `lib/email/booking/bookingCancelled.ts` | `sendBookingCancelledClient(params)`, `sendBookingCancelledOwner(params)`, `BookingCancelledClientParams`, `BookingCancelledOwnerParams` | Branded booking-cancelled emails: client copy (workspace-branded) and owner copy (platform-branded). |
+| `lib/email/booking/inquiryDecline.ts` | `sendInquiryDeclineClient(params)`, `InquiryDeclineClientParams` | Branded inquiry-decline email to the client when an inquiry is declined. |
+
+### `lib/notifications/`
+| Import | Export | Purpose |
+|--------|--------|---------|
+| `lib/notifications/types.ts` | `NotificationType`, `NotificationEntityType`, `NotificationVars`, `NotificationRecipient`, `SendNotificationOptions`, `SerializedNotificationPayload` | Shared notification type contracts. Import these instead of re-declaring. |
+| `lib/notifications/send.ts` | `sendNotification(opts)` | Single entry point for creating in-app `Notification` docs and optionally sending notification emails. Use this instead of writing directly to the `Notification` collection. |
+| `lib/notifications/messages.ts` | `buildNotificationContent(type, vars, locale)` | Builds `{ title, body }` from the i18n notification copy for a given type/vars/locale combo. Used by `sendNotification`. |
+| `lib/notifications/recipients.ts` | `resolveTeamRecipients(workspaceId, teamId)`, `resolveStatusChangeRecipients({ workspaceId, teamId, ownerUserId, ownerEmail })` | Resolve `NotificationRecipient[]` for `sendNotification`. `resolveTeamRecipients` does the `TeamMembership`→`User` lookup scoped by `workspaceId`+`teamId` (deduped, tenant-isolated). `resolveStatusChangeRecipients` merges team members + the workspace owner, deduped by `workosUserId`. Use these instead of re-implementing the lookup at booking/notification call sites. |
 
 ### Other lib
 | Import | Export | Purpose |

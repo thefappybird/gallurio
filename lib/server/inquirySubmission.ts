@@ -9,6 +9,7 @@ import {
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
 import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
+import { resolveWorkspaceBrand } from "@/lib/email/brand";
 import { sendNotification } from "@/lib/notifications/send";
 
 export type SubmitInquiryResult =
@@ -56,9 +57,12 @@ export async function submitInquiry(
       ownerUserId: 1,
       currency: 1,
       timezone: 1,
+      country: 1,
       "contact.email": 1,
       "publicPage.inquiryRecipientEmail": 1,
       "publicPage.formLocale": 1,
+      "publicPage.header.logoUrl": 1,
+      "publicPage.brandKit.accentColor": 1,
     })
     .lean();
 
@@ -219,6 +223,17 @@ export async function submitInquiry(
       clientEmail: email,
       clientName: name,
       ownerEmail: recipient,
+      brand: resolveWorkspaceBrand({
+        name: workspace.name,
+        publicPage: workspace.publicPage
+          ? {
+              header: { logoUrl: workspace.publicPage.header?.logoUrl },
+              brandKit: { accentColor: workspace.publicPage.brandKit?.accentColor },
+            }
+          : undefined,
+        contact: workspace.contact ? { email: workspace.contact.email } : undefined,
+      }),
+      country: workspace.country ?? null,
     });
   } catch (err) {
     console.error("[inquiry] client confirmation failed (non-fatal):", err);
