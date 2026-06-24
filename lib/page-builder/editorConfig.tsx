@@ -125,14 +125,17 @@ function Preview({
   label,
   lines,
   blockStyle,
+  puck,
 }: {
   label: string;
   lines: Array<string | null | undefined>;
   blockStyle?: BlockStyle;
+  puck?: { dragRef?: ((element: Element | null) => void) | null };
 }) {
   const shown = lines.filter((l): l is string => Boolean(l && l.trim()));
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       style={{
         border: "1px solid color-mix(in srgb, var(--pf-color-fg) 15%, transparent)",
         background: "var(--pf-color-bg)",
@@ -589,7 +592,7 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
     // All show* toggles are managed by the ContactDetailsPanel in StyleToolkitField
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, showEmail, showPhone, showAddress, showSocials }) => (
+  render: ({ _style, showEmail, showPhone, showAddress, showSocials, puck }) => (
     <Preview
       label="Contact Details"
       lines={[
@@ -598,6 +601,7 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
           .join(" · ") || "All fields hidden",
       ]}
       blockStyle={_style}
+      puck={puck}
     />
   ),
 };
