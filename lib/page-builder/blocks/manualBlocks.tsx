@@ -19,6 +19,7 @@ import {
   resolveBlockAttrs,
   asText,
   colorTokenToVar,
+  buildColorWithOpacity,
   productionStyleField,
   FLEX_JUSTIFY_MAP,
   FLEX_ALIGN_MAP,
@@ -311,30 +312,25 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   let tkBorderColor: string;
 
   if (_style?.buttonStyle === "outline") {
+    // Outline: transparent fill, always 2px border in the button color.
+    // borderWidth/borderColorToken from _style are ignored (deprecated in Pass 2).
     buttonBg = "transparent";
     buttonText = customTextColor ?? colorVar;
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
-    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? colorVar;
+    tkBorderWidth = "2px";
+    tkBorderColor = colorVar;
   } else if (_style?.buttonStyle === "soft") {
+    // Soft: tinted fill at 15%, no border. borderWidth/borderColorToken ignored (deprecated in Pass 2).
     buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
     buttonText = customTextColor ?? colorVar;
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
-    // Honor an explicit user border color; if only width was set (>0), use a visible fallback.
-    tkBorderColor = _style?.borderColorToken
-      ? (colorTokenToVar(_style.borderColorToken) ?? "var(--pf-color-fg)")
-      : _style?.borderWidth && _style.borderWidth > 0
-      ? "var(--pf-color-fg)"
-      : "transparent";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "solid") {
-    buttonBg = colorVar;
+    // Opacity applies to the fill; 100 is a no-op (no color-mix overhead).
+    // borderWidth/borderColorToken are ignored for named button styles (deprecated in Pass 2).
+    buttonBg = buildColorWithOpacity(colorVar, _style?.buttonOpacity ?? 100);
     buttonText = customTextColor ?? "var(--pf-color-bg)";
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
-    // Honor an explicit user border color; if only width was set (>0), use a visible fallback.
-    tkBorderColor = _style?.borderColorToken
-      ? (colorTokenToVar(_style.borderColorToken) ?? "var(--pf-color-fg)")
-      : _style?.borderWidth && _style.borderWidth > 0
-      ? "var(--pf-color-fg)"
-      : "transparent";
+    tkBorderWidth = "0px";
+    tkBorderColor = "transparent";
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
     const hasColor = _style?.buttonColorToken !== undefined;
@@ -346,7 +342,9 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
-  // Resolve toolkit styles for margins, shadow, font family/size overrides.
+  // Resolve toolkit styles for margins and font family/size overrides.
+  // Shadow and border-frame are intentionally NOT applied to buttons — they are
+  // deprecated fields for the button variant (old data is simply ignored).
   const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
 
   const wrapperStyle: React.CSSProperties = {
@@ -375,7 +373,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     borderRadius: tkBorderRadius,
     backgroundColor: buttonBg,
     color: buttonText,
-    ...(resolved.boxShadow && { boxShadow: resolved.boxShadow as string }),
+    // Shadow suppressed: button no longer reads _style.shadow (deprecated for buttons).
     ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
     ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
   };

@@ -439,7 +439,8 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.borderWidth).toBe("");
   });
 
-  it("a solid button honors an explicit border width + color", () => {
+  it("a solid button IGNORES borderWidth/borderColorToken — deprecated in Pass 2", () => {
+    // Named button styles (solid/soft/outline) no longer read borderWidth/borderColorToken.
     render(
       <ButtonBlock
         label="Btn"
@@ -449,8 +450,8 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    expect(a.style.borderWidth).toBe("3px");
-    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
   });
 
   it("_style.radius set → button uses px borderRadius (not var(--pf-radius))", () => {
@@ -465,12 +466,12 @@ describe("ButtonBlock", () => {
     expect(a.style.borderRadius).toBe("var(--pf-radius)");
   });
 
-  it("_style.shadow applies boxShadow to the <a> not the wrapper div", () => {
+  it("_style.shadow is IGNORED for buttons — shadow was deprecated in Pass 2 (old data back-compat)", () => {
+    // Shadow is no longer applied to buttons. Old saved buttons that carry `shadow`
+    // simply have it ignored on render so pages don't break.
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ shadow: "sm" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    const wrapper = a.parentElement as HTMLElement;
-    expect(a.style.boxShadow).not.toBe("");
-    expect(wrapper.style.boxShadow).toBe("");
+    expect(a.style.boxShadow).toBe("");
   });
 
   it("_style.borderColorToken changes border color independently of borderWidth", () => {
@@ -575,7 +576,8 @@ describe("ButtonBlock", () => {
     expect(a.style.color).toBe("var(--pf-color-secondary)");
   });
 
-  it("a soft button honors an explicit border width + color", () => {
+  it("a soft button uses 0px border (borderWidth/borderColorToken deprecated in Pass 2)", () => {
+    // Soft style: tinted fill at 15%, no border. Old _style.borderWidth data ignored.
     render(
       <ButtonBlock
         label="Btn"
@@ -585,8 +587,103 @@ describe("ButtonBlock", () => {
       />
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonOpacity=60 on solid: fill uses color-mix at 60%", () => {
+    // jsdom silently drops color-mix() from inline style; use server markup to assert the raw CSS.
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "primary", buttonOpacity: 60 }}
+      />
+    );
+    expect(html).toContain(
+      "background-color:color-mix(in srgb, var(--pf-color-primary) 60%, transparent)"
+    );
+  });
+
+  it("buttonOpacity=100 on solid: fill is the raw CSS variable (no color-mix overhead)", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "accent", buttonOpacity: 100 }}
+      />
+    );
+    expect(html).toContain("background-color:var(--pf-color-accent)");
+    expect(html).not.toContain("color-mix");
+  });
+
+  it("shadow in _style is IGNORED for buttons — no boxShadow applied to <a>", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", shadow: "lg" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.boxShadow).toBe("");
+  });
+
+  it("borderWidth in _style is IGNORED for solid buttons — border is always 0px", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", borderWidth: 5, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+  });
+
+  it("borderWidth in _style is IGNORED for outline buttons — always 2px with colorVar", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "outline", buttonColorToken: "primary", borderWidth: 10 }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.borderWidth).toBe("2px");
-    expect(a.style.borderColor).toBe("var(--pf-color-accent)");
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("borderWidth in _style is IGNORED for soft buttons — always 0px/transparent", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", borderWidth: 2, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonOpacity=50 on soft: applies to the tinted fill via color-mix", () => {
+    // Soft tinted bg = color-mix(15%); buttonOpacity further reduces that tinted color.
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", buttonColorToken: "accent", buttonOpacity: 50 }}
+      />
+    );
+    expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
   });
 });
 

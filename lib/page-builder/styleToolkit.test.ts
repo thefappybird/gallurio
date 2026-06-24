@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
+
+// ---------------------------------------------------------------------------
+// buildColorWithOpacity
+// ---------------------------------------------------------------------------
+
+describe("buildColorWithOpacity", () => {
+  it("returns the color unchanged when opacity is 100", () => {
+    expect(buildColorWithOpacity("var(--pf-color-primary)", 100)).toBe("var(--pf-color-primary)");
+  });
+});
 
 describe("highlight option constants", () => {
   it("exposes the three band shapes in order", () => {

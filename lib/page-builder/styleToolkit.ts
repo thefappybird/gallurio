@@ -95,6 +95,9 @@ export type BlockStyle = {
   textColorToken?: StyleColorToken | string;
   // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
   buttonColorToken?: StyleColorToken | string;
+  // Button fill opacity 0-100 (Button block only). Unset = effective 100. Applied via
+  // buildColorWithOpacity so it composes with each style variant (see manualBlocks.tsx).
+  buttonOpacity?: number;
   // Button visual style (solid/outline/soft) — overrides brand-kit default for this button.
   buttonStyle?: BrandKitButtonStyle;
   bold?: boolean;
@@ -166,6 +169,17 @@ export const FLEX_ALIGN_MAP: Record<NonNullable<BlockStyle["alignItems"]>, strin
   end: "flex-end",
   stretch: "stretch",
 };
+
+/**
+ * Mix a CSS color with transparency at the given opacity (0–100).
+ * Opacity >= 100 returns the color unchanged (no extra CSS overhead).
+ * Used by ButtonBlock for buttonOpacity. PortfolioHeader has a local copy
+ * that should be consolidated here when next touched.
+ */
+export function buildColorWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
+}
 
 /**
  * Read the plain text out of a stored text prop. Block text props are plain
