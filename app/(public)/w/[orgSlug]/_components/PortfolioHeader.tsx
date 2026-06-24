@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
 
 export type PortfolioHeaderLabels = {
   brand: string;
@@ -90,10 +91,6 @@ function buildBg(config: PortfolioHeaderConfig | null | undefined): string {
   return `color-mix(in srgb, ${bgColor} ${opacity}%, transparent)`;
 }
 
-function buildColorWithOpacity(color: string, opacity: number): string {
-  if (opacity >= 100) return color;
-  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
-}
 
 export function PortfolioHeader({
   slug,

@@ -673,8 +673,8 @@ describe("ButtonBlock", () => {
     expect(a.style.borderColor).toBe("transparent");
   });
 
-  it("buttonOpacity=50 on soft: applies to the tinted fill via color-mix", () => {
-    // Soft tinted bg = color-mix(15%); buttonOpacity further reduces that tinted color.
+  it("buttonOpacity on soft: soft retains its fixed 15% tint and intentionally ignores buttonOpacity", () => {
+    // Soft always uses the 15% tint; buttonOpacity is intentionally not applied on top.
     const html = renderToStaticMarkup(
       <ButtonBlock
         label="Btn"

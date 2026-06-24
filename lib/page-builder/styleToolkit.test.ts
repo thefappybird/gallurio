@@ -10,6 +10,12 @@ describe("buildColorWithOpacity", () => {
   it("returns the color unchanged when opacity is 100", () => {
     expect(buildColorWithOpacity("var(--pf-color-primary)", 100)).toBe("var(--pf-color-primary)");
   });
+
+  it("returns a color-mix expression at opacity < 100", () => {
+    expect(buildColorWithOpacity("var(--pf-color-accent)", 60)).toBe(
+      "color-mix(in srgb, var(--pf-color-accent) 60%, transparent)"
+    );
+  });
 });
 
 describe("highlight option constants", () => {
