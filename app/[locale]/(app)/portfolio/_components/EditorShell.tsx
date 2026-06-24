@@ -1213,10 +1213,10 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
+      <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-x-auto" role="group" aria-label={t("zone.sectionsLabel")}>
         {/* section-tabs wrapper: spans all five page tabs (Home → Contact Form)
             for the spotlight tour step 7 cutout. Excludes Preview. */}
-        <div className="flex flex-wrap items-center gap-1" data-tour-id="section-tabs">
+        <div className="flex flex-nowrap items-center gap-1" data-tour-id="section-tabs">
           {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
             const label =
               section === "header"
@@ -1242,6 +1242,7 @@ export function EditorShell({
                 variant={activeSection === section ? "default" : "outline"}
                 aria-pressed={activeSection === section}
                 data-tour-id={tourId}
+                className="shrink-0"
                 onClick={() => {
                   if (section === "header") void openHeader();
                   else if (section === "contact") openContact();
@@ -1262,6 +1263,7 @@ export function EditorShell({
           data-tour-id="preview-toggle"
           loading={previewLoading}
           disabled={previewLoading}
+          className="shrink-0"
           onClick={() => void togglePreview()}
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
@@ -1271,7 +1273,7 @@ export function EditorShell({
           title={t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
           onClick={() => window.open(previewBasePath, "_blank", "noopener,noreferrer")}
-          className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <ExternalLinkIcon className="size-4" aria-hidden />
         </button>

@@ -545,13 +545,20 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
   });
 
-  it("renders the Preview button as a sibling of the section tabs inside one flex-wrap row", async () => {
+  it("nav cluster uses flex-nowrap with overflow-x-auto so tabs scroll instead of wrapping", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const sectionGroup = screen.getByRole("group", { name: /sections/i });
+    expect(sectionGroup.className).toContain("flex-nowrap");
+    expect(sectionGroup.className).toContain("overflow-x-auto");
+    expect(sectionGroup.className).not.toContain("flex-wrap");
+  });
+
+  it("renders the Preview button as a sibling of the section tabs inside the nav cluster", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const preview = screen.getByRole("button", { name: /Preview/ });
     const sectionGroup = screen.getByRole("group", { name: /sections/i });
     // Preview must share the section-tab group's flex container (no orphaned second line).
     expect(preview.parentElement).toBe(sectionGroup);
-    expect(preview.parentElement?.className).toContain("flex-wrap");
   });
 
   it("renders the draft title above the toolbar below lg and between Drafts and Save changes on desktop", async () => {
