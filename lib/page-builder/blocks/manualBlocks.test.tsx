@@ -1184,3 +1184,79 @@ describe("defaultProps bgAnimation/bgSpeed (Item 4)", () => {
     expect(containerDefaultProps.bgSpeed).toBe("medium");
   });
 });
+
+// ---------------------------------------------------------------------------
+// B2a: Container/Columns padding — effective-default DISPLAY (prop stays unset)
+// ---------------------------------------------------------------------------
+
+describe("B2a: containerDefaultProps carries no padding (de-materialized)", () => {
+  it("containerDefaultProps._style has no paddingTop", () => {
+    expect(containerDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingRight", () => {
+    expect(containerDefaultProps._style?.paddingRight).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingBottom", () => {
+    expect(containerDefaultProps._style?.paddingBottom).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingLeft", () => {
+    expect(containerDefaultProps._style?.paddingLeft).toBeUndefined();
+  });
+});
+
+describe("B2a: columnsDefaultProps carries no padding (de-materialized)", () => {
+  it("columnsDefaultProps._style has no paddingTop", () => {
+    expect(columnsDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingRight", () => {
+    expect(columnsDefaultProps._style?.paddingRight).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingBottom", () => {
+    expect(columnsDefaultProps._style?.paddingBottom).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingLeft", () => {
+    expect(columnsDefaultProps._style?.paddingLeft).toBeUndefined();
+  });
+});
+
+describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
+  it("renders paddingTop 1.5rem when _style is undefined", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1.5rem");
+  });
+  it("renders all four sides 1.5rem when _style is undefined", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1.5rem");
+    expect(html).toContain("padding-right:1.5rem");
+    expect(html).toContain("padding-bottom:1.5rem");
+    expect(html).toContain("padding-left:1.5rem");
+  });
+  it("explicit _style.paddingTop overrides the fallback", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} _style={{ paddingTop: "3rem" }} />,
+    );
+    expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
+  it("renders top/bottom 1rem, left/right 1.5rem when _style has no padding", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1rem");
+    expect(html).toContain("padding-right:1.5rem");
+    expect(html).toContain("padding-bottom:1rem");
+    expect(html).toContain("padding-left:1.5rem");
+  });
+  it("explicit _style.paddingTop overrides the fallback", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "3rem" }} />,
+    );
+    expect(html).toContain("padding-top:3rem");
+  });
+});

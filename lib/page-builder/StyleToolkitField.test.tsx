@@ -829,6 +829,28 @@ describe("NumberInputRow (gap) — edit writes real value", () => {
   });
 });
 
+describe("B2a: Container padding — effective-default display (placeholder)", () => {
+  it("LayoutTabBody for Container shows placeholder '1.5' on padding Top input when _style has no padding", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{ minHeight: "auto" }}
+        setProp={() => {}}
+      />,
+    );
+    // Spacing drawer auto-opens; click Advanced to show per-side inputs
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    // DimensionInput uses a <span> label, so we query all spinbuttons; Top is first.
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    // First spinbutton is the Top padding number input
+    expect(spinbuttons[0].placeholder).toBe("1.5");
+  });
+});
+
 describe("Font select — edit writes real selected font key", () => {
   it("selecting a font from the dropdown calls the setter with the real fontFamily key", () => {
     const set = vi.fn();

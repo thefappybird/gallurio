@@ -499,15 +499,19 @@ export type ColumnsBlockProps = {
   content: Slot;
 };
 
+/** Effective padding constants for Columns — render fallback + control effectiveValue. */
+export const COLUMNS_EFFECTIVE_PAD = {
+  top: "1rem",
+  right: "1.5rem",
+  bottom: "1rem",
+  left: "1.5rem",
+} as const;
+
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
   content: [],
   _style: {
-    paddingTop: "1rem",
-    paddingRight: "1.5rem",
-    paddingBottom: "1rem",
-    paddingLeft: "1.5rem",
     gap: 16,
   },
 };
@@ -575,7 +579,15 @@ export function ColumnsBlock({
   return (
     <div
       ref={puck?.dragRef ?? undefined}
-      style={{ padding: "1rem 1.5rem", ...outerStyle, containerType: "inline-size", containerName: "pf-cols" }}
+      style={{
+        paddingTop: _style?.paddingTop ?? COLUMNS_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        ...outerStyle,
+        containerType: "inline-size",
+        containerName: "pf-cols",
+      }}
       {...resolveBlockAttrs(_style)}
     >
       {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.
@@ -641,6 +653,14 @@ export type ContainerBlockProps = {
   content: Slot;
 };
 
+/** Effective padding constants for Container — render fallback + control effectiveValue. */
+export const CONTAINER_EFFECTIVE_PAD = {
+  top: "1.5rem",
+  right: "1.5rem",
+  bottom: "1.5rem",
+  left: "1.5rem",
+} as const;
+
 export const containerDefaultProps: ContainerBlockProps = {
   backgroundImages: [],
   bgAnimation: "crossfade",
@@ -650,12 +670,6 @@ export const containerDefaultProps: ContainerBlockProps = {
   alignX: "left",
   alignY: "top",
   content: [],
-  _style: {
-    paddingTop: "1.5rem",
-    paddingRight: "1.5rem",
-    paddingBottom: "1.5rem",
-    paddingLeft: "1.5rem",
-  },
 };
 
 const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
@@ -743,7 +757,10 @@ export function ContainerBlock({
         flexGrow: 1,
         justifyContent: effectiveJustify,
         minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
-        padding: "1.5rem",
+        paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,

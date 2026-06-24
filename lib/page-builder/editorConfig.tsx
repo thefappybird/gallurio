@@ -789,12 +789,6 @@ const container: ComponentConfig<ContainerBlockProps> = {
   inline: true,
   defaultProps: {
     ...containerDefaultProps,
-    _style: {
-      paddingTop: "1.5rem",
-      paddingRight: "1.5rem",
-      paddingBottom: "1.5rem",
-      paddingLeft: "1.5rem",
-    },
   },
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,

@@ -204,25 +204,42 @@ export function DimensionInput({
   onChange,
   min,
   max,
+  effectiveValue,
 }: {
   label: string;
   value: string | undefined;
   onChange: (v: string | undefined) => void;
   min?: number;
   max?: number;
+  /**
+   * Show this CSS-length string as a placeholder when value is unset —
+   * indicates the block is following the theme default. Display-only;
+   * typing writes the real value, clearing reverts to this display.
+   */
+  effectiveValue?: string;
 }) {
-  function parse(raw: string | undefined): { n: string; unit: "px" | "%" } {
+  function parse(raw: string | undefined): { n: string; unit: "px" | "%" | "rem" } {
     if (!raw) return { n: "", unit: "px" };
     if (raw.endsWith("%")) return { n: raw.slice(0, -1), unit: "%" };
+    if (raw.endsWith("rem")) return { n: raw.slice(0, -3), unit: "rem" };
     if (raw.endsWith("px")) return { n: raw.slice(0, -2), unit: "px" };
     return { n: raw, unit: "px" };
   }
 
   // Persist the unit independently — clearing the number value must not reset the unit.
-  const [localUnit, setLocalUnit] = useState<"px" | "%">(() => parse(value).unit);
+  const [localUnit, setLocalUnit] = useState<"px" | "%">(() => {
+    const u = parse(value).unit;
+    return u === "rem" ? "px" : u;
+  });
   // When value is defined, reflect its actual unit; when undefined, keep the last known unit.
-  const activeUnit = value ? parse(value).unit : localUnit;
+  const parsedUnit = value ? parse(value).unit : localUnit;
+  const activeUnit: "px" | "%" = parsedUnit === "rem" ? "px" : parsedUnit;
   const n = value ? parse(value).n : "";
+
+  // Derive placeholder text from effectiveValue when value is unset.
+  const placeholder = value === undefined && effectiveValue !== undefined
+    ? parse(effectiveValue).n
+    : undefined;
 
   function compose(numStr: string, u: "px" | "%"): string | undefined {
     if (numStr === "") return undefined;
@@ -251,24 +268,35 @@ export function DimensionInput({
     onChange(`${num}${activeUnit}`);
   }
 
+  const isEffective = value === undefined && effectiveValue !== undefined;
+
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>{label}</span>
       <div className="flex items-center gap-1">
         <span className="flex">
           <input
             type="number"
             inputMode="numeric"
             value={n}
+            placeholder={placeholder}
             onChange={handleNumberChange}
             onBlur={handleBlur}
-            className="h-7 w-14 min-w-0 border border-border bg-background pl-2 pr-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              "h-7 w-14 min-w-0 border bg-background pl-2 pr-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective
+                ? "border-border/60 text-muted-foreground placeholder:text-muted-foreground/60"
+                : "border-border text-foreground",
+            )}
           />
           <select
             value={activeUnit}
             onChange={handleUnitChange}
             aria-label={`${label} unit`}
-            className="h-7 cursor-pointer border border-l-0 border-border bg-background px-1 text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              "h-7 cursor-pointer border border-l-0 bg-background px-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective ? "border-border/60 text-muted-foreground/60" : "border-border text-muted-foreground",
+            )}
           >
             <option value="px">px</option>
             <option value="%">%</option>

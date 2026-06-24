@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * StyleToolkitField — the block-level styling panel (`_style` custom Puck field).
@@ -75,6 +75,7 @@ import {
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
 import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
+import { CONTAINER_EFFECTIVE_PAD, COLUMNS_EFFECTIVE_PAD } from "./blocks/manualBlocks";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -730,18 +731,27 @@ export function CarouselTextPadding({
 // Padding controls — shared by LayoutTabBody (flex containers only)
 // ---------------------------------------------------------------------------
 
+type EffectivePad = { top: string; right: string; bottom: string; left: string };
+
 function PaddingControls({
   s,
   set,
+  effectivePad,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
+  effectivePad?: EffectivePad;
 }) {
   const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight ? s.paddingLeft : undefined;
   const paddingY =
     s.paddingTop !== undefined && s.paddingTop === s.paddingBottom ? s.paddingTop : undefined;
+  // Collapsed-mode effective values: only show when L===R or T===B respectively.
+  const effectiveX =
+    effectivePad && effectivePad.left === effectivePad.right ? effectivePad.left : undefined;
+  const effectiveY =
+    effectivePad && effectivePad.top === effectivePad.bottom ? effectivePad.top : undefined;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -764,21 +774,23 @@ function PaddingControls({
       </div>
       {paddingAdvanced ? (
         <div className="flex flex-col gap-2">
-          <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
-          <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
-          <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
-          <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
+          <DimensionInput label="Top" value={s.paddingTop} effectiveValue={effectivePad?.top} onChange={(v) => set({ paddingTop: v })} />
+          <DimensionInput label="Right" value={s.paddingRight} effectiveValue={effectivePad?.right} onChange={(v) => set({ paddingRight: v })} />
+          <DimensionInput label="Bottom" value={s.paddingBottom} effectiveValue={effectivePad?.bottom} onChange={(v) => set({ paddingBottom: v })} />
+          <DimensionInput label="Left" value={s.paddingLeft} effectiveValue={effectivePad?.left} onChange={(v) => set({ paddingLeft: v })} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <DimensionInput
             label="Horizontal (X)"
             value={paddingX}
+            effectiveValue={effectiveX}
             onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
           />
           <DimensionInput
             label="Vertical (Y)"
             value={paddingY}
+            effectiveValue={effectiveY}
             onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
           />
         </div>
@@ -1239,6 +1251,13 @@ export function LayoutTabBody({
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
 
+  // Effective padding for the plain Container and Columns blocks only.
+  // Preset blocks have explicit curated padding already baked in -- no effectivePad.
+  const effectivePad: EffectivePad | undefined =
+    blockType === "Container" ? CONTAINER_EFFECTIVE_PAD :
+    blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
+    undefined;
+
   if (isGalleryLayout && p && setProp) {
     if (isGalleryContainer) {
       // Gallery container blocks: gallery-specific controls (columns/gap) + container
@@ -1396,7 +1415,7 @@ export function LayoutTabBody({
   return (
     <EditorDrawerGroup>
       <EditorDrawerSection title="Spacing">
-        {(isFlexContainer || isColumns) && <PaddingControls s={s} set={set} />}
+        {(isFlexContainer || isColumns) && <PaddingControls s={s} set={set} effectivePad={effectivePad} />}
       </EditorDrawerSection>
       <EditorDrawerSection title="Layout">
         <NumberInputRow
