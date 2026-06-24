@@ -50,7 +50,7 @@ import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { SpotlightGuide } from "./SpotlightGuide";
-import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
@@ -1054,10 +1054,23 @@ export function EditorShell({
     if (!guideDismissed) openEntryAfterGuide();
   }
 
+  function resetGuideCanvas() {
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    setRenderDraftData({ home: EMPTY_ZONE, gallery: EMPTY_ZONE });
+    setPuckSeed(prepareForEditor(EMPTY_ZONE));
+    setSeedNonce((n) => n + 1);
+    setDragBaseline(0);
+  }
+
   function handleGuideStepChange(next: number) {
-    // Capture baseline content count when entering the drag-block step
     const currentId = SPOTLIGHT_STEPS[next]?.id;
-    if (currentId === "drag-block") {
+
+    if (guideMode && shouldResetGuideCanvasOnStep(currentId ?? "", puckContentCount > 0)) {
+      // Back to drag-block: wipe the scratch canvas so step 2 starts blank and
+      // its drop-gate re-arms correctly.
+      resetGuideCanvas();
+    } else if (currentId === "drag-block") {
+      // Forward to drag-block: capture the current count as the new baseline.
       setDragBaseline(puckContentCount);
     }
 

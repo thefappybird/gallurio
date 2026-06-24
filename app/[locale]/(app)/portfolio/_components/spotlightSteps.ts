@@ -246,6 +246,16 @@ export function guidePanelActions(
 }
 
 /**
+ * Returns true when navigating to `nextStepId` requires resetting the guide
+ * canvas to empty. The drag-block step must start with a blank canvas so its
+ * drop-gate re-arms correctly on Back; reset is only needed when there is
+ * already content on the canvas (`hasContent`).
+ */
+export function shouldResetGuideCanvasOnStep(nextStepId: string, hasContent: boolean): boolean {
+  return nextStepId === "drag-block" && hasContent;
+}
+
+/**
  * Dispatches the computed panel actions to concrete callbacks. All branching
  * is isolated here so the EditorShell call site is a single non-branching
  * expression.

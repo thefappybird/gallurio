@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SPOTLIGHT_STEPS, guideStepPanel, guidePanelActions, applyGuidePanelActions } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guideStepPanel, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 
 describe("SPOTLIGHT_STEPS", () => {
   it("style tab steps appear in Content → Design → Layout order", () => {
@@ -96,6 +96,20 @@ describe("guidePanelActions", () => {
     // none step + both closed -> all false
     expect(guidePanelActions("drag-block", { headerOpen: false, contactOpen: false }))
       .toEqual({ openHeader: false, openContact: false, closeHeader: false, closeContact: false });
+  });
+});
+
+describe("shouldResetGuideCanvasOnStep", () => {
+  it("returns true when navigating to drag-block with content present", () => {
+    expect(shouldResetGuideCanvasOnStep("drag-block", true)).toBe(true);
+  });
+
+  it("returns false when navigating to drag-block with no content (blank canvas — no reset needed)", () => {
+    expect(shouldResetGuideCanvasOnStep("drag-block", false)).toBe(false);
+  });
+
+  it("returns false for other step ids regardless of content", () => {
+    expect(shouldResetGuideCanvasOnStep("properties-panel", true)).toBe(false);
   });
 });
 
