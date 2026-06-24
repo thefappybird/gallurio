@@ -155,11 +155,11 @@ describe("SpotlightGuide", () => {
     expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
   });
 
-  it("Finish calls onFinish(false) when clicked without dont-show-again", () => {
+  it("Finish calls onFinish(true) — completing the tour persists dismissal", () => {
     const onFinish = vi.fn();
     renderGuide({ stepIndex: STEPS.length - 1, onFinish });
     fireEvent.click(screen.getByRole("button", { name: /^Finish$/i }));
-    expect(onFinish).toHaveBeenCalledWith(false);
+    expect(onFinish).toHaveBeenCalledWith(true);
   });
 
   // ── Overlay click-blocking (gated robustness) ────────────────────────────────
@@ -183,27 +183,47 @@ describe("SpotlightGuide", () => {
 
   // ── Skip ─────────────────────────────────────────────────────────────────────
 
-  it("'Skip Guide' on the first step calls onSkip(false)", () => {
+  it("clicking 'Skip Guide' opens the confirm dialog and does NOT call onSkip", () => {
     const onSkip = vi.fn();
     renderGuide({ stepIndex: 0, onSkip });
     fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
-    expect(onSkip).toHaveBeenCalledWith(false);
+    // Confirm dialog should now be visible
+    expect(screen.getByRole("dialog", { name: /Skip the guide\?/i })).toBeInTheDocument();
+    expect(onSkip).not.toHaveBeenCalled();
   });
 
-  // ── Don't show again ─────────────────────────────────────────────────────────
-
-  it("'Don't show again' calls onSkip(true) on a non-last step", () => {
+  it("confirm modal 'Don't show again' calls onSkip(true)", () => {
     const onSkip = vi.fn();
-    renderGuide({ stepIndex: 1, onSkip });
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
     fireEvent.click(screen.getByRole("button", { name: /Don't show again/i }));
     expect(onSkip).toHaveBeenCalledWith(true);
   });
 
-  it("'Don't show again' calls onFinish(true) on the last step", () => {
-    const onFinish = vi.fn();
-    renderGuide({ stepIndex: STEPS.length - 1, onFinish });
-    fireEvent.click(screen.getByRole("button", { name: /Don't show again/i }));
-    expect(onFinish).toHaveBeenCalledWith(true);
+  it("confirm modal 'Skip Guide' button calls onSkip(false)", () => {
+    const onSkip = vi.fn();
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
+    // The modal has its own "Skip Guide" button; get all and use the last one
+    const skipBtns = screen.getAllByRole("button", { name: /^Skip Guide$/i });
+    fireEvent.click(skipBtns[skipBtns.length - 1]);
+    expect(onSkip).toHaveBeenCalledWith(false);
+  });
+
+  it("confirm modal 'Back' closes the dialog without calling onSkip", () => {
+    const onSkip = vi.fn();
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
+    expect(screen.getByRole("dialog", { name: /Skip the guide\?/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Back$/i }));
+    expect(screen.queryByRole("dialog", { name: /Skip the guide\?/i })).toBeNull();
+    expect(onSkip).not.toHaveBeenCalled();
+  });
+
+  it("footer never renders a 'Don't show again' button (it lives only in the confirm modal)", () => {
+    // Render on a non-last step — "Don't show again" should be absent from footer
+    renderGuide({ stepIndex: 1 });
+    expect(screen.queryByRole("button", { name: /Don't show again/i })).toBeNull();
   });
 
   // ── Esc closes ───────────────────────────────────────────────────────────────
@@ -339,22 +359,18 @@ describe("SpotlightGuide", () => {
 
   // ── Skip Guide (persistent) ──────────────────────────────────────────────────
 
-  it("renders 'Skip Guide' button on a non-first step and clicking it calls onSkip(false)", () => {
-    const onSkip = vi.fn();
-    renderGuide({ stepIndex: 2, onSkip });
+  it("renders 'Skip Guide' button on a non-first step", () => {
+    renderGuide({ stepIndex: 2 });
     const btn = screen.getByRole("button", { name: /^Skip Guide$/i });
     expect(btn).toBeInTheDocument();
-    fireEvent.click(btn);
-    expect(onSkip).toHaveBeenCalledWith(false);
   });
 
-  // ── Footer layout: gated step with all 4 buttons ─────────────────────────────
+  // ── Footer layout: gated step ─────────────────────────────────────────────────
 
-  it("unsatisfied gated non-first step shows Don't show again + Back, but no Skip-this-step and no Next", () => {
+  it("unsatisfied gated non-first step shows Back but no Next", () => {
     // STEPS[2] is gated; stepIndex=2 → not first, not last, gated, unsatisfied
     renderGuide({ stepIndex: 2, gateSatisfied: false });
 
-    expect(screen.getByRole("button", { name: /Don't show again/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Back$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
@@ -391,5 +407,50 @@ describe("SpotlightGuide", () => {
 
     removeA();
     removeB();
+  });
+
+  // ── Step-change transition ────────────────────────────────────────────────────
+
+  it("card data-tour-transition is 'out' after stepIndex changes, then 'in' after 160ms", () => {
+    vi.useFakeTimers();
+    const { rerender } = renderGuide({ stepIndex: 0 });
+
+    act(() => {
+      rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
+    });
+
+    // Flush the setTimeout(0) that sets transitioning=true
+    act(() => {
+      vi.advanceTimersByTime(0);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("data-tour-transition")).toBe("out");
+
+    act(() => {
+      vi.advanceTimersByTime(160);
+    });
+
+    expect(dialog.getAttribute("data-tour-transition")).toBe("in");
+
+    vi.useRealTimers();
+  });
+
+  it("reduced-motion path: data-tour-transition stays 'in' even after stepIndex changes", () => {
+    vi.useFakeTimers();
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+
+    const { rerender } = renderGuide({ stepIndex: 0 });
+
+    act(() => {
+      rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
+    });
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.getAttribute("data-tour-transition")).toBe("in");
+
+    window.matchMedia = originalMatchMedia;
+    vi.useRealTimers();
   });
 });

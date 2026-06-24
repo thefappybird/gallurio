@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
@@ -64,6 +65,13 @@ const L = {
   dontShow: "Don't show again",
   tryIt: "Try it to continue to the next step",
   progress: (n: number, total: number) => `${n} of ${total}`,
+  skipConfirm: {
+    heading: "Skip the guide?",
+    body: "You'll lose your place in the walkthrough. You can restart it anytime.",
+    back: "Back",
+    dontShow: "Don't show again",
+    skip: "Skip Guide",
+  },
 };
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -161,13 +169,15 @@ function DimWithCutout({
   secondaryRect,
   gated,
   passthrough,
+  suppressHole,
 }: {
   rect: ElementRect | null;
   secondaryRect: ElementRect | null;
   gated: boolean;
   passthrough: boolean;
+  suppressHole: boolean;
 }) {
-  const hasCutout = rect !== null && (rect.width > 0 || rect.height > 0);
+  const hasCutout = !suppressHole && rect !== null && (rect.width > 0 || rect.height > 0);
   const hasSecondaryCutout = secondaryRect !== null && (secondaryRect.width > 0 || secondaryRect.height > 0);
   const pad = CUTOUT_PADDING;
 
@@ -293,6 +303,97 @@ function DimWithCutout({
   );
 }
 
+// ─── Skip Confirm Modal ───────────────────────────────────────────────────────
+
+type SkipConfirmModalProps = {
+  onBack: () => void;
+  onDontShow: () => void;
+  onSkip: () => void;
+};
+
+function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps) {
+  const backRef = useRef<HTMLButtonElement | null>(null);
+
+  // Focus the Back button when the modal mounts
+  useEffect(() => {
+    const id = setTimeout(() => {
+      backRef.current?.focus({ preventScroll: true });
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Escape") onBack();
+    },
+    [onBack]
+  );
+
+  return createPortal(
+    <>
+      {/* Backdrop */}
+      <div
+        aria-hidden
+        className="fixed inset-0"
+        style={{ zIndex: 9994, background: "rgba(0,0,0,0.4)" }}
+      />
+      {/* Modal */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={L.skipConfirm.heading}
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
+          "flex flex-col gap-3 rounded-[var(--radius-surface)]",
+          "border border-border bg-popover text-popover-foreground",
+          "p-5 shadow-lg outline-none"
+        )}
+        style={{ zIndex: 9995, width: 320, maxWidth: "calc(100vw - 24px)" }}
+      >
+        <h2 className="text-sm font-semibold text-foreground">
+          {L.skipConfirm.heading}
+        </h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {L.skipConfirm.body}
+        </p>
+        <div className="flex flex-col gap-1.5">
+          <Button
+            ref={backRef}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 w-full px-3 text-xs"
+            onClick={onBack}
+          >
+            {L.skipConfirm.back}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-full px-2 text-xs text-muted-foreground"
+            onClick={onDontShow}
+          >
+            {L.skipConfirm.dontShow}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 w-full px-2 text-xs text-muted-foreground"
+            onClick={onSkip}
+          >
+            {L.skipConfirm.skip}
+          </Button>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
 // ─── Tooltip Card ────────────────────────────────────────────────────────────
 
 type TooltipCardProps = {
@@ -301,6 +402,7 @@ type TooltipCardProps = {
   total: number;
   rect: ElementRect | null;
   gateSatisfied: boolean;
+  transitioning: boolean;
   onBack: () => void;
   onNext: () => void;
   onSkip: (dontShowAgain: boolean) => void;
@@ -315,6 +417,7 @@ function TooltipCard({
   total,
   rect,
   gateSatisfied,
+  transitioning,
   onBack,
   onNext,
   onSkip,
@@ -324,6 +427,7 @@ function TooltipCard({
 }: TooltipCardProps) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === total - 1;
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const isGated = step.gated === true;
   // On an actionable (gated) step, Next is hidden until the user performs the
   // action. Once satisfied (incl. when stepping Back onto a completed step) the
@@ -357,10 +461,13 @@ function TooltipCard({
       aria-label={step.title}
       tabIndex={-1}
       onKeyDown={onKeyDown}
+      data-tour-transition={transitioning ? "out" : "in"}
       className={cn(
         "fixed flex flex-col gap-3 rounded-[var(--radius-surface)]",
         "border border-border bg-popover text-popover-foreground",
-        "p-4 shadow-lg outline-none"
+        "p-4 shadow-lg outline-none",
+        "transition-opacity duration-150 motion-reduce:transition-none",
+        transitioning ? "opacity-0" : "opacity-100"
       )}
       style={{
         zIndex: 9991,
@@ -412,27 +519,27 @@ function TooltipCard({
         ))}
       </div>
 
+      {/* Skip confirm modal (portaled) */}
+      {showSkipConfirm && (
+        <SkipConfirmModal
+          onBack={() => setShowSkipConfirm(false)}
+          onDontShow={() => onSkip(true)}
+          onSkip={() => onSkip(false)}
+        />
+      )}
+
       {/* Footer */}
       <div className="flex flex-col gap-1.5">
-        {/* Secondary actions — Skip Guide (always visible) + Don't show again */}
+        {/* Secondary actions — Skip Guide (opens confirm modal) */}
         <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() => onSkip(false)}
+            onClick={() => setShowSkipConfirm(true)}
           >
             {L.skip}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() => (isLast ? onFinish(true) : onSkip(true))}
-          >
-            {L.dontShow}
           </Button>
         </div>
 
@@ -457,7 +564,7 @@ function TooltipCard({
               type="button"
               size="sm"
               className="h-7 px-3 text-xs"
-              onClick={() => onFinish(false)}
+              onClick={() => onFinish(true)}
             >
               {L.finish}
             </Button>
@@ -545,6 +652,37 @@ export function SpotlightGuide({
     return () => clearTimeout(id);
   }, [open, stepIndex]);
 
+  // Step-change fade: briefly suppress the cutout hole and hide the card so the
+  // anchor rect can settle before we reveal the new position. Only fires on
+  // step _changes_ (not on first mount). Skip when prefers-reduced-motion.
+  const [transitioning, setTransitioning] = useState(false);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (!open) return;
+    // SSR-safe reduced-motion check
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    let id: ReturnType<typeof setTimeout>;
+    // Use setTimeout(0) so the state update is deferred out of the effect body
+    // (avoids react-hooks/set-state-in-effect lint error from sync setState).
+    const startId = setTimeout(() => {
+      setTransitioning(true);
+      id = setTimeout(() => setTransitioning(false), 160);
+    }, 0);
+    return () => {
+      clearTimeout(startId);
+      clearTimeout(id);
+    };
+  }, [open, stepIndex]);
+
   const handleBack = useCallback(() => {
     if (stepIndex > 0) onStepChange(stepIndex - 1);
   }, [stepIndex, onStepChange]);
@@ -574,6 +712,7 @@ export function SpotlightGuide({
         secondaryRect={hasMeaningfulSecondaryRect ? secondaryRect : null}
         gated={step.gated === true}
         passthrough={step.passthrough === true}
+        suppressHole={transitioning}
       />
       <TooltipCard
         step={step}
@@ -581,6 +720,7 @@ export function SpotlightGuide({
         total={steps.length}
         rect={rect}
         gateSatisfied={gateSatisfied}
+        transitioning={transitioning}
         onBack={handleBack}
         onNext={handleNext}
         onSkip={onSkip}
