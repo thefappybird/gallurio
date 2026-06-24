@@ -42,7 +42,27 @@ export function PreviewBrandShell({
       const draft = JSON.parse(raw) as DraftShape;
       if (draft.version !== LOCAL_DRAFT_VERSION) return;
       if (!draft.brandKit) return;
-      const resolved = resolveBrandKit(draft.brandKit);
+      // Shallow-validate required primitive fields before calling resolveBrandKit.
+      // A structurally-present but malformed brandKit (e.g. {}) would produce
+      // broken styles like pf-theme-undefined / var(--font-undefined) instead of
+      // falling back gracefully. fontPair/headingFont/bodyFont are excluded —
+      // resolveBrandKit already handles them defensively.
+      const bk = draft.brandKit;
+      const requiredStrings = [
+        "primaryColor",
+        "secondaryColor",
+        "accentColor",
+        "backgroundColor",
+        "foregroundColor",
+        "radius",
+        "themePreset",
+        "buttonStyle",
+      ] as const satisfies (keyof PortfolioBrandKit)[];
+      const isValid = requiredStrings.every(
+        (k) => typeof bk[k] === "string" && (bk[k] as string).length > 0,
+      );
+      if (!isValid) return;
+      const resolved = resolveBrandKit(bk);
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs localStorage draft (external store) into React state on mount; server fallbackCssVars is already the initial state
       setCssVars(resolved.cssVars);
       setClassName(resolved.className);
@@ -53,7 +73,6 @@ export function PreviewBrandShell({
 
   return (
     <div
-      data-testid="preview-brand-shell"
       style={{
         ...(cssVars as React.CSSProperties),
         minHeight: "100dvh",

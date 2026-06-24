@@ -26,7 +26,7 @@ describe("PreviewBrandShell", () => {
       }),
     );
 
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#ffffff" }}
@@ -36,7 +36,7 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
     // Draft backgroundColor is #123456, so --pf-color-bg should be the draft value
     expect(style).toContain("--pf-color-bg: #123456");
@@ -58,7 +58,7 @@ describe("PreviewBrandShell", () => {
       }),
     );
 
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{}}
@@ -68,13 +68,13 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     expect(wrapper.className).toContain("pf-theme-editorial");
     expect(wrapper.className).toContain("pf-button-outline");
   });
 
   it("falls back to fallbackCssVars when no draft is present", () => {
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#aabbcc" }}
@@ -84,7 +84,7 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
     expect(style).toContain("--pf-color-bg: #aabbcc");
     expect(wrapper.className).toContain("pf-theme-minimal");
@@ -93,7 +93,7 @@ describe("PreviewBrandShell", () => {
   it("falls back to fallbackCssVars when draft is malformed", () => {
     window.localStorage.setItem(KEY, "not-valid-json{{{");
 
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#ffeecc" }}
@@ -103,7 +103,7 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
     expect(style).toContain("--pf-color-bg: #ffeecc");
     expect(wrapper.className).toContain("pf-theme-bold");
@@ -118,7 +118,7 @@ describe("PreviewBrandShell", () => {
       }),
     );
 
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#ffffff" }}
@@ -128,7 +128,7 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
     expect(style).toContain("--pf-color-bg: #ffffff");
   });
@@ -142,7 +142,7 @@ describe("PreviewBrandShell", () => {
       }),
     );
 
-    render(
+    const { container } = render(
       <PreviewBrandShell
         slug={SLUG}
         fallbackCssVars={{ "--pf-color-bg": "#ffffff" }}
@@ -152,7 +152,7 @@ describe("PreviewBrandShell", () => {
       </PreviewBrandShell>,
     );
 
-    const wrapper = screen.getByTestId("preview-brand-shell");
+    const wrapper = container.firstChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
     expect(style).toContain("--pf-color-bg: #ffffff");
   });
@@ -169,5 +169,34 @@ describe("PreviewBrandShell", () => {
     );
 
     expect(screen.getByTestId("inner")).toBeInTheDocument();
+  });
+
+  it("falls back when draft brandKit is structurally present but malformed (missing required fields)", () => {
+    // A draft with version 2 and a brandKit object that lacks required color/radius/themePreset fields
+    window.localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        version: 2,
+        brandKit: {},
+      }),
+    );
+
+    const { container } = render(
+      <PreviewBrandShell
+        slug={SLUG}
+        fallbackCssVars={{ "--pf-color-bg": "#fallback" }}
+        fallbackClassName="pf-theme-minimal pf-button-solid"
+      >
+        <span>content</span>
+      </PreviewBrandShell>,
+    );
+
+    const wrapper = container.firstChild as HTMLElement;
+    const style = wrapper.getAttribute("style") ?? "";
+    // Must use fallback — no pf-theme-undefined
+    expect(style).not.toContain("pf-theme-undefined");
+    expect(wrapper.className).not.toContain("pf-theme-undefined");
+    expect(wrapper.className).toContain("pf-theme-minimal");
+    expect(style).toContain("--pf-color-bg: #fallback");
   });
 });
