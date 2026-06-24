@@ -90,10 +90,11 @@ export const CONTAINER_TYPES = new Set([
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
-// Frame (border/radius/shadow) is hidden for text/spacer leaf blocks.
+// Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
+// Button has its own consolidated design controls (see DesignTab isButton branch).
 // GalleryGrid, GalleryMasonry, and FeaturedWork are container-like and DO show Frame.
 const NO_FRAME_BLOCKS = new Set([
-  "Heading", "Text", "Divider", "Spacer",
+  "Heading", "Text", "Divider", "Spacer", "Button",
 ]);
 // Gallery blocks that support banner/container props: same tab set as Container minus Typography.
 export const GALLERY_CONTAINER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
@@ -842,25 +843,16 @@ export function DesignTab({
               </>
             )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="text-xs text-muted-foreground">Text color</span>
-            </div>
-            <ColorSwatchRow
-              value={s.textColorToken}
-              onChange={(t) => set({ textColorToken: t })}
-            />
-          </div>
-          {isButton && (
+          {/* Text color: shown in Typography for non-button blocks; Button has it in the Button section. */}
+          {!isButton && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
-                <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="text-xs text-muted-foreground">Button color</span>
+                <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">Text color</span>
               </div>
               <ColorSwatchRow
-                value={s.buttonColorToken}
-                onChange={(t) => set({ buttonColorToken: t })}
+                value={s.textColorToken}
+                onChange={(t) => set({ textColorToken: t })}
               />
             </div>
           )}
@@ -937,6 +929,67 @@ export function DesignTab({
               )}
             </div>
           )}
+        </EditorDrawerSection>
+      )}
+
+      {/* Button section — consolidated design controls for the Button block only.
+          Order matches the brief: color → opacity → text color → radius → style. */}
+      {isButton && (
+        <EditorDrawerSection title="Button">
+          {/* 1. Button color */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="text-xs text-muted-foreground">Button color</span>
+            </div>
+            <ColorSwatchRow
+              value={s.buttonColorToken}
+              onChange={(t) => set({ buttonColorToken: t })}
+            />
+          </div>
+          {/* 2. Button opacity — effective 100 when unset (prop stays unset until edited) */}
+          <NumberInputRow
+            label="Button opacity"
+            value={s.buttonOpacity}
+            min={0}
+            max={100}
+            suffix="%"
+            effectiveValue={100}
+            onChange={(v) => set({ buttonOpacity: v })}
+          />
+          {/* 3. Button text color */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="text-xs text-muted-foreground">Button text color</span>
+            </div>
+            <ColorSwatchRow
+              value={s.textColorToken}
+              onChange={(t) => set({ textColorToken: t })}
+            />
+          </div>
+          {/* 4. Corner radius */}
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
+          {/* 5. Button style */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
+            <div className="flex items-center gap-1.5">
+              {(["solid", "outline", "soft"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={s.buttonStyle === v}
+                  onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
         </EditorDrawerSection>
       )}
 
@@ -1291,25 +1344,7 @@ export function LayoutTabBody({
       <EditorDrawerGroup>
         {isButton && p && setProp && (
           <EditorDrawerSection title="Layout">
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
-              <div className="flex items-center gap-1.5">
-                {(["solid", "outline", "soft"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={s.buttonStyle === v}
-                    onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
-                    className={cn(
-                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
-                    )}
-                  >
-                    {v.charAt(0).toUpperCase() + v.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Button style and Corner radius moved to Design tab → Button section (Pass 2). */}
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
               <div className="flex items-center gap-1.5">
@@ -1330,7 +1365,6 @@ export function LayoutTabBody({
                 ))}
               </div>
             </div>
-            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={layoutEffectiveRadius} />
             <IconRow
               label="Block position"
               value={s.selfAlign}

@@ -314,7 +314,7 @@ describe("RadiusButtons", () => {
 });
 
 describe("Button style section — corner radius picker", () => {
-  it("LayoutTabBody for Button shows a Corner radius picker (flat single-section, always visible)", () => {
+  it("LayoutTabBody for Button does NOT show Corner radius (moved to Design tab in Pass 2)", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -326,8 +326,64 @@ describe("Button style section — corner radius picker", () => {
         setProp={() => {}}
       />,
     );
-    // Button has one Layout section — rendered flat (no accordion), Corner radius always visible.
+    // Corner radius moved to Design tab Button section in Pass 2.
+    expect(screen.queryByText("Corner radius")).toBeNull();
+  });
+
+  it("LayoutTabBody for Button does NOT show 'Button style' picker in Layout (moved to Design)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Button"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.queryByText("Button style")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pass 2: Button Design tab consolidation
+// ---------------------------------------------------------------------------
+
+describe("DesignTab — Button block shows consolidated button controls", () => {
+  it("DesignTab for Button shows 'Button color' in the expanded Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    // Button section is collapsed by default; expand it first.
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button color")).toBeTruthy();
+  });
+
+  it("DesignTab for Button shows a 'Button opacity' input in the expanded Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button opacity")).toBeTruthy();
+  });
+
+  it("DesignTab for Button does NOT show Frame section (border/shadow)", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.queryByText("Border width")).toBeNull();
+    expect(screen.queryByText("Shadow")).toBeNull();
+  });
+
+  it("DesignTab for Button shows Corner radius in Design tab", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
     expect(screen.getByText("Corner radius")).toBeTruthy();
+  });
+
+  it("DesignTab for Button shows Button style picker (Solid/Outline/Soft) in the Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button style")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Solid" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Outline" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Soft" })).toBeTruthy();
   });
 });
 
@@ -601,26 +657,19 @@ describe("LayoutTabBody — Min height buttons show effective default 'auto' whe
   });
 });
 
-describe("LayoutTabBody Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
+describe("DesignTab Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
   it("shows None as aria-pressed for Button block when brand radius is 'sharp' and block radius unset", () => {
-    // Uses "None" preset (value=0) which is unique in the LayoutTabBody Button — unlike "S"/"M"/"L"
-    // which collide with the size picker buttons.
+    // Radius moved from LayoutTabBody to DesignTab Button section in Pass 2.
     render(
       <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "sharp" }}>
-        <LayoutTabBody
-          s={{}}
-          set={() => {}}
-          isGridChild={false}
-          showJustify={false}
-          blockType="Button"
-          p={{}}
-          setProp={() => {}}
-        />
+        <DesignTab s={{}} set={vi.fn()} blockType="Button" />
       </BrandColorsContext.Provider>
     );
-    // "None" appears only in RadiusButtons (the size picker uses S/M/L), so this is unique.
-    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+    // Expand the Button section to reveal RadiusButtons.
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    // "None" is unique (the size picker S/M/L has no overlap with RadiusButtons' None/S/M/L/Full).
+    expect(screen.getAllByRole("button", { name: "None" })[0]).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button", { name: "Full" })[0]).toHaveAttribute("aria-pressed", "false");
   });
 });
 
