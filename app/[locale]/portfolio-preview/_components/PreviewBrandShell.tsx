@@ -2,22 +2,38 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
-import type { PortfolioBrandKit } from "@/lib/page-builder/types";
+import type {
+  PortfolioBrandKit,
+  PortfolioHeaderConfig,
+} from "@/lib/page-builder/types";
+import {
+  PreviewDraftContext,
+  type PreviewDraftConfigs,
+} from "./PreviewDraftContext";
 
 const LOCAL_DRAFT_VERSION = 2;
 
 type DraftShape = {
   version?: number;
   brandKit?: PortfolioBrandKit;
+  headerConfig?: PortfolioHeaderConfig;
+};
+
+const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
+  headerConfig: null,
+  contact: null,
+  collectionsPopup: null,
 };
 
 /**
  * Client shell that wraps the portfolio preview with the unsaved (localStorage)
  * brand kit when present, falling back to the DB-resolved CSS vars otherwise.
  *
- * This ensures the preview always matches the canvas — theme changes the owner
- * has NOT yet saved are still visible here. A brief flash of the DB theme before
- * the effect runs is acceptable: this is an owner-only preview surface.
+ * Also reads headerConfig from the draft and provides it via PreviewDraftContext
+ * so PreviewHeaderShell can override the DB-resolved fallback.
+ *
+ * A brief flash of the DB fallback before the effect runs is acceptable: this is
+ * an owner-only preview surface.
  *
  * Blocks consume `var(--pf-*)` CSS variables — no React brand context is needed.
  */
@@ -34,6 +50,7 @@ export function PreviewBrandShell({
 }) {
   const [cssVars, setCssVars] = useState<Record<string, string>>(fallbackCssVars);
   const [className, setClassName] = useState<string>(fallbackClassName);
+  const [draftConfigs, setDraftConfigs] = useState<PreviewDraftConfigs>(EMPTY_DRAFT_CONFIGS);
 
   useEffect(() => {
     try {
@@ -41,47 +58,59 @@ export function PreviewBrandShell({
       if (!raw) return;
       const draft = JSON.parse(raw) as DraftShape;
       if (draft.version !== LOCAL_DRAFT_VERSION) return;
-      if (!draft.brandKit) return;
-      // Shallow-validate required primitive fields before calling resolveBrandKit.
-      // A structurally-present but malformed brandKit (e.g. {}) would produce
-      // broken styles like pf-theme-undefined / var(--font-undefined) instead of
-      // falling back gracefully. fontPair/headingFont/bodyFont are excluded —
-      // resolveBrandKit already handles them defensively.
-      const bk = draft.brandKit;
-      const requiredStrings = [
-        "primaryColor",
-        "secondaryColor",
-        "accentColor",
-        "backgroundColor",
-        "foregroundColor",
-        "radius",
-        "themePreset",
-        "buttonStyle",
-      ] as const satisfies (keyof PortfolioBrandKit)[];
-      const isValid = requiredStrings.every(
-        (k) => typeof bk[k] === "string" && (bk[k] as string).length > 0,
-      );
-      if (!isValid) return;
-      const resolved = resolveBrandKit(bk);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs localStorage draft (external store) into React state on mount; server fallbackCssVars is already the initial state
-      setCssVars(resolved.cssVars);
-      setClassName(resolved.className);
+
+      // --- brandKit ---
+      if (draft.brandKit) {
+        // Shallow-validate required primitive fields before calling resolveBrandKit.
+        // A structurally-present but malformed brandKit (e.g. {}) would produce
+        // broken styles like pf-theme-undefined / var(--font-undefined) instead of
+        // falling back gracefully. fontPair/headingFont/bodyFont are excluded —
+        // resolveBrandKit already handles them defensively.
+        const bk = draft.brandKit;
+        const requiredStrings = [
+          "primaryColor",
+          "secondaryColor",
+          "accentColor",
+          "backgroundColor",
+          "foregroundColor",
+          "radius",
+          "themePreset",
+          "buttonStyle",
+        ] as const satisfies (keyof PortfolioBrandKit)[];
+        const isValid = requiredStrings.every(
+          (k) => typeof bk[k] === "string" && (bk[k] as string).length > 0,
+        );
+        if (isValid) {
+          const resolved = resolveBrandKit(bk);
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs localStorage draft (external store) into React state on mount; server fallbackCssVars is already the initial state
+          setCssVars(resolved.cssVars);
+          setClassName(resolved.className);
+        }
+      }
+
+      // --- headerConfig ---
+      if (draft.headerConfig != null && typeof draft.headerConfig === "object") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs draft (external store) into React state on mount
+        setDraftConfigs((prev) => ({ ...prev, headerConfig: draft.headerConfig! }));
+      }
     } catch {
       // ignore malformed draft; keep DB fallback
     }
   }, [slug]);
 
   return (
-    <div
-      style={{
-        ...(cssVars as React.CSSProperties),
-        minHeight: "100dvh",
-        backgroundColor: "var(--pf-color-bg)",
-        color: "var(--pf-color-fg)",
-      }}
-      className={className}
-    >
-      {children}
-    </div>
+    <PreviewDraftContext value={draftConfigs}>
+      <div
+        style={{
+          ...(cssVars as React.CSSProperties),
+          minHeight: "100dvh",
+          backgroundColor: "var(--pf-color-bg)",
+          color: "var(--pf-color-fg)",
+        }}
+        className={className}
+      >
+        {children}
+      </div>
+    </PreviewDraftContext>
   );
 }

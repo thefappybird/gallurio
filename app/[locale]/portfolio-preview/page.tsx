@@ -12,7 +12,6 @@ import {
   type PuckData,
 } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
-import { PortfolioHeader } from "@/app/(public)/w/[orgSlug]/_components/PortfolioHeader";
 import {
   resolveAddSessionAppearance,
   resolveSubmitAppearance,
@@ -20,6 +19,7 @@ import {
 import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
+import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
 // current (possibly unpublished) draft.
@@ -64,6 +64,7 @@ export default async function PortfolioPreviewPage({
 
   const chromeLocale = resolvePublicChromeLocale(workspace);
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
+  // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
   const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
   const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
   // Keep the logo + Home link within the preview iframe; do not navigate to the
@@ -131,8 +132,9 @@ export default async function PortfolioPreviewPage({
       fallbackCssVars={cssVars}
       fallbackClassName={className}
     >
-      <PortfolioHeader
+      <PreviewHeaderShell
         slug={workspace.slug}
+        fallbackConfig={headerConfig}
         activePath={activePath}
         homeHref={previewHomeHref}
         labels={{
@@ -144,7 +146,6 @@ export default async function PortfolioPreviewPage({
           openMenu: tNav("openMenu"),
           closeMenu: tNav("closeMenu"),
         }}
-        config={headerConfig}
       />
       {body}
     </PreviewBrandShell>
