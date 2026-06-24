@@ -688,6 +688,48 @@ describe("ButtonBlock", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TextBlock / HeadingBlock — color fallback (parity)
+// ---------------------------------------------------------------------------
+
+describe("TextBlock and HeadingBlock color parity", () => {
+  it("TextBlock with no _style has outer div color: var(--pf-color-fg)", () => {
+    const { container } = render(<TextBlock text="Hello" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("HeadingBlock with no _style has outer div color: var(--pf-color-fg)", () => {
+    const { container } = render(<HeadingBlock text="Hi" level="h2" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("TextBlock with explicit textColorToken:'primary' has outer div color: var(--pf-color-primary)", () => {
+    const { container } = render(<TextBlock text="Hello" _style={{ textColorToken: "primary" }} />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-primary)");
+  });
+
+  it("HeadingBlock with explicit textColorToken:'primary' has outer div color: var(--pf-color-primary)", () => {
+    const { container } = render(<HeadingBlock text="Hi" level="h2" _style={{ textColorToken: "primary" }} />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-primary)");
+  });
+
+  it("ButtonBlock with no _style uses var(--pf-color-fg) for text (legacy fallback)", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("ButtonBlock solid style with no textColorToken uses var(--pf-color-bg) for text", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "solid" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-bg)");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // SpacerBlock
 // ---------------------------------------------------------------------------
 

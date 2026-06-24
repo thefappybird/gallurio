@@ -112,8 +112,11 @@ export function ColorSwatchRow({
   value: StyleColorToken | string | undefined;
   onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
-  /** Show this token as active when value is unset (theme-coupled). Display-only. */
-  effectiveValue?: StyleColorToken;
+  /** Show this token as active when value is unset (theme-coupled). Display-only.
+   *  A hex string is accepted (effectiveButtonTextToken may return one when
+   *  buttonColorToken is a custom hex); a hex never matches a palette swatch so
+   *  nothing lights up — correct behaviour. */
+  effectiveValue?: StyleColorToken | string;
 }) {
   // Resolved hex (via context) so swatches show the real color even when the
   // popover is portaled outside the `--pf-color-*` scope.

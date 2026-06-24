@@ -706,6 +706,79 @@ describe("DesignTab — Border color swatch effective state is visually distinct
   });
 });
 
+describe("DesignTab — text color swatch effective state (Text/Heading blocks)", () => {
+  it("foreground swatch is aria-pressed when textColorToken is unset on a Text block", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    // Typography drawer is auto-open — text color row is visible
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const foregroundSwatches = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("effective text color swatch has lighter ring class (ring-1) not explicit ring-2", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const foregroundSwatch = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Text" })[0];
+    const classes = foregroundSwatch.className.split(/\s+/);
+    expect(classes).toContain("ring-1");
+    expect(classes).not.toContain("ring-2");
+  });
+
+  it("explicit primary token on Text block — primary swatch is ring-2 (explicit, not effective)", () => {
+    render(<DesignTab s={{ textColorToken: "primary" }} set={vi.fn()} blockType="Text" />);
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const primarySwatch = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Primary" })[0];
+    const classes = primarySwatch.className.split(/\s+/);
+    expect(primarySwatch).toHaveAttribute("aria-pressed", "true");
+    expect(classes).toContain("ring-2");
+    expect(classes).not.toContain("opacity-70");
+  });
+});
+
+describe("DesignTab — button text color swatch effective state", () => {
+  it("Button with no buttonStyle → foreground swatch is aria-pressed in Button text color row", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{}} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Button buttonStyle='solid' → background swatch is aria-pressed as effective text color", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const backgroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Background" });
+    expect(backgroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Button soft with buttonColorToken='accent' → accent swatch is aria-pressed as effective text color", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{ buttonStyle: "soft", buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const accentSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Accent" });
+    expect(accentSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("NumberInputRow (gap) — edit writes real value", () => {
   it("typing a value into the gap input calls the style setter with the real typed number", () => {
     const set = vi.fn();

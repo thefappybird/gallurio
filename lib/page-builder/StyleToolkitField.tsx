@@ -70,6 +70,7 @@ import {
   type SelfAlign,
   type HighlightShape,
   type HighlightSize,
+  effectiveButtonTextToken,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
@@ -852,6 +853,7 @@ export function DesignTab({
               </div>
               <ColorSwatchRow
                 value={s.textColorToken}
+                effectiveValue="foreground"
                 onChange={(t) => set({ textColorToken: t })}
               />
             </div>
@@ -965,6 +967,7 @@ export function DesignTab({
             </div>
             <ColorSwatchRow
               value={s.textColorToken}
+              effectiveValue={effectiveButtonTextToken(s)}
               onChange={(t) => set({ textColorToken: t })}
             />
           </div>
