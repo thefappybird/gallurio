@@ -419,6 +419,36 @@ describe("useEffectiveBrandRadius hook", () => {
   });
 });
 
+describe("BrandColorMap — headingFont and bodyFont fields", () => {
+  it("BrandColorMap accepts headingFont and bodyFont (type and value check)", () => {
+    // Verify BrandColorMap can hold font keys — this guards the EditorShell wiring.
+    const map: BrandColorMap = {
+      ...DEFAULT_COLORS,
+      headingFont: "playfair",
+      bodyFont: "inter",
+    };
+    expect(map.headingFont).toBe("playfair");
+    expect(map.bodyFont).toBe("inter");
+  });
+
+  it("useEffectiveBrandFont returns headingFont from a BrandColorMap built like EditorShell does", () => {
+    // Simulates the EditorShell brandColors object construction including font fields.
+    const brandColors: BrandColorMap = {
+      ...DEFAULT_COLORS,
+      brandRadius: "subtle",
+      headingFont: "fraunces",
+      bodyFont: "dm-sans",
+    };
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={brandColors}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"), { wrapper });
+    expect(result.current).toBe("fraunces");
+  });
+});
+
 describe("useEffectiveBrandFont hook", () => {
   it("returns the heading font key from context when kind is 'heading'", () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -491,6 +521,31 @@ describe("LayoutTabBody — gap input shows effective default 16 as placeholder 
     const gapInput = within(gapRow).getByRole("spinbutton");
     // When gap is unset, the input value is empty but placeholder shows the effective default.
     expect(gapInput).toHaveAttribute("placeholder", "16");
+  });
+});
+
+describe("DesignTab — Border color swatch pre-selects 'foreground' when borderColorToken is unset", () => {
+  it("foreground swatch (Text) in Border color row is aria-pressed when borderColorToken is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    // The Frame drawer contains a "Border color" label; the swatch row below it
+    // should show the foreground token as effective-active. Use the label to scope.
+    const borderColorLabel = screen.getByText("Border color");
+    const borderColorRow = borderColorLabel.closest("div")!.querySelector("div")!;
+    // The first "Text" button in this row should be aria-pressed (foreground = effective).
+    const textSwatches = within(borderColorRow as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(textSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("DesignTab — Font size input shows effective default 16 as placeholder when fontSize is unset", () => {
+  it("Font size input has placeholder '16' for a Text block when fontSize is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    // Typography drawer is auto-open.
+    const fontSizeLabel = screen.getByText("Font size");
+    const row = fontSizeLabel.closest("div")!;
+    const input = within(row).getByRole("spinbutton");
+    expect(input).toHaveAttribute("placeholder", "16");
   });
 });
 

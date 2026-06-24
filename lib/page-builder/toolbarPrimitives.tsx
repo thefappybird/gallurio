@@ -97,15 +97,23 @@ export function ToolbarPopover({
   );
 }
 
-/** A row of the 5 brand-palette swatches (+ optional reset icon + custom hex picker). */
+/**
+ * A row of the 5 brand-palette swatches (+ optional reset icon + custom hex picker).
+ *
+ * `effectiveValue` — when provided and value is unset, the matching swatch shows as
+ * active (aria-pressed=true) to indicate the theme-coupled default. Display-only.
+ */
 export function ColorSwatchRow({
   value,
   onChange,
   allowNone = true,
+  effectiveValue,
 }: {
   value: StyleColorToken | string | undefined;
   onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
+  /** Show this token as active when value is unset (theme-coupled). Display-only. */
+  effectiveValue?: StyleColorToken;
 }) {
   // Resolved hex (via context) so swatches show the real color even when the
   // popover is portaled outside the `--pf-color-*` scope.
@@ -116,21 +124,24 @@ export function ColorSwatchRow({
     !(STYLE_COLOR_TOKENS as readonly string[]).includes(value);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {STYLE_COLOR_TOKENS.map((token) => (
-        <button
-          key={token}
-          type="button"
-          title={COLOR_LABEL[token]}
-          aria-label={COLOR_LABEL[token]}
-          aria-pressed={value === token}
-          onClick={() => onChange(token)}
-          className={cn(
-            "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
-          )}
-          style={{ background: colors[token] }}
-        />
-      ))}
+      {STYLE_COLOR_TOKENS.map((token) => {
+        const isEffective = value === undefined && effectiveValue === token;
+        return (
+          <button
+            key={token}
+            type="button"
+            title={COLOR_LABEL[token]}
+            aria-label={COLOR_LABEL[token]}
+            aria-pressed={value === token || isEffective}
+            onClick={() => onChange(token)}
+            className={cn(
+              "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+            )}
+            style={{ background: colors[token] }}
+          />
+        );
+      })}
       {allowNone && (
         <button
           type="button"

@@ -899,6 +899,10 @@ export function DesignTab({
               value={s.fontSize}
               min={STYLE_LIMITS.fontSize.min}
               max={STYLE_LIMITS.fontSize.max}
+              // ponytail: fontSize renders as CSS `inherit` (manualBlocks ~L173), resolving to
+              // the page's cascaded font-size. 16px is the browser default base and the most
+              // likely effective value, so we use it as the placeholder for unset fontSize.
+              effectiveValue={16}
               onChange={(v) => set({ fontSize: v })}
             />
           )}
@@ -949,10 +953,13 @@ export function DesignTab({
           />
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">Border color</span>
+            {/* Effective: resolveBlockStyle falls back to var(--pf-color-fg) when borderColorToken
+                is unset (styleToolkit.ts ~L257), mapping to the "foreground" token. */}
             <ColorSwatchRow
               value={s.borderColorToken}
               onChange={(t) => set({ borderColorToken: t })}
               allowNone={false}
+              effectiveValue="foreground"
             />
           </div>
           <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
