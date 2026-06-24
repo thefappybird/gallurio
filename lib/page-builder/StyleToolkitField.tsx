@@ -1235,7 +1235,6 @@ export function LayoutTabBody({
   // Columns is a grid container (not flex), but it shares the same spacing
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
-  const layoutEffectiveRadius = useEffectiveBrandRadius();
 
   if (isGalleryLayout && p && setProp) {
     if (isGalleryContainer) {
