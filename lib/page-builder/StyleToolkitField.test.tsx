@@ -103,6 +103,31 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByRole("button", { name: "Large" })).toBeTruthy();
   });
 
+  it("Shadow IconRow shows 'No shadow' as effective (aria-pressed) when shadow is unset", () => {
+    // When _style.shadow is unset, the effective default 'none' should be aria-pressed
+    // (lighter treatment). The 'No shadow' button must be pressed even with no explicit value.
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    expect(screen.getByRole("button", { name: "No shadow" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Shadow IconRow — clicking 'Small' when shadow is unset writes shadow:'sm' (effectiveValue pattern)", () => {
+    // With effectiveValue="none", shadow prop is unset (= following theme, shows lighter).
+    // Clicking a real shadow option writes that value and decouples from theme.
+    // If the field were materialized (s.shadow ?? "none"), 'Small' would need two clicks
+    // to change (first click deselects 'none', second selects 'sm'). With effectiveValue,
+    // 'Small' registers immediately.
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Small" }));
+    const calls = onChange.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls[calls.length - 1][0]).toHaveProperty("shadow", "sm");
+  });
+
   it("Layout tab Spacing drawer does not show Top or Bottom spacing (removed from standard drawer)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));

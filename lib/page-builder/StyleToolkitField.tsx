@@ -1039,9 +1039,10 @@ export function DesignTab({
           <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
           <IconRow
             label="Shadow"
-            value={s.shadow ?? "none"}
+            value={s.shadow}
             options={SHADOW_OPTIONS}
-            onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
+            effectiveValue="none"
+            onChange={(v) => set({ shadow: v as ShadowSize | undefined })}
           />
         </EditorDrawerSection>
       )}
