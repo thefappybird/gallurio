@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import type {
   PortfolioBrandKit,
   PortfolioHeaderConfig,
+  PortfolioCollectionsPopupConfig,
 } from "@/lib/page-builder/types";
 import {
   PreviewDraftContext,
@@ -17,6 +18,7 @@ type DraftShape = {
   version?: number;
   brandKit?: PortfolioBrandKit;
   headerConfig?: PortfolioHeaderConfig;
+  collectionsPopup?: PortfolioCollectionsPopupConfig;
 };
 
 const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
@@ -29,8 +31,8 @@ const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
  * Client shell that wraps the portfolio preview with the unsaved (localStorage)
  * brand kit when present, falling back to the DB-resolved CSS vars otherwise.
  *
- * Also reads headerConfig from the draft and provides it via PreviewDraftContext
- * so PreviewHeaderShell can override the DB-resolved fallback.
+ * Also reads headerConfig and collectionsPopup from the draft and provides them
+ * via PreviewDraftContext so child components can override DB-resolved fallbacks.
  *
  * A brief flash of the DB fallback before the effect runs is acceptable: this is
  * an owner-only preview surface.
@@ -92,6 +94,11 @@ export function PreviewBrandShell({
       if (draft.headerConfig != null && typeof draft.headerConfig === "object") {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: syncs draft (external store) into React state on mount
         setDraftConfigs((prev) => ({ ...prev, headerConfig: draft.headerConfig! }));
+      }
+      // --- collectionsPopup ---
+      if (draft.collectionsPopup != null && typeof draft.collectionsPopup === "object") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: same pattern as headerConfig
+        setDraftConfigs((prev) => ({ ...prev, collectionsPopup: draft.collectionsPopup! }));
       }
     } catch {
       // ignore malformed draft; keep DB fallback

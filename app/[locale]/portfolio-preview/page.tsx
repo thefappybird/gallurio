@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireOrg } from "@/lib/auth/requireOrg";
@@ -8,6 +8,7 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
+  type PortfolioCollectionsPopupConfig,
   type PortfolioHeaderConfig,
   type PuckData,
 } from "@/lib/page-builder/types";
@@ -20,6 +21,7 @@ import { PreviewContactCard } from "./_components/PreviewContactCard";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
 import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
+import { PreviewPopupShell } from "./_components/PreviewPopupShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
 // current (possibly unpublished) draft.
@@ -42,7 +44,11 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
  * HOME/GALLERY zones: rendered client-side via <PreviewClient> which reads the
  * unsaved draft from localStorage — avoids HTTP 431 from large URL params.
  * CONTACT zone: rendered server-side from DB (last-saved contact config).
- * Brand-kit CSS vars and PortfolioHeader are always sourced from DB.
+ *
+ * Brand-kit CSS vars, header config, contact config, and collectionsPopup config
+ * are initially sourced from DB; PreviewBrandShell and the Preview*Shell client
+ * components override each with the localStorage draft on mount, so unsaved
+ * edits are visible in preview without saving.
  */
 export default async function PortfolioPreviewPage({
   params,
@@ -66,6 +72,8 @@ export default async function PortfolioPreviewPage({
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
   // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
   const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
+  // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
+  const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
   const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
   // Keep the logo + Home link within the preview iframe; do not navigate to the
   // published public site.
@@ -116,14 +124,19 @@ export default async function PortfolioPreviewPage({
       { content: [], root: {} };
 
     body = (
-      <PreviewClient
-        slug={workspace.slug}
-        zone={zone}
-        workspace={renderWorkspace}
-        fallbackData={fallbackData}
-      />
+      <>
+        <PreviewClient
+          slug={workspace.slug}
+          zone={zone}
+          workspace={renderWorkspace}
+          fallbackData={fallbackData}
+        />
+        <PreviewPopupShell
+          slug={workspace.slug}
+          fallbackConfig={collectionsPopupConfig}
+        />
+      </>
     );
-
   }
 
   return (
