@@ -19,15 +19,18 @@ a render change ships to live pages. Files:
 - `styleToolkit.ts` — the `BlockStyle` type and `resolveBlockStyle()` mapping `_style` →
   CSS; `colSpan`/`rowSpan` → `grid-column/grid-row: span N`.
 
-## Defaults: make `defaultProps` the source of truth
+## Defaults: never show a blank control — "float up" the effective value
 Controls in `StyleToolkitField` read the block's Puck props directly. If a block applies a
 default via a **render-time fallback** (`prop ?? "1rem"`, `|| "crossfade"`, a hardcoded
-style when unset) instead of declaring it in `*DefaultProps`, the rendered output looks
-right but the matching **control shows blank** — the editor and the applied value drift.
-Fix pattern: move the effective default into `*DefaultProps` and drop the render fallback
-(output stays identical), so the control displays it. For already-saved pages, normalize on
-load by deep-merging each block's props with its `defaultProps` (missing keys only — never
-overwrite a user value), which surfaces defaults without changing rendered output.
+style when unset) instead of surfacing it, the rendered output looks right but the matching
+**control shows blank** — the editor and the applied value drift.
+**Preferred fix — effective-default DISPLAY (prop stays unset):** show the field's effective
+value in the control as a display-only overlay while leaving the prop unset, so it keeps
+following the theme and only decouples when the user edits. Reserve MATERIALIZING the value
+into `*DefaultProps` (or grounding it in the render) for the narrow cases where an unset
+field would resolve differently in the canvas than in preview/publish (the `inherit` trap).
+This whole decision + the per-field effective sources + the parity rule live in
+**`portfolio-effective-defaults`** — read it before wiring any default into a control.
 Only surface defaults where a control already exists; don't add controls for structural
 plumbing (`display`, `position`, `overflow`, internal `max-width`, aspect ratios).
 

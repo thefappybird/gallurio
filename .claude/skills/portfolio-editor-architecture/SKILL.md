@@ -32,6 +32,9 @@ load the focused sub-skill for your actual task.
   cutout, `useElementRect`. This is gotcha-dense — read it before debugging the tour.)
 - **Adding/editing a block, block fields, padding/gap/color/font controls, Columns grid,
   col/row span, defaultProps** → `portfolio-blocks-and-design`.
+- **A style control renders blank or shows a hardcoded-looking value, "floating up"
+  effective theme defaults to controls, or an unset style looks different in the canvas
+  vs preview/publish** → `portfolio-effective-defaults`.
 - **Driving the editor in a browser / Playwright / dnd-kit drag / reaching a gated step /
   asserting the canvas** → `portfolio-testing`.
 - **Brand colors, fonts, `--pf-*` tokens, the Theme panel** → `portfolio-theme-brand-kit`.

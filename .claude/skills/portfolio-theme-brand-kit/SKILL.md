@@ -42,7 +42,18 @@ which uses the app's own semantic tokens. Public portfolios may override brand s
 inside this wrapper; no per-block brand override beyond the kit. (See the app design rules:
 app chrome = Plus Jakarta Sans + semantic tokens; Merriweather is a portfolio brand-font option.)
 
+## Effective brand values in the editor controls
+The same brand kit also feeds the editor's style controls so they can show a field's
+current theme value as a display-only default. `brandColors.tsx`'s `BrandColorsContext`
+carries the brand colors + `brandRadius` + `headingFont`/`bodyFont` (populated in
+`EditorShell` from `resolveBrandKit` + `resolveEffectiveFonts`); hooks
+`useEffectiveBrandRadius()` / `useEffectiveBrandFont(kind)` / `useBrandColors()` read it.
+To make a new brand value show up as an effective default in a control, extend THIS context
+(not a parallel provider). See `portfolio-effective-defaults` for the float-up pattern.
+
 ## Editing checklist
 - Add a color/font option → extend `PortfolioBrandKit` + the picker + `resolveBrandKit`'s
   `cssVars` together, and ensure blocks reference the new `--pf-*` var.
+- If the option should pre-fill its editor control as a theme default, also extend
+  `BrandColorsContext` + its effective hook (see `portfolio-effective-defaults`).
 - Keep public-page changes locale-correct (public chrome uses workspace-country locale).
