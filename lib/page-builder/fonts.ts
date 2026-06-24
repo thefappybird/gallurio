@@ -76,3 +76,24 @@ export function fontFamilyValue(key: PortfolioFontKey | undefined | null): strin
   if (!key || !isPortfolioFontKey(key)) return undefined;
   return PORTFOLIO_FONTS[key].family;
 }
+
+/**
+ * Resolves the effective heading/body font keys for a brand kit, mirroring the
+ * same fallback logic used by `resolveBrandKit` for the live page. Prefers the
+ * independent `headingFont`/`bodyFont` fields; falls back to `legacyFontPairToFonts`
+ * when those are absent (portfolios saved before independent fonts).
+ *
+ * Use this wherever the editor must display the font that actually renders on the
+ * live page, so the two surfaces can't drift.
+ */
+export function resolveEffectiveFonts(brandKit: {
+  fontPair?: string | null;
+  headingFont?: string | null;
+  bodyFont?: string | null;
+}): { headingFont: PortfolioFontKey; bodyFont: PortfolioFontKey } {
+  const legacy = legacyFontPairToFonts(brandKit.fontPair);
+  return {
+    headingFont: isPortfolioFontKey(brandKit.headingFont) ? brandKit.headingFont : legacy.headingFont,
+    bodyFont: isPortfolioFontKey(brandKit.bodyFont) ? brandKit.bodyFont : legacy.bodyFont,
+  };
+}

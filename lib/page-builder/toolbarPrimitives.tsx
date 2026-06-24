@@ -136,7 +136,8 @@ export function ColorSwatchRow({
             onClick={() => onChange(token)}
             className={cn(
               "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+              value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+              isEffective && "ring-1 ring-foreground ring-offset-1 ring-offset-background opacity-70"
             )}
             style={{ background: colors[token] }}
           />

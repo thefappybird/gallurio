@@ -8,7 +8,7 @@
  */
 
 import type { PortfolioBrandKit, BrandKitFontPair, BrandKitRadius } from "./types";
-import { PORTFOLIO_FONTS, legacyFontPairToFonts, isPortfolioFontKey } from "./fonts";
+import { PORTFOLIO_FONTS, resolveEffectiveFonts } from "./fonts";
 
 // ---------------------------------------------------------------------------
 // Font-pair → CSS family string mapping
@@ -73,10 +73,9 @@ export type ResolvedBrandKit = {
 export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
   // Prefer the independent heading/body families; fall back to the legacy
   // `fontPair` mapping for portfolios saved before independent fonts (no
-  // migration needed). Guard against stale/unknown keys defensively.
-  const legacy = legacyFontPairToFonts(brandKit.fontPair);
-  const headingKey = isPortfolioFontKey(brandKit.headingFont) ? brandKit.headingFont : legacy.headingFont;
-  const bodyKey = isPortfolioFontKey(brandKit.bodyFont) ? brandKit.bodyFont : legacy.bodyFont;
+  // migration needed). Uses the shared resolver so this logic can't drift from
+  // the editor's effective-font display.
+  const { headingFont: headingKey, bodyFont: bodyKey } = resolveEffectiveFonts(brandKit);
 
   const cssVars: Record<string, string> = {
     "--pf-color-primary": brandKit.primaryColor,

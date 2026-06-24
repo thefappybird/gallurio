@@ -14,6 +14,7 @@ import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLi
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 import type {
   PortfolioBrandKit,
@@ -1142,6 +1143,10 @@ export function EditorShell({
   const { cssVars, className } = resolveBrandKit(brandKit);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
+  // Use resolveEffectiveFonts so legacy-kit portfolios (only `fontPair` set, no
+  // independent headingFont/bodyFont) get the same font the live page renders —
+  // preventing the font dropdown from showing no selection for those portfolios.
+  const { headingFont: effectiveHeadingFont, bodyFont: effectiveBodyFont } = resolveEffectiveFonts(brandKit);
   const brandColors = {
     primary: brandKit.primaryColor,
     secondary: brandKit.secondaryColor,
@@ -1149,8 +1154,8 @@ export function EditorShell({
     background: brandKit.backgroundColor,
     foreground: brandKit.foregroundColor,
     brandRadius: brandKit.radius,
-    headingFont: brandKit.headingFont,
-    bodyFont: brandKit.bodyFont,
+    headingFont: effectiveHeadingFont,
+    bodyFont: effectiveBodyFont,
   };
   const activeSectionTitle =
     activeSection === "header"

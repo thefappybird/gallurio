@@ -6,6 +6,7 @@ import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CO
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
+import { resolveEffectiveFonts } from "./fonts";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -620,5 +621,124 @@ describe("LayoutTabBody Button — RadiusButtons shows brand theme radius when b
     // "None" appears only in RadiusButtons (the size picker uses S/M/L), so this is unique.
     expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("resolveEffectiveFonts — legacy fontPair fallback", () => {
+  it("falls back to legacy fontPair mapping when headingFont/bodyFont are absent", () => {
+    const result = resolveEffectiveFonts({ fontPair: "playfair-inter" });
+    expect(result.headingFont).toBe("playfair");
+    expect(result.bodyFont).toBe("inter");
+  });
+
+  it("prefers explicit headingFont/bodyFont over the legacy fontPair when both are set", () => {
+    const result = resolveEffectiveFonts({ fontPair: "playfair-inter", headingFont: "fraunces", bodyFont: "montserrat" });
+    expect(result.headingFont).toBe("fraunces");
+    expect(result.bodyFont).toBe("montserrat");
+  });
+});
+
+describe("DesignTab — Border color swatch effective state is visually distinct", () => {
+  it("effective-but-unset swatch has a lighter ring class (ring-1) but not the explicit ring-2", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    const borderColorLabel = screen.getByText("Border color");
+    const borderColorRow = borderColorLabel.closest("div")!.querySelector("div")!;
+    const textSwatches = within(borderColorRow as HTMLElement).getAllByRole("button", { name: "Text" });
+    const effectiveSwatch = textSwatches[0];
+    // aria-pressed confirms it's the effective swatch, not just any swatch
+    expect(effectiveSwatch).toHaveAttribute("aria-pressed", "true");
+    // effective state uses a lighter unconditional ring (ring-1 without a variant prefix),
+    // not the explicit ring (ring-2). focus-visible:ring-1 is always present; we want
+    // the bare class to also appear as a space-delimited token.
+    const classes = effectiveSwatch.className.split(/\s+/);
+    expect(classes).toContain("ring-1");
+    expect(classes).not.toContain("ring-2");
+  });
+});
+
+describe("NumberInputRow (gap) — edit writes real value", () => {
+  it("typing a value into the gap input calls the style setter with the real typed number", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const gapInput = within(gapRow).getByRole("spinbutton");
+    fireEvent.change(gapInput, { target: { value: "24" } });
+    // style setter is called with { gap: 24 } — the real typed value, not the effective default (16)
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.gap).toBe(24);
+  });
+
+  it("resetting the gap input calls the style setter with gap: undefined (reverts to effective)", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{ gap: 24 }}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const resetBtn = within(gapRow).getByRole("button", { name: /Reset Gap/i });
+    fireEvent.click(resetBtn);
+    // After reset, gap is cleared so the effective default (placeholder "16") re-appears
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.gap).toBeUndefined();
+  });
+});
+
+describe("Font select — edit writes real selected font key", () => {
+  it("selecting a font from the dropdown calls the setter with the real fontFamily key", () => {
+    const set = vi.fn();
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{}} set={set} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // Typography drawer is auto-open; font select shows effective heading font (playfair)
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    fireEvent.change(fontSelect, { target: { value: "cormorant" } });
+    // setter is called with the real selected key, not the effective default
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBe("cormorant");
+  });
+
+  it("resetting font clears fontFamily to undefined and re-shows effective font in dropdown", () => {
+    const set = vi.fn();
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{ fontFamily: "cormorant" }} set={set} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // Typography drawer is auto-open; explicit cormorant is set
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("cormorant");
+    // Click the Reset Font button
+    fireEvent.click(screen.getByRole("button", { name: /Reset Font/i }));
+    // setter is called with fontFamily: undefined — effective heading font re-shows
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBeUndefined();
   });
 });
