@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+﻿import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
@@ -47,7 +47,6 @@ describe("PreviewPopupShell", () => {
         fallbackClassName=""
       >
         <PreviewPopupShell
-          slug={SLUG}
           fallbackConfig={{ backgroundColor: "secondary" }}
         />
       </PreviewBrandShell>,
@@ -65,7 +64,6 @@ describe("PreviewPopupShell", () => {
         fallbackClassName=""
       >
         <PreviewPopupShell
-          slug={SLUG}
           fallbackConfig={{ backgroundColor: "secondary" }}
         />
       </PreviewBrandShell>,
@@ -83,7 +81,6 @@ describe("PreviewPopupShell", () => {
         fallbackClassName=""
       >
         <PreviewPopupShell
-          slug={SLUG}
           fallbackConfig={null}
         />
       </PreviewBrandShell>,

@@ -16,10 +16,8 @@ import { usePreviewDraft } from "./PreviewDraftContext";
  * (position: absolute, inset: 5%) instead of fixed-center.
  */
 export function PreviewPopupShell({
-  slug: _slug,
   fallbackConfig,
 }: {
-  slug: string;
   fallbackConfig: PortfolioCollectionsPopupConfig | null;
 }) {
   const { collectionsPopup } = usePreviewDraft();

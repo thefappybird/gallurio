@@ -132,7 +132,6 @@ export default async function PortfolioPreviewPage({
           fallbackData={fallbackData}
         />
         <PreviewPopupShell
-          slug={workspace.slug}
           fallbackConfig={collectionsPopupConfig}
         />
       </>
