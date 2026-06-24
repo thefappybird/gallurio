@@ -73,6 +73,7 @@ import {
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
+import { useBrandRadius } from "./brandColors";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -609,31 +610,57 @@ const RADIUS_PRESETS: { label: string; value: number }[] = [
   { label: "Full", value: 9999 },
 ];
 
+/**
+ * Maps a brand-kit radius token to the nearest RADIUS_PRESETS value.
+ * Brand-kit rem values use a 16px base:
+ *   sharp   → "0"      → 0px  → preset 0   (None)
+ *   subtle  → "0.25rem"→ 4px  → preset 4   (S)
+ *   rounded → "0.5rem" → 8px  → preset 8   (M)
+ */
+export const BRAND_RADIUS_TO_PRESET: Record<"sharp" | "subtle" | "rounded", number> = {
+  sharp: 0,
+  subtle: 4,
+  rounded: 8,
+};
+
 export function RadiusButtons({
   value,
   onChange,
+  effectiveValue,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
+  /** The preset value that the theme's brand-kit radius maps to. When the
+   *  block's own radius is unset (theme-coupled), this is shown as active so
+   *  the user can see what the theme is applying. Writing `effectiveValue`
+   *  into block props is NOT done here — only the display changes. */
+  effectiveValue?: number;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">Corner radius</span>
       <div className="flex items-center gap-1.5">
-        {RADIUS_PRESETS.map(({ label, value: v }) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={value === v}
-            onClick={() => onChange(value === v ? undefined : v)}
-            className={cn(
-              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              value === v && "bg-foreground text-background hover:bg-foreground"
-            )}
-          >
-            {label}
-          </button>
-        ))}
+        {RADIUS_PRESETS.map(({ label, value: v }) => {
+          const isExplicit = value === v;
+          // When the block has no explicit radius, show the theme's effective preset.
+          const isEffective = value === undefined && effectiveValue === v;
+          const isActive = isExplicit || isEffective;
+          return (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => onChange(value === v ? undefined : v)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isExplicit && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground"
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -773,6 +800,8 @@ export function DesignTab({
 }) {
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
+  const brandRadius = useBrandRadius();
+  const effectiveRadius = brandRadius !== undefined ? BRAND_RADIUS_TO_PRESET[brandRadius] : undefined;
   // Image-only gallery blocks have no on-page text — hide typography controls.
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
 
@@ -917,7 +946,7 @@ export function DesignTab({
               allowNone={false}
             />
           </div>
-          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
           <IconRow
             label="Shadow"
             value={s.shadow ?? "none"}
@@ -1137,6 +1166,9 @@ export function LayoutTabBody({
   // Columns is a grid container (not flex), but it shares the same spacing
   // (padding) + gap controls as Container.
   const isColumns = blockType === "Columns";
+  const layoutBrandRadius = useBrandRadius();
+  const layoutEffectiveRadius =
+    layoutBrandRadius !== undefined ? BRAND_RADIUS_TO_PRESET[layoutBrandRadius] : undefined;
 
   if (isGalleryLayout && p && setProp) {
     if (isGalleryContainer) {
@@ -1274,7 +1306,7 @@ export function LayoutTabBody({
                 ))}
               </div>
             </div>
-            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
+            <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={layoutEffectiveRadius} />
             <IconRow
               label="Block position"
               value={s.selfAlign}

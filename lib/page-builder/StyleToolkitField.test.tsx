@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import React from "react";
 import { StyleToolkitField } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
+import { BrandColorsContext } from "./brandColors";
+import type { BrandColorMap } from "./brandColors";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -283,6 +286,37 @@ describe("RadiusButtons", () => {
     fireEvent.click(screen.getByRole("button", { name: "S" }));
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
+
+  it("shows the effective (theme) preset as aria-pressed when block radius is unset", () => {
+    // effectiveValue=8 corresponds to the brand "rounded" preset (M button).
+    render(<RadiusButtons value={undefined} onChange={vi.fn()} effectiveValue={8} />);
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("explicit block radius overrides the effective (theme) value display", () => {
+    // Block has radius=4 (S), theme says 8 (M) — block wins.
+    render(<RadiusButtons value={4} onChange={vi.fn()} effectiveValue={8} />);
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking a preset calls onChange even when effective display is active", () => {
+    const onChange = vi.fn();
+    render(<RadiusButtons value={undefined} onChange={onChange} effectiveValue={8} />);
+    fireEvent.click(screen.getByRole("button", { name: "L" }));
+    expect(onChange).toHaveBeenCalledWith(16);
+  });
+
+  it("does not force any preset active when effectiveValue is absent and value is unset", () => {
+    render(<RadiusButtons value={undefined} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "L" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
 });
 
 describe("Button style section — corner radius picker", () => {
@@ -323,5 +357,87 @@ describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMas
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     // Content tab is shown by default
     expect(screen.getByText("Banner")).toBeTruthy();
+  });
+});
+
+import { BRAND_RADIUS_TO_PRESET } from "./StyleToolkitField";
+
+describe("BRAND_RADIUS_TO_PRESET mapping", () => {
+  it("maps sharp to 0 (None preset)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.sharp).toBe(0);
+  });
+
+  it("maps subtle to 4 (S preset, 0.25rem = 4px)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.subtle).toBe(4);
+  });
+
+  it("maps rounded to 8 (M preset, 0.5rem = 8px)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.rounded).toBe(8);
+  });
+});
+
+const DEFAULT_COLORS: BrandColorMap = {
+  primary: "#111",
+  secondary: "#f5f5f5",
+  accent: "#2f5d56",
+  background: "#fff",
+  foreground: "#111",
+};
+
+describe("DesignTab — RadiusButtons shows brand theme radius when block radius is unset", () => {
+  it("shows M (8) as aria-pressed in Frame section when brand radius is 'rounded' and block radius unset", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "rounded" }}>
+        <StyleToolkitField value={undefined} onChange={vi.fn()} />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    // Open the Frame drawer to reveal RadiusButtons.
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+import { renderHook } from "@testing-library/react";
+import { useBrandRadius } from "./brandColors";
+
+describe("useBrandRadius hook", () => {
+  it("returns brandRadius from BrandColorsContext", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "rounded" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useBrandRadius(), { wrapper });
+    expect(result.current).toBe("rounded");
+  });
+
+  it("returns undefined when no brandRadius in context", () => {
+    const { result } = renderHook(() => useBrandRadius());
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("LayoutTabBody Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
+  it("shows None as aria-pressed for Button block when brand radius is 'sharp' and block radius unset", () => {
+    // Uses "None" preset (value=0) which is unique in the LayoutTabBody Button — unlike "S"/"M"/"L"
+    // which collide with the size picker buttons.
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "sharp" }}>
+        <LayoutTabBody
+          s={{}}
+          set={() => {}}
+          isGridChild={false}
+          showJustify={false}
+          blockType="Button"
+          p={{}}
+          setProp={() => {}}
+        />
+      </BrandColorsContext.Provider>
+    );
+    // "None" appears only in RadiusButtons (the size picker uses S/M/L), so this is unique.
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
   });
 });

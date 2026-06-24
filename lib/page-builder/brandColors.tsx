@@ -15,8 +15,13 @@
 
 import { createContext, useContext } from "react";
 import type { StyleColorToken } from "./styleToolkit";
+import type { BrandKitRadius } from "./types";
 
-export type BrandColorMap = Record<StyleColorToken, string>;
+export type BrandColorMap = Record<StyleColorToken, string> & {
+  /** The brand kit's radius token, used to show the effective preset in
+   *  RadiusButtons when the block's own radius prop is unset. Display-only. */
+  brandRadius?: BrandKitRadius;
+};
 
 const DEFAULT_BRAND_COLORS: BrandColorMap = {
   primary: "var(--pf-color-primary)",
@@ -30,4 +35,9 @@ export const BrandColorsContext = createContext<BrandColorMap>(DEFAULT_BRAND_COL
 
 export function useBrandColors(): BrandColorMap {
   return useContext(BrandColorsContext);
+}
+
+/** Returns the brand kit's radius token, or undefined when outside the editor. */
+export function useBrandRadius(): BrandKitRadius | undefined {
+  return useContext(BrandColorsContext).brandRadius;
 }
