@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Shared per-block style toolkit.
  *
  * `BlockStyle` is the section-level styling an owner applies to any Puck block
@@ -423,4 +423,16 @@ export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: An
   if (style.animation && style.animation !== "none") attrs["data-anim"] = style.animation;
   if (style.hover && style.hover !== "none") attrs["data-hover"] = style.hover;
   return attrs;
+}
+
+/** The text-color token a Button actually renders when textColorToken is unset.
+ *  Mirrors ButtonBlock's per-variant fallback so the editor control can show the
+ *  same effective value. Display-only. */
+export function effectiveButtonTextToken(
+  style: BlockStyle | undefined,
+): StyleColorToken | string {
+  if (style?.buttonStyle === "solid") return "background";
+  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
+    return style.buttonColorToken ?? "primary";
+  return "foreground"; // unset / legacy branch
 }

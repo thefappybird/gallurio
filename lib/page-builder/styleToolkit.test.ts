@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -244,25 +244,48 @@ describe("flex layout fields", () => {
   });
 });
 
+
 // ---------------------------------------------------------------------------
-// B1: headingDefaultProps and textDefaultProps ship textColorToken:"foreground"
-// so the canvas and preview/public render the same color (var(--pf-color-fg)).
+// B2: headingDefaultProps and textDefaultProps must NOT materialise textColorToken.
+// Parity maintained by a render-time color fallback on the outer div.
 // ---------------------------------------------------------------------------
 
-describe("default textColorToken on Heading and Text blocks", () => {
-  it("headingDefaultProps has textColorToken set to 'foreground'", () => {
-    expect(headingDefaultProps._style?.textColorToken).toBe("foreground");
+describe("default textColorToken — no materialization", () => {
+  it("headingDefaultProps does not carry textColorToken (effective via render fallback)", () => {
+    expect(headingDefaultProps._style?.textColorToken).toBeUndefined();
   });
 
-  it("textDefaultProps has textColorToken set to 'foreground'", () => {
-    expect(textDefaultProps._style?.textColorToken).toBe("foreground");
+  it("textDefaultProps does not carry textColorToken (effective via render fallback)", () => {
+    expect(textDefaultProps._style?.textColorToken).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// effectiveButtonTextToken
+// ---------------------------------------------------------------------------
+
+describe("effectiveButtonTextToken", () => {
+  it("solid button style → 'background'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("background");
   });
 
-  it("resolveBlockStyle(headingDefaultProps._style) yields color: var(--pf-color-fg)", () => {
-    expect(resolveBlockStyle(headingDefaultProps._style).color).toBe("var(--pf-color-fg)");
+  it("soft button with buttonColorToken set → returns that token", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("accent");
   });
 
-  it("resolveBlockStyle(textDefaultProps._style) yields color: var(--pf-color-fg)", () => {
-    expect(resolveBlockStyle(textDefaultProps._style).color).toBe("var(--pf-color-fg)");
+  it("soft button with no buttonColorToken → 'primary'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("primary");
+  });
+
+  it("outline button with no buttonColorToken → 'primary'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("primary");
+  });
+
+  it("no buttonStyle (legacy/unset) → 'foreground'", () => {
+    expect(effectiveButtonTextToken({})).toBe("foreground");
+  });
+
+  it("undefined style → 'foreground'", () => {
+    expect(effectiveButtonTextToken(undefined)).toBe("foreground");
   });
 });

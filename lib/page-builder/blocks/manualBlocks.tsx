@@ -79,7 +79,7 @@ export type HeadingBlockProps = {
   level: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 };
 
-export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2", _style: { textColorToken: "foreground" } };
+export const headingDefaultProps: HeadingBlockProps = { text: "Heading", level: "h2" };
 
 /** Fluid clamp font sizes for headings. `cqi` resolves against the `pfpage` container. */
 const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
@@ -100,6 +100,7 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
+        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -157,7 +158,6 @@ export type TextBlockProps = { _style?: BlockStyle; text: string };
 
 export const textDefaultProps: TextBlockProps = {
   text: "Write anything here. Line breaks are preserved.",
-  _style: { textColorToken: "foreground" },
 };
 
 export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: BlockPuck }) {
@@ -168,6 +168,7 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
+        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
