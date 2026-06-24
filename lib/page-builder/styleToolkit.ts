@@ -38,6 +38,14 @@ export type StyleColorToken = (typeof STYLE_COLOR_TOKENS)[number];
 export const SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
 export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
+/** Gallery-specific column counts — stored in `_style.galleryColumns` (not a top-level prop). */
+export const GALLERY_COLUMN_OPTIONS = [2, 3, 4] as const;
+export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
+
+/** Gallery image spacing tokens — stored in `_style.galleryGap` (not a top-level prop). */
+export const GALLERY_GAP_OPTIONS = ["tight", "normal", "loose"] as const;
+export type GalleryGap = (typeof GALLERY_GAP_OPTIONS)[number];
+
 export type TextAlign = "left" | "center" | "right";
 
 export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -141,6 +149,12 @@ export type BlockStyle = {
   descriptionHighlightToken?: StyleColorToken | string;
   descriptionHighlightShape?: HighlightShape;
   descriptionHighlightSize?: HighlightSize;
+  // Gallery layout — stored here instead of top-level props so columns/gap are
+  // style-drawer overrides (Layout tab → Gallery section) rather than Puck
+  // sidebar select fields. Dedicated keys avoid clashing with the numeric `gap`
+  // used by flex/grid containers.
+  galleryColumns?: GalleryColumns; // 2 | 3 | 4; effective default 3
+  galleryGap?: GalleryGap; // "tight" | "normal" | "loose"; effective default "normal"
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms

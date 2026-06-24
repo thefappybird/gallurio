@@ -17,6 +17,8 @@ import {
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
+  type GalleryColumns,
+  type GalleryGap,
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
@@ -35,8 +37,6 @@ export type GalleryImage = { id: string; publicId: string; alt?: string };
 export type GalleryGridProps = {
   _style?: BlockStyle;
   images: GalleryImage[];
-  columns: 2 | 3 | 4;
-  gap: "tight" | "normal" | "loose";
   // Banner / container props (same as ContainerBlock)
   backgroundImages?: GalleryImage[];
   bgAnimation?: "crossfade" | "kenburns" | "slide";
@@ -47,20 +47,18 @@ export type GalleryGridProps = {
 
 export const galleryGridDefaultProps: GalleryGridProps = {
   images: [],
-  columns: 3,
-  gap: "normal",
   backgroundImages: [],
   bgAnimation: "crossfade",
   bgSpeed: "medium",
 };
 
-const GAP_MAP: Record<GalleryGridProps["gap"], string> = {
+const GAP_MAP: Record<GalleryGap, string> = {
   tight: "4px",
   normal: "8px",
   loose: "16px",
 };
 
-const THUMB_WIDTH_MAP: Record<GalleryGridProps["columns"], number> = {
+const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   2: 800,
   3: 600,
   4: 400,
@@ -135,8 +133,6 @@ function GalleryBannerLayers({
 export function GalleryGridBlock({
   _style,
   images,
-  columns,
-  gap,
   backgroundImages,
   bgAnimation,
   bgSpeed,
@@ -144,6 +140,8 @@ export function GalleryGridBlock({
   minHeight,
   puck,
 }: GalleryGridProps & { puck?: BlockPuck }) {
+  const columns = _style?.galleryColumns ?? 3;
+  const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
@@ -251,27 +249,11 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight
   // from saved props; no sidebar field is needed there either.
+  // columns/gap are now stored in _style.galleryColumns/_style.galleryGap and edited
+  // via the Layout tab GalleryLayoutControls — not as top-level sidebar fields.
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight (4px)", value: "tight" },
-        { label: "Normal (8px)", value: "normal" },
-        { label: "Loose (16px)", value: "loose" },
-      ],
-    },
     backgroundImages: {
       type: "array",
       label: "Background images",

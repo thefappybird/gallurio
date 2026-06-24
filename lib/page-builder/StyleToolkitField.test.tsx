@@ -408,6 +408,20 @@ describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMas
   });
 });
 
+describe("GalleryLayoutControls — writes _style.galleryColumns on click", () => {
+  it("clicking column '2' calls onChange with _style.galleryColumns=2", () => {
+    const onChange = vi.fn();
+    render(
+      <StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryGrid" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    // Gallery section drawer auto-opens (it is the first drawer in the group)
+    // The "2" column button is visible after switching to Layout tab
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ galleryColumns: 2 }));
+  });
+});
+
 describe("BRAND_RADIUS_TO_PRESET mapping", () => {
   it("maps sharp to 0 (None preset)", () => {
     expect(BRAND_RADIUS_TO_PRESET.sharp).toBe(0);

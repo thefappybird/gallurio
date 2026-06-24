@@ -1140,53 +1140,65 @@ const COLUMNS_OPTIONS = [
 
 function GalleryLayoutControls({
   type,
-  p,
-  setProp,
+  s,
+  set,
 }: {
   type: string;
-  p: Record<string, unknown>;
-  setProp: (key: string, val: unknown) => void;
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
 }) {
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
     // GalleryGrid and GalleryMasonry: show Columns + Gap controls.
+    // Values live in _style.galleryColumns / _style.galleryGap.
+    // Effective defaults: columns=3, gap="normal" (shown with lighter "following theme" ring).
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Columns</span>
           <div className="flex items-center gap-1.5">
-            {COLUMNS_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={(p.columns as number) === value}
-                onClick={() => setProp("columns", value)}
-                className={cn(
-                  "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.columns as number) === value && "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+            {COLUMNS_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryColumns === value;
+              const isEffective = s.galleryColumns === undefined && value === 3;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryColumns: value })}
+                  className={cn(
+                    "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Image spacing</span>
           <div className="flex items-center gap-1.5">
-            {GAP_OPTIONS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={(p.gap as string) === value}
-                onClick={() => setProp("gap", value)}
-                className={cn(
-                  "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.gap as string) === value && "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+            {GAP_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryGap === value;
+              const isEffective = s.galleryGap === undefined && value === "normal";
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryGap: value })}
+                  className={cn(
+                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1194,26 +1206,32 @@ function GalleryLayoutControls({
   }
 
   if (type === "FeaturedWork") {
+    // FeaturedWork: columns only, no gap. Value in _style.galleryColumns.
+    // Effective default: columns=3.
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Columns</span>
           <div className="flex items-center gap-1.5">
-            {([2, 3, 4] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={(p.columns as number) === v}
-                onClick={() => setProp("columns", v)}
-                className={cn(
-                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.columns as number) === v &&
-                    "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {v}
-              </button>
-            ))}
+            {COLUMNS_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryColumns === value;
+              const isEffective = s.galleryColumns === undefined && value === 3;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryColumns: value })}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1258,14 +1276,14 @@ export function LayoutTabBody({
     blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
     undefined;
 
-  if (isGalleryLayout && p && setProp) {
+  if (isGalleryLayout) {
     if (isGalleryContainer) {
-      // Gallery container blocks: gallery-specific controls (columns/gap) + container
-      // layout drawers (Spacing with padding, Layout with gap/min-height/align).
+      // Gallery container blocks: gallery-specific controls (columns/gap via _style) +
+      // container layout drawers (Spacing with padding, Layout with gap/min-height/align).
       return (
         <EditorDrawerGroup>
           <EditorDrawerSection title="Gallery">
-            <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
+            <GalleryLayoutControls type={blockType} s={s} set={set} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Spacing">
             <PaddingControls s={s} set={set} />
@@ -1280,7 +1298,7 @@ export function LayoutTabBody({
               effectiveValue={16}
               onChange={(v) => set({ gap: v })}
             />
-            {p !== undefined && (
+            {p !== undefined && setProp !== undefined && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
                 <div className="flex items-center gap-1.5">
@@ -1332,30 +1350,12 @@ export function LayoutTabBody({
         </EditorDrawerGroup>
       );
     }
+    // Non-container gallery blocks: simple layout view with gallery controls only.
     return (
       <div className="flex flex-col gap-4 p-3">
-        <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
+        <GalleryLayoutControls type={blockType} s={s} set={set} />
       </div>
     );
-  }
-  // Standalone (no Puck provider — tests): gallery layout controls still render.
-  if (isGalleryLayout) {
-    if (isGalleryContainer) {
-      return (
-        <EditorDrawerGroup>
-          <EditorDrawerSection title="Gallery">
-            <GalleryLayoutControls type={blockType} p={{}} setProp={() => {}} />
-          </EditorDrawerSection>
-          <EditorDrawerSection title="Spacing">
-            <PaddingControls s={s} set={set} />
-          </EditorDrawerSection>
-          <EditorDrawerSection title="Layout">
-            <NumberInputRow label="Gap" value={s.gap} min={0} max={96} suffix="px" effectiveValue={16} onChange={(v) => set({ gap: v })} />
-          </EditorDrawerSection>
-        </EditorDrawerGroup>
-      );
-    }
-    return <div className="flex flex-col gap-4 p-3" />;
   }
 
   // For text-only and button leaf blocks: position/size + spacing controls.

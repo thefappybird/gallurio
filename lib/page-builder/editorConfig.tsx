@@ -41,16 +41,11 @@ import { SECTION_PRESETS } from "./blocks/sectionPresets";
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
-import { GalleryGridBlock } from "./blocks/GalleryGridBlock";
+import { GalleryGridBlock, galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
-import { GalleryMasonryBlock } from "./blocks/GalleryMasonryBlock";
+import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
-
-// Inlined copies of the data blocks' defaultProps (kept in sync; the parity
-// test compares these against the real server-block defaults).
-const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal", backgroundImages: [], bgAnimation: "crossfade", bgSpeed: "medium" };
-const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal", backgroundImages: [], bgAnimation: "crossfade", bgSpeed: "medium" };
 const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
@@ -418,29 +413,12 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Photo Grid",
   inline: true,
   defaultProps: galleryGridDefaultProps,
-  // `images` is intentionally absent — the editor drives it via StyleToolkitField
-  // (Task 7). Banner fields are hidden (visible: false) and managed by StyleToolkitField;
+  // `images` is intentionally absent — the editor drives it via StyleToolkitField.
+  // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField;
   // resolveFields strips them so they never appear in the standard Puck sidebar.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight (4px)", value: "tight" },
-        { label: "Normal (8px)", value: "normal" },
-        { label: "Loose (16px)", value: "loose" },
-      ],
-    },
     backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
     bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
     bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
@@ -458,28 +436,11 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Masonry",
   inline: true,
   defaultProps: galleryMasonryDefaultProps,
-  // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
+  // `images` is intentionally absent — driven by StyleToolkitField.
+  // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
   // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight", value: "tight" },
-        { label: "Normal", value: "normal" },
-        { label: "Loose", value: "loose" },
-      ],
-    },
     backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
     bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
     bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
@@ -498,18 +459,10 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   inline: true,
   defaultProps: featuredWorkDefaultProps,
   // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
+  // columns moved to _style.galleryColumns (Layout tab Gallery section).
   // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
     backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<FeaturedWorkProps["backgroundImages"]>,
     bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<FeaturedWorkProps["bgAnimation"]>,
     bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<FeaturedWorkProps["bgSpeed"]>,

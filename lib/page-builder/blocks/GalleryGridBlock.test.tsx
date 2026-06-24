@@ -39,16 +39,22 @@ describe("GalleryGridBlock — isomorphic render", () => {
     expect(document.querySelector("[data-block='gallery-grid'][data-empty='true']")).toBeInTheDocument();
   });
 
-  it.each([2, 3, 4] as const)("columns=%i sets responsive gridColsVar on grid-template-columns", (cols) => {
-    const { container } = render(GalleryGridBlock({ ...base, images: imgs(2), columns: cols }));
+  it.each([2, 3, 4] as const)("_style.galleryColumns=%i sets responsive gridColsVar on grid-template-columns", (cols) => {
+    const { container } = render(GalleryGridBlock({ ...base, images: imgs(2), _style: { galleryColumns: cols } }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
     expect(grid.style.gridTemplateColumns).toBe(`var(--pf-grid-cols, repeat(${cols}, 1fr))`);
   });
 
-  it("applies the gap value", () => {
-    const { container } = render(GalleryGridBlock({ ...base, images: imgs(1), gap: "loose" }));
+  it("applies the gap value from _style.galleryGap", () => {
+    const { container } = render(GalleryGridBlock({ ...base, images: imgs(1), _style: { galleryGap: "loose" } }));
     const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
     expect(grid.style.gap).toBe("16px");
+  });
+
+  it("defaults to 3 columns when _style.galleryColumns is unset", () => {
+    const { container } = render(GalleryGridBlock({ ...base, images: imgs(2) }));
+    const grid = container.querySelector("[data-block='gallery-grid'] > div > div") as HTMLElement;
+    expect(grid.style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(3, 1fr))");
   });
 
   it("does not import server-only cloudinary (no SDK access in client bundle)", () => {

@@ -17,6 +17,7 @@ import {
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
+  type GalleryColumns,
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
@@ -43,7 +44,6 @@ export type FeaturedCollectionRef = {
 export type FeaturedWorkProps = {
   _style?: BlockStyle;
   collections: FeaturedCollectionRef[];
-  columns: 2 | 3 | 4;
   // Banner / container props (same as ContainerBlock)
   backgroundImages?: GalleryImage[];
   bgAnimation?: "crossfade" | "kenburns" | "slide";
@@ -54,7 +54,6 @@ export type FeaturedWorkProps = {
 
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
   collections: [],
-  columns: 3,
   backgroundImages: [],
   bgAnimation: "crossfade",
   bgSpeed: "medium",
@@ -110,7 +109,6 @@ function GalleryBannerLayers({
 export function FeaturedWorkBlock({
   _style,
   collections,
-  columns,
   backgroundImages,
   bgAnimation,
   bgSpeed,
@@ -118,6 +116,7 @@ export function FeaturedWorkBlock({
   minHeight,
   puck,
 }: FeaturedWorkProps & { puck?: BlockPuck }) {
+  const columns: GalleryColumns = _style?.galleryColumns ?? 3;
   const ws = puck?.metadata?.workspace;
   const slug = ws?.slug;
   const editorPreview = ws?.editorPreview ?? false;
@@ -196,18 +195,11 @@ export const featuredWorkBlockConfig: ComponentConfig<FeaturedWorkProps> = {
   // `collections` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField Content tab. Production <Render> reads collections straight
   // from saved props; no sidebar field is needed there either.
+  // columns is now stored in _style.galleryColumns and edited via the Layout tab
+  // GalleryLayoutControls — not as a top-level sidebar field.
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
     backgroundImages: {
       type: "array",
       label: "Background images",

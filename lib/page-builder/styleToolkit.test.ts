@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
 import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -287,5 +287,15 @@ describe("effectiveButtonTextToken", () => {
 
   it("undefined style → 'foreground'", () => {
     expect(effectiveButtonTextToken(undefined)).toBe("foreground");
+  });
+});
+
+describe("BlockStyle — galleryColumns", () => {
+  it("GALLERY_COLUMN_OPTIONS contains 2, 3, 4", () => {
+    expect(GALLERY_COLUMN_OPTIONS).toEqual([2, 3, 4]);
+  });
+
+  it("GALLERY_GAP_OPTIONS contains tight, normal, loose", () => {
+    expect(GALLERY_GAP_OPTIONS).toEqual(["tight", "normal", "loose"]);
   });
 });

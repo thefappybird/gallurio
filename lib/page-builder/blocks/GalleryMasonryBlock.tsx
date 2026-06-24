@@ -15,6 +15,8 @@ import {
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
+  type GalleryColumns,
+  type GalleryGap,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
 import { GALLERY_MIN_HEIGHT, resolveBannerLayers } from "./GalleryGridBlock";
@@ -25,8 +27,6 @@ import type { ContainerHeight } from "./manualBlocks";
 export type GalleryMasonryProps = {
   _style?: BlockStyle;
   images: GalleryImage[];
-  columns: 2 | 3 | 4;
-  gap: "tight" | "normal" | "loose";
   // Banner / container props (same as ContainerBlock)
   backgroundImages?: GalleryImage[];
   bgAnimation?: "crossfade" | "kenburns" | "slide";
@@ -37,20 +37,18 @@ export type GalleryMasonryProps = {
 
 export const galleryMasonryDefaultProps: GalleryMasonryProps = {
   images: [],
-  columns: 3,
-  gap: "normal",
   backgroundImages: [],
   bgAnimation: "crossfade",
   bgSpeed: "medium",
 };
 
-const GAP_MAP: Record<GalleryMasonryProps["gap"], string> = {
+const GAP_MAP: Record<GalleryGap, string> = {
   tight: "4px",
   normal: "12px",
   loose: "24px",
 };
 
-const THUMB_WIDTH_MAP: Record<GalleryMasonryProps["columns"], number> = {
+const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   2: 800,
   3: 600,
   4: 400,
@@ -98,8 +96,6 @@ function GalleryBannerLayers({
 export function GalleryMasonryBlock({
   _style,
   images,
-  columns,
-  gap,
   backgroundImages,
   bgAnimation,
   bgSpeed,
@@ -107,6 +103,8 @@ export function GalleryMasonryBlock({
   minHeight,
   puck,
 }: GalleryMasonryProps & { puck?: BlockPuck }) {
+  const columns = _style?.galleryColumns ?? 3;
+  const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "12px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const labels = getGalleryChromeLabelsFrom(puck);
@@ -212,27 +210,11 @@ export const galleryMasonryBlockConfig: ComponentConfig<GalleryMasonryProps> = {
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight
   // from saved props; no sidebar field is needed there either.
+  // columns/gap are now stored in _style.galleryColumns/_style.galleryGap and edited
+  // via the Layout tab GalleryLayoutControls — not as top-level sidebar fields.
   // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight", value: "tight" },
-        { label: "Normal", value: "normal" },
-        { label: "Loose", value: "loose" },
-      ],
-    },
     backgroundImages: {
       type: "array",
       label: "Background images",
