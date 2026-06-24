@@ -348,14 +348,17 @@ type ContainerBgControls = {
   onSpeedChange: (v: string) => void;
 };
 
-function BannerSection({
+export function BannerSection({
   s,
   set,
   container,
+  hideBgImage = false,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
   container?: ContainerBgControls | null;
+  /** When true, suppresses all background-image pickers (gallery blocks: color only). */
+  hideBgImage?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -366,7 +369,7 @@ function BannerSection({
         <span className="text-xs text-muted-foreground">Color</span>
         <ColorSwatchRow value={s.bgColorToken} onChange={(t) => set({ bgColorToken: t })} />
       </div>
-      {container ? (
+      {!hideBgImage && (container ? (
         <ContainerBackgroundControls {...container} />
       ) : (
         <div className="flex flex-col gap-1.5">
@@ -376,7 +379,7 @@ function BannerSection({
             onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
           />
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -556,9 +559,12 @@ function ContentTabBody({
   // (collections picker / photo picker) — unlike true containers (slots), they have
   // direct gallery content controlled via ContentInputs.
   const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
+  // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
+  // but NOT the background-images picker — the images are the block content, not a backdrop.
+  const hideBgImage = GALLERY_CONTAINER_BLOCKS.has(type);
   return (
     <div className="flex flex-col gap-4 p-3">
-      {showBanner && <BannerSection s={s} set={set} container={container} />}
+      {showBanner && <BannerSection s={s} set={set} container={container} hideBgImage={hideBgImage} />}
       {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} />}
     </div>
   );
@@ -1765,6 +1771,7 @@ export function StyleToolkitField({
 
   // Standalone render (tests — no Puck provider): show full 3-tab panel
   const allTabs = ["content", "design", "layout"] as const;
+  const standaloneIsContainer = CONTAINER_TYPES.has(blockType) || GALLERY_CONTAINER_BLOCKS.has(blockType);
   return (
     <div className="flex flex-col">
       <TabHeader tab={tab} tabs={allTabs} onTabChange={setTab} />
@@ -1775,8 +1782,8 @@ export function StyleToolkitField({
           type={blockType}
           p={undefined}
           setProp={() => {}}
-          showBanner={true}
-          isContainer={false}
+          showBanner={standaloneIsContainer || !GALLERY_BLOCKS.has(blockType)}
+          isContainer={standaloneIsContainer}
         />
       )}
       {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}

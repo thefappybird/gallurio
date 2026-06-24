@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
-import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET } from "./StyleToolkitField";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET, BannerSection } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
 import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
@@ -405,6 +405,19 @@ describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMas
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     // Content tab is shown by default
     expect(screen.getByText("Banner")).toBeTruthy();
+  });
+});
+
+describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color", () => {
+  it("GalleryGrid Content tab does NOT render ContainerBackgroundControls (no bg-image picker)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    // Content tab is default; "Background images" label from ContainerBackgroundControls must be absent
+    expect(screen.queryByText("Background images")).toBeNull();
+  });
+
+  it("BannerSection with hideBgImage=true does NOT render Image picker", () => {
+    render(<BannerSection s={{}} set={vi.fn()} hideBgImage={true} />);
+    expect(screen.queryByText("Image")).toBeNull();
   });
 });
 
