@@ -760,12 +760,6 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   inline: true,
   defaultProps: {
     ...columnsDefaultProps,
-    _style: {
-      paddingTop: "1rem",
-      paddingRight: "1.5rem",
-      paddingBottom: "1rem",
-      paddingLeft: "1.5rem",
-    },
   },
   fields: {
     _style: styleField,
