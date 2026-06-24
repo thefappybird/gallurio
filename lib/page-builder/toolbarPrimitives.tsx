@@ -269,6 +269,10 @@ export function DimensionInput({
  * A labelled NUMBER input with steppers.
  * Two-column layout: label left, input+suffix+reset right.
  * Clamps to [min,max] on blur. Empty input → `undefined` (block falls back to default).
+ *
+ * `effectiveValue` — when provided and the block's own value is unset, the input
+ * shows this number as a placeholder so the user can see what the theme applies.
+ * Typing any number writes the REAL prop; this is display-only.
  */
 export function NumberInputRow({
   label,
@@ -278,6 +282,7 @@ export function NumberInputRow({
   step = 1,
   suffix = "px",
   onChange,
+  effectiveValue,
 }: {
   label: string;
   value: number | undefined;
@@ -286,6 +291,8 @@ export function NumberInputRow({
   step?: number;
   suffix?: string;
   onChange: (next: number | undefined) => void;
+  /** Show this number as the placeholder when value is unset (theme-coupled). */
+  effectiveValue?: number;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -299,6 +306,7 @@ export function NumberInputRow({
             max={max}
             step={step}
             value={value ?? ""}
+            placeholder={value === undefined && effectiveValue !== undefined ? String(effectiveValue) : undefined}
             onChange={(e) => {
               const raw = e.target.value;
               if (raw === "") { onChange(undefined); return; }
@@ -334,17 +342,23 @@ export function NumberInputRow({
  * justify, shadow size). Clicking an already-active option deselects it
  * (returns `undefined`). Uses `ToolbarToggle` so all focus/hover/active states
  * are consistent with the rest of the toolbar.
+ *
+ * `effectiveValue` — when provided and the block's own value is unset, the
+ * matching icon shows as active (aria-pressed=true, following-theme). Display-only.
  */
 export function IconRow<T extends string>({
   label,
   value,
   options,
   onChange,
+  effectiveValue,
 }: {
   label: string;
   value: T | undefined;
   options: { value: T; label: string; Icon: LucideIcon }[];
   onChange: (v: T | undefined) => void;
+  /** Show this option as active when value is unset (theme-coupled). Display-only. */
+  effectiveValue?: T;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -353,7 +367,7 @@ export function IconRow<T extends string>({
         {options.map(({ value: v, label: l, Icon }) => (
           <ToolbarToggle
             key={v}
-            active={value === v}
+            active={value === v || (value === undefined && effectiveValue === v)}
             title={l}
             Icon={Icon}
             onClick={() => onChange(value === v ? undefined : v)}

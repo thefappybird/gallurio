@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import React from "react";
 import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
-import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius } from "./brandColors";
+import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import type { BrandColorMap } from "./brandColors";
 
 const mockFetch = vi.fn();
@@ -416,6 +416,132 @@ describe("useEffectiveBrandRadius hook", () => {
     );
     const { result } = renderHook(() => useEffectiveBrandRadius(), { wrapper });
     expect(result.current).toBeUndefined();
+  });
+});
+
+describe("useEffectiveBrandFont hook", () => {
+  it("returns the heading font key from context when kind is 'heading'", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"), { wrapper });
+    expect(result.current).toBe("playfair");
+  });
+
+  it("returns the body font key from context when kind is 'body'", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("body"), { wrapper });
+    expect(result.current).toBe("inter");
+  });
+
+  it("returns undefined when outside the editor (no fonts in context)", () => {
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"));
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("DesignTab — font family dropdown pre-selects effective brand font when block fontFamily is unset", () => {
+  it("shows the brand heading font as selected in the Font dropdown for Heading block when fontFamily is unset", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{}} set={vi.fn()} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // The font select should show "playfair" as the selected value (effective heading font).
+    // Typography drawer is auto-open (first drawer).
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("playfair");
+  });
+
+  it("explicit fontFamily on the block wins over the effective brand font", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{ fontFamily: "cormorant" }} set={vi.fn()} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("cormorant");
+  });
+});
+
+describe("LayoutTabBody — gap input shows effective default 16 as placeholder when gap is unset", () => {
+  it("Gap input shows placeholder '16' when _style.gap is undefined", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Layout drawer is the second drawer; open it to see Gap.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    // Find the "Gap" label text node's parent row, then find the spinbutton within it.
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const gapInput = within(gapRow).getByRole("spinbutton");
+    // When gap is unset, the input value is empty but placeholder shows the effective default.
+    expect(gapInput).toHaveAttribute("placeholder", "16");
+  });
+});
+
+describe("DesignTab — Border width input shows effective default 0 as placeholder when borderWidth is unset", () => {
+  it("Border width input has placeholder '0' for a framed block when borderWidth is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    // Open Frame drawer.
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    const borderWidthLabel = screen.getByText("Border width");
+    const row = borderWidthLabel.closest("div")!;
+    const input = within(row).getByRole("spinbutton");
+    expect(input).toHaveAttribute("placeholder", "0");
+  });
+});
+
+describe("LayoutTabBody — Align icon row shows effective default 'stretch' when alignItems is unset", () => {
+  it("Stretch to fill icon is marked active (aria-pressed=true) when alignItems is unset", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Open the Layout drawer.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Stretch to fill" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("LayoutTabBody — Min height buttons show effective default 'auto' when minHeight prop is unset", () => {
+  it("Auto button is aria-pressed when p.minHeight is undefined (effective default)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Open the Layout drawer to reveal min height controls.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 

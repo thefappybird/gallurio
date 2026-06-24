@@ -16,11 +16,17 @@
 import { createContext, useContext } from "react";
 import type { StyleColorToken } from "./styleToolkit";
 import type { BrandKitRadius } from "./types";
+import type { PortfolioFontKey } from "./fonts";
 
 export type BrandColorMap = Record<StyleColorToken, string> & {
   /** The brand kit's radius token, used to show the effective preset in
    *  RadiusButtons when the block's own radius prop is unset. Display-only. */
   brandRadius?: BrandKitRadius;
+  /** The brand kit's heading font key, used to pre-select the font-family
+   *  dropdown when the block's own fontFamily is unset. Display-only. */
+  headingFont?: PortfolioFontKey;
+  /** The brand kit's body font key. Display-only. */
+  bodyFont?: PortfolioFontKey;
 };
 
 const DEFAULT_BRAND_COLORS: BrandColorMap = {
@@ -55,4 +61,15 @@ export function useEffectiveBrandRadius(): number | undefined {
   if (!brandRadius) return undefined;
   const mapped = BRAND_RADIUS_MAP[brandRadius];
   return mapped !== undefined ? mapped : undefined;
+}
+
+/**
+ * Returns the brand kit's heading or body font key from context, or undefined
+ * when outside the editor or when the font is not set. Display-only — never
+ * written into block props; use it to pre-select the font-family dropdown when
+ * the block's own fontFamily is unset.
+ */
+export function useEffectiveBrandFont(kind: "heading" | "body"): PortfolioFontKey | undefined {
+  const ctx = useContext(BrandColorsContext);
+  return kind === "heading" ? ctx.headingFont : ctx.bodyFont;
 }

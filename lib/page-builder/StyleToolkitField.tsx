@@ -73,7 +73,7 @@ import {
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
-import { useEffectiveBrandRadius } from "./brandColors";
+import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -803,6 +803,10 @@ export function DesignTab({
   const effectiveRadius = useEffectiveBrandRadius();
   // Image-only gallery blocks have no on-page text — hide typography controls.
   const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
+  // Heading blocks follow the brand heading font; all others follow the body font.
+  // ponytail: "body" covers Text, Button, Container, and all other block types since
+  // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
+  const effectiveFontFamily = useEffectiveBrandFont(blockType === "Heading" ? "heading" : "body");
 
   return (
     <EditorDrawerGroup>
@@ -863,8 +867,10 @@ export function DesignTab({
           <div className="flex items-center justify-between gap-2">
             <span className="shrink-0 text-xs text-muted-foreground">Font</span>
             <div className="flex items-center gap-1">
+              {/* When fontFamily is unset, show the effective brand font as selected
+                  (lighter opacity = "following theme"). Editing writes the real _style. */}
               <select
-                value={s.fontFamily ?? ""}
+                value={s.fontFamily ?? effectiveFontFamily ?? ""}
                 onChange={(e) =>
                   set({
                     fontFamily: e.target.value
@@ -872,7 +878,10 @@ export function DesignTab({
                       : undefined,
                   })
                 }
-                className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={cn(
+                  "h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  s.fontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60"
+                )}
               >
                 <option value="">Theme font</option>
                 {PORTFOLIO_FONT_KEYS.map((key) => (
@@ -935,6 +944,7 @@ export function DesignTab({
             value={s.borderWidth}
             min={STYLE_LIMITS.borderWidth.min}
             max={STYLE_LIMITS.borderWidth.max}
+            effectiveValue={0}
             onChange={(v) => set({ borderWidth: v })}
           />
           <div className="flex flex-col gap-1.5">
@@ -1186,26 +1196,34 @@ export function LayoutTabBody({
               min={0}
               max={96}
               suffix="px"
+              effectiveValue={16}
               onChange={(v) => set({ gap: v })}
             />
             {p !== undefined && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
                 <div className="flex items-center gap-1.5">
-                  {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={(p.minHeight as string) === value}
-                      onClick={() => setProp("minHeight", value)}
-                      className={cn(
-                        "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                        (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                  {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
+                    const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
+                    // Effective default: when minHeight is unset, "auto" is the fallback.
+                    const isEffective = p.minHeight === undefined && value === "auto";
+                    const isActive = isExplicit || isEffective;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => setProp("minHeight", value)}
+                        className={cn(
+                          "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          isExplicit && "bg-foreground text-background hover:bg-foreground",
+                          isEffective && "border-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1216,6 +1234,7 @@ export function LayoutTabBody({
                   label="Align"
                   value={s.alignItems}
                   options={ALIGN_OPTIONS}
+                  effectiveValue="stretch"
                   onChange={(v) => set({ alignItems: v })}
                 />
               </>
@@ -1224,6 +1243,7 @@ export function LayoutTabBody({
                 label="Align"
                 value={s.alignItems}
                 options={ALIGN_OPTIONS}
+                effectiveValue="stretch"
                 onChange={(v) => set({ alignItems: v })}
               />
             )}
@@ -1249,7 +1269,7 @@ export function LayoutTabBody({
             <PaddingControls s={s} set={set} />
           </EditorDrawerSection>
           <EditorDrawerSection title="Layout">
-            <NumberInputRow label="Gap" value={s.gap} min={0} max={96} suffix="px" onChange={(v) => set({ gap: v })} />
+            <NumberInputRow label="Gap" value={s.gap} min={0} max={96} suffix="px" effectiveValue={16} onChange={(v) => set({ gap: v })} />
           </EditorDrawerSection>
         </EditorDrawerGroup>
       );
@@ -1342,6 +1362,7 @@ export function LayoutTabBody({
           min={0}
           max={96}
           suffix="px"
+          effectiveValue={16}
           onChange={(v) => set({ gap: v })}
         />
         {/* Min height — only for flex containers, controlled via block prop */}
@@ -1349,20 +1370,27 @@ export function LayoutTabBody({
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
             <div className="flex items-center gap-1.5">
-              {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={(p.minHeight as string) === value}
-                  onClick={() => setProp("minHeight", value)}
-                  className={cn(
-                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+              {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
+                const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
+                // Effective default: when minHeight is unset, "auto" is the fallback.
+                const isEffective = p.minHeight === undefined && value === "auto";
+                const isActive = isExplicit || isEffective;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setProp("minHeight", value)}
+                    className={cn(
+                      "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      isExplicit && "bg-foreground text-background hover:bg-foreground",
+                      isEffective && "border-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -1373,12 +1401,14 @@ export function LayoutTabBody({
               label="Align"
               value={s.alignItems}
               options={ALIGN_OPTIONS}
+              effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
             />
             <IconRow
               label="Justify"
               value={s.justifyContent}
               options={JUSTIFY_OPTIONS}
+              effectiveValue="start"
               onChange={(v) => set({ justifyContent: v })}
             />
           </>
@@ -1388,6 +1418,7 @@ export function LayoutTabBody({
               label="Align"
               value={s.alignItems}
               options={ALIGN_OPTIONS}
+              effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
             />
             {showJustify && (
@@ -1395,6 +1426,7 @@ export function LayoutTabBody({
                 label="Justify"
                 value={s.justifyContent}
                 options={JUSTIFY_OPTIONS}
+                effectiveValue="start"
                 onChange={(v) => set({ justifyContent: v })}
               />
             )}
