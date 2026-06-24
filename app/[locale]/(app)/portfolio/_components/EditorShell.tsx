@@ -1619,7 +1619,12 @@ export function EditorShell({
       />
       <PortfolioEntryDialog
         open={entryOpen}
-        canContinue={hasRecoverableBuffer}
+        // "Continue where you left off" resumes the most recent state: the
+        // unsaved-edit buffer if present, otherwise the active draft. It is only
+        // disabled on a true first visit — no active draft now (initialActiveDraftId)
+        // nor a recoverable buffer from last time. Note the buffer is cleared on
+        // save/publish, so it must NOT be the sole gate.
+        canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
         hasDrafts={drafts.length > 0}
         onContinue={() => setEntryOpen(false)}
         onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}

@@ -192,9 +192,13 @@ async function renderAndDismissEntry(ui: ReactElement) {
   const result = renderWithProviders(ui);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
-  const skipBtn = screen.queryByRole("button", { name: "Skip" });
+  // "Skip Guide" now opens a confirm modal; confirm via the modal's own
+  // "Skip Guide" button (the last one once the modal is mounted).
+  const skipBtn = screen.queryByRole("button", { name: "Skip Guide" });
   if (skipBtn) {
     fireEvent.click(skipBtn);
+    const confirmSkip = screen.getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
   }
 
   // "Continue where you left off" is now enabled; clicking it closes the dialog
@@ -436,6 +440,29 @@ describe("EditorShell", () => {
     // The entry dialog must still appear (spec: shown on every load).
     renderWithProviders(<EditorShell {...baseProps} />);
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+  });
+
+  it("enables 'Continue where you left off' when an active draft exists even without an unsaved-edit buffer", async () => {
+    // beforeEach clears localStorage → no recoverable buffer. baseProps still has
+    // an active draft (initialActiveDraftId="d1"). Continue must stay enabled:
+    // it's only disabled on a true first visit (no active draft now nor last time).
+    renderWithProviders(<EditorShell {...baseProps} />);
+    const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
+    expect(continueBtn).not.toBeDisabled();
+  });
+
+  it("disables 'Continue where you left off' when there is no active draft and no buffer (drafts exist)", async () => {
+    // A saved draft exists (so the entry dialog — not the welcome-template modal —
+    // is shown), but there is no active draft and no buffer → Continue disabled.
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+      />
+    );
+    const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
+    expect(continueBtn).toBeDisabled();
   });
 
   it("brand-new user (no drafts, no buffer) sees the welcome template modal instead of PortfolioEntryDialog", async () => {
@@ -880,9 +907,10 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
     expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
 
-    // Skip the guide
-    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
-    fireEvent.click(skipBtn);
+    // Skip the guide (Skip Guide → confirm modal → Skip Guide)
+    fireEvent.click(within(document.body).getByRole("button", { name: "Skip Guide" }));
+    const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
 
     // After skip, brand-new user gets the welcome template modal
     expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
@@ -897,9 +925,10 @@ describe("EditorShell", () => {
     // Guide shows first
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
 
-    // Skip the guide
-    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
-    fireEvent.click(skipBtn);
+    // Skip the guide (Skip Guide → confirm modal → Skip Guide)
+    fireEvent.click(within(document.body).getByRole("button", { name: "Skip Guide" }));
+    const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
 
     // Returning user gets the normal PortfolioEntryDialog
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
@@ -951,6 +980,11 @@ describe("EditorShell", () => {
     // Next advances to the first actionable step: drag a block (gated, unsatisfied).
     fireEvent.click(within(welcomeCard).getByRole("button", { name: "Next" }));
     const dragCard = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
+
+    // The blocks-panel anchor is a Puck `drawer` override, which the mocked Puck
+    // does not render — so the loading gate shows its spinner until the safety
+    // timeout. Wait for the step body to reveal before asserting footer state.
+    await within(dragCard).findByText(/Try it/i);
 
     // Unsatisfied gated step: no Skip-this-step, no Next escape hatch, but the
     // "Try it…" hint and a working Back button are present.

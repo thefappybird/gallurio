@@ -409,48 +409,41 @@ describe("SpotlightGuide", () => {
     removeB();
   });
 
-  // ── Step-change transition ────────────────────────────────────────────────────
+  // ── Step-change loading gate ──────────────────────────────────────────────────
+  // Replaces the cross-fade: when the step changes to one that highlights an
+  // anchor that isn't measured yet, the card holds in place showing a loading
+  // indicator (instead of jumping to centre), then reveals once the anchor
+  // resolves.
 
-  it("card data-tour-transition is 'out' after stepIndex changes, then 'in' after 160ms", () => {
-    vi.useFakeTimers();
+  it("shows a loading indicator and hides the step body when moving to a step whose anchor is not yet in the DOM", () => {
     const { rerender } = renderGuide({ stepIndex: 0 });
 
     act(() => {
       rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
     });
 
-    // Flush the setTimeout(0) that sets transitioning=true
-    act(() => {
-      vi.advanceTimersByTime(0);
-    });
-
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.getAttribute("data-tour-transition")).toBe("out");
-
-    act(() => {
-      vi.advanceTimersByTime(160);
-    });
-
-    expect(dialog.getAttribute("data-tour-transition")).toBe("in");
-
-    vi.useRealTimers();
+    // anchor "my-anchor" was never injected → the gate stays in the loading state
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(
+      screen.queryByText("This step has an anchor element.")
+    ).toBeNull();
   });
 
-  it("reduced-motion path: data-tour-transition stays 'in' even after stepIndex changes", () => {
-    vi.useFakeTimers();
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
-
+  it("reveals the new step immediately (no loading) when its anchor is already in the DOM at step change", () => {
+    const removeAnchor = injectAnchor("my-anchor");
     const { rerender } = renderGuide({ stepIndex: 0 });
 
     act(() => {
       rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
     });
 
-    const dialog = screen.getByRole("dialog");
-    expect(dialog.getAttribute("data-tour-transition")).toBe("in");
+    // Synchronous re-measure finds the anchor → the gate clears in the same
+    // render, so no spinner flashes and the body is shown straight away.
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(
+      screen.getByText("This step has an anchor element.")
+    ).toBeInTheDocument();
 
-    window.matchMedia = originalMatchMedia;
-    vi.useRealTimers();
+    removeAnchor();
   });
 });

@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { AlertCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useElementRect, type ElementRect } from "./useElementRect";
@@ -329,6 +330,12 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
     [onBack]
   );
 
+  // Mirrors the shared AlertDialog/UnsavedChangesDialog pattern (icon + title +
+  // description in a bordered header, actions in a right-aligned footer) so the
+  // tour's skip warning is visually consistent with the editor's save/discard
+  // dialogs. It is hand-rolled rather than reusing <AlertDialog> because the
+  // tour runs in a high z-index portal (z-9990+) and the Dialog primitives are
+  // pinned to z-50, which would render this behind the spotlight overlay.
   return createPortal(
     <>
       {/* Backdrop */}
@@ -345,46 +352,46 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
-          "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2",
-          "flex flex-col gap-3 rounded-[var(--radius-surface)]",
-          "border border-border bg-popover text-popover-foreground",
-          "p-5 shadow-lg outline-none"
+          "fixed left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col gap-0",
+          "overflow-hidden rounded-[var(--radius-surface)] bg-popover text-popover-foreground",
+          "shadow-lg ring-1 ring-foreground/10 outline-none"
         )}
-        style={{ zIndex: 9995, width: 320, maxWidth: "calc(100vw - 24px)" }}
+        style={{ zIndex: 9995, width: 448, maxWidth: "calc(100vw - 24px)" }}
       >
-        <h2 className="text-sm font-semibold text-foreground">
-          {L.skipConfirm.heading}
-        </h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          {L.skipConfirm.body}
-        </p>
-        <div className="flex flex-col gap-1.5">
+        {/* Header — icon + title + description */}
+        <div className="flex items-start gap-3 border-b border-border px-4 py-3">
+          <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center border border-border bg-muted text-muted-foreground">
+            <AlertCircleIcon className="size-4" />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h2 className="font-heading text-base font-medium leading-none text-foreground">
+              {L.skipConfirm.heading}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {L.skipConfirm.body}
+            </p>
+          </div>
+        </div>
+        {/* Footer — Back (cancel) · Don't show again · Skip Guide */}
+        <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end">
           <Button
             ref={backRef}
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-7 w-full px-3 text-xs"
             onClick={onBack}
           >
             {L.skipConfirm.back}
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="h-7 w-full px-2 text-xs text-muted-foreground"
             onClick={onDontShow}
           >
             {L.skipConfirm.dontShow}
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-full px-2 text-xs text-muted-foreground"
-            onClick={onSkip}
-          >
+          <Button type="button" size="sm" onClick={onSkip}>
             {L.skipConfirm.skip}
           </Button>
         </div>
@@ -400,9 +407,9 @@ type TooltipCardProps = {
   step: SpotlightStep;
   stepIndex: number;
   total: number;
-  rect: ElementRect | null;
+  position: Position;
+  loading: boolean;
   gateSatisfied: boolean;
-  transitioning: boolean;
   onBack: () => void;
   onNext: () => void;
   onSkip: (dontShowAgain: boolean) => void;
@@ -415,9 +422,9 @@ function TooltipCard({
   step,
   stepIndex,
   total,
-  rect,
+  position,
+  loading,
   gateSatisfied,
-  transitioning,
   onBack,
   onNext,
   onSkip,
@@ -434,40 +441,19 @@ function TooltipCard({
   // Next button reappears so the user is never stuck.
   const hideNext = isGated && !gateSatisfied && !isLast;
 
-  // Determine position
-  const hasMeaningfulRect =
-    rect !== null && (rect.width > 0 || rect.height > 0);
-
-  let position: Position;
-  if (hasMeaningfulRect) {
-    const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
-    const vpH = typeof window !== "undefined" ? window.innerHeight : 800;
-    position = calcTooltipPosition(rect!, step.placement, vpW, vpH);
-  } else {
-    // No anchor: center the tooltip
-    const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
-    const vpH = typeof window !== "undefined" ? window.innerHeight : 800;
-    position = {
-      top: vpH / 2 - TOOLTIP_H / 2,
-      left: vpW / 2 - TOOLTIP_W / 2,
-    };
-  }
-
   return (
     <div
       ref={cardRef}
       role="dialog"
       aria-modal="true"
       aria-label={step.title}
+      aria-busy={loading || undefined}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      data-tour-transition={transitioning ? "out" : "in"}
       className={cn(
         "fixed flex flex-col gap-3 rounded-[var(--radius-surface)]",
         "border border-border bg-popover text-popover-foreground",
-        "p-4 shadow-lg outline-none",
-        "transition-opacity duration-150 motion-reduce:transition-none",
-        transitioning ? "opacity-0" : "opacity-100"
+        "p-4 shadow-lg outline-none"
       )}
       style={{
         zIndex: 9991,
@@ -477,7 +463,7 @@ function TooltipCard({
         maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
       }}
     >
-      {/* Header */}
+      {/* Header — always visible so the card stays recognisable while loading */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">
@@ -489,101 +475,113 @@ function TooltipCard({
         </div>
       </div>
 
-      {/* Body */}
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        {step.body}
-      </p>
-
-      {/* Gated hint — visually prominent so users notice the call to action */}
-      {isGated && (
-        <div className="flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-border px-2 py-1">
-          {/* Pulsing dot: accent color + animation carry the "action needed" signal */}
+      {loading ? (
+        // While the next step's anchor is still settling, hold the card in
+        // place and show a loading indicator instead of jumping the cutout to
+        // a half-positioned state. Revealed once the anchor resolves.
+        <div
+          role="status"
+          aria-label="Loading"
+          className="flex items-center justify-center py-8"
+        >
           <span
             aria-hidden
-            className="size-2 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)]"
+            className="size-5 animate-spin rounded-full border-2 border-muted border-t-foreground"
           />
-          <p className="text-xs font-semibold text-foreground">{L.tryIt}</p>
         </div>
-      )}
+      ) : (
+        <>
+          {/* Body */}
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {step.body}
+          </p>
 
-      {/* Progress bar */}
-      <div className="flex items-center gap-0.5" aria-hidden>
-        {Array.from({ length: total }).map((_, i) => (
-          <span
-            key={i}
-            className={cn(
-              "h-0.5 flex-1 rounded-full transition-colors",
-              i <= stepIndex ? "bg-foreground" : "bg-muted"
+          {/* Gated hint — visually prominent so users notice the call to action */}
+          {isGated && (
+            <div className="flex items-center gap-1.5 rounded-[var(--radius)] border border-dashed border-border px-2 py-1">
+              {/* Pulsing dot: accent color + animation carry the "action needed" signal */}
+              <span
+                aria-hidden
+                className="size-2 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)]"
+              />
+              <p className="text-xs font-semibold text-foreground">{L.tryIt}</p>
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div className="flex items-center gap-0.5" aria-hidden>
+            {Array.from({ length: total }).map((_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "h-0.5 flex-1 rounded-full transition-colors",
+                  i <= stepIndex ? "bg-foreground" : "bg-muted"
+                )}
+              />
+            ))}
+          </div>
+
+          {/* Skip confirm modal (portaled) */}
+          {showSkipConfirm && (
+            <SkipConfirmModal
+              onBack={() => setShowSkipConfirm(false)}
+              onDontShow={() => onSkip(true)}
+              onSkip={() => onSkip(false)}
+            />
+          )}
+
+          {/* Footer — single row. Left: Back + Skip Guide (Skip takes Back's
+              slot on the first step, where Back is absent). Right: Next/Finish. */}
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1.5">
+              {!isFirst && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-3 text-xs"
+                  onClick={onBack}
+                >
+                  {L.back}
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground"
+                onClick={() => setShowSkipConfirm(true)}
+              >
+                {L.skip}
+              </Button>
+            </div>
+
+            {isLast ? (
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 px-3 text-xs"
+                onClick={() => onFinish(true)}
+              >
+                {L.finish}
+              </Button>
+            ) : hideNext ? (
+              // Actionable step, gate not yet satisfied: no Next — the "Try it…"
+              // hint tells the user what to do; Back stays available.
+              <span />
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 px-3 text-xs"
+                onClick={onNext}
+              >
+                {L.next}
+              </Button>
             )}
-          />
-        ))}
-      </div>
-
-      {/* Skip confirm modal (portaled) */}
-      {showSkipConfirm && (
-        <SkipConfirmModal
-          onBack={() => setShowSkipConfirm(false)}
-          onDontShow={() => onSkip(true)}
-          onSkip={() => onSkip(false)}
-        />
+          </div>
+        </>
       )}
-
-      {/* Footer */}
-      <div className="flex flex-col gap-1.5">
-        {/* Secondary actions — Skip Guide (opens confirm modal) */}
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() => setShowSkipConfirm(true)}
-          >
-            {L.skip}
-          </Button>
-        </div>
-
-        {/* Primary nav — Back + Next/Finish always fit on one row */}
-        <div className="flex items-center justify-between gap-1.5">
-          {!isFirst ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={onBack}
-            >
-              {L.back}
-            </Button>
-          ) : (
-            <span />
-          )}
-
-          {isLast ? (
-            <Button
-              type="button"
-              size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={() => onFinish(true)}
-            >
-              {L.finish}
-            </Button>
-          ) : hideNext ? (
-            // Actionable step, gate not yet satisfied: no Next — the "Try it…"
-            // hint tells the user what to do; Back stays available.
-            <span />
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              className="h-7 px-3 text-xs"
-              onClick={onNext}
-            >
-              {L.next}
-            </Button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -652,36 +650,50 @@ export function SpotlightGuide({
     return () => clearTimeout(id);
   }, [open, stepIndex]);
 
-  // Step-change fade: briefly suppress the cutout hole and hide the card so the
-  // anchor rect can settle before we reveal the new position. Only fires on
-  // step _changes_ (not on first mount). Skip when prefers-reduced-motion.
-  const [transitioning, setTransitioning] = useState(false);
-  const isFirstRender = useRef(true);
+  // ─── Step-change loading gate ────────────────────────────────────────────────
+  // When the step changes to one that highlights an anchor that is NOT yet in
+  // the DOM (e.g. its panel opens a moment later), hold the card in place
+  // (frozen at its last position) showing a loading indicator until the anchor
+  // mounts, then reveal the repositioned card + cutout. This replaces a
+  // cross-fade: rather than animating through a half-positioned state (which
+  // read as flickery), we wait for the anchor and snap straight to the final
+  // position. `useElementRect` re-measures the new anchor synchronously on id
+  // change, so an anchor that is already present positions correctly in the
+  // same render — the gate keys off DOM PRESENCE (not pixel-perfect layout), so
+  // a present-but-still-laying-out anchor reveals immediately with no spinner.
+  const hasMeaningfulRect = rect !== null && (rect.width > 0 || rect.height > 0);
+
+  const anchorPresent = (anchorId: string | undefined): boolean => {
+    if (!anchorId || typeof document === "undefined") return false;
+    const scope = queryRoot ?? document;
+    return scope.querySelector(`[data-tour-id="${anchorId}"]`) !== null;
+  };
+
+  // The last position committed while NOT loading, so the card can hold there
+  // (frozen) during a load instead of jumping. State (not a ref) because it is
+  // read during render.
+  const [committedPosition, setCommittedPosition] = useState<Position | null>(null);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
+  const [trackedIndex, setTrackedIndex] = useState(stepIndex);
+  if (trackedIndex !== stepIndex) {
+    setTrackedIndex(stepIndex);
+    // Only "load" when this step targets an anchor that hasn't mounted yet.
+    const anchorId = steps[stepIndex]?.anchorId;
+    setPendingIndex(anchorId && !anchorPresent(anchorId) ? stepIndex : null);
+  }
+  // Clear the gate as soon as the target anchor mounts.
+  if (pendingIndex === stepIndex && anchorPresent(step?.anchorId)) {
+    setPendingIndex(null);
+  }
+  const loading = pendingIndex === stepIndex;
+
+  // Safety net: never spin forever if the anchor never resolves (e.g. it was
+  // removed, or the step's panel failed to open).
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (!open) return;
-    // SSR-safe reduced-motion check
-    if (
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-    let id: ReturnType<typeof setTimeout>;
-    // Use setTimeout(0) so the state update is deferred out of the effect body
-    // (avoids react-hooks/set-state-in-effect lint error from sync setState).
-    const startId = setTimeout(() => {
-      setTransitioning(true);
-      id = setTimeout(() => setTransitioning(false), 160);
-    }, 0);
-    return () => {
-      clearTimeout(startId);
-      clearTimeout(id);
-    };
-  }, [open, stepIndex]);
+    if (pendingIndex === null) return;
+    const id = setTimeout(() => setPendingIndex(null), 600);
+    return () => clearTimeout(id);
+  }, [pendingIndex]);
 
   const handleBack = useCallback(() => {
     if (stepIndex > 0) onStepChange(stepIndex - 1);
@@ -702,25 +714,43 @@ export function SpotlightGuide({
 
   if (!open || !step) return null;
 
-  const hasMeaningfulRect = rect !== null && (rect.width > 0 || rect.height > 0);
   const hasMeaningfulSecondaryRect = secondaryRect !== null && (secondaryRect.width > 0 || secondaryRect.height > 0);
+
+  // Compute the live position from the current rect, but freeze to the last
+  // committed position while loading so the card doesn't jump before the new
+  // anchor resolves.
+  const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const vpH = typeof window !== "undefined" ? window.innerHeight : 800;
+  const livePosition: Position = hasMeaningfulRect
+    ? calcTooltipPosition(rect!, step.placement, vpW, vpH)
+    : { top: vpH / 2 - TOOLTIP_H / 2, left: vpW / 2 - TOOLTIP_W / 2 };
+  // Track the live position while not loading so a subsequent load can freeze
+  // to it. Guarded so the render-phase update only fires when it actually moves.
+  if (
+    !loading &&
+    (committedPosition?.top !== livePosition.top ||
+      committedPosition?.left !== livePosition.left)
+  ) {
+    setCommittedPosition(livePosition);
+  }
+  const position = loading && committedPosition ? committedPosition : livePosition;
 
   return createPortal(
     <>
       <DimWithCutout
         rect={hasMeaningfulRect ? rect : null}
-        secondaryRect={hasMeaningfulSecondaryRect ? secondaryRect : null}
+        secondaryRect={loading ? null : hasMeaningfulSecondaryRect ? secondaryRect : null}
         gated={step.gated === true}
         passthrough={step.passthrough === true}
-        suppressHole={transitioning}
+        suppressHole={loading}
       />
       <TooltipCard
         step={step}
         stepIndex={stepIndex}
         total={steps.length}
-        rect={rect}
+        position={position}
+        loading={loading}
         gateSatisfied={gateSatisfied}
-        transitioning={transitioning}
         onBack={handleBack}
         onNext={handleNext}
         onSkip={onSkip}

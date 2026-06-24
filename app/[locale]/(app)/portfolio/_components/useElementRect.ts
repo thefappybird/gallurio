@@ -76,6 +76,25 @@ export function useElementRect(
     return (r.width > 0 || r.height > 0) ? domRectToPlain(r) : null;
   });
 
+  // Synchronously re-measure when the anchor id changes so the returned rect
+  // reflects the NEW anchor in the same render instead of lagging a frame on
+  // the previous one. The stale-frame lag is what made the guide flicker when
+  // stepping between anchors; the rAF loop below then keeps it live.
+  const [measuredId, setMeasuredId] = useState(id);
+  if (id !== measuredId) {
+    setMeasuredId(id);
+    let next: ElementRect | null = null;
+    if (typeof document !== "undefined" && id) {
+      const scope = root ?? document;
+      const el = scope.querySelector<Element>(`[data-tour-id="${id}"]`);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        next = r.width > 0 || r.height > 0 ? domRectToPlain(r) : null;
+      }
+    }
+    setRect(next);
+  }
+
   useEffect(() => {
     if (!id) {
       // No anchor requested — clear any stale rect via rAF so the call is not

@@ -253,6 +253,31 @@ describe("useElementRect", () => {
     el.remove();
   });
 
+  it("re-measures synchronously when the anchor id changes, returning the new anchor's rect without waiting for the rAF loop", () => {
+    // The cutout/tooltip must not lag a frame on the previous anchor when the
+    // step changes — a stale rect for one frame is what made the guide flicker.
+    const a = insertAnchor("sync-a", () => ({ top: 10, left: 10, width: 50, height: 20 }));
+    const b = insertAnchor("sync-b", () => ({ top: 300, left: 400, width: 120, height: 60 }));
+
+    const { result, rerender } = renderHook(
+      ({ id }: { id: string }) => useElementRect(id),
+      { initialProps: { id: "sync-a" } }
+    );
+    flushRaf();
+    expect(result.current?.width).toBe(50);
+
+    // Switch id WITHOUT flushing the rAF loop: the synchronous re-measure must
+    // already reflect the new anchor, with no stale "sync-a" rect lingering.
+    act(() => {
+      rerender({ id: "sync-b" });
+    });
+    expect(result.current?.width).toBe(120);
+    expect(result.current?.top).toBe(300);
+
+    a.remove();
+    b.remove();
+  });
+
   it("does NOT skip a zero-size rect on the very first measurement if no prior valid rect exists", () => {
     // If the element starts at zero size and never had a valid measurement,
     // the hook should stay at null (no stale positive-size rect to retain).
