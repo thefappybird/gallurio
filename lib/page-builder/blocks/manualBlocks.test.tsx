@@ -987,6 +987,18 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.flexGrow).toBe("1");
   });
 
+  it("editor mode: content slot fills the container height (flexGrow) so the whole area is droppable", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: true }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexGrow).toBe("1");
+  });
+
+  it("public page: content slot does NOT grow (no editor flexGrow) so layout is unchanged", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: false }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.flexGrow).toBe("");
+  });
+
   it("auto-height container gets an editor-only minHeight when editing (droppable footprint)", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: true }} />

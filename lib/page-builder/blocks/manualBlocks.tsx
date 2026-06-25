@@ -812,6 +812,15 @@ export function ContainerBlock({
           alignItems: "stretch",
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,
+          // In the editor, stretch the drop zone to fill the whole container so
+          // the entire (min-height-tall) section is a droppable surface — not just
+          // the small content-sized strip the slot occupies otherwise. Move the
+          // vertical alignment onto the slot so dropped content still aligns the
+          // same way. On the public page the slot stays content-sized and the
+          // section's justifyContent aligns it (unchanged output).
+          ...(puck?.isEditing
+            ? { flexGrow: 1, minHeight: 0, justifyContent: effectiveJustify }
+            : null),
         },
       })}
     </section>
