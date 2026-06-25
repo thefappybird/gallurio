@@ -104,6 +104,8 @@ export default async function SettingsCatchallPage({
     // Default inquiry routing to the owner's own email until they set another.
     inquiryRecipientEmail:
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
+    siteIconUrl: workspace.publicPage?.siteIcon?.url ?? "",
+    siteIconAssetId: workspace.publicPage?.siteIcon?.assetId ?? "",
   };
 
   const t = await getTranslations("app.settings.tabs");
