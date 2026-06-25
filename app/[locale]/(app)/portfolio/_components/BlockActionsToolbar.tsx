@@ -55,6 +55,20 @@ type Anchor = {
   overlayOpen: boolean;
 };
 
+// The block's nearest scrollable ancestor IS the visible canvas viewport (the
+// element whose top edge is the canvas "white line" and that clips on scroll).
+// Anchoring to it — not the outer [data-tour-id="canvas"] box, whose top sits up
+// behind the header — is what makes the invert/clip behave.
+export function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const overflowY = getComputedStyle(node).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
 function sameAnchor(a: Anchor | null, b: Anchor | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -72,6 +86,7 @@ function useBlockAnchor(id: string | undefined): Anchor | null {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const rafRef = useRef<number>(0);
   const lastRef = useRef<Anchor | null>(null);
+  const canvasRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (typeof document === "undefined" || !id) {
@@ -82,6 +97,7 @@ function useBlockAnchor(id: string | undefined): Anchor | null {
       });
       return () => cancelAnimationFrame(raf);
     }
+    canvasRef.current = null;
 
     function commit(next: Anchor | null) {
       if (sameAnchor(lastRef.current, next)) return;
@@ -91,15 +107,25 @@ function useBlockAnchor(id: string | undefined): Anchor | null {
 
     function measure() {
       const el = document.querySelector<HTMLElement>(`[data-puck-component="${id}"]`);
-      const canvas = document.querySelector<HTMLElement>('[data-tour-id="canvas"]');
-      if (!el || !el.isConnected || !canvas) {
+      if (!el || !el.isConnected) {
+        canvasRef.current = null;
         commit(null);
       } else {
+        // Resolve the canvas viewport once per block (the block's scroll parent),
+        // falling back to the outer canvas box. getComputedStyle is only touched
+        // here on (re)resolution, not every frame.
+        if (!canvasRef.current || !canvasRef.current.isConnected) {
+          canvasRef.current =
+            scrollParent(el) ?? document.querySelector<HTMLElement>('[data-tour-id="canvas"]');
+        }
+        const canvas = canvasRef.current;
         const r = el.getBoundingClientRect();
         if (r.width === 0 && r.height === 0) {
           commit(null);
         } else {
-          const c = canvas.getBoundingClientRect();
+          const c = canvas
+            ? canvas.getBoundingClientRect()
+            : ({ top: 0, bottom: window.innerHeight } as DOMRect);
           commit({
             blockTop: r.top,
             blockBottom: r.bottom,

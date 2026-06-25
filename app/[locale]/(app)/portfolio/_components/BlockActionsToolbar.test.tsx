@@ -28,7 +28,7 @@ vi.mock("@measured/puck", () => ({
     selector ? selector(mockApi) : mockApi,
 }));
 
-const { BlockActionsToolbar } = await import("./BlockActionsToolbar");
+const { BlockActionsToolbar, scrollParent } = await import("./BlockActionsToolbar");
 
 // Append a DOM node with a stubbed bounding rect (jsdom returns zeros otherwise).
 function mount(id: string, attr: string, rect: Partial<DOMRect>) {
@@ -44,6 +44,22 @@ function mount(id: string, attr: string, rect: Partial<DOMRect>) {
 afterEach(() => {
   cleanup();
   document.querySelectorAll("[data-tour-id='canvas'],[data-puck-component]").forEach((n) => n.remove());
+});
+
+describe("scrollParent", () => {
+  it("returns the nearest overflow:auto/scroll ancestor (the canvas viewport)", () => {
+    const outer = document.createElement("div");
+    const scroller = document.createElement("div");
+    scroller.style.overflowY = "auto";
+    const inner = document.createElement("div");
+    const block = document.createElement("div");
+    inner.appendChild(block);
+    scroller.appendChild(inner);
+    outer.appendChild(scroller);
+    document.body.appendChild(outer);
+    expect(scrollParent(block)).toBe(scroller);
+    outer.remove();
+  });
 });
 
 describe("BlockActionsToolbar", () => {
