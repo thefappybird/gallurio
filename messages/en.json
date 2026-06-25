@@ -1173,6 +1173,8 @@
           "team": "Team"
         },
         "actions": {
+          "decline": "Decline & notify",
+          "declinedToast": "Inquiry declined — the client has been notified.",
           "archive": "Archive",
           "working": "Saving…",
           "archivedToast": "Inquiry archived.",
@@ -1572,8 +1574,8 @@
             "body": "{assignerName} assigned a booking to your team."
           },
           "status_changed": {
-            "title": "Booking status updated",
-            "body": "{actorName} changed a booking status to {newStatus}."
+            "title": "{newStatus, select, cancelled {Booking cancelled} completed {Booking completed} booked {Booking confirmed} other {Booking status updated}}",
+            "body": "{newStatus, select, cancelled {{actorName} cancelled a booking.} completed {{actorName} marked a booking completed.} booked {{actorName} confirmed a booking.} other {{actorName} changed a booking status to {newStatus}.}}"
           }
         },
         "team": {
@@ -1640,7 +1642,11 @@
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
         "other": "Other"
-      }
+      },
+      "slugChecking": "Checking…",
+      "slugAvailable": "Available",
+      "slugTaken": "Already taken",
+      "slugInvalid": "Invalid format"
     },
     "plan": {
       "title": "Pick the plan that fits",

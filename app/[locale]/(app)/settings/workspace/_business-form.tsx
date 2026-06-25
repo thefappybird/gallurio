@@ -1,10 +1,11 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
+import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import {
   updateWorkspaceBusinessSchema,
   BILLING_COUNTRY_VALUES,
@@ -19,6 +20,7 @@ import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -71,11 +73,15 @@ export function WorkspaceBusinessForm({
     handleSubmit,
     setValue,
     reset,
+    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<UpdateWorkspaceBusinessInput>({
     resolver: zodResolver(updateWorkspaceBusinessSchema),
     defaultValues: defaults,
   });
+
+  const slugValue = useWatch({ control, name: "slug" });
+  const { status: slugStatus } = useSlugAvailability(slugValue, defaults.slug);
 
   async function onSubmit(data: UpdateWorkspaceBusinessInput) {
     const result = await updateWorkspaceBusinessAction(data);
@@ -106,8 +112,13 @@ export function WorkspaceBusinessForm({
             <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
               gallurio.com/w/
             </span>
-            <Input id="slug" {...register("slug")} />
+            <Input
+              id="slug"
+              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+              {...register("slug")}
+            />
           </div>
+          <SlugStatusIndicator status={slugStatus} t={tOnb} />
           {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
         </div>
 
@@ -203,7 +214,16 @@ export function WorkspaceBusinessForm({
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !isDirty}>
+          <Button
+            type="submit"
+            disabled={
+              isSubmitting ||
+              !isDirty ||
+              slugStatus === "checking" ||
+              slugStatus === "taken" ||
+              slugStatus === "invalid"
+            }
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -568,10 +568,7 @@
       "logOutConfirmBody": "Anda perlu log masuk semula untuk mengakses ruang kerja anda.",
       "logOutConfirmCancel": "Batal",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu akaun",
-      "logOutConfirmTitle": "Log keluar?",
-      "logOutConfirmBody": "Anda perlu log masuk semula untuk mengakses ruang kerja anda.",
-      "logOutConfirmCancel": "Batal"
+      "accountMenu": "Menu akaun"
     },
     "theme": {
       "label": "Tema",
@@ -1176,6 +1173,8 @@
           "team": "Pasukan"
         },
         "actions": {
+          "decline": "Tolak & maklumkan",
+          "declinedToast": "Pertanyaan ditolak — pelanggan telah dimaklumkan.",
           "archive": "Arkib",
           "working": "Menyimpan…",
           "archivedToast": "Pertanyaan diarkib.",
@@ -1575,8 +1574,8 @@
             "body": "{assignerName} memberikan tempahan kepada pasukan anda."
           },
           "status_changed": {
-            "title": "Status tempahan dikemas kini",
-            "body": "{actorName} menukar tempahan kepada {newStatus}."
+            "title": "{newStatus, select, cancelled {Tempahan dibatalkan} completed {Tempahan selesai} booked {Tempahan disahkan} other {Status tempahan dikemas kini}}",
+            "body": "{newStatus, select, cancelled {{actorName} membatalkan tempahan.} completed {{actorName} menandakan tempahan selesai.} booked {{actorName} mengesahkan tempahan.} other {{actorName} menukar status tempahan kepada {newStatus}.}}"
           }
         },
         "team": {
@@ -1643,7 +1642,11 @@
         "catering": "Katering",
         "entertainer": "Penghibur / DJ / Kugiran",
         "other": "Lain-lain"
-      }
+      },
+      "slugChecking": "Menyemak…",
+      "slugAvailable": "Tersedia",
+      "slugTaken": "Sudah diambil",
+      "slugInvalid": "Format tidak sah"
     },
     "plan": {
       "title": "Pilih pelan yang sesuai",

@@ -24,6 +24,8 @@ import { Client } from "@/lib/db/models";
 import { computeInquiryConflicts } from "@/lib/db/queries/inquiry-conflicts";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { INQUIRIES_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
+import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 
 export async function generateMetadata({
   params,
@@ -87,7 +89,10 @@ export default async function InquiriesPage({
   const { workspace, role, userId } = await requireOrg();
 
   const sp = await searchParams;
-  const view = sp.view === "calendar" ? "calendar" : "table";
+  const view = await resolveStoredCollectionView(
+    sp.view,
+    INQUIRIES_VIEW_COOKIE_NAME
+  );
 
   const parsedPage = Number.parseInt(sp.page ?? "1", 10);
   const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;

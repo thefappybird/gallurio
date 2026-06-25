@@ -568,10 +568,7 @@
       "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
       "logOutConfirmCancel": "Kanselahin",
       "portfolio": "Portfolio",
-      "accountMenu": "Menu ng account",
-      "logOutConfirmTitle": "Mag-log out?",
-      "logOutConfirmBody": "Kakailanganin mong mag-sign in muli para makabalik sa iyong workspace.",
-      "logOutConfirmCancel": "Kanselahin"
+      "accountMenu": "Menu ng account"
     },
     "theme": {
       "label": "Tema",
@@ -1176,6 +1173,8 @@
           "team": "Koponan"
         },
         "actions": {
+          "decline": "Tanggihan at abisuhan",
+          "declinedToast": "Tinanggihan ang katanungan — naabisuhan na ang kliyente.",
           "archive": "I-archive",
           "working": "Sino-save…",
           "archivedToast": "Naka-archive na ang katanungan.",
@@ -1575,8 +1574,8 @@
             "body": "Itinalaga ni {assignerName} ang isang booking sa iyong koponan."
           },
           "status_changed": {
-            "title": "Na-update ang status ng booking",
-            "body": "Binago ni {actorName} ang booking sa {newStatus}."
+            "title": "{newStatus, select, cancelled {Booking na-cancel} completed {Booking nakumpleto} booked {Booking nakumpirma} other {Na-update ang status ng booking}}",
+            "body": "{newStatus, select, cancelled {Kinansela ni {actorName} ang isang booking.} completed {Minarkahan ni {actorName} na kumpleto ang booking.} booked {Kinumpirma ni {actorName} ang isang booking.} other {Binago ni {actorName} ang status ng booking sa {newStatus}.}}"
           }
         },
         "team": {
@@ -1643,7 +1642,11 @@
         "catering": "Catering",
         "entertainer": "Entertainer / DJ / Band",
         "other": "Iba pa"
-      }
+      },
+      "slugChecking": "Tinitingnan…",
+      "slugAvailable": "Available",
+      "slugTaken": "Hindi available",
+      "slugInvalid": "Hindi tamang format"
     },
     "plan": {
       "title": "Pumili ng planong angkop",

@@ -48,10 +48,23 @@ export async function updateWorkspaceBusinessAction(
   }).lean();
   if (slugClash) return { error: "That URL is already taken — try another." };
 
-  await Workspace.updateOne(
-    { _id: ctx.workspace._id },
-    { $set: { name, slug, businessType, country, currency, timezone } },
-  );
+  try {
+    await Workspace.updateOne(
+      { _id: ctx.workspace._id },
+      { $set: { name, slug, businessType, country, currency, timezone } },
+    );
+  } catch (err) {
+    // Race-safe: map E11000 duplicate-key on slug to the same friendly message.
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "That URL is already taken — try another." };
+    }
+    throw err;
+  }
 
   revalidatePath("/settings/workspace", "page");
   return { ok: true };

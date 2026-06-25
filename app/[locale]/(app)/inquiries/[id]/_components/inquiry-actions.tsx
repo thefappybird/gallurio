@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/lib/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { archiveInquiryAction } from "../../_actions";
+import { archiveInquiryAction, declineInquiryAction } from "../../_actions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 
 type Props = {
@@ -41,6 +41,16 @@ export function InquiryActions({ inquiryId, status }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2">
+      {canArchive && (
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={working}
+          onClick={() => run(() => declineInquiryAction(inquiryId), t("declinedToast"))}
+        >
+          {t("decline")}
+        </Button>
+      )}
       {canArchive && (
         <Button
           variant="ghost"

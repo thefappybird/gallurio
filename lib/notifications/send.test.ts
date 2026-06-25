@@ -87,38 +87,113 @@ afterEach(() => {
 })
 
 describe('sendNotification', () => {
-  describe('self-exclusion', () => {
-    it('excludes triggeredByWorkosUserId from recipients', async () => {
+  describe('actor-silent delivery', () => {
+    it('persists actor with read:true, silent:true and does NOT emit loud notification to actor', async () => {
       await sendNotification(
         makeOpts({
           recipients: [
             { workosUserId: 'user-A', email: 'a@x.com' },
-            { workosUserId: 'trigger', email: 't@x.com' },
+            { workosUserId: 'actor', email: 'actor@x.com' },
           ],
-          triggeredByWorkosUserId: 'trigger',
+          triggeredByWorkosUserId: 'actor',
         }),
       )
 
-      const insertCall = (Notification.insertMany as ReturnType<typeof vi.fn>).mock.calls[0][0] as unknown[]
-      expect(insertCall).toHaveLength(1)
-      expect((insertCall[0] as { recipientWorkosUserId: string }).recipientWorkosUserId).toBe('user-A')
+      // Both should be inserted
+      const docs = (Notification.insertMany as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as Array<{ recipientWorkosUserId: string; read: boolean; silent: boolean }>
+      expect(docs).toHaveLength(2)
 
+      const actorDoc = docs.find((d) => d.recipientWorkosUserId === 'actor')
+      expect(actorDoc).toBeDefined()
+      expect(actorDoc!.read).toBe(true)
+      expect(actorDoc!.silent).toBe(true)
+
+      const nonActorDoc = docs.find((d) => d.recipientWorkosUserId === 'user-A')
+      expect(nonActorDoc).toBeDefined()
+      expect(nonActorDoc!.read).toBe(false)
+      expect(nonActorDoc!.silent).toBe(false)
+
+      // No loud emit to actor
       const emittedRooms = (mockTo.mock.calls as unknown as [string][]).map((c) => c[0])
       expect(emittedRooms).toContain('user:user-A')
-      expect(emittedRooms).not.toContain('user:trigger')
+      expect(emittedRooms).not.toContain('user:actor')
+    })
+
+    it('does NOT send email to actor', async () => {
+      await sendNotification(
+        makeOpts({
+          recipients: [
+            { workosUserId: 'user-A', email: 'a@x.com' },
+            { workosUserId: 'actor', email: 'actor@x.com' },
+          ],
+          triggeredByWorkosUserId: 'actor',
+        }),
+      )
+
+      const emailRecipients = (sendNotificationEmail.mock.calls as Array<[{ recipient: { workosUserId: string } }]>).map(
+        (c) => c[0].recipient.workosUserId,
+      )
+      expect(emailRecipients).toContain('user-A')
+      expect(emailRecipients).not.toContain('actor')
+    })
+
+    it('non-actor gets loud emit with read:false, silent:false', async () => {
+      await sendNotification(
+        makeOpts({
+          recipients: [
+            { workosUserId: 'non-actor', email: 'na@x.com' },
+            { workosUserId: 'actor', email: 'actor@x.com' },
+          ],
+          triggeredByWorkosUserId: 'actor',
+        }),
+      )
+
+      expect(mockTo).toHaveBeenCalledWith('user:non-actor')
+      expect(mockEmit).toHaveBeenCalledWith(
+        'notification:new',
+        expect.objectContaining({
+          read: false,
+          silent: false,
+        }),
+      )
     })
   })
 
-  describe('all recipients excluded', () => {
-    it('does nothing when all recipients are excluded', async () => {
+  describe('all recipients excluded (empty list)', () => {
+    it('does nothing when recipients list is empty', async () => {
       await sendNotification(
         makeOpts({
-          recipients: [{ workosUserId: 'trigger', email: 't@x.com' }],
-          triggeredByWorkosUserId: 'trigger',
+          recipients: [],
+          triggeredByWorkosUserId: 'actor',
         }),
       )
 
       expect(Notification.insertMany).not.toHaveBeenCalled()
+      expect(mockEmit).not.toHaveBeenCalled()
+      expect(sendNotificationEmail).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('actor-only recipients', () => {
+    it('persists actor doc silently but emits nothing and sends no email', async () => {
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'actor', email: 'actor@x.com' }],
+          triggeredByWorkosUserId: 'actor',
+        }),
+      )
+
+      // DB write happens (actor gets a silent record)
+      expect(Notification.insertMany).toHaveBeenCalledOnce()
+      const docs = (Notification.insertMany as ReturnType<typeof vi.fn>).mock.calls[0][0] as Array<{
+        read: boolean
+        silent: boolean
+      }>
+      expect(docs[0].read).toBe(true)
+      expect(docs[0].silent).toBe(true)
+
+      // No socket emit, no email
       expect(mockEmit).not.toHaveBeenCalled()
       expect(sendNotificationEmail).not.toHaveBeenCalled()
     })

@@ -22,6 +22,8 @@ import type { CalendarEvent } from "./_components/booking-calendar";
 import { buildBookingCalendarEvents } from "@/lib/bookings/build-booking-events";
 import type { BookingStatus } from "@/lib/validators/booking";
 import type { SupportedCurrency } from "@/lib/validators/workspace";
+import { BOOKINGS_VIEW_COOKIE_NAME } from "@/lib/view-preferences";
+import { resolveStoredCollectionView } from "@/lib/view-preferences.server";
 
 type ClientHit = {
   id: string;
@@ -80,7 +82,10 @@ export default async function BookingsPage({
   const allowedTeamIds = await resolveBookingTeamScope({ role, userId, workspace });
 
   const sp = await searchParams;
-  const view: BookingsView = sp.view === "calendar" ? "calendar" : "table";
+  const view = (await resolveStoredCollectionView(
+    sp.view,
+    BOOKINGS_VIEW_COOKIE_NAME
+  )) as BookingsView;
 
   // Phase 5 — team scoping. Owners see every team; non-owners see only their own
   // (both include deactivated teams, shown as view-only choices).

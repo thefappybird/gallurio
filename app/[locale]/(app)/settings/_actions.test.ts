@@ -252,6 +252,30 @@ describe("updateWorkspaceBusinessAction", () => {
     expect(wsBAfter?.slug).toBe("other-studio");
   });
 
+  it("maps E11000 duplicate-key race error to a friendly taken message (does not throw)", async () => {
+    await seedWorkspaceA();
+
+    // Simulate a race: the pre-write clash check passes (slug is free at check
+    // time) but the unique index fires on the actual write.
+    // We mock Workspace.updateOne to throw a synthetic E11000 error.
+    const mongooseModule = await import("mongoose");
+    const fakeE11000 = Object.assign(new Error("E11000 duplicate key error"), {
+      code: 11000,
+      name: "MongoServerError",
+      keyPattern: { slug: 1 },
+    });
+    const updateOneSpy = vi.spyOn(Workspace, "updateOne").mockRejectedValueOnce(fakeE11000);
+
+    const result = await updateWorkspaceBusinessAction({
+      ...validInput,
+      slug: "brand-new-slug", // no pre-existing clash, so pre-check passes
+    });
+
+    updateOneSpy.mockRestore();
+    expect(result.error).toMatch(/already taken/i);
+    expect(mongooseModule).toBeDefined(); // sanity
+  });
+
   it("role gating — non-owner gets error and doc is unchanged", async () => {
     await seedWorkspaceA();
 

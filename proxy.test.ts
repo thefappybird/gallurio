@@ -38,4 +38,46 @@ describe("proxy", () => {
     expect(authMiddlewareMock).not.toHaveBeenCalled();
     expect(intlMiddlewareMock).toHaveBeenCalledTimes(1);
   });
+
+  it("preserves original path+query as returnTo when redirecting unauthenticated users to sign-in (local /sign-in redirect)", async () => {
+    // Simulate authkitMiddleware signalling an unauthenticated request by
+    // returning a redirect to /sign-in (mock/test environments).
+    authMiddlewareMock.mockResolvedValueOnce(
+      NextResponse.redirect(new URL("http://localhost/sign-in"))
+    );
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/bookings?detail=abc");
+
+    const response = await proxy(req);
+
+    expect(response).toBeDefined();
+    const location = (response as Response).headers.get("location");
+    expect(location).not.toBeNull();
+    const redirected = new URL(location!);
+    expect(redirected.pathname).toBe("/sign-in");
+    expect(redirected.searchParams.get("returnTo")).toBe("/bookings?detail=abc");
+  });
+
+  it("preserves original path+query as returnTo when authkitMiddleware redirects to the hosted WorkOS auth endpoint", async () => {
+    // In real usage, authkitMiddleware calls workos.userManagement.getAuthorizationUrl
+    // and returns a redirect to the WorkOS authorization endpoint (api.workos.com),
+    // not the local /sign-in. This case was not handled before — verify it is now.
+    authMiddlewareMock.mockResolvedValueOnce(
+      NextResponse.redirect(
+        new URL("https://api.workos.com/user_management/authorize?client_id=test&state=xyz")
+      )
+    );
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/inquiries?inquiryId=abc123");
+
+    const response = await proxy(req);
+
+    expect(response).toBeDefined();
+    const location = (response as Response).headers.get("location");
+    expect(location).not.toBeNull();
+    const redirected = new URL(location!);
+    // Should redirect to the local sign-in page, not to authkit.app
+    expect(redirected.pathname).toBe("/sign-in");
+    expect(redirected.searchParams.get("returnTo")).toBe("/inquiries?inquiryId=abc123");
+  });
 });
