@@ -272,3 +272,36 @@ guard); `tsc`/`lint` clean.
   matches the visible area and the overlay tracks an empty container like any other
   block. Editor renders container heights in px (to feed `minEmptyHeight`); the
   public page keeps vh heights + a content-sized slot (unchanged).
+
+### Third wave — side-panel unification + contact styling (commits `2e75140`, `ad7c933`, `0f1b3a3`, `d5daead`, `4b88274`, `18b4357`, `fcf0c11`, `538d7a1`)
+
+The three non-Puck-block side panels (Navigation, Contact, Featured Popup) each carried
+their OWN `ColorSwatchRow` + `resolveSwatchHex(brandKit)` copy instead of the shared
+brand-aware control — the root of several reported issues. Plus three concrete contact
+rendering bugs.
+
+- **Swatch shows white but applies black (background/foreground).** `resolveContactColor`
+  built `var(--pf-color-${token})`, yielding the non-existent `--pf-color-background` /
+  `--pf-color-foreground` (real vars: `--pf-color-bg` / `--pf-color-fg`), so those tokens
+  fell back to a wrong color while the swatch showed the right hex. Fixed to reuse
+  `colorTokenToVar`; the duplicate copy in `ContactFormPreview` was removed. (Bug was on the
+  published page too.)
+- **Contact active/inactive tab styling missing in the editor canvas.** `ContactFormPreview`
+  rendered `<ContactForm>` without the contact config, so `getActiveTabExtraStyle(undefined)`
+  produced empty styles. Now passes `contactConfig`, matching the published page.
+- **Error-message color** now defaults to Gallurio's CRM error color `#e7000b` (the app
+  `--destructive`, exported as `CRM_ERROR_COLOR`) instead of `accent`, and appears as a
+  selectable swatch on the contact error-color control (via a new additive `extraSwatches`
+  prop on the shared `ColorSwatchRow`).
+- **Unify + float.** Navigation, Contact, and Featured Popup now use the shared
+  `toolbarPrimitives.ColorSwatchRow` (brand colors from `useBrandColors()`, so swatch DISPLAY
+  == APPLIED color) and float every control's effective default (`effectiveValue` derived
+  from each field's public-render fallback — display-only; props stay unset until edited).
+- **Featured Popup design synced.** Its custom `DesignDrawer` accordion was replaced with the
+  shared `EditorDrawerSection`/`EditorDrawerGroup` (Popup / Title styles / Button styles), so
+  it matches the Navigation/Contact panels and the Puck blocks.
+
+Spec + decisions are recorded here (the standalone spec doc was folded in). Public render
+output is unchanged; editor chrome stays English-only (the panels' localized swatch labels
+were dropped for the shared English labels). 68 tests across the touched suites; `tsc`/`lint`
+clean.
