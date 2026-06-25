@@ -1,7 +1,7 @@
 "use client";
 
 import { ContactForm, type InquiryFormLabels, type SubmitAppearance } from "@/app/(public)/w/[orgSlug]/_components/ContactForm";
-import type { ButtonAppearance } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
+import { resolveContactColor, type ButtonAppearance } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import type { PortfolioBrandKit, PortfolioContactConfig } from "@/lib/page-builder/types";
 
 type Props = {
@@ -19,12 +19,6 @@ const CONTACT_RADIUS_MAP: Record<string, string> = {
   subtle: "0.25rem",
   rounded: "0.5rem",
 };
-
-function resolveContactColor(value: string | undefined, fallback: string): string {
-  if (!value) return fallback;
-  if (value.startsWith("#")) return value;
-  return `var(--pf-color-${value}, ${fallback})`;
-}
 
 function resolvePopupStyle(contact: PortfolioContactConfig, brandKit: PortfolioBrandKit): React.CSSProperties {
   const fallbackBg = brandKit.backgroundColor;
@@ -86,6 +80,7 @@ export function ContactFormPreview({
             labels={labels}
             submitAppearance={submitAppearance}
             addSessionAppearance={addSessionAppearance}
+            contactConfig={contact}
             onSuccess={() => {}}
             preview
             compactLocationPicker
