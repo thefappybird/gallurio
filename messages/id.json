@@ -751,7 +751,21 @@
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Pengaturan halaman publik diperbarui.",
-        "visibilityUpdatedToast": "Visibilitas diperbarui."
+        "visibilityUpdatedToast": "Visibilitas diperbarui.",
+        "siteIconSection": "Ikon situs",
+        "siteIconHint": "Ditampilkan sebagai ikon tab browser untuk halaman portofolio publik Anda. Akan menggunakan logo header jika tidak disetel.",
+        "siteIconLabel": "Unggah ikon situs",
+        "siteIconUpload": "Pilih gambar",
+        "siteIconUploading": "Mengunggah…",
+        "siteIconRequirements": "PNG, JPEG, WebP atau AVIF · maks 1 MB · hingga 512 × 512 px",
+        "siteIconRemove": "Hapus",
+        "siteIconErrors": {
+          "type": "Hanya file PNG, JPEG, WebP atau AVIF yang diterima.",
+          "size": "File harus berukuran 1 MB atau lebih kecil.",
+          "dimensions": "Gambar harus 512 × 512 px atau lebih kecil.",
+          "image": "Tidak dapat membaca gambar. Coba file lain.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        }
       }
     },
     "teams": {
