@@ -91,4 +91,20 @@ describe("selectedBlockActions", () => {
       destinationIndex: 2,
     });
   });
+
+  it("sets moveUp to null when block is at index 0", () => {
+    const result = selectedBlockActions({ index: 0 }, 1);
+    expect(result?.moveUp).toBeNull();
+  });
+
+  it("provides moveUp action moving to sourceIndex - 1 within same zone", () => {
+    const result = selectedBlockActions({ index: 2 }, 3);
+    expect(result?.moveUp).toEqual({
+      type: "move",
+      sourceIndex: 2,
+      sourceZone: ROOT_ZONE,
+      destinationZone: ROOT_ZONE,
+      destinationIndex: 1,
+    });
+  });
 });
