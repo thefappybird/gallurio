@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { CollectionPopupChrome } from "@/lib/page-builder/blocks/CollectionPopupChrome";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Shared per-block style toolkit.
  *
  * `BlockStyle` is the section-level styling an owner applies to any Puck block

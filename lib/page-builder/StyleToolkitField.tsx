@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * StyleToolkitField — the block-level styling panel (`_style` custom Puck field).
