@@ -149,8 +149,7 @@ describe("HeaderPanelDialog", () => {
     expect(screen.queryAllByText("Navbar size")).toHaveLength(0);
   });
 
-  it("debounces the color spectrum input — multiple rapid changes produce one committed call", () => {
-    vi.useFakeTimers();
+  it("custom color picker commits every change immediately (shared ColorSwatchRow has no debounce)", () => {
     const onHeaderChange = vi.fn();
     renderWithProviders(<HeaderPanelDialog {...baseProps} onHeaderChange={onHeaderChange} />);
 
@@ -159,27 +158,28 @@ describe("HeaderPanelDialog", () => {
 
     const colorInput = screen.getByLabelText("Pick custom color");
 
-    // Simulate three rapid drag ticks
     fireEvent.change(colorInput, { target: { value: "#ff0000" } });
-    fireEvent.change(colorInput, { target: { value: "#ff8800" } });
     fireEvent.change(colorInput, { target: { value: "#ffcc00" } });
 
-    // The debounce has NOT fired yet — no backgroundColor commit
-    const callsBeforeFlush = onHeaderChange.mock.calls.filter((c) =>
-      JSON.stringify(c[0]).includes("Color"),
+    // Each change fires immediately — two commits, last one is the final color
+    const hexCalls = onHeaderChange.mock.calls.filter((c) =>
+      JSON.stringify(c[0]).includes("#ff"),
     );
-    expect(callsBeforeFlush).toHaveLength(0);
+    expect(hexCalls).toHaveLength(2);
+    expect(onHeaderChange).toHaveBeenLastCalledWith({ backgroundColor: "#ffcc00" });
+  });
 
-    // Advance past the 120 ms debounce window
-    vi.advanceTimersByTime(200);
+  it("link-color row shows foreground swatch as aria-pressed when linkColor is unset (effective default)", () => {
+    // With linkColor unset, PortfolioHeader falls back to var(--pf-color-fg) — "foreground".
+    // The shared ColorSwatchRow must reflect this via effectiveValue="foreground".
+    renderWithProviders(<HeaderPanelDialog {...baseProps} header={{} satisfies PortfolioHeaderConfig} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
-    // Exactly one commit with the final color
-    const callsAfterFlush = onHeaderChange.mock.calls.filter((c) =>
-      JSON.stringify(c[0]).includes("ffcc00"),
-    );
-    expect(callsAfterFlush).toHaveLength(1);
-
-    vi.useRealTimers();
+    // The "Text" swatch (foreground token) in the link-color row should be aria-pressed
+    const foregroundSwatches = screen.getAllByRole("button", { name: "Text" });
+    // First foreground swatch in the Links section (link color row)
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows percent suffixes for opacity controls", () => {

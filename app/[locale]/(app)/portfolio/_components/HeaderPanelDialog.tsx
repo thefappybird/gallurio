@@ -2,17 +2,16 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useDebounce } from "@/lib/hooks/useDebounce";
 import { toast } from "sonner";
-import { RotateCcw, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { cn } from "@/lib/utils";
-import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
+import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
+import { useBrandRadius } from "@/lib/page-builder/brandColors";
 import {
-  CONTACT_BUTTON_COLORS,
   HEADER_SHADOW_SIZES,
   HEADER_FONT_SIZES,
   HEADER_NAVBAR_SIZES,
@@ -21,9 +20,9 @@ import {
   type PortfolioBrandKit,
   type PortfolioHeaderConfig,
 } from "@/lib/page-builder/types";
+import type { StyleColorToken } from "@/lib/page-builder/styleToolkit";
 
 type Tab = "setup" | "design";
-const COLOR_TOKENS = CONTACT_BUTTON_COLORS;
 const LOGO_MAX_BYTES = 250 * 1024;
 const LOGO_MAX_WIDTH = 512;
 const LOGO_MAX_HEIGHT = 256;
@@ -32,124 +31,41 @@ const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 type Props = {
   header: PortfolioHeaderConfig;
   onHeaderChange: (next: PortfolioHeaderConfig) => void;
-  brandKit: PortfolioBrandKit;
+  /** Accepted for API compat but no longer consumed — shared ColorSwatchRow uses BrandColorsContext. */
+  brandKit?: PortfolioBrandKit;
   workspaceName: string;
   /** Called after a successful DB save — parent updates snapshot. */
-  onSaved: () => void;
+  onSaved?: () => void;
   /** Called on X/cancel — parent reverts to snapshot. */
-  onCancel: () => void;
+  onCancel?: () => void;
 };
 
-function resolveSwatchHex(token: (typeof COLOR_TOKENS)[number], brandKit: PortfolioBrandKit): string {
-  switch (token) {
-    case "primary":    return brandKit.primaryColor;
-    case "secondary":  return brandKit.secondaryColor;
-    case "accent":     return brandKit.accentColor;
-    case "background": return brandKit.backgroundColor;
-    case "foreground": return brandKit.foregroundColor;
-  }
-}
-
-function ColorSwatchRow({
+/**
+ * Labelled wrapper around the shared ColorSwatchRow.
+ * The shared control only renders the swatch buttons; the label lives here.
+ */
+function LabeledSwatchRow({
   label,
-  active,
-  brandKit,
-  onToggle,
-  allowNone = true,
+  value,
+  onChange,
+  allowNone,
+  effectiveValue,
 }: {
   label: string;
-  active: string | undefined;
-  brandKit: PortfolioBrandKit;
-  onToggle: (color: string | undefined) => void;
+  value: StyleColorToken | string | undefined;
+  onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
+  effectiveValue?: StyleColorToken | string;
 }) {
-  const isCustomHex =
-    typeof active === "string" &&
-    active.startsWith("#") &&
-    !(COLOR_TOKENS as readonly string[]).includes(active);
-
-  // Local display value for the spectrum input so the swatch stays visually live
-  // during a drag; the debounced commit coalesces rapid changes into one update.
-  const [liveColor, setLiveColor] = useState<string | null>(null);
-  const { debounced: debouncedToggle, flush } = useDebounce<string>(onToggle);
-
-  const displayColor = liveColor ?? (isCustomHex ? active : "#000000");
-
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {COLOR_TOKENS.map((colorToken) => {
-          const hex = resolveSwatchHex(colorToken, brandKit);
-          const isActive = active === colorToken;
-          return (
-            <button
-              key={colorToken}
-              type="button"
-              aria-label={colorToken}
-              aria-pressed={isActive}
-              onClick={() => {
-                setLiveColor(null);
-                onToggle(isActive ? undefined : colorToken);
-              }}
-              style={{ backgroundColor: hex }}
-              className={cn(
-                "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                isActive && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-              )}
-            />
-          );
-        })}
-        {allowNone && (
-          <button
-            type="button"
-            onClick={() => {
-              setLiveColor(null);
-              onToggle(undefined);
-            }}
-            title="Reset"
-            aria-label="Reset color"
-            className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <RotateCcw className="size-3.5" aria-hidden />
-          </button>
-        )}
-        {/* Spectrum / custom hex picker — onChange is debounced; swatch shows live local value */}
-        <label
-          title="Custom color"
-          aria-label="Custom color"
-          className={cn(
-            "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
-            (liveColor !== null || isCustomHex) && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-          )}
-          style={{ background: liveColor ?? (isCustomHex ? active : undefined) }}
-        >
-          <input
-            type="color"
-            value={displayColor ?? "#000000"}
-            onChange={(e) => {
-              setLiveColor(e.target.value);
-              debouncedToggle(e.target.value);
-            }}
-            onBlur={() => {
-              flush();
-              setLiveColor(null);
-            }}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            aria-label="Pick custom color"
-          />
-          {liveColor === null && !isCustomHex && (
-            <span
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
-                opacity: 0.85,
-              }}
-            />
-          )}
-        </label>
-      </div>
+      <ColorSwatchRow
+        value={value}
+        onChange={onChange}
+        allowNone={allowNone}
+        effectiveValue={effectiveValue}
+      />
     </div>
   );
 }
@@ -159,7 +75,6 @@ function BorderRow({
   colorLabel,
   width,
   color,
-  brandKit,
   onWidthChange,
   onColorChange,
 }: {
@@ -167,15 +82,16 @@ function BorderRow({
   colorLabel: string;
   width: number | undefined;
   color: string | undefined;
-  brandKit: PortfolioBrandKit;
   onWidthChange: (v: number | undefined) => void;
   onColorChange: (v: string | undefined) => void;
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <NumberInputRow label={widthLabel} value={width} min={0} max={8} onChange={onWidthChange} />
+      <NumberInputRow label={widthLabel} value={width} min={0} max={8} onChange={onWidthChange} effectiveValue={0} />
       {!!width && (
-        <ColorSwatchRow label={colorLabel} active={color} brandKit={brandKit} onToggle={onColorChange} allowNone={false} />
+        // borderBottomColor fallback is "color-mix(in srgb, var(--pf-color-fg) 14%, transparent)" —
+        // no clean single token; leave effectiveValue unset
+        <LabeledSwatchRow label={colorLabel} value={color} onChange={onColorChange} allowNone={false} />
       )}
     </div>
   );
@@ -210,28 +126,32 @@ function RadiusRow({
   active,
   onToggle,
   getLabel,
+  effectiveValue,
 }: {
   label: string;
   active: BrandKitRadius | "" | undefined;
   onToggle: (radius: BrandKitRadius | "") => void;
   getLabel: (radius: BrandKitRadius) => string;
+  effectiveValue?: BrandKitRadius;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex">
         {BRAND_KIT_RADII.map((radius) => {
-          const isActive = active === radius;
+          const isExplicit = active === radius;
+          const isEffective = !active && effectiveValue === radius;
           return (
             <button
               key={radius}
               type="button"
               aria-label={getLabel(radius)}
-              aria-pressed={isActive}
-              onClick={() => onToggle(isActive ? "" : radius)}
+              aria-pressed={isExplicit || isEffective}
+              onClick={() => onToggle(isExplicit ? "" : radius)}
               className={cn(
                 "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                isActive && "bg-foreground text-background hover:bg-foreground",
+                isExplicit && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground opacity-70",
               )}
             >
               {getLabel(radius)}
@@ -263,7 +183,6 @@ function getImageSize(file: File): Promise<{ width: number; height: number }> {
 export function HeaderPanelDialog({
   header,
   onHeaderChange,
-  brandKit,
   workspaceName,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.headerDialog");
@@ -272,6 +191,9 @@ export function HeaderPanelDialog({
   const [logoError, setLogoError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("setup");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Effective brand radius for the radius pickers (display-only, theme-coupled)
+  const effectiveBrandRadius = useBrandRadius();
 
   function set<K extends keyof PortfolioHeaderConfig>(key: K, value: PortfolioHeaderConfig[K]) {
     onHeaderChange({ ...header, [key]: value });
@@ -475,20 +397,23 @@ export function HeaderPanelDialog({
           <EditorDrawerGroup plain>
             {/* ── Banner ─────────────────────────────── */}
             <EditorDrawerSection title={t("sectionBanner")}>
-              <ColorSwatchRow
+              {/* backgroundColor: PortfolioHeader fallback = var(--pf-color-bg) → "background" */}
+              <LabeledSwatchRow
                 label={t("bgColorLabel")}
-                active={header.backgroundColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("backgroundColor", c)}
+                value={header.backgroundColor}
+                onChange={(c) => set("backgroundColor", c)}
+                effectiveValue="background"
               />
 
+              {/* backgroundOpacity: PortfolioHeader fallback = 100 */}
               <NumberInputRow
                 label={t("bgOpacityLabel")}
-                value={header.backgroundOpacity ?? 100}
+                value={header.backgroundOpacity}
                 min={0}
                 max={100}
                 suffix="%"
-                onChange={(v) => set("backgroundOpacity", v ?? 100)}
+                onChange={(v) => set("backgroundOpacity", v)}
+                effectiveValue={100}
               />
 
               <BorderRow
@@ -496,7 +421,6 @@ export function HeaderPanelDialog({
                 colorLabel={t("borderColorLabel")}
                 width={header.borderBottomWidth}
                 color={header.borderBottomColor}
-                brandKit={brandKit}
                 onWidthChange={(v) => set("borderBottomWidth", v)}
                 onColorChange={(v) => set("borderBottomColor", v)}
               />
@@ -553,25 +477,28 @@ export function HeaderPanelDialog({
                 </div>
               </div>
 
-              <ColorSwatchRow
+              {/* linkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
+              <LabeledSwatchRow
                 label={t("linkColorLabel")}
-                active={header.linkColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("linkColor", c)}
+                value={header.linkColor}
+                onChange={(c) => set("linkColor", c)}
+                effectiveValue="foreground"
               />
 
-              <ColorSwatchRow
+              {/* brandTextColor: PortfolioHeader fallback = linkColor → linkColor defaults to var(--pf-color-fg) → "foreground" */}
+              <LabeledSwatchRow
                 label={t("brandTextColorLabel")}
-                active={header.brandTextColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("brandTextColor", c)}
+                value={header.brandTextColor}
+                onChange={(c) => set("brandTextColor", c)}
+                effectiveValue="foreground"
               />
 
-              <ColorSwatchRow
+              {/* activeLinkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
+              <LabeledSwatchRow
                 label={t("activeLinkColorLabel")}
-                active={header.activeLinkColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("activeLinkColor", c)}
+                value={header.activeLinkColor}
+                onChange={(c) => set("activeLinkColor", c)}
+                effectiveValue="foreground"
               />
             </EditorDrawerSection>
 
@@ -595,21 +522,24 @@ export function HeaderPanelDialog({
 
               {/* Conditional: highlight bg color */}
               {header.activeLinkHighlight && (
-                <ColorSwatchRow
+                // highlightColor fallback = "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)"
+                // — no clean single token; leave effectiveValue unset
+                <LabeledSwatchRow
                   label={t("highlightColorLabel")}
-                  active={header.highlightColor}
-                  brandKit={brandKit}
-                  onToggle={(c) => set("highlightColor", c)}
+                  value={header.highlightColor}
+                  onChange={(c) => set("highlightColor", c)}
                 />
               )}
               {header.activeLinkHighlight && (
+                // highlightOpacity: PortfolioHeader fallback = 100
                 <NumberInputRow
                   label={t("highlightOpacityLabel")}
-                  value={header.highlightOpacity ?? 100}
+                  value={header.highlightOpacity}
                   min={0}
                   max={100}
                   suffix="%"
-                  onChange={(v) => set("highlightOpacity", v ?? 100)}
+                  onChange={(v) => set("highlightOpacity", v)}
+                  effectiveValue={100}
                 />
               )}
               {header.activeLinkHighlight && (
@@ -618,47 +548,54 @@ export function HeaderPanelDialog({
                   active={header.activeLinkRadius}
                   onToggle={(radius) => set("activeLinkRadius", radius)}
                   getLabel={(radius) => t(`radius.${radius}`)}
+                  effectiveValue={effectiveBrandRadius}
                 />
               )}
 
               {/* Conditional: underline color */}
               {header.activeLinkUnderline && (
-                <ColorSwatchRow
+                // underlineColor: PortfolioHeader fallback = var(--pf-color-accent) → "accent"
+                <LabeledSwatchRow
                   label={t("underlineColorLabel")}
-                  active={header.underlineColor}
-                  brandKit={brandKit}
-                  onToggle={(c) => set("underlineColor", c)}
+                  value={header.underlineColor}
+                  onChange={(c) => set("underlineColor", c)}
+                  effectiveValue="accent"
                 />
               )}
             </EditorDrawerSection>
 
             {/* ── Contact button ──────────────────────── */}
             <EditorDrawerSection title={t("sectionContactButton")}>
-              <ColorSwatchRow
+              {/* contactButtonColor: PortfolioHeader fallback = var(--pf-color-primary) → "primary" */}
+              <LabeledSwatchRow
                 label={t("contactButtonColorLabel")}
-                active={header.contactButtonColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("contactButtonColor", c)}
+                value={header.contactButtonColor}
+                onChange={(c) => set("contactButtonColor", c)}
+                effectiveValue="primary"
               />
+              {/* contactButtonOpacity: PortfolioHeader fallback = 100 */}
               <NumberInputRow
                 label={t("contactButtonOpacityLabel")}
-                value={header.contactButtonOpacity ?? 100}
+                value={header.contactButtonOpacity}
                 min={0}
                 max={100}
                 suffix="%"
-                onChange={(v) => set("contactButtonOpacity", v ?? 100)}
+                onChange={(v) => set("contactButtonOpacity", v)}
+                effectiveValue={100}
               />
-              <ColorSwatchRow
+              {/* contactButtonTextColor: PortfolioHeader fallback = var(--pf-color-bg) → "background" */}
+              <LabeledSwatchRow
                 label={t("contactButtonTextColorLabel")}
-                active={header.contactButtonTextColor}
-                brandKit={brandKit}
-                onToggle={(c) => set("contactButtonTextColor", c)}
+                value={header.contactButtonTextColor}
+                onChange={(c) => set("contactButtonTextColor", c)}
+                effectiveValue="background"
               />
               <RadiusRow
                 label={t("cornerRadiusLabel")}
                 active={header.contactButtonRadius}
                 onToggle={(radius) => set("contactButtonRadius", radius)}
                 getLabel={(radius) => t(`radius.${radius}`)}
+                effectiveValue={effectiveBrandRadius}
               />
             </EditorDrawerSection>
           </EditorDrawerGroup>
