@@ -365,7 +365,7 @@ async function seedWorkspace(
   const toTimeStr = (h: number, min = 0): string =>
     `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 
-  // Conflict anchors: two "new" inquiries share today's booking date+time window
+  // Conflict anchors: two "inquiry" inquiries share today's booking date+time window
   // so the calendar conflict filter and conflict-color gating are exercisable.
   const conflictDateStr = toDateStr(todaySlot.start);
   const conflictStartH = todaySlot.start.getHours();
@@ -373,13 +373,13 @@ async function seedWorkspace(
 
   // 15 inquiries across trailing 30 days, mix of statuses (some converted).
   const inquiryPayloads = Array.from({ length: 15 }).map((_, i) => {
-    const status = pick(["new", "new", "booked", "booked", "archived"] as const);
+    const status = pick(["inquiry", "inquiry", "booked", "booked", "archived"] as const);
     const eventDate = dayOffset(range(30, 200));
     const startH = range(9, 15); // 9am–3pm start for a business-hours feel
     const durationH = range(2, 5);
 
-    // Inquiries 13 and 14 are forced "new" and overlap the today booking so the
-    // New/Conflicted calendar filter and conflict coloring can be verified.
+    // Inquiries 13 and 14 are forced "inquiry" and overlap the today booking so the
+    // Inquiry/Conflicted calendar filter and conflict coloring can be verified.
     const isConflict = i >= 13;
     const sessionDate = isConflict ? conflictDateStr : toDateStr(eventDate);
     const sessionStartH = isConflict ? conflictStartH : startH;
@@ -416,7 +416,7 @@ async function seedWorkspace(
       eventDate: isConflict ? todaySlot.start : eventDate,
       eventType: pick(EVENT_TYPES),
       budgetRange: pick(["under 50k", "50-100k", "100-250k", "250k+"]),
-      status: isConflict ? ("new" as const) : status,
+      status: isConflict ? ("inquiry" as const) : status,
       createdAt: dayOffset(-range(0, 30)),
     };
   });

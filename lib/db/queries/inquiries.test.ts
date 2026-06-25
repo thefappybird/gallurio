@@ -42,7 +42,7 @@ async function seedInquiry(
     workspaceId: wid,
     name: overrides.name ?? "Emma Carter",
     email: overrides.email ?? "emma@example.com",
-    status: overrides.status ?? "new",
+    status: overrides.status ?? "inquiry",
     eventType: overrides.eventType ?? "wedding",
     createdAt,
     updatedAt: createdAt,
@@ -62,7 +62,7 @@ describe("listInquiries", () => {
   });
 
   it("filters by status", async () => {
-    await seedInquiry(workspaceId, { status: "new" });
+    await seedInquiry(workspaceId, { status: "inquiry" });
     await seedInquiry(workspaceId, { status: "booked" });
     await seedInquiry(workspaceId, { status: "converted" });
 
@@ -72,7 +72,7 @@ describe("listInquiries", () => {
   });
 
   it("ignores an invalid status value", async () => {
-    await seedInquiry(workspaceId, { status: "new" });
+    await seedInquiry(workspaceId, { status: "inquiry" });
     const { rows } = await listInquiries(workspaceId, { status: "bogus" });
     expect(rows).toHaveLength(1);
   });
@@ -107,15 +107,15 @@ describe("listInquiries", () => {
 
 describe("getInquiryStatusCounts", () => {
   it("counts per status and totals only real statuses", async () => {
-    await seedInquiry(workspaceId, { status: "new" });
-    await seedInquiry(workspaceId, { status: "new" });
+    await seedInquiry(workspaceId, { status: "inquiry" });
+    await seedInquiry(workspaceId, { status: "inquiry" });
     await seedInquiry(workspaceId, { status: "archived" });
     await seedInquiry(workspaceId, { status: "booked" });
     await seedInquiry(workspaceId, { status: "converted" });
-    await seedInquiry(otherWorkspaceId, { status: "new" });
+    await seedInquiry(otherWorkspaceId, { status: "inquiry" });
 
     const counts = await getInquiryStatusCounts(workspaceId);
-    expect(counts).toEqual({ new: 2, booked: 2, archived: 1, all: 5 });
+    expect(counts).toEqual({ inquiry: 2, booked: 2, archived: 1, all: 5 });
   });
 });
 
@@ -152,7 +152,7 @@ describe("getInquiryWithDraft", () => {
       workspaceId,
       name: "Emma",
       email: "emma@example.com",
-      status: "new",
+      status: "inquiry",
       eventDate: new Date("2030-08-15T00:00:00Z"),
       clientId: client._id,
       draftBookingId: booking._id,

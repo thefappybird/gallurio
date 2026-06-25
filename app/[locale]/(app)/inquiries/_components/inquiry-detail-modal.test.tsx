@@ -41,7 +41,7 @@ const detail: InquiryDetailModalData = {
   email: "alice@example.com",
   phone: null,
   preferredContact: "email",
-  status: "new",
+  status: "inquiry",
   eventType: "wedding",
   guestCount: null,
   location: null,

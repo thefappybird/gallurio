@@ -1078,12 +1078,12 @@
       },
       "tabs": {
         "all": "Lahat",
-        "new": "Bago",
+        "inquiry": "Inquiry",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
-        "new": "Bago",
+        "inquiry": "Inquiry",
         "archived": "Naka-archive",
         "booked": "Na-book",
         "converted": "Na-convert sa Booking"
@@ -1212,7 +1212,7 @@
       "calendar": {
         "empty": "Walang mga katanungan o booking na ipapakita.",
         "filters": {
-          "new": "Bago",
+          "inquiry": "Inquiry",
           "booked": "Naka-book",
           "conflicted": "May Salungatan"
         },

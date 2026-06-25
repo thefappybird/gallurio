@@ -71,7 +71,7 @@ async function seedInquiry(
     workspaceId: wid,
     name: "Test Client",
     email: "test@example.com",
-    status: overrides.status ?? "new",
+    status: overrides.status ?? "inquiry",
     eventDate: utcStart,
     clientId: client._id,
     draftBookingId: booking._id,

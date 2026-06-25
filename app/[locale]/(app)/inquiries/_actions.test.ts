@@ -112,7 +112,7 @@ async function seedDraft(wid: Types.ObjectId) {
     workspaceId: wid,
     name: "Emma Carter",
     email: "emma@example.com",
-    status: "new",
+    status: "inquiry",
     eventDate: new Date("2030-08-15T00:00:00Z"),
     clientId: client._id,
     draftBookingId: booking._id,
@@ -152,7 +152,7 @@ async function seedDraftWithSessions(
     workspaceId: wid,
     name: "Session Client",
     email: "session@example.com",
-    status: "new",
+    status: "inquiry",
     eventDate: utcStart,
     clientId: client._id,
     draftBookingId: booking._id,
@@ -282,7 +282,7 @@ describe("approveInquiryBookingAction", () => {
     expect(freshBooking?.status).toBe("draft");
 
     const freshInquiry = await Inquiry.findById(inquiry._id).lean();
-    expect(freshInquiry?.status).toBe("new");
+    expect(freshInquiry?.status).toBe("inquiry");
     expect(freshInquiry?.convertedBookingId).toBeNull();
   });
 
@@ -370,7 +370,7 @@ describe("saveDraftBookingFieldsAction", () => {
     expect(fresh?.amount?.total).toBe(5000);
     expect(fresh?.notes).toBe("hold");
     expect(fresh?.status).toBe("draft"); // still a draft
-    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("new");
+    expect((await Inquiry.findById(inquiry._id).lean())?.status).toBe("inquiry");
   });
 
   it("is owner-only", async () => {
@@ -504,7 +504,7 @@ async function seedInquiryWithDraft(
     workspaceId: wid,
     name: "Test Client",
     email: "test@example.com",
-    status: overrides.status ?? "new",
+    status: overrides.status ?? "inquiry",
     eventDate: utcStart,
     clientId: client._id,
     draftBookingId: booking._id,

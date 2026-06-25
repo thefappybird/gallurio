@@ -143,9 +143,9 @@ describe("getKpiSnapshot", () => {
     expect(snap.activeBookingsThisMonth).toBe(1);
   });
 
-  it("counts new inquiries only with status='new'", async () => {
+  it("counts new inquiries only with status='inquiry'", async () => {
     const ed = new Date("2030-08-15T00:00:00Z");
-    await Inquiry.create({ workspaceId, name: "A", email: "a@ex.com", status: "new", eventDate: ed });
+    await Inquiry.create({ workspaceId, name: "A", email: "a@ex.com", status: "inquiry", eventDate: ed });
     await Inquiry.create({ workspaceId, name: "B", email: "b@ex.com", status: "converted", eventDate: ed });
     const snap = await getKpiSnapshot(workspaceId);
     expect(snap.newInquiries).toBe(1);
@@ -184,7 +184,7 @@ describe("tenant isolation", () => {
       workspaceId: otherWorkspaceId,
       name: "X",
       email: "x@x.com",
-      status: "new",
+      status: "inquiry",
       eventDate: new Date("2030-08-15T00:00:00Z"),
     });
 
@@ -203,7 +203,7 @@ describe("tenant isolation", () => {
       workspaceId: otherWorkspaceId,
       name: "Leak",
       email: "leak@x.com",
-      status: "new",
+      status: "inquiry",
       eventDate: new Date("2030-08-15T00:00:00Z"),
     });
     await ActivityLog.create({
@@ -260,7 +260,7 @@ describe("getUpcomingWeek", () => {
 describe("getPipelineCounts", () => {
   it("counts new inquiries and booked bookings separately", async () => {
     const ed = new Date("2030-08-15T00:00:00Z");
-    await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "new", eventDate: ed });
+    await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "inquiry", eventDate: ed });
     await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "converted", eventDate: ed });
     await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived", eventDate: ed });
     await seedBooking(workspaceId, { status: "booked" });

@@ -1078,12 +1078,12 @@
       },
       "tabs": {
         "all": "All",
-        "new": "New",
+        "inquiry": "Inquiry",
         "booked": "Booked",
         "archived": "Archived"
       },
       "statusValues": {
-        "new": "New",
+        "inquiry": "Inquiry",
         "archived": "Archived",
         "booked": "Booked",
         "converted": "Converted To Booking"
@@ -1212,7 +1212,7 @@
       "calendar": {
         "empty": "No inquiries or bookings to show.",
         "filters": {
-          "new": "New",
+          "inquiry": "Inquiry",
           "booked": "Booked",
           "conflicted": "Conflicted"
         },

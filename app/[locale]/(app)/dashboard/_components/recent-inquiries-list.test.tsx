@@ -22,7 +22,7 @@ function makeInquiry(overrides: Partial<InquiryDoc> = {}): InquiryDoc {
       utm_campaign: null,
       referrer: null,
     },
-    status: "new",
+    status: "inquiry",
     convertedClientId: null,
     convertedBookingId: null,
     createdAt: new Date(),
@@ -49,7 +49,7 @@ describe("RecentInquiriesList", () => {
     renderWithProviders(
       <RecentInquiriesList
         inquiries={[
-          makeInquiry({ name: "Lena Okafor", eventType: "corporate", status: "new" }),
+          makeInquiry({ name: "Lena Okafor", eventType: "corporate", status: "inquiry" }),
           makeInquiry({ name: "Jordan Patel", eventType: "wedding", status: "booked" }),
         ]}
         locale="en"
@@ -60,7 +60,7 @@ describe("RecentInquiriesList", () => {
     );
     expect(screen.getByText("Lena Okafor")).toBeInTheDocument();
     expect(screen.getByText("Jordan Patel")).toBeInTheDocument();
-    expect(screen.getByText("new")).toBeInTheDocument();
+    expect(screen.getByText("inquiry")).toBeInTheDocument();
     expect(screen.getByText("booked")).toBeInTheDocument();
   });
 

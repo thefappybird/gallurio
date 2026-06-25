@@ -75,7 +75,7 @@ describe("backfill: eventDate", () => {
       workspaceId,
       name: "Test",
       email: "t@x.com",
-      status: "new",
+      status: "inquiry",
       eventDate: null,
       sessions: [
         { startDate: "2030-08-20", startTime: "10:00", endTime: "18:00" },
@@ -97,7 +97,7 @@ describe("backfill: eventDate", () => {
       workspaceId,
       name: "Test",
       email: "t@x.com",
-      status: "new",
+      status: "inquiry",
       eventDate: existing,
       sessions: [{ startDate: "2030-08-15", startTime: "09:00", endTime: "17:00" }],
     });
@@ -114,7 +114,7 @@ describe("backfill: eventDate", () => {
       workspaceId,
       name: "No sessions",
       email: "ns@x.com",
-      status: "new",
+      status: "inquiry",
       eventDate: null,
       sessions: [],
     });
@@ -132,7 +132,7 @@ describe("backfill: contacted -> booked rename", () => {
     await mongoose.connection.collection("inquiries").insertMany([
       { workspaceId, name: "A", email: "a@x.com", status: "contacted", eventDate: new Date() },
       { workspaceId, name: "B", email: "b@x.com", status: "contacted", eventDate: new Date() },
-      { workspaceId, name: "C", email: "c@x.com", status: "new", eventDate: new Date() },
+      { workspaceId, name: "C", email: "c@x.com", status: "inquiry", eventDate: new Date() },
     ]);
 
     const modified = await runContactedToBookedRename();
@@ -140,11 +140,11 @@ describe("backfill: contacted -> booked rename", () => {
 
     const booked = await mongoose.connection.collection("inquiries").countDocuments({ status: "booked" });
     const contacted = await mongoose.connection.collection("inquiries").countDocuments({ status: "contacted" });
-    const newCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "new" });
+    const inquiryCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "inquiry" });
 
     expect(booked).toBe(2);
     expect(contacted).toBe(0);
-    expect(newCount).toBe(1);
+    expect(inquiryCount).toBe(1);
   });
 
   it("is idempotent -- running twice does not change already-booked inquiries", async () => {
@@ -170,7 +170,7 @@ describe("backfill: approved -> booked rename", () => {
     await mongoose.connection.collection("inquiries").insertMany([
       { workspaceId, name: "A", email: "a@x.com", status: "approved", eventDate: new Date() },
       { workspaceId, name: "B", email: "b@x.com", status: "approved", eventDate: new Date() },
-      { workspaceId, name: "C", email: "c@x.com", status: "new", eventDate: new Date() },
+      { workspaceId, name: "C", email: "c@x.com", status: "inquiry", eventDate: new Date() },
     ]);
 
     const modified = await runApprovedToBookedRename();
@@ -178,11 +178,11 @@ describe("backfill: approved -> booked rename", () => {
 
     const booked = await mongoose.connection.collection("inquiries").countDocuments({ status: "booked" });
     const approved = await mongoose.connection.collection("inquiries").countDocuments({ status: "approved" });
-    const newCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "new" });
+    const inquiryCount = await mongoose.connection.collection("inquiries").countDocuments({ status: "inquiry" });
 
     expect(booked).toBe(2);
     expect(approved).toBe(0);
-    expect(newCount).toBe(1);
+    expect(inquiryCount).toBe(1);
   });
 
   it("is idempotent -- running twice does not change already-booked inquiries", async () => {

@@ -56,7 +56,7 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
       firstSessionStart: { $gte: monthStart, $lte: monthEnd },
       status: "booked",
     }),
-    Inquiry.countDocuments({ workspaceId, status: "new" }),
+    Inquiry.countDocuments({ workspaceId, status: "inquiry" }),
     Booking.aggregate<{ _id: null; total: number; paid: number }>([
       { $match: { workspaceId, status: "booked" } },
       {
@@ -144,7 +144,7 @@ export type PipelineCounts = {
 
 export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
   const [inquiries, booked] = await Promise.all([
-    Inquiry.countDocuments({ workspaceId, status: "new" }),
+    Inquiry.countDocuments({ workspaceId, status: "inquiry" }),
     Booking.countDocuments({ workspaceId, status: "booked" }),
   ]);
   return { inquiries, booked };

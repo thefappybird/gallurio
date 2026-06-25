@@ -1,4 +1,4 @@
-export const INQUIRY_STATUS_VALUES = ["new", "booked", "converted", "archived"] as const;
+export const INQUIRY_STATUS_VALUES = ["inquiry", "booked", "converted", "archived"] as const;
 
 export const BOOKED_INQUIRY_STATUS = "booked";
 // "converted" is a terminal booked state treated identically to "booked" for
@@ -23,9 +23,9 @@ export function getInquiryStatusLabelKey(status: string | null | undefined): str
   // Legacy "approved" was an intermediate value (contacted -> approved -> booked).
   // Map it to "booked" so it renders correctly without a MISSING_MESSAGE error.
   if (status === "approved") return BOOKED_INQUIRY_STATUS;
-  // Safe fallback: if the status is unknown or missing, return "new" so t(key)
+  // Safe fallback: if the status is unknown or missing, return "inquiry" so t(key)
   // never hits MISSING_MESSAGE. This is defence-in-depth only -- callers should
   // pass a valid INQUIRY_STATUS_VALUES member.
-  const key = status ?? "new";
-  return (INQUIRY_STATUS_VALUES as readonly string[]).includes(key) ? key : "new";
+  const key = status ?? "inquiry";
+  return (INQUIRY_STATUS_VALUES as readonly string[]).includes(key) ? key : "inquiry";
 }

@@ -142,7 +142,7 @@ export async function submitInquiry(
               utm_campaign: normalizeOptional(payload.utm_campaign),
               referrer: normalizeOptional(payload.referrer),
             },
-            status: "new",
+            status: "inquiry",
             clientId: resolvedClientId,
           },
         ],

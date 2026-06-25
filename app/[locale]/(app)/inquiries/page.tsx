@@ -162,8 +162,8 @@ export default async function InquiriesPage({
       allClients.map((c) => [c._id.toString(), c.email ?? null])
     );
 
-    // Keep only un-converted inquiries (new) for the calendar overlay.
-    const unconvertedInquiries = items.filter((q) => q.status === "new");
+    // Keep only un-converted inquiries (inquiry status) for the calendar overlay.
+    const unconvertedInquiries = items.filter((q) => q.status === "inquiry");
 
     const inquiryEvents = buildInquiryCalendarEvents(
       unconvertedInquiries.map((q) => ({

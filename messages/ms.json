@@ -1078,12 +1078,12 @@
       },
       "tabs": {
         "all": "Semua",
-        "new": "Baru",
+        "inquiry": "Pertanyaan",
         "booked": "Ditempah",
         "archived": "Diarkib"
       },
       "statusValues": {
-        "new": "Baru",
+        "inquiry": "Pertanyaan",
         "archived": "Diarkib",
         "booked": "Ditempah",
         "converted": "Ditukar Kepada Tempahan"
@@ -1212,7 +1212,7 @@
       "calendar": {
         "empty": "Tiada pertanyaan atau tempahan untuk dipaparkan.",
         "filters": {
-          "new": "Baharu",
+          "inquiry": "Pertanyaan",
           "booked": "Ditempah",
           "conflicted": "Berkonflik"
         },

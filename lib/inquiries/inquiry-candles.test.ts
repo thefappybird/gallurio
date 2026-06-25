@@ -36,7 +36,7 @@ describe("buildInquiryCalendarEvents", () => {
   it("sets kind to 'inquiry', inquiryId, and colorOverride to var(--event-inquiry) for active inquiries", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
-    ], { status: "new" });
+    ], { status: "inquiry" });
     const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
     expect(event.kind).toBe("inquiry");
     expect(event.inquiryId).toBe("abc123");
@@ -46,7 +46,7 @@ describe("buildInquiryCalendarEvents", () => {
   it("sets colorOverride to var(--danger) for conflicted unbooked inquiries", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
-    ], { status: "new", hasConflict: true });
+    ], { status: "inquiry", hasConflict: true });
     const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
     expect(event.colorOverride).toBe("var(--danger)");
   });
@@ -54,7 +54,7 @@ describe("buildInquiryCalendarEvents", () => {
   it("sets colorOverride to var(--event-inquiry) for non-conflicted unbooked inquiries", () => {
     const inq = makeInquiry("abc123", [
       { startDate: futureStr, startTime: "09:00", endTime: "17:00" },
-    ], { status: "new", hasConflict: false });
+    ], { status: "inquiry", hasConflict: false });
     const [event] = buildInquiryCalendarEvents([inq], { today: TODAY, tz: TZ });
     expect(event.colorOverride).toBe("var(--event-inquiry)");
   });

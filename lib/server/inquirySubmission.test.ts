@@ -104,7 +104,7 @@ describe("submitInquiry", () => {
     expect(String(booking.clientId)).toBe(String(client._id));
     expect(client.source).toBe("form");
     expect(client.email).toBe("emma@example.com");
-    expect(inquiry.status).toBe("new");
+    expect(inquiry.status).toBe("inquiry");
     expect(inquiry.convertedBookingId).toBeNull();
     expect(inquiry.eventTitle).toBe("Emma & Noah Wedding");
     expect(booking.title).toBe("Emma & Noah Wedding");

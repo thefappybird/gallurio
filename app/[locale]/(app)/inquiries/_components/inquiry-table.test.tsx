@@ -7,7 +7,7 @@ const baseRow: InquiryRow = {
   id: "inq-1",
   name: "Maria Santos",
   email: "maria@example.com",
-  status: "new",
+  status: "inquiry",
   eventTitle: "Santos Wedding",
   eventDate: "2026-09-15T00:00:00.000Z",
   eventType: "wedding",
