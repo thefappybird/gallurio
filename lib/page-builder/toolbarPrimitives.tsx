@@ -108,6 +108,7 @@ export function ColorSwatchRow({
   onChange,
   allowNone = true,
   effectiveValue,
+  extraSwatches,
 }: {
   value: StyleColorToken | string | undefined;
   onChange: (next: StyleColorToken | string | undefined) => void;
@@ -117,14 +118,20 @@ export function ColorSwatchRow({
    *  buttonColorToken is a custom hex); a hex never matches a palette swatch so
    *  nothing lights up — correct behaviour. */
   effectiveValue?: StyleColorToken | string;
+  /** Fixed-color swatches rendered after the token swatches (before none/custom-hex).
+   *  Each has its own hex value and label; clicking selects that exact hex string.
+   *  These values are excluded from the custom-hex highlight — they are not "custom". */
+  extraSwatches?: { value: string; label: string }[];
 }) {
   // Resolved hex (via context) so swatches show the real color even when the
   // popover is portaled outside the `--pf-color-*` scope.
   const colors = useBrandColors();
+  const extraSwatchValues = extraSwatches?.map((s) => s.value) ?? [];
   const isCustomHex =
     typeof value === "string" &&
     value.startsWith("#") &&
-    !(STYLE_COLOR_TOKENS as readonly string[]).includes(value);
+    !(STYLE_COLOR_TOKENS as readonly string[]).includes(value) &&
+    !extraSwatchValues.includes(value);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {STYLE_COLOR_TOKENS.map((token) => {
@@ -143,6 +150,26 @@ export function ColorSwatchRow({
               isEffective && "ring-1 ring-foreground ring-offset-1 ring-offset-background opacity-70"
             )}
             style={{ background: colors[token] }}
+          />
+        );
+      })}
+      {extraSwatches?.map((sw) => {
+        const isSelected = value === sw.value;
+        const isEffective = value === undefined && effectiveValue === sw.value;
+        return (
+          <button
+            key={sw.value}
+            type="button"
+            title={sw.label}
+            aria-label={sw.label}
+            aria-pressed={isSelected || isEffective}
+            onClick={() => onChange(sw.value)}
+            className={cn(
+              "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isSelected && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+              isEffective && "ring-1 ring-foreground ring-offset-1 ring-offset-background opacity-70",
+            )}
+            style={{ background: sw.value }}
           />
         );
       })}
