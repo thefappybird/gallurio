@@ -46,7 +46,7 @@ import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
-const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
+const contactDetailsDefaultProps: ContactDetailsProps = {};
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
   VideoBlock,
