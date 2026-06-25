@@ -979,7 +979,9 @@ describe("ContainerBlock", () => {
 });
 
 describe("ContainerBlock flex defaults", () => {
-  const MockSlot: SlotComponent = (props) => <div data-testid="slot-inner" style={props?.style} />;
+  const MockSlot: SlotComponent = (props) => (
+    <div data-testid="slot-inner" data-min-empty={String(props?.minEmptyHeight ?? "")} style={props?.style} />
+  );
 
   it("renders the outer section with flexGrow: 1", () => {
     const { container } = render(<ContainerBlock content={MockSlot} />);
@@ -987,24 +989,25 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.flexGrow).toBe("1");
   });
 
-  it("editor mode: content slot fills the container height (flexGrow) so the whole area is droppable", () => {
+  it("editor mode: empty drop zone gets Puck's native minEmptyHeight so the whole area is droppable", () => {
     render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: true }} />);
     const inner = screen.getByTestId("slot-inner");
-    expect(inner.style.flexGrow).toBe("1");
+    // short -> 320px editor footprint (CONTAINER_EDITOR_HEIGHT_PX).
+    expect(inner.getAttribute("data-min-empty")).toBe("320");
   });
 
-  it("public page: content slot does NOT grow (no editor flexGrow) so layout is unchanged", () => {
+  it("public page: drop zone gets NO minEmptyHeight so layout is content-sized (unchanged)", () => {
     render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: false }} />);
     const inner = screen.getByTestId("slot-inner");
-    expect(inner.style.flexGrow).toBe("");
+    expect(inner.getAttribute("data-min-empty")).toBe("");
   });
 
-  it("auto-height container gets an editor-only minHeight when editing (droppable footprint)", () => {
+  it("auto-height container gets an editor px min-height when editing (droppable footprint)", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: true }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.minHeight).toBe("5rem");
+    expect(section?.style.minHeight).toBe("128px");
   });
 
   it("does NOT apply the editor minHeight on the public page (auto container)", () => {
@@ -1015,12 +1018,13 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.minHeight).toBe("");
   });
 
-  it("keeps an explicit minHeight (tall) in editor mode — editor floor only fills auto", () => {
+  it("tall container renders its editor px height in edit mode (vh on the public page)", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} minHeight="tall" puck={{ isEditing: true }} />
     );
     const section = container.querySelector("section");
-    expect(section?.style.minHeight).toBe("80vh");
+    // Editor uses px so it can feed Puck's minEmptyHeight; public page keeps 80vh.
+    expect(section?.style.minHeight).toBe("640px");
   });
 
   it("uses _style.justifyContent over legacy alignY on the outer section", () => {

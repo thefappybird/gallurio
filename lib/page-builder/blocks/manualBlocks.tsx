@@ -678,13 +678,19 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
   medium: "60vh",
   tall: "80vh",
 };
-// Editor-only floor for auto-height containers. With no min-height an empty
-// container collapses to just its padding (~3rem), leaving the root drop zone no
-// targetable band between siblings — so dragging an empty container only ever
-// nests it into a taller neighbour instead of dropping at page root. A real
-// editor footprint keeps it grabbable and preserves the root-level drop band.
-// Never applied on the public page (gated on puck.isEditing).
-const CONTAINER_EDITOR_MIN_HEIGHT = "5rem";
+// Editor-only px heights per container size. The public page uses the vh values
+// above; the editor uses fixed px so they can be fed to Puck's native
+// `minEmptyHeight` (a px number). Driving the empty drop zone through Puck's own
+// primitive — rather than a custom flexGrow — keeps Puck's internal empty-zone
+// MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
+// (positioned off that model) reliably tracks an empty container the same way it
+// does any other block. Never used on the public page (gated on puck.isEditing).
+const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
+  auto: 128,
+  short: 320,
+  medium: 480,
+  tall: 640,
+};
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
 // Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
@@ -763,9 +769,9 @@ export function ContainerBlock({
         flexDirection: "column",
         flexGrow: 1,
         justifyContent: effectiveJustify,
-        minHeight:
-          CONTAINER_MIN_HEIGHT[minHeight ?? "auto"] ??
-          (puck?.isEditing ? CONTAINER_EDITOR_MIN_HEIGHT : undefined),
+        minHeight: puck?.isEditing
+          ? `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
+          : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
         paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
@@ -812,16 +818,15 @@ export function ContainerBlock({
           alignItems: "stretch",
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,
-          // In the editor, stretch the drop zone to fill the whole container so
-          // the entire (min-height-tall) section is a droppable surface — not just
-          // the small content-sized strip the slot occupies otherwise. Move the
-          // vertical alignment onto the slot so dropped content still aligns the
-          // same way. On the public page the slot stays content-sized and the
-          // section's justifyContent aligns it (unchanged output).
-          ...(puck?.isEditing
-            ? { flexGrow: 1, minHeight: 0, justifyContent: effectiveJustify }
-            : null),
         },
+        // Editor only: give the empty drop zone a real, Puck-managed footprint via
+        // Puck's native minEmptyHeight so the whole container is droppable AND
+        // Puck's selection/action-bar overlay tracks the visible area (see
+        // CONTAINER_EDITOR_HEIGHT_PX). On the public page the slot stays
+        // content-sized (the section's min-height drives layout, unchanged).
+        ...(puck?.isEditing
+          ? { minEmptyHeight: CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"] }
+          : {}),
       })}
     </section>
   );
