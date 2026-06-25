@@ -434,33 +434,34 @@ export function ContactPanelDialog({
 
             {/* ── Tabs section ──────────────────────────── */}
             <EditorDrawerSection title={t("sectionTabs")}>
+              {/* Tab font size applies to ALL tabs (active + inactive), so it lives at
+                  the Tabs level — outside both the inactive and active sub-sections. */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
+                <div className="flex">
+                  {HEADER_FONT_SIZES.map((s) => {
+                    const isActive = (contact.tabFontSize || "md") === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        aria-label={t(`tabFontSize.${s}`)}
+                        aria-pressed={isActive}
+                        onClick={() => set("tabFontSize", s === "md" ? "" : s)}
+                        className={cn(
+                          "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          isActive && "bg-foreground text-background hover:bg-foreground",
+                        )}
+                      >
+                        {t(`tabFontSize.${s}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Inactive tabs sub-section */}
               <EditorDrawerSection title={t("inactiveTabsSection")}>
-                {/* Font size */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
-                  <div className="flex">
-                    {HEADER_FONT_SIZES.map((s) => {
-                      const isActive = (contact.tabFontSize || "md") === s;
-                      return (
-                        <button
-                          key={s}
-                          type="button"
-                          aria-label={t(`tabFontSize.${s}`)}
-                          aria-pressed={isActive}
-                          onClick={() => set("tabFontSize", s === "md" ? "" : s)}
-                          className={cn(
-                            "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                            isActive && "bg-foreground text-background hover:bg-foreground",
-                          )}
-                        >
-                          {t(`tabFontSize.${s}`)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 {/* inactive tab color: resolveTabColor falls back to "" (no color applied) — no effective token */}
                 <LabeledSwatchRow
                   label={t("tabColorLabel")}
