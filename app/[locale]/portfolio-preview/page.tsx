@@ -18,6 +18,7 @@ import {
   resolveSubmitAppearance,
 } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { PreviewContactCard } from "./_components/PreviewContactCard";
+import { PreviewContactModal } from "./_components/PreviewContactModal";
 import { PreviewClient } from "./_components/PreviewClient";
 import { PreviewBrandShell } from "./_components/PreviewBrandShell";
 import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
@@ -88,24 +89,27 @@ export default async function PortfolioPreviewPage({
   // published public site.
   const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
 
+  // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
+  // enabling the navbar Contact button to open the modal (mirrors public layout).
+  const tForm = await getTranslations({ locale: chromeLocale, namespace: "publicPage.inquiryForm" });
+  const tLocationPicker = await getTranslations({
+    locale: chromeLocale,
+    namespace: "app.bookings.locationPicker",
+  });
+  const dbContact = (pp?.contact ?? null) as PortfolioContactConfig | null;
+  const contactLabels = buildContactLabels(tForm, tLocationPicker);
+
   let body: React.ReactNode;
 
   if (zone === "contact") {
-    const tForm = await getTranslations({ locale: chromeLocale, namespace: "publicPage.inquiryForm" });
-    const tLocationPicker = await getTranslations({
-      locale: chromeLocale,
-      namespace: "app.bookings.locationPicker",
-    });
-    const contact = (pp?.contact ?? null) as PortfolioContactConfig | null;
-    const labels = buildContactLabels(tForm, tLocationPicker);
     body = (
       <PreviewContactCard
         workspaceSlug={workspace.slug}
-        title={contact?.title?.trim() || labels.title}
-        description={contact?.description?.trim() || labels.description}
-        labels={labels.form}
-        submitAppearance={resolveSubmitAppearance(contact)}
-        addSessionAppearance={resolveAddSessionAppearance(contact)}
+        title={dbContact?.title?.trim() || contactLabels.title}
+        description={dbContact?.description?.trim() || contactLabels.description}
+        labels={contactLabels.form}
+        submitAppearance={resolveSubmitAppearance(dbContact)}
+        addSessionAppearance={resolveAddSessionAppearance(dbContact)}
       />
     );
   } else if (zone === "popup") {
@@ -174,6 +178,16 @@ export default async function PortfolioPreviewPage({
         />
       )}
       {body}
+      {/* Mount contact modal only when the header is visible (home/gallery zones).
+          The contact zone shows PreviewContactCard instead; popup zone has no header.
+          This mirrors the public layout's ContactModal mount. */}
+      {showHeader && zone !== "contact" && (
+        <PreviewContactModal
+          workspaceSlug={workspace.slug}
+          dbContact={dbContact}
+          labels={contactLabels}
+        />
+      )}
     </PreviewBrandShell>
   );
 }

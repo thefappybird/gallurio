@@ -27,6 +27,7 @@ const EMPTY_DRAFT_CONFIGS: PreviewDraftConfigs = {
   headerConfig: null,
   contact: null,
   collectionsPopup: null,
+  cssVars: {},
 };
 
 /**
@@ -109,7 +110,8 @@ export function PreviewBrandShell({
   }, [slug]);
 
   return (
-    <PreviewDraftContext value={draftConfigs}>
+    // ponytail: merge cssVars into context at render rather than a second state or effect
+    <PreviewDraftContext value={{ ...draftConfigs, cssVars }}>
       <div
         style={{
           ...(cssVars as React.CSSProperties),
