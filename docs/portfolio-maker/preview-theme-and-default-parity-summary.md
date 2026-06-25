@@ -305,3 +305,19 @@ Spec + decisions are recorded here (the standalone spec doc was folded in). Publ
 output is unchanged; editor chrome stays English-only (the panels' localized swatch labels
 were dropped for the shared English labels). 68 tests across the touched suites; `tsc`/`lint`
 clean.
+
+### Fourth wave — tab-size placement + "Move out" block action (commits `01fce99`, `0ad4827`, `78721cf`)
+
+- **Contact tab font size moved up a level.** It sat inside the Inactive-tabs sub-section but
+  applies to ALL tabs, so it now lives at the Tabs-section level, above both the active and
+  inactive sub-sections.
+- **"Move out" block action (deterministic un-nest).** Dragging an EMPTY container out of a
+  parent container to the page root was unreliable — Puck/dnd-kit drops into the deepest zone
+  under the cursor, so nested containers outrank the root canvas, and a thin empty container
+  leaves almost no root area to target (a content-filled, tall container drags out fine). Rather
+  than keep tuning the drag, added a **"Move out"** button to the block action bar (Puck
+  `actionBar` override, `MoveOutActionBar`) that dispatches a Puck `move` action relocating any
+  nested block to the page root zone (`"root:default-zone"`). The move logic is a pure, unit-
+  tested helper `moveBlockToRootAction(indexes, itemId)`; the button only shows for nested
+  blocks. Works for empty or filled blocks; no precise dragging needed. (Runtime Puck UI —
+  owner verifies the button in a browser.)
