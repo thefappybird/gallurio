@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildButtonStyle, buildButtonVisualStyle, resolveContactColor, type ButtonAppearance } from "./contactButtonAppearance";
+import { buildButtonStyle, buildButtonVisualStyle, resolveContactColor, resolveSubmitAppearance, type ButtonAppearance } from "./contactButtonAppearance";
 
 const APP: ButtonAppearance = {
   color: "#123456",
@@ -17,6 +17,13 @@ describe("resolveContactColor", () => {
     expect(resolveContactColor("primary", "FB")).toBe("var(--pf-color-primary, FB)");
     expect(resolveContactColor("#abc", "FB")).toBe("#abc");
     expect(resolveContactColor(undefined, "FB")).toBe("FB");
+  });
+});
+
+describe("resolveSubmitAppearance errorColor", () => {
+  it("defaults errorColor to CRM destructive hex when errorMessageColor is unset", () => {
+    const result = resolveSubmitAppearance({});
+    expect(result.errorColor).toBe("#e7000b");
   });
 });
 

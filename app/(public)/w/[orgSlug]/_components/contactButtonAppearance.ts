@@ -109,9 +109,7 @@ export function resolveSubmitAppearance(contact?: PortfolioContactConfig | null)
       ? resolveContactColor(contact.buttonTextColor, "inherit")
       : undefined,
     border,
-    errorColor: contact?.errorMessageColor
-      ? resolveContactColor(contact.errorMessageColor, "var(--pf-color-accent)")
-      : undefined,
+    errorColor: resolveContactColor(contact?.errorMessageColor, CRM_ERROR_COLOR),
   };
 }
 

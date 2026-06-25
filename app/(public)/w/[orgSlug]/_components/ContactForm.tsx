@@ -15,6 +15,7 @@ import { LocationPicker } from "@/components/ui/location-picker";
 import {
   buildButtonStyle,
   buildButtonVisualStyle,
+  CRM_ERROR_COLOR,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
@@ -212,7 +213,7 @@ export function ContactForm({
 
   const errorStyle: CSSProperties = {
     fontSize: "0.75rem",
-    color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
+    color: submitAppearance.errorColor ?? CRM_ERROR_COLOR,
     marginTop: "0.25rem",
   };
   const fieldStyle = createFieldStyle();
