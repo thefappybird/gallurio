@@ -251,3 +251,24 @@ Three issues reported after the owner exercised the preview and editor:
 Each shipped with tests (PortfolioHeader gallery-href override; RootStyleField
 effective-default display; ContainerBlock editor-only min-height incl. production
 guard); `tsc`/`lint` clean.
+
+### Second wave (commits `f9dde61`, `63d8774`, `03bd088`)
+- **Renamed the editor "Collections Popup" → "Featured Popup"** (the active-section
+  title, the nav tab, and the panel heading/aria; internal `collectionsPopup` keys
+  untouched).
+- **Contact form now opens from the navbar in preview.** The navbar Contact button
+  calls `window.__gallurioOpenContact?.()`, which is registered by `ContactModal`
+  via `useGlobalContactTrigger`. That modal is mounted in the *public* layout, but
+  the preview route is a separate tree that never mounted it — so the opener was
+  undefined and the click was a no-op (the popup has its own trigger, hence it
+  worked). A new `PreviewContactModal` mounts `ContactModal` + `ContactTriggerDelegate`
+  in the preview (home/gallery zones), fed by the draft contact config + draft brand
+  vars via `PreviewDraftContext`.
+- **Empty-container action controls.** The container drop zone was first stretched
+  to fill via `flexGrow` (fixed the small-strip droppable area), but that left Puck's
+  internal empty-zone model at its 128px default, so the copy/delete action-bar
+  overlay landed inconsistently on empty containers. Reworked to feed a per-size
+  editor px height into Puck's **native `minEmptyHeight`**, so the empty-zone model
+  matches the visible area and the overlay tracks an empty container like any other
+  block. Editor renders container heights in px (to feed `minEmptyHeight`); the
+  public page keeps vh heights + a content-sized slot (unchanged).
