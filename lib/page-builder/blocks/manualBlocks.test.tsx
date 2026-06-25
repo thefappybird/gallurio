@@ -987,6 +987,30 @@ describe("ContainerBlock flex defaults", () => {
     expect(section?.style.flexGrow).toBe("1");
   });
 
+  it("auto-height container gets an editor-only minHeight when editing (droppable footprint)", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.minHeight).toBe("5rem");
+  });
+
+  it("does NOT apply the editor minHeight on the public page (auto container)", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.minHeight).toBe("");
+  });
+
+  it("keeps an explicit minHeight (tall) in editor mode — editor floor only fills auto", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="tall" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.minHeight).toBe("80vh");
+  });
+
   it("uses _style.justifyContent over legacy alignY on the outer section", () => {
     const { container } = render(
       <ContainerBlock content={MockSlot} alignY="top" _style={{ justifyContent: "center" }} />

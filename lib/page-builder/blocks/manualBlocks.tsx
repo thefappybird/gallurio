@@ -678,6 +678,13 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
   medium: "60vh",
   tall: "80vh",
 };
+// Editor-only floor for auto-height containers. With no min-height an empty
+// container collapses to just its padding (~3rem), leaving the root drop zone no
+// targetable band between siblings — so dragging an empty container only ever
+// nests it into a taller neighbour instead of dropping at page root. A real
+// editor footprint keeps it grabbable and preserves the root-level drop band.
+// Never applied on the public page (gated on puck.isEditing).
+const CONTAINER_EDITOR_MIN_HEIGHT = "5rem";
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
 // Maps _style.alignItems to CSS text-align for ContainerBlock inner content wrapper.
@@ -756,7 +763,9 @@ export function ContainerBlock({
         flexDirection: "column",
         flexGrow: 1,
         justifyContent: effectiveJustify,
-        minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
+        minHeight:
+          CONTAINER_MIN_HEIGHT[minHeight ?? "auto"] ??
+          (puck?.isEditing ? CONTAINER_EDITOR_MIN_HEIGHT : undefined),
         paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
