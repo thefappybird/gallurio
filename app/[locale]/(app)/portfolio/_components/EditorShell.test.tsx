@@ -243,17 +243,17 @@ describe("EditorShell", () => {
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
-    expect(within(controls).getByRole("button", { name: "Collections Popup" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Featured Popup" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
   });
 
-  it("opens the Collections Popup panel when the Collections Popup tab is clicked", async () => {
+  it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
-    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Collections Popup" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
@@ -387,7 +387,7 @@ describe("EditorShell", () => {
     expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Contact Form" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Collections Popup" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Featured Popup" })).not.toBeInTheDocument();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
     expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute("aria-pressed", "true");
@@ -404,16 +404,16 @@ describe("EditorShell", () => {
 
   it("renders the collections popup preview when the popup tab is open", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
     expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 
-  it("shows the collections popup preview on the canvas when the Collections Popup tab is opened", async () => {
+  it("shows the collections popup preview on the canvas when the Featured Popup tab is opened", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
     // Wait for the async openCollectionsPopup state update to settle.
     // The style panel (right rail) must be present.
-    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     // Puck canvas must be gone — the preview branch replaces it.
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     // CollectionsPopupPreview must render the sample chrome with its title.

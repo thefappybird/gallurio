@@ -263,12 +263,12 @@ export function CollectionsPopupPanelDialog({
     <div
       className="flex w-[360px] flex-col border-l border-border bg-card"
       role="complementary"
-      aria-label="Collections popup style"
+      aria-label="Featured popup style"
     >
       {/* Header */}
       <div className="flex items-center border-b border-border px-4 py-3">
         <span className="text-sm font-semibold text-foreground">
-          Collections popup
+          Featured popup
         </span>
       </div>
 

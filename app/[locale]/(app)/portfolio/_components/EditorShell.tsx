@@ -1181,7 +1181,7 @@ export function EditorShell({
       : activeSection === "contact"
         ? t("contactSettingsShort")
         : activeSection === "collectionsPopup"
-          ? "Collections Popup"
+          ? "Featured Popup"
           : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
   const contactLabels = buildContactLabels(
@@ -1241,7 +1241,7 @@ export function EditorShell({
                 : section === "contact"
                   ? t("contactSettingsShort")
                   : section === "collectionsPopup"
-                    ? "Collections Popup"
+                    ? "Featured Popup"
                     : t(`zone.${section}`);
             // Tour anchor: header and contact get dedicated ids for their own
             // gated steps (step 8 and step 12); page tabs have no individual id.
