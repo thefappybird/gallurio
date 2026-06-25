@@ -321,3 +321,23 @@ clean.
   tested helper `moveBlockToRootAction(indexes, itemId)`; the button only shows for nested
   blocks. Works for empty or filled blocks; no precise dragging needed. (Runtime Puck UI —
   owner verifies the button in a browser.)
+
+### Fifth wave — custom always-visible block-actions toolbar (commits `d6d990b`…`5cbe5d0`, `b080ad4`)
+
+The "Move out" button (fourth wave) never appeared, and Puck's own floating action bar shows
+inconsistently for containers — both because Puck's overlay visibility is internal state
+(`dragFinished && (hover||selected)`) we can't control, and because the first attempt gated on
+`appState.indexes` which is undefined on the public `usePuck().appState`. Replaced the Puck-bar
+dependency with our OWN canvas toolbar that's always visible whenever a block is selected:
+
+- `BlockActionsToolbar` (`createUsePuck` selectors — no bare `usePuck()`, so no Puck perf
+  warning) reads the selected block from the PUBLIC `appState.ui.itemSelector` (`{index, zone}`),
+  anchors to the block's `[data-puck-component]` element via a small rAF rect hook, and portals a
+  fixed toolbar to `document.body` at the block's top-right. Buttons: block label · Move up · Move
+  down · Move out (nested only) · Duplicate · Delete — all driven by a pure, unit-tested helper
+  `selectedBlockActions(itemSelector, rootContentLength)`.
+- Puck's own flaky action bar is suppressed via the `actionBar` override (`SuppressedActionBar`
+  renders an empty bar) so there is a single, reliable toolbar.
+
+Owner verifies the toolbar in a browser (runtime UI); the action logic + wiring are unit-tested
+(71 tests across the touched suites), `tsc`/`lint` clean.
