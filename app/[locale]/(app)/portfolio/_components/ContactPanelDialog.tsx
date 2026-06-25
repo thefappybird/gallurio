@@ -507,11 +507,11 @@ export function ContactPanelDialog({
                     />
                     <NumberInputRow
                       label={t("tabHighlightOpacityLabel")}
-                      value={contact.tabHighlightOpacity ?? undefined}
+                      value={contact.tabHighlightOpacity}
                       min={0}
                       max={100}
                       suffix="%"
-                      onChange={(v) => set("tabHighlightOpacity", v ?? undefined)}
+                      onChange={(v) => set("tabHighlightOpacity", v)}
                       effectiveValue={100}
                     />
                     <ActiveTabRadiusRow
