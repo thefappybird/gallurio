@@ -239,4 +239,45 @@ describe("publicPageSettingsSchema", () => {
     });
     expect(ok.success).toBe(true);
   });
+
+  it("accepts valid siteIconUrl and preserves it in output", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      siteIconUrl: "https://example.com/icon.png",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { siteIconUrl?: string }).siteIconUrl).toBe(
+        "https://example.com/icon.png"
+      );
+    }
+  });
+
+  it("accepts empty string siteIconUrl", () => {
+    const result = publicPageSettingsSchema.safeParse({ siteIconUrl: "" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { siteIconUrl?: string }).siteIconUrl).toBe("");
+    }
+  });
+
+  it("defaults siteIconUrl to empty string when omitted", () => {
+    const result = publicPageSettingsSchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { siteIconUrl?: string }).siteIconUrl).toBe("");
+    }
+  });
+
+  it("rejects non-URL non-empty siteIconUrl", () => {
+    const result = publicPageSettingsSchema.safeParse({ siteIconUrl: "not-a-url" });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts siteIconAssetId and preserves it in output", () => {
+    const result = publicPageSettingsSchema.safeParse({ siteIconAssetId: "abc123" });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { siteIconAssetId?: string }).siteIconAssetId).toBe("abc123");
+    }
+  });
 });

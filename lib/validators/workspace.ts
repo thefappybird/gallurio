@@ -130,5 +130,13 @@ export const publicPageSettingsSchema = z.object({
     .union([z.string().email("Enter a valid email"), z.literal("")])
     .optional()
     .default(""),
+  siteIconUrl: z
+    .string()
+    .trim()
+    .url()
+    .or(z.literal(""))
+    .optional()
+    .default(""),
+  siteIconAssetId: z.string().trim().optional().default(""),
 });
 export type PublicPageSettingsInput = z.infer<typeof publicPageSettingsSchema>;
