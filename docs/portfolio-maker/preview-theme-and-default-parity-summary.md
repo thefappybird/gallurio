@@ -103,7 +103,121 @@ commits `c730ec5`, `5ab6d72`, `588b3eb`, `496f881`, `8c15354`, `a198b79`).
   transitions snapped cleanly with no persistent spinner.
 
 ## Follow-ups (non-blocking)
-- Surface the button's effective per-variant defaults in its controls (deferred).
+- ~~Surface the button's effective per-variant defaults in its controls~~ — done in
+  Round 7 (below).
 - DRY: `LOCAL_DRAFT_VERSION` duplicated in `PreviewBrandShell`/`PreviewClient`;
   the 3-entry brand-radius map duplicated in `brandColors.tsx`/`StyleToolkitField.tsx`
   (circular-import avoidance). Register in `REUSABLE_CODE.md` when extracted.
+
+---
+
+# Round 7 — effective-default display for ALL fields, button redesign, gallery/container fixes, and full preview parity
+
+Continuation of the same branch (commits `b266625`..`200862c`). Round 6 grounded
+colors and showed the *radius* effective default; Round 7 generalizes that
+display pattern to every theme-coupled control, redesigns the Button block,
+fixes a batch of editor bugs, and closes the canvas↔preview↔publish parity gap
+for the header, collections popup, and contact form.
+
+## Problems addressed
+1. **Theme-driven defaults hidden in most controls.** Only radius/colour showed
+   their effective value; font size/family, border width/colour, gap, min-height,
+   align/justify, and container padding rendered blank, hiding the choice already
+   in effect.
+2. **Button controls inconsistent + frozen text colour.** Button text/heading/
+   button-text colour are theme-decided but weren't shown; button controls were
+   split across Design/Layout/Frame tabs with a duplicate radius.
+3. **Container/Columns/gallery padding materialized.** Padding lived as filled
+   strings in `defaultProps`, so it read as an explicit override rather than a
+   theme default.
+4. **Gallery blocks: stray Puck fields + bg-image.** PhotoGrid/Masonry/Highlights
+   exposed top-level Puck `columns`/`gap` selects (instead of the style drawer
+   every other block uses) and a background-image picker that doesn't apply.
+5. **Contact Details block invisible on drop.** Its editor `render` used the shared
+   `Preview` wrapper, which never attached Puck's `dragRef` → the block rendered
+   unmeasured with its action toolbar off-screen.
+6. **Editor nav row wrapped to 3 lines** on narrow widths.
+7. **Preview ignored unsaved header / popup / contact config.** Preview read these
+   from the DB only (Round 6 wired only the brand kit), so navbar edits, the
+   collections popup (never rendered at all), and the contact form's active/inactive
+   tab styling appeared only after publish.
+
+## Changes
+### Effective-default display generalized — `StyleToolkitField.tsx`, `toolbarPrimitives.tsx`, `brandColors.tsx`
+- Every in-scope control now takes an `effectiveValue`: it pre-fills/ highlights
+  the theme's effective value as a **display-only** overlay (lighter ring /
+  placeholder), the block `_style` prop stays **unset**, editing decouples just
+  that field on that block, and clearing reverts. `DimensionInput`, `ColorSwatchRow`,
+  and the shadow/icon rows were extended to carry it.
+- Brand fonts were threaded through `BrandColorsContext` (`useEffectiveBrandFont`)
+  with a shared `resolveEffectiveFonts` reused by `resolveBrandKit` + `EditorShell`.
+
+### Text/Heading/Button text colour shown, not materialized — `manualBlocks.tsx`, `styleToolkit.ts`
+- `textColorToken:"foreground"` was **de-materialized** from the Text/Heading
+  `defaultProps`; the render grounds colour via an outer-div
+  `color: colorTokenToVar(_style?.textColorToken) ?? var(--pf-color-fg)` placed
+  before the `resolveBlockStyle` spread, so canvas == preview == publish without a
+  written default.
+- Shared `effectiveButtonTextToken(style)` (solid→background, soft/outline→
+  buttonColorToken??primary, else→foreground) backs both the render fallback and
+  the control — one source, can't drift.
+
+### Button block redesign — `StyleToolkitField.tsx`, `manualBlocks.tsx`
+- Consolidated onto the Design tab (colour, opacity [new], text colour, radius,
+  style); removed the Frame section (border width/colour, shadow) and the duplicate
+  Layout radius. Opacity applies to the fill, mirroring the header's
+  `buildColorWithOpacity`. Dev-only data → old props are simply ignored on render.
+
+### Container/Columns padding → effective — `manualBlocks.tsx`, `StyleToolkitField.tsx`
+- Padding de-materialized from `containerDefaultProps`/`columnsDefaultProps`; render
+  fallbacks (`CONTAINER_EFFECTIVE_PAD` 1.5rem; `COLUMNS_EFFECTIVE_PAD` 1rem/1.5rem)
+  reproduce byte-identical output, asserted by `renderToStaticMarkup` tests. Curated
+  preset sections keep their explicit padding (it's intentional design).
+
+### Gallery blocks — `manualBlocks.tsx`, `editorConfig.tsx`, `StyleToolkitField.tsx`
+- `columns`/`gap` moved from top-level Puck selects to `_style.galleryColumns/
+  galleryGap` drawer overrides (effective 3 / "normal"); the background-image picker
+  is suppressed for the 3 gallery container blocks (banner **Color** kept); shadow
+  shows effective "none".
+
+### Bug fixes
+- **ContactDetails dragRef** — the shared `Preview` wrapper now attaches
+  `ref={puck?.dragRef}` to its root `<section>` so Puck measures the block (it's the
+  only block using `Preview`).
+- **Nav row** — the cluster is `flex-nowrap` + `overflow-x-auto` with `shrink-0`
+  children, so it scrolls instead of wrapping; tour anchors preserved.
+
+### Preview parity — `app/[locale]/portfolio-preview/`
+- `PreviewBrandShell` now parses the draft `header`/`contact`/`collectionsPopup`
+  configs (new `PreviewDraftContext`); new `PreviewHeaderShell` + `PreviewPopupShell`
+  and the updated `PreviewContactCard` render them with the **production** components
+  (`PortfolioHeader`, `CollectionPopupChrome`, `ContactForm`) — no forks — so navbar
+  edits, the popup (previously absent in preview), and the contact form's
+  active/inactive tab styling all show pre-publish, falling back to DB when the draft
+  is absent/malformed.
+- The collections popup renders as a dedicated `zone=popup` surface (not an always-on
+  sample spliced onto every page). `previewZoneFor(activeSection, activeZone)` maps
+  the active editor section to the preview `zone` param so the iframe **and** the
+  open-in-new-tab link land on what the owner is viewing (popup/contact/page) —
+  closing a reachability gap where `zone=popup` was otherwise unreachable.
+
+## Key decisions
+- One uniform **effective-default DISPLAY** mechanism (mirror of Round 6's
+  `RadiusButtons.effectiveValue`): show the effective value, keep the prop unset,
+  write `_style` only on explicit edit. Codified as the new
+  `.claude/skills/portfolio-effective-defaults` skill (the float-up vs.
+  materialize/ground decision), with the existing portfolio skills reconciled.
+- **Ground in the render, don't materialize into `defaultProps`** when a concrete
+  `var(--pf-*)` fallback restores parity — keeps the prop theme-coupled.
+
+## Verification
+- `pnpm typecheck` clean; `pnpm lint` 0 errors (82 pre-existing warnings, none in
+  changed lines).
+- Touched page-builder + preview suites green (incl. the new `previewZoneFor`,
+  effective-default, padding-parity, and Preview*Shell tests).
+- Whole-branch review (most-capable model): MERGEABLE, 0 Critical / 0 Important
+  after fixes. Two review findings fixed: a UTF-8 BOM injected into 7 files
+  (stripped), and the popup preview reworked from an always-on sample to the
+  dedicated `zone=popup` surface.
+- Browser verification deferred to the owner per request (no Playwright run this
+  round).
