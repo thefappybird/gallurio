@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { ColorSwatchRow } from "./toolbarPrimitives";
 
 // Mock brandColors so tests don't need the full provider

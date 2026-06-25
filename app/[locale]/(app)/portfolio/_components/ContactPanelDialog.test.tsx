@@ -24,6 +24,19 @@ const baseProps = {
   onCancel: vi.fn(),
 };
 
+describe("ContactPanelDialog — effective defaults (unset color shows theme fallback)", () => {
+  it("shows the Background token as effective when popup backgroundColor is unset", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Popup" }));
+
+    // All Background swatches (there may be multiple color rows) — at least one should
+    // be aria-pressed because effectiveValue="background" is set on the bg color row.
+    const bgSwatches = screen.getAllByRole("button", { name: "Background" });
+    expect(bgSwatches.some((el) => el.getAttribute("aria-pressed") === "true")).toBe(true);
+  });
+});
+
 describe("ContactPanelDialog", () => {
   it("renders design groups as collapsed drawers", () => {
     renderWithProviders(<ContactPanelDialog {...baseProps} />);
