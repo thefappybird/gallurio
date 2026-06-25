@@ -68,6 +68,7 @@ import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
+import { MoveOutActionBar } from "./MoveOutActionBar";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -1223,6 +1224,10 @@ export function EditorShell({
           {children}
         </div>
       ),
+      // Block action bar: adds a "Move out" button that relocates a nested block
+      // to the page root zone. MoveOutActionBar is a module-level component so
+      // its identity is stable — no risk of Puck remounting the subtree.
+      actionBar: MoveOutActionBar,
     }),
     []
   );
