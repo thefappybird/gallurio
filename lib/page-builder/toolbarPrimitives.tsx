@@ -8,7 +8,7 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { RotateCcw } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -455,6 +455,59 @@ export function IconRow<T extends string>({
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Floating-label text input (Material style): label sits inside the field at
+ * rest and floats to the top-left on focus or when the field has a value.
+ * Uses CSS-only `peer` + `placeholder=" "` trick — no JS state needed.
+ *
+ * Accessible: real `<label htmlFor>`, `useId` for association. Supports
+ * idle / focus-visible / filled states; keyboard-navigable via native input.
+ *
+ * Editor chrome — English-only (RELEASE-CHECKLIST §4f).
+ */
+export function FloatingLabelInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+}) {
+  const id = useId();
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        // A single space placeholder is required so peer-[:not(:placeholder-shown)]
+        // fires when the field has a real value typed in — without it the label
+        // never "locks" in the floated state after blur.
+        placeholder=" "
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      />
+      <label
+        htmlFor={id}
+        className={cn(
+          "pointer-events-none absolute left-3 text-muted-foreground transition-all duration-150",
+          // Floated state: small label at top
+          "peer-focus:top-1.5 peer-focus:text-[0.65rem] peer-focus:font-medium peer-focus:text-foreground",
+          // Filled state (placeholder not shown = value present)
+          "peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-[0.65rem] peer-[:not(:placeholder-shown)]:font-medium",
+          // Resting state: centered label
+          "top-3.5 text-xs"
+        )}
+      >
+        {label}
+      </label>
     </div>
   );
 }

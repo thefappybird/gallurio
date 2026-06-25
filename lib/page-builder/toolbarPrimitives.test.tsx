@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ColorSwatchRow } from "./toolbarPrimitives";
+import { ColorSwatchRow, FloatingLabelInput } from "./toolbarPrimitives";
 
 // Mock brandColors so tests don't need the full provider
 vi.mock("./brandColors", () => ({
@@ -53,5 +53,16 @@ describe("ColorSwatchRow — extraSwatches", () => {
     // custom-hex picker should NOT also show ring-2 (extraSwatches value excluded)
     const customPicker = screen.getByLabelText("Custom color");
     expect(customPicker).not.toHaveClass("ring-2");
+  });
+});
+
+describe("FloatingLabelInput", () => {
+  it("renders an input associated to its label via htmlFor/id", () => {
+    render(<FloatingLabelInput label="Email" value="" onChange={vi.fn()} />);
+    const input = screen.getByRole("textbox");
+    expect(input).toBeInTheDocument();
+    const label = screen.getByText("Email");
+    expect(label.tagName).toBe("LABEL");
+    expect(label).toHaveAttribute("for", input.id);
   });
 });
