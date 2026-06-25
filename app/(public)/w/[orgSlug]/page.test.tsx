@@ -195,6 +195,66 @@ describe("generateMetadata", () => {
 
     expect((meta.alternates as { canonical?: string })?.canonical).toBe("/w/luna-studio");
   });
+
+  it("sets icons.icon from siteIcon.url when present", async () => {
+    const workspace = makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: null, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+        siteIcon: { url: "https://cdn.example.com/icon.png", assetId: "abc" },
+      },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.icons).toEqual({ icon: "https://cdn.example.com/icon.png" });
+  });
+
+  it("falls back to header.logoUrl when siteIcon.url is empty", async () => {
+    const workspace = makePublishedWorkspace({
+      publicPage: {
+        templateId: "minimal",
+        data: { home: null, gallery: null },
+        brandKit: DEFAULT_BRAND_KIT,
+        publishedAt: new Date(),
+        lastPublishedAt: null,
+        latestVersion: 0,
+        seoTitle: "",
+        seoDescription: "",
+        inquiryRecipientEmail: "",
+        siteIcon: { url: "", assetId: "" },
+        header: { logoUrl: "https://cdn.example.com/logo.png" },
+      },
+    } as Partial<WorkspaceDoc>);
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.icons).toEqual({ icon: "https://cdn.example.com/logo.png" });
+  });
+
+  it("omits icons when both siteIcon.url and header.logoUrl are empty", async () => {
+    const workspace = makePublishedWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.icons).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
