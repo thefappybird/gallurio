@@ -508,55 +508,29 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
   defaultProps: contactDetailsDefaultProps,
   fields: {
     _style: styleField,
-    showEmail: {
-      type: "select",
-      label: "Show email",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showPhone: {
-      type: "select",
-      label: "Show phone",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showAddress: {
-      type: "select",
-      label: "Show address",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showSocials: {
-      type: "select",
-      label: "Show social links",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
   },
   resolveFields: (_data, { fields }) => {
-    // All show* toggles are managed by the ContactDetailsPanel in StyleToolkitField
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, showEmail, showPhone, showAddress, showSocials, puck }) => (
-    <Preview
-      label="Contact Details"
-      lines={[
-        [showEmail && "Email", showPhone && "Phone", showAddress && "Address", showSocials && "Socials"]
-          .filter(Boolean)
-          .join(" · ") || "All fields hidden",
-      ]}
-      blockStyle={_style}
-      puck={puck}
-    />
-  ),
+  render: ({ _style, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
+    const overrides = [
+      email && "Email",
+      phone && "Phone",
+      address && "Address",
+      instagram && "Instagram",
+      facebook && "Facebook",
+      tiktok && "TikTok",
+      website && "Website",
+    ].filter(Boolean);
+    return (
+      <Preview
+        label="Contact Details"
+        lines={[overrides.length > 0 ? overrides.join(" · ") + " overridden" : "Workspace contact details"]}
+        blockStyle={_style}
+        puck={puck}
+      />
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------

@@ -33,10 +33,6 @@ describe("ContactDetails editor render — dragRef forwarding", () => {
 
     render(
       <RenderFn
-        showEmail
-        showPhone
-        showAddress
-        showSocials
         puck={{ dragRef }}
       />
     );
