@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { moveBlockToRootAction, ROOT_ZONE } from "./moveBlockToRoot";
+import { moveBlockToRootAction, selectedBlockActions, ROOT_ZONE } from "./moveBlockToRoot";
 
 describe("moveBlockToRootAction", () => {
   it("returns a move action for a nested block", () => {
@@ -68,5 +68,11 @@ describe("moveBlockToRootAction", () => {
       destinationZone: ROOT_ZONE,
       destinationIndex: 0,
     });
+  });
+});
+
+describe("selectedBlockActions", () => {
+  it("returns null when itemSelector is null", () => {
+    expect(selectedBlockActions(null, 3)).toBeNull();
   });
 });
