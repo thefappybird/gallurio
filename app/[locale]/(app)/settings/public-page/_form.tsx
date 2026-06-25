@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useRef, useState, useTransition, useOptimistic } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
@@ -18,6 +18,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+
+const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
+const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
+const SITE_ICON_MAX_DIM = 512;
 
 export function PublicPageSettingsForm({
   slug,
@@ -38,15 +43,24 @@ export function PublicPageSettingsForm({
     publishedAt
   );
 
+  const [iconUploading, setIconUploading] = useState(false);
+  const [iconDragActive, setIconDragActive] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
+  const iconFileInputRef = useRef<HTMLInputElement>(null);
+
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<PublicPageSettingsInput>({
     resolver: zodResolver(publicPageSettingsSchema),
     defaultValues: defaults,
   });
+
+  const siteIconUrl = watch("siteIconUrl");
 
   const publicUrl = `gallurio.com/w/${slug}`;
 
@@ -76,11 +90,66 @@ export function PublicPageSettingsForm({
     reset(data);
   }
 
+  async function handleIconFile(file: File) {
+    setIconError(null);
+    setIconUploading(true);
+    try {
+      const result = await uploadAsset(
+        file,
+        {
+          acceptedTypes: SITE_ICON_TYPES,
+          maxBytes: SITE_ICON_MAX_BYTES,
+          maxWidth: SITE_ICON_MAX_DIM,
+          maxHeight: SITE_ICON_MAX_DIM,
+        },
+        { subfolder: "site_icon" },
+      );
+      if ("error" in result) {
+        const msgKey = (
+          {
+            type_not_accepted: "siteIconErrors.type",
+            file_too_large: "siteIconErrors.size",
+            dimensions_too_large: "siteIconErrors.dimensions",
+            invalid_image: "siteIconErrors.image",
+          } as Record<string, string>
+        )[result.error];
+        setIconError(t(msgKey as Parameters<typeof t>[0]));
+        return;
+      }
+      setValue("siteIconUrl", result.asset.url, { shouldDirty: true });
+      setValue("siteIconAssetId", result.asset.assetId, { shouldDirty: true });
+    } catch {
+      setIconError(t("siteIconErrors.upload"));
+    } finally {
+      setIconUploading(false);
+      if (iconFileInputRef.current) iconFileInputRef.current.value = "";
+    }
+  }
+
+  function handleIconInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) void handleIconFile(file);
+  }
+
+  function handleIconDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIconDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handleIconFile(file);
+  }
+
+  function handleRemoveIcon() {
+    setValue("siteIconUrl", "", { shouldDirty: true });
+    setValue("siteIconAssetId", "", { shouldDirty: true });
+    setIconError(null);
+    if (iconFileInputRef.current) iconFileInputRef.current.value = "";
+  }
+
   const isPublished = !!optimisticPublishedAt;
 
   return (
     <div className="flex flex-col gap-8">
-      {/* ── Visibility ─────────────────────────────────────────────────────── */}
+      {/* Visibility */}
       <section className="flex flex-col gap-4">
         <div>
           <h2 className="text-lg font-semibold">{t("visibilitySection")}</h2>
@@ -88,7 +157,6 @@ export function PublicPageSettingsForm({
         </div>
 
         <div className="flex flex-col gap-4">
-          {/* Status pill */}
           <div className="flex items-center gap-2">
             <span
               className={[
@@ -108,7 +176,6 @@ export function PublicPageSettingsForm({
             </span>
           </div>
 
-          {/* Public URL row */}
           <div className="flex flex-col gap-1.5">
             <Label>{t("publicUrl")}</Label>
             <div className="flex items-stretch">
@@ -126,7 +193,6 @@ export function PublicPageSettingsForm({
             </div>
           </div>
 
-          {/* Visibility toggle */}
           <div>
             <Button
               type="button"
@@ -150,7 +216,7 @@ export function PublicPageSettingsForm({
         </div>
       </section>
 
-      {/* ── SEO + Inquiry (shared form) ─────────────────────────────────────── */}
+      {/* SEO + Site icon + Inquiry (shared form) */}
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-8">
         {/* SEO section */}
         <section className="flex flex-col gap-4 border-t border-border pt-8">
@@ -186,6 +252,98 @@ export function PublicPageSettingsForm({
               )}
             </div>
           </div>
+        </section>
+
+        {/* Site icon section */}
+        <section className="flex flex-col gap-4 border-t border-border pt-8">
+          <div>
+            <h2 className="text-lg font-semibold">{t("siteIconSection")}</h2>
+            <p className="text-sm text-muted-foreground">{t("siteIconHint")}</p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {siteIconUrl ? (
+              <div className="flex items-center gap-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={siteIconUrl}
+                  alt={t("siteIconLabel")}
+                  className="h-16 w-16 border border-border object-contain bg-muted"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={iconUploading}
+                  onClick={handleRemoveIcon}
+                  className="flex items-center gap-1.5"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  {t("siteIconRemove")}
+                </Button>
+              </div>
+            ) : (
+              <label
+                htmlFor="siteIconFile"
+                className={[
+                  "flex cursor-pointer flex-col items-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
+                  iconDragActive
+                    ? "border-brand bg-brand/5"
+                    : "border-input hover:border-brand hover:bg-brand/5",
+                  iconUploading ? "pointer-events-none opacity-60" : "",
+                ].join(" ")}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIconDragActive(true);
+                }}
+                onDragLeave={() => setIconDragActive(false)}
+                onDrop={handleIconDrop}
+              >
+                {iconUploading ? (
+                  <>
+                    <Loader2
+                      className="h-6 w-6 animate-spin text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {t("siteIconUploading")}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Upload
+                      className="h-6 w-6 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm font-medium">{t("siteIconLabel")}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {t("siteIconRequirements")}
+                    </span>
+                  </>
+                )}
+              </label>
+            )}
+
+            <input
+              ref={iconFileInputRef}
+              id="siteIconFile"
+              type="file"
+              accept={SITE_ICON_TYPES.join(",")}
+              className="sr-only"
+              aria-label={t("siteIconLabel")}
+              disabled={iconUploading}
+              onChange={handleIconInputChange}
+            />
+
+            {iconError && (
+              <p className="text-sm text-destructive" role="alert">
+                {iconError}
+              </p>
+            )}
+          </div>
+
+          <input type="hidden" {...register("siteIconUrl")} />
+          <input type="hidden" {...register("siteIconAssetId")} />
         </section>
 
         {/* Inquiry routing section */}

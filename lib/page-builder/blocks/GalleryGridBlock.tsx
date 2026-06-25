@@ -17,12 +17,16 @@ import {
   resolveBlockAttrs,
   productionStyleField,
   type BlockStyle,
+  type GalleryColumns,
+  type GalleryGap,
 } from "@/lib/page-builder/styleToolkit";
 import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
 import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
+import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import type { ContainerHeight } from "./manualBlocks";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -33,35 +37,157 @@ export type GalleryImage = { id: string; publicId: string; alt?: string };
 export type GalleryGridProps = {
   _style?: BlockStyle;
   images: GalleryImage[];
-  columns: 2 | 3 | 4;
-  gap: "tight" | "normal" | "loose";
+  // Banner / container props (same as ContainerBlock)
+  backgroundImages?: GalleryImage[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayOpacity?: number;
+  minHeight?: ContainerHeight;
 };
 
 export const galleryGridDefaultProps: GalleryGridProps = {
   images: [],
-  columns: 3,
-  gap: "normal",
+  backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
 };
 
-const GAP_MAP: Record<GalleryGridProps["gap"], string> = {
+const GAP_MAP: Record<GalleryGap, string> = {
   tight: "4px",
   normal: "8px",
   loose: "16px",
 };
 
-const THUMB_WIDTH_MAP: Record<GalleryGridProps["columns"], number> = {
+const THUMB_WIDTH_MAP: Record<GalleryColumns, number> = {
   2: 800,
   3: 600,
   4: 400,
 };
 
-export function GalleryGridBlock({ _style, images, columns, gap, puck }: GalleryGridProps & { puck?: BlockPuck }) {
+export const GALLERY_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
+  auto: undefined,
+  short: "40vh",
+  medium: "60vh",
+  tall: "80vh",
+};
+
+/** Resolve a background image public ID to a full-bleed cover URL (client-safe). */
+function bgImageUrl(publicId: string): string | null {
+  return imageDeliveryUrl(publicId, { width: 2000, height: 8000, fit: "scale-down" });
+}
+
+/** Shared banner layer resolution — filters out blank/unresolvable entries. */
+export function resolveBannerLayers(backgroundImages: GalleryImage[] | undefined): { id: string; src: string }[] {
+  return (Array.isArray(backgroundImages) ? backgroundImages : [])
+    .map((img) => ({ id: img.id, src: bgImageUrl(img.publicId) }))
+    .filter((l): l is { id: string; src: string } => Boolean(l.src));
+}
+
+// ---------------------------------------------------------------------------
+// Banner background sub-render (same pattern as ContainerBlock)
+// ---------------------------------------------------------------------------
+
+function GalleryBannerLayers({
+  layers,
+  bgAnimation,
+  bgSpeed,
+  overlayAlpha,
+}: {
+  layers: { id: string; src: string }[];
+  bgAnimation?: "crossfade" | "kenburns" | "slide";
+  bgSpeed?: "slow" | "medium" | "fast";
+  overlayAlpha: number;
+}) {
+  return (
+    <>
+      {overlayAlpha > 0 && (
+        <div
+          aria-hidden="true"
+          style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }}
+        />
+      )}
+      {layers.length === 1 && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={layers[0].src}
+          alt=""
+          aria-hidden="true"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      )}
+      {layers.length >= 2 && (
+        <ContainerBackgroundSlideshow
+          images={layers}
+          animation={bgAnimation ?? "crossfade"}
+          speed={bgSpeed ?? "medium"}
+        />
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function GalleryGridBlock({
+  _style,
+  images,
+  backgroundImages,
+  bgAnimation,
+  bgSpeed,
+  overlayOpacity,
+  minHeight,
+  puck,
+}: GalleryGridProps & { puck?: BlockPuck }) {
+  const columns = _style?.galleryColumns ?? 3;
+  const gap = _style?.galleryGap ?? "normal";
   const gapValue = GAP_MAP[gap] ?? "8px";
   const thumbWidth = THUMB_WIDTH_MAP[columns] ?? 600;
   const list = Array.isArray(images) ? images : [];
 
+  const layers = resolveBannerLayers(backgroundImages);
+  const hasBg = layers.length > 0;
+  const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+  const sectionStyle = resolveBlockStyle(_style);
+
   if (list.length === 0) {
-    return <GalleryEmptyState message={getGalleryChromeLabelsFrom(puck).empty} dragRef={puck?.dragRef} />;
+    return (
+      <section
+        ref={puck?.dragRef ?? undefined}
+        data-block="gallery-grid"
+        data-empty="true"
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+          minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+          padding: padVar("4rem 1.5rem"),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          ...sectionStyle,
+        }}
+        {...resolveBlockAttrs(_style)}
+      >
+        {hasBg && (
+          <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
+        )}
+        <p
+          style={{
+            position: "relative",
+            zIndex: 1,
+            fontFamily: "var(--pf-font-body)",
+            color: "var(--pf-color-fg)",
+            opacity: 0.45,
+            fontSize: "0.9375rem",
+            margin: 0,
+          }}
+        >
+          {getGalleryChromeLabelsFrom(puck).empty}
+        </p>
+      </section>
+    );
   }
 
   return (
@@ -69,14 +195,20 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
       ref={puck?.dragRef ?? undefined}
       data-block="gallery-grid"
       style={{
-        backgroundColor: "var(--pf-color-bg)",
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
+        minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
         padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
-        ...resolveBlockStyle(_style),
+        ...sectionStyle,
       }}
       {...resolveBlockAttrs(_style)}
     >
-      <div style={{ maxWidth: "80rem", margin: "0 auto" }}>
+      {hasBg && (
+        <GalleryBannerLayers layers={layers} bgAnimation={bgAnimation} bgSpeed={bgSpeed} overlayAlpha={overlayAlpha} />
+      )}
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "80rem", margin: "0 auto" }}>
         <div
           style={{
             display: "grid",
@@ -110,35 +242,6 @@ export function GalleryGridBlock({ _style, images, columns, gap, puck }: Gallery
   );
 }
 
-function GalleryEmptyState({ message, dragRef }: { message: string; dragRef?: ((el: Element | null) => void) | null }) {
-  return (
-    <section
-      ref={dragRef ?? undefined}
-      data-block="gallery-grid"
-      data-empty="true"
-      style={{
-        backgroundColor: "var(--pf-color-bg)",
-        padding: padVar("4rem 1.5rem"),
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <p
-        style={{
-          fontFamily: "var(--pf-font-body)",
-          color: "var(--pf-color-fg)",
-          opacity: 0.45,
-          fontSize: "0.9375rem",
-          margin: 0,
-        }}
-      >
-        {message}
-      </p>
-    </section>
-  );
-}
-
 export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   label: "Photo Grid",
   inline: true,
@@ -146,26 +249,50 @@ export const galleryGridBlockConfig: ComponentConfig<GalleryGridProps> = {
   // `images` is intentionally absent from the sidebar fields — the editor drives
   // it via StyleToolkitField (Task 7). Production <Render> reads images straight
   // from saved props; no sidebar field is needed there either.
+  // columns/gap are now stored in _style.galleryColumns/_style.galleryGap and edited
+  // via the Layout tab GalleryLayoutControls — not as top-level sidebar fields.
+  // Banner fields are managed by StyleToolkitField and stripped by resolveFields in editorConfig.
   fields: {
     _style: productionStyleField,
-    columns: {
+    backgroundImages: {
+      type: "array",
+      label: "Background images",
+      arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } },
+    } as unknown as Field<GalleryImage[] | undefined>,
+    bgAnimation: {
       type: "select",
-      label: "Columns",
+      label: "BG animation",
       options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
+        { label: "Crossfade", value: "crossfade" },
+        { label: "Ken Burns", value: "kenburns" },
+        { label: "Slide", value: "slide" },
       ],
-    } as Field<2 | 3 | 4>,
-    gap: {
+    } as Field<GalleryGridProps["bgAnimation"]>,
+    bgSpeed: {
       type: "select",
-      label: "Gap between images",
+      label: "BG speed",
       options: [
-        { label: "Tight (4px)", value: "tight" },
-        { label: "Normal (8px)", value: "normal" },
-        { label: "Loose (16px)", value: "loose" },
+        { label: "Slow", value: "slow" },
+        { label: "Medium", value: "medium" },
+        { label: "Fast", value: "fast" },
       ],
-    },
+    } as Field<GalleryGridProps["bgSpeed"]>,
+    overlayOpacity: {
+      type: "number",
+      label: "Overlay opacity",
+      min: 0,
+      max: 100,
+    } as Field<number | undefined>,
+    minHeight: {
+      type: "select",
+      label: "Min height",
+      options: [
+        { label: "Auto", value: "auto" },
+        { label: "Short", value: "short" },
+        { label: "Medium", value: "medium" },
+        { label: "Tall", value: "tall" },
+      ],
+    } as Field<ContainerHeight | undefined>,
   } as unknown as Fields<GalleryGridProps>,
   render: GalleryGridBlock,
 };

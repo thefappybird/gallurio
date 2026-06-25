@@ -19,6 +19,7 @@ import {
   resolveBlockAttrs,
   asText,
   colorTokenToVar,
+  buildColorWithOpacity,
   productionStyleField,
   FLEX_JUSTIFY_MAP,
   FLEX_ALIGN_MAP,
@@ -99,6 +100,7 @@ export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & 
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
+        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -166,6 +168,7 @@ export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: Bloc
       ref={puck?.dragRef ?? undefined}
       style={{
         fontFamily: "var(--pf-font-body)",
+        color: colorTokenToVar(_style?.textColorToken) ?? "var(--pf-color-fg)",
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}
@@ -300,7 +303,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   const href = action === "go-to-gallery" && slug ? `/w/${slug}/gallery` : "#";
   const dataCta = action === "open-contact" ? "contact" : undefined;
 
-  const tkBorderRadius = "var(--pf-radius)";
+  const tkBorderRadius = _style?.radius !== undefined ? `${_style.radius}px` : "var(--pf-radius)";
   const customTextColor = colorTokenToVar(_style?.textColorToken);
   const colorVar = colorTokenToVar(_style?.buttonColorToken) ?? "var(--pf-color-primary)";
 
@@ -310,19 +313,24 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
   let tkBorderColor: string;
 
   if (_style?.buttonStyle === "outline") {
+    // Outline: transparent fill, always 2px border in the button color.
+    // borderWidth/borderColorToken from _style are ignored (deprecated in Pass 2).
     buttonBg = "transparent";
     buttonText = customTextColor ?? colorVar;
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "2px";
-    tkBorderColor = colorTokenToVar(_style?.borderColorToken) ?? colorVar;
+    tkBorderWidth = "2px";
+    tkBorderColor = colorVar;
   } else if (_style?.buttonStyle === "soft") {
+    // Soft: tinted fill at 15%, no border. borderWidth/borderColorToken ignored (deprecated in Pass 2).
     buttonBg = `color-mix(in srgb, ${colorVar} 15%, transparent)`;
     buttonText = customTextColor ?? colorVar;
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
+    tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else if (_style?.buttonStyle === "solid") {
-    buttonBg = colorVar;
+    // Opacity applies to the fill; 100 is a no-op (no color-mix overhead).
+    // borderWidth/borderColorToken are ignored for named button styles (deprecated in Pass 2).
+    buttonBg = buildColorWithOpacity(colorVar, _style?.buttonOpacity ?? 100);
     buttonText = customTextColor ?? "var(--pf-color-bg)";
-    tkBorderWidth = _style?.borderWidth !== undefined ? `${_style.borderWidth}px` : "0px";
+    tkBorderWidth = "0px";
     tkBorderColor = "transparent";
   } else {
     // No explicit buttonStyle — legacy per-field behaviour.
@@ -335,7 +343,9 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
 
   const legacyMargin = BUTTON_ALIGN_TO_MARGIN[align] ?? BUTTON_ALIGN_TO_MARGIN.left;
 
-  // Resolve toolkit styles for margins, shadow, font family/size overrides.
+  // Resolve toolkit styles for margins and font family/size overrides.
+  // Shadow and border-frame are intentionally NOT applied to buttons — they are
+  // deprecated fields for the button variant (old data is simply ignored).
   const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
 
   const wrapperStyle: React.CSSProperties = {
@@ -364,7 +374,7 @@ export function ButtonBlock({ _style, label, action, align, size, puck }: Button
     borderRadius: tkBorderRadius,
     backgroundColor: buttonBg,
     color: buttonText,
-    ...(resolved.boxShadow && { boxShadow: resolved.boxShadow as string }),
+    // Shadow suppressed: button no longer reads _style.shadow (deprecated for buttons).
     ...(resolved.fontFamily && { fontFamily: resolved.fontFamily as string }),
     ...(resolved.fontSize && { fontSize: resolved.fontSize as string }),
   };
@@ -480,23 +490,29 @@ export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
 
 export type ColumnsBlockProps = {
   _style?: BlockStyle;
-  columns: 2 | 3;
-  /** Explicit row count. When set to 2 or more, the grid defines that many rows so
-   *  child `rowSpan` values are meaningful. Unset (or 1) keeps the current auto-row
-   *  behaviour so existing layouts are unaffected. */
+  /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
+  columns: number;
+  /** Explicit row count 1–6. When set to 2 or more, the grid defines that many
+   *  rows so child `rowSpan` values are meaningful. Unset (or 1) keeps the
+   *  current auto-row behaviour so existing layouts are unaffected. */
   rows?: number;
   content: Slot;
 };
+
+/** Effective padding constants for Columns — render fallback + control effectiveValue. */
+export const COLUMNS_EFFECTIVE_PAD = {
+  top: "1rem",
+  right: "1.5rem",
+  bottom: "1rem",
+  left: "1.5rem",
+} as const;
 
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
   content: [],
   _style: {
-    paddingTop: "1rem",
-    paddingRight: "1.5rem",
-    paddingBottom: "1rem",
-    paddingLeft: "1.5rem",
+    gap: 16,
   },
 };
 
@@ -508,34 +524,88 @@ export function ColumnsBlock({
   puck,
 }: {
   _style?: BlockStyle;
-  columns: 2 | 3;
+  columns: number;
   rows?: number;
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
-  const cols = columns === 3 ? 3 : 2;
+  // Clamp columns to 1–6; accept legacy 2|3 values as-is.
+  const cols = Math.min(6, Math.max(1, Math.floor(columns ?? 2)));
+  // Tablet breakpoint shows min(2, cols) columns; desktop shows the full count.
+  const tabletCols = Math.min(2, cols);
   const rowCount =
     rows !== undefined && Number.isFinite(rows)
-      ? Math.min(12, Math.max(1, Math.floor(rows)))
+      ? Math.min(6, Math.max(1, Math.floor(rows)))
       : undefined;
   const hasRows = rowCount !== undefined && rowCount > 1;
+  // Whether we are inside the Puck editor canvas. Puck injects `isEditing: true`
+  // into the puck prop during editing; it is false (or absent) during public render.
+  const isEditing = puck?.isEditing === true;
+  // Build per-instance scoped CSS rules for this column/row count.
+  // Container queries (keyed off the block's own width via `container-type:inline-size`
+  // on the outer div) are used instead of viewport min-width media queries. This is
+  // critical for colSpan/rowSpan: a child can only span N tracks if the parent grid
+  // actually defines N tracks.
+  //
+  // PUBLIC BREAKPOINTS (mobile-first design):
+  //   480px → tablet (min(2,cols) tracks) — keeps 375px phones at 1 column (~327px container)
+  //   720px → desktop (full cols tracks)
+  //
+  // The editor canvas is only ~428px wide (both panels open at 1280px viewport), so the
+  // 480px breakpoint never fires there — which would make the editor always look 1-column.
+  // Instead, when isEditing is true we inject a direct inline gridTemplateColumns so the
+  // editor always shows the actual configured column count (bypassing the media queries).
+  const colsRule = cols === 1
+    ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
+    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+      (cols > 2
+        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        : "");
   const rowsRule = hasRows
-    ? `@media (min-width:640px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
+  // Editor-only: show the real column count regardless of canvas width.
+  // This is an inline override so it outranks the container-query class rules.
+  const editorGridCols = isEditing && cols > 1
+    ? `repeat(${cols},minmax(0,1fr))`
+    : undefined;
+  // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
+  const gapValue =
+    _style?.gap != null ? `${Math.min(96, Math.max(0, Math.floor(_style.gap)))}px` : "1rem";
+  // Don't let the resolved `gap` (meant for flex/grid children) leak onto the
+  // outer wrapper — it's applied to the grid below.
+  const outerStyle = resolveBlockStyle(_style);
+  delete (outerStyle as Record<string, unknown>).gap;
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
-      {/* Responsive: 1 column on phones, 2 on tablets, the chosen count on
-          desktop. Inline styles can't hold media queries, so scoped classes +
-          a <style> drive the breakpoints. */}
+    <div
+      ref={puck?.dragRef ?? undefined}
+      style={{
+        paddingTop: _style?.paddingTop ?? COLUMNS_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        ...outerStyle,
+        containerType: "inline-size",
+        containerName: "pf-cols",
+      }}
+      {...resolveBlockAttrs(_style)}
+    >
+      {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.
+          Container queries (not viewport min-width) are used so colSpan/rowSpan
+          work correctly when the editor canvas is narrower than the viewport.
+          Inline styles can't hold @container rules, so scoped classes + a <style>
+          drive the breakpoints. */}
       <style>{`
-        .pf-cols{display:grid;gap:1rem;max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
-        @media (min-width:640px){.pf-cols-2,.pf-cols-3{grid-template-columns:repeat(2,minmax(0,1fr));}}
-        @media (min-width:1024px){.pf-cols-3{grid-template-columns:repeat(3,minmax(0,1fr));}}
+        .pf-cols{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        ${colsRule}
         ${rowsRule}
       `}</style>
       {Content({
         className: `pf-cols pf-cols-${cols}${hasRows ? ` pf-cols-rows-${rowCount}` : ""}`,
-        style: {},
+        // In the editor, bypass the container-query breakpoints so the chosen
+        // column count is visible in the narrow (~428px) canvas. On the public
+        // page this stays empty and the @container rules drive the layout.
+        style: editorGridCols ? { gridTemplateColumns: editorGridCols } : {},
       })}
     </div>
   );
@@ -548,14 +618,12 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
   fields: {
     _style: productionStyleField,
     columns: {
-      type: "select",
+      type: "number",
       label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
-    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
+      min: 1,
+      max: 6,
+    } as Field<number>,
+    rows: { type: "number", label: "Rows", min: 1, max: 6 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   render: ColumnsBlock,
@@ -585,19 +653,23 @@ export type ContainerBlockProps = {
   content: Slot;
 };
 
+/** Effective padding constants for Container — render fallback + control effectiveValue. */
+export const CONTAINER_EFFECTIVE_PAD = {
+  top: "1.5rem",
+  right: "1.5rem",
+  bottom: "1.5rem",
+  left: "1.5rem",
+} as const;
+
 export const containerDefaultProps: ContainerBlockProps = {
   backgroundImages: [],
+  bgAnimation: "crossfade",
+  bgSpeed: "medium",
   overlayOpacity: 0,
   minHeight: "auto",
   alignX: "left",
   alignY: "top",
   content: [],
-  _style: {
-    paddingTop: "1.5rem",
-    paddingRight: "1.5rem",
-    paddingBottom: "1.5rem",
-    paddingLeft: "1.5rem",
-  },
 };
 
 const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
@@ -605,6 +677,19 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
   short: "40vh",
   medium: "60vh",
   tall: "80vh",
+};
+// Editor-only px heights per container size. The public page uses the vh values
+// above; the editor uses fixed px so they can be fed to Puck's native
+// `minEmptyHeight` (a px number). Driving the empty drop zone through Puck's own
+// primitive — rather than a custom flexGrow — keeps Puck's internal empty-zone
+// MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
+// (positioned off that model) reliably tracks an empty container the same way it
+// does any other block. Never used on the public page (gated on puck.isEditing).
+const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
+  auto: 128,
+  short: 320,
+  medium: 480,
+  tall: 640,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
@@ -684,8 +769,13 @@ export function ContainerBlock({
         flexDirection: "column",
         flexGrow: 1,
         justifyContent: effectiveJustify,
-        minHeight: CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
-        padding: "1.5rem",
+        minHeight: puck?.isEditing
+          ? `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
+          : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
+        paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
+        paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
+        paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
+        paddingLeft: _style?.paddingLeft ?? CONTAINER_EFFECTIVE_PAD.left,
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : undefined,
         ...sectionStyle,
@@ -729,6 +819,14 @@ export function ContainerBlock({
           textAlign: effectiveTextAlign as React.CSSProperties["textAlign"],
           gap: effectiveGap,
         },
+        // Editor only: give the empty drop zone a real, Puck-managed footprint via
+        // Puck's native minEmptyHeight so the whole container is droppable AND
+        // Puck's selection/action-bar overlay tracks the visible area (see
+        // CONTAINER_EDITOR_HEIGHT_PX). On the public page the slot stays
+        // content-sized (the section's min-height drives layout, unchanged).
+        ...(puck?.isEditing
+          ? { minEmptyHeight: CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"] }
+          : {}),
       })}
     </section>
   );

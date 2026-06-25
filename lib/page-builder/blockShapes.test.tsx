@@ -56,7 +56,7 @@ describe("puckConfig — registry shape", () => {
     const names = Object.keys(puckConfig.components);
     expect(names).toContain("GalleryGrid");
     expect(names).toContain("GalleryMasonry");
-    expect(names).toContain("GalleryCarousel");
+    expect(names).toContain("GalleryLandingPreset");
     expect(names).toContain("FeaturedWork");
     expect(names).toContain("Video");
     expect(names).toContain("ContactDetails");

@@ -1,4 +1,4 @@
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import type { PortfolioTemplate } from "./types";
 import {
   heroPreset,
@@ -15,16 +15,11 @@ export const weddingPhotographerTemplate: PortfolioTemplate = {
   businessType: "photographer",
   description: "Image-first hero, featured weddings, services, and a warm contact close.",
   previewImage: "/template-previews/wedding-photographer.svg",
-  defaultBrandKit: {
-    ...DEFAULT_BRAND_KIT,
-    themePreset: "editorial",
-    fontPair: "playfair-inter",
-    accentColor: "#7e6a52",
-  },
+  defaultBrandKit: THEME_PRESET_DEFINITIONS.romantic.brandKit,
   defaultContact: {
     title: "Let's tell your story",
     description: "Share a few details about your day and I'll be in touch within 48 hours.",
-    buttonStyle: "solid",
+    buttonStyle: "soft",
     buttonColor: "accent",
   },
   seedData: () => ({

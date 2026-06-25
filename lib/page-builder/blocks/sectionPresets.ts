@@ -134,7 +134,7 @@ export const GALLERY_GRID_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Gallery highlights" }),
     child("Text", { text: "A curated selection from one collection." }),
-    child("GalleryGrid", { collectionId: "", columns: 3, gap: "normal", maxItems: 12 }),
+    child("GalleryGrid", { images: [], columns: 3, gap: "normal" }),
   ]),
 };
 
@@ -147,7 +147,7 @@ export const GALLERY_MASONRY_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Story gallery" }),
     child("Text", { text: "A more editorial layout for one collection." }),
-    child("GalleryMasonry", { collectionId: "", columns: 3, gap: "normal", maxItems: 18 }),
+    child("GalleryMasonry", { images: [], columns: 3, gap: "normal" }),
   ]),
 };
 
@@ -164,15 +164,33 @@ export const FEATURED_WORK_PRESET: ContainerBlockProps = {
   ]),
 };
 
+/**
+ * Gallery landing — a medium-height, full-bleed hero-style container for the
+ * Gallery page. Supports multi-image background (slideshow). No button.
+ */
+export const GALLERY_LANDING_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  overlayOpacity: 40,
+  minHeight: "medium",
+  alignX: "center",
+  alignY: "center",
+  _style: { bgColorToken: "accent" },
+  content: slot([
+    child("Heading", { level: "h2", text: "Our gallery", _style: { ...onDark, bold: true } }),
+    child("Text", { text: "A curated look at our work.", _style: onDark }),
+  ]),
+};
+
 export const SECTION_PRESETS = {
-  HeroPreset: { label: "Hero", defaultProps: HERO_PRESET },
-  AboutPreset: { label: "About", defaultProps: ABOUT_PRESET },
-  ServicesPreset: { label: "Services", defaultProps: SERVICES_PRESET },
-  CtaPreset: { label: "Call to action", defaultProps: CTA_PRESET },
-  ContactPreset: { label: "Contact", defaultProps: CONTACT_PRESET },
-  GalleryGridPreset: { label: "Gallery Grid", defaultProps: GALLERY_GRID_PRESET },
+  HeroPreset:           { label: "Hero",            defaultProps: HERO_PRESET },
+  AboutPreset:          { label: "About",           defaultProps: ABOUT_PRESET },
+  ServicesPreset:       { label: "Services",        defaultProps: SERVICES_PRESET },
+  CtaPreset:            { label: "Call to action",  defaultProps: CTA_PRESET },
+  ContactPreset:        { label: "Contact",         defaultProps: CONTACT_PRESET },
+  GalleryGridPreset:    { label: "Gallery Grid",    defaultProps: GALLERY_GRID_PRESET },
   GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
-  FeaturedWorkPreset: { label: "Featured Work", defaultProps: FEATURED_WORK_PRESET },
+  FeaturedWorkPreset:   { label: "Featured Work",   defaultProps: FEATURED_WORK_PRESET },
+  GalleryLandingPreset: { label: "Gallery landing", defaultProps: GALLERY_LANDING_PRESET },
 } as const;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

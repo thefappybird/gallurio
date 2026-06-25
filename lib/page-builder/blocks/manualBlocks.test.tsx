@@ -11,6 +11,8 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  columnsDefaultProps,
+  containerDefaultProps,
   type HeadingBlockProps,
 } from "./manualBlocks";
 import type { SlotComponent } from "@measured/puck";
@@ -437,20 +439,39 @@ describe("ButtonBlock", () => {
     expect(wrapper.style.borderWidth).toBe("");
   });
 
-  it("button borderRadius always comes from var(--pf-radius), not _style.radius", () => {
-    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
+  it("a solid button IGNORES borderWidth/borderColorToken — deprecated in Pass 2", () => {
+    // Named button styles (solid/soft/outline) no longer read borderWidth/borderColorToken.
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", borderWidth: 3, borderColorToken: "primary" }}
+      />
+    );
     const a = document.querySelector("a") as HTMLAnchorElement;
-    const wrapper = a.parentElement as HTMLElement;
-    expect(a.style.borderRadius).toBe("var(--pf-radius)");
-    expect(wrapper.style.borderRadius).toBe("");
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
   });
 
-  it("_style.shadow applies boxShadow to the <a> not the wrapper div", () => {
+  it("_style.radius set → button uses px borderRadius (not var(--pf-radius))", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ radius: 8 }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderRadius).toBe("8px");
+  });
+
+  it("_style.radius unset → button falls back to var(--pf-radius) brand-kit radius", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderRadius).toBe("var(--pf-radius)");
+  });
+
+  it("_style.shadow is IGNORED for buttons — shadow was deprecated in Pass 2 (old data back-compat)", () => {
+    // Shadow is no longer applied to buttons. Old saved buttons that carry `shadow`
+    // simply have it ignored on render so pages don't break.
     render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ shadow: "sm" }} />);
     const a = document.querySelector("a") as HTMLAnchorElement;
-    const wrapper = a.parentElement as HTMLElement;
-    expect(a.style.boxShadow).not.toBe("");
-    expect(wrapper.style.boxShadow).toBe("");
+    expect(a.style.boxShadow).toBe("");
   });
 
   it("_style.borderColorToken changes border color independently of borderWidth", () => {
@@ -553,6 +574,158 @@ describe("ButtonBlock", () => {
     );
     const a = document.querySelector("a") as HTMLAnchorElement;
     expect(a.style.color).toBe("var(--pf-color-secondary)");
+  });
+
+  it("a soft button uses 0px border (borderWidth/borderColorToken deprecated in Pass 2)", () => {
+    // Soft style: tinted fill at 15%, no border. Old _style.borderWidth data ignored.
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", borderWidth: 2, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonOpacity=60 on solid: fill uses color-mix at 60%", () => {
+    // jsdom silently drops color-mix() from inline style; use server markup to assert the raw CSS.
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "primary", buttonOpacity: 60 }}
+      />
+    );
+    expect(html).toContain(
+      "background-color:color-mix(in srgb, var(--pf-color-primary) 60%, transparent)"
+    );
+  });
+
+  it("buttonOpacity=100 on solid: fill is the raw CSS variable (no color-mix overhead)", () => {
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", buttonColorToken: "accent", buttonOpacity: 100 }}
+      />
+    );
+    expect(html).toContain("background-color:var(--pf-color-accent)");
+    expect(html).not.toContain("color-mix");
+  });
+
+  it("shadow in _style is IGNORED for buttons — no boxShadow applied to <a>", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", shadow: "lg" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.boxShadow).toBe("");
+  });
+
+  it("borderWidth in _style is IGNORED for solid buttons — border is always 0px", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "solid", borderWidth: 5, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+  });
+
+  it("borderWidth in _style is IGNORED for outline buttons — always 2px with colorVar", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "outline", buttonColorToken: "primary", borderWidth: 10 }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("2px");
+    expect(a.style.borderColor).toBe("var(--pf-color-primary)");
+  });
+
+  it("borderWidth in _style is IGNORED for soft buttons — always 0px/transparent", () => {
+    render(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", borderWidth: 2, borderColorToken: "accent" }}
+      />
+    );
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.borderWidth).toBe("0px");
+    expect(a.style.borderColor).toBe("transparent");
+  });
+
+  it("buttonOpacity on soft: soft retains its fixed 15% tint and intentionally ignores buttonOpacity", () => {
+    // Soft always uses the 15% tint; buttonOpacity is intentionally not applied on top.
+    const html = renderToStaticMarkup(
+      <ButtonBlock
+        label="Btn"
+        action="open-contact"
+        align="center"
+        _style={{ buttonStyle: "soft", buttonColorToken: "accent", buttonOpacity: 50 }}
+      />
+    );
+    expect(html).toContain("color-mix(in srgb, var(--pf-color-accent) 15%, transparent)");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TextBlock / HeadingBlock — color fallback (parity)
+// ---------------------------------------------------------------------------
+
+describe("TextBlock and HeadingBlock color parity", () => {
+  it("TextBlock with no _style has outer div color: var(--pf-color-fg)", () => {
+    const { container } = render(<TextBlock text="Hello" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("HeadingBlock with no _style has outer div color: var(--pf-color-fg)", () => {
+    const { container } = render(<HeadingBlock text="Hi" level="h2" />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("TextBlock with explicit textColorToken:'primary' has outer div color: var(--pf-color-primary)", () => {
+    const { container } = render(<TextBlock text="Hello" _style={{ textColorToken: "primary" }} />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-primary)");
+  });
+
+  it("HeadingBlock with explicit textColorToken:'primary' has outer div color: var(--pf-color-primary)", () => {
+    const { container } = render(<HeadingBlock text="Hi" level="h2" _style={{ textColorToken: "primary" }} />);
+    const div = container.firstChild as HTMLElement;
+    expect(div.style.color).toBe("var(--pf-color-primary)");
+  });
+
+  it("ButtonBlock with no _style uses var(--pf-color-fg) for text (legacy fallback)", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-fg)");
+  });
+
+  it("ButtonBlock solid style with no textColorToken uses var(--pf-color-bg) for text", () => {
+    render(<ButtonBlock label="Btn" action="open-contact" align="center" _style={{ buttonStyle: "solid" }} />);
+    const a = document.querySelector("a") as HTMLAnchorElement;
+    expect(a.style.color).toBe("var(--pf-color-bg)");
   });
 });
 
@@ -678,11 +851,10 @@ describe("ColumnsBlock", () => {
     expect(slot.className).toContain("pf-cols-3");
   });
 
-  it("defaults to 2 columns for unexpected column value", () => {
-    // Cast to test defensive clamping behavior
-    render(<ColumnsBlock columns={5 as 2 | 3} content={stubSlot} />);
+  it("columns=7 clamps to 6 and renders pf-cols-6", () => {
+    render(<ColumnsBlock columns={7} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-2");
+    expect(slot.className).toContain("pf-cols-6");
   });
 
   it("rows=3 adds a rows class to the slot element", () => {
@@ -695,6 +867,80 @@ describe("ColumnsBlock", () => {
     render(<ColumnsBlock columns={2} rows={1} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
     expect(slot.className).not.toContain("pf-cols-rows-");
+  });
+
+  it("columns=1 applies pf-cols-1 class", () => {
+    render(<ColumnsBlock columns={1 as number} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).toContain("pf-cols-1");
+  });
+
+  it("columns=4 applies pf-cols-4 class", () => {
+    render(<ColumnsBlock columns={4} content={stubSlot} />);
+    const slot = screen.getByTestId("slot");
+    expect(slot.className).toContain("pf-cols-4");
+  });
+
+  it("columns=6 generates repeat(6,...) in the desktop CSS rule", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={6} content={stubSlot} />);
+    expect(html).toContain("repeat(6,minmax(0,1fr))");
+  });
+
+  it("rows=undefined produces no grid-template-rows rule (auto-flow)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} rows={undefined} content={stubSlot} />);
+    expect(html).not.toContain("grid-template-rows");
+  });
+
+  it("rows=3 produces grid-template-rows:repeat(3,...) in the style tag", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
+    expect(html).toContain("grid-template-rows:repeat(3,minmax(0,auto))");
+  });
+
+  it("multi-column grid uses container queries (not viewport media queries) so colSpan works inside narrow editor canvases", () => {
+    // colSpan only takes effect when the parent defines N tracks. If the grid uses
+    // viewport min-width, an editor canvas narrower than the breakpoint never fires the
+    // desktop rule, so span N has no tracks to span. Container queries key off the
+    // block's own width instead of the viewport.
+    const html = renderToStaticMarkup(<ColumnsBlock columns={3} content={stubSlot} />);
+    expect(html).toContain("@container");
+    expect(html).not.toMatch(/@media\s*\(min-width/);
+  });
+
+  it("PUBLIC breakpoints keep a 375px phone single-column: first breakpoint is >327px", () => {
+    // A 375px phone has ~327px of available container width inside typical page padding.
+    // The first @container breakpoint must be above 327px so the grid stays 1 column
+    // on phones. The editor handles its narrow canvas separately via puck.isEditing,
+    // not by lowering these public breakpoints.
+    const html = renderToStaticMarkup(<ColumnsBlock columns={2} content={stubSlot} />);
+    const breakpoints = [...html.matchAll(/@container[^{]+\(min-width:\s*(\d+)px\)/g)]
+      .map((m) => parseInt(m[1], 10));
+    expect(breakpoints.length).toBeGreaterThan(0);
+    // All public breakpoints must be above the phone container width (~327px).
+    breakpoints.forEach((bp) => expect(bp).toBeGreaterThan(327));
+  });
+
+  it("editor-mode (puck.isEditing=true): 2-col block gets inline grid-template-columns for direct column preview", () => {
+    // When isEditing=true, the block injects a direct gridTemplateColumns so the user
+    // sees the actual column count in the narrow editor canvas (~428px), bypassing the
+    // container-query breakpoints which require the container to be >=480px.
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    // React serializes { gridTemplateColumns: "..." } as "grid-template-columns:..." in HTML.
+    expect(html).toContain("grid-template-columns");
+    expect(html).toContain("repeat(2,minmax(0,1fr))");
+  });
+
+  it("render-mode (puck.isEditing=false): 2-col block does NOT inject inline grid-template-columns (uses @container rules)", () => {
+    // On the public page puck.isEditing is false; the grid relies on container queries
+    // so it is responsive (1-col on mobile, multi-col on wider containers).
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} puck={{ isEditing: false }} />
+    );
+    // The @container rule is in the <style> tag but the slot element should have no
+    // inline grid-template-columns style (style prop is empty object → no style attr).
+    // The ONLY occurrence of grid-template-columns should be inside the <style> tag.
+    expect(html).not.toMatch(/class="pf-cols[^"]*"[^>]*style="[^"]*grid-template-columns/);
   });
 });
 
@@ -733,12 +979,52 @@ describe("ContainerBlock", () => {
 });
 
 describe("ContainerBlock flex defaults", () => {
-  const MockSlot: SlotComponent = (props) => <div data-testid="slot-inner" style={props?.style} />;
+  const MockSlot: SlotComponent = (props) => (
+    <div data-testid="slot-inner" data-min-empty={String(props?.minEmptyHeight ?? "")} style={props?.style} />
+  );
 
   it("renders the outer section with flexGrow: 1", () => {
     const { container } = render(<ContainerBlock content={MockSlot} />);
     const section = container.querySelector("section");
     expect(section?.style.flexGrow).toBe("1");
+  });
+
+  it("editor mode: empty drop zone gets Puck's native minEmptyHeight so the whole area is droppable", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: true }} />);
+    const inner = screen.getByTestId("slot-inner");
+    // short -> 320px editor footprint (CONTAINER_EDITOR_HEIGHT_PX).
+    expect(inner.getAttribute("data-min-empty")).toBe("320");
+  });
+
+  it("public page: drop zone gets NO minEmptyHeight so layout is content-sized (unchanged)", () => {
+    render(<ContainerBlock content={MockSlot} minHeight="short" puck={{ isEditing: false }} />);
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.getAttribute("data-min-empty")).toBe("");
+  });
+
+  it("auto-height container gets an editor px min-height when editing (droppable footprint)", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.minHeight).toBe("128px");
+  });
+
+  it("does NOT apply the editor minHeight on the public page (auto container)", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="auto" puck={{ isEditing: false }} />
+    );
+    const section = container.querySelector("section");
+    expect(section?.style.minHeight).toBe("");
+  });
+
+  it("tall container renders its editor px height in edit mode (vh on the public page)", () => {
+    const { container } = render(
+      <ContainerBlock content={MockSlot} minHeight="tall" puck={{ isEditing: true }} />
+    );
+    const section = container.querySelector("section");
+    // Editor uses px so it can feed Puck's minEmptyHeight; public page keeps 80vh.
+    expect(section?.style.minHeight).toBe("640px");
   });
 
   it("uses _style.justifyContent over legacy alignY on the outer section", () => {
@@ -901,5 +1187,116 @@ describe("ContainerBlock — dragRef forwarding", () => {
     const stubSlot: SlotComponent = () => <div />;
     render(<ContainerBlock content={stubSlot} puck={{ dragRef }} />);
     expect(capturedEl).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Item 4: defaultProps gap default
+// ---------------------------------------------------------------------------
+
+describe("defaultProps gap default (Item 4)", () => {
+  it("columnsDefaultProps._style.gap is 16 (16px = 1rem, matches fallback)", () => {
+    expect(columnsDefaultProps._style?.gap).toBe(16);
+  });
+
+  it("ColumnsBlock renders 16px gap (same as old 1rem fallback) when gap=16 is set", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "1rem", gap: 16 }} />,
+    );
+    expect(html).toContain("gap:16px");
+  });
+
+  it("ColumnsBlock still renders 1rem gap via fallback when _style.gap is undefined (old saved pages)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{}} />,
+    );
+    expect(html).toContain("gap:1rem");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Item 4: defaultProps bgAnimation/bgSpeed
+// ---------------------------------------------------------------------------
+
+describe("defaultProps bgAnimation/bgSpeed (Item 4)", () => {
+  it("containerDefaultProps has bgAnimation='crossfade' and bgSpeed='medium'", () => {
+    expect(containerDefaultProps.bgAnimation).toBe("crossfade");
+    expect(containerDefaultProps.bgSpeed).toBe("medium");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// B2a: Container/Columns padding — effective-default DISPLAY (prop stays unset)
+// ---------------------------------------------------------------------------
+
+describe("B2a: containerDefaultProps carries no padding (de-materialized)", () => {
+  it("containerDefaultProps._style has no paddingTop", () => {
+    expect(containerDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingRight", () => {
+    expect(containerDefaultProps._style?.paddingRight).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingBottom", () => {
+    expect(containerDefaultProps._style?.paddingBottom).toBeUndefined();
+  });
+  it("containerDefaultProps._style has no paddingLeft", () => {
+    expect(containerDefaultProps._style?.paddingLeft).toBeUndefined();
+  });
+});
+
+describe("B2a: columnsDefaultProps carries no padding (de-materialized)", () => {
+  it("columnsDefaultProps._style has no paddingTop", () => {
+    expect(columnsDefaultProps._style?.paddingTop).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingRight", () => {
+    expect(columnsDefaultProps._style?.paddingRight).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingBottom", () => {
+    expect(columnsDefaultProps._style?.paddingBottom).toBeUndefined();
+  });
+  it("columnsDefaultProps._style has no paddingLeft", () => {
+    expect(columnsDefaultProps._style?.paddingLeft).toBeUndefined();
+  });
+});
+
+describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
+  it("renders paddingTop 1.5rem when _style is undefined", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1.5rem");
+  });
+  it("renders all four sides 1.5rem when _style is undefined", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1.5rem");
+    expect(html).toContain("padding-right:1.5rem");
+    expect(html).toContain("padding-bottom:1.5rem");
+    expect(html).toContain("padding-left:1.5rem");
+  });
+  it("explicit _style.paddingTop overrides the fallback", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} _style={{ paddingTop: "3rem" }} />,
+    );
+    expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
+  it("renders top/bottom 1rem, left/right 1.5rem when _style has no padding", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} />,
+    );
+    expect(html).toContain("padding-top:1rem");
+    expect(html).toContain("padding-right:1.5rem");
+    expect(html).toContain("padding-bottom:1rem");
+    expect(html).toContain("padding-left:1.5rem");
+  });
+  it("explicit _style.paddingTop overrides the fallback", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} content={stubSlot} _style={{ paddingTop: "3rem" }} />,
+    );
+    expect(html).toContain("padding-top:3rem");
   });
 });

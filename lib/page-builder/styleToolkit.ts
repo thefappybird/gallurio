@@ -38,6 +38,14 @@ export type StyleColorToken = (typeof STYLE_COLOR_TOKENS)[number];
 export const SHADOW_SIZES = ["none", "sm", "md", "lg"] as const;
 export type ShadowSize = (typeof SHADOW_SIZES)[number];
 
+/** Gallery-specific column counts — stored in `_style.galleryColumns` (not a top-level prop). */
+export const GALLERY_COLUMN_OPTIONS = [2, 3, 4] as const;
+export type GalleryColumns = (typeof GALLERY_COLUMN_OPTIONS)[number];
+
+/** Gallery image spacing tokens — stored in `_style.galleryGap` (not a top-level prop). */
+export const GALLERY_GAP_OPTIONS = ["tight", "normal", "loose"] as const;
+export type GalleryGap = (typeof GALLERY_GAP_OPTIONS)[number];
+
 export type TextAlign = "left" | "center" | "right";
 
 export type HeadingLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -95,6 +103,9 @@ export type BlockStyle = {
   textColorToken?: StyleColorToken | string;
   // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
   buttonColorToken?: StyleColorToken | string;
+  // Button fill opacity 0-100 (Button block only). Unset = effective 100. Applied via
+  // buildColorWithOpacity so it composes with each style variant (see manualBlocks.tsx).
+  buttonOpacity?: number;
   // Button visual style (solid/outline/soft) — overrides brand-kit default for this button.
   buttonStyle?: BrandKitButtonStyle;
   bold?: boolean;
@@ -138,6 +149,12 @@ export type BlockStyle = {
   descriptionHighlightToken?: StyleColorToken | string;
   descriptionHighlightShape?: HighlightShape;
   descriptionHighlightSize?: HighlightSize;
+  // Gallery layout — stored here instead of top-level props so columns/gap are
+  // style-drawer overrides (Layout tab → Gallery section) rather than Puck
+  // sidebar select fields. Dedicated keys avoid clashing with the numeric `gap`
+  // used by flex/grid containers.
+  galleryColumns?: GalleryColumns; // 2 | 3 | 4; effective default 3
+  galleryGap?: GalleryGap; // "tight" | "normal" | "loose"; effective default "normal"
   // Motion
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
@@ -166,6 +183,17 @@ export const FLEX_ALIGN_MAP: Record<NonNullable<BlockStyle["alignItems"]>, strin
   end: "flex-end",
   stretch: "stretch",
 };
+
+/**
+ * Mix a CSS color with transparency at the given opacity (0–100).
+ * Opacity >= 100 returns the color unchanged (no extra CSS overhead).
+ * Used by ButtonBlock for buttonOpacity. PortfolioHeader has a local copy
+ * that should be consolidated here when next touched.
+ */
+export function buildColorWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 100) return color;
+  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
+}
 
 /**
  * Read the plain text out of a stored text prop. Block text props are plain
@@ -320,12 +348,26 @@ export function resolveBlockStyle(style?: BlockStyle | null): React.CSSPropertie
   // block (Heading, Text, etc.) responds to the Layout-tab Align control. Flex
   // container blocks (Container, Flex) also apply align-items:stretch on their
   // inner wrapper so children fill width — both mechanisms are consistent.
+  // Additionally, alignSelf is emitted so the block positions itself within its
+  // grid cell when nested inside a Columns block (harmless in normal flow).
   if (style.alignItems) {
     const ta: Record<string, string | undefined> = {
       start: "left", center: "center", end: "right", stretch: undefined,
     };
     const v = ta[style.alignItems];
     if (v) css.textAlign = v;
+    css.alignSelf = style.alignItems;
+  }
+
+  // justifyContent -> justifySelf for grid cell inline-axis placement. Flex-only
+  // values (between/around) have no CSS grid equivalent, so they are skipped.
+  if (style.justifyContent) {
+    const jsSelf: Record<string, string | undefined> = {
+      start: "start", center: "center", end: "end",
+      between: undefined, around: undefined,
+    };
+    const js = jsSelf[style.justifyContent];
+    if (js) css.justifySelf = js;
   }
 
   // Gap between children — emitted here so it applies on any flex/grid container.
@@ -395,4 +437,16 @@ export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: An
   if (style.animation && style.animation !== "none") attrs["data-anim"] = style.animation;
   if (style.hover && style.hover !== "none") attrs["data-hover"] = style.hover;
   return attrs;
+}
+
+/** The text-color token a Button actually renders when textColorToken is unset.
+ *  Mirrors ButtonBlock's per-variant fallback so the editor control can show the
+ *  same effective value. Display-only. */
+export function effectiveButtonTextToken(
+  style: BlockStyle | undefined,
+): StyleColorToken | string {
+  if (style?.buttonStyle === "solid") return "background";
+  if (style?.buttonStyle === "soft" || style?.buttonStyle === "outline")
+    return style.buttonColorToken ?? "primary";
+  return "foreground"; // unset / legacy branch
 }

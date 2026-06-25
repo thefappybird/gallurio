@@ -41,20 +41,12 @@ import { SECTION_PRESETS } from "./blocks/sectionPresets";
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
 import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
-import { GalleryGridBlock } from "./blocks/GalleryGridBlock";
+import { GalleryGridBlock, galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
-import { GalleryMasonryBlock } from "./blocks/GalleryMasonryBlock";
+import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./blocks/GalleryMasonryBlock";
-import { GalleryCarouselBlock } from "./blocks/GalleryCarouselBlock";
-import type { GalleryCarouselProps } from "./blocks/GalleryCarouselBlock";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedWorkProps } from "./blocks/FeaturedWorkBlock";
-
-// Inlined copies of the data blocks' defaultProps (kept in sync; the parity
-// test compares these against the real server-block defaults).
-const galleryGridDefaultProps: GalleryGridProps = { images: [], columns: 3, gap: "normal" };
-const galleryMasonryDefaultProps: GalleryMasonryProps = { images: [], columns: 3, gap: "normal" };
-const galleryCarouselDefaultProps: GalleryCarouselProps = { images: [], heading: "", description: "", aspect: "landscape", floatX: "center", floatY: "center", autoplay: false };
-const contactDetailsDefaultProps: ContactDetailsProps = { showEmail: true, showPhone: true, showAddress: true, showSocials: true };
+const contactDetailsDefaultProps: ContactDetailsProps = {};
 // Isomorphic blocks — safe to import the real component + defaults into the client.
 import {
   VideoBlock,
@@ -101,10 +93,10 @@ type EditorComponents = {
   GalleryGridPreset: ContainerBlockProps;
   GalleryMasonryPreset: ContainerBlockProps;
   FeaturedWorkPreset: ContainerBlockProps;
+  GalleryLandingPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
-  GalleryCarousel: GalleryCarouselProps;
   FeaturedWork: FeaturedWorkProps;
   Video: VideoBlockProps;
   ContactDetails: ContactDetailsProps;
@@ -128,14 +120,17 @@ function Preview({
   label,
   lines,
   blockStyle,
+  puck,
 }: {
   label: string;
   lines: Array<string | null | undefined>;
   blockStyle?: BlockStyle;
+  puck?: { dragRef?: ((element: Element | null) => void) | null };
 }) {
   const shown = lines.filter((l): l is string => Boolean(l && l.trim()));
   return (
     <section
+      ref={puck?.dragRef ?? undefined}
       style={{
         border: "1px solid color-mix(in srgb, var(--pf-color-fg) 15%, transparent)",
         background: "var(--pf-color-bg)",
@@ -319,6 +314,10 @@ const resolveContainerFieldsTyped = resolveContainerFields as unknown as Compone
 
 const heroPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.HeroPreset.label,
+  // inline so the section root (which carries colSpan/rowSpan grid placement) is
+  // the grid child in the editor canvas, matching the public render. Without it
+  // Puck wraps the block and the span lands on the inner section (ignored).
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.HeroPreset.defaultProps,
@@ -327,6 +326,7 @@ const heroPreset: ComponentConfig<ContainerBlockProps> = {
 
 const aboutPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.AboutPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.AboutPreset.defaultProps,
@@ -335,6 +335,7 @@ const aboutPreset: ComponentConfig<ContainerBlockProps> = {
 
 const servicesPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ServicesPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ServicesPreset.defaultProps,
@@ -343,6 +344,7 @@ const servicesPreset: ComponentConfig<ContainerBlockProps> = {
 
 const ctaPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.CtaPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.CtaPreset.defaultProps,
@@ -351,6 +353,7 @@ const ctaPreset: ComponentConfig<ContainerBlockProps> = {
 
 const contactPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.ContactPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.ContactPreset.defaultProps,
@@ -359,6 +362,7 @@ const contactPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryGridPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.GalleryGridPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryGridPreset.defaultProps,
@@ -367,6 +371,7 @@ const galleryGridPreset: ComponentConfig<ContainerBlockProps> = {
 
 const galleryMasonryPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.GalleryMasonryPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
@@ -375,10 +380,27 @@ const galleryMasonryPreset: ComponentConfig<ContainerBlockProps> = {
 
 const featuredWorkPreset: ComponentConfig<ContainerBlockProps> = {
   label: SECTION_PRESETS.FeaturedWorkPreset.label,
+  inline: true,
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
   defaultProps: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
   render: ContainerBlock,
+};
+
+const galleryLandingPreset: ComponentConfig<ContainerBlockProps> = {
+  label: SECTION_PRESETS.GalleryLandingPreset.label,
+  inline: true,
+  fields: editorContainerFields,
+  resolveFields: resolveContainerFieldsTyped,
+  defaultProps: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
+  render: ContainerBlock,
+  // Editor hint: uploading multiple background images activates the auto-playing
+  // carousel/slideshow (ContainerBackgroundControls shows animation controls at
+  // images.length >= 2). Stored in metadata so field key parity with the production
+  // config is preserved — editor tooling reads this to surface help text.
+  metadata: {
+    backgroundImagesHint: "Upload multiple background images to turn this into an auto-playing carousel.",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -391,31 +413,21 @@ const galleryGrid: ComponentConfig<GalleryGridProps> = {
   label: "Photo Grid",
   inline: true,
   defaultProps: galleryGridDefaultProps,
-  // `images` is intentionally absent — the editor drives it via StyleToolkitField
-  // (Task 7). The cast is required because Puck's Fields<T> demands all keys.
+  // `images` is intentionally absent — the editor drives it via StyleToolkitField.
+  // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField;
+  // resolveFields strips them so they never appear in the standard Puck sidebar.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight (4px)", value: "tight" },
-        { label: "Normal (8px)", value: "normal" },
-        { label: "Loose (16px)", value: "loose" },
-      ],
-    },
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryGridProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryGridProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryGridProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<GalleryGridProps>,
   resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: GalleryGridBlock,
 };
@@ -424,82 +436,22 @@ const galleryMasonry: ComponentConfig<GalleryMasonryProps> = {
   label: "Masonry",
   inline: true,
   defaultProps: galleryMasonryDefaultProps,
-  // `images` is intentionally absent — driven by StyleToolkitField (Task 7).
+  // `images` is intentionally absent — driven by StyleToolkitField.
+  // columns/gap moved to _style.galleryColumns/_style.galleryGap (Layout tab Gallery section).
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
-    gap: {
-      type: "select",
-      label: "Gap between images",
-      options: [
-        { label: "Tight", value: "tight" },
-        { label: "Normal", value: "normal" },
-        { label: "Loose", value: "loose" },
-      ],
-    },
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<GalleryMasonryProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<GalleryMasonryProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<GalleryMasonryProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<GalleryMasonryProps>,
   resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: GalleryMasonryBlock,
-};
-
-const galleryCarousel: ComponentConfig<GalleryCarouselProps> = {
-  label: "Gallery Carousel",
-  inline: true,
-  defaultProps: galleryCarouselDefaultProps,
-  fields: {
-    _style: styleField,
-    heading: richTextField("Heading (optional)"),
-    description: richTextField("Description (optional)", true),
-    aspect: {
-      type: "select",
-      label: "Image shape",
-      options: [
-        { label: "Square", value: "square" },
-        { label: "Landscape", value: "landscape" },
-        { label: "Portrait", value: "portrait" },
-      ],
-    },
-    floatX: {
-      type: "select",
-      label: "Floating header — horizontal",
-      options: [
-        { label: "Left", value: "left" },
-        { label: "Center", value: "center" },
-        { label: "Right", value: "right" },
-      ],
-    } as Field<"left" | "center" | "right">,
-    floatY: {
-      type: "select",
-      label: "Floating header — vertical",
-      options: [
-        { label: "Top", value: "top" },
-        { label: "Middle", value: "center" },
-        { label: "Bottom", value: "bottom" },
-      ],
-    } as Field<"top" | "center" | "bottom">,
-    autoplay: {
-      type: "select",
-      label: "Autoplay",
-      options: [
-        { label: "Off", value: false },
-        { label: "On", value: true },
-      ],
-    } as Field<boolean>,
-  } as unknown as Fields<GalleryCarouselProps>,
-  resolveFields: (_data, { fields }) => {
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
-  },
-  render: GalleryCarouselBlock,
 };
 
 const featuredWork: ComponentConfig<FeaturedWorkProps> = {
@@ -507,22 +459,19 @@ const featuredWork: ComponentConfig<FeaturedWorkProps> = {
   inline: true,
   defaultProps: featuredWorkDefaultProps,
   // `collections` is intentionally absent — driven by StyleToolkitField Content tab.
-  // This matches the production featuredWorkBlockConfig field keys exactly.
+  // columns moved to _style.galleryColumns (Layout tab Gallery section).
+  // Banner fields are hidden (visible: false) and managed by StyleToolkitField.
   fields: {
     _style: styleField,
-    columns: {
-      type: "select",
-      label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-        { label: "4 columns", value: 4 },
-      ],
-    } as Field<2 | 3 | 4>,
+    backgroundImages: { type: "array", label: "Background images", visible: false, arrayFields: { id: { type: "text", label: "ID" }, publicId: { type: "text", label: "Public ID" } } } as unknown as Field<FeaturedWorkProps["backgroundImages"]>,
+    bgAnimation: { type: "select", label: "BG animation", visible: false, options: [{ label: "Crossfade", value: "crossfade" }, { label: "Ken Burns", value: "kenburns" }, { label: "Slide", value: "slide" }] } as unknown as Field<FeaturedWorkProps["bgAnimation"]>,
+    bgSpeed: { type: "select", label: "BG speed", visible: false, options: [{ label: "Slow", value: "slow" }, { label: "Medium", value: "medium" }, { label: "Fast", value: "fast" }] } as unknown as Field<FeaturedWorkProps["bgSpeed"]>,
+    overlayOpacity: { type: "number", label: "Overlay opacity", visible: false, min: 0, max: 100 } as unknown as Field<number | undefined>,
+    minHeight: { type: "select", label: "Min height", visible: false, options: [{ label: "Auto", value: "auto" }, { label: "Short", value: "short" }, { label: "Medium", value: "medium" }, { label: "Tall", value: "tall" }] } as unknown as Field<ContainerHeight | undefined>,
   } as unknown as Fields<FeaturedWorkProps>,
   resolveFields: (_data, { fields }) => {
-    // collections and columns are managed by the StyleToolkitField Content/Layout tabs
-    return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+    const { backgroundImages: _bi, bgAnimation: _ba, bgSpeed: _bs, overlayOpacity: _o, minHeight: _mh, ...rest } = fields as Record<string, unknown>;
+    return rest as typeof fields;
   },
   render: FeaturedWorkBlock,
 };
@@ -559,54 +508,29 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
   defaultProps: contactDetailsDefaultProps,
   fields: {
     _style: styleField,
-    showEmail: {
-      type: "select",
-      label: "Show email",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showPhone: {
-      type: "select",
-      label: "Show phone",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showAddress: {
-      type: "select",
-      label: "Show address",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
-    showSocials: {
-      type: "select",
-      label: "Show social links",
-      options: [
-        { label: "Yes", value: true },
-        { label: "No", value: false },
-      ],
-    } as Field<boolean>,
   },
   resolveFields: (_data, { fields }) => {
-    // All show* toggles are managed by the ContactDetailsPanel in StyleToolkitField
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, showEmail, showPhone, showAddress, showSocials }) => (
-    <Preview
-      label="Contact Details"
-      lines={[
-        [showEmail && "Email", showPhone && "Phone", showAddress && "Address", showSocials && "Socials"]
-          .filter(Boolean)
-          .join(" · ") || "All fields hidden",
-      ]}
-      blockStyle={_style}
-    />
-  ),
+  render: ({ _style, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
+    const overrides = [
+      email && "Email",
+      phone && "Phone",
+      address && "Address",
+      instagram && "Instagram",
+      facebook && "Facebook",
+      tiktok && "TikTok",
+      website && "Website",
+    ].filter(Boolean);
+    return (
+      <Preview
+        label="Contact Details"
+        lines={[overrides.length > 0 ? overrides.join(" · ") + " overridden" : "Workspace contact details"]}
+        blockStyle={_style}
+        puck={puck}
+      />
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -767,24 +691,16 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   inline: true,
   defaultProps: {
     ...columnsDefaultProps,
-    _style: {
-      paddingTop: "1rem",
-      paddingRight: "1.5rem",
-      paddingBottom: "1rem",
-      paddingLeft: "1.5rem",
-    },
   },
   fields: {
     _style: styleField,
     columns: {
-      type: "select",
+      type: "number",
       label: "Columns",
-      options: [
-        { label: "2 columns", value: 2 },
-        { label: "3 columns", value: 3 },
-      ],
-    } as Field<2 | 3>,
-    rows: { type: "number", label: "Rows", min: 1, max: 12 } as Field<number | undefined>,
+      min: 1,
+      max: 6,
+    } as Field<number>,
+    rows: { type: "number", label: "Rows", min: 1, max: 6 } as Field<number | undefined>,
     content: { type: "slot" },
   },
   resolveFields: (_data, { fields }) => {
@@ -800,12 +716,6 @@ const container: ComponentConfig<ContainerBlockProps> = {
   inline: true,
   defaultProps: {
     ...containerDefaultProps,
-    _style: {
-      paddingTop: "1.5rem",
-      paddingRight: "1.5rem",
-      paddingBottom: "1.5rem",
-      paddingLeft: "1.5rem",
-    },
   },
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
@@ -826,9 +736,9 @@ export const editorPuckConfig: Config<EditorComponents> = {
     GalleryGridPreset: galleryGridPreset,
     GalleryMasonryPreset: galleryMasonryPreset,
     FeaturedWorkPreset: featuredWorkPreset,
+    GalleryLandingPreset: galleryLandingPreset,
     GalleryGrid: galleryGrid,
     GalleryMasonry: galleryMasonry,
-    GalleryCarousel: galleryCarousel,
     FeaturedWork: featuredWork,
     Video: video,
     ContactDetails: contactDetails,

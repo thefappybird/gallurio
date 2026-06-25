@@ -8,27 +8,34 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import {
   DEFAULT_BRAND_KIT,
   type PortfolioContactConfig,
+  type PortfolioCollectionsPopupConfig,
   type PortfolioHeaderConfig,
   type PuckData,
 } from "@/lib/page-builder/types";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
-import { PortfolioHeader } from "@/app/(public)/w/[orgSlug]/_components/PortfolioHeader";
 import {
   resolveAddSessionAppearance,
   resolveSubmitAppearance,
 } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { PreviewContactCard } from "./_components/PreviewContactCard";
+import { PreviewContactModal } from "./_components/PreviewContactModal";
 import { PreviewClient } from "./_components/PreviewClient";
+import { PreviewBrandShell } from "./_components/PreviewBrandShell";
+import { PreviewHeaderShell } from "./_components/PreviewHeaderShell";
+import { PreviewPopupShell } from "./_components/PreviewPopupShell";
 
 // Owner-only draft preview — never indexed, always rendered fresh from the
 // current (possibly unpublished) draft.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-type PreviewZone = "home" | "gallery" | "contact";
+type PreviewZone = "home" | "gallery" | "contact" | "popup";
 
 function parseZone(value: string | string[] | undefined): PreviewZone {
-  return value === "gallery" || value === "contact" ? value : "home";
+  if (value === "gallery") return "gallery";
+  if (value === "contact") return "contact";
+  if (value === "popup") return "popup";
+  return "home";
 }
 
 /**
@@ -41,7 +48,14 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
  * HOME/GALLERY zones: rendered client-side via <PreviewClient> which reads the
  * unsaved draft from localStorage — avoids HTTP 431 from large URL params.
  * CONTACT zone: rendered server-side from DB (last-saved contact config).
- * Brand-kit CSS vars and PortfolioHeader are always sourced from DB.
+ * POPUP zone: dedicated collections-popup preview surface that mirrors the
+ *   editor's CollectionsPopupPreview; driven by the localStorage draft config
+ *   (via PreviewBrandShell → PreviewDraftContext) with DB fallback.
+ *
+ * Brand-kit CSS vars, header config, contact config, and collectionsPopup config
+ * are initially sourced from DB; PreviewBrandShell and the Preview*Shell client
+ * components override each with the localStorage draft on mount, so unsaved
+ * edits are visible in preview without saving.
  */
 export default async function PortfolioPreviewPage({
   params,
@@ -63,29 +77,45 @@ export default async function PortfolioPreviewPage({
 
   const chromeLocale = resolvePublicChromeLocale(workspace);
   const tNav = await getTranslations({ locale: chromeLocale, namespace: "publicPage.nav" });
+  // DB fallback — PreviewHeaderShell overrides with the localStorage draft on mount.
   const headerConfig = (pp?.header ?? null) as PortfolioHeaderConfig | null;
+  // DB fallback — PreviewPopupShell overrides with the localStorage draft on mount.
+  const collectionsPopupConfig = (pp?.collectionsPopup ?? null) as PortfolioCollectionsPopupConfig | null;
   const activePath = zone === "gallery" ? `/w/${workspace.slug}/gallery` : `/w/${workspace.slug}`;
+  // Keep the logo + Home link within the preview iframe; do not navigate to the
+  // published public site.
+  const previewHomeHref = `/${locale}/portfolio-preview`;
+  // Keep the Gallery link within the preview iframe; do not navigate to the
+  // published public site.
+  const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
+
+  // Built unconditionally so PreviewContactModal can mount in home/gallery zones,
+  // enabling the navbar Contact button to open the modal (mirrors public layout).
+  const tForm = await getTranslations({ locale: chromeLocale, namespace: "publicPage.inquiryForm" });
+  const tLocationPicker = await getTranslations({
+    locale: chromeLocale,
+    namespace: "app.bookings.locationPicker",
+  });
+  const dbContact = (pp?.contact ?? null) as PortfolioContactConfig | null;
+  const contactLabels = buildContactLabels(tForm, tLocationPicker);
 
   let body: React.ReactNode;
 
   if (zone === "contact") {
-    const tForm = await getTranslations({ locale: chromeLocale, namespace: "publicPage.inquiryForm" });
-    const tLocationPicker = await getTranslations({
-      locale: chromeLocale,
-      namespace: "app.bookings.locationPicker",
-    });
-    const contact = (pp?.contact ?? null) as PortfolioContactConfig | null;
-    const labels = buildContactLabels(tForm, tLocationPicker);
     body = (
       <PreviewContactCard
         workspaceSlug={workspace.slug}
-        title={contact?.title?.trim() || labels.title}
-        description={contact?.description?.trim() || labels.description}
-        labels={labels.form}
-        submitAppearance={resolveSubmitAppearance(contact)}
-        addSessionAppearance={resolveAddSessionAppearance(contact)}
+        title={dbContact?.title?.trim() || contactLabels.title}
+        description={dbContact?.description?.trim() || contactLabels.description}
+        labels={contactLabels.form}
+        submitAppearance={resolveSubmitAppearance(dbContact)}
+        addSessionAppearance={resolveAddSessionAppearance(dbContact)}
       />
     );
+  } else if (zone === "popup") {
+    // Dedicated popup-preview surface: mirrors the editor's CollectionsPopupPreview.
+    // No page header — the popup overlays the full viewport.
+    body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
     const renderWorkspace = {
@@ -118,29 +148,46 @@ export default async function PortfolioPreviewPage({
         fallbackData={fallbackData}
       />
     );
-
   }
 
+  // The popup zone fills the full viewport — skip the nav header.
+  const showHeader = zone !== "popup";
+
   return (
-    <div
-      style={{ ...(cssVars as React.CSSProperties), minHeight: "100dvh", backgroundColor: "var(--pf-color-bg)", color: "var(--pf-color-fg)" }}
-      className={className}
+    <PreviewBrandShell
+      slug={workspace.slug}
+      fallbackCssVars={cssVars}
+      fallbackClassName={className}
     >
-      <PortfolioHeader
-        slug={workspace.slug}
-        activePath={activePath}
-        labels={{
-          brand: workspace.name,
-          navLandmark: tNav("navLandmark"),
-          home: tNav("home"),
-          gallery: tNav("gallery"),
-          contact: tNav("contact"),
-          openMenu: tNav("openMenu"),
-          closeMenu: tNav("closeMenu"),
-        }}
-        config={headerConfig}
-      />
+      {showHeader && (
+        <PreviewHeaderShell
+          slug={workspace.slug}
+          fallbackConfig={headerConfig}
+          activePath={activePath}
+          homeHref={previewHomeHref}
+          galleryHref={previewGalleryHref}
+          labels={{
+            brand: workspace.name,
+            navLandmark: tNav("navLandmark"),
+            home: tNav("home"),
+            gallery: tNav("gallery"),
+            contact: tNav("contact"),
+            openMenu: tNav("openMenu"),
+            closeMenu: tNav("closeMenu"),
+          }}
+        />
+      )}
       {body}
-    </div>
+      {/* Mount contact modal only when the header is visible (home/gallery zones).
+          The contact zone shows PreviewContactCard instead; popup zone has no header.
+          This mirrors the public layout's ContactModal mount. */}
+      {showHeader && zone !== "contact" && (
+        <PreviewContactModal
+          workspaceSlug={workspace.slug}
+          dbContact={dbContact}
+          labels={contactLabels}
+        />
+      )}
+    </PreviewBrandShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
+import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
 
 export type ButtonAppearance = {
   color: string;
@@ -12,16 +13,22 @@ export type ButtonAppearance = {
   errorColor?: string;
 };
 
+export const CRM_ERROR_COLOR = "#e7000b";
+
 const CONTACT_RADIUS_MAP: Record<string, string> = {
   sharp: "0",
   subtle: "0.25rem",
   rounded: "0.5rem",
 };
 
-function resolveContactColor(value: string | undefined, fallback: string): string {
+export function resolveContactColor(value: string | undefined, fallback: string): string {
   if (!value) return fallback;
   if (value.startsWith("#")) return value;
-  return `var(--pf-color-${value}, ${fallback})`;
+  const cssVar = colorTokenToVar(value);
+  if (!cssVar) return fallback;
+  if (!cssVar.startsWith("var(")) return cssVar;
+  // Insert fallback before closing paren: "var(--pf-color-bg)" → "var(--pf-color-bg, FB)"
+  return `${cssVar.slice(0, -1)}, ${fallback})`;
 }
 
 export function buildButtonStyle(
@@ -68,6 +75,27 @@ export function buildButtonStyle(
   return style;
 }
 
+/**
+ * Visual-only subset of a contact button's style — color/background/border/
+ * radius WITHOUT layout sizing (width / min-height / font). Use when a
+ * differently-sized control (e.g. the location picker's small square "apply"
+ * icon-button) should adopt the submit button's *look* without being forced to
+ * the full-width 48px submit size.
+ */
+export function buildButtonVisualStyle(
+  appearance: ButtonAppearance,
+  disabled: boolean
+): CSSProperties {
+  const {
+    width: _width,
+    minHeight: _minHeight,
+    fontSize: _fontSize,
+    fontFamily: _fontFamily,
+    ...visual
+  } = buildButtonStyle(appearance, disabled);
+  return visual;
+}
+
 export function resolveSubmitAppearance(contact?: PortfolioContactConfig | null): ButtonAppearance {
   const border = contact?.buttonBorderWidth
     ? `${contact.buttonBorderWidth}px solid ${resolveContactColor(contact.buttonBorderColor, "currentColor")}`
@@ -81,9 +109,7 @@ export function resolveSubmitAppearance(contact?: PortfolioContactConfig | null)
       ? resolveContactColor(contact.buttonTextColor, "inherit")
       : undefined,
     border,
-    errorColor: contact?.errorMessageColor
-      ? resolveContactColor(contact.errorMessageColor, "var(--pf-color-accent)")
-      : undefined,
+    errorColor: resolveContactColor(contact?.errorMessageColor, CRM_ERROR_COLOR),
   };
 }
 

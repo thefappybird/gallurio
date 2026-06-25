@@ -8,12 +8,13 @@ import { usePuckStore } from "@/lib/page-builder/puckHooks";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
+import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
 import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
 import type {
   PortfolioBrandKit,
@@ -25,6 +26,7 @@ import type {
 } from "@/lib/page-builder/types";
 import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
+import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import {
   dismissPortfolioGuideAction,
 } from "../_actions";
@@ -49,7 +51,8 @@ import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { SpotlightGuide } from "./SpotlightGuide";
-import { SPOTLIGHT_STEPS } from "./spotlightSteps";
+import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
+import { SandboxEditorGuide } from "./SandboxEditorGuide";
 import { CollectionsManagerDialog } from "@/lib/page-builder/galleryPicker/CollectionsManagerDialog";
 import { GalleryPickerCacheProvider } from "@/lib/page-builder/galleryPicker/GalleryPickerCacheContext";
 import { buildContactLabels } from "@/app/(public)/w/[orgSlug]/_components/buildContactLabels";
@@ -64,11 +67,32 @@ import { DraftNameEditor } from "./DraftNameEditor";
 import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
+import { resolveDiscardTarget } from "./draftDiscard";
+import { SuppressedActionBar } from "./SuppressedActionBar";
+import { BlockActionsToolbar } from "./BlockActionsToolbar";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
 type Zone = "home" | "gallery";
 type EditorSection = Zone | "collectionsPopup" | "header" | "contact";
+
+/** Preview-route `zone` param for the active editor section. */
+export type PreviewZoneParam = "home" | "gallery" | "contact" | "popup";
+
+/**
+ * Map the active editor section to the preview route's `zone` param so the
+ * iframe and the open-in-new-tab link land on what the user is viewing.
+ * Contact and the collections popup have dedicated preview zones; header
+ * chrome renders on the underlying page, so it falls back to the active zone.
+ */
+export function previewZoneFor(
+  activeSection: EditorSection,
+  activeZone: Zone
+): PreviewZoneParam {
+  if (activeSection === "contact") return "contact";
+  if (activeSection === "collectionsPopup") return "popup";
+  return activeZone;
+}
 
 /** Serializable starter-template summary for the in-editor switcher. */
 export type EditorTemplateSummary = {
@@ -103,6 +127,24 @@ type Props = {
   initialDrafts?: DraftSummary[];
   initialActiveDraftId?: string | null;
   initialActiveDraftName?: string;
+  /**
+   * When true the shell runs in sandbox/guide mode: all persistence (localStorage,
+   * server drafts, publish, dismiss-guide) is disabled so the real editor's data
+   * is never touched during the interactive tour.
+   */
+  guideMode?: boolean;
+  /** Called when the sandbox guide finishes (user completed all steps). */
+  onGuideFinish?: (dontShowAgain: boolean) => void;
+  /** Called when the sandbox guide is skipped mid-tour. */
+  onGuideSkipClose?: (dontShowAgain: boolean) => void;
+  /**
+   * Scopes spotlight anchor queries to a specific DOM subtree. Only needed in
+   * sandbox (guideMode) when a second EditorShell coexists with the real one —
+   * both render the same data-tour-id attributes, so an unscoped querySelector
+   * resolves to the outer shell's element. Pass the sandbox overlay container
+   * element here to constrain the lookup to the guide's own subtree.
+   */
+  guideQueryRoot?: Element | null;
 };
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
@@ -120,6 +162,41 @@ type PortfolioBrowserDraft = {
   draftId: string | null;
   draftName: string;
 };
+
+/**
+ * Mounts inside Puck's `fields` override and climbs the DOM to find the
+ * outermost sidebar column (identified by `grid-area: right` in its computed
+ * style — stable regardless of Puck's minified class names). Adds
+ * `data-tour-id="properties-panel-full"` to that column so the spotlight
+ * guide can frame the *entire* right panel for step 3.
+ *
+ * The attribute is added and removed in a useEffect so it never leaks
+ * into the DOM after unmount.
+ */
+function RightPanelTourMarker() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let marked: Element | null = null;
+    let el: Element | null = ref.current?.parentElement ?? null;
+    // Walk up at most 8 levels to find the Puck sidebar column.
+    // Puck sets `grid-area: right` (CSS) on the right sidebar column. The
+    // computed `gridRowStart` returns the named area identifier "right" reliably
+    // across browsers (unlike the `gridArea` shorthand whose computed form varies).
+    for (let i = 0; i < 8 && el; i++) {
+      const style = window.getComputedStyle(el);
+      if (style.gridRowStart === "right") {
+        el.setAttribute("data-tour-id", "properties-panel-full");
+        marked = el;
+        break;
+      }
+      el = el.parentElement;
+    }
+    return () => {
+      marked?.removeAttribute("data-tour-id");
+    };
+  }, []);
+  return <div ref={ref} style={{ display: "none" }} aria-hidden />;
+}
 
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
 // standalone iframe preview. Mirrors the <Puck viewports> prop.
@@ -153,7 +230,6 @@ function EditCanvasControls() {
         aria-pressed={leftSideBarVisible}
         aria-label="Toggle blocks panel"
         title="Toggle blocks panel"
-        data-tour-id="blocks-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
@@ -234,15 +310,12 @@ function DeviceTogglePreview({
 function PuckGateReader({
   onState,
 }: {
-  onState: (state: { contentCount: number; hasSelection: boolean; panelOpen: boolean }) => void;
+  onState: (state: { contentCount: number }) => void;
 }) {
   const contentCount = usePuckStore((s) => s.appState.data.content?.length ?? 0);
-  const selectedItem = usePuckStore((s) => s.selectedItem);
-  const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
-  const hasSelection = selectedItem !== null;
 
   useEffect(() => {
-    onState({ contentCount, hasSelection, panelOpen: leftSideBarVisible });
+    onState({ contentCount });
   });
 
   return null;
@@ -266,6 +339,12 @@ function ensureIds(data: PuckData): Data {
   } as Data;
 }
 
+/** Fill missing defaultProps into every block, then assign stable ids. */
+function prepareForEditor(data: PuckData): Data {
+  const withDefaults = fillBlockDefaults(data as unknown as PuckDataLike) as unknown as PuckData;
+  return ensureIds(withDefaults);
+}
+
 export function EditorShell({
   slug,
   workspaceName,
@@ -284,6 +363,10 @@ export function EditorShell({
   initialDrafts = [],
   initialActiveDraftId = null,
   initialActiveDraftName,
+  guideMode = false,
+  onGuideFinish,
+  onGuideSkipClose,
+  guideQueryRoot,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
@@ -322,8 +405,6 @@ export function EditorShell({
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
   // Puck gate state (populated by PuckGateReader when Puck is mounted)
   const [puckContentCount, setPuckContentCount] = useState(0);
-  const [puckHasSelection, setPuckHasSelection] = useState(false);
-  const [puckPanelOpen, setPuckPanelOpen] = useState(false);
   // Baseline content count captured when the drag-block step becomes active
   const [dragBaseline, setDragBaseline] = useState<number | null>(null);
 
@@ -370,7 +451,9 @@ export function EditorShell({
     return !hasDrafts && !hasBuffer;
   });
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   // True only when the canvas holds a newly-created draft (applyTemplate path) that
   // has no DB record yet; false when the active draft was deleted (deleted-working-copy
   // path). Controls whether the dashed "Unsaved" row appears in DraftsDialog.
@@ -384,8 +467,8 @@ export function EditorShell({
       name: initialActiveDraftName || DEFAULT_DRAFT_NAME,
       templateId: currentTemplateId,
       data: {
-        home: ensureIds(initialData.home ?? EMPTY_ZONE),
-        gallery: ensureIds(initialData.gallery ?? EMPTY_ZONE),
+        home: prepareForEditor(initialData.home ?? EMPTY_ZONE),
+        gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE),
       },
       brandKit: initialBrandKit,
       contact: initialContact,
@@ -426,7 +509,7 @@ export function EditorShell({
   // re-renders never reset the editor mid-edit, and full re-seeds (applyTemplate,
   // applyDraft) force a remount by bumping seedNonce.
   const [puckSeed, setPuckSeed] = useState<Data>(() =>
-    ensureIds(initialData.home ?? EMPTY_ZONE)
+    prepareForEditor(initialData.home ?? EMPTY_ZONE)
   );
   const [seedNonce, setSeedNonce] = useState(0);
   const draftKey = `gallurio:portfolio-draft:${slug}`;
@@ -455,6 +538,7 @@ export function EditorShell({
       savedSnapshot;
 
   const persistLocalDraft = useCallback(() => {
+    if (guideMode) return;
     if (typeof window === "undefined") return;
     const draft: PortfolioBrowserDraft = {
       version: LOCAL_DRAFT_VERSION,
@@ -473,7 +557,7 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, headerConfig, activeDraftId, draftName]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
 
   // Compute on mount whether a recoverable localStorage buffer exists.
   const [hasRecoverableBuffer] = useState<boolean>(() => {
@@ -489,6 +573,7 @@ export function EditorShell({
   });
 
   useEffect(() => {
+    if (guideMode) return;
     if (typeof window === "undefined") return;
     const raw = window.localStorage.getItem(draftKey);
     if (!raw) return;
@@ -500,8 +585,8 @@ export function EditorShell({
         const gallery = draft.data?.gallery ?? zoneDataRef.current.gallery;
         zoneDataRef.current = { home, gallery };
         setRenderDraftData({
-          home: ensureIds(home) as unknown as PuckData,
-          gallery: ensureIds(gallery) as unknown as PuckData,
+          home: prepareForEditor(home) as unknown as PuckData,
+          gallery: prepareForEditor(gallery) as unknown as PuckData,
         });
         if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
@@ -511,17 +596,18 @@ export function EditorShell({
         if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
         if (draft.draftName) setDraftName(draft.draftName);
         ignoreNextChange.current = true;
-        setPuckSeed(ensureIds(zoneDataRef.current.home));
+        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
         setSeedNonce((n) => n + 1);
       });
     } catch {
       window.localStorage.removeItem(draftKey);
     }
-  }, [draftKey]);
+  }, [draftKey, guideMode]);
 
   useEffect(() => {
+    if (guideMode) return;
     persistLocalDraft();
-  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, headerConfig, persistLocalDraft]);
+  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, guideMode, headerConfig, persistLocalDraft]);
 
   // beforeunload guard while dirty.
   useEffect(() => {
@@ -568,6 +654,7 @@ export function EditorShell({
 
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
+    if (guideMode) return false;
     const shouldToastValidationError = templatesOpen;
     const validationError = validateDraftName(draftName);
     if (validationError) {
@@ -672,7 +759,7 @@ export function EditorShell({
     setDraftName(d.name);
     setNameError(null);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(homeData));
+    setPuckSeed(prepareForEditor(homeData));
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
@@ -687,6 +774,51 @@ export function EditorShell({
     }));
     persistLocalDraft();
     setDraftsOpen(false);
+  }
+
+  // ---- Reset canvas to an empty scratch state (no backing draft) ----
+  function resetToScratchCanvas() {
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    setRenderDraftData(zoneDataRef.current);
+    setActiveDraftId(null);
+    setIsNewUnsavedDraft(true);
+    setDraftName(DEFAULT_DRAFT_NAME);
+    setNameError(null);
+    setSavedSnapshot(null);
+    ignoreNextChange.current = true;
+    setPuckSeed(prepareForEditor(EMPTY_ZONE));
+    setSeedNonce((n) => n + 1);
+    setActiveZone("home");
+  }
+
+  // ---- Discard unsaved changes ----
+  // Scrap the in-memory edits, restore a clean canvas (see resolveDiscardTarget),
+  // then perform the action the user was attempting. The pending action runs
+  // last, so when it loads its own data (apply draft/template) that target wins.
+  async function handleDiscardChanges() {
+    const run = pendingAction;
+    setPendingAction(null);
+    setPublishOpen(false);
+    setDiscarding(true);
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
+      if (activeDraftId !== null) {
+        // 5.2 — saved draft: re-fetch its stored data into the canvas.
+        await applyDraft(activeDraftId);
+      } else {
+        // 5.1 — new, never-saved draft: drop it and open the next available
+        // draft (resolved from a fresh list), or an empty canvas when none.
+        const list = await listDraftsAction();
+        setDrafts(list);
+        setIsNewUnsavedDraft(false);
+        const target = resolveDiscardTarget(null, list);
+        if (target.type === "open") await applyDraft(target.id);
+        else resetToScratchCanvas();
+      }
+      run?.();
+    } finally {
+      setDiscarding(false);
+    }
   }
 
   // ---- Delete draft ----
@@ -734,38 +866,44 @@ export function EditorShell({
     if (sidePanelOpen) {
       hideEditorPanels();
       ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current.home));
+      setPuckSeed(prepareForEditor(zoneDataRef.current.home));
       setActiveZone("home");
     }
     await flushPendingSave(activeZone);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[zone]));
+    setPuckSeed(prepareForEditor(zoneDataRef.current[zone]));
     setActiveZone(zone);
     if (previewMode) setPreviewNonce((n) => n + 1);
   }
 
   async function togglePreview() {
-    if (previewMode) {
-      // Back to editing — remount Puck from the freshest data; ignore its echo.
-      ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
-      setPreviewMode(false);
-      return;
+    setPreviewLoading(true);
+    try {
+      if (previewMode) {
+        // Back to editing — remount Puck from the freshest data; ignore its echo.
+        ignoreNextChange.current = true;
+        setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
+        setPreviewMode(false);
+        return;
+      }
+      // Entering preview — guarantee the iframe shows the latest edits.
+      await flushPendingSave(activeZone);
+      if (sidePanelOpen) {
+        hideEditorPanels();
+        ignoreNextChange.current = true;
+        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
+        setActiveZone("home");
+      }
+      setPreviewNonce((n) => n + 1);
+      setPreviewMode(true);
+    } finally {
+      setPreviewLoading(false);
     }
-    // Entering preview — guarantee the iframe shows the latest edits.
-    await flushPendingSave(activeZone);
-    if (sidePanelOpen) {
-      hideEditorPanels();
-      ignoreNextChange.current = true;
-      setPuckSeed(ensureIds(zoneDataRef.current.home));
-      setActiveZone("home");
-    }
-    setPreviewNonce((n) => n + 1);
-    setPreviewMode(true);
   }
 
   // ---- Publish from draft ----
   async function doPublish() {
+    if (guideMode) return;
     if (!activeDraftId) return;
     setSavingChanges(true);
     try {
@@ -864,6 +1002,7 @@ export function EditorShell({
 
   // ---- Apply template as a new unsaved draft ----
   async function applyTemplate(nextTemplateId: string) {
+    if (guideMode) return;
     setSwitching(true);
     setSwitchError(null);
     const res = await seedTemplateAction(nextTemplateId);
@@ -889,7 +1028,7 @@ export function EditorShell({
     setNameError(null);
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
-    setPuckSeed(ensureIds(zoneDataRef.current[activeZone]));
+    setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
@@ -917,6 +1056,10 @@ export function EditorShell({
 
   function handleGuideSkip(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (guideMode) {
+      onGuideSkipClose?.(dontShowAgain);
+      return;
+    }
     if (dontShowAgain) void dismissPortfolioGuideAction();
     // Open entry only when the guide was gating it (i.e. it was not already open).
     if (!guideDismissed) openEntryAfterGuide();
@@ -924,16 +1067,46 @@ export function EditorShell({
 
   function handleGuideFinish(dontShowAgain: boolean) {
     setGuideOpen(false);
+    if (guideMode) {
+      onGuideFinish?.(dontShowAgain);
+      return;
+    }
     if (dontShowAgain) void dismissPortfolioGuideAction();
     if (!guideDismissed) openEntryAfterGuide();
   }
 
+  function resetGuideCanvas() {
+    zoneDataRef.current = { home: EMPTY_ZONE, gallery: EMPTY_ZONE };
+    setRenderDraftData({ home: EMPTY_ZONE, gallery: EMPTY_ZONE });
+    setPuckSeed(prepareForEditor(EMPTY_ZONE));
+    setSeedNonce((n) => n + 1);
+    setDragBaseline(0);
+  }
+
   function handleGuideStepChange(next: number) {
-    // Capture baseline content count when entering the drag-block step
     const currentId = SPOTLIGHT_STEPS[next]?.id;
-    if (currentId === "drag-block") {
+
+    if (guideMode && shouldResetGuideCanvasOnStep(currentId ?? "", puckContentCount > 0)) {
+      // Back to drag-block: wipe the scratch canvas so step 2 starts blank and
+      // its drop-gate re-arms correctly.
+      resetGuideCanvas();
+    } else if (currentId === "drag-block") {
+      // Forward to drag-block: capture the current count as the new baseline.
       setDragBaseline(puckContentCount);
     }
+
+    // Rewind: restore the side-panel context the target step expects so its
+    // anchor exists (and Back works across panels).
+    applyGuidePanelActions(
+      guidePanelActions(currentId, { headerOpen, contactOpen }),
+      {
+        openHeader: () => { void openHeader(); },
+        openContact: () => { void openContact(); },
+        closeHeader: () => closeHeader(false),
+        closeContact: () => closeContact(false),
+      },
+    );
+
     setSpotlightStepIndex(next);
   }
 
@@ -941,14 +1114,10 @@ export function EditorShell({
   const currentStepId = SPOTLIGHT_STEPS[spotlightStepIndex]?.id ?? "";
   const gateSatisfied: boolean = (() => {
     switch (currentStepId) {
-      case "blocks-panel-toggle":
-        return puckPanelOpen;
       case "drag-block":
         return dragBaseline !== null
           ? puckContentCount > dragBaseline
           : false;
-      case "select-block":
-        return puckHasSelection;
       case "header-tab":
         return headerOpen;
       case "contact-tab":
@@ -958,23 +1127,55 @@ export function EditorShell({
     }
   })();
 
-  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S)
-  // from firing while the user is typing in an input or contenteditable inside
-  // the right-side properties panel. Puck registers document-level listeners;
-  // stopping propagation here prevents those handlers from seeing the event.
+  // Stop Puck's global keydown hotkeys (Backspace/Delete/Escape/Ctrl+Z/Ctrl+S,
+  // and single-key shortcuts like I=interactive-preview and Y=redo) from firing
+  // while the user is typing in any text input, textarea, select, or contenteditable.
+  //
+  // Two-layer defence:
+  //  1. React onKeyDown (bubble): stops propagation so Puck's document-level
+  //     bubble-phase listener never sees the event for most cases.
+  //  2. Native capture-phase listener on document: fires before ANY bubble-phase
+  //     listener (including ones registered before React mounts), so it catches
+  //     the edge case where Puck's registration order beats React's delegation.
+  //     stopImmediatePropagation() is used so no subsequent same-phase handler
+  //     on document can see the event either.
+  //     We do NOT preventDefault — normal typing must reach the input.
   const handleEditorKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (isEditableTarget(e.target)) e.stopPropagation();
+  }, []);
+
+  useEffect(() => {
+    function interceptPuckHotkeys(e: KeyboardEvent) {
+      const target = e.target ?? document.activeElement;
+      if (isEditableTarget(target)) {
+        // stopImmediatePropagation prevents all other listeners — same phase
+        // (capture) and all subsequent phases — from seeing this event.
+        // Do NOT preventDefault: typing characters must still reach the input.
+        e.stopImmediatePropagation();
+      }
+    }
+    document.addEventListener("keydown", interceptPuckHotkeys, true);
+    return () => {
+      document.removeEventListener("keydown", interceptPuckHotkeys, true);
+    };
   }, []);
 
   const { cssVars, className } = resolveBrandKit(brandKit);
   // Resolved palette for the toolkit swatches (portaled popovers can't read the
   // `--pf-color-*` vars, so we thread the hex values through React context).
+  // Use resolveEffectiveFonts so legacy-kit portfolios (only `fontPair` set, no
+  // independent headingFont/bodyFont) get the same font the live page renders —
+  // preventing the font dropdown from showing no selection for those portfolios.
+  const { headingFont: effectiveHeadingFont, bodyFont: effectiveBodyFont } = resolveEffectiveFonts(brandKit);
   const brandColors = {
     primary: brandKit.primaryColor,
     secondary: brandKit.secondaryColor,
     accent: brandKit.accentColor,
     background: brandKit.backgroundColor,
     foreground: brandKit.foregroundColor,
+    brandRadius: brandKit.radius,
+    headingFont: effectiveHeadingFont,
+    bodyFont: effectiveBodyFont,
   };
   const activeSectionTitle =
     activeSection === "header"
@@ -982,28 +1183,55 @@ export function EditorShell({
       : activeSection === "contact"
         ? t("contactSettingsShort")
         : activeSection === "collectionsPopup"
-          ? "Collections Popup"
+          ? "Featured Popup"
           : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
   const contactLabels = buildContactLabels(
     (key, values) => tPublicForm(key, values),
     (key, values) => tLocationPicker(key, values)
   ).form;
-  const previewSrc =
-    `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
-    `&v=${previewNonce}`;
+  const previewZone = previewZoneFor(activeSection, activeZone);
+  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}`;
 
-  // Stable reference for the Puck canvas override: prevents Puck from re-rendering
-  // the canvas container on every EditorShell re-render (e.g. keystroke → onChange
-  // → setRenderDraftData), which would otherwise trigger a canvas scroll-to-top.
-  const puckCanvasOverride = useMemo(
+  // Stable references for Puck overrides that must not change identity on every
+  // re-render. Puck treats a new function reference as a reason to unmount and
+  // remount the subtree — causing canvas scroll-to-top for `puck`, and focus loss
+  // on every keystroke for `drawer`/`fields` (Puck onChange → re-render → new
+  // inline arrow → remounted right panel → focused input destroyed).
+  // All three are stable because none of their JSX closes over changing values:
+  // RootCanvasStyle and RightPanelTourMarker are module-level components.
+  const puckStableOverrides = useMemo(
     () => ({
+      // Canvas wrapper — also carries RootCanvasStyle for the iframe background,
+      // and BlockActionsToolbar (always-visible, portals to body from within
+      // Puck context so createUsePuck selectors are available).
       puck: ({ children }: { children: ReactNode }) => (
-        <div data-tour-id="canvas" className="contents">
+        <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
           {children}
           <RootCanvasStyle />
+          <BlockActionsToolbar />
         </div>
       ),
+      // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
+      drawer: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
+          {children}
+        </div>
+      ),
+      // Right properties panel — tour anchor for the "block settings" spotlight step.
+      // RightPanelTourMarker climbs to the sidebar column (grid-area: right) and
+      // marks it as "properties-panel-full" so the step-3 cutout frames the full
+      // column, not just the inner fields wrapper.
+      fields: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="properties-panel-body" className="flex min-h-0 flex-1 flex-col">
+          <RightPanelTourMarker />
+          {children}
+        </div>
+      ),
+      // Block action bar: suppress Puck's built-in floating bar so it doesn't
+      // compete with BlockActionsToolbar (our always-visible toolbar).
+      // SuppressedActionBar is module-level — stable reference, no remount risk.
+      actionBar: SuppressedActionBar,
     }),
     []
   );
@@ -1011,51 +1239,57 @@ export function EditorShell({
   // Left cluster: page navigation (Home / Gallery / Contact) + Preview toggle.
   function navCluster() {
     return (
-      <div className="flex flex-wrap items-center gap-1" role="group" aria-label={t("zone.sectionsLabel")}>
-        {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
-          const label =
-            section === "header"
-              ? t("headerSettings")
-              : section === "contact"
-                ? t("contactSettingsShort")
-                : section === "collectionsPopup"
-                  ? "Collections Popup"
-                  : t(`zone.${section}`);
-          // Tour anchor: home+gallery share the section-tabs group id on the first
-          // rendered tab; header and contact get dedicated ids.
-          const tourId =
-            section === "header"
-              ? "header-tab"
-              : section === "contact"
-                ? "contact-tab"
-                : section === "home"
-                  ? "section-tabs"
+      <div className="flex min-w-0 flex-nowrap items-center gap-1 overflow-x-auto" role="group" aria-label={t("zone.sectionsLabel")}>
+        {/* section-tabs wrapper: spans all five page tabs (Home → Contact Form)
+            for the spotlight tour step 7 cutout. Excludes Preview. */}
+        <div className="flex flex-nowrap items-center gap-1" data-tour-id="section-tabs">
+          {EDITOR_SECTIONS.filter((section) => !previewMode || (section !== "header" && section !== "contact" && section !== "collectionsPopup")).map((section) => {
+            const label =
+              section === "header"
+                ? t("headerSettings")
+                : section === "contact"
+                  ? t("contactSettingsShort")
+                  : section === "collectionsPopup"
+                    ? "Featured Popup"
+                    : t(`zone.${section}`);
+            // Tour anchor: header and contact get dedicated ids for their own
+            // gated steps (step 8 and step 12); page tabs have no individual id.
+            const tourId =
+              section === "header"
+                ? "header-tab"
+                : section === "contact"
+                  ? "contact-tab"
                   : undefined;
-          return (
-            <Button
-              key={section}
-              type="button"
-              size="sm"
-              variant={activeSection === section ? "default" : "outline"}
-              aria-pressed={activeSection === section}
-              data-tour-id={tourId}
-              onClick={() => {
-                if (section === "header") void openHeader();
-                else if (section === "contact") openContact();
-                else if (section === "collectionsPopup") void openCollectionsPopup();
-                else void selectZone(section);
-              }}
-            >
-              {label}
-            </Button>
-          );
-        })}
+            return (
+              <Button
+                key={section}
+                type="button"
+                size="sm"
+                variant={activeSection === section ? "default" : "outline"}
+                aria-pressed={activeSection === section}
+                data-tour-id={tourId}
+                className="shrink-0"
+                onClick={() => {
+                  if (section === "header") void openHeader();
+                  else if (section === "contact") openContact();
+                  else if (section === "collectionsPopup") void openCollectionsPopup();
+                  else void selectZone(section);
+                }}
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
         <Button
           type="button"
           size="sm"
           variant="secondary"
           aria-pressed={previewMode}
           data-tour-id="preview-toggle"
+          loading={previewLoading}
+          disabled={previewLoading}
+          className="shrink-0"
           onClick={() => void togglePreview()}
         >
           {previewMode ? t("preview.edit") : t("preview.show")}
@@ -1064,8 +1298,8 @@ export function EditorShell({
           type="button"
           title={t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
-          onClick={() => window.open(previewBasePath, "_blank", "noopener,noreferrer")}
-          className="inline-flex size-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+          onClick={() => window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer")}
+          className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <ExternalLinkIcon className="size-4" aria-hidden />
         </button>
@@ -1160,11 +1394,29 @@ export function EditorShell({
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
-        className={cn("gallurio-editor min-h-svh", className)}
+        className={cn("gallurio-editor relative min-h-svh", className)}
         data-testid="portfolio-editor-shell"
         style={cssVars as React.CSSProperties}
         onKeyDown={handleEditorKeyDown}
       >
+        {/* Page-wide loading overlay shown during draft discard/load transitions.
+            Positioned to cover the editor canvas area; when Puck is visible the
+            left sidebar (~260px) is excluded by the left offset so only the
+            canvas + properties panel area is covered. */}
+        {discarding && (
+          <div
+            role="status"
+            aria-live="polite"
+            aria-label="Loading draft"
+            className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            style={{ left: showPuck ? "260px" : 0 }}
+          >
+            <div className="flex flex-col items-center gap-3 rounded-lg bg-card px-8 py-6 shadow-lg border border-border">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
+              <p className="text-sm font-medium text-foreground">Loading draft…</p>
+            </div>
+          </div>
+        )}
         {showPuck ? (
           <Puck
             key={`${activeZone}-${seedNonce}`}
@@ -1203,10 +1455,8 @@ export function EditorShell({
                   style={{ gridArea: "header" }}
                 >
                   <PuckGateReader
-                    onState={({ contentCount, hasSelection, panelOpen }) => {
+                    onState={({ contentCount }) => {
                       setPuckContentCount(contentCount);
-                      setPuckHasSelection(hasSelection);
-                      setPuckPanelOpen(panelOpen);
                     }}
                   />
                   {topBar(
@@ -1222,11 +1472,12 @@ export function EditorShell({
                   )}
                 </header>
               ),
-              // Stable memoized override: prevents Puck from re-rendering the
-              // canvas wrapper on every EditorShell re-render (keystroke → onChange).
-              // Defined above with useMemo([]); RootCanvasStyle reads from Puck
-              // context directly so needs no props passed here.
-              ...puckCanvasOverride,
+              // Stable memoized overrides: canvas (`puck`), left drawer, and right
+              // fields panel. All three are defined in `puckStableOverrides` above
+              // with useMemo([]) so their identities never change between renders,
+              // preventing Puck from remounting the subtrees (scroll-to-top on canvas;
+              // focus loss on every keystroke in the right-panel inputs).
+              ...puckStableOverrides,
             }}
           />
         ) : (
@@ -1366,15 +1617,29 @@ export function EditorShell({
         welcome
         onStartScratch={() => setWelcomeTemplatesOpen(false)}
       />
-      <SpotlightGuide
-        open={guideOpen}
-        steps={SPOTLIGHT_STEPS}
-        stepIndex={spotlightStepIndex}
-        onStepChange={handleGuideStepChange}
-        gateSatisfied={gateSatisfied}
-        onSkip={handleGuideSkip}
-        onFinish={handleGuideFinish}
-      />
+      {/* In sandbox (guideMode) the guide runs directly in this shell. In the
+          real editor it opens a full-screen sandbox so the live data is never
+          touched during the tour. */}
+      {guideMode ? (
+        <SpotlightGuide
+          open={guideOpen}
+          steps={SPOTLIGHT_STEPS}
+          stepIndex={spotlightStepIndex}
+          onStepChange={handleGuideStepChange}
+          gateSatisfied={gateSatisfied}
+          onSkip={handleGuideSkip}
+          onFinish={handleGuideFinish}
+          queryRoot={guideQueryRoot}
+        />
+      ) : (
+        guideOpen && (
+          <SandboxEditorGuide
+            templates={templates}
+            onFinished={handleGuideFinish}
+            onSkipped={handleGuideSkip}
+          />
+        )
+      )}
 
       {/* Draft system dialogs */}
       <DraftsDialog
@@ -1390,7 +1655,12 @@ export function EditorShell({
       />
       <PortfolioEntryDialog
         open={entryOpen}
-        canContinue={hasRecoverableBuffer}
+        // "Continue where you left off" resumes the most recent state: the
+        // unsaved-edit buffer if present, otherwise the active draft. It is only
+        // disabled on a true first visit — no active draft now (initialActiveDraftId)
+        // nor a recoverable buffer from last time. Note the buffer is cleared on
+        // save/publish, so it must NOT be the sole gate.
+        canContinue={hasRecoverableBuffer || initialActiveDraftId !== null}
         hasDrafts={drafts.length > 0}
         onContinue={() => setEntryOpen(false)}
         onLoadExisting={() => { setEntryOpen(false); setDraftsOpen(true); }}
@@ -1399,6 +1669,7 @@ export function EditorShell({
       <UnsavedChangesDialog
         open={pendingAction !== null}
         saving={savingChanges}
+        discarding={discarding}
         name={draftName}
         onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
         nameLabel="Draft name"
@@ -1411,11 +1682,7 @@ export function EditorShell({
             run?.();
           }
         }}
-        onDiscard={() => {
-          window.localStorage.removeItem(draftKey);
-          setPendingAction(null);
-          setPublishOpen(false);
-        }}
+        onDiscard={() => void handleDiscardChanges()}
         onCancel={() => setPendingAction(null)}
       />
 

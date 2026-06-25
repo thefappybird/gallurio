@@ -1,4 +1,4 @@
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import type { PortfolioTemplate } from "./types";
 import {
   heroPreset,
@@ -15,12 +15,7 @@ export const eventPhotographerTemplate: PortfolioTemplate = {
   businessType: "photographer",
   description: "Bold, energetic layout for corporate events, debuts, and gatherings.",
   previewImage: "/template-previews/event-photographer.svg",
-  defaultBrandKit: {
-    ...DEFAULT_BRAND_KIT,
-    themePreset: "bold",
-    fontPair: "fraunces-inter",
-    accentColor: "#1f3a5f",
-  },
+  defaultBrandKit: THEME_PRESET_DEFINITIONS.bold.brandKit,
   defaultContact: {
     title: "Book your event",
     description: "Tell me the date, venue, and vibe — I'll send availability and packages.",

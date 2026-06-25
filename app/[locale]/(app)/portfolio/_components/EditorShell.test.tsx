@@ -54,7 +54,10 @@ vi.mock("@measured/puck", () => ({
     data,
   }: {
     headerTitle?: string;
-    overrides?: { header?: (p: { children: ReactNode }) => ReactNode };
+    overrides?: {
+      header?: (p: { children: ReactNode }) => ReactNode;
+      puck?: (p: { children: ReactNode }) => ReactNode;
+    };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
@@ -98,6 +101,7 @@ vi.mock("@measured/puck", () => ({
         {overrides?.header?.({
           children: null,
         })}
+        {overrides?.puck?.({ children: <div data-testid="puck-canvas-content" /> })}
       </div>
     );
   },
@@ -133,7 +137,7 @@ vi.mock("../_draftActions", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { EditorShell } from "./EditorShell";
+import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
@@ -179,6 +183,16 @@ const baseProps = {
 // basePro alias mirrors the existing test usage pattern.
 const basePro = baseProps;
 
+describe("previewZoneFor", () => {
+  it("maps the contact section to the contact zone", () => {
+    expect(previewZoneFor("contact", "home")).toBe("contact");
+  });
+
+  it("maps the collections popup section to the popup zone", () => {
+    expect(previewZoneFor("collectionsPopup", "gallery")).toBe("popup");
+  });
+});
+
 /**
  * Seed localStorage so `hasRecoverableBuffer` is true, enabling the
  * "Continue where you left off" option in the entry dialog. Then render and
@@ -192,9 +206,13 @@ async function renderAndDismissEntry(ui: ReactElement) {
   const result = renderWithProviders(ui);
 
   // If the guide is open, skip it first so the entry dialog becomes visible.
-  const skipBtn = screen.queryByRole("button", { name: "Skip" });
+  // "Skip Guide" now opens a confirm modal; confirm via the modal's own
+  // "Skip Guide" button (the last one once the modal is mounted).
+  const skipBtn = screen.queryByRole("button", { name: "Skip Guide" });
   if (skipBtn) {
     fireEvent.click(skipBtn);
+    const confirmSkip = screen.getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
   }
 
   // "Continue where you left off" is now enabled; clicking it closes the dialog
@@ -229,17 +247,17 @@ describe("EditorShell", () => {
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
     expect(within(controls).getByRole("button", { name: "Home" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Gallery" })).toBeInTheDocument();
-    expect(within(controls).getByRole("button", { name: "Collections Popup" })).toBeInTheDocument();
+    expect(within(controls).getByRole("button", { name: "Featured Popup" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Navigation" })).toBeInTheDocument();
     expect(within(controls).getByRole("button", { name: "Contact Form" })).toBeInTheDocument();
   });
 
-  it("opens the Collections Popup panel when the Collections Popup tab is clicked", async () => {
+  it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
-    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Collections Popup" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
   });
 
   it("shows a preview and swaps the right editor panel between header and contact settings", async () => {
@@ -280,6 +298,28 @@ describe("EditorShell", () => {
 
     document.removeEventListener("keydown", outerHandler);
     expect(propagated).toBe(false);
+  });
+
+  it("blocks document-level bubble-phase keydown listeners (e.g. Puck hotkeys) when typing in an input — capture-phase interceptor", async () => {
+    // Simulate a Puck-style listener registered on document in bubble phase
+    // BEFORE the component mounts. The capture-phase interceptor added by EditorShell
+    // must call stopImmediatePropagation so this listener never fires for editable targets.
+    let puckHotkeyFired = false;
+    const puckStyleListener = () => { puckHotkeyFired = true; };
+    document.addEventListener("keydown", puckStyleListener);
+
+    const { container } = await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const editorRoot = container.querySelector('[data-testid="portfolio-editor-shell"]') as HTMLElement;
+    const input = document.createElement("input");
+    editorRoot.appendChild(input);
+    input.focus();
+
+    // Type a character that Puck shortcuts on (e.g. "i" for toggle-interactive, "y" for redo)
+    const event = new KeyboardEvent("keydown", { key: "i", code: "KeyI", bubbles: true });
+    input.dispatchEvent(event);
+
+    document.removeEventListener("keydown", puckStyleListener);
+    expect(puckHotkeyFired).toBe(false);
   });
 
   it("opens the publish dialog when the Publish button in the editor header is clicked", async () => {
@@ -351,7 +391,7 @@ describe("EditorShell", () => {
     expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Navigation" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Contact Form" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Collections Popup" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Featured Popup" })).not.toBeInTheDocument();
     const iframe = container.querySelector("iframe");
     expect(iframe?.getAttribute("src")).toContain("/portfolio-preview?zone=home");
     expect(screen.getByRole("button", { name: "Home" })).toHaveAttribute("aria-pressed", "true");
@@ -368,16 +408,16 @@ describe("EditorShell", () => {
 
   it("renders the collections popup preview when the popup tab is open", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
     expect(await screen.findByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 
-  it("shows the collections popup preview on the canvas when the Collections Popup tab is opened", async () => {
+  it("shows the collections popup preview on the canvas when the Featured Popup tab is opened", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
-    fireEvent.click(screen.getByRole("button", { name: "Collections Popup" }));
+    fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
     // Wait for the async openCollectionsPopup state update to settle.
     // The style panel (right rail) must be present.
-    expect(await screen.findByLabelText("Collections popup style")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     // Puck canvas must be gone — the preview branch replaces it.
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     // CollectionsPopupPreview must render the sample chrome with its title.
@@ -414,6 +454,29 @@ describe("EditorShell", () => {
     // The entry dialog must still appear (spec: shown on every load).
     renderWithProviders(<EditorShell {...baseProps} />);
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
+  });
+
+  it("enables 'Continue where you left off' when an active draft exists even without an unsaved-edit buffer", async () => {
+    // beforeEach clears localStorage → no recoverable buffer. baseProps still has
+    // an active draft (initialActiveDraftId="d1"). Continue must stay enabled:
+    // it's only disabled on a true first visit (no active draft now nor last time).
+    renderWithProviders(<EditorShell {...baseProps} />);
+    const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
+    expect(continueBtn).not.toBeDisabled();
+  });
+
+  it("disables 'Continue where you left off' when there is no active draft and no buffer (drafts exist)", async () => {
+    // A saved draft exists (so the entry dialog — not the welcome-template modal —
+    // is shown), but there is no active draft and no buffer → Continue disabled.
+    renderWithProviders(
+      <EditorShell
+        {...baseProps}
+        initialActiveDraftId={null}
+        initialActiveDraftName={undefined}
+      />
+    );
+    const continueBtn = await screen.findByRole("button", { name: /Continue where you left off/ });
+    expect(continueBtn).toBeDisabled();
   });
 
   it("brand-new user (no drafts, no buffer) sees the welcome template modal instead of PortfolioEntryDialog", async () => {
@@ -496,13 +559,20 @@ describe("EditorShell", () => {
     expect(screen.getByRole("button", { name: /Preview/ }).className).toContain("bg-secondary");
   });
 
-  it("renders the Preview button as a sibling of the section tabs inside one flex-wrap row", async () => {
+  it("nav cluster uses flex-nowrap with overflow-x-auto so tabs scroll instead of wrapping", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    const sectionGroup = screen.getByRole("group", { name: /sections/i });
+    expect(sectionGroup.className).toContain("flex-nowrap");
+    expect(sectionGroup.className).toContain("overflow-x-auto");
+    expect(sectionGroup.className).not.toContain("flex-wrap");
+  });
+
+  it("renders the Preview button as a sibling of the section tabs inside the nav cluster", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const preview = screen.getByRole("button", { name: /Preview/ });
     const sectionGroup = screen.getByRole("group", { name: /sections/i });
     // Preview must share the section-tab group's flex container (no orphaned second line).
     expect(preview.parentElement).toBe(sectionGroup);
-    expect(preview.parentElement?.className).toContain("flex-wrap");
   });
 
   it("renders the draft title above the toolbar below lg and between Drafts and Save changes on desktop", async () => {
@@ -858,9 +928,10 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
     expect(screen.queryByText("Pick a template to start")).not.toBeInTheDocument();
 
-    // Skip the guide
-    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
-    fireEvent.click(skipBtn);
+    // Skip the guide (Skip Guide → confirm modal → Skip Guide)
+    fireEvent.click(within(document.body).getByRole("button", { name: "Skip Guide" }));
+    const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
 
     // After skip, brand-new user gets the welcome template modal
     expect(await screen.findByText("Pick a template to start")).toBeInTheDocument();
@@ -875,9 +946,10 @@ describe("EditorShell", () => {
     // Guide shows first
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
 
-    // Skip the guide
-    const skipBtn = within(document.body).getByRole("button", { name: "Skip" });
-    fireEvent.click(skipBtn);
+    // Skip the guide (Skip Guide → confirm modal → Skip Guide)
+    fireEvent.click(within(document.body).getByRole("button", { name: "Skip Guide" }));
+    const confirmSkip = within(document.body).getAllByRole("button", { name: "Skip Guide" });
+    fireEvent.click(confirmSkip[confirmSkip.length - 1]);
 
     // Returning user gets the normal PortfolioEntryDialog
     expect(await screen.findByText("Welcome back")).toBeInTheDocument();
@@ -914,44 +986,52 @@ describe("EditorShell", () => {
     expect(screen.getByTestId("portfolio-editor-shell")).toBeInTheDocument();
   });
 
-  it("gated spotlight steps show Skip this step button", async () => {
-    // The Puck mock has leftSideBarVisible=true, which would immediately satisfy the
-    // blocks-panel-toggle gate and auto-advance. Override it to false for this test.
-    const origLeftSideBarVisible = mockPuckApi.appState.ui.leftSideBarVisible;
-    mockPuckApi.appState.ui.leftSideBarVisible = false;
+  it("actionable (gated) steps hide Next and never show 'Skip this step'; Back still works", async () => {
+    // Dismiss the entry dialog first (guideDismissed=true so entry opens directly),
+    // then reopen the guide via the Guide button.
+    await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={true} />);
 
-    try {
-      // Dismiss the entry dialog first (guideDismissed=true so entry opens directly).
-      // Then reopen the guide via the Guide button.
-      await renderAndDismissEntry(<EditorShell {...baseProps} guideDismissed={true} />);
+    // Reopen the guide at step 0 via the Guide button (same behavior as first-run).
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
 
-      // Reopen the guide at step 0 via the Guide button (same behavior as first-run).
-      fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    // Guide is open at the welcome step.
+    expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    const welcomeCard = screen.getByRole("dialog", { name: "Welcome to your portfolio editor" });
 
-      // Guide is open at step 0
-      expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
+    // Next advances to the first actionable step: drag a block (gated, unsatisfied).
+    fireEvent.click(within(welcomeCard).getByRole("button", { name: "Next" }));
+    const dragCard = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
 
-      // Find the guide card by role now that entry dialog is gone
-      const guideCard = screen.getByRole("dialog", { name: "Welcome to your portfolio editor" });
+    // The blocks-panel anchor is a Puck `drawer` override, which the mocked Puck
+    // does not render — so the loading gate shows its spinner until the safety
+    // timeout. Wait for the step body to reveal before asserting footer state.
+    await within(dragCard).findByText(/Try it/i);
 
-      // Click Next within the guide card to go to step 1 (gated blocks-panel-toggle)
-      fireEvent.click(within(guideCard).getByRole("button", { name: "Next" }));
+    // Unsatisfied gated step: no Skip-this-step, no Next escape hatch, but the
+    // "Try it…" hint and a working Back button are present.
+    expect(within(dragCard).queryByRole("button", { name: "Skip this step" })).toBeNull();
+    expect(within(dragCard).queryByRole("button", { name: "Next" })).toBeNull();
+    expect(within(dragCard).getByText(/Try it/i)).toBeInTheDocument();
 
-      // Step 1 is gated — must show "Skip this step"
-      const step1Card = await screen.findByRole("dialog", { name: "Open the blocks panel" });
-      expect(step1Card).toBeInTheDocument();
-      expect(within(step1Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
+    // Back returns to the welcome step.
+    fireEvent.click(within(dragCard).getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeInTheDocument();
+  });
 
-      // Skip this step advances to step 2 (drag-block, also gated)
-      fireEvent.click(within(step1Card).getByRole("button", { name: "Skip this step" }));
-      const step2Card = await screen.findByRole("dialog", { name: "Drag a block onto your page" });
-      expect(within(step2Card).getByRole("button", { name: "Skip this step" })).toBeInTheDocument();
-
-      // Back goes to step 1
-      fireEvent.click(within(step2Card).getByRole("button", { name: "Back" }));
-      expect(await screen.findByRole("dialog", { name: "Open the blocks panel" })).toBeInTheDocument();
-    } finally {
-      mockPuckApi.appState.ui.leftSideBarVisible = origLeftSideBarVisible;
-    }
+  it("renders BlockActionsToolbar toolbar when a block is selected", async () => {
+    // Temporarily set a selected item + itemSelector so BlockActionsToolbar renders.
+    const origSelected = mockPuckApi.selectedItem;
+    const origUi = mockPuckApi.appState.ui;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi as any).selectedItem = { type: "Hero", props: { id: "hero-test" } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi.appState.ui as any).itemSelector = { index: 0 };
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(document.querySelector("[role='toolbar']")).not.toBeNull();
+    // Restore.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi as any).selectedItem = origSelected;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi.appState as any).ui = origUi;
   });
 });

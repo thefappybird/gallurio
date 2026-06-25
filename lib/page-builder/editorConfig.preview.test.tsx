@@ -21,8 +21,6 @@ describe("editor gallery previews", () => {
         id="preview-gallery-grid"
         _style={undefined}
         images={[]}
-        columns={3}
-        gap="normal"
         puck={{} as never}
       />
     );

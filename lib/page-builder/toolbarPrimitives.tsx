@@ -8,7 +8,7 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { RotateCcw } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -97,40 +97,82 @@ export function ToolbarPopover({
   );
 }
 
-/** A row of the 5 brand-palette swatches (+ optional reset icon + custom hex picker). */
+/**
+ * A row of the 5 brand-palette swatches (+ optional reset icon + custom hex picker).
+ *
+ * `effectiveValue` — when provided and value is unset, the matching swatch shows as
+ * active (aria-pressed=true) to indicate the theme-coupled default. Display-only.
+ */
 export function ColorSwatchRow({
   value,
   onChange,
   allowNone = true,
+  effectiveValue,
+  extraSwatches,
 }: {
   value: StyleColorToken | string | undefined;
   onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
+  /** Show this token as active when value is unset (theme-coupled). Display-only.
+   *  A hex string is accepted (effectiveButtonTextToken may return one when
+   *  buttonColorToken is a custom hex); a hex never matches a palette swatch so
+   *  nothing lights up — correct behaviour. */
+  effectiveValue?: StyleColorToken | string;
+  /** Fixed-color swatches rendered after the token swatches (before none/custom-hex).
+   *  Each has its own hex value and label; clicking selects that exact hex string.
+   *  These values are excluded from the custom-hex highlight — they are not "custom". */
+  extraSwatches?: { value: string; label: string }[];
 }) {
   // Resolved hex (via context) so swatches show the real color even when the
   // popover is portaled outside the `--pf-color-*` scope.
   const colors = useBrandColors();
+  const extraSwatchValues = extraSwatches?.map((s) => s.value) ?? [];
   const isCustomHex =
     typeof value === "string" &&
     value.startsWith("#") &&
-    !(STYLE_COLOR_TOKENS as readonly string[]).includes(value);
+    !(STYLE_COLOR_TOKENS as readonly string[]).includes(value) &&
+    !extraSwatchValues.includes(value);
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {STYLE_COLOR_TOKENS.map((token) => (
-        <button
-          key={token}
-          type="button"
-          title={COLOR_LABEL[token]}
-          aria-label={COLOR_LABEL[token]}
-          aria-pressed={value === token}
-          onClick={() => onChange(token)}
-          className={cn(
-            "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-            value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
-          )}
-          style={{ background: colors[token] }}
-        />
-      ))}
+      {STYLE_COLOR_TOKENS.map((token) => {
+        const isEffective = value === undefined && effectiveValue === token;
+        return (
+          <button
+            key={token}
+            type="button"
+            title={COLOR_LABEL[token]}
+            aria-label={COLOR_LABEL[token]}
+            aria-pressed={value === token || isEffective}
+            onClick={() => onChange(token)}
+            className={cn(
+              "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              value === token && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+              isEffective && "ring-1 ring-foreground ring-offset-1 ring-offset-background opacity-70"
+            )}
+            style={{ background: colors[token] }}
+          />
+        );
+      })}
+      {extraSwatches?.map((sw) => {
+        const isSelected = value === sw.value;
+        const isEffective = value === undefined && effectiveValue === sw.value;
+        return (
+          <button
+            key={sw.value}
+            type="button"
+            title={sw.label}
+            aria-label={sw.label}
+            aria-pressed={isSelected || isEffective}
+            onClick={() => onChange(sw.value)}
+            className={cn(
+              "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isSelected && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
+              isEffective && "ring-1 ring-foreground ring-offset-1 ring-offset-background opacity-70",
+            )}
+            style={{ background: sw.value }}
+          />
+        );
+      })}
       {allowNone && (
         <button
           type="button"
@@ -189,25 +231,53 @@ export function DimensionInput({
   onChange,
   min,
   max,
+  effectiveValue,
 }: {
   label: string;
   value: string | undefined;
   onChange: (v: string | undefined) => void;
   min?: number;
   max?: number;
+  /**
+   * Show this CSS-length string as a placeholder when value is unset —
+   * indicates the block is following the theme default. Display-only;
+   * typing writes the real value, clearing reverts to this display.
+   */
+  effectiveValue?: string;
 }) {
-  function parse(raw: string | undefined): { n: string; unit: "px" | "%" } {
+  function parse(raw: string | undefined): { n: string; unit: "px" | "%" | "rem" } {
     if (!raw) return { n: "", unit: "px" };
     if (raw.endsWith("%")) return { n: raw.slice(0, -1), unit: "%" };
+    if (raw.endsWith("rem")) return { n: raw.slice(0, -3), unit: "rem" };
     if (raw.endsWith("px")) return { n: raw.slice(0, -2), unit: "px" };
     return { n: raw, unit: "px" };
   }
 
   // Persist the unit independently — clearing the number value must not reset the unit.
-  const [localUnit, setLocalUnit] = useState<"px" | "%">(() => parse(value).unit);
+  // Note: the UI select only offers px / % — "rem" is a read-only legacy unit.
+  // If a block carries an explicit rem value (e.g. "1.5rem" from old defaults),
+  // localUnit is initialised to "px" so the select renders without a missing
+  // option, but n (the numeric part) is preserved from the rem string. The first
+  // edit the owner makes will write the value back as px. If the dev DB is ever
+  // seeded with explicit rem padding, this is the place to add a rem option.
+  const [localUnit, setLocalUnit] = useState<"px" | "%">(() => {
+    const u = parse(value).unit;
+    return u === "rem" ? "px" : u;
+  });
   // When value is defined, reflect its actual unit; when undefined, keep the last known unit.
-  const activeUnit = value ? parse(value).unit : localUnit;
+  // rem coerces to px so the select never holds an option it can't display.
+  const parsedUnit = value ? parse(value).unit : localUnit;
+  const activeUnit: "px" | "%" = parsedUnit === "rem" ? "px" : parsedUnit;
   const n = value ? parse(value).n : "";
+  // Guard: if the stored value is rem, display the numeric part unchanged (1.5rem
+  // → shows "1.5" in the input). The unit select shows "px" as the closest
+  // available option. On any edit, compose() writes back as px — acceptable since
+  // rem padding is not produced by any current editor control.
+
+  // Derive placeholder text from effectiveValue when value is unset.
+  const placeholder = value === undefined && effectiveValue !== undefined
+    ? parse(effectiveValue).n
+    : undefined;
 
   function compose(numStr: string, u: "px" | "%"): string | undefined {
     if (numStr === "") return undefined;
@@ -236,24 +306,35 @@ export function DimensionInput({
     onChange(`${num}${activeUnit}`);
   }
 
+  const isEffective = value === undefined && effectiveValue !== undefined;
+
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>{label}</span>
       <div className="flex items-center gap-1">
         <span className="flex">
           <input
             type="number"
             inputMode="numeric"
             value={n}
+            placeholder={placeholder}
             onChange={handleNumberChange}
             onBlur={handleBlur}
-            className="h-7 w-14 min-w-0 border border-border bg-background pl-2 pr-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              "h-7 w-14 min-w-0 border bg-background pl-2 pr-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective
+                ? "border-border/60 text-muted-foreground placeholder:text-muted-foreground/60"
+                : "border-border text-foreground",
+            )}
           />
           <select
             value={activeUnit}
             onChange={handleUnitChange}
             aria-label={`${label} unit`}
-            className="h-7 cursor-pointer border border-l-0 border-border bg-background px-1 text-xs text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className={cn(
+              "h-7 cursor-pointer border border-l-0 bg-background px-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective ? "border-border/60 text-muted-foreground/60" : "border-border text-muted-foreground",
+            )}
           >
             <option value="px">px</option>
             <option value="%">%</option>
@@ -269,6 +350,10 @@ export function DimensionInput({
  * A labelled NUMBER input with steppers.
  * Two-column layout: label left, input+suffix+reset right.
  * Clamps to [min,max] on blur. Empty input → `undefined` (block falls back to default).
+ *
+ * `effectiveValue` — when provided and the block's own value is unset, the input
+ * shows this number as a placeholder so the user can see what the theme applies.
+ * Typing any number writes the REAL prop; this is display-only.
  */
 export function NumberInputRow({
   label,
@@ -278,6 +363,7 @@ export function NumberInputRow({
   step = 1,
   suffix = "px",
   onChange,
+  effectiveValue,
 }: {
   label: string;
   value: number | undefined;
@@ -286,6 +372,8 @@ export function NumberInputRow({
   step?: number;
   suffix?: string;
   onChange: (next: number | undefined) => void;
+  /** Show this number as the placeholder when value is unset (theme-coupled). */
+  effectiveValue?: number;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -299,6 +387,7 @@ export function NumberInputRow({
             max={max}
             step={step}
             value={value ?? ""}
+            placeholder={value === undefined && effectiveValue !== undefined ? String(effectiveValue) : undefined}
             onChange={(e) => {
               const raw = e.target.value;
               if (raw === "") { onChange(undefined); return; }
@@ -334,17 +423,23 @@ export function NumberInputRow({
  * justify, shadow size). Clicking an already-active option deselects it
  * (returns `undefined`). Uses `ToolbarToggle` so all focus/hover/active states
  * are consistent with the rest of the toolbar.
+ *
+ * `effectiveValue` — when provided and the block's own value is unset, the
+ * matching icon shows as active (aria-pressed=true, following-theme). Display-only.
  */
 export function IconRow<T extends string>({
   label,
   value,
   options,
   onChange,
+  effectiveValue,
 }: {
   label: string;
   value: T | undefined;
   options: { value: T; label: string; Icon: LucideIcon }[];
   onChange: (v: T | undefined) => void;
+  /** Show this option as active when value is unset (theme-coupled). Display-only. */
+  effectiveValue?: T;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -353,13 +448,66 @@ export function IconRow<T extends string>({
         {options.map(({ value: v, label: l, Icon }) => (
           <ToolbarToggle
             key={v}
-            active={value === v}
+            active={value === v || (value === undefined && effectiveValue === v)}
             title={l}
             Icon={Icon}
             onClick={() => onChange(value === v ? undefined : v)}
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Floating-label text input (Material style): label sits inside the field at
+ * rest and floats to the top-left on focus or when the field has a value.
+ * Uses CSS-only `peer` + `placeholder=" "` trick — no JS state needed.
+ *
+ * Accessible: real `<label htmlFor>`, `useId` for association. Supports
+ * idle / focus-visible / filled states; keyboard-navigable via native input.
+ *
+ * Editor chrome — English-only (RELEASE-CHECKLIST §4f).
+ */
+export function FloatingLabelInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+}) {
+  const id = useId();
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        // A single space placeholder is required so peer-[:not(:placeholder-shown)]
+        // fires when the field has a real value typed in — without it the label
+        // never "locks" in the floated state after blur.
+        placeholder=" "
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      />
+      <label
+        htmlFor={id}
+        className={cn(
+          "pointer-events-none absolute left-3 text-muted-foreground transition-all duration-150",
+          // Floated state: small label at top
+          "peer-focus:top-1.5 peer-focus:text-[0.65rem] peer-focus:font-medium peer-focus:text-foreground",
+          // Filled state (placeholder not shown = value present)
+          "peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-[0.65rem] peer-[:not(:placeholder-shown)]:font-medium",
+          // Resting state: centered label
+          "top-3.5 text-xs"
+        )}
+      >
+        {label}
+      </label>
     </div>
   );
 }

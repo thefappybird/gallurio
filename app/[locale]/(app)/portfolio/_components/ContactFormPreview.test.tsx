@@ -224,6 +224,28 @@ describe("ContactFormPreview", () => {
     expect(form?.style.maxHeight).toBe("100%");
   });
 
+  it("passes contactConfig so active tab styling is applied in the editor canvas", () => {
+    const configWithTabStyle: PortfolioContactConfig = {
+      ...contact,
+      activeTabColor: "#cc2200",
+    };
+    renderWithProviders(
+      <ContactFormPreview
+        contact={configWithTabStyle}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
+    );
+
+    // The active tab (Client is default) should have the activeTabColor applied
+    const activeTab = screen.getByRole("tab", { name: "Client" });
+    expect(activeTab.style.color).toBe("#cc2200");
+  });
+
   it("shows validation states in preview without submitting the inquiry", async () => {
     renderWithProviders(
       <ContactFormPreview

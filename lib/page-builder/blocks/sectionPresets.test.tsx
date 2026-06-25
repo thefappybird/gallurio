@@ -5,6 +5,7 @@ import { puckConfig } from "../config";
 import {
   FEATURED_WORK_PRESET,
   GALLERY_GRID_PRESET,
+  GALLERY_LANDING_PRESET,
   GALLERY_MASONRY_PRESET,
   HERO_PRESET,
   SECTION_PRESETS,
@@ -57,5 +58,18 @@ describe("section preset background shape", () => {
       expect(Array.isArray(props.backgroundImages), `${key}.backgroundImages is an array`).toBe(true);
       expect(props, `${key} should drop backgroundImagePublicId`).not.toHaveProperty("backgroundImagePublicId");
     }
+  });
+});
+
+describe("GalleryLandingPreset in puckConfig", () => {
+  it("GalleryLandingPreset is registered in puckConfig and renders its heading", () => {
+    render(
+      <Render
+        config={puckConfig}
+        data={{ root: {}, content: [{ type: "GalleryLandingPreset", props: { id: "gl-1", ...GALLERY_LANDING_PRESET } }] }}
+      />
+    );
+    expect(screen.getByText("Our gallery")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /get in touch/i })).not.toBeInTheDocument();
   });
 });

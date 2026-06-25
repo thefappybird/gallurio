@@ -164,6 +164,7 @@ Every executor/planner operates as a senior full-stack engineer with strong mobi
 
 ### UI
 - Design mobile-first at 375px
+- Verify with Playwright at THREE breakpoints, not mobile only: mobile 375px, tablet 768px, desktop 1280px. Desktop-only surfaces (e.g. the portfolio editor/canvas) may verify tablet 768px + desktop 1280px and skip 375px; public-facing surfaces must cover all three.
 - Every async surface ships loading, empty, error, and populated states
 - Every interactive control ships idle, hover/focus-visible, active, and disabled states
 - No hover-only UX
@@ -387,7 +388,7 @@ A task is done only when:
 - tests are added and passing
 - lint and typecheck pass
 - locales are updated
-- mobile view is checked at 375px
+- views checked at 3 breakpoints (mobile 375px, tablet 768px, desktop 1280px); desktop-only surfaces may do tablet+desktop only
 - optimistic behavior is implemented where appropriate
 - errors are surfaced properly
 - indexes are confirmed for new queries
@@ -396,11 +397,18 @@ A task is done only when:
 - Consolidate locales
 - Build
 - Run strict code review
-  - The code review step must include a Playwright run-through (prefer the Playwright CLI, not the MCP plugin — see Tooling) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) plus the 375px mobile view, not just that the code compiles
+  - The code review step must include a Playwright run-through (prefer the Playwright CLI, not the MCP plugin — see Tooling) of any UI changes to confirm they are built to spec — drive the flow in a browser and verify each state (loading/empty/error/populated, idle/hover/focus/active/disabled) across the 3 breakpoints (375 / 768 / 1280px; desktop-only surfaces tablet+desktop), not just that the code compiles
 - Save review as markdown
 - Fix review findings
 - After the final review passes and all findings are fixed, automatically open a PR for the branch. The PR description must list the completed tasks as a checklist (`- [ ]`) so each can be tested easily later. Only open the PR once there are no remaining tasks on the branch.
 - Merge to `dev` only after review and explicit approval
+
+## Docs hygiene (minimize doc bloat)
+- Treat docs created during a task/PR (spec, plan, audit notes, code-review markdown) as scratch — keep them only for the duration of the work.
+- Before opening the PR, CONSOLIDATE everything into a SINGLE summary doc under `docs/<area>/` describing what the PR did: problem, changes per scope item, key decisions, and verification/test results. Delete every other doc created during that run — they stay recoverable in git history.
+- Net result of any PR: at most ONE new/changed doc file. Do not leave behind separate spec/plan/review files alongside the summary.
+- This overrides "Save review as markdown" above: fold the review outcome into the single summary instead of a standalone review file.
+- Pre-existing durable references (README, master-plan, product-spec-reference, blueprint, backend-audit-findings, RELEASE-CHECKLIST, REUSABLE_CODE) are NOT run-created — never delete them as part of this cleanup.
 
 ## Commands
 - `pnpm dev`

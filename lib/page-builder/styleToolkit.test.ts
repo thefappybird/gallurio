@@ -1,5 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { resolveBlockStyle, colorTokenToVar, asText, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, type BlockStyle } from "./styleToolkit";
+import { resolveBlockStyle, colorTokenToVar, asText, buildColorWithOpacity, FLEX_JUSTIFY_MAP, FLEX_ALIGN_MAP, HIGHLIGHT_SHAPES, HIGHLIGHT_SIZES, effectiveButtonTextToken, GALLERY_COLUMN_OPTIONS, GALLERY_GAP_OPTIONS, type BlockStyle } from "./styleToolkit";
+import { headingDefaultProps, textDefaultProps } from "./blocks/manualBlocks";
+
+// ---------------------------------------------------------------------------
+// buildColorWithOpacity
+// ---------------------------------------------------------------------------
+
+describe("buildColorWithOpacity", () => {
+  it("returns the color unchanged when opacity is 100", () => {
+    expect(buildColorWithOpacity("var(--pf-color-primary)", 100)).toBe("var(--pf-color-primary)");
+  });
+
+  it("returns a color-mix expression at opacity < 100", () => {
+    expect(buildColorWithOpacity("var(--pf-color-accent)", 60)).toBe(
+      "color-mix(in srgb, var(--pf-color-accent) 60%, transparent)"
+    );
+  });
+});
 
 describe("highlight option constants", () => {
   it("exposes the three band shapes in order", () => {
@@ -172,5 +189,113 @@ describe("flex layout fields", () => {
     expect(FLEX_ALIGN_MAP.center).toBe("center");
     expect(FLEX_ALIGN_MAP.end).toBe("flex-end");
     expect(FLEX_ALIGN_MAP.stretch).toBe("stretch");
+  });
+
+  // Grid placement (colSpan / rowSpan) — these are the CSS properties that make
+  // col-span and row-span controls actually work inside a Columns grid.
+  it("colSpan=1 does NOT emit gridColumn (no-op — single cell is default)", () => {
+    const css = resolveBlockStyle({ colSpan: 1 });
+    expect((css as Record<string, unknown>).gridColumn).toBeUndefined();
+  });
+
+  it("colSpan=2 emits gridColumn: 'span 2'", () => {
+    expect(resolveBlockStyle({ colSpan: 2 }).gridColumn).toBe("span 2");
+  });
+
+  it("colSpan=3 emits gridColumn: 'span 3'", () => {
+    expect(resolveBlockStyle({ colSpan: 3 }).gridColumn).toBe("span 3");
+  });
+
+  it("colSpan=13 clamps to span 12 (max grid span)", () => {
+    expect(resolveBlockStyle({ colSpan: 13 }).gridColumn).toBe("span 12");
+  });
+
+  it("rowSpan=1 does NOT emit gridRow", () => {
+    const css = resolveBlockStyle({ rowSpan: 1 });
+    expect((css as Record<string, unknown>).gridRow).toBeUndefined();
+  });
+
+  it("rowSpan=2 emits gridRow: 'span 2'", () => {
+    expect(resolveBlockStyle({ rowSpan: 2 }).gridRow).toBe("span 2");
+  });
+
+  it("rowSpan=4 emits gridRow: 'span 4'", () => {
+    expect(resolveBlockStyle({ rowSpan: 4 }).gridRow).toBe("span 4");
+  });
+
+  // Grid self-alignment: alignItems -> alignSelf so a block positions itself
+  // within its Columns grid cell (not just textAlign for leaf text).
+  it("alignItems maps to alignSelf for grid cell placement", () => {
+    expect(resolveBlockStyle({ alignItems: "start" }).alignSelf).toBe("start");
+    expect(resolveBlockStyle({ alignItems: "center" }).alignSelf).toBe("center");
+    expect(resolveBlockStyle({ alignItems: "end" }).alignSelf).toBe("end");
+    expect(resolveBlockStyle({ alignItems: "stretch" }).alignSelf).toBe("stretch");
+  });
+
+  // justifyContent -> justifySelf for inline axis positioning in the grid cell.
+  // Flex-only values (between/around) have no justifySelf equivalent — skip them.
+  it("justifyContent maps to justifySelf for grid cell inline-axis placement", () => {
+    expect(resolveBlockStyle({ justifyContent: "start" }).justifySelf).toBe("start");
+    expect(resolveBlockStyle({ justifyContent: "center" }).justifySelf).toBe("center");
+    expect(resolveBlockStyle({ justifyContent: "end" }).justifySelf).toBe("end");
+    // flex-only values do not produce justifySelf
+    expect(resolveBlockStyle({ justifyContent: "between" }).justifySelf).toBeUndefined();
+    expect(resolveBlockStyle({ justifyContent: "around" }).justifySelf).toBeUndefined();
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// B2: headingDefaultProps and textDefaultProps must NOT materialise textColorToken.
+// Parity maintained by a render-time color fallback on the outer div.
+// ---------------------------------------------------------------------------
+
+describe("default textColorToken — no materialization", () => {
+  it("headingDefaultProps does not carry textColorToken (effective via render fallback)", () => {
+    expect(headingDefaultProps._style?.textColorToken).toBeUndefined();
+  });
+
+  it("textDefaultProps does not carry textColorToken (effective via render fallback)", () => {
+    expect(textDefaultProps._style?.textColorToken).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// effectiveButtonTextToken
+// ---------------------------------------------------------------------------
+
+describe("effectiveButtonTextToken", () => {
+  it("solid button style → 'background'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "solid" })).toBe("background");
+  });
+
+  it("soft button with buttonColorToken set → returns that token", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "soft", buttonColorToken: "accent" })).toBe("accent");
+  });
+
+  it("soft button with no buttonColorToken → 'primary'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "soft" })).toBe("primary");
+  });
+
+  it("outline button with no buttonColorToken → 'primary'", () => {
+    expect(effectiveButtonTextToken({ buttonStyle: "outline" })).toBe("primary");
+  });
+
+  it("no buttonStyle (legacy/unset) → 'foreground'", () => {
+    expect(effectiveButtonTextToken({})).toBe("foreground");
+  });
+
+  it("undefined style → 'foreground'", () => {
+    expect(effectiveButtonTextToken(undefined)).toBe("foreground");
+  });
+});
+
+describe("BlockStyle — galleryColumns", () => {
+  it("GALLERY_COLUMN_OPTIONS contains 2, 3, 4", () => {
+    expect(GALLERY_COLUMN_OPTIONS).toEqual([2, 3, 4]);
+  });
+
+  it("GALLERY_GAP_OPTIONS contains tight, normal, loose", () => {
+    expect(GALLERY_GAP_OPTIONS).toEqual(["tight", "normal", "loose"]);
   });
 });

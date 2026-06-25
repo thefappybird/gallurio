@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { PortfolioHeaderConfig } from "@/lib/page-builder/types";
+import { buildColorWithOpacity } from "@/lib/page-builder/styleToolkit";
 
 export type PortfolioHeaderLabels = {
   brand: string;
@@ -90,21 +91,27 @@ function buildBg(config: PortfolioHeaderConfig | null | undefined): string {
   return `color-mix(in srgb, ${bgColor} ${opacity}%, transparent)`;
 }
 
-function buildColorWithOpacity(color: string, opacity: number): string {
-  if (opacity >= 100) return color;
-  return `color-mix(in srgb, ${color} ${opacity}%, transparent)`;
-}
 
 export function PortfolioHeader({
   slug,
   labels,
   config,
   activePath,
+  homeHref: homeHrefProp,
+  galleryHref: galleryHrefProp,
 }: {
   slug: string;
   labels: PortfolioHeaderLabels;
   config?: PortfolioHeaderConfig | null;
   activePath?: string;
+  /** Override for the logo + Home nav href. Pass the preview route URL when
+   * rendering inside the editor preview iframe so the logo does not navigate
+   * to the published public site. */
+  homeHref?: string;
+  /** Override for the Gallery nav href. Pass the preview route URL when
+   * rendering inside the editor preview iframe so the link stays within the
+   * draft-aware preview instead of navigating to the published public site. */
+  galleryHref?: string;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -117,8 +124,8 @@ export function PortfolioHeader({
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
-  const homeHref = `/w/${slug}`;
-  const galleryHref = `/w/${slug}/gallery`;
+  const homeHref = homeHrefProp ?? `/w/${slug}`;
+  const galleryHref = galleryHrefProp ?? `/w/${slug}/gallery`;
   const currentPath = activePath ?? pathname;
   const navbarSize = NAVBAR_SIZE_MAP[config?.navbarSize || "balanced"];
 

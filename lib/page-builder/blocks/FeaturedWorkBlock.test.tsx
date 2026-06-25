@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { puckConfig } from "@/lib/page-builder/config";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
+import type { GalleryImage } from "./GalleryGridBlock";
 
 // ---------------------------------------------------------------------------
 // CF Images env
@@ -70,7 +71,7 @@ describe("FeaturedWorkBlock — tiles render", () => {
       makeCollection({ id: "c2", name: "Portraits", itemCount: 3, coverPublicId: "p/cover.jpg" }),
     ];
     const { container } = render(
-      <FeaturedWorkBlock {...featuredWorkDefaultProps} collections={collections} columns={3} />
+      <FeaturedWorkBlock {...featuredWorkDefaultProps} collections={collections} />
     );
     // 2 tile buttons rendered
     const tiles = container.querySelectorAll("[data-featured-tile]");
@@ -157,12 +158,12 @@ describe("FeaturedWorkBlock — tiles render", () => {
 });
 
 describe("FeaturedWorkBlock — columns", () => {
-  it("sets responsive gridColsVar for columns=2", () => {
+  it("sets responsive gridColsVar for _style.galleryColumns=2", () => {
     const { container } = render(
       <FeaturedWorkBlock
         {...featuredWorkDefaultProps}
         collections={[makeCollection({ id: "c1" }), makeCollection({ id: "c2" })]}
-        columns={2}
+        _style={{ galleryColumns: 2 }}
       />
     );
     const grid = container.querySelector(".pf-featured-grid");
@@ -170,16 +171,27 @@ describe("FeaturedWorkBlock — columns", () => {
     expect((grid as HTMLElement).style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(2, 1fr))");
   });
 
-  it("sets responsive gridColsVar for columns=4", () => {
+  it("sets responsive gridColsVar for _style.galleryColumns=4", () => {
     const { container } = render(
       <FeaturedWorkBlock
         {...featuredWorkDefaultProps}
         collections={[makeCollection({ id: "c1" })]}
-        columns={4}
+        _style={{ galleryColumns: 4 }}
       />
     );
     const grid = container.querySelector(".pf-featured-grid");
     expect((grid as HTMLElement).style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(4, 1fr))");
+  });
+
+  it("defaults to 3 columns when _style.galleryColumns is unset", () => {
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection({ id: "c1" })]}
+      />
+    );
+    const grid = container.querySelector(".pf-featured-grid");
+    expect((grid as HTMLElement).style.gridTemplateColumns).toBe("var(--pf-grid-cols, repeat(3, 1fr))");
   });
 });
 
@@ -213,5 +225,21 @@ describe("FeaturedWorkBlock — client safety", () => {
     } finally {
       process.env.NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH = prev;
     }
+  });
+});
+
+describe("FeaturedWorkBlock — banner/container props", () => {
+  it("renders a background image when backgroundImages has one entry", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+        backgroundImages={bgImages}
+      />
+    );
+    const bgImg = container.querySelector("img[aria-hidden='true']");
+    expect(bgImg).toBeTruthy();
+    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
   });
 });

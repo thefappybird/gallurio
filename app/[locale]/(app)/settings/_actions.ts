@@ -11,6 +11,7 @@ import {
   publicPageSettingsSchema,
   type UpdateWorkspaceBusinessInput,
   type PublicPageSettingsInput,
+  type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage } from "@/lib/storage/cloudflareImages";
@@ -74,7 +75,7 @@ export async function updateWorkspaceBusinessAction(
 // ---------------------------------------------------------------------------
 
 export async function updatePublicPageSettingsAction(
-  input: PublicPageSettingsInput,
+  input: PublicPageSettingsRawInput,
 ): Promise<ActionResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };
@@ -91,6 +92,8 @@ export async function updatePublicPageSettingsAction(
         "publicPage.seoDescription": parsed.data.seoDescription ?? "",
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
+        "publicPage.siteIcon.url": parsed.data.siteIconUrl ?? "",
+        "publicPage.siteIcon.assetId": parsed.data.siteIconAssetId ?? "",
       },
     },
   );

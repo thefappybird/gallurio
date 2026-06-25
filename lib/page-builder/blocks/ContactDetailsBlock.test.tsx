@@ -32,142 +32,107 @@ function makeWorkspace(overrides: Partial<RenderWorkspace> = {}): RenderWorkspac
   };
 }
 
-// The render path threads the workspace through Puck `metadata` (RSC-safe).
-// Tests mirror that by passing the workspace via the `puck` prop rather than
-// the server-only AsyncLocalStorage store.
-function renderBlock(ws: RenderWorkspace | null, props: ContactDetailsProps) {
+function renderBlock(ws: RenderWorkspace | null, props: ContactDetailsProps = {}) {
   const puck = ws ? { metadata: { workspace: ws } } : undefined;
   return render(<ContactDetailsBlock {...props} puck={puck} />);
 }
 
 // ---------------------------------------------------------------------------
-// Smoke test — renders without crashing
+// Smoke tests
 // ---------------------------------------------------------------------------
 
-describe("ContactDetailsBlock — smoke test", () => {
-  it("renders without crashing inside a workspace context", () => {
-    const ws = makeWorkspace();
-    expect(() => renderBlock(ws, contactDetailsDefaultProps)).not.toThrow();
+describe("ContactDetailsBlock — smoke", () => {
+  it("renders without crashing", () => {
+    expect(() => renderBlock(makeWorkspace())).not.toThrow();
   });
 
-  it("renders a <dl> element with data-block='contact-details'", () => {
-    const ws = makeWorkspace();
-    const { container } = renderBlock(ws, contactDetailsDefaultProps);
+  it("renders a <dl> with data-block='contact-details'", () => {
+    const { container } = renderBlock(makeWorkspace());
     expect(container.querySelector("[data-block='contact-details']")).not.toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// showEmail toggle
+// Blank props -> workspace fallback
 // ---------------------------------------------------------------------------
 
-describe("ContactDetailsBlock — showEmail", () => {
-  it("renders the email when showEmail=true and workspace has an email", () => {
-    renderBlock(makeWorkspace(), { showEmail: true, showPhone: false, showAddress: false, showSocials: false });
+describe("ContactDetailsBlock — blank props fall back to workspace", () => {
+  it("shows workspace email when no override", () => {
+    renderBlock(makeWorkspace(), {});
     expect(screen.getByText("hello@teststudio.com")).toBeTruthy();
   });
 
-  it("does NOT render the email when showEmail=false", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
-    expect(screen.queryByText("hello@teststudio.com")).toBeNull();
-  });
-
-  it("does NOT render the email when workspace has no email", () => {
-    const ws = makeWorkspace({ contact: { email: null, phone: "+63 912 345 6789", address: null, socials: null } });
-    renderBlock(ws, { showEmail: true, showPhone: false, showAddress: false, showSocials: false });
-    expect(screen.queryByText(/hello@/)).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// showPhone toggle
-// ---------------------------------------------------------------------------
-
-describe("ContactDetailsBlock — showPhone", () => {
-  it("renders the phone when showPhone=true and workspace has a phone", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: true, showAddress: false, showSocials: false });
+  it("shows workspace phone when no override", () => {
+    renderBlock(makeWorkspace(), {});
     expect(screen.getByText("+63 912 345 6789")).toBeTruthy();
   });
 
-  it("does NOT render the phone when showPhone=false", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
-    expect(screen.queryByText("+63 912 345 6789")).toBeNull();
-  });
-
-  it("does NOT render the phone when workspace has no phone", () => {
-    const ws = makeWorkspace({ contact: { email: "a@b.com", phone: null, address: null, socials: null } });
-    renderBlock(ws, { showEmail: false, showPhone: true, showAddress: false, showSocials: false });
-    expect(screen.queryByText(/\+63/)).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// showAddress toggle
-// ---------------------------------------------------------------------------
-
-describe("ContactDetailsBlock — showAddress", () => {
-  it("renders the address when showAddress=true", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: true, showSocials: false });
+  it("shows workspace address when no override", () => {
+    renderBlock(makeWorkspace(), {});
     expect(screen.getByText("Taguig City, Metro Manila")).toBeTruthy();
   });
 
-  it("does NOT render the address when showAddress=false", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
-    expect(screen.queryByText("Taguig City, Metro Manila")).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// showSocials toggle
-// ---------------------------------------------------------------------------
-
-describe("ContactDetailsBlock — showSocials", () => {
-  it("renders social links when showSocials=true", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
+  it("shows workspace socials when no override", () => {
+    renderBlock(makeWorkspace(), {});
     expect(screen.getByText("Instagram")).toBeTruthy();
     expect(screen.getByText("Facebook")).toBeTruthy();
     expect(screen.getByText("Website")).toBeTruthy();
   });
+});
 
-  it("does NOT render social links when showSocials=false", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: false });
-    expect(screen.queryByText("Instagram")).toBeNull();
+describe("ContactDetailsBlock — override replaces workspace value", () => {
+  it("shows override email, not workspace email", () => {
+    renderBlock(makeWorkspace(), { email: "override@x.com" });
+    expect(screen.getByText("override@x.com")).toBeTruthy();
+    expect(screen.queryByText("hello@teststudio.com")).toBeNull();
   });
 
-  it("does NOT render the socials row when workspace has no socials", () => {
-    const ws = makeWorkspace({ contact: { email: "a@b.com", phone: null, address: null, socials: null } });
-    renderBlock(ws, { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
-    expect(screen.queryByTestId("socials-row")).toBeNull();
+  it("shows override phone, not workspace phone", () => {
+    renderBlock(makeWorkspace(), { phone: "+1 555 000 0000" });
+    expect(screen.getByText("+1 555 000 0000")).toBeTruthy();
+    expect(screen.queryByText("+63 912 345 6789")).toBeNull();
   });
 
-  it("skips a social link for null values (TikTok null in fixture)", () => {
-    renderBlock(makeWorkspace(), { showEmail: false, showPhone: false, showAddress: false, showSocials: true });
-    // tiktok is null in the fixture, so TikTok link should not appear
+  it("shows override address, not workspace address", () => {
+    renderBlock(makeWorkspace(), { address: "BGC, Taguig" });
+    expect(screen.getByText("BGC, Taguig")).toBeTruthy();
+    expect(screen.queryByText("Taguig City, Metro Manila")).toBeNull();
+  });
+});
+
+describe("ContactDetailsBlock — socials override merges per-key", () => {
+  it("override instagram replaces workspace instagram; other socials fall through", () => {
+    renderBlock(makeWorkspace(), { instagram: "override_ig" });
+    const igLink = screen.getByText("Instagram") as HTMLAnchorElement;
+    expect(igLink.closest("a")?.href).toContain("override_ig");
+    expect(screen.getByText("Facebook")).toBeTruthy();
+    expect(screen.getByText("Website")).toBeTruthy();
+  });
+});
+
+describe("ContactDetailsBlock — website href safety", () => {
+  it("prefixes bare domain override with https://", () => {
+    renderBlock(makeWorkspace(), { website: "example.com" });
+    const link = screen.getByText("Website") as HTMLAnchorElement;
+    expect(link.closest("a")?.href).toBe("https://example.com/");
+  });
+});
+
+describe("ContactDetailsBlock — no workspace + no overrides", () => {
+  it("renders empty <dl> with zero dt elements", () => {
+    const { container } = renderBlock(null, {});
+    const dl = container.querySelector("[data-block='contact-details']") as HTMLElement;
+    expect(dl).not.toBeNull();
+    expect(dl.querySelectorAll("dt").length).toBe(0);
+  });
+});
+
+describe("ContactDetailsBlock — null socials skipped", () => {
+  it("does not render TikTok link when workspace tiktok is null", () => {
+    renderBlock(makeWorkspace(), {});
     expect(screen.queryByText("TikTok")).toBeNull();
   });
 });
-
-// ---------------------------------------------------------------------------
-// No workspace context
-// ---------------------------------------------------------------------------
-
-describe("ContactDetailsBlock — no workspace context", () => {
-  it("renders an empty <dl> without crashing when no workspace context is provided", () => {
-    // ContactDetailsBlock calls getRenderWorkspaceFrom(puck) — when puck is
-    // undefined it returns null, so the block renders an empty <dl>.
-    const { container } = render(
-      React.createElement(ContactDetailsBlock, contactDetailsDefaultProps)
-    );
-    expect(container.querySelector("[data-block='contact-details']")).not.toBeNull();
-    // No text rows appear since contact is null
-    expect(screen.queryByText(/Email/i)).toBeNull();
-    expect(screen.queryByText(/Phone/i)).toBeNull();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// buildRenderWorkspace integration (puck metadata path)
-// ---------------------------------------------------------------------------
 
 describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
   it("renders email + phone from a built workspace doc", () => {
@@ -182,7 +147,7 @@ describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
       },
     };
     const rw = buildRenderWorkspace(doc);
-    renderBlock(rw, { showEmail: true, showPhone: true, showAddress: true, showSocials: true });
+    renderBlock(rw, {});
     expect(screen.getByText("doc@studio.com")).toBeTruthy();
     expect(screen.getByText("+63 917 000 1111")).toBeTruthy();
     expect(screen.getByText("Makati")).toBeTruthy();
@@ -192,11 +157,9 @@ describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
   it("does not render any rows when workspace doc has no contact field", () => {
     const doc = { _id: "doc-id-2", name: "No Contact Studio" };
     const rw = buildRenderWorkspace(doc);
-    const { container } = renderBlock(rw, { showEmail: true, showPhone: true, showAddress: true, showSocials: true });
-    // The <dl> renders but is empty (no child rows)
+    const { container } = renderBlock(rw, {});
     const dl = container.querySelector("[data-block='contact-details']") as HTMLElement;
     expect(dl).not.toBeNull();
-    // No label terms (dt elements) should exist
     expect(dl.querySelectorAll("dt").length).toBe(0);
   });
 });

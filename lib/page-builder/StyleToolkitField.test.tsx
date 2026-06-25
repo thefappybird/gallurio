@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { StyleToolkitField } from "./StyleToolkitField";
+import { render, screen, fireEvent, within } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
+import React from "react";
+import { StyleToolkitField, ContainerBackgroundControls, CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab, RadiusButtons, ContentInputs, BRAND_RADIUS_TO_PRESET, BannerSection } from "./StyleToolkitField";
 import type { BlockStyle } from "./styleToolkit";
+import { BrandColorsContext, useBrandRadius, useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
+import type { BrandColorMap } from "./brandColors";
+import { resolveEffectiveFonts } from "./fonts";
 
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
@@ -31,8 +36,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     expect(screen.getByText("Typography")).toBeTruthy();
-    // Typography controls live inside the collapsed drawer — expand it first.
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — it opens automatically (no click needed).
     expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Underline" })).toBeTruthy();
@@ -51,7 +55,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={undefined} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(true);
@@ -61,7 +65,7 @@ describe("StyleToolkitField — 3-tab panel", () => {
     const onChange = vi.fn();
     render(<StyleToolkitField value={{ bold: true }} onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     fireEvent.click(screen.getByRole("button", { name: "Bold" }));
     expect(onChange).toHaveBeenCalledOnce();
     expect((onChange.mock.calls[0][0] as BlockStyle).bold).toBe(false);
@@ -99,6 +103,31 @@ describe("StyleToolkitField — 3-tab panel", () => {
     expect(screen.getByRole("button", { name: "Large" })).toBeTruthy();
   });
 
+  it("Shadow IconRow shows 'No shadow' as effective (aria-pressed) when shadow is unset", () => {
+    // When _style.shadow is unset, the effective default 'none' should be aria-pressed
+    // (lighter treatment). The 'No shadow' button must be pressed even with no explicit value.
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    expect(screen.getByRole("button", { name: "No shadow" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Shadow IconRow — clicking 'Small' when shadow is unset writes shadow:'sm' (effectiveValue pattern)", () => {
+    // With effectiveValue="none", shadow prop is unset (= following theme, shows lighter).
+    // Clicking a real shadow option writes that value and decouples from theme.
+    // If the field were materialized (s.shadow ?? "none"), 'Small' would need two clicks
+    // to change (first click deselects 'none', second selects 'sm'). With effectiveValue,
+    // 'Small' registers immediately.
+    const onChange = vi.fn();
+    render(<StyleToolkitField value={undefined} onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    fireEvent.click(screen.getByRole("button", { name: "Small" }));
+    const calls = onChange.mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls[calls.length - 1][0]).toHaveProperty("shadow", "sm");
+  });
+
   it("Layout tab Spacing drawer does not show Top or Bottom spacing (removed from standard drawer)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "Layout" }));
@@ -116,31 +145,28 @@ describe("StyleToolkitField — 3-tab panel", () => {
   it("hides the Bold control for Heading blocks", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="Heading" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Typography" }));
+    // Typography is the first drawer — already open.
     expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
     expect(screen.getByRole("button", { name: "Italic" })).toBeTruthy();
   });
 
-  it("hides Frame and Typography for image-only gallery blocks (GalleryGrid)", () => {
+  it("hides Typography but shows Frame and Effects for image-only gallery blocks (GalleryGrid — container-like)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Frame")).toBeNull();
+    // Gallery container blocks now get Frame (container-like) but no Typography (images-only).
+    expect(screen.getByText("Frame")).toBeTruthy();
     expect(screen.queryByText("Typography")).toBeNull();
     // Effects drawer remains available for entrance animations.
     expect(screen.getByText("Effects")).toBeTruthy();
   });
 
-  it("hides Frame and the shared Typography for the GalleryCarousel (uses drawers)", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
+  it("shows Frame and Typography for GalleryLandingPreset (container-typed)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryLandingPreset" />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Frame")).toBeNull();
-    expect(screen.queryByText("Typography")).toBeNull();
-    expect(screen.getByRole("button", { name: "Heading" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Description" })).toBeTruthy();
+    expect(screen.getByText("Typography")).toBeTruthy();
+    expect(screen.getByText("Frame")).toBeTruthy();
   });
 });
-
-import { ContainerBackgroundControls } from "./StyleToolkitField";
 
 describe("ContainerBackgroundControls — animation gating", () => {
   const noop = () => {};
@@ -193,67 +219,6 @@ describe("ContainerBackgroundControls — animation gating", () => {
   });
 });
 
-describe("StyleToolkitField — carousel per-target drawers", () => {
-  it("keeps both drawers collapsed by default (inner controls hidden)", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByRole("button", { name: "Bold" })).toBeNull();
-  });
-
-  it("expanding the Heading drawer reveals B/I/U, Level and the heading highlight", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
-    expect(screen.getByRole("button", { name: "Bold" })).toBeTruthy();
-    expect(screen.getByText("Level")).toBeTruthy();
-    expect(screen.getByLabelText("Heading highlight")).toBeTruthy();
-  });
-
-  it("expanding the Description drawer reveals a Font size control", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Description" }));
-    expect(screen.getByText("Font size")).toBeTruthy();
-    expect(screen.getByLabelText("Description highlight")).toBeTruthy();
-  });
-
-  it("toggling the heading highlight writes headingHighlight: true", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
-    fireEvent.click(screen.getByLabelText("Heading highlight"));
-    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlight).toBe(true);
-  });
-
-  it("shows Shape and Size rows once a highlight is on and writes the picked shape", () => {
-    const onChange = vi.fn();
-    render(<StyleToolkitField value={{ headingHighlight: true }} onChange={onChange} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    fireEvent.click(screen.getByRole("button", { name: "Heading" }));
-    expect(screen.getByText("Shape")).toBeTruthy();
-    expect(screen.getByText("Size")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Rounded" }));
-    expect((onChange.mock.calls[0][0] as BlockStyle).headingHighlightShape).toBe("rounded");
-  });
-});
-
-describe("StyleToolkitField — carousel Layout tab", () => {
-  it("shows the shared Text padding control on the Layout tab", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
-    expect(screen.getByText("Text padding")).toBeTruthy();
-  });
-
-  it("does not show Text padding on the Design tab for the carousel", () => {
-    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryCarousel" />);
-    fireEvent.click(screen.getByRole("button", { name: "Design" }));
-    expect(screen.queryByText("Text padding")).toBeNull();
-  });
-});
-
-import { CarouselTextPadding, CONTAINER_TYPES, FLEX_CONTAINER_BLOCKS, LayoutTabBody, DesignTab } from "./StyleToolkitField";
-
 describe("CarouselTextPadding heading gap control", () => {
   it("renders a heading gap input and writes _style.headingGap", () => {
     const set = vi.fn();
@@ -271,7 +236,7 @@ describe("CarouselTextPadding heading gap control", () => {
 });
 
 describe("padding lives in the Layout tab", () => {
-  it("LayoutTabBody shows Padding for a Container", () => {
+  it("LayoutTabBody shows Padding for a Container — Spacing drawer auto-opens", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -283,8 +248,7 @@ describe("padding lives in the Layout tab", () => {
         setProp={() => {}}
       />,
     );
-    // Padding lives inside the collapsed Spacing drawer — expand it first.
-    fireEvent.click(screen.getByRole("button", { name: "Spacing" }));
+    // Spacing is the first drawer and opens automatically — Padding is visible.
     expect(screen.getByText("Padding")).toBeInTheDocument();
   });
 
@@ -306,9 +270,11 @@ describe("gallery section presets are container-typed", () => {
   it("does not treat the standalone GalleryCarousel as a container", () => {
     expect(CONTAINER_TYPES.has("GalleryCarousel")).toBe(false);
   });
+  it("GalleryLandingPreset is a CONTAINER_TYPE and FLEX_CONTAINER_BLOCK", () => {
+    expect(CONTAINER_TYPES.has("GalleryLandingPreset")).toBe(true);
+    expect(FLEX_CONTAINER_BLOCKS.has("GalleryLandingPreset")).toBe(true);
+  });
 });
-
-import { RadiusButtons } from "./StyleToolkitField";
 
 describe("RadiusButtons", () => {
   it("renders 5 preset buttons (None, S, M, L, Full)", () => {
@@ -339,13 +305,660 @@ describe("RadiusButtons", () => {
     fireEvent.click(screen.getByRole("button", { name: "S" }));
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
+
+  it("shows the effective (theme) preset as aria-pressed when block radius is unset", () => {
+    // effectiveValue=8 corresponds to the brand "rounded" preset (M button).
+    render(<RadiusButtons value={undefined} onChange={vi.fn()} effectiveValue={8} />);
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("explicit block radius overrides the effective (theme) value display", () => {
+    // Block has radius=4 (S), theme says 8 (M) — block wins.
+    render(<RadiusButtons value={4} onChange={vi.fn()} effectiveValue={8} />);
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("clicking a preset calls onChange even when effective display is active", () => {
+    const onChange = vi.fn();
+    render(<RadiusButtons value={undefined} onChange={onChange} effectiveValue={8} />);
+    fireEvent.click(screen.getByRole("button", { name: "L" }));
+    expect(onChange).toHaveBeenCalledWith(16);
+  });
+
+  it("does not force any preset active when effectiveValue is absent and value is unset", () => {
+    render(<RadiusButtons value={undefined} onChange={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "None" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "L" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Full" })).toHaveAttribute("aria-pressed", "false");
+  });
 });
 
-import { ContentInputs } from "./StyleToolkitField";
+describe("Button style section — corner radius picker", () => {
+  it("LayoutTabBody for Button does NOT show Corner radius (moved to Design tab in Pass 2)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Button"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    // Corner radius moved to Design tab Button section in Pass 2.
+    expect(screen.queryByText("Corner radius")).toBeNull();
+  });
+
+  it("LayoutTabBody for Button does NOT show 'Button style' picker in Layout (moved to Design)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Button"
+        p={{}}
+        setProp={() => {}}
+      />,
+    );
+    expect(screen.queryByText("Button style")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pass 2: Button Design tab consolidation
+// ---------------------------------------------------------------------------
+
+describe("DesignTab — Button block shows consolidated button controls", () => {
+  it("DesignTab for Button shows 'Button color' in the expanded Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    // Button section is collapsed by default; expand it first.
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button color")).toBeTruthy();
+  });
+
+  it("DesignTab for Button shows a 'Button opacity' input in the expanded Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button opacity")).toBeTruthy();
+  });
+
+  it("DesignTab for Button does NOT show Frame section (border/shadow)", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    expect(screen.queryByText("Frame")).toBeNull();
+    expect(screen.queryByText("Border width")).toBeNull();
+    expect(screen.queryByText("Shadow")).toBeNull();
+  });
+
+  it("DesignTab for Button shows Corner radius in Design tab", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Corner radius")).toBeTruthy();
+  });
+
+  it("DesignTab for Button shows Button style picker (Solid/Outline/Soft) in the Button section", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Button" />);
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    expect(screen.getByText("Button style")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Solid" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Outline" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Soft" })).toBeTruthy();
+  });
+});
 
 describe("ContentInputs — emoji button integration", () => {
   it("Heading block shows Insert emoji button beside the text input", () => {
     render(<ContentInputs type="Heading" props={{ text: "Hello", level: "h2" }} setProp={vi.fn()} />);
     expect(screen.getByRole("button", { name: "Insert emoji" })).toBeTruthy();
+  });
+});
+
+describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMasonry/FeaturedWork)", () => {
+  it("GalleryGrid shows Frame drawer on Design tab (container-like)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    expect(screen.getByText("Frame")).toBeTruthy();
+  });
+
+  it("GalleryGrid Content tab shows Banner section (no fieldId standalone mode)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    // Content tab is shown by default
+    expect(screen.getByText("Banner")).toBeTruthy();
+  });
+});
+
+describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color", () => {
+  it("GalleryGrid Content tab does NOT render ContainerBackgroundControls (no bg-image picker)", () => {
+    render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
+    // Content tab is default; "Background images" label from ContainerBackgroundControls must be absent
+    expect(screen.queryByText("Background images")).toBeNull();
+  });
+
+  it("BannerSection with hideBgImage=true does NOT render Image picker", () => {
+    render(<BannerSection s={{}} set={vi.fn()} hideBgImage={true} />);
+    expect(screen.queryByText("Image")).toBeNull();
+  });
+});
+
+describe("GalleryLayoutControls — writes _style.galleryColumns on click", () => {
+  it("clicking column '2' calls onChange with _style.galleryColumns=2", () => {
+    const onChange = vi.fn();
+    render(
+      <StyleToolkitField value={undefined} onChange={onChange} blockType="GalleryGrid" />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    // Gallery section drawer auto-opens (it is the first drawer in the group)
+    // The "2" column button is visible after switching to Layout tab
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ galleryColumns: 2 }));
+  });
+});
+
+describe("BRAND_RADIUS_TO_PRESET mapping", () => {
+  it("maps sharp to 0 (None preset)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.sharp).toBe(0);
+  });
+
+  it("maps subtle to 4 (S preset, 0.25rem = 4px)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.subtle).toBe(4);
+  });
+
+  it("maps rounded to 8 (M preset, 0.5rem = 8px)", () => {
+    expect(BRAND_RADIUS_TO_PRESET.rounded).toBe(8);
+  });
+});
+
+const DEFAULT_COLORS: BrandColorMap = {
+  primary: "#111",
+  secondary: "#f5f5f5",
+  accent: "#2f5d56",
+  background: "#fff",
+  foreground: "#111",
+};
+
+describe("DesignTab — RadiusButtons shows brand theme radius when block radius is unset", () => {
+  it("shows M (8) as aria-pressed in Frame section when brand radius is 'rounded' and block radius unset", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "rounded" }}>
+        <StyleToolkitField value={undefined} onChange={vi.fn()} />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    // Open the Frame drawer to reveal RadiusButtons.
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    expect(screen.getByRole("button", { name: "M" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "S" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("ContentInputs — ContactDetails type", () => {
+  it("renders Email floating-label input for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Email")).toBeTruthy();
+  });
+
+  it("renders Phone floating-label input for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Phone")).toBeTruthy();
+  });
+});
+
+describe("useBrandRadius hook", () => {
+  it("returns brandRadius from BrandColorsContext", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "rounded" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useBrandRadius(), { wrapper });
+    expect(result.current).toBe("rounded");
+  });
+
+  it("returns undefined when no brandRadius in context", () => {
+    const { result } = renderHook(() => useBrandRadius());
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("useEffectiveBrandRadius hook", () => {
+  it("returns undefined when brandRadius is '' (empty string)", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      // Cast needed: BrandColorMap.brandRadius is BrandKitRadius | undefined at the type level,
+      // but at runtime it can arrive as "" from PortfolioBrandKit fields that allow BrandKitRadius | "".
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "" as never }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandRadius(), { wrapper });
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("BrandColorMap — headingFont and bodyFont fields", () => {
+  it("BrandColorMap accepts headingFont and bodyFont (type and value check)", () => {
+    // Verify BrandColorMap can hold font keys — this guards the EditorShell wiring.
+    const map: BrandColorMap = {
+      ...DEFAULT_COLORS,
+      headingFont: "playfair",
+      bodyFont: "inter",
+    };
+    expect(map.headingFont).toBe("playfair");
+    expect(map.bodyFont).toBe("inter");
+  });
+
+  it("useEffectiveBrandFont returns headingFont from a BrandColorMap built like EditorShell does", () => {
+    // Simulates the EditorShell brandColors object construction including font fields.
+    const brandColors: BrandColorMap = {
+      ...DEFAULT_COLORS,
+      brandRadius: "subtle",
+      headingFont: "fraunces",
+      bodyFont: "dm-sans",
+    };
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={brandColors}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"), { wrapper });
+    expect(result.current).toBe("fraunces");
+  });
+});
+
+describe("useEffectiveBrandFont hook", () => {
+  it("returns the heading font key from context when kind is 'heading'", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"), { wrapper });
+    expect(result.current).toBe("playfair");
+  });
+
+  it("returns the body font key from context when kind is 'body'", () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        {children}
+      </BrandColorsContext.Provider>
+    );
+    const { result } = renderHook(() => useEffectiveBrandFont("body"), { wrapper });
+    expect(result.current).toBe("inter");
+  });
+
+  it("returns undefined when outside the editor (no fonts in context)", () => {
+    const { result } = renderHook(() => useEffectiveBrandFont("heading"));
+    expect(result.current).toBeUndefined();
+  });
+});
+
+describe("DesignTab — font family dropdown pre-selects effective brand font when block fontFamily is unset", () => {
+  it("shows the brand heading font as selected in the Font dropdown for Heading block when fontFamily is unset", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{}} set={vi.fn()} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // The font select should show "playfair" as the selected value (effective heading font).
+    // Typography drawer is auto-open (first drawer).
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("playfair");
+  });
+
+  it("explicit fontFamily on the block wins over the effective brand font", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{ fontFamily: "cormorant" }} set={vi.fn()} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("cormorant");
+  });
+});
+
+describe("LayoutTabBody — gap input shows effective default 16 as placeholder when gap is unset", () => {
+  it("Gap input shows placeholder '16' when _style.gap is undefined", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Layout drawer is the second drawer; open it to see Gap.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    // Find the "Gap" label text node's parent row, then find the spinbutton within it.
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const gapInput = within(gapRow).getByRole("spinbutton");
+    // When gap is unset, the input value is empty but placeholder shows the effective default.
+    expect(gapInput).toHaveAttribute("placeholder", "16");
+  });
+});
+
+describe("DesignTab — Border color swatch pre-selects 'foreground' when borderColorToken is unset", () => {
+  it("foreground swatch (Text) in Border color row is aria-pressed when borderColorToken is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    // The Frame drawer contains a "Border color" label; the swatch row below it
+    // should show the foreground token as effective-active. Use the label to scope.
+    const borderColorLabel = screen.getByText("Border color");
+    const borderColorRow = borderColorLabel.closest("div")!.querySelector("div")!;
+    // The first "Text" button in this row should be aria-pressed (foreground = effective).
+    const textSwatches = within(borderColorRow as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(textSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("DesignTab — Font size input shows effective default 16 as placeholder when fontSize is unset", () => {
+  it("Font size input has placeholder '16' for a Text block when fontSize is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    // Typography drawer is auto-open.
+    const fontSizeLabel = screen.getByText("Font size");
+    const row = fontSizeLabel.closest("div")!;
+    const input = within(row).getByRole("spinbutton");
+    expect(input).toHaveAttribute("placeholder", "16");
+  });
+});
+
+describe("DesignTab — Border width input shows effective default 0 as placeholder when borderWidth is unset", () => {
+  it("Border width input has placeholder '0' for a framed block when borderWidth is unset", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    // Open Frame drawer.
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    const borderWidthLabel = screen.getByText("Border width");
+    const row = borderWidthLabel.closest("div")!;
+    const input = within(row).getByRole("spinbutton");
+    expect(input).toHaveAttribute("placeholder", "0");
+  });
+});
+
+describe("LayoutTabBody — Align icon row shows effective default 'stretch' when alignItems is unset", () => {
+  it("Stretch to fill icon is marked active (aria-pressed=true) when alignItems is unset", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Open the Layout drawer.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Stretch to fill" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("LayoutTabBody — Min height buttons show effective default 'auto' when minHeight prop is unset", () => {
+  it("Auto button is aria-pressed when p.minHeight is undefined (effective default)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    // Open the Layout drawer to reveal min height controls.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("DesignTab Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
+  it("shows None as aria-pressed for Button block when brand radius is 'sharp' and block radius unset", () => {
+    // Radius moved from LayoutTabBody to DesignTab Button section in Pass 2.
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "sharp" }}>
+        <DesignTab s={{}} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    // Expand the Button section to reveal RadiusButtons.
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    // "None" is unique (the size picker S/M/L has no overlap with RadiusButtons' None/S/M/L/Full).
+    expect(screen.getAllByRole("button", { name: "None" })[0]).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button", { name: "Full" })[0]).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+describe("resolveEffectiveFonts — legacy fontPair fallback", () => {
+  it("falls back to legacy fontPair mapping when headingFont/bodyFont are absent", () => {
+    const result = resolveEffectiveFonts({ fontPair: "playfair-inter" });
+    expect(result.headingFont).toBe("playfair");
+    expect(result.bodyFont).toBe("inter");
+  });
+
+  it("prefers explicit headingFont/bodyFont over the legacy fontPair when both are set", () => {
+    const result = resolveEffectiveFonts({ fontPair: "playfair-inter", headingFont: "fraunces", bodyFont: "montserrat" });
+    expect(result.headingFont).toBe("fraunces");
+    expect(result.bodyFont).toBe("montserrat");
+  });
+});
+
+describe("DesignTab — Border color swatch effective state is visually distinct", () => {
+  it("effective-but-unset swatch has a lighter ring class (ring-1) but not the explicit ring-2", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Container" />);
+    fireEvent.click(screen.getByRole("button", { name: "Frame" }));
+    const borderColorLabel = screen.getByText("Border color");
+    const borderColorRow = borderColorLabel.closest("div")!.querySelector("div")!;
+    const textSwatches = within(borderColorRow as HTMLElement).getAllByRole("button", { name: "Text" });
+    const effectiveSwatch = textSwatches[0];
+    // aria-pressed confirms it's the effective swatch, not just any swatch
+    expect(effectiveSwatch).toHaveAttribute("aria-pressed", "true");
+    // effective state uses a lighter unconditional ring (ring-1 without a variant prefix),
+    // not the explicit ring (ring-2). focus-visible:ring-1 is always present; we want
+    // the bare class to also appear as a space-delimited token.
+    const classes = effectiveSwatch.className.split(/\s+/);
+    expect(classes).toContain("ring-1");
+    expect(classes).not.toContain("ring-2");
+  });
+});
+
+describe("DesignTab — text color swatch effective state (Text/Heading blocks)", () => {
+  it("foreground swatch is aria-pressed when textColorToken is unset on a Text block", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    // Typography drawer is auto-open — text color row is visible
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const foregroundSwatches = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("effective text color swatch has lighter ring class (ring-1) not explicit ring-2", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Text" />);
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const foregroundSwatch = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Text" })[0];
+    const classes = foregroundSwatch.className.split(/\s+/);
+    expect(classes).toContain("ring-1");
+    expect(classes).not.toContain("ring-2");
+  });
+
+  it("explicit primary token on Text block — primary swatch is ring-2 (explicit, not effective)", () => {
+    render(<DesignTab s={{ textColorToken: "primary" }} set={vi.fn()} blockType="Text" />);
+    const textColorLabel = screen.getByText("Text color");
+    const textColorSection = textColorLabel.closest("div")!.parentElement!;
+    const primarySwatch = within(textColorSection as HTMLElement).getAllByRole("button", { name: "Primary" })[0];
+    const classes = primarySwatch.className.split(/\s+/);
+    expect(primarySwatch).toHaveAttribute("aria-pressed", "true");
+    expect(classes).toContain("ring-2");
+    expect(classes).not.toContain("opacity-70");
+  });
+});
+
+describe("DesignTab — button text color swatch effective state", () => {
+  it("Button with no buttonStyle → foreground swatch is aria-pressed in Button text color row", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{}} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const foregroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Text" });
+    expect(foregroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Button buttonStyle='solid' → background swatch is aria-pressed as effective text color", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{ buttonStyle: "solid" }} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const backgroundSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Background" });
+    expect(backgroundSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("Button soft with buttonColorToken='accent' → accent swatch is aria-pressed as effective text color", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, brandRadius: "subtle" }}>
+        <DesignTab s={{ buttonStyle: "soft", buttonColorToken: "accent" }} set={vi.fn()} blockType="Button" />
+      </BrandColorsContext.Provider>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    const btnTextLabel = screen.getByText("Button text color");
+    const btnTextSection = btnTextLabel.closest("div")!.parentElement!;
+    const accentSwatches = within(btnTextSection as HTMLElement).getAllByRole("button", { name: "Accent" });
+    expect(accentSwatches[0]).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("NumberInputRow (gap) — edit writes real value", () => {
+  it("typing a value into the gap input calls the style setter with the real typed number", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const gapInput = within(gapRow).getByRole("spinbutton");
+    fireEvent.change(gapInput, { target: { value: "24" } });
+    // style setter is called with { gap: 24 } — the real typed value, not the effective default (16)
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.gap).toBe(24);
+  });
+
+  it("resetting the gap input calls the style setter with gap: undefined (reverts to effective)", () => {
+    const set = vi.fn();
+    render(
+      <LayoutTabBody
+        s={{ gap: 24 }}
+        set={set}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    const gapLabel = screen.getByText("Gap");
+    const gapRow = gapLabel.closest("div")!;
+    const resetBtn = within(gapRow).getByRole("button", { name: /Reset Gap/i });
+    fireEvent.click(resetBtn);
+    // After reset, gap is cleared so the effective default (placeholder "16") re-appears
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.gap).toBeUndefined();
+  });
+});
+
+describe("B2a: Container padding — effective-default display (placeholder)", () => {
+  it("LayoutTabBody for Container shows placeholder '1.5' on padding Top input when _style has no padding", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{ minHeight: "auto" }}
+        setProp={() => {}}
+      />,
+    );
+    // Spacing drawer auto-opens; click Advanced to show per-side inputs
+    fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
+    // DimensionInput uses a <span> label, so we query all spinbuttons; Top is first.
+    const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    // First spinbutton is the Top padding number input
+    expect(spinbuttons[0].placeholder).toBe("1.5");
+  });
+});
+
+describe("Font select — edit writes real selected font key", () => {
+  it("selecting a font from the dropdown calls the setter with the real fontFamily key", () => {
+    const set = vi.fn();
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{}} set={set} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // Typography drawer is auto-open; font select shows effective heading font (playfair)
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    fireEvent.change(fontSelect, { target: { value: "cormorant" } });
+    // setter is called with the real selected key, not the effective default
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBe("cormorant");
+  });
+
+  it("resetting font clears fontFamily to undefined and re-shows effective font in dropdown", () => {
+    const set = vi.fn();
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "playfair", bodyFont: "inter" }}>
+        <DesignTab s={{ fontFamily: "cormorant" }} set={set} blockType="Heading" />
+      </BrandColorsContext.Provider>
+    );
+    // Typography drawer is auto-open; explicit cormorant is set
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(fontSelect.value).toBe("cormorant");
+    // Click the Reset Font button
+    fireEvent.click(screen.getByRole("button", { name: /Reset Font/i }));
+    // setter is called with fontFamily: undefined — effective heading font re-shows
+    expect(set).toHaveBeenCalled();
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBeUndefined();
   });
 });

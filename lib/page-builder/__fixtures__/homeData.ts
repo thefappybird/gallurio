@@ -12,9 +12,8 @@
 import type { PuckData } from "../types";
 import { galleryGridDefaultProps } from "../blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "../blocks/GalleryMasonryBlock";
-import { galleryCarouselDefaultProps } from "../blocks/GalleryCarouselBlock";
 import { featuredWorkDefaultProps } from "../blocks/FeaturedWorkBlock";
-import { HERO_PRESET, SERVICES_PRESET } from "../blocks/sectionPresets";
+import { HERO_PRESET, SERVICES_PRESET, GALLERY_LANDING_PRESET } from "../blocks/sectionPresets";
 
 export const FIXTURE_HEADING_TEXT = "FIXTURE_HEADING_TEXT";
 export const FIXTURE_HERO_HEADLINE = "Capturing moments that last forever";
@@ -66,11 +65,10 @@ export const homeDataFixture: PuckData = {
       },
     },
     {
-      type: "GalleryCarousel",
+      type: "GalleryLandingPreset",
       props: {
-        id: "fixture-carousel-1",
-        ...galleryCarouselDefaultProps,
-        collectionId: "",
+        id: "fixture-gallery-landing-1",
+        ...GALLERY_LANDING_PRESET,
       },
     },
     {

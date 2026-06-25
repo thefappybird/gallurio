@@ -142,9 +142,9 @@ describe("SpotlightGuide", () => {
     expect(screen.queryByRole("button", { name: /^Back$/i })).toBeNull();
   });
 
-  it("renders Skip (not Back) on the first step", () => {
+  it("renders 'Skip Guide' button on the first step", () => {
     renderGuide({ stepIndex: 0 });
-    expect(screen.getByRole("button", { name: /^Skip$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Skip Guide$/i })).toBeInTheDocument();
   });
 
   // ── Last step: Finish ────────────────────────────────────────────────────────
@@ -155,36 +155,75 @@ describe("SpotlightGuide", () => {
     expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
   });
 
-  it("Finish calls onFinish(false) when clicked without dont-show-again", () => {
+  it("Finish calls onFinish(true) — completing the tour persists dismissal", () => {
     const onFinish = vi.fn();
     renderGuide({ stepIndex: STEPS.length - 1, onFinish });
     fireEvent.click(screen.getByRole("button", { name: /^Finish$/i }));
-    expect(onFinish).toHaveBeenCalledWith(false);
+    expect(onFinish).toHaveBeenCalledWith(true);
+  });
+
+  // ── Overlay click-blocking (gated robustness) ────────────────────────────────
+  // A gated step asks the user to act on the real UI, so the dim must be
+  // visual-only (no click-blocking layer) — otherwise an imperfect anchor rect
+  // lets the blocker cover the real control and the gate can never be satisfied.
+
+  it("passive anchor step renders click-blocking rects around the cutout", () => {
+    const removeAnchor = injectAnchor("my-anchor");
+    renderGuide({ stepIndex: 1 }); // anchor-step (non-gated)
+    expect(document.querySelectorAll("rect.pointer-events-auto").length).toBeGreaterThan(0);
+    removeAnchor();
+  });
+
+  it("gated step renders NO click-blocking rects so the target stays clickable", () => {
+    const removeAnchor = injectAnchor("gated-anchor");
+    renderGuide({ stepIndex: 2 }); // gated-step
+    expect(document.querySelectorAll("rect.pointer-events-auto").length).toBe(0);
+    removeAnchor();
   });
 
   // ── Skip ─────────────────────────────────────────────────────────────────────
 
-  it("Skip (first step) calls onSkip(false)", () => {
+  it("clicking 'Skip Guide' opens the confirm dialog and does NOT call onSkip", () => {
     const onSkip = vi.fn();
     renderGuide({ stepIndex: 0, onSkip });
-    fireEvent.click(screen.getByRole("button", { name: /^Skip$/i }));
-    expect(onSkip).toHaveBeenCalledWith(false);
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
+    // Confirm dialog should now be visible
+    expect(screen.getByRole("dialog", { name: /Skip the guide\?/i })).toBeInTheDocument();
+    expect(onSkip).not.toHaveBeenCalled();
   });
 
-  // ── Don't show again ─────────────────────────────────────────────────────────
-
-  it("'Don't show again' calls onSkip(true) on a non-last step", () => {
+  it("confirm modal 'Don't show again' calls onSkip(true)", () => {
     const onSkip = vi.fn();
-    renderGuide({ stepIndex: 1, onSkip });
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
     fireEvent.click(screen.getByRole("button", { name: /Don't show again/i }));
     expect(onSkip).toHaveBeenCalledWith(true);
   });
 
-  it("'Don't show again' calls onFinish(true) on the last step", () => {
-    const onFinish = vi.fn();
-    renderGuide({ stepIndex: STEPS.length - 1, onFinish });
-    fireEvent.click(screen.getByRole("button", { name: /Don't show again/i }));
-    expect(onFinish).toHaveBeenCalledWith(true);
+  it("confirm modal 'Skip Guide' button calls onSkip(false)", () => {
+    const onSkip = vi.fn();
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
+    // The modal has its own "Skip Guide" button; get all and use the last one
+    const skipBtns = screen.getAllByRole("button", { name: /^Skip Guide$/i });
+    fireEvent.click(skipBtns[skipBtns.length - 1]);
+    expect(onSkip).toHaveBeenCalledWith(false);
+  });
+
+  it("confirm modal 'Back' closes the dialog without calling onSkip", () => {
+    const onSkip = vi.fn();
+    renderGuide({ stepIndex: 0, onSkip });
+    fireEvent.click(screen.getByRole("button", { name: /^Skip Guide$/i }));
+    expect(screen.getByRole("dialog", { name: /Skip the guide\?/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Back$/i }));
+    expect(screen.queryByRole("dialog", { name: /Skip the guide\?/i })).toBeNull();
+    expect(onSkip).not.toHaveBeenCalled();
+  });
+
+  it("footer never renders a 'Don't show again' button (it lives only in the confirm modal)", () => {
+    // Render on a non-last step — "Don't show again" should be absent from footer
+    renderGuide({ stepIndex: 1 });
+    expect(screen.queryByRole("button", { name: /Don't show again/i })).toBeNull();
   });
 
   // ── Esc closes ───────────────────────────────────────────────────────────────
@@ -198,17 +237,16 @@ describe("SpotlightGuide", () => {
 
   // ── Gated step ───────────────────────────────────────────────────────────────
 
-  it("renders 'Skip this step' and 'Try it…' on a gated step", () => {
+  it("shows the 'Try it to continue' hint and never renders a 'Skip this step' button on a gated step (1a fix)", () => {
     renderGuide({ stepIndex: 2 }); // STEPS[2] is gated
-    expect(screen.getByRole("button", { name: /Skip this step/i })).toBeInTheDocument();
-    expect(screen.getByText(/Try it/i)).toBeInTheDocument();
+    // Updated copy: "Try it to continue to the next step"
+    expect(screen.getByText(/Try it to continue to the next step/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
   });
 
-  it("'Skip this step' on a gated step calls onStepChange with next index", () => {
-    const onStepChange = vi.fn();
-    renderGuide({ stepIndex: 2, onStepChange });
-    fireEvent.click(screen.getByRole("button", { name: /Skip this step/i }));
-    expect(onStepChange).toHaveBeenCalledWith(3);
+  it("shows Next on a gated step once its gate is already satisfied (e.g. stepped Back onto a completed step)", () => {
+    renderGuide({ stepIndex: 2, gateSatisfied: true });
+    expect(screen.getByRole("button", { name: /^Next$/i })).toBeInTheDocument();
   });
 
   it("auto-advances when gateSatisfied flips to true on a gated step", () => {
@@ -236,6 +274,35 @@ describe("SpotlightGuide", () => {
     });
 
     expect(onStepChange).toHaveBeenCalledWith(3);
+  });
+
+  it("does NOT auto-advance when stepping Back onto an already-satisfied gated step (Back must work)", () => {
+    // Real flow: the gated step opened a panel; the user advances, then clicks
+    // Back. The gate is still satisfied, but stepping back must NOT bounce the
+    // user forward again — auto-advance only fires when the gate flips while the
+    // user stays on the same step, not when the step itself changes.
+    const onStepChange = vi.fn();
+    const { rerender } = renderGuide({
+      stepIndex: 3, // last-step (non-gated); gate for step 2 is satisfied behind the scenes
+      gateSatisfied: false,
+      onStepChange,
+    });
+
+    act(() => {
+      rerender(
+        <SpotlightGuide
+          open={true}
+          steps={STEPS}
+          stepIndex={2} // stepped Back onto the gated step
+          onStepChange={onStepChange}
+          gateSatisfied={true} // gate still satisfied (panel still open)
+          onSkip={vi.fn()}
+          onFinish={vi.fn()}
+        />
+      );
+    });
+
+    expect(onStepChange).not.toHaveBeenCalled();
   });
 
   it("does NOT auto-advance if gateSatisfied is already true on mount (no prev-false transition)", () => {
@@ -288,5 +355,95 @@ describe("SpotlightGuide", () => {
     );
     expect(screen.getByText("Anchor step")).toBeInTheDocument();
     expect(screen.queryByText("Welcome to the tour")).toBeNull();
+  });
+
+  // ── Skip Guide (persistent) ──────────────────────────────────────────────────
+
+  it("renders 'Skip Guide' button on a non-first step", () => {
+    renderGuide({ stepIndex: 2 });
+    const btn = screen.getByRole("button", { name: /^Skip Guide$/i });
+    expect(btn).toBeInTheDocument();
+  });
+
+  // ── Footer layout: gated step ─────────────────────────────────────────────────
+
+  it("unsatisfied gated non-first step shows Back but no Next", () => {
+    // STEPS[2] is gated; stepIndex=2 → not first, not last, gated, unsatisfied
+    renderGuide({ stepIndex: 2, gateSatisfied: false });
+
+    expect(screen.getByRole("button", { name: /^Back$/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Skip this step/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Next$/i })).toBeNull();
+  });
+
+  // ── Secondary anchor: two cutout holes ───────────────────────────────────────
+
+  it("renders two black mask rects when a step has both anchorId and secondaryAnchorId with non-zero rects", () => {
+    const removeA = injectAnchor("a", { top: 100, left: 50, width: 80, height: 60, bottom: 160, right: 130 });
+    const removeB = injectAnchor("b", { top: 300, left: 400, width: 200, height: 100, bottom: 400, right: 600 });
+
+    const twoAnchorStep: SpotlightStep = {
+      id: "two-anchor",
+      anchorId: "a",
+      secondaryAnchorId: "b",
+      title: "Two anchors",
+      body: "Primary and secondary highlighted.",
+      passthrough: true,
+    };
+
+    render(
+      <SpotlightGuide
+        open={true}
+        steps={[twoAnchorStep]}
+        stepIndex={0}
+        onStepChange={vi.fn()}
+        gateSatisfied={false}
+        onSkip={vi.fn()}
+        onFinish={vi.fn()}
+      />
+    );
+
+    expect(document.querySelectorAll('mask rect[fill="black"]').length).toBe(2);
+
+    removeA();
+    removeB();
+  });
+
+  // ── Step-change loading gate ──────────────────────────────────────────────────
+  // Replaces the cross-fade: when the step changes to one that highlights an
+  // anchor that isn't measured yet, the card holds in place showing a loading
+  // indicator (instead of jumping to centre), then reveals once the anchor
+  // resolves.
+
+  it("shows a loading indicator and hides the step body when moving to a step whose anchor is not yet in the DOM", () => {
+    const { rerender } = renderGuide({ stepIndex: 0 });
+
+    act(() => {
+      rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
+    });
+
+    // anchor "my-anchor" was never injected → the gate stays in the loading state
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(
+      screen.queryByText("This step has an anchor element.")
+    ).toBeNull();
+  });
+
+  it("reveals the new step immediately (no loading) when its anchor is already in the DOM at step change", () => {
+    const removeAnchor = injectAnchor("my-anchor");
+    const { rerender } = renderGuide({ stepIndex: 0 });
+
+    act(() => {
+      rerender(<SpotlightGuide {...defaultProps} stepIndex={1} />);
+    });
+
+    // Synchronous re-measure finds the anchor → the gate clears in the same
+    // render, so no spinner flashes and the body is shown straight away.
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(
+      screen.getByText("This step has an anchor element.")
+    ).toBeInTheDocument();
+
+    removeAnchor();
   });
 });

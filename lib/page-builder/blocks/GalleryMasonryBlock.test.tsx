@@ -29,10 +29,16 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(container.querySelectorAll("img").length).toBe(4);
   });
 
-  it("sets responsive masonryColsVar from the columns prop", () => {
-    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2), columns: 4 }));
+  it("sets responsive masonryColsVar from _style.galleryColumns", () => {
+    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2), _style: { galleryColumns: 4 } }));
     const col = container.querySelector(".pf-masonry") as HTMLElement;
     expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 4)");
+  });
+
+  it("defaults to 3 columns when _style.galleryColumns is unset", () => {
+    const { container } = render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
+    const col = container.querySelector(".pf-masonry") as HTMLElement;
+    expect(col.style.columnCount).toBe("var(--pf-masonry-cols, 3)");
   });
 
   it("renders the empty state (default English label) when images is empty", () => {
@@ -57,5 +63,17 @@ describe("GalleryMasonryBlock — isomorphic render", () => {
     expect(galleryMasonryDefaultProps).not.toHaveProperty("collectionId");
     expect(galleryMasonryDefaultProps).not.toHaveProperty("maxItems");
     expect(puckConfig.components.GalleryMasonry.defaultProps).toHaveProperty("images");
+  });
+});
+
+describe("GalleryMasonryBlock — banner/container props", () => {
+  it("renders a background image when backgroundImages has one entry", () => {
+    const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];
+    const { container } = render(
+      GalleryMasonryBlock({ ...base, images: imgs(1), backgroundImages: bgImages })
+    );
+    const bgImg = container.querySelector("img[aria-hidden='true']");
+    expect(bgImg).toBeTruthy();
+    expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
   });
 });

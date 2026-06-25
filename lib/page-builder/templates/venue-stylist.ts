@@ -1,11 +1,12 @@
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import type { PortfolioTemplate } from "./types";
 import {
   heroPreset,
   aboutPreset,
   servicesPreset,
   ctaPreset,
-  galleryCarousel,
+  galleryGrid,
+  galleryLandingPreset,
   zone,
 } from "./_blocks";
 
@@ -13,27 +14,25 @@ export const venueStylistTemplate: PortfolioTemplate = {
   id: "venue-stylist",
   label: "Venue & Stylist",
   businessType: "stylist",
-  description: "Lush, romantic layout that lets spaces and styling lead.",
+  description: "Lush, editorial layout that lets spaces and styling lead.",
   previewImage: "/template-previews/venue-stylist.svg",
-  defaultBrandKit: {
-    ...DEFAULT_BRAND_KIT,
-    themePreset: "romantic",
-    fontPair: "cormorant-montserrat",
-    accentColor: "#9c6b6b",
-  },
+  defaultBrandKit: THEME_PRESET_DEFINITIONS.luxury.brandKit,
   defaultContact: {
     title: "Enquire about styling",
     description: "Share your date and palette — we'll craft a styling proposal for your space.",
-    buttonStyle: "soft",
+    buttonStyle: "outline",
     buttonColor: "accent",
   },
   seedData: () => ({
     home: zone([
       heroPreset("vs-home-hero"),
-      aboutPreset("vs-home-about"),
       servicesPreset("vs-home-services"),
+      aboutPreset("vs-home-about"),
       ctaPreset("vs-home-cta"),
     ]),
-    gallery: zone([galleryCarousel("vs-gallery-carousel", { aspect: "landscape" })]),
+    gallery: zone([
+      galleryLandingPreset("vs-gallery-landing"),
+      galleryGrid("vs-gallery-grid", { columns: 3 }),
+    ]),
   }),
 };

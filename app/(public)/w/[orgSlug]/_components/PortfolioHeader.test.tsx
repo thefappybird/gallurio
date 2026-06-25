@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
 
@@ -146,6 +146,20 @@ describe("PortfolioHeader", () => {
     expect(screen.queryByRole("link", { name: "Luna Studio" })).not.toBeInTheDocument();
   });
 
+  it("preview mode: uses homeHref prop for logo and Home nav instead of /w/slug", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        homeHref="/en/portfolio-preview"
+      />
+    );
+    const logoLink = screen.getByRole("link", { name: "Luna Studio" });
+    expect(logoLink).toHaveAttribute("href", "/en/portfolio-preview");
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    expect(homeLink).toHaveAttribute("href", "/en/portfolio-preview");
+  });
+
   it("brand link has minWidth:0 and overflow:hidden to prevent hamburger push-off at narrow viewports", () => {
     render(<PortfolioHeader slug="luna-studio" labels={labels} />);
     const brandLink = screen.getByRole("link", { name: "Luna Studio" });
@@ -184,5 +198,24 @@ describe("PortfolioHeader", () => {
     expect(toggle.style.borderRadius).toBe("0.5rem");
     // no border — the original had a visible border; the new toggle uses border:none
     expect(toggle.style.borderStyle).not.toBe("solid");
+  });
+
+  it("preview mode: uses galleryHref prop for Gallery nav instead of /w/slug/gallery", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        galleryHref="/en/portfolio-preview?zone=gallery"
+      />
+    );
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks.length).toBeGreaterThan(0);
+    expect(galleryLinks[0]).toHaveAttribute("href", "/en/portfolio-preview?zone=gallery");
+  });
+
+  it("preview mode: gallery falls back to /w/slug/gallery when galleryHref is omitted", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks[0]).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
 });

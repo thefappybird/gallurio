@@ -748,7 +748,21 @@
         "save": "Save changes",
         "saving": "Saving…",
         "savedToast": "Public page settings updated.",
-        "visibilityUpdatedToast": "Visibility updated."
+        "visibilityUpdatedToast": "Visibility updated.",
+        "siteIconSection": "Site icon",
+        "siteIconHint": "Shown as the browser tab icon for your public portfolio pages. Falls back to your header logo if not set.",
+        "siteIconLabel": "Upload site icon",
+        "siteIconUpload": "Choose image",
+        "siteIconUploading": "Uploading…",
+        "siteIconRequirements": "PNG, JPEG, WebP or AVIF · max 1 MB · up to 512 × 512 px",
+        "siteIconRemove": "Remove",
+        "siteIconErrors": {
+          "type": "Only PNG, JPEG, WebP or AVIF files are accepted.",
+          "size": "File must be 1 MB or smaller.",
+          "dimensions": "Image must be 512 × 512 px or smaller.",
+          "image": "Could not read the image. Please try another file.",
+          "upload": "Upload failed. Please try again."
+        }
       }
     },
     "teams": {

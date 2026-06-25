@@ -21,6 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { publicPage, name } = workspace;
   const title = `${name} — Gallery`;
   const description = publicPage?.seoDescription || undefined;
+  const iconUrl = workspace.publicPage?.siteIcon?.url || workspace.publicPage?.header?.logoUrl;
 
   return {
     title,
@@ -32,6 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: {
       canonical: `/w/${workspace.slug}/gallery`,
     },
+    icons: iconUrl ? { icon: iconUrl } : undefined,
   };
 }
 

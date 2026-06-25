@@ -748,7 +748,21 @@
         "save": "I-save ang mga pagbabago",
         "saving": "Sine-save…",
         "savedToast": "Na-update ang mga setting ng pampublikong pahina.",
-        "visibilityUpdatedToast": "Na-update ang visibility."
+        "visibilityUpdatedToast": "Na-update ang visibility.",
+        "siteIconSection": "Icon ng site",
+        "siteIconHint": "Ipinakita bilang icon ng browser tab para sa iyong mga pampublikong pahina ng portfolio. Gagamitin ang logo ng header kung walang naitalaga.",
+        "siteIconLabel": "Mag-upload ng icon ng site",
+        "siteIconUpload": "Pumili ng larawan",
+        "siteIconUploading": "Ina-upload…",
+        "siteIconRequirements": "PNG, JPEG, WebP o AVIF · max 1 MB · hanggang 512 × 512 px",
+        "siteIconRemove": "Alisin",
+        "siteIconErrors": {
+          "type": "Tinatanggap lamang ang PNG, JPEG, WebP o AVIF na mga file.",
+          "size": "Ang file ay dapat 1 MB o mas maliit.",
+          "dimensions": "Ang larawan ay dapat 512 × 512 px o mas maliit.",
+          "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
+          "upload": "Nabigo ang pag-upload. Subukan muli."
+        }
       }
     },
     "teams": {

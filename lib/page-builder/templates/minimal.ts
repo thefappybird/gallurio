@@ -1,4 +1,4 @@
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { THEME_PRESET_DEFINITIONS } from "@/lib/page-builder/brandKitPicker/themePresetDefinitions";
 import type { PortfolioTemplate } from "./types";
 import { heroPreset, aboutPreset, ctaPreset, galleryGrid, zone } from "./_blocks";
 
@@ -8,11 +8,7 @@ export const minimalTemplate: PortfolioTemplate = {
   businessType: "other",
   description: "A clean, no-frills starting point. Add blocks as you go.",
   previewImage: "/template-previews/minimal.svg",
-  defaultBrandKit: {
-    ...DEFAULT_BRAND_KIT,
-    themePreset: "minimal",
-    fontPair: "merriweather-only",
-  },
+  defaultBrandKit: THEME_PRESET_DEFINITIONS.minimal.brandKit,
   defaultContact: {
     title: "Get in touch",
     description: "Send a message and we'll get back to you soon.",

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
+import { BlockIdContext } from "./drawerOpenStore";
 
 describe("EditorDrawerSection", () => {
   it("(a) renders title and children", () => {
@@ -34,9 +35,83 @@ describe("EditorDrawerSection", () => {
     expect(btn).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("effect controls")).not.toBeInTheDocument();
   });
+
+  it("(f) within a block context, an opened section stays open across a remount", () => {
+    const Section = () => (
+      <BlockIdContext.Provider value="blk-persist">
+        <EditorDrawerSection title="Layout">
+          <span>layout controls</span>
+        </EditorDrawerSection>
+      </BlockIdContext.Provider>
+    );
+
+    const { unmount } = render(<Section />);
+    const btn = screen.getByRole("button");
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+
+    // User expands the Layout section.
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute("aria-expanded", "true");
+
+    // Puck remounts the field (simulated by unmount + fresh render). The section
+    // must come back open because the store persisted it for this block id.
+    unmount();
+    render(<Section />);
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("(g) without a block context, open state is local-only (does not persist across remount)", () => {
+    const Section = () => (
+      <EditorDrawerSection title="Layout">
+        <span>layout controls</span>
+      </EditorDrawerSection>
+    );
+
+    const { unmount } = render(<Section />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "true");
+
+    unmount();
+    render(<Section />);
+    // No block context → falls back to defaultOpen (false) on remount.
+    expect(screen.getByRole("button")).toHaveAttribute("aria-expanded", "false");
+  });
 });
 
 describe("EditorDrawerGroup", () => {
+  it("(e) single-section group renders flat — no accordion button, children always visible", () => {
+    render(
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="Only Section">
+          <span>flat content</span>
+        </EditorDrawerSection>
+      </EditorDrawerGroup>,
+    );
+    // No accordion toggle button
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    // Children always visible
+    expect(screen.getByText("flat content")).toBeInTheDocument();
+  });
+
+  it("(d) multi-section group — first section expanded by default, second collapsed", () => {
+    render(
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="First">
+          <span>first content</span>
+        </EditorDrawerSection>
+        <EditorDrawerSection title="Second">
+          <span>second content</span>
+        </EditorDrawerSection>
+      </EditorDrawerGroup>,
+    );
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("first content")).toBeInTheDocument();
+    expect(buttons[1]).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("second content")).not.toBeInTheDocument();
+  });
+
   it("(c) two sections render exactly one divider between them (flush, no gap)", () => {
     const { container } = render(
       <EditorDrawerGroup>

@@ -18,7 +18,7 @@ export const PRESET_BLOCK_KEYS = [
   "GalleryGridPreset",
   "GalleryMasonryPreset",
   "FeaturedWorkPreset",
-  "GalleryCarousel",
+  "GalleryLandingPreset",
 ] as const;
 
 // Manual blocks: barebones primitives + the styleable Container/Columns

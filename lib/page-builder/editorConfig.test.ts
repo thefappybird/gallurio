@@ -4,7 +4,6 @@ import { puckConfig } from "./config";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import { galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
-import { galleryCarouselDefaultProps } from "./blocks/GalleryCarouselBlock";
 import { featuredWorkDefaultProps } from "./blocks/FeaturedWorkBlock";
 import { videoDefaultProps } from "./blocks/VideoBlock";
 import { contactDetailsDefaultProps } from "./blocks/ContactDetailsBlock";
@@ -39,9 +38,9 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     GalleryGridPreset: SECTION_PRESETS.GalleryGridPreset.defaultProps,
     GalleryMasonryPreset: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
     FeaturedWorkPreset: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
+    GalleryLandingPreset: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
-    GalleryCarousel: galleryCarouselDefaultProps,
     FeaturedWork: featuredWorkDefaultProps,
     Video: videoDefaultProps,
     ContactDetails: contactDetailsDefaultProps,
@@ -73,14 +72,6 @@ describe("editorPuckConfig parity with production puckConfig", () => {
       expect(editorFields).toEqual(prodFields);
     });
   }
-
-  it("removes footer from GalleryCarousel defaultProps and field keys", () => {
-    expect(galleryCarouselDefaultProps).not.toHaveProperty("footer");
-    const editorFields = Object.keys(editorPuckConfig.components.GalleryCarousel.fields ?? {});
-    const prodFields = Object.keys(puckConfig.components.GalleryCarousel.fields ?? {});
-    expect(editorFields).not.toContain("footer");
-    expect(prodFields).not.toContain("footer");
-  });
 
   it("removes gallery copy inputs from GalleryGrid field keys", () => {
     const editorFields = Object.keys(editorPuckConfig.components.GalleryGrid.fields ?? {});
@@ -127,6 +118,51 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     const heroFields = Object.keys(editorPuckConfig.components.HeroPreset.fields ?? {});
     expect(heroFields).toEqual(expect.arrayContaining(["bgAnimation", "bgSpeed"]));
   });
+
+  it("registers GalleryLandingPreset in editorPuckConfig", () => {
+    expect(editorPuckConfig.components).toHaveProperty("GalleryLandingPreset");
+  });
+});
+
+describe("GalleryLandingPreset carousel hint", () => {
+  it("GalleryLandingPreset carries a backgroundImages carousel hint accessible via component metadata", () => {
+    const cfg = editorPuckConfig.components.GalleryLandingPreset as Record<string, unknown>;
+    const meta = cfg?.metadata as Record<string, unknown> | undefined;
+    // metadata.backgroundImagesHint must mention multiple images and carousel or slideshow
+    // so editor tooling (e.g. a help popover) can surface the hint without polluting
+    // Puck field keys (which must stay in sync with the production config).
+    expect(meta?.backgroundImagesHint).toBeDefined();
+    const hint = String(meta?.backgroundImagesHint ?? "").toLowerCase();
+    expect(hint).toMatch(/multiple/i);
+    expect(hint).toMatch(/carousel|slideshow/i);
+  });
+});
+
+describe("preset section blocks are inline so grid placement applies", () => {
+  // Preset sections render via ContainerBlock, whose root carries the resolved
+  // colSpan/rowSpan (grid-column/grid-row: span N). For that to take effect when
+  // the section is a child of a Columns grid in the EDITOR canvas, Puck must treat
+  // the block as `inline` — otherwise Puck wraps it in its own drag <div> which
+  // becomes the grid child, and the span lands on the inner section (ignored).
+  // Plain Container and Columns are already inline; the presets must match.
+  const PRESET_KEYS = [
+    "HeroPreset",
+    "AboutPreset",
+    "ServicesPreset",
+    "CtaPreset",
+    "ContactPreset",
+    "GalleryGridPreset",
+    "GalleryMasonryPreset",
+    "FeaturedWorkPreset",
+    "GalleryLandingPreset",
+  ] as const;
+
+  for (const key of PRESET_KEYS) {
+    it(`${key} is inline: true`, () => {
+      const cfg = (editorPuckConfig.components as Record<string, { inline?: boolean }>)[key];
+      expect(cfg?.inline).toBe(true);
+    });
+  }
 });
 
 describe("block label renames", () => {
@@ -144,7 +180,7 @@ describe("block label renames", () => {
       expect(label(cfg as never, "GalleryGrid")).toBe("Photo Grid");
       expect(label(cfg as never, "GalleryMasonry")).toBe("Masonry");
       expect(label(cfg as never, "FeaturedWork")).toBe("Highlights");
-      expect(label(cfg as never, "GalleryCarousel")).toBe("Gallery Carousel");
+      expect(label(cfg as never, "GalleryLandingPreset")).toBe("Gallery landing");
     }
   });
 });

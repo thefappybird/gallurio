@@ -142,18 +142,9 @@ We are explicitly **not** adding `Portfolio`, `PortfolioPage`, `PortfolioVersion
 
 ## Phase plan (10 phases, each independently shippable)
 
-> Each phase has a dedicated sub-plan file under `docs/portfolio-maker/phases/`:
-> - Phase 0: `phases/phase-0-blueprint-updates.md`
-> - Phase 1: `phases/phase-1-puck-config.md`
-> - Phase 2: `phases/phase-2-public-home-renderer.md`
-> - Phase 3: `phases/phase-3-first-six-blocks.md`
-> - Phase 4: `phases/phase-4-gallery-page-and-blocks.md`
-> - Phase 5: `phases/phase-5-contact-modal-and-form.md`
-> - Phase 6: `phases/phase-6-inquiry-api-and-draft-booking.md`
-> - Phase 7: `phases/phase-7-lead-inbox.md`
-> - Phase 8: `phases/phase-8-brand-kit-templates-wizard.md`
-> - Phase 9: `phases/phase-9-editor-preview-publish.md`
-> - Phase 10: `phases/phase-10-seo-sitemap-analytics.md`
+> Phases 0–10 have all shipped. Their per-phase sub-plan files (`phases/phase-0…phase-10`)
+> and the phase review docs were removed once complete; they remain recoverable in git
+> history. The summaries below are kept for context.
 
 ### Phase 0 — Blueprint & CLAUDE.md updates
 Update `CLAUDE.md` and `SaaS-Blueprint.md` per the section above. No code changes.

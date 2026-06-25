@@ -14,6 +14,8 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { LocationPicker } from "@/components/ui/location-picker";
 import {
   buildButtonStyle,
+  buildButtonVisualStyle,
+  CRM_ERROR_COLOR,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
@@ -211,7 +213,7 @@ export function ContactForm({
 
   const errorStyle: CSSProperties = {
     fontSize: "0.75rem",
-    color: submitAppearance.errorColor ?? "var(--pf-color-accent)",
+    color: submitAppearance.errorColor ?? CRM_ERROR_COLOR,
     marginTop: "0.25rem",
   };
   const fieldStyle = createFieldStyle();
@@ -314,9 +316,15 @@ export function ContactForm({
         }
         .pf-contact-form .pf-contact-phone input,
         .pf-contact-form .pf-contact-location input,
-        .pf-contact-form .pf-contact-location button,
+        .pf-contact-form .pf-contact-location button:not(li button),
         .pf-contact-form .pf-contact-location [data-slot="input"] {
           color: inherit;
+        }
+        .pf-contact-form .pf-contact-location [data-slot="input"] {
+          background-color: var(--pf-color-bg);
+        }
+        .pf-contact-form .pf-contact-location button:not(li button) {
+          background-color: var(--pf-color-bg);
         }
         .pf-contact-form .pf-contact-location .text-muted-foreground,
         .pf-contact-form .pf-contact-location svg,
@@ -529,7 +537,7 @@ export function ContactForm({
                     lng: field.value.lng ?? null,
                   }}
                   compact={compactLocationPicker}
-                  applyButtonStyle={buildButtonStyle(submitAppearance, false)}
+                  applyButtonStyle={buildButtonVisualStyle(submitAppearance, false)}
                   ariaDescribedby={errors.location?.address ? "cf-location-error" : undefined}
                   onChange={(value) =>
                     field.onChange({

@@ -31,6 +31,11 @@ vi.mock("react-colorful", () => ({
 const PRESETS = ["#0d7377", "#7c5cff"] as const;
 
 describe("ColorPicker", () => {
+  it("has data-color-picker attribute on the root element (used by popover wrappers to prevent dismiss on drag)", () => {
+    const { container } = render(<ColorPicker value="#0d7377" onChange={() => {}} presets={PRESETS} />);
+    expect(container.firstChild).toHaveAttribute("data-color-picker");
+  });
+
   it("renders preset swatches and marks the current value as pressed", () => {
     render(<ColorPicker value="#0d7377" onChange={() => {}} presets={PRESETS} />);
     const selected = screen.getByRole("button", { name: "#0d7377" });

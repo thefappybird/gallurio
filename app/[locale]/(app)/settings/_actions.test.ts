@@ -338,6 +338,31 @@ describe("updatePublicPageSettingsAction", () => {
 
     expect(result.error).toBeTruthy();
   });
+
+  it("persists siteIconUrl and siteIconAssetId", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "https://cdn.example.com/icon.png",
+      siteIconAssetId: "abc123",
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.siteIcon?.url).toBe("https://cdn.example.com/icon.png");
+    expect(ws?.publicPage?.siteIcon?.assetId).toBe("abc123");
+  });
+
+  it("rejects invalid siteIconUrl (non-URL non-empty string)", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      siteIconUrl: "not-a-url",
+    });
+
+    expect(result.error).toBeTruthy();
+  });
 });
 
 // ---- togglePublicPagePublishedAction ----------------------------------------

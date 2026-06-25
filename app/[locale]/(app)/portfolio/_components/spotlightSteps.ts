@@ -1,82 +1,57 @@
 import type { SpotlightStep } from "./SpotlightGuide";
 
 /**
- * 14-stop spotlight tour steps for the portfolio editor.
+ * Spotlight tour steps for the portfolio editor.
  * Editor chrome is English-only (RELEASE-CHECKLIST §4f).
  *
- * Gate ids used by EditorShell to compute `gateSatisfied`:
+ * Gate ids used by EditorShell to compute `gateSatisfied` (actionable steps —
+ * Next is hidden until the action is performed):
  *   "drag-block"   — a block was dropped (content count increased)
- *   "select-block" — a block is selected (selectedItem non-null)
- *   "open-header"  — header panel is open (headerOpen === true)
- *   "open-contact" — contact panel is open (contactOpen === true)
- *   (style-tab steps are PASSIVE — no gate; tab changes happen inside the panel)
+ *   "header-tab"   — Navigation panel is open (headerOpen === true)
+ *   "contact-tab"  — contact panel is open (contactOpen === true)
+ * All other steps are passive (advance with Next).
+ *
+ * Panels (blocks list, properties) are open by default, so there is no
+ * "open the panel" step. Dropping a block auto-selects it and reveals its
+ * properties, so there is no separate "select a block" step.
+ *
+ * Steps with `passthrough: true` render the dim for visual context but make
+ * all overlay layers pointer-events:none so the user can drag freely across
+ * the full viewport (needed for drag-block: grab from panel, drop on canvas).
  */
 export const SPOTLIGHT_STEPS: SpotlightStep[] = [
-  // 0 — Welcome (centred, no anchor)
+  // Welcome (centred, no anchor)
   {
     id: "welcome",
     title: "Welcome to your portfolio editor",
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
 
-  // 1 — Blocks panel
-  {
-    id: "blocks-panel-toggle",
-    anchorId: "blocks-panel",
-    title: "Open the blocks panel",
-    body: "Click this to open the panel of blocks you can drag onto your page.",
-    placement: "bottom",
-    gated: true,
-  },
-
-  // 2 — Drag a block
+  // Blocks panel — gated: user must drag a block to the canvas to advance.
+  // passthrough lets pointer events reach the real editor so the drag works.
+  // secondaryAnchorId highlights the canvas as the drop target alongside the panel.
   {
     id: "drag-block",
-    anchorId: "canvas",
+    anchorId: "blocks-panel",
+    secondaryAnchorId: "canvas",
     title: "Drag a block onto your page",
-    body: "Try it: drag any block from the left panel and drop it onto the canvas here.",
+    body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
     placement: "right",
     gated: true,
+    passthrough: true,
   },
 
-  // 3 — Select a block
-  {
-    id: "select-block",
-    anchorId: "canvas",
-    title: "Click a block to select it",
-    body: "Now click the block you just added. Selecting a block reveals its properties.",
-    placement: "right",
-    gated: true,
-  },
-
-  // 4 — Properties panel
+  // Properties panel — anchor targets the full right sidebar column
+  // (marked by RightPanelTourMarker inside the fields override in EditorShell).
   {
     id: "properties-panel",
-    anchorId: "properties-panel",
-    title: "Block properties appear here",
-    body: "When a block is selected, its settings show up in this panel on the right.",
+    anchorId: "properties-panel-full",
+    title: "Block properties live here",
+    body: "Dropping a block selects it automatically — its settings appear in this panel on the right.",
     placement: "left",
   },
 
-  // 4.1 — Layout tab (passive — tab changes happen inside the panel)
-  {
-    id: "style-tab-layout",
-    anchorId: "style-tab-layout",
-    title: "Layout: size, spacing, and position",
-    body: "The Layout tab controls gap, min-height, alignment, and grid placement.",
-    placement: "bottom",
-  },
-
-  // 4.2 — Design tab (passive)
-  {
-    id: "style-tab-design",
-    anchorId: "style-tab-design",
-    title: "Design: colors, borders, and corners",
-    body: "The Design tab controls typography, background color, borders, shadows, and animations.",
-    placement: "bottom",
-  },
-
-  // 4.3 — Content tab (passive)
+  // Content tab (passive — tab changes happen inside the panel)
   {
     id: "style-tab-content",
     anchorId: "style-tab-content",
@@ -85,63 +60,99 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 5 — Section tabs
+  // Design tab (passive)
+  {
+    id: "style-tab-design",
+    anchorId: "style-tab-design",
+    title: "Design: colors, borders, and corners",
+    body: "The Design tab controls typography, background color, borders, shadows, and animations.",
+    placement: "bottom",
+  },
+
+  // Layout tab (passive)
+  {
+    id: "style-tab-layout",
+    anchorId: "style-tab-layout",
+    title: "Layout: size, spacing, and position",
+    body: "The Layout tab controls gap, min-height, alignment, and grid placement.",
+    placement: "bottom",
+  },
+
+  // Section tabs — spans all five page tabs (Home → Contact Form), non-gated.
   {
     id: "section-tabs",
     anchorId: "section-tabs",
     title: "Switch between pages",
-    body: "Use these tabs to switch between your Home page and your Gallery page.",
+    body: "Switch between the different parts of your portfolio website.",
     placement: "bottom",
   },
 
-  // 6 — Header tab (gated: open header panel)
+  // Navigation tab (actionable: open the Navigation panel)
   {
     id: "header-tab",
     anchorId: "header-tab",
-    title: "Customize your header",
-    body: "Try it: click Header to open the header settings — logo, navigation links, and styling.",
+    title: "Open Navigation",
+    body: "Click Navigation to set up your site's header — brand, logo, menu links, and styling.",
     placement: "bottom",
     gated: true,
   },
 
-  // 6.1 — Logo uploader
+  // Navigation · Setup tab
+  {
+    id: "header-setup-tab",
+    anchorId: "header-setup-tab",
+    title: "Navigation · Setup",
+    body: "The Setup tab is where you set your brand text, navbar size, logo, and menu links.",
+    placement: "bottom",
+  },
+
+  // Logo uploader (passive detail)
   {
     id: "logo-uploader",
     anchorId: "logo-uploader",
-    title: "Upload your logo",
-    body: "Upload a PNG, JPEG, or WEBP logo. It will appear in the header on your live page.",
-    placement: "right",
+    title: "Your logo lives here",
+    body: "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page.",
+    placement: "left",
   },
 
-  // 6.2 — Header nav/style
+  // Navigation · Design tab
   {
-    id: "header-nav-style",
-    anchorId: "header-nav-style",
-    title: "Navigation links and header style",
-    body: "The Design tab lets you set colors, borders, and typography for your header and nav links.",
-    placement: "right",
+    id: "header-design-tab",
+    anchorId: "header-design-tab",
+    title: "Navigation · Design",
+    body: "The Design tab controls header colors, borders, and typography for your nav links.",
+    placement: "bottom",
   },
 
-  // 7 — Contact tab (gated: open contact panel)
+  // Contact tab (actionable: open the contact panel)
   {
     id: "contact-tab",
     anchorId: "contact-tab",
     title: "Your inquiry form",
-    body: "Try it: click Contact to open the contact settings. Visitors use this form to reach you.",
+    body: "Click Contact Form to set up the form visitors use to reach you.",
     placement: "bottom",
     gated: true,
   },
 
-  // 7.1 — Contact form preview
+  // Contact · Setup tab
   {
-    id: "contact-form-preview",
-    anchorId: "contact-form-preview",
-    title: "Choose fields and styling",
-    body: "Select which fields to show and how they look. The form layout itself is fixed.",
-    placement: "right",
+    id: "contact-setup-tab",
+    anchorId: "contact-setup-tab",
+    title: "Contact · Setup",
+    body: "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed.",
+    placement: "bottom",
   },
 
-  // 8 — Photos
+  // Contact · Design tab
+  {
+    id: "contact-design-tab",
+    anchorId: "contact-design-tab",
+    title: "Contact · Design",
+    body: "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look.",
+    placement: "bottom",
+  },
+
+  // Photos
   {
     id: "photos",
     anchorId: "photos",
@@ -150,7 +161,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 9 — Theme
+  // Theme
   {
     id: "theme",
     anchorId: "theme",
@@ -159,7 +170,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 10 — Preview + device toggle
+  // Preview + device toggle
   {
     id: "preview-device",
     anchorId: "preview-toggle",
@@ -168,7 +179,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 10.1 — Publish
+  // Publish
   {
     id: "publish",
     anchorId: "publish",
@@ -177,7 +188,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // 11 — Save + Drafts
+  // Save + Drafts
   {
     id: "save-drafts",
     anchorId: "save-changes",
@@ -186,3 +197,80 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 ];
+
+/** Which side panel must be open for a given tour step id. */
+export type GuidePanel = "nav" | "contact" | "none";
+
+const NAV_STEPS = new Set(["header-setup-tab", "logo-uploader", "header-design-tab"]);
+const CONTACT_STEPS = new Set(["contact-setup-tab", "contact-design-tab"]);
+
+/**
+ * Returns which side panel must be open when the tour is on the step with
+ * `stepId`. Used by EditorShell to restore panel context on every step change
+ * so anchors exist (and Back works across panels).
+ */
+export function guideStepPanel(stepId: string | undefined): GuidePanel {
+  if (!stepId) return "none";
+  if (NAV_STEPS.has(stepId)) return "nav";
+  if (CONTACT_STEPS.has(stepId)) return "contact";
+  return "none";
+}
+
+/** Computed open/close flags for EditorShell panel state on each guide step. */
+export type GuidePanelActions = {
+  openHeader: boolean;
+  openContact: boolean;
+  closeHeader: boolean;
+  closeContact: boolean;
+};
+
+/**
+ * Given the current step id and the current open/close state of both side
+ * panels, returns which panels need to be opened or closed so the step's
+ * anchor is present. openHeader/openContact each close the other internally,
+ * so only the relevant open flag is set; closeHeader/closeContact are only
+ * set for the "none" bucket when a panel is actually open.
+ */
+export function guidePanelActions(
+  stepId: string | undefined,
+  state: { headerOpen: boolean; contactOpen: boolean }
+): GuidePanelActions {
+  const panel = guideStepPanel(stepId);
+  if (panel === "nav") {
+    return { openHeader: !state.headerOpen, openContact: false, closeHeader: false, closeContact: false };
+  }
+  if (panel === "contact") {
+    return { openHeader: false, openContact: !state.contactOpen, closeHeader: false, closeContact: false };
+  }
+  return { openHeader: false, openContact: false, closeHeader: state.headerOpen, closeContact: state.contactOpen };
+}
+
+/**
+ * Returns true when navigating to `nextStepId` requires resetting the guide
+ * canvas to empty. The drag-block step must start with a blank canvas so its
+ * drop-gate re-arms correctly on Back; reset is only needed when there is
+ * already content on the canvas (`hasContent`).
+ */
+export function shouldResetGuideCanvasOnStep(nextStepId: string, hasContent: boolean): boolean {
+  return nextStepId === "drag-block" && hasContent;
+}
+
+/**
+ * Dispatches the computed panel actions to concrete callbacks. All branching
+ * is isolated here so the EditorShell call site is a single non-branching
+ * expression.
+ */
+export function applyGuidePanelActions(
+  actions: GuidePanelActions,
+  cb: {
+    openHeader: () => void;
+    openContact: () => void;
+    closeHeader: () => void;
+    closeContact: () => void;
+  },
+): void {
+  if (actions.openHeader) cb.openHeader();
+  if (actions.openContact) cb.openContact();
+  if (actions.closeHeader) cb.closeHeader();
+  if (actions.closeContact) cb.closeContact();
+}

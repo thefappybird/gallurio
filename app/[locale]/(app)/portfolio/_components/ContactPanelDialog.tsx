@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { RotateCcw } from "lucide-react";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { NumberInputRow } from "@/lib/page-builder/toolbarPrimitives";
+import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
+import { useBrandRadius } from "@/lib/page-builder/brandColors";
+import { CRM_ERROR_COLOR } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
+import type { StyleColorToken } from "@/lib/page-builder/styleToolkit";
 import {
   BRAND_KIT_BUTTON_STYLES,
   BRAND_KIT_RADII,
-  CONTACT_BUTTON_COLORS,
   HEADER_FONT_SIZES,
   type BrandKitRadius,
   type PortfolioBrandKit,
@@ -32,110 +33,45 @@ type Props = {
   onContactChange: (next: PortfolioContactConfig) => void;
   formLocale: string;
   onFormLocaleChange: (next: string) => void;
-  brandKit: PortfolioBrandKit;
+  /** Accepted for API compat but no longer consumed — shared ColorSwatchRow uses BrandColorsContext. */
+  brandKit?: PortfolioBrandKit;
   /** Called after a successful DB save — parent updates snapshot. */
   onSaved: () => void;
   /** Called on X / cancel — parent reverts to snapshot. */
   onCancel: () => void;
 };
 
-/** Map brand-kit color token names to their actual hex values. */
-function resolveSwatchHex(
-  token: (typeof CONTACT_BUTTON_COLORS)[number],
-  brandKit: PortfolioBrandKit,
-): string {
-  switch (token) {
-    case "primary":    return brandKit.primaryColor;
-    case "secondary":  return brandKit.secondaryColor;
-    case "accent":     return brandKit.accentColor;
-    case "background": return brandKit.backgroundColor;
-    case "foreground": return brandKit.foregroundColor;
-  }
-}
+const ERROR_SWATCHES: { value: string; label: string }[] = [{ value: CRM_ERROR_COLOR, label: "Error" }];
 
-function ColorSwatchRow({
+/**
+ * Labelled wrapper around the shared ColorSwatchRow.
+ * The shared control only renders the swatch buttons; the label lives here.
+ */
+function LabeledSwatchRow({
   label,
-  active,
-  brandKit,
-  onToggle,
-  getLabel,
-  allowNone = true,
+  value,
+  onChange,
+  allowNone,
+  effectiveValue,
+  extraSwatches,
 }: {
   label: string;
-  active: string | undefined;
-  brandKit: PortfolioBrandKit;
-  onToggle: (color: string | undefined) => void;
-  getLabel: (color: (typeof CONTACT_BUTTON_COLORS)[number]) => string;
+  value: StyleColorToken | string | undefined;
+  onChange: (next: StyleColorToken | string | undefined) => void;
   allowNone?: boolean;
+  effectiveValue?: StyleColorToken | string;
+  extraSwatches?: { value: string; label: string }[];
 }) {
-  const isCustomHex =
-    typeof active === "string" &&
-    active.startsWith("#") &&
-    !(CONTACT_BUTTON_COLORS as readonly string[]).includes(active);
-
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {CONTACT_BUTTON_COLORS.map((colorToken) => {
-          const hex = resolveSwatchHex(colorToken, brandKit);
-          const isActive = active === colorToken;
-          return (
-            <button
-              key={colorToken}
-              type="button"
-              title={getLabel(colorToken)}
-              aria-label={getLabel(colorToken)}
-              aria-pressed={isActive}
-              onClick={() => onToggle(isActive ? undefined : colorToken)}
-              style={{ backgroundColor: hex }}
-              className={cn(
-                "size-7 cursor-pointer border border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                isActive && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-              )}
-            />
-          );
-        })}
-        {allowNone && (
-          <button
-            type="button"
-            onClick={() => onToggle(undefined)}
-            title="Reset"
-            aria-label="Reset color"
-            className="inline-flex size-7 cursor-pointer items-center justify-center border border-border bg-background text-muted-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <RotateCcw className="size-3.5" aria-hidden />
-          </button>
-        )}
-        {/* Spectrum / custom hex picker */}
-        <label
-          title="Custom color"
-          aria-label="Custom color"
-          className={cn(
-            "relative size-7 cursor-pointer overflow-hidden border border-border focus-within:ring-1 focus-within:ring-ring",
-            isCustomHex && "ring-2 ring-foreground ring-offset-1 ring-offset-background",
-          )}
-          style={{ background: isCustomHex ? active : undefined }}
-        >
-          <input
-            type="color"
-            value={isCustomHex ? active : "#000000"}
-            onChange={(e) => onToggle(e.target.value)}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            aria-label="Pick custom color"
-          />
-          {!isCustomHex && (
-            <span
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
-                opacity: 0.85,
-              }}
-            />
-          )}
-        </label>
-      </div>
+      <ColorSwatchRow
+        value={value}
+        onChange={onChange}
+        allowNone={allowNone}
+        effectiveValue={effectiveValue}
+        extraSwatches={extraSwatches}
+      />
     </div>
   );
 }
@@ -145,19 +81,15 @@ function BorderRow({
   colorLabel,
   width,
   color,
-  brandKit,
   onWidthChange,
   onColorChange,
-  getColorLabel,
 }: {
   widthLabel: string;
   colorLabel: string;
   width: number | undefined;
   color: string | undefined;
-  brandKit: PortfolioBrandKit;
   onWidthChange: (v: number | undefined) => void;
   onColorChange: (v: string | undefined) => void;
-  getColorLabel: (c: (typeof CONTACT_BUTTON_COLORS)[number]) => string;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -167,14 +99,14 @@ function BorderRow({
         min={0}
         max={12}
         onChange={onWidthChange}
+        effectiveValue={0}
       />
       {!!width && (
-        <ColorSwatchRow
+        // borderColor fallback varies; leave effectiveValue unset
+        <LabeledSwatchRow
           label={colorLabel}
-          active={color}
-          brandKit={brandKit}
-          onToggle={onColorChange}
-          getLabel={getColorLabel}
+          value={color}
+          onChange={onColorChange}
           allowNone={false}
         />
       )}
@@ -187,28 +119,32 @@ function RadiusRow({
   active,
   onToggle,
   getLabel,
+  effectiveValue,
 }: {
   label: string;
   active: BrandKitRadius | undefined;
   onToggle: (radius: BrandKitRadius) => void;
   getLabel: (radius: BrandKitRadius) => string;
+  effectiveValue?: BrandKitRadius;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex">
         {BRAND_KIT_RADII.map((r) => {
-          const isActive = active === r;
+          const isExplicit = active === r;
+          const isEffective = !active && effectiveValue === r;
           return (
             <button
               key={r}
               type="button"
               aria-label={getLabel(r)}
-              aria-pressed={isActive}
+              aria-pressed={isExplicit || isEffective}
               onClick={() => onToggle(r)}
               className={cn(
                 "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                isActive && "bg-foreground text-background hover:bg-foreground",
+                isExplicit && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground opacity-70",
               )}
             >
               {getLabel(r)}
@@ -289,10 +225,12 @@ export function ContactPanelDialog({
   onContactChange,
   formLocale,
   onFormLocaleChange,
-  brandKit,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const [tab, setTab] = useState<Tab>("setup");
+
+  // Effective brand radius for radius pickers (display-only, theme-coupled)
+  const effectiveBrandRadius = useBrandRadius();
 
   if (!open) return null;
 
@@ -342,6 +280,7 @@ export function ContactPanelDialog({
           <button
             key={id}
             type="button"
+            data-tour-id={`contact-${id}-tab`}
             onClick={() => setTab(id)}
             className={cn(
               "flex-1 py-2 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
@@ -404,31 +343,32 @@ export function ContactPanelDialog({
         )}
 
         {tab === "design" && (
-          <EditorDrawerGroup>
+          <EditorDrawerGroup plain>
             {/* ── Popup section ─────────────────────────── */}
             <EditorDrawerSection title={t("sectionPopup")}>
-              <ColorSwatchRow
+              {/* text color: resolvePopupStyle falls back to brandKit.foregroundColor → "foreground" token */}
+              <LabeledSwatchRow
                 label={t("textColorLabel")}
-                active={contact.textColor}
-                brandKit={brandKit}
-                onToggle={(c) => toggleColor("textColor", c)}
-                getLabel={(c) => t(`buttonColors.${c}`)}
+                value={contact.textColor}
+                onChange={(c) => set("textColor", c)}
+                effectiveValue="foreground"
               />
 
-              <ColorSwatchRow
+              {/* bg color: resolvePopupStyle falls back to brandKit.backgroundColor → "background" token */}
+              <LabeledSwatchRow
                 label={t("bgColorLabel")}
-                active={contact.backgroundColor}
-                brandKit={brandKit}
-                onToggle={(c) => toggleColor("backgroundColor", c)}
-                getLabel={(c) => t(`buttonColors.${c}`)}
+                value={contact.backgroundColor}
+                onChange={(c) => set("backgroundColor", c)}
+                effectiveValue="background"
               />
 
-              <ColorSwatchRow
+              {/* error color: resolveSubmitAppearance falls back to CRM_ERROR_COLOR */}
+              <LabeledSwatchRow
                 label={t("errorColorLabel")}
-                active={contact.errorMessageColor}
-                brandKit={brandKit}
-                onToggle={(c) => toggleColor("errorMessageColor", c)}
-                getLabel={(c) => t(`buttonColors.${c}`)}
+                value={contact.errorMessageColor}
+                onChange={(c) => set("errorMessageColor", c)}
+                effectiveValue={CRM_ERROR_COLOR}
+                extraSwatches={ERROR_SWATCHES}
               />
 
               <RadiusRow
@@ -436,6 +376,7 @@ export function ContactPanelDialog({
                 active={contact.popupRadius}
                 onToggle={(r) => toggleRadius("popupRadius", r)}
                 getLabel={(r) => t(`radius.${r}`)}
+                effectiveValue={effectiveBrandRadius}
               />
 
               <BorderRow
@@ -443,10 +384,8 @@ export function ContactPanelDialog({
                 colorLabel={t("borderColorLabel")}
                 width={contact.popupBorderWidth}
                 color={contact.popupBorderColor}
-                brandKit={brandKit}
                 onWidthChange={(v) => set("popupBorderWidth", v)}
                 onColorChange={(v) => set("popupBorderColor", v)}
-                getColorLabel={(c) => t(`buttonColors.${c}`)}
               />
             </EditorDrawerSection>
 
@@ -457,16 +396,18 @@ export function ContactPanelDialog({
                 styleValue={contact.buttonStyle}
                 onStyleToggle={(style) => toggleColor("buttonStyle", style)}
                 textColorValue={contact.buttonTextColor}
-                onTextColorToggle={(c) => toggleColor("buttonTextColor", c)}
+                onTextColorToggle={(c) => set("buttonTextColor", c)}
                 buttonColorValue={contact.buttonColor}
-                onButtonColorToggle={(c) => toggleColor("buttonColor", c)}
+                onButtonColorToggle={(c) => set("buttonColor", c)}
                 radiusValue={contact.buttonRadius}
                 onRadiusToggle={(r) => toggleRadius("buttonRadius", r)}
                 borderWidthValue={contact.buttonBorderWidth}
                 onBorderWidthChange={(v) => set("buttonBorderWidth", v)}
                 borderColorValue={contact.buttonBorderColor}
                 onBorderColorChange={(v) => set("buttonBorderColor", v)}
-                brandKit={brandKit}
+                effectiveBrandRadius={effectiveBrandRadius}
+                defaultStyle="solid"
+                defaultButtonColorToken="primary"
                 t={t}
               />
 
@@ -475,66 +416,68 @@ export function ContactPanelDialog({
                 styleValue={contact.addSessionButtonStyle}
                 onStyleToggle={(style) => toggleColor("addSessionButtonStyle", style)}
                 textColorValue={contact.addSessionButtonTextColor}
-                onTextColorToggle={(c) => toggleColor("addSessionButtonTextColor", c)}
+                onTextColorToggle={(c) => set("addSessionButtonTextColor", c)}
                 buttonColorValue={contact.addSessionButtonColor}
-                onButtonColorToggle={(c) => toggleColor("addSessionButtonColor", c)}
+                onButtonColorToggle={(c) => set("addSessionButtonColor", c)}
                 radiusValue={contact.addSessionButtonRadius}
                 onRadiusToggle={(r) => toggleRadius("addSessionButtonRadius", r)}
                 borderWidthValue={contact.addSessionButtonBorderWidth}
                 onBorderWidthChange={(v) => set("addSessionButtonBorderWidth", v)}
                 borderColorValue={contact.addSessionButtonBorderColor}
                 onBorderColorChange={(v) => set("addSessionButtonBorderColor", v)}
-                brandKit={brandKit}
+                effectiveBrandRadius={effectiveBrandRadius}
+                defaultStyle="outline"
+                defaultButtonColorToken="foreground"
                 t={t}
               />
             </EditorDrawerSection>
 
             {/* ── Tabs section ──────────────────────────── */}
             <EditorDrawerSection title={t("sectionTabs")}>
+              {/* Tab font size applies to ALL tabs (active + inactive), so it lives at
+                  the Tabs level — outside both the inactive and active sub-sections. */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
+                <div className="flex">
+                  {HEADER_FONT_SIZES.map((s) => {
+                    const isActive = (contact.tabFontSize || "md") === s;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        aria-label={t(`tabFontSize.${s}`)}
+                        aria-pressed={isActive}
+                        onClick={() => set("tabFontSize", s === "md" ? "" : s)}
+                        className={cn(
+                          "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          isActive && "bg-foreground text-background hover:bg-foreground",
+                        )}
+                      >
+                        {t(`tabFontSize.${s}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Inactive tabs sub-section */}
               <EditorDrawerSection title={t("inactiveTabsSection")}>
-                {/* Font size */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs text-muted-foreground">{t("tabFontSizeLabel")}</span>
-                  <div className="flex">
-                    {HEADER_FONT_SIZES.map((s) => {
-                      const isActive = (contact.tabFontSize || "md") === s;
-                      return (
-                        <button
-                          key={s}
-                          type="button"
-                          aria-label={t(`tabFontSize.${s}`)}
-                          aria-pressed={isActive}
-                          onClick={() => set("tabFontSize", s === "md" ? "" : s)}
-                          className={cn(
-                            "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                            isActive && "bg-foreground text-background hover:bg-foreground",
-                          )}
-                        >
-                          {t(`tabFontSize.${s}`)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <ColorSwatchRow
+                {/* inactive tab color: resolveTabColor falls back to "" (no color applied) — no effective token */}
+                <LabeledSwatchRow
                   label={t("tabColorLabel")}
-                  active={contact.tabColor}
-                  brandKit={brandKit}
-                  onToggle={(c) => set("tabColor", c)}
-                  getLabel={(c) => t(`buttonColors.${c}`)}
+                  value={contact.tabColor}
+                  onChange={(c) => set("tabColor", c)}
                 />
               </EditorDrawerSection>
 
               {/* Active tab sub-section */}
               <EditorDrawerSection title={t("activeTabSection")}>
-                <ColorSwatchRow
+                {/* active tab color: getActiveTabExtraStyle falls back to var(--pf-color-fg) → "foreground" */}
+                <LabeledSwatchRow
                   label={t("activeTabColorLabel")}
-                  active={contact.activeTabColor}
-                  brandKit={brandKit}
-                  onToggle={(c) => set("activeTabColor", c)}
-                  getLabel={(c) => t(`buttonColors.${c}`)}
+                  value={contact.activeTabColor}
+                  onChange={(c) => set("activeTabColor", c)}
+                  effectiveValue="foreground"
                 />
 
                 {/* Scale / Highlight / Underline toggles */}
@@ -555,41 +498,39 @@ export function ContactPanelDialog({
 
                 {/* Conditional: highlight controls */}
                 {contact.activeTabHighlight && (
-                  <ColorSwatchRow
-                    label={t("tabHighlightColorLabel")}
-                    active={contact.tabHighlightColor}
-                    brandKit={brandKit}
-                    onToggle={(c) => set("tabHighlightColor", c)}
-                    getLabel={(c) => t(`buttonColors.${c}`)}
-                  />
-                )}
-                {contact.activeTabHighlight && (
-                  <NumberInputRow
-                    label={t("tabHighlightOpacityLabel")}
-                    value={contact.tabHighlightOpacity ?? 100}
-                    min={0}
-                    max={100}
-                    suffix="%"
-                    onChange={(v) => set("tabHighlightOpacity", v ?? 100)}
-                  />
-                )}
-                {contact.activeTabHighlight && (
-                  <ActiveTabRadiusRow
-                    label={t("cornerRadiusLabel")}
-                    active={contact.activeTabRadius}
-                    onToggle={toggleTabRadius}
-                    getLabel={(r) => t(`radius.${r}`)}
-                  />
+                  <>
+                    {/* highlight color: resolveTabColor falls back to fg-mix (~"foreground") */}
+                    <LabeledSwatchRow
+                      label={t("tabHighlightColorLabel")}
+                      value={contact.tabHighlightColor}
+                      onChange={(c) => set("tabHighlightColor", c)}
+                      effectiveValue="foreground"
+                    />
+                    <NumberInputRow
+                      label={t("tabHighlightOpacityLabel")}
+                      value={contact.tabHighlightOpacity}
+                      min={0}
+                      max={100}
+                      suffix="%"
+                      onChange={(v) => set("tabHighlightOpacity", v)}
+                      effectiveValue={100}
+                    />
+                    <ActiveTabRadiusRow
+                      label={t("cornerRadiusLabel")}
+                      active={contact.activeTabRadius}
+                      onToggle={toggleTabRadius}
+                      getLabel={(r) => t(`radius.${r}`)}
+                    />
+                  </>
                 )}
 
-                {/* Conditional: underline color */}
+                {/* Conditional: underline color — resolveTabColor falls back to var(--pf-color-accent) → "accent" */}
                 {contact.activeTabUnderline && (
-                  <ColorSwatchRow
+                  <LabeledSwatchRow
                     label={t("tabUnderlineColorLabel")}
-                    active={contact.tabUnderlineColor}
-                    brandKit={brandKit}
-                    onToggle={(c) => set("tabUnderlineColor", c)}
-                    getLabel={(c) => t(`buttonColors.${c}`)}
+                    value={contact.tabUnderlineColor}
+                    onChange={(c) => set("tabUnderlineColor", c)}
+                    effectiveValue="accent"
                   />
                 )}
               </EditorDrawerSection>
@@ -600,6 +541,29 @@ export function ContactPanelDialog({
 
     </div>
   );
+}
+
+/**
+ * Derive the effective button text color token given button style + button color.
+ * Mirrors resolveSubmitAppearance / buildButtonStyle variant rules so the control
+ * display matches what the render applies.
+ *
+ * solid → "background" (text on filled button)
+ * outline / soft → buttonColorToken ?? defaultButtonColorToken (text matches border/bg)
+ * unset → "foreground" (fallback for legacy / unset style)
+ */
+function effectiveTextColorToken(
+  style: string | undefined,
+  buttonColorToken: string | undefined,
+  defaultButtonColorToken: StyleColorToken,
+): StyleColorToken | string {
+  if (style === "solid") return "background";
+  if (style === "outline" || style === "soft") {
+    return (buttonColorToken && !buttonColorToken.startsWith("#"))
+      ? (buttonColorToken as StyleColorToken)
+      : (buttonColorToken ?? defaultButtonColorToken);
+  }
+  return "foreground";
 }
 
 function ButtonControlsSection({
@@ -616,7 +580,9 @@ function ButtonControlsSection({
   onBorderWidthChange,
   borderColorValue,
   onBorderColorChange,
-  brandKit,
+  effectiveBrandRadius,
+  defaultStyle,
+  defaultButtonColorToken,
   t,
 }: {
   title: string;
@@ -632,9 +598,23 @@ function ButtonControlsSection({
   onBorderWidthChange: (width: number | undefined) => void;
   borderColorValue: string | undefined;
   onBorderColorChange: (color: string | undefined) => void;
-  brandKit: PortfolioBrandKit;
+  effectiveBrandRadius: BrandKitRadius | undefined;
+  /** Default style token when styleValue is unset (used to compute effective text color). */
+  defaultStyle: "solid" | "outline";
+  /** Default button color token when buttonColorValue is unset and style is outline/soft. */
+  defaultButtonColorToken: StyleColorToken;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const activeStyle = styleValue ?? defaultStyle;
+  const effectiveTextToken = effectiveTextColorToken(
+    activeStyle,
+    buttonColorValue,
+    defaultButtonColorToken,
+  );
+
+  // Effective button color token: resolveSubmitAppearance falls back to defaultButtonColorToken
+  const effectiveButtonColorToken: StyleColorToken = defaultButtonColorToken;
+
   return (
     <EditorDrawerSection title={title}>
       <div className="flex flex-col gap-1.5">
@@ -661,20 +641,20 @@ function ButtonControlsSection({
         </div>
       </div>
 
-      <ColorSwatchRow
+      {/* text color: effective token depends on button variant */}
+      <LabeledSwatchRow
         label={t("textColorLabel")}
-        active={textColorValue}
-        brandKit={brandKit}
-        onToggle={onTextColorToggle}
-        getLabel={(c) => t(`buttonColors.${c}`)}
+        value={textColorValue}
+        onChange={onTextColorToggle}
+        effectiveValue={effectiveTextToken}
       />
 
-      <ColorSwatchRow
+      {/* button color: resolveSubmitAppearance / resolveAddSessionAppearance fallback */}
+      <LabeledSwatchRow
         label={t("buttonColorLabel")}
-        active={buttonColorValue}
-        brandKit={brandKit}
-        onToggle={onButtonColorToggle}
-        getLabel={(c) => t(`buttonColors.${c}`)}
+        value={buttonColorValue}
+        onChange={onButtonColorToggle}
+        effectiveValue={effectiveButtonColorToken}
       />
 
       <RadiusRow
@@ -682,6 +662,7 @@ function ButtonControlsSection({
         active={radiusValue}
         onToggle={onRadiusToggle}
         getLabel={(r) => t(`radius.${r}`)}
+        effectiveValue={effectiveBrandRadius}
       />
 
       <BorderRow
@@ -689,10 +670,8 @@ function ButtonControlsSection({
         colorLabel={t("borderColorLabel")}
         width={borderWidthValue}
         color={borderColorValue}
-        brandKit={brandKit}
         onWidthChange={onBorderWidthChange}
         onColorChange={onBorderColorChange}
-        getColorLabel={(c) => t(`buttonColors.${c}`)}
       />
     </EditorDrawerSection>
   );

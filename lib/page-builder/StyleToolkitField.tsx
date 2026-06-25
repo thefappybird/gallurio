@@ -15,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
+import { BlockIdContext } from "./drawerOpenStore";
 import { EmojiButton } from "./EmojiTextInput";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -55,6 +56,7 @@ import {
   DimensionInput,
   IconRow,
   ResetButton,
+  FloatingLabelInput,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
 import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
@@ -67,11 +69,14 @@ import {
   type AnimationType,
   type HoverEffect,
   type SelfAlign,
-  type TextAlign,
   type HighlightShape,
   type HighlightSize,
+  effectiveButtonTextToken,
 } from "./styleToolkit";
 import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
+import { CountControl } from "./CountControl";
+import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
+import { CONTAINER_EFFECTIVE_PAD, COLUMNS_EFFECTIVE_PAD } from "./blocks/manualBlocks";
 
 // Block types that are containers (no text/video inputs in Content tab)
 export const CONTAINER_TYPES = new Set([
@@ -84,27 +89,28 @@ export const CONTAINER_TYPES = new Set([
   "GalleryGridPreset",
   "GalleryMasonryPreset",
   "FeaturedWorkPreset",
+  "GalleryLandingPreset",
 ]);
 
 const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Button"]);
-// Frame (border/radius/shadow) is hidden for text/spacer leaf blocks and for all
-// gallery blocks (the gallery frame chrome was removed).
+// Frame (border/radius/shadow) is hidden for text/spacer/button leaf blocks.
+// Button has its own consolidated design controls (see DesignTab isButton branch).
+// GalleryGrid, GalleryMasonry, and FeaturedWork are container-like and DO show Frame.
 const NO_FRAME_BLOCKS = new Set([
-  "Heading", "Text", "Divider", "Spacer",
-  "GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork",
+  "Heading", "Text", "Divider", "Spacer", "Button", "ContactDetails",
 ]);
-const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel", "FeaturedWork"]);
-// Gallery blocks that render images only (no on-page text) — their typography /
-// text-align controls are hidden since there is nothing to style. The carousel
-// is excluded: it still renders a heading + description.
+// Gallery blocks that support banner/container props: same tab set as Container minus Typography.
+export const GALLERY_CONTAINER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
+const GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
+// Gallery blocks that render images only (no on-page text) — typography controls are hidden.
 const GALLERY_NO_TEXT_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
 export const FLEX_CONTAINER_BLOCKS = new Set([
   "Container",
   "HeroPreset", "AboutPreset", "ServicesPreset", "CtaPreset", "ContactPreset",
-  "GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset",
+  "GalleryGridPreset", "GalleryMasonryPreset", "FeaturedWorkPreset", "GalleryLandingPreset",
 ]);
 
-const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "GalleryCarousel"]);
+const COLLECTION_GALLERY_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry"]);
 
 const ANIMATION_LABEL: Record<AnimationType, string> = {
   none: "None",
@@ -157,13 +163,6 @@ const MIN_HEIGHT_OPTIONS = [
   { value: "short",  label: "Short" },
   { value: "medium", label: "Medium" },
   { value: "tall",   label: "Tall" },
-] as const;
-
-const CONTACT_TOGGLES = [
-  { key: "showEmail",   label: "Email" },
-  { key: "showPhone",   label: "Phone" },
-  { key: "showAddress", label: "Address" },
-  { key: "showSocials", label: "Social links" },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -343,14 +342,17 @@ type ContainerBgControls = {
   onSpeedChange: (v: string) => void;
 };
 
-function BannerSection({
+export function BannerSection({
   s,
   set,
   container,
+  hideBgImage = false,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
   container?: ContainerBgControls | null;
+  /** When true, suppresses all background-image pickers (gallery blocks: color only). */
+  hideBgImage?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -361,7 +363,7 @@ function BannerSection({
         <span className="text-xs text-muted-foreground">Color</span>
         <ColorSwatchRow value={s.bgColorToken} onChange={(t) => set({ bgColorToken: t })} />
       </div>
-      {container ? (
+      {!hideBgImage && (container ? (
         <ContainerBackgroundControls {...container} />
       ) : (
         <div className="flex flex-col gap-1.5">
@@ -371,7 +373,7 @@ function BannerSection({
             onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
           />
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -389,8 +391,6 @@ export function ContentInputs({
   const headingRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const buttonLabelRef = useRef<HTMLInputElement>(null);
-  const carouselHeadingRef = useRef<HTMLInputElement>(null);
-  const carouselDescRef = useRef<HTMLTextAreaElement>(null);
 
   if (type === "Heading") {
     return (
@@ -463,9 +463,7 @@ export function ContentInputs({
     );
   }
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
-    // Only the carousel renders on-page text — grid/masonry are images only, so
-    // they expose just the Photos (multi-image) picker (heading/description only on carousel).
-    const isCarousel = type === "GalleryCarousel";
+    // GalleryGrid and GalleryMasonry are images-only — expose the Photos picker.
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
@@ -476,36 +474,6 @@ export function ContentInputs({
             max={60}
           />
         </div>
-        {isCarousel && (
-          <>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Heading</span>
-              <div className="flex items-center gap-1">
-                <input
-                  ref={carouselHeadingRef}
-                  type="text"
-                  value={(props.heading as string) ?? ""}
-                  onChange={(e) => setProp("heading", e.target.value)}
-                  className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
-                <EmojiButton inputRef={carouselHeadingRef} onChange={(v) => setProp("heading", v)} />
-              </div>
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              <span>Description</span>
-              <div className="flex items-start gap-1">
-                <textarea
-                  ref={carouselDescRef}
-                  rows={2}
-                  value={(props.description as string) ?? ""}
-                  onChange={(e) => setProp("description", e.target.value)}
-                  className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
-                <EmojiButton inputRef={carouselDescRef} onChange={(v) => setProp("description", v)} />
-              </div>
-            </label>
-          </>
-        )}
       </div>
     );
   }
@@ -527,31 +495,70 @@ export function ContentInputs({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
-          <div className="flex items-center gap-1.5">
-            {([2, 3] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={(props.columns as number) === v}
-                onClick={() => setProp("columns", v)}
-                className={cn(
-                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (props.columns as number) === v &&
-                    "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
+          <CountControl
+            value={props.columns as number | undefined}
+            onChange={(v) => setProp("columns", v ?? 1)}
+            quickValues={[1, 2, 3]}
+            min={1}
+            max={6}
+            allowAuto={false}
+          />
         </div>
-        <NumberInputRow
-          label="Rows"
-          value={props.rows as number | undefined}
-          min={1}
-          max={12}
-          suffix="rows"
-          onChange={(v) => setProp("rows", v)}
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Rows</span>
+          <CountControl
+            value={props.rows as number | undefined}
+            onChange={(v) => setProp("rows", v)}
+            quickValues={[1, 2, 3]}
+            min={1}
+            max={6}
+            allowAuto
+          />
+        </div>
+      </div>
+    );
+  }
+  if (type === "ContactDetails") {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-xs text-muted-foreground">Leave blank to use your workspace contact details.</p>
+        <FloatingLabelInput
+          label="Email"
+          value={(props.email as string) ?? ""}
+          onChange={(v) => setProp("email", v)}
+          type="email"
+        />
+        <FloatingLabelInput
+          label="Phone"
+          value={(props.phone as string) ?? ""}
+          onChange={(v) => setProp("phone", v)}
+          type="tel"
+        />
+        <FloatingLabelInput
+          label="Address"
+          value={(props.address as string) ?? ""}
+          onChange={(v) => setProp("address", v)}
+        />
+        <FloatingLabelInput
+          label="Instagram"
+          value={(props.instagram as string) ?? ""}
+          onChange={(v) => setProp("instagram", v)}
+        />
+        <FloatingLabelInput
+          label="Facebook"
+          value={(props.facebook as string) ?? ""}
+          onChange={(v) => setProp("facebook", v)}
+        />
+        <FloatingLabelInput
+          label="TikTok"
+          value={(props.tiktok as string) ?? ""}
+          onChange={(v) => setProp("tiktok", v)}
+        />
+        <FloatingLabelInput
+          label="Website"
+          value={(props.website as string) ?? ""}
+          onChange={(v) => setProp("website", v)}
+          type="url"
         />
       </div>
     );
@@ -587,10 +594,17 @@ function ContentTabBody({
           onSpeedChange: (v) => setProp("bgSpeed", v),
         }
       : null;
+  // Gallery container blocks need both the banner AND their gallery-specific content inputs
+  // (collections picker / photo picker) — unlike true containers (slots), they have
+  // direct gallery content controlled via ContentInputs.
+  const showContentInputs = !isContainer || GALLERY_CONTAINER_BLOCKS.has(type);
+  // Gallery blocks (GalleryGrid/GalleryMasonry/FeaturedWork) show the banner Color swatch
+  // but NOT the background-images picker — the images are the block content, not a backdrop.
+  const hideBgImage = GALLERY_CONTAINER_BLOCKS.has(type);
   return (
     <div className="flex flex-col gap-4 p-3">
-      {showBanner && <BannerSection s={s} set={set} container={container} />}
-      {!isContainer && p && <ContentInputs type={type} props={p} setProp={setProp} />}
+      {showBanner && <BannerSection s={s} set={set} container={container} hideBgImage={hideBgImage} />}
+      {showContentInputs && p && <ContentInputs type={type} props={p} setProp={setProp} />}
     </div>
   );
 }
@@ -644,31 +658,57 @@ const RADIUS_PRESETS: { label: string; value: number }[] = [
   { label: "Full", value: 9999 },
 ];
 
+/**
+ * Maps a brand-kit radius token to the nearest RADIUS_PRESETS value.
+ * Brand-kit rem values use a 16px base:
+ *   sharp   → "0"      → 0px  → preset 0   (None)
+ *   subtle  → "0.25rem"→ 4px  → preset 4   (S)
+ *   rounded → "0.5rem" → 8px  → preset 8   (M)
+ */
+export const BRAND_RADIUS_TO_PRESET: Record<"sharp" | "subtle" | "rounded", number> = {
+  sharp: 0,
+  subtle: 4,
+  rounded: 8,
+};
+
 export function RadiusButtons({
   value,
   onChange,
+  effectiveValue,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
+  /** The preset value that the theme's brand-kit radius maps to. When the
+   *  block's own radius is unset (theme-coupled), this is shown as active so
+   *  the user can see what the theme is applying. Writing `effectiveValue`
+   *  into block props is NOT done here — only the display changes. */
+  effectiveValue?: number;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-muted-foreground">Corner radius</span>
       <div className="flex items-center gap-1.5">
-        {RADIUS_PRESETS.map(({ label, value: v }) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={value === v}
-            onClick={() => onChange(value === v ? undefined : v)}
-            className={cn(
-              "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              value === v && "bg-foreground text-background hover:bg-foreground"
-            )}
-          >
-            {label}
-          </button>
-        ))}
+        {RADIUS_PRESETS.map(({ label, value: v }) => {
+          const isExplicit = value === v;
+          // When the block has no explicit radius, show the theme's effective preset.
+          const isEffective = value === undefined && effectiveValue === v;
+          const isActive = isExplicit || isEffective;
+          return (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => onChange(value === v ? undefined : v)}
+              className={cn(
+                "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                isExplicit && "bg-foreground text-background hover:bg-foreground",
+                isEffective && "border-foreground"
+              )}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -708,138 +748,6 @@ function HighlightToggle({
   );
 }
 
-function CarouselTargetControls({
-  target,
-  s,
-  set,
-}: {
-  target: "heading" | "description";
-  s: BlockStyle;
-  set: (patch: Partial<BlockStyle>) => void;
-}) {
-  const isHeading = target === "heading";
-  const bold = isHeading ? s.headingBold : s.descriptionBold;
-  const italic = isHeading ? s.headingItalic : s.descriptionItalic;
-  const underline = isHeading ? s.headingUnderline : s.descriptionUnderline;
-  const align = isHeading ? s.headingAlign : s.descriptionAlign;
-  const colorToken = isHeading ? s.headingColorToken : s.descriptionColorToken;
-  const fontFamily = isHeading ? s.headingFontFamily : s.descriptionFontFamily;
-  const highlight = isHeading ? s.headingHighlight : s.descriptionHighlight;
-  const highlightToken = isHeading ? s.headingHighlightToken : s.descriptionHighlightToken;
-  const highlightShape = isHeading ? s.headingHighlightShape : s.descriptionHighlightShape;
-  const highlightSize = isHeading ? s.headingHighlightSize : s.descriptionHighlightSize;
-
-  const setAlign = (a: TextAlign) => {
-    const next = align === a ? undefined : a;
-    set(isHeading ? { headingAlign: next } : { descriptionAlign: next });
-  };
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <ToolbarToggle
-          active={!!bold}
-          title="Bold"
-          Icon={Bold}
-          onClick={() => set(isHeading ? { headingBold: !bold } : { descriptionBold: !bold })}
-        />
-        <ToolbarToggle
-          active={!!italic}
-          title="Italic"
-          Icon={Italic}
-          onClick={() => set(isHeading ? { headingItalic: !italic } : { descriptionItalic: !italic })}
-        />
-        <ToolbarToggle
-          active={!!underline}
-          title="Underline"
-          Icon={Underline}
-          onClick={() => set(isHeading ? { headingUnderline: !underline } : { descriptionUnderline: !underline })}
-        />
-        <ToolbarToggle active={align === "left"} title="Align left" Icon={AlignLeft} onClick={() => setAlign("left")} />
-        <ToolbarToggle active={align === "center"} title="Align center" Icon={AlignCenter} onClick={() => setAlign("center")} />
-        <ToolbarToggle active={align === "right"} title="Align right" Icon={AlignRight} onClick={() => setAlign("right")} />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-1.5">
-          <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="text-xs text-muted-foreground">Text color</span>
-        </div>
-        <ColorSwatchRow
-          value={colorToken}
-          onChange={(t) => set(isHeading ? { headingColorToken: t } : { descriptionColorToken: t })}
-        />
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <span className="shrink-0 text-xs text-muted-foreground">Font</span>
-        <div className="flex items-center gap-1">
-          <select
-            value={fontFamily ?? ""}
-            onChange={(e) => {
-              const f = e.target.value ? (e.target.value as PortfolioFontKey) : undefined;
-              set(isHeading ? { headingFontFamily: f } : { descriptionFontFamily: f });
-            }}
-            className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          >
-            <option value="">Theme font</option>
-            {PORTFOLIO_FONT_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {PORTFOLIO_FONTS[key].label}
-              </option>
-            ))}
-          </select>
-          <ResetButton
-            onClick={() => set(isHeading ? { headingFontFamily: undefined } : { descriptionFontFamily: undefined })}
-            label="Font"
-          />
-        </div>
-      </div>
-
-      {isHeading ? (
-        <HeadingLevelButtons value={s.headingLevel} onChange={(v) => set({ headingLevel: v })} />
-      ) : (
-        <NumberInputRow
-          label="Font size"
-          value={s.descriptionFontSize}
-          min={STYLE_LIMITS.fontSize.min}
-          max={STYLE_LIMITS.fontSize.max}
-          onChange={(v) => set({ descriptionFontSize: v })}
-        />
-      )}
-
-      <div className="flex flex-col gap-1.5">
-        <HighlightToggle
-          label={isHeading ? "Heading highlight" : "Description highlight"}
-          on={!!highlight}
-          onToggle={() => set(isHeading ? { headingHighlight: !highlight } : { descriptionHighlight: !highlight })}
-        />
-        {highlight && (
-          <div className="flex flex-col gap-2">
-            <ColorSwatchRow
-              value={highlightToken}
-              onChange={(t) => set(isHeading ? { headingHighlightToken: t } : { descriptionHighlightToken: t })}
-              allowNone={false}
-            />
-            <ChoiceRow
-              label="Shape"
-              value={(highlightShape ?? "subtle") as HighlightShape}
-              options={HIGHLIGHT_SHAPE_OPTIONS}
-              onChange={(v) => set(isHeading ? { headingHighlightShape: v } : { descriptionHighlightShape: v })}
-            />
-            <ChoiceRow
-              label="Size"
-              value={(highlightSize ?? "md") as HighlightSize}
-              options={HIGHLIGHT_SIZE_OPTIONS}
-              onChange={(v) => set(isHeading ? { headingHighlightSize: v } : { descriptionHighlightSize: v })}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function CarouselTextPadding({
   s,
   set,
@@ -868,18 +776,27 @@ export function CarouselTextPadding({
 // Padding controls — shared by LayoutTabBody (flex containers only)
 // ---------------------------------------------------------------------------
 
+type EffectivePad = { top: string; right: string; bottom: string; left: string };
+
 function PaddingControls({
   s,
   set,
+  effectivePad,
 }: {
   s: BlockStyle;
   set: (p: Partial<BlockStyle>) => void;
+  effectivePad?: EffectivePad;
 }) {
   const [paddingAdvanced, setPaddingAdvanced] = useState(false);
   const paddingX =
     s.paddingLeft !== undefined && s.paddingLeft === s.paddingRight ? s.paddingLeft : undefined;
   const paddingY =
     s.paddingTop !== undefined && s.paddingTop === s.paddingBottom ? s.paddingTop : undefined;
+  // Collapsed-mode effective values: only show when L===R or T===B respectively.
+  const effectiveX =
+    effectivePad && effectivePad.left === effectivePad.right ? effectivePad.left : undefined;
+  const effectiveY =
+    effectivePad && effectivePad.top === effectivePad.bottom ? effectivePad.top : undefined;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
@@ -902,21 +819,23 @@ function PaddingControls({
       </div>
       {paddingAdvanced ? (
         <div className="flex flex-col gap-2">
-          <DimensionInput label="Top" value={s.paddingTop} onChange={(v) => set({ paddingTop: v })} />
-          <DimensionInput label="Right" value={s.paddingRight} onChange={(v) => set({ paddingRight: v })} />
-          <DimensionInput label="Bottom" value={s.paddingBottom} onChange={(v) => set({ paddingBottom: v })} />
-          <DimensionInput label="Left" value={s.paddingLeft} onChange={(v) => set({ paddingLeft: v })} />
+          <DimensionInput label="Top" value={s.paddingTop} effectiveValue={effectivePad?.top} onChange={(v) => set({ paddingTop: v })} />
+          <DimensionInput label="Right" value={s.paddingRight} effectiveValue={effectivePad?.right} onChange={(v) => set({ paddingRight: v })} />
+          <DimensionInput label="Bottom" value={s.paddingBottom} effectiveValue={effectivePad?.bottom} onChange={(v) => set({ paddingBottom: v })} />
+          <DimensionInput label="Left" value={s.paddingLeft} effectiveValue={effectivePad?.left} onChange={(v) => set({ paddingLeft: v })} />
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <DimensionInput
             label="Horizontal (X)"
             value={paddingX}
+            effectiveValue={effectiveX}
             onChange={(v) => set({ paddingLeft: v, paddingRight: v })}
           />
           <DimensionInput
             label="Vertical (Y)"
             value={paddingY}
+            effectiveValue={effectiveY}
             onChange={(v) => set({ paddingTop: v, paddingBottom: v })}
           />
         </div>
@@ -940,9 +859,13 @@ export function DesignTab({
 }) {
   const isButton = blockType === "Button";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
-  const isCarousel = blockType === "GalleryCarousel";
-  // Image-only gallery blocks have no on-page text; the carousel uses per-target drawers.
-  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && !isCarousel;
+  const effectiveRadius = useEffectiveBrandRadius();
+  // Image-only gallery blocks have no on-page text — hide typography controls.
+  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
+  // Heading blocks follow the brand heading font; all others follow the body font.
+  // ponytail: "body" covers Text, Button, Container, and all other block types since
+  // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
+  const effectiveFontFamily = useEffectiveBrandFont(blockType === "Heading" ? "heading" : "body");
 
   return (
     <EditorDrawerGroup>
@@ -978,33 +901,27 @@ export function DesignTab({
               </>
             )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5">
-              <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="text-xs text-muted-foreground">Text color</span>
-            </div>
-            <ColorSwatchRow
-              value={s.textColorToken}
-              onChange={(t) => set({ textColorToken: t })}
-            />
-          </div>
-          {isButton && (
+          {/* Text color: shown in Typography for non-button blocks; Button has it in the Button section. */}
+          {!isButton && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5">
-                <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                <span className="text-xs text-muted-foreground">Button color</span>
+                <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">Text color</span>
               </div>
               <ColorSwatchRow
-                value={s.buttonColorToken}
-                onChange={(t) => set({ buttonColorToken: t })}
+                value={s.textColorToken}
+                effectiveValue="foreground"
+                onChange={(t) => set({ textColorToken: t })}
               />
             </div>
           )}
           <div className="flex items-center justify-between gap-2">
             <span className="shrink-0 text-xs text-muted-foreground">Font</span>
             <div className="flex items-center gap-1">
+              {/* When fontFamily is unset, show the effective brand font as selected
+                  (lighter opacity = "following theme"). Editing writes the real _style. */}
               <select
-                value={s.fontFamily ?? ""}
+                value={s.fontFamily ?? effectiveFontFamily ?? ""}
                 onChange={(e) =>
                   set({
                     fontFamily: e.target.value
@@ -1012,7 +929,10 @@ export function DesignTab({
                       : undefined,
                   })
                 }
-                className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className={cn(
+                  "h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                  s.fontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60"
+                )}
               >
                 <option value="">Theme font</option>
                 {PORTFOLIO_FONT_KEYS.map((key) => (
@@ -1030,6 +950,10 @@ export function DesignTab({
               value={s.fontSize}
               min={STYLE_LIMITS.fontSize.min}
               max={STYLE_LIMITS.fontSize.max}
+              // ponytail: fontSize renders as CSS `inherit` (manualBlocks ~L173), resolving to
+              // the page's cascaded font-size. 16px is the browser default base and the most
+              // likely effective value, so we use it as the placeholder for unset fontSize.
+              effectiveValue={16}
               onChange={(v) => set({ fontSize: v })}
             />
           )}
@@ -1067,16 +991,66 @@ export function DesignTab({
         </EditorDrawerSection>
       )}
 
-      {/* Carousel per-target typography drawers */}
-      {isCarousel && (
-        <>
-          <EditorDrawerSection title="Heading">
-            <CarouselTargetControls target="heading" s={s} set={set} />
-          </EditorDrawerSection>
-          <EditorDrawerSection title="Description">
-            <CarouselTargetControls target="description" s={s} set={set} />
-          </EditorDrawerSection>
-        </>
+      {/* Button section — consolidated design controls for the Button block only.
+          Order matches the brief: color → opacity → text color → radius → style. */}
+      {isButton && (
+        <EditorDrawerSection title="Button">
+          {/* 1. Button color */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <PaintBucket className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="text-xs text-muted-foreground">Button color</span>
+            </div>
+            <ColorSwatchRow
+              value={s.buttonColorToken}
+              onChange={(t) => set({ buttonColorToken: t })}
+            />
+          </div>
+          {/* 2. Button opacity — effective 100 when unset (prop stays unset until edited) */}
+          <NumberInputRow
+            label="Button opacity"
+            value={s.buttonOpacity}
+            min={0}
+            max={100}
+            suffix="%"
+            effectiveValue={100}
+            onChange={(v) => set({ buttonOpacity: v })}
+          />
+          {/* 3. Button text color */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="text-xs text-muted-foreground">Button text color</span>
+            </div>
+            <ColorSwatchRow
+              value={s.textColorToken}
+              effectiveValue={effectiveButtonTextToken(s)}
+              onChange={(t) => set({ textColorToken: t })}
+            />
+          </div>
+          {/* 4. Corner radius */}
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
+          {/* 5. Button style */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
+            <div className="flex items-center gap-1.5">
+              {(["solid", "outline", "soft"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={s.buttonStyle === v}
+                  onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {v.charAt(0).toUpperCase() + v.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </EditorDrawerSection>
       )}
 
       {/* Frame drawer — hidden for text/button leaf blocks and gallery blocks */}
@@ -1087,22 +1061,27 @@ export function DesignTab({
             value={s.borderWidth}
             min={STYLE_LIMITS.borderWidth.min}
             max={STYLE_LIMITS.borderWidth.max}
+            effectiveValue={0}
             onChange={(v) => set({ borderWidth: v })}
           />
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">Border color</span>
+            {/* Effective: resolveBlockStyle falls back to var(--pf-color-fg) when borderColorToken
+                is unset (styleToolkit.ts ~L257), mapping to the "foreground" token. */}
             <ColorSwatchRow
               value={s.borderColorToken}
               onChange={(t) => set({ borderColorToken: t })}
               allowNone={false}
+              effectiveValue="foreground"
             />
           </div>
-          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} />
+          <RadiusButtons value={s.radius} onChange={(v) => set({ radius: v })} effectiveValue={effectiveRadius} />
           <IconRow
             label="Shadow"
-            value={s.shadow ?? "none"}
+            value={s.shadow}
             options={SHADOW_OPTIONS}
-            onChange={(v) => set({ shadow: (v ?? "none") as ShadowSize })}
+            effectiveValue="none"
+            onChange={(v) => set({ shadow: v as ShadowSize | undefined })}
           />
         </EditorDrawerSection>
       )}
@@ -1205,196 +1184,100 @@ const COLUMNS_OPTIONS = [
   { value: 4, label: "4" },
 ] as const;
 
-const ASPECT_OPTIONS = [
-  { value: "square",    label: "Square" },
-  { value: "landscape", label: "Landscape" },
-  { value: "portrait",  label: "Portrait" },
-] as const;
-
-// Floating-header position for the carousel: horizontal (X) + vertical (Y).
-const CAROUSEL_FLOAT_X_OPTIONS = [
-  { value: "left",   label: "Left" },
-  { value: "center", label: "Center" },
-  { value: "right",  label: "Right" },
-] as const;
-
-const CAROUSEL_FLOAT_Y_OPTIONS = [
-  { value: "top",    label: "Top" },
-  { value: "center", label: "Middle" },
-  { value: "bottom", label: "Bottom" },
-] as const;
-
 function GalleryLayoutControls({
   type,
-  p,
-  setProp,
+  s,
+  set,
 }: {
   type: string;
-  p: Record<string, unknown>;
-  setProp: (key: string, val: unknown) => void;
+  s: BlockStyle;
+  set: (patch: Partial<BlockStyle>) => void;
 }) {
   if (COLLECTION_GALLERY_BLOCKS.has(type)) {
-    const isCarousel = type === "GalleryCarousel";
-    return (
-      <div className="flex flex-col gap-3">
-        {!isCarousel && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Columns</span>
-            <div className="flex items-center gap-1.5">
-              {COLUMNS_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={(p.columns as number) === value}
-                  onClick={() => setProp("columns", value)}
-                  className={cn(
-                    "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    (p.columns as number) === value && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {isCarousel && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Image shape</span>
-            <div className="flex items-center gap-1.5">
-              {ASPECT_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={(p.aspect as string) === value}
-                  onClick={() => setProp("aspect", value)}
-                  className={cn(
-                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    (p.aspect as string) === value && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {isCarousel && (
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Autoplay</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={!!(p.autoplay)}
-              onClick={() => setProp("autoplay", !p.autoplay)}
-              className={cn(
-                "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                p.autoplay ? "bg-foreground" : "bg-muted"
-              )}
-            >
-              <span
-                className={cn(
-                  "inline-block h-3 w-3 translate-x-1 transition-transform bg-background",
-                  !!p.autoplay && "translate-x-5"
-                )}
-              />
-            </button>
-          </div>
-        )}
-        {isCarousel && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Floating header — horizontal</span>
-            <div className="flex items-center gap-1.5">
-              {CAROUSEL_FLOAT_X_OPTIONS.map(({ value, label }) => {
-                const current = (p.floatX as string) ?? "center";
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={current === value}
-                    onClick={() => setProp("floatX", value)}
-                    className={cn(
-                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      current === value && "bg-foreground text-background hover:bg-foreground"
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {isCarousel && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Floating header — vertical</span>
-            <div className="flex items-center gap-1.5">
-              {CAROUSEL_FLOAT_Y_OPTIONS.map(({ value, label }) => {
-                const current = (p.floatY as string) ?? "center";
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={current === value}
-                    onClick={() => setProp("floatY", value)}
-                    className={cn(
-                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      current === value && "bg-foreground text-background hover:bg-foreground"
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {!isCarousel && (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Image spacing</span>
-            <div className="flex items-center gap-1.5">
-              {GAP_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={(p.gap as string) === value}
-                  onClick={() => setProp("gap", value)}
-                  className={cn(
-                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    (p.gap as string) === value && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (type === "FeaturedWork") {
+    // GalleryGrid and GalleryMasonry: show Columns + Gap controls.
+    // Values live in _style.galleryColumns / _style.galleryGap.
+    // Effective defaults: columns=3, gap="normal" (shown with lighter "following theme" ring).
     return (
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Columns</span>
           <div className="flex items-center gap-1.5">
-            {([2, 3, 4] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={(p.columns as number) === v}
-                onClick={() => setProp("columns", v)}
-                className={cn(
-                  "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  (p.columns as number) === v &&
-                    "bg-foreground text-background hover:bg-foreground"
-                )}
-              >
-                {v}
-              </button>
-            ))}
+            {COLUMNS_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryColumns === value;
+              const isEffective = s.galleryColumns === undefined && value === 3;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryColumns: value })}
+                  className={cn(
+                    "inline-flex h-7 min-w-[2.5rem] cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground">Image spacing</span>
+          <div className="flex items-center gap-1.5">
+            {GAP_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryGap === value;
+              const isEffective = s.galleryGap === undefined && value === "normal";
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryGap: value })}
+                  className={cn(
+                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === "FeaturedWork") {
+    // FeaturedWork: columns only, no gap. Value in _style.galleryColumns.
+    // Effective default: columns=3.
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs text-muted-foreground">Columns</span>
+          <div className="flex items-center gap-1.5">
+            {COLUMNS_OPTIONS.map(({ value, label }) => {
+              const isExplicit = s.galleryColumns === value;
+              const isEffective = s.galleryColumns === undefined && value === 3;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={isExplicit || isEffective}
+                  onClick={() => set({ galleryColumns: value })}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    isExplicit && "bg-foreground text-background hover:bg-foreground",
+                    isEffective && "border-foreground opacity-70"
+                  )}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1426,20 +1309,99 @@ export function LayoutTabBody({
   parentRowsCount?: number;
 }) {
   const isGalleryLayout = GALLERY_BLOCKS.has(blockType);
+  const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(blockType);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(blockType);
+  // Columns is a grid container (not flex), but it shares the same spacing
+  // (padding) + gap controls as Container.
+  const isColumns = blockType === "Columns";
 
-  const isCarousel = blockType === "GalleryCarousel";
-  if (isGalleryLayout && p && setProp) {
+  // Effective padding for the plain Container and Columns blocks only.
+  // Preset blocks have explicit curated padding already baked in -- no effectivePad.
+  const effectivePad: EffectivePad | undefined =
+    blockType === "Container" ? CONTAINER_EFFECTIVE_PAD :
+    blockType === "Columns" ? COLUMNS_EFFECTIVE_PAD :
+    undefined;
+
+  if (isGalleryLayout) {
+    if (isGalleryContainer) {
+      // Gallery container blocks: gallery-specific controls (columns/gap via _style) +
+      // container layout drawers (Spacing with padding, Layout with gap/min-height/align).
+      return (
+        <EditorDrawerGroup>
+          <EditorDrawerSection title="Gallery">
+            <GalleryLayoutControls type={blockType} s={s} set={set} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Spacing">
+            <PaddingControls s={s} set={set} />
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Layout">
+            <NumberInputRow
+              label="Gap"
+              value={s.gap}
+              min={0}
+              max={96}
+              suffix="px"
+              effectiveValue={16}
+              onChange={(v) => set({ gap: v })}
+            />
+            {p !== undefined && setProp !== undefined && (
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
+                <div className="flex items-center gap-1.5">
+                  {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
+                    const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
+                    // Effective default: when minHeight is unset, "auto" is the fallback.
+                    const isEffective = p.minHeight === undefined && value === "auto";
+                    const isActive = isExplicit || isEffective;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => setProp("minHeight", value)}
+                        className={cn(
+                          "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                          isExplicit && "bg-foreground text-background hover:bg-foreground",
+                          isEffective && "border-foreground"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {isGridChild ? (
+              <>
+                <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+                <IconRow
+                  label="Align"
+                  value={s.alignItems}
+                  options={ALIGN_OPTIONS}
+                  effectiveValue="stretch"
+                  onChange={(v) => set({ alignItems: v })}
+                />
+              </>
+            ) : (
+              <IconRow
+                label="Align"
+                value={s.alignItems}
+                options={ALIGN_OPTIONS}
+                effectiveValue="stretch"
+                onChange={(v) => set({ alignItems: v })}
+              />
+            )}
+          </EditorDrawerSection>
+        </EditorDrawerGroup>
+      );
+    }
+    // Non-container gallery blocks: simple layout view with gallery controls only.
     return (
       <div className="flex flex-col gap-4 p-3">
-        <GalleryLayoutControls type={blockType} p={p} setProp={setProp} />
-        {isCarousel && <CarouselTextPadding s={s} set={set} />}
+        <GalleryLayoutControls type={blockType} s={s} set={set} />
       </div>
     );
-  }
-  // Standalone (no Puck provider — tests): the carousel still exposes Text padding.
-  if (isGalleryLayout) {
-    return <div className="flex flex-col gap-4 p-3">{isCarousel && <CarouselTextPadding s={s} set={set} />}</div>;
   }
 
   // For text-only and button leaf blocks: position/size + spacing controls.
@@ -1449,25 +1411,7 @@ export function LayoutTabBody({
       <EditorDrawerGroup>
         {isButton && p && setProp && (
           <EditorDrawerSection title="Layout">
-            <div className="flex flex-col gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Button style</span>
-              <div className="flex items-center gap-1.5">
-                {(["solid", "outline", "soft"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    aria-pressed={s.buttonStyle === v}
-                    onClick={() => set({ buttonStyle: s.buttonStyle === v ? undefined : v })}
-                    className={cn(
-                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      s.buttonStyle === v && "bg-foreground text-background hover:bg-foreground"
-                    )}
-                  >
-                    {v.charAt(0).toUpperCase() + v.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Button style and Corner radius moved to Design tab → Button section (Pass 2). */}
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Size</span>
               <div className="flex items-center gap-1.5">
@@ -1517,7 +1461,7 @@ export function LayoutTabBody({
   return (
     <EditorDrawerGroup>
       <EditorDrawerSection title="Spacing">
-        {isFlexContainer && <PaddingControls s={s} set={set} />}
+        {(isFlexContainer || isColumns) && <PaddingControls s={s} set={set} effectivePad={effectivePad} />}
       </EditorDrawerSection>
       <EditorDrawerSection title="Layout">
         <NumberInputRow
@@ -1526,6 +1470,7 @@ export function LayoutTabBody({
           min={0}
           max={96}
           suffix="px"
+          effectiveValue={16}
           onChange={(v) => set({ gap: v })}
         />
         {/* Min height — only for flex containers, controlled via block prop */}
@@ -1533,31 +1478,55 @@ export function LayoutTabBody({
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
             <div className="flex items-center gap-1.5">
-              {MIN_HEIGHT_OPTIONS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={(p.minHeight as string) === value}
-                  onClick={() => setProp("minHeight", value)}
-                  className={cn(
-                    "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                    (p.minHeight as string) === value && "bg-foreground text-background hover:bg-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+              {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
+                const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
+                // Effective default: when minHeight is unset, "auto" is the fallback.
+                const isEffective = p.minHeight === undefined && value === "auto";
+                const isActive = isExplicit || isEffective;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setProp("minHeight", value)}
+                    className={cn(
+                      "inline-flex h-7 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      isExplicit && "bg-foreground text-background hover:bg-foreground",
+                      isEffective && "border-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
         {isGridChild ? (
-          <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+          <>
+            <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+            <IconRow
+              label="Align"
+              value={s.alignItems}
+              options={ALIGN_OPTIONS}
+              effectiveValue="stretch"
+              onChange={(v) => set({ alignItems: v })}
+            />
+            <IconRow
+              label="Justify"
+              value={s.justifyContent}
+              options={JUSTIFY_OPTIONS}
+              effectiveValue="start"
+              onChange={(v) => set({ justifyContent: v })}
+            />
+          </>
         ) : (
           <>
             <IconRow
               label="Align"
               value={s.alignItems}
               options={ALIGN_OPTIONS}
+              effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
             />
             {showJustify && (
@@ -1565,6 +1534,7 @@ export function LayoutTabBody({
                 label="Justify"
                 value={s.justifyContent}
                 options={JUSTIFY_OPTIONS}
+                effectiveValue="start"
                 onChange={(v) => set({ justifyContent: v })}
               />
             )}
@@ -1650,38 +1620,6 @@ function DividerPanel({ p, setProp }: { p: Record<string, unknown> | undefined; 
   );
 }
 
-function ContactDetailsPanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
-  return (
-    <div className="flex flex-col p-3">
-      {CONTACT_TOGGLES.map(({ key, label }) => (
-        <div
-          key={key}
-          className="flex items-center justify-between border-b border-border py-2.5 last:border-b-0"
-        >
-          <span className="text-xs text-muted-foreground">{label}</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!(p?.[key])}
-            onClick={() => setProp(key, !(p?.[key]))}
-            className={cn(
-              "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              p?.[key] ? "bg-foreground" : "bg-muted"
-            )}
-          >
-            <span
-              className={cn(
-                "inline-block h-3 w-3 translate-x-1 transition-transform bg-background",
-                !!(p?.[key]) && "translate-x-5"
-              )}
-            />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Block-aware panel — single usePuck() call, derives type/context from selection
 // ---------------------------------------------------------------------------
@@ -1717,9 +1655,15 @@ function BlockAwarePanel({
   const type = (selectedItem?.type ?? "") as string;
   const isGallery = GALLERY_BLOCKS.has(type);
   const isContainer = CONTAINER_TYPES.has(type);
+  // Gallery container blocks (GalleryGrid, GalleryMasonry, FeaturedWork) get the same
+  // Content/Design/Layout drawers as Container, minus Typography. They are NOT true
+  // containers (no slot), so ContentInputs still shows their gallery-specific controls.
+  const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(type);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
-  const availableTabs = ["content", "design", "layout"] as const;
+  const availableTabs = type === "ContactDetails"
+    ? (["content", "design"] as const)
+    : (["content", "design", "layout"] as const);
 
   const isGridChild = (() => {
     if (!selectedItem) return false;
@@ -1776,37 +1720,38 @@ function BlockAwarePanel({
   if (type === "Divider") return <DividerPanel p={p} setProp={setProp} />;
   if (type === "Image") return <ImagePanel p={p} setProp={setProp} />;
   if (type === "Video") return <VideoPanel p={p} setProp={setProp} />;
-  if (type === "ContactDetails") return <ContactDetailsPanel p={p} setProp={setProp} />;
 
   return (
-    <div className="flex flex-col">
-      <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
-      {activeTab === "content" && (
-        <ContentTabBody
-          s={s}
-          set={set}
-          type={type}
-          p={p}
-          setProp={setProp}
-          showBanner={isContainer}
-          isContainer={isContainer}
-        />
-      )}
-      {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}
-      {activeTab === "layout" && (
-        <LayoutTabBody
-          s={s}
-          set={set}
-          isGridChild={isGridChild}
-          showJustify={isFlexContainer && !isGallery}
-          blockType={type}
-          p={p}
-          setProp={setProp}
-          parentColumnsCount={parentColumnsCount}
-          parentRowsCount={parentRowsCount}
-        />
-      )}
-    </div>
+    <BlockIdContext.Provider value={blockId}>
+      <div className="flex flex-col">
+        <TabHeader tab={activeTab} tabs={availableTabs} onTabChange={setActiveTab} />
+        {activeTab === "content" && (
+          <ContentTabBody
+            s={s}
+            set={set}
+            type={type}
+            p={p}
+            setProp={setProp}
+            showBanner={isContainer || isGalleryContainer || type === "ContactDetails"}
+            isContainer={isContainer || isGalleryContainer}
+          />
+        )}
+        {activeTab === "design" && <DesignTab s={s} set={set} blockType={type} />}
+        {activeTab === "layout" && (
+          <LayoutTabBody
+            s={s}
+            set={set}
+            isGridChild={isGridChild}
+            showJustify={isFlexContainer && !isGallery}
+            blockType={type}
+            p={p}
+            setProp={setProp}
+            parentColumnsCount={parentColumnsCount}
+            parentRowsCount={parentRowsCount}
+          />
+        )}
+      </div>
+    </BlockIdContext.Provider>
   );
 }
 
@@ -1835,6 +1780,7 @@ export function StyleToolkitField({
 
   // Standalone render (tests — no Puck provider): show full 3-tab panel
   const allTabs = ["content", "design", "layout"] as const;
+  const standaloneIsContainer = CONTAINER_TYPES.has(blockType) || GALLERY_CONTAINER_BLOCKS.has(blockType);
   return (
     <div className="flex flex-col">
       <TabHeader tab={tab} tabs={allTabs} onTabChange={setTab} />
@@ -1845,8 +1791,8 @@ export function StyleToolkitField({
           type={blockType}
           p={undefined}
           setProp={() => {}}
-          showBanner={true}
-          isContainer={false}
+          showBanner={standaloneIsContainer || !GALLERY_BLOCKS.has(blockType)}
+          isContainer={standaloneIsContainer}
         />
       )}
       {tab === "design" && <DesignTab s={s} set={set} blockType={blockType} />}
