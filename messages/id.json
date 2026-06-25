@@ -1139,7 +1139,8 @@
           "none": "—",
           "editPhone": "Edit",
           "savePhone": "Simpan",
-          "cancelEdit": "Batal"
+          "cancelEdit": "Batal",
+          "savedToast": "Telepon diperbarui."
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -1202,7 +1203,9 @@
           "dateLabel": "Tanggal",
           "startLabel": "Waktu mulai",
           "endLabel": "Waktu selesai",
-          "alterOnlyError": "Jumlah sesi tidak dapat diubah."
+          "alterOnlyError": "Jumlah sesi tidak dapat diubah.",
+          "savedToast": "Sesi disimpan.",
+          "saveError": "Tidak dapat menyimpan sesi. Silakan coba lagi."
         }
       },
       "view": {
@@ -1217,7 +1220,9 @@
           "conflicted": "Konflik"
         },
         "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
-        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi"
+        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
+        "updating": "Menjadwalkan ulang…",
+        "updated": "Sesi dijadwalkan ulang"
       }
     },
     "pageBuilder": {

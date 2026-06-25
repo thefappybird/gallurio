@@ -1139,7 +1139,8 @@
           "none": "—",
           "editPhone": "Edit",
           "savePhone": "Save",
-          "cancelEdit": "Cancel"
+          "cancelEdit": "Cancel",
+          "savedToast": "Phone updated."
         },
         "eventRequest": {
           "title": "Event request",
@@ -1202,7 +1203,9 @@
           "dateLabel": "Date",
           "startLabel": "Start time",
           "endLabel": "End time",
-          "alterOnlyError": "Session count cannot change."
+          "alterOnlyError": "Session count cannot change.",
+          "savedToast": "Sessions saved.",
+          "saveError": "Could not save sessions. Please try again."
         }
       },
       "view": {
@@ -1217,7 +1220,9 @@
           "conflicted": "Conflicted"
         },
         "rescheduleConflict": "This time conflicts with an existing booking; the move was cancelled.",
-        "rescheduleFailed": "Could not reschedule — please try again"
+        "rescheduleFailed": "Could not reschedule — please try again",
+        "updating": "Rescheduling…",
+        "updated": "Session rescheduled"
       }
     },
     "pageBuilder": {

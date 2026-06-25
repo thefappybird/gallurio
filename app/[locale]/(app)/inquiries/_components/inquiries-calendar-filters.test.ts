@@ -7,7 +7,7 @@ vi.mock("../_actions", () => ({
   rescheduleInquirySessionAction: vi.fn(),
 }));
 
-import { calendarEventMatchesFilters, mergeConflict } from "./inquiries-calendar-manager";
+import { calendarEventMatchesFilters, mergeConflict, isInquiryCandleDraggable } from "./inquiries-calendar-manager";
 import type { CalendarEvent } from "../../bookings/_components/booking-calendar";
 
 function makeEvent(overrides: Partial<CalendarEvent>): CalendarEvent {
@@ -41,6 +41,17 @@ const newCandle = makeEvent({ kind: "inquiry", hasConflict: false });
 const conflictedCandle = makeEvent({ kind: "inquiry", hasConflict: true });
 // booking candle (kind omitted = undefined, treated as non-inquiry)
 const bookingCandle = makeEvent({ kind: undefined, hasConflict: false });
+
+describe("isInquiryCandleDraggable", () => {
+  it("past inquiry candle with colorOverride is NOT draggable", () => {
+    const past = makeEvent({
+      kind: "inquiry",
+      colorOverride: "var(--event-inquiry)",
+      end: new Date(Date.now() - 86_400_000),
+    });
+    expect(isInquiryCandleDraggable(past)).toBe(false);
+  });
+});
 
 describe("mergeConflict", () => {
   it("preserves server hasConflict=true even when conflictIds is empty (Booked chip OFF scenario)", () => {

@@ -334,6 +334,7 @@ export function MonthBookingEvent({
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
   const tStatus = useTranslations("app.bookings.statusValues");
+  const tInq = useTranslations("app.inquiries.statusValues");
   const timeMode = useTimeFormat();
 
   if ("type" in ev && ev.type === "overflow") {
@@ -380,7 +381,7 @@ export function MonthBookingEvent({
     booking.status === "cancelled" || booking.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(booking.status) ? booking.status : tStatus(booking.status);
-  const labelOverride = booking.kind === "inquiry" && booking.status !== "booked" ? "Inquiry" : undefined;
+  const labelOverride = booking.kind === "inquiry" ? tInq("inquiry") : undefined;
   const candleAriaLabel = `${booking.title} · ${labelOverride ?? statusLabel}${booking.hasConflict ? " · conflict" : ""}`;
 
   return (
@@ -424,6 +425,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const ctx = useContext(CalendarToolbarCtx);
   const t = useTranslations("app.bookings.calendar");
   const tStatus = useTranslations("app.bookings.statusValues");
+  const tInq = useTranslations("app.inquiries.statusValues");
   const timeMode = useTimeFormat();
   // Overflow events never appear in week/day view (only month view produces them).
   // Guard defensively so the narrowing is correct for TS.
@@ -440,7 +442,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
   const isStatusMuted = ev.status === "cancelled" || ev.status === "completed";
   const showPastVisual = isPast && !isStatusMuted && (ctx?.showPast ?? false);
   const statusLabel = typeof tStatus.has === "function" && !tStatus.has(ev.status) ? ev.status : tStatus(ev.status);
-  const labelOverride = ev.kind === "inquiry" && ev.status !== "booked" ? "Inquiry" : undefined;
+  const labelOverride = ev.kind === "inquiry" ? tInq("inquiry") : undefined;
   const candleAriaLabel = `${ev.title} · ${labelOverride ?? statusLabel}${ev.hasConflict ? " · conflict" : ""}`;
 
   return (

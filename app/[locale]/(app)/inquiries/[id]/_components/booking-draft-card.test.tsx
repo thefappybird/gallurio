@@ -15,9 +15,11 @@ vi.mock("@/lib/time-format/context", () => ({
 
 const approveInquiryBookingAction = vi.fn();
 const saveDraftBookingFieldsAction = vi.fn();
+const editInquirySessionsAction = vi.fn();
 vi.mock("../../_actions", () => ({
   approveInquiryBookingAction: (...a: unknown[]) => approveInquiryBookingAction(...a),
   saveDraftBookingFieldsAction: (...a: unknown[]) => saveDraftBookingFieldsAction(...a),
+  editInquirySessionsAction: (...a: unknown[]) => editInquirySessionsAction(...a),
 }));
 
 const refresh = vi.fn();
@@ -50,6 +52,8 @@ beforeEach(() => {
   approveInquiryBookingAction.mockResolvedValue({ ok: true, bookingId: "bk_1" });
   saveDraftBookingFieldsAction.mockReset();
   saveDraftBookingFieldsAction.mockResolvedValue({ ok: true });
+  editInquirySessionsAction.mockReset();
+  editInquirySessionsAction.mockResolvedValue({ ok: true });
   refresh.mockReset();
 });
 
@@ -128,6 +132,18 @@ describe("BookingDraftCard", () => {
       "abc",
       expect.objectContaining({ total: 2500, deposit: 0, notes: "" })
     );
+  });
+
+  it("calls toast.success after a successful sessions save", async () => {
+    const { toast } = await import("sonner");
+    const futureSession = { startDate: "2099-12-31", startTime: "10:00", endTime: "12:00" };
+    renderWithProviders(<BookingDraftCard {...baseProps} sessions={[futureSession]} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Edit sessions/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => expect(editInquirySessionsAction).toHaveBeenCalledOnce());
+    expect(toast.success).toHaveBeenCalledWith("Sessions saved.");
   });
 
   it("renders session time via formatSessionTimeRange in 12h mode (not raw HH:MM)", () => {

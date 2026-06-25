@@ -46,6 +46,7 @@ type Props = {
   sessions?: InquirySessionView[];
   locale?: string;
   hasConflict?: boolean;
+  readOnly?: boolean;
   onConverted?: () => void;
   onConvertFailed?: () => void;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
@@ -66,6 +67,7 @@ export function BookingDraftCard({
   sessions = [],
   locale,
   hasConflict = false,
+  readOnly = false,
   onConverted,
   onConvertFailed,
   onInquiryChanged,
@@ -157,8 +159,10 @@ export function BookingDraftCard({
     setSessionsSaving(false);
     if ("ok" in result && result.ok) {
       setEditingSessions(false);
+      toast.success(ts("savedToast"));
     } else if ("error" in result) {
       setSessionsError(result.error);
+      toast.error(ts("saveError"));
     }
   }
 
@@ -284,7 +288,7 @@ export function BookingDraftCard({
               <span className="text-xs uppercase tracking-wide text-muted-foreground">
                 {ter("sessions")}
               </span>
-              {!editingSessions ? (
+              {!readOnly && !editingSessions ? (
                 <button
                   type="button"
                   onClick={() => { setEditingSessions(true); setSessionsError(null); }}
@@ -380,9 +384,9 @@ export function BookingDraftCard({
           </div>
         )}
 
-        {!isOwner ? (
+        {!readOnly && !isOwner ? (
           <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
-        ) : (
+        ) : !readOnly ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
@@ -411,7 +415,7 @@ export function BookingDraftCard({
               </p>
             )}
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -63,6 +63,18 @@ export function mergeConflict(ev: CalendarEvent, conflictIds: Set<string>): Cale
 }
 
 /**
+ * Returns true if the given calendar event should be draggable.
+ * Only future, non-booked inquiry candles (those with a colorOverride) are draggable.
+ */
+export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
+  return (
+    ev.kind === "inquiry" &&
+    ev.colorOverride !== undefined &&
+    ev.end >= new Date()
+  );
+}
+
+/**
  * Calendar view for the inquiries page. New inquiry candles are draggable;
  * booking candles are not. On drop, persists via rescheduleInquirySessionAction
  * with optimistic update and revert on conflict/error.
@@ -201,36 +213,35 @@ export function InquiriesCalendarManager({
         };
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
 
-        const result = await rescheduleInquirySessionAction({
-          inquiryId: ev.inquiryId,
-          sessionIndex: ev.sessionIndex,
-          startDate,
-          startTime,
-          endTime,
-        });
-
-        if ("error" in result) {
-          // Revert optimistic move and toast the user.
-          setOptimisticOverrides((prev) => {
-            const next = new Map(prev);
-            next.set(ev.id, prevEvent);
-            return next;
-          });
-          if (result.error === "conflict") {
-            toast.error(t("rescheduleConflict"));
-          } else {
-            toast.error(t("rescheduleFailed"));
+        await toast.promise(
+          (async () => {
+            const result = await rescheduleInquirySessionAction({
+              inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
+              sessionIndex: ev.sessionIndex,
+              startDate,
+              startTime,
+              endTime,
+            });
+            if ("error" in result) throw result.error;
+            // Success -- clear the override and trigger a data refresh.
+            setOptimisticOverrides((prev) => {
+              const next = new Map(prev);
+              next.delete(ev.id);
+              return next;
+            });
+            router.refresh();
+          })(),
+          {
+            loading: t("updating"),
+            success: t("updated"),
+            error: (err: unknown) => {
+              setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
+              return typeof err === "string" && err === "conflict"
+                ? t("rescheduleConflict")
+                : t("rescheduleFailed");
+            },
           }
-          return;
-        }
-
-        // Success -- clear the override and trigger a data refresh.
-        setOptimisticOverrides((prev) => {
-          const next = new Map(prev);
-          next.delete(ev.id);
-          return next;
-        });
-        router.refresh();
+        );
       } finally {
         inFlightRef.current.delete(sessionKey);
       }
@@ -259,7 +270,7 @@ export function InquiriesCalendarManager({
           className="size-2.5 shrink-0"
           style={{ background: showNew ? "currentColor" : "var(--event-inquiry)" }}
         />
-        {t("filters.new")}
+        {t("filters.inquiry")}
       </button>
       <button
         type="button"
@@ -304,10 +315,9 @@ export function InquiriesCalendarManager({
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
+      showPast={true}
       draggableAccessor={(ev: AnyCalendarEvent) =>
-        "kind" in ev &&
-        (ev as CalendarEvent).kind === "inquiry" &&
-        (ev as CalendarEvent).colorOverride !== undefined
+        "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent)
       }
       toolbarTrailing={toolbarTrailing}
       messages={{
