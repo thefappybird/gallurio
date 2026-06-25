@@ -74,6 +74,24 @@ import { resolveDiscardTarget } from "./draftDiscard";
 type Zone = "home" | "gallery";
 type EditorSection = Zone | "collectionsPopup" | "header" | "contact";
 
+/** Preview-route `zone` param for the active editor section. */
+export type PreviewZoneParam = "home" | "gallery" | "contact" | "popup";
+
+/**
+ * Map the active editor section to the preview route's `zone` param so the
+ * iframe and the open-in-new-tab link land on what the user is viewing.
+ * Contact and the collections popup have dedicated preview zones; header
+ * chrome renders on the underlying page, so it falls back to the active zone.
+ */
+export function previewZoneFor(
+  activeSection: EditorSection,
+  activeZone: Zone
+): PreviewZoneParam {
+  if (activeSection === "contact") return "contact";
+  if (activeSection === "collectionsPopup") return "popup";
+  return activeZone;
+}
+
 /** Serializable starter-template summary for the in-editor switcher. */
 export type EditorTemplateSummary = {
   id: string;
@@ -1170,9 +1188,8 @@ export function EditorShell({
     (key, values) => tPublicForm(key, values),
     (key, values) => tLocationPicker(key, values)
   ).form;
-  const previewSrc =
-    `${previewBasePath}?zone=${activeSection === "contact" ? "contact" : activeZone}` +
-    `&v=${previewNonce}`;
+  const previewZone = previewZoneFor(activeSection, activeZone);
+  const previewSrc = `${previewBasePath}?zone=${previewZone}&v=${previewNonce}`;
 
   // Stable references for Puck overrides that must not change identity on every
   // re-render. Puck treats a new function reference as a reason to unmount and
@@ -1272,7 +1289,7 @@ export function EditorShell({
           type="button"
           title={t("preview.openInTab")}
           aria-label={t("preview.openInTab")}
-          onClick={() => window.open(previewBasePath, "_blank", "noopener,noreferrer")}
+          onClick={() => window.open(`${previewBasePath}?zone=${previewZone}`, "_blank", "noopener,noreferrer")}
           className="inline-flex size-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <ExternalLinkIcon className="size-4" aria-hidden />

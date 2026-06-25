@@ -133,7 +133,7 @@ vi.mock("../_draftActions", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { EditorShell } from "./EditorShell";
+import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 
 const DRAFT_KEY = "gallurio:portfolio-draft:studio-aurora";
@@ -178,6 +178,16 @@ const baseProps = {
 
 // basePro alias mirrors the existing test usage pattern.
 const basePro = baseProps;
+
+describe("previewZoneFor", () => {
+  it("maps the contact section to the contact zone", () => {
+    expect(previewZoneFor("contact", "home")).toBe("contact");
+  });
+
+  it("maps the collections popup section to the popup zone", () => {
+    expect(previewZoneFor("collectionsPopup", "gallery")).toBe("popup");
+  });
+});
 
 /**
  * Seed localStorage so `hasRecoverableBuffer` is true, enabling the
