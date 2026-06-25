@@ -56,6 +56,7 @@ import {
   DimensionInput,
   IconRow,
   ResetButton,
+  FloatingLabelInput,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
 import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
@@ -96,7 +97,7 @@ const TEXT_ONLY_BLOCKS = new Set(["Heading", "Text", "Divider", "Spacer", "Butto
 // Button has its own consolidated design controls (see DesignTab isButton branch).
 // GalleryGrid, GalleryMasonry, and FeaturedWork are container-like and DO show Frame.
 const NO_FRAME_BLOCKS = new Set([
-  "Heading", "Text", "Divider", "Spacer", "Button",
+  "Heading", "Text", "Divider", "Spacer", "Button", "ContactDetails",
 ]);
 // Gallery blocks that support banner/container props: same tab set as Container minus Typography.
 export const GALLERY_CONTAINER_BLOCKS = new Set(["GalleryGrid", "GalleryMasonry", "FeaturedWork"]);
@@ -162,13 +163,6 @@ const MIN_HEIGHT_OPTIONS = [
   { value: "short",  label: "Short" },
   { value: "medium", label: "Medium" },
   { value: "tall",   label: "Tall" },
-] as const;
-
-const CONTACT_TOGGLES = [
-  { key: "showEmail",   label: "Email" },
-  { key: "showPhone",   label: "Phone" },
-  { key: "showAddress", label: "Address" },
-  { key: "showSocials", label: "Social links" },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -521,6 +515,51 @@ export function ContentInputs({
             allowAuto
           />
         </div>
+      </div>
+    );
+  }
+  if (type === "ContactDetails") {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-xs text-muted-foreground">Leave blank to use your workspace contact details.</p>
+        <FloatingLabelInput
+          label="Email"
+          value={(props.email as string) ?? ""}
+          onChange={(v) => setProp("email", v)}
+          type="email"
+        />
+        <FloatingLabelInput
+          label="Phone"
+          value={(props.phone as string) ?? ""}
+          onChange={(v) => setProp("phone", v)}
+          type="tel"
+        />
+        <FloatingLabelInput
+          label="Address"
+          value={(props.address as string) ?? ""}
+          onChange={(v) => setProp("address", v)}
+        />
+        <FloatingLabelInput
+          label="Instagram"
+          value={(props.instagram as string) ?? ""}
+          onChange={(v) => setProp("instagram", v)}
+        />
+        <FloatingLabelInput
+          label="Facebook"
+          value={(props.facebook as string) ?? ""}
+          onChange={(v) => setProp("facebook", v)}
+        />
+        <FloatingLabelInput
+          label="TikTok"
+          value={(props.tiktok as string) ?? ""}
+          onChange={(v) => setProp("tiktok", v)}
+        />
+        <FloatingLabelInput
+          label="Website"
+          value={(props.website as string) ?? ""}
+          onChange={(v) => setProp("website", v)}
+          type="url"
+        />
       </div>
     );
   }
@@ -1581,38 +1620,6 @@ function DividerPanel({ p, setProp }: { p: Record<string, unknown> | undefined; 
   );
 }
 
-function ContactDetailsPanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
-  return (
-    <div className="flex flex-col p-3">
-      {CONTACT_TOGGLES.map(({ key, label }) => (
-        <div
-          key={key}
-          className="flex items-center justify-between border-b border-border py-2.5 last:border-b-0"
-        >
-          <span className="text-xs text-muted-foreground">{label}</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!(p?.[key])}
-            onClick={() => setProp(key, !(p?.[key]))}
-            className={cn(
-              "relative inline-flex h-5 w-9 cursor-pointer items-center border border-border transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-              p?.[key] ? "bg-foreground" : "bg-muted"
-            )}
-          >
-            <span
-              className={cn(
-                "inline-block h-3 w-3 translate-x-1 transition-transform bg-background",
-                !!(p?.[key]) && "translate-x-5"
-              )}
-            />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Block-aware panel — single usePuck() call, derives type/context from selection
 // ---------------------------------------------------------------------------
@@ -1654,7 +1661,9 @@ function BlockAwarePanel({
   const isGalleryContainer = GALLERY_CONTAINER_BLOCKS.has(type);
   const isFlexContainer = FLEX_CONTAINER_BLOCKS.has(type);
 
-  const availableTabs = ["content", "design", "layout"] as const;
+  const availableTabs = type === "ContactDetails"
+    ? (["content", "design"] as const)
+    : (["content", "design", "layout"] as const);
 
   const isGridChild = (() => {
     if (!selectedItem) return false;
@@ -1711,7 +1720,6 @@ function BlockAwarePanel({
   if (type === "Divider") return <DividerPanel p={p} setProp={setProp} />;
   if (type === "Image") return <ImagePanel p={p} setProp={setProp} />;
   if (type === "Video") return <VideoPanel p={p} setProp={setProp} />;
-  if (type === "ContactDetails") return <ContactDetailsPanel p={p} setProp={setProp} />;
 
   return (
     <BlockIdContext.Provider value={blockId}>
@@ -1724,7 +1732,7 @@ function BlockAwarePanel({
             type={type}
             p={p}
             setProp={setProp}
-            showBanner={isContainer || isGalleryContainer}
+            showBanner={isContainer || isGalleryContainer || type === "ContactDetails"}
             isContainer={isContainer || isGalleryContainer}
           />
         )}

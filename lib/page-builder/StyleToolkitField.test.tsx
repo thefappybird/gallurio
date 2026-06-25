@@ -497,6 +497,30 @@ describe("DesignTab — RadiusButtons shows brand theme radius when block radius
   });
 });
 
+describe("ContentInputs — ContactDetails type", () => {
+  it("renders Email floating-label input for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Email")).toBeTruthy();
+  });
+
+  it("renders Phone floating-label input for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText("Phone")).toBeTruthy();
+  });
+});
+
 describe("useBrandRadius hook", () => {
   it("returns brandRadius from BrandColorsContext", () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
