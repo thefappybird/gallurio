@@ -221,3 +221,33 @@ for the header, collections popup, and contact form.
   dedicated `zone=popup` surface.
 - Browser verification deferred to the owner per request (no Playwright run this
   round).
+
+## Round 7 follow-up fixes (commits `c4289f1`, `8449d59`, `ef86ba6`)
+
+Three issues reported after the owner exercised the preview and editor:
+
+- **Preview navbar links dropped the draft theme.** Clicking the navbar **Gallery**
+  link inside the preview iframe reverted to the published/DB theme (wrong
+  foreground) and lost the navbar/contact/popup styling. Root cause: `PortfolioHeader`
+  hardcoded the Gallery href to `/w/${slug}/gallery` (the published route) with no
+  override, while Home already had a `homeHref` override the preview uses. Added a
+  `galleryHref?` prop threaded through `PreviewHeaderShell` and set from the preview
+  page to `/[locale]/portfolio-preview?zone=gallery`, so navigating between Home and
+  Gallery stays on the draft-aware preview route (which re-applies the unsaved draft).
+- **Root page canvas controls rendered blank.** The Puck `root` style panel
+  (`RootStyleField`) now floats its effective defaults like the block controls do:
+  the background-color swatch shows the theme **background** token as the effective
+  value when unset, opacity shows `100`, and padding/margin show their `0` default —
+  all display-only (the `_rootStyle` prop stays unset; `resolveRootStyle` and rendering
+  are untouched, so parity holds).
+- **Empty containers weren't droppable at page root.** An auto-height container
+  collapses to ~3rem of padding when empty, so the root drop zone had no targetable
+  band and dragging an empty container only nested it into a taller sibling. Applied a
+  5rem **editor-only** min-height (gated on `puck.isEditing`) so empty containers keep
+  a grabbable footprint and the root canvas keeps a drop band between siblings; the
+  published page is unchanged. (This is a dnd-kit targeting mitigation — owner to
+  confirm the drag-to-root gesture in a browser.)
+
+Each shipped with tests (PortfolioHeader gallery-href override; RootStyleField
+effective-default display; ContainerBlock editor-only min-height incl. production
+guard); `tsc`/`lint` clean.
