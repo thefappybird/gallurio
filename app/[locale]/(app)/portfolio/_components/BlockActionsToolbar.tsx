@@ -35,8 +35,8 @@ function useBlockRect(id: string | undefined): Rect | null {
 
   useEffect(() => {
     if (typeof document === "undefined" || !id) {
-      setRect(null);
-      return;
+      const raf = requestAnimationFrame(() => setRect(null));
+      return () => cancelAnimationFrame(raf);
     }
 
     function measure() {

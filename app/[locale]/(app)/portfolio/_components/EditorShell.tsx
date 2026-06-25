@@ -68,7 +68,8 @@ import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
-import { MoveOutActionBar } from "./MoveOutActionBar";
+import { SuppressedActionBar } from "./MoveOutActionBar";
+import { BlockActionsToolbar } from "./BlockActionsToolbar";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -1201,11 +1202,14 @@ export function EditorShell({
   // RootCanvasStyle and RightPanelTourMarker are module-level components.
   const puckStableOverrides = useMemo(
     () => ({
-      // Canvas wrapper — also carries RootCanvasStyle for the iframe background.
+      // Canvas wrapper — also carries RootCanvasStyle for the iframe background,
+      // and BlockActionsToolbar (always-visible, portals to body from within
+      // Puck context so createUsePuck selectors are available).
       puck: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="canvas" className="flex min-h-0 flex-1 flex-col">
           {children}
           <RootCanvasStyle />
+          <BlockActionsToolbar />
         </div>
       ),
       // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
@@ -1224,10 +1228,10 @@ export function EditorShell({
           {children}
         </div>
       ),
-      // Block action bar: adds a "Move out" button that relocates a nested block
-      // to the page root zone. MoveOutActionBar is a module-level component so
-      // its identity is stable — no risk of Puck remounting the subtree.
-      actionBar: MoveOutActionBar,
+      // Block action bar: suppress Puck's built-in floating bar so it doesn't
+      // compete with BlockActionsToolbar (our always-visible toolbar).
+      // SuppressedActionBar is module-level — stable reference, no remount risk.
+      actionBar: SuppressedActionBar,
     }),
     []
   );

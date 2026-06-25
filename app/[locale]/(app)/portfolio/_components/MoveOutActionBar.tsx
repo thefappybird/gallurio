@@ -1,31 +1,21 @@
 "use client";
 
 /**
- * Puck actionBar override that adds a "Move out" button to the block action bar.
+ * SuppressedActionBar — Puck actionBar override that renders an empty
+ * container so Puck's built-in floating action bar shows no buttons.
  *
- * Clicking "Move out" dispatches a Puck `move` action that relocates the
- * currently selected nested block to the page root zone. The button is only
- * rendered when the selected block is actually nested (not already at root).
+ * BlockActionsToolbar (our always-visible toolbar anchored to the selected
+ * block) takes over all action handling. Puck's own bar was unreliable:
+ * its visibility is gated by internal `dragFinished` state we can't control.
  *
- * This sidesteps the dnd-kit nested-zone drag-collision problem for blocks
- * (especially empty containers) that are hard to drag out manually.
+ * Module-level component — stable reference required so Puck does not
+ * remount the subtree on every render.
  *
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import type { ReactNode, SyntheticEvent } from "react";
-import { ActionBar, usePuck } from "@measured/puck";
-import type { AppState } from "@measured/puck";
-import { ArrowUpFromLine } from "lucide-react";
-import { moveBlockToRootAction } from "@/lib/page-builder/moveBlockToRoot";
-
-/** Local mirror of Puck's internal PrivateAppState (not exported by @measured/puck). */
-type AppStateWithIndexes = AppState & {
-  indexes: {
-    nodes: Record<string, { zone: string }>;
-    zones: Record<string, { contentIds: string[] }>;
-  };
-};
+import type { ReactNode } from "react";
+import { ActionBar } from "@measured/puck";
 
 type ActionBarOverrideProps = {
   label?: string;
@@ -34,41 +24,14 @@ type ActionBarOverrideProps = {
 };
 
 /**
- * Module-level component — stable reference, no closure over changing values.
- * Puck remounts the subtree whenever the override identity changes, so this
- * must NOT be defined inline or inside a render function.
+ * Renders Puck's ActionBar shell with no children — suppresses all built-in
+ * action buttons so they don't compete with BlockActionsToolbar.
  */
-export function MoveOutActionBar({
-  label,
-  children,
-  parentAction,
-}: ActionBarOverrideProps) {
-  const { appState, selectedItem, dispatch } = usePuck();
-
-  // appState is typed as AppState (no indexes) but Puck passes PrivateAppState
-  // at runtime. Cast to access indexes for the move calculation.
-  const indexes = (appState as AppStateWithIndexes).indexes;
-  const itemId = selectedItem?.props?.id as string | undefined;
-
-  const action =
-    indexes && itemId
-      ? moveBlockToRootAction(indexes, itemId)
-      : null;
-
-  function handleMoveOut(e: SyntheticEvent) {
-    e.stopPropagation();
-    if (action) dispatch(action);
-  }
-
-  return (
-    <ActionBar label={label}>
-      {parentAction}
-      {children}
-      {action && (
-        <ActionBar.Action label="Move out" onClick={handleMoveOut}>
-          <ArrowUpFromLine size={16} aria-hidden />
-        </ActionBar.Action>
-      )}
-    </ActionBar>
-  );
+export function SuppressedActionBar({ label }: ActionBarOverrideProps) {
+  return <ActionBar label={label} />;
 }
+
+// Keep the old export name so EditorShell's import still resolves while
+// we update it in a follow-up step.
+/** @deprecated Use SuppressedActionBar */
+export { SuppressedActionBar as MoveOutActionBar };
