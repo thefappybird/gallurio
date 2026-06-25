@@ -381,7 +381,17 @@ async function seedWorkspace(
     // Inquiries 13 and 14 are forced "inquiry" and overlap the today booking so the
     // Inquiry/Conflicted calendar filter and conflict coloring can be verified.
     const isConflict = i >= 13;
-    const sessionDate = isConflict ? conflictDateStr : toDateStr(eventDate);
+    // Inquiries 0 and 1 are forced to a PAST "inquiry" so the calendar's past
+    // handling (dimmed candle + Past pill + read-only modal) is demoable/testable.
+    const isPastSeed = i < 2;
+    // Fixed recent-past offsets so both past inquiries land within the current
+    // calendar month and are reliably visible on the default month view.
+    const pastDate = dayOffset(i === 0 ? -7 : -14);
+    const sessionDate = isConflict
+      ? conflictDateStr
+      : isPastSeed
+      ? toDateStr(pastDate)
+      : toDateStr(eventDate);
     const sessionStartH = isConflict ? conflictStartH : startH;
     const sessionEndH = isConflict ? conflictEndH : startH + durationH;
 
@@ -413,10 +423,10 @@ async function seedWorkspace(
           endTime: toTimeStr(sessionEndH),
         },
       ],
-      eventDate: isConflict ? todaySlot.start : eventDate,
+      eventDate: isConflict ? todaySlot.start : isPastSeed ? pastDate : eventDate,
       eventType: pick(EVENT_TYPES),
       budgetRange: pick(["under 50k", "50-100k", "100-250k", "250k+"]),
-      status: isConflict ? ("inquiry" as const) : status,
+      status: isConflict ? ("inquiry" as const) : isPastSeed ? ("inquiry" as const) : status,
       createdAt: dayOffset(-range(0, 30)),
     };
   });
