@@ -107,4 +107,33 @@ describe("selectedBlockActions", () => {
       destinationIndex: 1,
     });
   });
+
+  it("provides moveDown action moving to sourceIndex + 1 within same zone", () => {
+    const result = selectedBlockActions({ index: 1, zone: "hero:content" }, 2);
+    expect(result?.moveDown).toEqual({
+      type: "move",
+      sourceIndex: 1,
+      sourceZone: "hero:content",
+      destinationZone: "hero:content",
+      destinationIndex: 2,
+    });
+  });
+
+  it("provides duplicate action with correct sourceIndex and zone", () => {
+    const result = selectedBlockActions({ index: 3, zone: "gallery:grid" }, 1);
+    expect(result?.duplicate).toEqual({
+      type: "duplicate",
+      sourceIndex: 3,
+      sourceZone: "gallery:grid",
+    });
+  });
+
+  it("provides remove action with correct index and zone defaulting to ROOT_ZONE", () => {
+    const result = selectedBlockActions({ index: 2 }, 5);
+    expect(result?.remove).toEqual({
+      type: "remove",
+      index: 2,
+      zone: ROOT_ZONE,
+    });
+  });
 });

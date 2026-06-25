@@ -1,8 +1,5 @@
 /**
- * Pure helper for the "Move out" action bar button.
- *
- * Computes the Puck `move` dispatch action that relocates a nested block to the
- * page root zone, sidestepping the dnd-kit nested-zone drag-collision problem.
+ * Pure helpers for block action bar dispatch actions.
  *
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
@@ -17,14 +14,67 @@ export type MoveAction = {
   destinationZone: string;
 };
 
+export type DuplicateAction = {
+  type: "duplicate";
+  sourceIndex: number;
+  sourceZone: string;
+};
+
+export type RemoveAction = {
+  type: "remove";
+  index: number;
+  zone: string;
+};
+
+export type BlockActions = {
+  moveOut: MoveAction | null;
+  moveUp: MoveAction | null;
+  moveDown: MoveAction;
+  duplicate: DuplicateAction;
+  remove: RemoveAction;
+};
+
+/**
+ * Derives all toolbar dispatch actions for the selected block from the public
+ * `appState.ui.itemSelector`. Returns null when no block is selected.
+ */
+export function selectedBlockActions(
+  itemSelector: { index: number; zone?: string } | null,
+  rootContentLength: number,
+): BlockActions | null {
+  if (!itemSelector) return null;
+
+  const sourceZone = itemSelector.zone ?? ROOT_ZONE;
+  const moveOut: MoveAction | null = sourceZone !== ROOT_ZONE
+    ? { type: "move", sourceIndex: itemSelector.index, sourceZone, destinationZone: ROOT_ZONE, destinationIndex: rootContentLength }
+    : null;
+
+  const sourceIndex = itemSelector.index;
+
+  const moveUp: MoveAction | null = sourceIndex > 0
+    ? { type: "move", sourceIndex, sourceZone, destinationZone: sourceZone, destinationIndex: sourceIndex - 1 }
+    : null;
+
+  return {
+    moveOut,
+    moveUp,
+    moveDown: { type: "move", sourceIndex, sourceZone, destinationZone: sourceZone, destinationIndex: sourceIndex + 1 },
+    duplicate: { type: "duplicate", sourceIndex, sourceZone },
+    remove: { type: "remove", index: sourceIndex, zone: sourceZone },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Legacy helper — uses internal Puck `indexes` (not public appState).
+// ---------------------------------------------------------------------------
+
 type Indexes = {
   nodes: Record<string, { zone: string }>;
   zones: Record<string, { contentIds: string[] }>;
 };
 
 /**
- * Returns a Puck `move` action that sends `itemId` to the end of the root zone,
- * or `null` when the item is already at root, missing, or its zone data is absent.
+ * @deprecated Use `selectedBlockActions` instead.
  */
 export function moveBlockToRootAction(
   indexes: Indexes,
