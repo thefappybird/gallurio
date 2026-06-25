@@ -54,7 +54,10 @@ vi.mock("@measured/puck", () => ({
     data,
   }: {
     headerTitle?: string;
-    overrides?: { header?: (p: { children: ReactNode }) => ReactNode };
+    overrides?: {
+      header?: (p: { children: ReactNode }) => ReactNode;
+      puck?: (p: { children: ReactNode }) => ReactNode;
+    };
     onPublish?: () => void;
     onChange?: (data: unknown) => void;
     data?: unknown;
@@ -98,6 +101,7 @@ vi.mock("@measured/puck", () => ({
         {overrides?.header?.({
           children: null,
         })}
+        {overrides?.puck?.({ children: <div data-testid="puck-canvas-content" /> })}
       </div>
     );
   },
@@ -1012,5 +1016,22 @@ describe("EditorShell", () => {
     // Back returns to the welcome step.
     fireEvent.click(within(dragCard).getByRole("button", { name: "Back" }));
     expect(await screen.findByRole("dialog", { name: "Welcome to your portfolio editor" })).toBeInTheDocument();
+  });
+
+  it("renders BlockActionsToolbar toolbar when a block is selected", async () => {
+    // Temporarily set a selected item + itemSelector so BlockActionsToolbar renders.
+    const origSelected = mockPuckApi.selectedItem;
+    const origUi = mockPuckApi.appState.ui;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi as any).selectedItem = { type: "Hero", props: { id: "hero-test" } };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi.appState.ui as any).itemSelector = { index: 0 };
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+    expect(document.querySelector("[role='toolbar']")).not.toBeNull();
+    // Restore.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi as any).selectedItem = origSelected;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (mockPuckApi.appState as any).ui = origUi;
   });
 });
