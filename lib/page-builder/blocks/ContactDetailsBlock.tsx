@@ -7,34 +7,50 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
-import type { ComponentConfig, Field } from "@measured/puck";
+import type { ComponentConfig } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
 import { resolveBlockStyle, resolveBlockAttrs, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
 
 export type ContactDetailsProps = {
   _style?: BlockStyle;
-  showEmail: boolean;
-  showPhone: boolean;
-  showAddress: boolean;
-  showSocials: boolean;
+  email?: string;
+  phone?: string;
+  address?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  website?: string;
 };
 
-export const contactDetailsDefaultProps: ContactDetailsProps = {
-  showEmail: true,
-  showPhone: true,
-  showAddress: true,
-  showSocials: true,
-};
+export const contactDetailsDefaultProps: ContactDetailsProps = {};
 
 export function ContactDetailsBlock({
   _style,
-  showEmail,
-  showPhone,
-  showAddress,
-  showSocials,
+  email,
+  phone,
+  address,
+  instagram,
+  facebook,
+  tiktok,
+  website,
   puck,
 }: ContactDetailsProps & { puck?: BlockPuck }) {
   const contact = getRenderWorkspaceFrom(puck)?.contact ?? null;
+
+  const effectiveEmail = email?.trim() || contact?.email;
+  const effectivePhone = phone?.trim() || contact?.phone;
+  const effectiveAddress = address?.trim() || contact?.address;
+  const effectiveSocials: Socials = {
+    instagram: instagram?.trim() || contact?.socials?.instagram,
+    facebook: facebook?.trim() || contact?.socials?.facebook,
+    tiktok: tiktok?.trim() || contact?.socials?.tiktok,
+    website: website?.trim() || contact?.socials?.website,
+  };
+  const hasSocials =
+    effectiveSocials.instagram ||
+    effectiveSocials.facebook ||
+    effectiveSocials.tiktok ||
+    effectiveSocials.website;
 
   return (
     <dl
@@ -52,28 +68,28 @@ export function ContactDetailsBlock({
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {showEmail && contact?.email && (
+      {effectiveEmail && (
         <ContactRow
           label="Email"
           value={
-            <a href={`mailto:${contact.email}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
-              {contact.email}
+            <a href={`mailto:${effectiveEmail}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
+              {effectiveEmail}
             </a>
           }
         />
       )}
-      {showPhone && contact?.phone && (
+      {effectivePhone && (
         <ContactRow
           label="Phone"
           value={
-            <a href={`tel:${contact.phone}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
-              {contact.phone}
+            <a href={`tel:${effectivePhone}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
+              {effectivePhone}
             </a>
           }
         />
       )}
-      {showAddress && contact?.address && <ContactRow label="Address" value={contact.address} />}
-      {showSocials && contact?.socials && <SocialsRow socials={contact.socials} />}
+      {effectiveAddress && <ContactRow label="Address" value={effectiveAddress} />}
+      {hasSocials && <SocialsRow socials={effectiveSocials} />}
     </dl>
   );
 }
@@ -157,26 +173,12 @@ function SocialsRow({ socials }: { socials: Socials }) {
   );
 }
 
-const showField = (label: string) =>
-  ({
-    type: "select",
-    label,
-    options: [
-      { label: "Yes", value: true },
-      { label: "No", value: false },
-    ],
-  }) as Field<boolean>;
-
 export const contactDetailsBlockConfig: ComponentConfig<ContactDetailsProps> = {
   label: "Contact Details",
   inline: true,
   defaultProps: contactDetailsDefaultProps,
   fields: {
     _style: productionStyleField,
-    showEmail: showField("Show email"),
-    showPhone: showField("Show phone"),
-    showAddress: showField("Show address"),
-    showSocials: showField("Show social links"),
   },
   render: ContactDetailsBlock,
 };
