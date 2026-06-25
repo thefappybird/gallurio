@@ -29,7 +29,7 @@ const baseConfig: PortfolioCollectionsPopupConfig = {
 };
 
 describe("CollectionsPopupPanelDialog", () => {
-  it("renders background color, border, and radius controls", () => {
+  it("renders background color, border, and radius controls inside the Popup section", () => {
     const onChange = vi.fn();
     render(
       <CollectionsPopupPanelDialog
@@ -39,12 +39,15 @@ describe("CollectionsPopupPanelDialog", () => {
       />,
     );
 
+    // Expand the Popup EditorDrawerSection
+    fireEvent.click(screen.getByRole("button", { name: /popup/i }));
+
     // Background label
     expect(screen.getByText(/background/i)).toBeInTheDocument();
 
     // Border width control — NumberInputRow uses a span label (no htmlFor), so
     // the spinbutton has no accessible name; find by its presence alongside the label text.
-    expect(screen.getByText(/border/i)).toBeInTheDocument();
+    expect(screen.getByText(/^border$/i)).toBeInTheDocument();
     expect(screen.getAllByRole("spinbutton").length).toBeGreaterThanOrEqual(1);
 
     // Radius buttons (sharp / subtle / rounded)
@@ -63,6 +66,7 @@ describe("CollectionsPopupPanelDialog", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
     fireEvent.click(screen.getByRole("button", { name: /subtle/i }));
     expect(onChange).toHaveBeenCalledWith({ ...baseConfig, radius: "subtle" });
   });
@@ -81,6 +85,7 @@ describe("CollectionsPopupPanelDialog", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
     fireEvent.click(screen.getByRole("button", { name: /subtle/i }));
     expect(onChange).toHaveBeenCalledWith({ ...configWithRadius, radius: "" });
   });
@@ -95,6 +100,8 @@ describe("CollectionsPopupPanelDialog", () => {
       />,
     );
 
+    // Expand Popup section to reveal border controls
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
     // NumberInputRow renders a spinbutton without htmlFor linkage
     const borderInput = screen.getAllByRole("spinbutton")[0];
     fireEvent.change(borderInput, { target: { value: "3" } });
@@ -130,6 +137,38 @@ describe("CollectionsPopupPanelDialog", () => {
   });
 });
 
+describe("CollectionsPopupPanelDialog shared EditorDrawerSection structure", () => {
+  it("renders Popup, Title styles, and Button styles as EditorDrawerSection headings (shared panel structure)", () => {
+    render(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    // The shared EditorDrawerSection renders each section heading as a button
+    expect(screen.getByRole("button", { name: /popup/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /title styles/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /button styles/i })).toBeInTheDocument();
+  });
+
+  it("shows title color Text swatch as effective (aria-pressed, following-theme) when titleColorToken is unset", () => {
+    render(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    // Expand Title styles section to reveal its controls
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    // effectiveValue="foreground" → COLOR_LABEL["foreground"] = "Text"
+    // When value is unset, the Text swatch should be aria-pressed=true (following theme)
+    const textSwatch = screen.getByRole("button", { name: "Text" });
+    expect(textSwatch).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("CollectionsPopupPanelDialog header styles", () => {
   function setup(config: Partial<PortfolioCollectionsPopupConfig> = {}) {
     const onChange = vi.fn();
@@ -143,16 +182,15 @@ describe("CollectionsPopupPanelDialog header styles", () => {
     return { onChange };
   }
 
-  it("exposes a Header styles drawer with Title and Button sub-sections", () => {
+  it("exposes Title styles and Button styles as top-level EditorDrawerSection headings", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
+    // After restructure, these are direct EditorDrawerSection headings — no parent "Header styles" click needed
     expect(screen.getByRole("button", { name: /title styles/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /button styles/i })).toBeInTheDocument();
   });
 
   it("writes a title text override", () => {
     const { onChange } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
     fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
     const input = screen.getByLabelText(/header text/i);
     fireEvent.change(input, { target: { value: "Galleries" } });
@@ -160,8 +198,7 @@ describe("CollectionsPopupPanelDialog header styles", () => {
   });
 
   it("writes a close button size", () => {
-    const { onChange } = setup();
-    fireEvent.click(screen.getByRole("button", { name: /header styles/i }));
+    setup();
     fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
     expect(screen.getByText(/button size/i)).toBeInTheDocument();
   });
