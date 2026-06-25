@@ -99,6 +99,8 @@ export function BookingDraftCard({
     teamId: initialTeamId ?? null,
   });
 
+  const fieldsLocked = !isOwner || readOnly;
+
   const isDirty =
     Number(total) !== Number(snapshot.total) ||
     Number(deposit) !== Number(snapshot.deposit) ||
@@ -250,23 +252,23 @@ export function BookingDraftCard({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-total">{t("total")} ({currency})</Label>
-            <Input id="draft-total" type="number" inputMode="decimal" min={0} value={total} disabled={!isOwner} onChange={(e) => setTotal(e.target.value)} />
+            <Input id="draft-total" type="number" inputMode="decimal" min={0} value={total} disabled={fieldsLocked} onChange={(e) => setTotal(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-deposit">{t("deposit")} ({currency})</Label>
-            <Input id="draft-deposit" type="number" inputMode="decimal" min={0} value={deposit} disabled={!isOwner} onChange={(e) => setDeposit(e.target.value)} />
+            <Input id="draft-deposit" type="number" inputMode="decimal" min={0} value={deposit} disabled={fieldsLocked} onChange={(e) => setDeposit(e.target.value)} />
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="draft-notes">{t("notes")}</Label>
-          <Textarea id="draft-notes" rows={3} value={notes} disabled={!isOwner} placeholder={t("notesPlaceholder")} onChange={(e) => setNotes(e.target.value)} />
+          <Textarea id="draft-notes" rows={3} value={notes} disabled={fieldsLocked} placeholder={t("notesPlaceholder")} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
         {showTeamPicker ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-team">{t("team")}</Label>
-            <Select<string> value={teamId ?? ""} disabled={!isOwner} onValueChange={(v) => setTeamId(v || null)}>
+            <Select<string> value={teamId ?? ""} disabled={fieldsLocked} onValueChange={(v) => setTeamId(v || null)}>
               <SelectTrigger id="draft-team">
                 <SelectValue placeholder={tTeam("allTeams")} />
               </SelectTrigger>

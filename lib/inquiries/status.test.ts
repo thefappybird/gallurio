@@ -7,7 +7,7 @@ import {
 const VALID_KEYS = INQUIRY_STATUS_VALUES as readonly string[];
 
 describe("getInquiryStatusLabelKey", () => {
-  it.each(["new", "booked", "converted", "archived"])(
+  it.each(["inquiry", "booked", "converted", "archived"])(
     "returns a valid statusValues key for known status '%s'",
     (status) => {
       const key = getInquiryStatusLabelKey(status);
