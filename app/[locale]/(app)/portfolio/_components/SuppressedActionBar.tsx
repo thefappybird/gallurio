@@ -30,8 +30,3 @@ type ActionBarOverrideProps = {
 export function SuppressedActionBar({ label }: ActionBarOverrideProps) {
   return <ActionBar label={label} />;
 }
-
-// Keep the old export name so EditorShell's import still resolves while
-// we update it in a follow-up step.
-/** @deprecated Use SuppressedActionBar */
-export { SuppressedActionBar as MoveOutActionBar };

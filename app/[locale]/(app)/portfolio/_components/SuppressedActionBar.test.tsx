@@ -17,7 +17,7 @@ vi.mock("@measured/puck", () => ({
   ),
 }));
 
-const { SuppressedActionBar } = await import("./MoveOutActionBar");
+const { SuppressedActionBar } = await import("./SuppressedActionBar");
 
 describe("SuppressedActionBar", () => {
   it("renders no action buttons (suppresses Puck floating bar)", () => {

@@ -68,7 +68,7 @@ import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
-import { SuppressedActionBar } from "./MoveOutActionBar";
+import { SuppressedActionBar } from "./SuppressedActionBar";
 import { BlockActionsToolbar } from "./BlockActionsToolbar";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
