@@ -78,6 +78,8 @@ export async function updatePublicPageSettingsAction(
         "publicPage.seoDescription": parsed.data.seoDescription ?? "",
         "publicPage.inquiryRecipientEmail":
           parsed.data.inquiryRecipientEmail ?? "",
+        "publicPage.siteIcon.url": parsed.data.siteIconUrl ?? "",
+        "publicPage.siteIcon.assetId": parsed.data.siteIconAssetId ?? "",
       },
     },
   );

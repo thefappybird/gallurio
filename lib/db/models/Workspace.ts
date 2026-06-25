@@ -208,6 +208,10 @@ const workspaceSchema = new Schema(
         contactButtonOpacity: { type: Number, default: 100 },
         contactButtonRadius: { type: String, enum: [...BRAND_KIT_RADII, ""], default: "" },
       },
+      siteIcon: {
+        url: { type: String, default: "" },
+        assetId: { type: String, default: "" },
+      },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 
