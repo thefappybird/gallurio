@@ -11,6 +11,7 @@ import {
   publicPageSettingsSchema,
   type UpdateWorkspaceBusinessInput,
   type PublicPageSettingsInput,
+  type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
 import { deleteImage } from "@/lib/storage/cloudflareImages";
@@ -61,7 +62,7 @@ export async function updateWorkspaceBusinessAction(
 // ---------------------------------------------------------------------------
 
 export async function updatePublicPageSettingsAction(
-  input: PublicPageSettingsInput,
+  input: PublicPageSettingsRawInput,
 ): Promise<ActionResult> {
   const ctx = await ownerContext();
   if ("error" in ctx) return { error: ctx.error };

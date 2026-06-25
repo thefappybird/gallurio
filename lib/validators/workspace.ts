@@ -140,3 +140,6 @@ export const publicPageSettingsSchema = z.object({
   siteIconAssetId: z.string().trim().optional().default(""),
 });
 export type PublicPageSettingsInput = z.infer<typeof publicPageSettingsSchema>;
+// Raw (pre-default) input type — use as the function parameter type so all
+// fields are optional (the schema applies defaults during parse).
+export type PublicPageSettingsRawInput = z.input<typeof publicPageSettingsSchema>;
