@@ -74,4 +74,44 @@ describe("RootStyleField", () => {
     fireEvent.change(inputs[0], { target: { value: "10" } });
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ paddingTop: "10px" }));
   });
+
+  it("floats background effective default: background swatch shows aria-pressed when value is unset", () => {
+    render(<RootStyleField value={{}} onChange={() => {}} />);
+    // When bgColorToken is unset the background swatch should show as the
+    // effective default (aria-pressed=true) via effectiveValue="background".
+    const backgroundSwatch = screen.getByRole("button", { name: /^background$/i });
+    expect(backgroundSwatch).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("floats opacity effective default: opacity spinbutton shows placeholder 100 when value is unset", () => {
+    render(<RootStyleField value={{}} onChange={() => {}} />);
+    const input = screen.getByRole("spinbutton");
+    expect(input).toHaveAttribute("placeholder", "100");
+  });
+
+  it("floats padding effective default: padding horizontal spinbutton shows placeholder 0 when value is unset", () => {
+    render(<RootStyleField value={{}} onChange={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
+    // First spinbutton on Layout tab is the collapsed Padding Horizontal (X) input.
+    const spinbuttons = screen.getAllByRole("spinbutton");
+    expect(spinbuttons[0]).toHaveAttribute("placeholder", "0");
+  });
+
+  it("explicit value wins over effective default: primary swatch pressed, opacity input value 50 not placeholder", () => {
+    render(
+      <RootStyleField
+        value={{ bgColorToken: "primary", bgOpacity: 50 }}
+        onChange={() => {}}
+      />,
+    );
+    // primary should be pressed, background should not be
+    const primarySwatch = screen.getByRole("button", { name: /^primary$/i });
+    const backgroundSwatch = screen.getByRole("button", { name: /^background$/i });
+    expect(primarySwatch).toHaveAttribute("aria-pressed", "true");
+    expect(backgroundSwatch).toHaveAttribute("aria-pressed", "false");
+    // opacity spinbutton has the set value (50), not the placeholder (100)
+    const opacityInput = screen.getByRole("spinbutton");
+    expect(opacityInput).toHaveValue(50);
+    expect(opacityInput).not.toHaveAttribute("placeholder", "100");
+  });
 });

@@ -53,6 +53,7 @@ export function RootStyleField({
             <ColorSwatchRow
               value={s.bgColorToken}
               onChange={(t) => set({ bgColorToken: t })}
+              effectiveValue="background"
             />
           </div>
           <NumberInputRow
@@ -62,6 +63,7 @@ export function RootStyleField({
             max={100}
             suffix="%"
             onChange={(v) => set({ bgOpacity: v })}
+            effectiveValue={100}
           />
         </div>
       )}
@@ -94,21 +96,25 @@ export function RootStyleField({
                   label="Top"
                   value={s.paddingTop}
                   onChange={(v) => set({ paddingTop: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Right"
                   value={s.paddingRight}
                   onChange={(v) => set({ paddingRight: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Bottom"
                   value={s.paddingBottom}
                   onChange={(v) => set({ paddingBottom: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Left"
                   value={s.paddingLeft}
                   onChange={(v) => set({ paddingLeft: v })}
+                  effectiveValue="0px"
                 />
               </div>
             ) : (
@@ -121,6 +127,7 @@ export function RootStyleField({
                       : undefined) ?? s.paddingX
                   }
                   onChange={(v) => set({ paddingLeft: v, paddingRight: v, paddingX: undefined })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Vertical (Y)"
@@ -130,6 +137,7 @@ export function RootStyleField({
                       : undefined) ?? s.paddingY
                   }
                   onChange={(v) => set({ paddingTop: v, paddingBottom: v, paddingY: undefined })}
+                  effectiveValue="0px"
                 />
               </div>
             )}
@@ -161,21 +169,25 @@ export function RootStyleField({
                   label="Top"
                   value={s.marginTop}
                   onChange={(v) => set({ marginTop: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Right"
                   value={s.marginRight}
                   onChange={(v) => set({ marginRight: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Bottom"
                   value={s.marginBottom}
                   onChange={(v) => set({ marginBottom: v })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Left"
                   value={s.marginLeft}
                   onChange={(v) => set({ marginLeft: v })}
+                  effectiveValue="0px"
                 />
               </div>
             ) : (
@@ -188,6 +200,7 @@ export function RootStyleField({
                       : undefined) ?? s.marginX
                   }
                   onChange={(v) => set({ marginLeft: v, marginRight: v, marginX: undefined })}
+                  effectiveValue="0px"
                 />
                 <DimensionInput
                   label="Vertical (Y)"
@@ -197,6 +210,7 @@ export function RootStyleField({
                       : undefined) ?? s.marginY
                   }
                   onChange={(v) => set({ marginTop: v, marginBottom: v, marginY: undefined })}
+                  effectiveValue="0px"
                 />
               </div>
             )}
