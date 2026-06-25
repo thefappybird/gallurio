@@ -30,7 +30,7 @@ describe("PreviewPopupShell", () => {
     window.localStorage.clear();
   });
 
-  it("renders CollectionPopupChrome with draft collectionsPopup config when present", () => {
+  it("renders the dedicated popup-preview surface with draft collectionsPopup config when present", () => {
     window.localStorage.setItem(
       KEY,
       JSON.stringify({
@@ -52,7 +52,11 @@ describe("PreviewPopupShell", () => {
       </PreviewBrandShell>,
     );
 
+    // The dedicated surface wrapper is always present
+    expect(screen.getByTestId("popup-preview-surface")).toBeInTheDocument();
+    // Chrome is rendered inside the dedicated surface
     expect(screen.getByTestId("popup-chrome")).toBeInTheDocument();
+    // Draft config wins over fallback
     expect(screen.getByTestId("popup-bg")).toHaveTextContent("primary");
   });
 
@@ -69,11 +73,12 @@ describe("PreviewPopupShell", () => {
       </PreviewBrandShell>,
     );
 
+    expect(screen.getByTestId("popup-preview-surface")).toBeInTheDocument();
     expect(screen.getByTestId("popup-chrome")).toBeInTheDocument();
     expect(screen.getByTestId("popup-bg")).toHaveTextContent("secondary");
   });
 
-  it("renders the popup even when both draft and fallback configs are absent", () => {
+  it("renders the popup surface even when both draft and fallback configs are absent", () => {
     render(
       <PreviewBrandShell
         slug={SLUG}
@@ -86,6 +91,7 @@ describe("PreviewPopupShell", () => {
       </PreviewBrandShell>,
     );
 
+    expect(screen.getByTestId("popup-preview-surface")).toBeInTheDocument();
     expect(screen.getByTestId("popup-chrome")).toBeInTheDocument();
   });
 });

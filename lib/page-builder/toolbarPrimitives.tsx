@@ -227,14 +227,25 @@ export function DimensionInput({
   }
 
   // Persist the unit independently — clearing the number value must not reset the unit.
+  // Note: the UI select only offers px / % — "rem" is a read-only legacy unit.
+  // If a block carries an explicit rem value (e.g. "1.5rem" from old defaults),
+  // localUnit is initialised to "px" so the select renders without a missing
+  // option, but n (the numeric part) is preserved from the rem string. The first
+  // edit the owner makes will write the value back as px. If the dev DB is ever
+  // seeded with explicit rem padding, this is the place to add a rem option.
   const [localUnit, setLocalUnit] = useState<"px" | "%">(() => {
     const u = parse(value).unit;
     return u === "rem" ? "px" : u;
   });
   // When value is defined, reflect its actual unit; when undefined, keep the last known unit.
+  // rem coerces to px so the select never holds an option it can't display.
   const parsedUnit = value ? parse(value).unit : localUnit;
   const activeUnit: "px" | "%" = parsedUnit === "rem" ? "px" : parsedUnit;
   const n = value ? parse(value).n : "";
+  // Guard: if the stored value is rem, display the numeric part unchanged (1.5rem
+  // → shows "1.5" in the input). The unit select shows "px" as the closest
+  // available option. On any edit, compose() writes back as px — acceptable since
+  // rem padding is not produced by any current editor control.
 
   // Derive placeholder text from effectiveValue when value is unset.
   const placeholder = value === undefined && effectiveValue !== undefined

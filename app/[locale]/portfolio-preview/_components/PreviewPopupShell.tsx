@@ -5,15 +5,18 @@ import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import { usePreviewDraft } from "./PreviewDraftContext";
 
 /**
- * Renders the collections popup chrome in the portfolio preview iframe so
- * the owner can see how their collections popup will look before saving.
+ * Dedicated popup-preview surface for the portfolio preview route (loaded in
+ * the editor's iframe when the collections-popup panel is open).
  *
- * Reads the unsaved draft collectionsPopup config from PreviewDraftContext
- * (provided by PreviewBrandShell) and overrides the server-supplied DB
- * fallback so unsaved popup style edits are visible in preview.
+ * Mirrors the editor's CollectionsPopupPreview layout: a full-height backdrop
+ * with the popup chrome centred inside it, driven by the unsaved draft config
+ * from PreviewDraftContext (falling back to the server-supplied DB config).
  *
- * Uses preview mode on CollectionPopupChrome so it renders in-place
- * (position: absolute, inset: 5%) instead of fixed-center.
+ * The brand-kit CSS vars are already applied by the outer PreviewBrandShell,
+ * so there is no need to resolve them here — CollectionPopupChrome reads
+ * var(--pf-color-*) directly from the cascade.
+ *
+ * Rendered only when zone=popup; never injected into the Home/Gallery body.
  */
 export function PreviewPopupShell({
   fallbackConfig,
@@ -24,7 +27,11 @@ export function PreviewPopupShell({
   const config = collectionsPopup ?? fallbackConfig ?? {};
 
   return (
-    <div style={{ position: "relative", minHeight: "320px" }}>
+    <div
+      data-testid="popup-preview-surface"
+      style={{ position: "relative", height: "100dvh", overflow: "hidden" }}
+      className="bg-black/45"
+    >
       <CollectionPopupChrome
         collectionName="Sample Collection"
         config={config}

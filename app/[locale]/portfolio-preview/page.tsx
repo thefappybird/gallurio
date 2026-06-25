@@ -28,10 +28,13 @@ import { PreviewPopupShell } from "./_components/PreviewPopupShell";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false, follow: false } };
 
-type PreviewZone = "home" | "gallery" | "contact";
+type PreviewZone = "home" | "gallery" | "contact" | "popup";
 
 function parseZone(value: string | string[] | undefined): PreviewZone {
-  return value === "gallery" || value === "contact" ? value : "home";
+  if (value === "gallery") return "gallery";
+  if (value === "contact") return "contact";
+  if (value === "popup") return "popup";
+  return "home";
 }
 
 /**
@@ -44,6 +47,9 @@ function parseZone(value: string | string[] | undefined): PreviewZone {
  * HOME/GALLERY zones: rendered client-side via <PreviewClient> which reads the
  * unsaved draft from localStorage — avoids HTTP 431 from large URL params.
  * CONTACT zone: rendered server-side from DB (last-saved contact config).
+ * POPUP zone: dedicated collections-popup preview surface that mirrors the
+ *   editor's CollectionsPopupPreview; driven by the localStorage draft config
+ *   (via PreviewBrandShell → PreviewDraftContext) with DB fallback.
  *
  * Brand-kit CSS vars, header config, contact config, and collectionsPopup config
  * are initially sourced from DB; PreviewBrandShell and the Preview*Shell client
@@ -99,6 +105,10 @@ export default async function PortfolioPreviewPage({
         addSessionAppearance={resolveAddSessionAppearance(contact)}
       />
     );
+  } else if (zone === "popup") {
+    // Dedicated popup-preview surface: mirrors the editor's CollectionsPopupPreview.
+    // No page header — the popup overlays the full viewport.
+    body = <PreviewPopupShell fallbackConfig={collectionsPopupConfig} />;
   } else {
     const t = await getTranslations({ locale: chromeLocale, namespace: "publicPage.chrome" });
     const renderWorkspace = {
@@ -124,19 +134,17 @@ export default async function PortfolioPreviewPage({
       { content: [], root: {} };
 
     body = (
-      <>
-        <PreviewClient
-          slug={workspace.slug}
-          zone={zone}
-          workspace={renderWorkspace}
-          fallbackData={fallbackData}
-        />
-        <PreviewPopupShell
-          fallbackConfig={collectionsPopupConfig}
-        />
-      </>
+      <PreviewClient
+        slug={workspace.slug}
+        zone={zone}
+        workspace={renderWorkspace}
+        fallbackData={fallbackData}
+      />
     );
   }
+
+  // The popup zone fills the full viewport — skip the nav header.
+  const showHeader = zone !== "popup";
 
   return (
     <PreviewBrandShell
@@ -144,21 +152,23 @@ export default async function PortfolioPreviewPage({
       fallbackCssVars={cssVars}
       fallbackClassName={className}
     >
-      <PreviewHeaderShell
-        slug={workspace.slug}
-        fallbackConfig={headerConfig}
-        activePath={activePath}
-        homeHref={previewHomeHref}
-        labels={{
-          brand: workspace.name,
-          navLandmark: tNav("navLandmark"),
-          home: tNav("home"),
-          gallery: tNav("gallery"),
-          contact: tNav("contact"),
-          openMenu: tNav("openMenu"),
-          closeMenu: tNav("closeMenu"),
-        }}
-      />
+      {showHeader && (
+        <PreviewHeaderShell
+          slug={workspace.slug}
+          fallbackConfig={headerConfig}
+          activePath={activePath}
+          homeHref={previewHomeHref}
+          labels={{
+            brand: workspace.name,
+            navLandmark: tNav("navLandmark"),
+            home: tNav("home"),
+            gallery: tNav("gallery"),
+            contact: tNav("contact"),
+            openMenu: tNav("openMenu"),
+            closeMenu: tNav("closeMenu"),
+          }}
+        />
+      )}
       {body}
     </PreviewBrandShell>
   );
