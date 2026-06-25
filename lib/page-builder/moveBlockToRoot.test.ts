@@ -80,4 +80,15 @@ describe("selectedBlockActions", () => {
     const result = selectedBlockActions({ index: 1 }, 3);
     expect(result?.moveOut).toBeNull();
   });
+
+  it("provides moveOut action for nested block pointing to root at rootContentLength", () => {
+    const result = selectedBlockActions({ index: 0, zone: "hero:content" }, 2);
+    expect(result?.moveOut).toEqual({
+      type: "move",
+      sourceIndex: 0,
+      sourceZone: "hero:content",
+      destinationZone: ROOT_ZONE,
+      destinationIndex: 2,
+    });
+  });
 });
