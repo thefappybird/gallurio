@@ -75,4 +75,9 @@ describe("selectedBlockActions", () => {
   it("returns null when itemSelector is null", () => {
     expect(selectedBlockActions(null, 3)).toBeNull();
   });
+
+  it("sets moveOut to null for a root block (no zone)", () => {
+    const result = selectedBlockActions({ index: 1 }, 3);
+    expect(result?.moveOut).toBeNull();
+  });
 });
