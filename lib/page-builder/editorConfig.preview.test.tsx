@@ -28,3 +28,31 @@ describe("editor gallery previews", () => {
     expect(screen.getByText("No photos in this collection yet.")).toBeInTheDocument();
   });
 });
+
+describe("editor ContactDetails WYSIWYG", () => {
+  it("renders typed email prop directly in the canvas (not as 'Email overridden')", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    render(
+      <Render
+        id="cd-wysiwyg"
+        _style={undefined}
+        email="hi@example.com"
+        puck={{} as never}
+      />
+    );
+    expect(screen.getByText("hi@example.com")).toBeInTheDocument();
+    expect(screen.queryByText(/overridden/i)).not.toBeInTheDocument();
+  });
+
+  it("shows placeholder when no contact props are set", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    render(
+      <Render
+        id="cd-empty"
+        _style={undefined}
+        puck={{} as never}
+      />
+    );
+    expect(screen.getByText("Workspace contact details")).toBeInTheDocument();
+  });
+});

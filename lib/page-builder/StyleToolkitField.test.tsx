@@ -444,6 +444,13 @@ describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color"
     render(<BannerSection s={{}} set={vi.fn()} hideBgImage={true} />);
     expect(screen.queryByText("Image")).toBeNull();
   });
+
+  it("BannerSection without container shows compact 'Choose photo' button (not inline photo grid)", () => {
+    // SingleImageControl renders a compact button picker; SingleImagePicker renders an inline grid/listbox.
+    render(<BannerSection s={{}} set={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
+    expect(screen.queryByRole("listbox", { name: /photos/i })).toBeNull();
+  });
 });
 
 describe("GalleryLayoutControls — writes _style.galleryColumns on click", () => {

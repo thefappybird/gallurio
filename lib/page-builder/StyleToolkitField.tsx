@@ -45,7 +45,6 @@ import {
 } from "lucide-react";
 import type { ComponentData } from "@measured/puck";
 import { usePuckStore } from "./puckHooks";
-import { SingleImagePicker } from "./galleryPicker/SingleImagePicker";
 import { SingleImageControl, MultiImageControl, MultiCollectionControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import type { CollectionRef } from "./galleryPicker/MediaField";
@@ -368,7 +367,7 @@ export function BannerSection({
       ) : (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs text-muted-foreground">Image</span>
-          <SingleImagePicker
+          <SingleImageControl
             value={s.bgImagePublicId ?? ""}
             onChange={(pid) => set({ bgImagePublicId: pid || undefined })}
           />

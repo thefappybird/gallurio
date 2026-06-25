@@ -513,22 +513,71 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
   render: ({ _style, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
-    const overrides = [
-      email && "Email",
-      phone && "Phone",
-      address && "Address",
-      instagram && "Instagram",
-      facebook && "Facebook",
-      tiktok && "TikTok",
-      website && "Website",
-    ].filter(Boolean);
+    // WYSIWYG: render the actual contact rows using prop values so the canvas
+    // reflects what the user typed in the Content tab. When all fields are blank
+    // the workspace contact data fills in at runtime; show a placeholder here.
+    const hasSocials = instagram || facebook || tiktok || website;
+    const hasAny = email || phone || address || hasSocials;
+    const rowStyle = { display: "flex", flexDirection: "column" as const, gap: "0.125rem" };
+    const labelStyle = {
+      fontSize: "0.6875rem",
+      fontWeight: 700,
+      letterSpacing: "0.12em",
+      textTransform: "uppercase" as const,
+      color: "var(--pf-color-fg)",
+      opacity: 0.45,
+    };
+    const accentStyle = { margin: 0, fontSize: "0.9375rem", color: "var(--pf-color-accent)", fontWeight: 500 };
     return (
-      <Preview
-        label="Contact Details"
-        lines={[overrides.length > 0 ? overrides.join(" · ") + " overridden" : "Workspace contact details"]}
-        blockStyle={_style}
-        puck={puck}
-      />
+      <dl
+        ref={puck?.dragRef ?? undefined}
+        data-block="contact-details"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.875rem",
+          margin: 0,
+          padding: "0.5rem 0",
+          fontFamily: "var(--pf-font-body)",
+          color: "var(--pf-color-fg)",
+          ...resolveBlockStyle(_style),
+        }}
+      >
+        {email && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Email</dt>
+            <dd style={accentStyle}>{email}</dd>
+          </div>
+        )}
+        {phone && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Phone</dt>
+            <dd style={accentStyle}>{phone}</dd>
+          </div>
+        )}
+        {address && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Address</dt>
+            <dd style={{ margin: 0, fontSize: "0.9375rem" }}>{address}</dd>
+          </div>
+        )}
+        {hasSocials && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Follow</dt>
+            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+              {instagram && <span style={accentStyle}>{instagram}</span>}
+              {facebook && <span style={accentStyle}>{facebook}</span>}
+              {tiktok && <span style={accentStyle}>{tiktok}</span>}
+              {website && <span style={accentStyle}>{website}</span>}
+            </dd>
+          </div>
+        )}
+        {!hasAny && (
+          <p style={{ margin: 0, fontSize: "0.875rem", opacity: 0.5, fontFamily: "var(--pf-font-body)" }}>
+            Workspace contact details
+          </p>
+        )}
+      </dl>
     );
   },
 };
