@@ -7,6 +7,16 @@
  * to document.body, so it is always visible (unlike Puck's built-in floating
  * action bar whose visibility is gated by internal dragFinished state).
  *
+ * Positioning rules:
+ *  - Sits above the block, right-aligned, by default.
+ *  - Inverts to just-inside the block's top edge (mirroring Puck's own overlay
+ *    flip) when there isn't room above within the canvas viewport — e.g. the
+ *    first block at the very top of the canvas.
+ *  - Clipped to the canvas band: hidden once the block scrolls out of view, so
+ *    it never floats over the editor header / section tabs (or below the canvas).
+ *  - Hidden while a header panel is open (Photos / Theme / Guide / Drafts /
+ *    publish confirm) — detected via any open dialog/menu in the document.
+ *
  * Uses createUsePuck with narrow selectors to avoid the bare-usePuck
  * perf warning and to minimise unnecessary re-renders.
  *
@@ -23,35 +33,83 @@ import type { BlockActions } from "@/lib/page-builder/moveBlockToRoot";
 // Module-level selector hook — stable reference, no closure over changing values.
 const usePuckSel = createUsePuck();
 
+// Any of these being present in the document means an editor panel/menu is open
+// (Theme/Photos/Drafts dialogs, the Guide card, a publish confirm) — hide the
+// block toolbar so it doesn't float over them.
+const OVERLAY_SELECTOR = '[role="dialog"],[role="alertdialog"],[role="menu"]';
+
+const TOOLBAR_H = 32; // approximate toolbar height in px
+const GAP = 4;
+
 // ---------------------------------------------------------------------------
-// useBlockRect — rAF loop that tracks the bounding rect of [data-puck-component]
+// useBlockAnchor — rAF loop tracking the block rect + the canvas viewport band
+// + whether an editor overlay is open. Only re-renders on actual change.
 // ---------------------------------------------------------------------------
 
-type Rect = { top: number; right: number; width: number; height: number };
+type Anchor = {
+  blockTop: number;
+  blockBottom: number;
+  blockRight: number;
+  canvasTop: number;
+  canvasBottom: number;
+  overlayOpen: boolean;
+};
 
-function useBlockRect(id: string | undefined): Rect | null {
-  const [rect, setRect] = useState<Rect | null>(null);
+function sameAnchor(a: Anchor | null, b: Anchor | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return (
+    a.blockTop === b.blockTop &&
+    a.blockBottom === b.blockBottom &&
+    a.blockRight === b.blockRight &&
+    a.canvasTop === b.canvasTop &&
+    a.canvasBottom === b.canvasBottom &&
+    a.overlayOpen === b.overlayOpen
+  );
+}
+
+function useBlockAnchor(id: string | undefined): Anchor | null {
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
   const rafRef = useRef<number>(0);
+  const lastRef = useRef<Anchor | null>(null);
 
   useEffect(() => {
     if (typeof document === "undefined" || !id) {
-      const raf = requestAnimationFrame(() => setRect(null));
+      // Defer via rAF (never setState synchronously inside the effect body).
+      const raf = requestAnimationFrame(() => {
+        lastRef.current = null;
+        setAnchor(null);
+      });
       return () => cancelAnimationFrame(raf);
+    }
+
+    function commit(next: Anchor | null) {
+      if (sameAnchor(lastRef.current, next)) return;
+      lastRef.current = next;
+      setAnchor(next);
     }
 
     function measure() {
       const el = document.querySelector<HTMLElement>(`[data-puck-component="${id}"]`);
-      if (!el || !el.isConnected) {
-        setRect(null);
-        rafRef.current = requestAnimationFrame(measure);
-        return;
+      const canvas = document.querySelector<HTMLElement>('[data-tour-id="canvas"]');
+      if (!el || !el.isConnected || !canvas) {
+        commit(null);
+      } else {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) {
+          commit(null);
+        } else {
+          const c = canvas.getBoundingClientRect();
+          commit({
+            blockTop: r.top,
+            blockBottom: r.bottom,
+            blockRight: r.right,
+            canvasTop: c.top,
+            canvasBottom: c.bottom,
+            overlayOpen: !!document.querySelector(OVERLAY_SELECTOR),
+          });
+        }
       }
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) {
-        rafRef.current = requestAnimationFrame(measure);
-        return;
-      }
-      setRect({ top: r.top, right: r.right, width: r.width, height: r.height });
       rafRef.current = requestAnimationFrame(measure);
     }
 
@@ -59,7 +117,7 @@ function useBlockRect(id: string | undefined): Rect | null {
     return () => cancelAnimationFrame(rafRef.current);
   }, [id]);
 
-  return rect;
+  return anchor;
 }
 
 // ---------------------------------------------------------------------------
@@ -86,7 +144,7 @@ function ToolbarButton({ label, onClick, disabled, hidden, children }: ToolbarBu
         e.stopPropagation();
         onClick(e);
       }}
-      className="flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+      className="flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-brand hover:text-brand-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
     >
       {children}
     </button>
@@ -106,21 +164,30 @@ export function BlockActionsToolbar() {
   const blockId: string | undefined =
     selectedItem && "props" in selectedItem ? (selectedItem as { props?: { id?: string } }).props?.id : undefined;
 
-  const rect = useBlockRect(blockId);
+  const anchor = useBlockAnchor(blockId);
 
   if (!selectedItem || !itemSelector) return null;
 
   const actions: BlockActions | null = selectedBlockActions(itemSelector, rootLen);
   if (!actions) return null;
 
-  // Position: top-right of the block, just above its top edge.
-  // If it would clip off the top of the viewport, place just inside.
-  const TOOLBAR_H = 32; // approximate height of toolbar in px
-  const GAP = 4;
-  let top = rect ? rect.top - TOOLBAR_H - GAP : 0;
-  if (top < 0) top = GAP;
-  const left = rect ? rect.right : 0;
+  // No rect yet (avoids a flash at 0,0) or an editor panel is open → hide.
+  if (!anchor || anchor.overlayOpen) return null;
 
+  // Hide once the block has scrolled out of the canvas viewport, so the toolbar
+  // never floats over the header / section tabs (above) or below the canvas.
+  const outOfView =
+    anchor.blockBottom <= anchor.canvasTop || anchor.blockTop >= anchor.canvasBottom;
+  if (outOfView) return null;
+
+  // Prefer above the block; invert to just-inside the top edge when there isn't
+  // room above within the canvas viewport. Clamp into the canvas band either way.
+  const above = anchor.blockTop - TOOLBAR_H - GAP;
+  let top = above >= anchor.canvasTop ? above : anchor.blockTop + GAP;
+  if (top < anchor.canvasTop) top = anchor.canvasTop + GAP;
+  if (top + TOOLBAR_H > anchor.canvasBottom) return null;
+
+  const left = anchor.blockRight;
   const label = (selectedItem as { type?: string }).type ?? "Block";
 
   const toolbar = (
@@ -134,7 +201,7 @@ export function BlockActionsToolbar() {
         transform: "translateX(-100%)",
         zIndex: 9999,
       }}
-      className="flex items-center gap-0.5 rounded-[--radius] border border-border bg-card px-1 shadow-none"
+      className="flex items-center gap-0.5 rounded-md border border-border bg-card px-1 shadow-none"
       onMouseDown={(e) => e.stopPropagation()}
     >
       <span className="select-none px-1 text-xs font-medium text-muted-foreground">{label}</span>

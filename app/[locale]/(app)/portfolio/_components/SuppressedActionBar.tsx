@@ -1,12 +1,18 @@
 "use client";
 
 /**
- * SuppressedActionBar — Puck actionBar override that renders an empty
- * container so Puck's built-in floating action bar shows no buttons.
+ * SuppressedActionBar — Puck actionBar override that renders nothing, so
+ * Puck's built-in floating overlay shows no action bar AND no label pill.
  *
  * BlockActionsToolbar (our always-visible toolbar anchored to the selected
  * block) takes over all action handling. Puck's own bar was unreliable:
  * its visibility is gated by internal `dragFinished` state we can't control.
+ *
+ * Rendering an empty fragment is safe: Puck only falls back to its
+ * DefaultActionBar when `overrides.actionBar` is itself falsy (not provided).
+ * A function that returns an empty fragment is still truthy, so Puck uses it
+ * and renders nothing — no residual "<label>" pill. (Puck's RenderFunc type
+ * requires a ReactElement, so a fragment is used rather than `null`.)
  *
  * Module-level component — stable reference required so Puck does not
  * remount the subtree on every render.
@@ -14,8 +20,7 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import type { ReactNode } from "react";
-import { ActionBar } from "@measured/puck";
+import type { ReactElement, ReactNode } from "react";
 
 type ActionBarOverrideProps = {
   label?: string;
@@ -23,10 +28,4 @@ type ActionBarOverrideProps = {
   parentAction: ReactNode;
 };
 
-/**
- * Renders Puck's ActionBar shell with no children — suppresses all built-in
- * action buttons so they don't compete with BlockActionsToolbar.
- */
-export function SuppressedActionBar({ label }: ActionBarOverrideProps) {
-  return <ActionBar label={label} />;
-}
+export const SuppressedActionBar: (props: ActionBarOverrideProps) => ReactElement = () => <></>;
