@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { PortfolioHeader, type PortfolioHeaderLabels } from "./PortfolioHeader";
 
@@ -198,5 +198,24 @@ describe("PortfolioHeader", () => {
     expect(toggle.style.borderRadius).toBe("0.5rem");
     // no border — the original had a visible border; the new toggle uses border:none
     expect(toggle.style.borderStyle).not.toBe("solid");
+  });
+
+  it("preview mode: uses galleryHref prop for Gallery nav instead of /w/slug/gallery", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        galleryHref="/en/portfolio-preview?zone=gallery"
+      />
+    );
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks.length).toBeGreaterThan(0);
+    expect(galleryLinks[0]).toHaveAttribute("href", "/en/portfolio-preview?zone=gallery");
+  });
+
+  it("preview mode: gallery falls back to /w/slug/gallery when galleryHref is omitted", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
+    expect(galleryLinks[0]).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
 });

@@ -84,6 +84,9 @@ export default async function PortfolioPreviewPage({
   // Keep the logo + Home link within the preview iframe; do not navigate to the
   // published public site.
   const previewHomeHref = `/${locale}/portfolio-preview`;
+  // Keep the Gallery link within the preview iframe; do not navigate to the
+  // published public site.
+  const previewGalleryHref = `/${locale}/portfolio-preview?zone=gallery`;
 
   let body: React.ReactNode;
 
@@ -158,6 +161,7 @@ export default async function PortfolioPreviewPage({
           fallbackConfig={headerConfig}
           activePath={activePath}
           homeHref={previewHomeHref}
+          galleryHref={previewGalleryHref}
           labels={{
             brand: workspace.name,
             navLandmark: tNav("navLandmark"),

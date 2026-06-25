@@ -15,12 +15,16 @@ export function PreviewHeaderShell({
   fallbackConfig,
   activePath,
   homeHref,
+  galleryHref,
   labels,
 }: {
   slug: string;
   fallbackConfig: PortfolioHeaderConfig | null;
   activePath: string;
   homeHref: string;
+  /** Override for the Gallery nav href so clicking it stays within the
+   * draft-aware preview iframe instead of navigating to the published site. */
+  galleryHref?: string;
   labels: PortfolioHeaderLabels;
 }) {
   const { headerConfig } = usePreviewDraft();
@@ -32,6 +36,7 @@ export function PreviewHeaderShell({
       config={config}
       activePath={activePath}
       homeHref={homeHref}
+      galleryHref={galleryHref}
       labels={labels}
     />
   );
