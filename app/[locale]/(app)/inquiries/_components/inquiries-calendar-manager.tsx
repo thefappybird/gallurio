@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -106,6 +106,17 @@ export function InquiriesCalendarManager({
   );
   // Prevents concurrent drops on the same inquiry session.
   const inFlightRef = useRef<Set<string>>(new Set());
+
+  // When fresh server events arrive (after router.refresh()), clear any pending
+  // optimistic overrides so mergedEvents reflects authoritative positions without
+  // a gap where the stale server data would flash the old position.
+  const prevEventsRef = useRef(events);
+  useEffect(() => {
+    if (events !== prevEventsRef.current) {
+      prevEventsRef.current = events;
+      setOptimisticOverrides((prev) => (prev.size ? new Map() : prev));
+    }
+  }, [events]);
 
   // Merge server events with any pending optimistic overrides.
   const mergedEvents = useMemo(() => {
@@ -223,12 +234,9 @@ export function InquiriesCalendarManager({
               endTime,
             });
             if ("error" in result) throw result.error;
-            // Success -- clear the override and trigger a data refresh.
-            setOptimisticOverrides((prev) => {
-              const next = new Map(prev);
-              next.delete(ev.id);
-              return next;
-            });
+            // Success -- trigger a data refresh; the useEffect on `events` clears
+            // the optimistic override once the authoritative position arrives,
+            // preventing any snap-back to the stale server state.
             router.refresh();
           })(),
           {
@@ -268,7 +276,7 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showNew ? "currentColor" : "var(--event-inquiry)" }}
+          style={{ background: "var(--event-inquiry)" }}
         />
         {t("filters.inquiry")}
       </button>
@@ -281,7 +289,7 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showBooked ? "currentColor" : "var(--event-booked)" }}
+          style={{ background: "var(--event-booked)" }}
         />
         {t("filters.booked")}
       </button>
@@ -294,7 +302,7 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showConflicted ? "currentColor" : "var(--danger)" }}
+          style={{ background: "var(--danger)" }}
         />
         {t("filters.conflicted")}
       </button>
