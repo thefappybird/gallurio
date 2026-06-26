@@ -68,6 +68,7 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     locale,
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),
+      socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
       gallery: {
         empty: t("gallery.empty"),
         noCollection: t("gallery.noCollection"),

@@ -123,6 +123,7 @@ export default async function PortfolioPreviewPage({
       locale: chromeLocale,
       chrome: {
         startingFrom: t("startingFrom", { price: "{price}" }),
+        socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
         gallery: {
           empty: t("gallery.empty"),
           noCollection: t("gallery.noCollection"),

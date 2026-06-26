@@ -1729,6 +1729,7 @@
       "notFoundTitle": "Hindi natagpuan ang portfolio",
       "notFoundBody": "Wala ang portfolio na ito o hindi pa ito na-publish.",
       "startingFrom": "Nagsisimula sa {price}",
+      "socialLinkConfirm": "Binibisita mo ang isang panlabas na site: {url}. Ituloy?",
       "gallery": {
         "empty": "Wala pang larawan sa koleksiyong ito.",
         "noCollection": "Walang napiling koleksiyon.",

@@ -74,9 +74,9 @@ describe("ContactDetailsBlock — blank props fall back to workspace", () => {
 
   it("shows workspace socials when no override", () => {
     renderBlock(makeWorkspace(), {});
-    expect(screen.getByText("Instagram")).toBeTruthy();
-    expect(screen.getByText("Facebook")).toBeTruthy();
-    expect(screen.getByText("Website")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Instagram" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Facebook" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Website" })).toBeTruthy();
   });
 });
 
@@ -103,18 +103,18 @@ describe("ContactDetailsBlock — override replaces workspace value", () => {
 describe("ContactDetailsBlock — socials override merges per-key", () => {
   it("override instagram replaces workspace instagram; other socials fall through", () => {
     renderBlock(makeWorkspace(), { instagram: "override_ig" });
-    const igLink = screen.getByText("Instagram") as HTMLAnchorElement;
-    expect(igLink.closest("a")?.href).toContain("override_ig");
-    expect(screen.getByText("Facebook")).toBeTruthy();
-    expect(screen.getByText("Website")).toBeTruthy();
+    const igLink = screen.getByRole("link", { name: "Instagram" }) as HTMLAnchorElement;
+    expect(igLink.href).toContain("override_ig");
+    expect(screen.getByRole("link", { name: "Facebook" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Website" })).toBeTruthy();
   });
 });
 
 describe("ContactDetailsBlock — website href safety", () => {
   it("prefixes bare domain override with https://", () => {
     renderBlock(makeWorkspace(), { website: "example.com" });
-    const link = screen.getByText("Website") as HTMLAnchorElement;
-    expect(link.closest("a")?.href).toBe("https://example.com/");
+    const link = screen.getByRole("link", { name: "Website" }) as HTMLAnchorElement;
+    expect(link.href).toBe("https://example.com/");
   });
 });
 
@@ -130,7 +130,7 @@ describe("ContactDetailsBlock — no workspace + no overrides", () => {
 describe("ContactDetailsBlock — null socials skipped", () => {
   it("does not render TikTok link when workspace tiktok is null", () => {
     renderBlock(makeWorkspace(), {});
-    expect(screen.queryByText("TikTok")).toBeNull();
+    expect(screen.queryByRole("link", { name: "TikTok" })).toBeNull();
   });
 });
 
@@ -151,7 +151,7 @@ describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
     expect(screen.getByText("doc@studio.com")).toBeTruthy();
     expect(screen.getByText("+63 917 000 1111")).toBeTruthy();
     expect(screen.getByText("Makati")).toBeTruthy();
-    expect(screen.getByText("Instagram")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Instagram" })).toBeTruthy();
   });
 
   it("does not render any rows when workspace doc has no contact field", () => {

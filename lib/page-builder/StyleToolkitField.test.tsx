@@ -526,6 +526,17 @@ describe("ContentInputs — ContactDetails type", () => {
     );
     expect(screen.getByText("Phone")).toBeTruthy();
   });
+
+  it("renders a Columns section for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/columns/i)).toBeTruthy();
+  });
 });
 
 describe("useBrandRadius hook", () => {
@@ -967,5 +978,19 @@ describe("Font select — edit writes real selected font key", () => {
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
     expect(lastCall.fontFamily).toBeUndefined();
+  });
+});
+
+describe("DesignTab — ContactDetails", () => {
+  it("renders Labels and Inputs sub-tabs for ContactDetails", () => {
+    render(
+      <DesignTab
+        s={{}}
+        set={vi.fn()}
+        blockType="ContactDetails"
+      />
+    );
+    expect(screen.getByText("Labels")).toBeTruthy();
+    expect(screen.getByText("Inputs")).toBeTruthy();
   });
 });

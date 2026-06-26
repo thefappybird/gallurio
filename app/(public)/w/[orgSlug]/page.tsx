@@ -93,6 +93,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),
+      socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
       gallery: {
         empty: t("gallery.empty"),
         noCollection: t("gallery.noCollection"),

@@ -1729,6 +1729,7 @@
       "notFoundTitle": "Portfolio not found",
       "notFoundBody": "This portfolio doesn't exist or hasn't been published yet.",
       "startingFrom": "Starting from {price}",
+      "socialLinkConfirm": "You are visiting an external site: {url}. Continue?",
       "gallery": {
         "empty": "No photos in this collection yet.",
         "noCollection": "No collection selected.",

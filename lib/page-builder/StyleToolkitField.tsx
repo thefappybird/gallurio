@@ -520,6 +520,17 @@ export function ContentInputs({
   if (type === "ContactDetails") {
     return (
       <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Columns</span>
+          <CountControl
+            value={props.columns as number | undefined}
+            onChange={(v) => setProp("columns", v ?? 1)}
+            quickValues={[1, 2]}
+            min={1}
+            max={2}
+            allowAuto={false}
+          />
+        </div>
         <p className="text-xs text-muted-foreground">Leave blank to use your workspace contact details.</p>
         <FloatingLabelInput
           label="Email"
@@ -857,6 +868,7 @@ export function DesignTab({
   blockType?: string;
 }) {
   const isButton = blockType === "Button";
+  const isContactDetails = blockType === "ContactDetails";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
   const effectiveRadius = useEffectiveBrandRadius();
   // Image-only gallery blocks have no on-page text — hide typography controls.
@@ -865,11 +877,114 @@ export function DesignTab({
   // ponytail: "body" covers Text, Button, Container, and all other block types since
   // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
   const effectiveFontFamily = useEffectiveBrandFont(blockType === "Heading" ? "heading" : "body");
+  // ContactDetails: local state for Labels/Inputs tab switcher in the design drawer.
+  const [contactTab, setContactTab] = useState<"labels" | "inputs">("labels");
 
   return (
     <EditorDrawerGroup>
-      {/* Typography drawer */}
-      {showTypography && (
+      {/* ContactDetails: per-target typography (Labels / Inputs) + Icons */}
+      {isContactDetails && (
+        <>
+          <EditorDrawerSection title="Typography">
+            <div className="flex items-center gap-1.5">
+              {(["labels", "inputs"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  aria-pressed={contactTab === tab}
+                  onClick={() => setContactTab(tab)}
+                  className={cn(
+                    "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground capitalize transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                    contactTab === tab && "bg-foreground text-background hover:bg-foreground"
+                  )}
+                >
+                  {tab === "labels" ? "Labels" : "Inputs"}
+                </button>
+              ))}
+            </div>
+            {contactTab === "labels" && (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <ToolbarToggle active={!!s.labelBold} title="Bold" Icon={Bold} onClick={() => set({ labelBold: !s.labelBold })} />
+                  <ToolbarToggle active={!!s.labelItalic} title="Italic" Icon={Italic} onClick={() => set({ labelItalic: !s.labelItalic })} />
+                  <ToolbarToggle active={!!s.labelUnderline} title="Underline" Icon={Underline} onClick={() => set({ labelUnderline: !s.labelUnderline })} />
+                  <ToolbarToggle active={s.labelAlign === "left"} title="Align left" Icon={AlignLeft} onClick={() => set({ labelAlign: s.labelAlign === "left" ? undefined : "left" })} />
+                  <ToolbarToggle active={s.labelAlign === "center"} title="Align center" Icon={AlignCenter} onClick={() => set({ labelAlign: s.labelAlign === "center" ? undefined : "center" })} />
+                  <ToolbarToggle active={s.labelAlign === "right"} title="Align right" Icon={AlignRight} onClick={() => set({ labelAlign: s.labelAlign === "right" ? undefined : "right" })} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="text-xs text-muted-foreground">Label color</span>
+                  </div>
+                  <ColorSwatchRow value={s.labelColorToken} onChange={(t) => set({ labelColorToken: t })} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={s.labelFontFamily ?? effectiveFontFamily ?? ""}
+                      onChange={(e) => set({ labelFontFamily: e.target.value ? (e.target.value as PortfolioFontKey) : undefined })}
+                      className={cn("h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", s.labelFontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60")}
+                    >
+                      <option value="">Theme font</option>
+                      {PORTFOLIO_FONT_KEYS.map((key) => <option key={key} value={key}>{PORTFOLIO_FONTS[key].label}</option>)}
+                    </select>
+                    <ResetButton onClick={() => set({ labelFontFamily: undefined })} label="Font" />
+                  </div>
+                </div>
+                <NumberInputRow label="Font size" value={s.labelFontSize} min={STYLE_LIMITS.fontSize.min} max={STYLE_LIMITS.fontSize.max} effectiveValue={11} onChange={(v) => set({ labelFontSize: v })} />
+              </>
+            )}
+            {contactTab === "inputs" && (
+              <>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <ToolbarToggle active={!!s.valueBold} title="Bold" Icon={Bold} onClick={() => set({ valueBold: !s.valueBold })} />
+                  <ToolbarToggle active={!!s.valueItalic} title="Italic" Icon={Italic} onClick={() => set({ valueItalic: !s.valueItalic })} />
+                  <ToolbarToggle active={!!s.valueUnderline} title="Underline" Icon={Underline} onClick={() => set({ valueUnderline: !s.valueUnderline })} />
+                  <ToolbarToggle active={s.valueAlign === "left"} title="Align left" Icon={AlignLeft} onClick={() => set({ valueAlign: s.valueAlign === "left" ? undefined : "left" })} />
+                  <ToolbarToggle active={s.valueAlign === "center"} title="Align center" Icon={AlignCenter} onClick={() => set({ valueAlign: s.valueAlign === "center" ? undefined : "center" })} />
+                  <ToolbarToggle active={s.valueAlign === "right"} title="Align right" Icon={AlignRight} onClick={() => set({ valueAlign: s.valueAlign === "right" ? undefined : "right" })} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <span className="text-xs text-muted-foreground">Value color</span>
+                  </div>
+                  <ColorSwatchRow value={s.valueColorToken} onChange={(t) => set({ valueColorToken: t })} />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={s.valueFontFamily ?? effectiveFontFamily ?? ""}
+                      onChange={(e) => set({ valueFontFamily: e.target.value ? (e.target.value as PortfolioFontKey) : undefined })}
+                      className={cn("h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", s.valueFontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60")}
+                    >
+                      <option value="">Theme font</option>
+                      {PORTFOLIO_FONT_KEYS.map((key) => <option key={key} value={key}>{PORTFOLIO_FONTS[key].label}</option>)}
+                    </select>
+                    <ResetButton onClick={() => set({ valueFontFamily: undefined })} label="Font" />
+                  </div>
+                </div>
+                <NumberInputRow label="Font size" value={s.valueFontSize} min={STYLE_LIMITS.fontSize.min} max={STYLE_LIMITS.fontSize.max} effectiveValue={15} onChange={(v) => set({ valueFontSize: v })} />
+              </>
+            )}
+          </EditorDrawerSection>
+          <EditorDrawerSection title="Icons">
+            <NumberInputRow label="Icon size" value={s.iconSize} min={12} max={64} effectiveValue={20} onChange={(v) => set({ iconSize: v })} />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-xs text-muted-foreground">Icon color</span>
+              </div>
+              <ColorSwatchRow value={s.iconColorToken} onChange={(t) => set({ iconColorToken: t })} />
+            </div>
+          </EditorDrawerSection>
+        </>
+      )}
+      {/* Typography drawer — all blocks except ContactDetails (per-target) and gallery image blocks */}
+      {!isContactDetails && showTypography && (
         <EditorDrawerSection title="Typography">
           <div className="flex flex-wrap items-center gap-1.5">
             {blockType !== "Heading" && (

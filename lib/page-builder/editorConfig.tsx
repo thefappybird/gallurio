@@ -33,7 +33,16 @@ import { StyleToolkitField } from "./StyleToolkitField";
 import { RootStyleField } from "./RootStyleField";
 import type { RootPageStyle } from "./rootStyle";
 import { NumberInputRow } from "./toolbarPrimitives";
-import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
+import {
+  resolveBlockStyle,
+  buildContactLabelStyle,
+  buildContactValueStyle,
+  buildContactIconColor,
+  buildContactIconSize,
+  contactGridTemplate,
+  type BlockStyle,
+} from "./styleToolkit";
+import { SocialIconLink } from "./blocks/SocialIconLink";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 // Preset defaultProps
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
@@ -512,29 +521,25 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
   resolveFields: (_data, { fields }) => {
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
-    // WYSIWYG: render the actual contact rows using prop values so the canvas
+  render: ({ _style, columns, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
+    // WYSIWYG canvas: render the actual contact rows using prop values so the canvas
     // reflects what the user typed in the Content tab. When all fields are blank
     // the workspace contact data fills in at runtime; show a placeholder here.
+    // No confirmMessage passed → SocialIconLink clicks are no-ops in the editor.
     const hasSocials = instagram || facebook || tiktok || website;
     const hasAny = email || phone || address || hasSocials;
     const rowStyle = { display: "flex", flexDirection: "column" as const, gap: "0.125rem" };
-    const labelStyle = {
-      fontSize: "0.6875rem",
-      fontWeight: 700,
-      letterSpacing: "0.12em",
-      textTransform: "uppercase" as const,
-      color: "var(--pf-color-fg)",
-      opacity: 0.45,
-    };
-    const accentStyle = { margin: 0, fontSize: "0.9375rem", color: "var(--pf-color-accent)", fontWeight: 500 };
+    const labelStyle = buildContactLabelStyle(_style);
+    const valueStyle = buildContactValueStyle(_style);
+    const iconColor = buildContactIconColor(_style);
+    const iconSize = buildContactIconSize(_style);
     return (
       <dl
         ref={puck?.dragRef ?? undefined}
         data-block="contact-details"
         style={{
-          display: "flex",
-          flexDirection: "column",
+          display: "grid",
+          gridTemplateColumns: contactGridTemplate(columns),
           gap: "0.875rem",
           margin: 0,
           padding: "0.5rem 0",
@@ -546,29 +551,37 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
         {email && (
           <div style={rowStyle}>
             <dt style={labelStyle}>Email</dt>
-            <dd style={accentStyle}>{email}</dd>
+            <dd style={{ ...valueStyle, textDecoration: "none" }}>{email}</dd>
           </div>
         )}
         {phone && (
           <div style={rowStyle}>
             <dt style={labelStyle}>Phone</dt>
-            <dd style={accentStyle}>{phone}</dd>
+            <dd style={{ ...valueStyle, textDecoration: "none" }}>{phone}</dd>
           </div>
         )}
         {address && (
           <div style={rowStyle}>
             <dt style={labelStyle}>Address</dt>
-            <dd style={{ margin: 0, fontSize: "0.9375rem" }}>{address}</dd>
+            <dd style={valueStyle}>{address}</dd>
           </div>
         )}
         {hasSocials && (
           <div style={rowStyle}>
             <dt style={labelStyle}>Follow</dt>
-            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-              {instagram && <span style={accentStyle}>{instagram}</span>}
-              {facebook && <span style={accentStyle}>{facebook}</span>}
-              {tiktok && <span style={accentStyle}>{tiktok}</span>}
-              {website && <span style={accentStyle}>{website}</span>}
+            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor }}>
+              {instagram && (
+                <SocialIconLink href={`https://instagram.com/${instagram}`} platform="instagram" size={iconSize} label="Instagram" />
+              )}
+              {facebook && (
+                <SocialIconLink href={`https://facebook.com/${facebook}`} platform="facebook" size={iconSize} label="Facebook" />
+              )}
+              {tiktok && (
+                <SocialIconLink href={`https://tiktok.com/@${tiktok}`} platform="tiktok" size={iconSize} label="TikTok" />
+              )}
+              {website && (
+                <SocialIconLink href={website.startsWith("http") ? website : `https://${website}`} platform="website" size={iconSize} label="Website" />
+              )}
             </dd>
           </div>
         )}

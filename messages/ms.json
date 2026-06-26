@@ -1729,6 +1729,7 @@
       "notFoundTitle": "Portfolio tidak dijumpai",
       "notFoundBody": "Portfolio ini tidak wujud atau belum diterbitkan.",
       "startingFrom": "Bermula dari {price}",
+      "socialLinkConfirm": "Anda melawat laman luar: {url}. Teruskan?",
       "gallery": {
         "empty": "Belum ada foto dalam koleksi ini.",
         "noCollection": "Tiada koleksi dipilih.",
