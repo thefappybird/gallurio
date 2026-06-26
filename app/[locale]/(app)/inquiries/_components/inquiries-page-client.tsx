@@ -20,7 +20,7 @@ import type { BookingTeamOption } from "../../bookings/_data/team-options";
 
 const INQUIRY_TABLE_COLUMNS = 6;
 
-const TABS = ["all", "new", "booked", "archived"] as const;
+const TABS = ["all", "inquiry", "booked", "archived"] as const;
 type TabKey = (typeof TABS)[number];
 
 type Props = {

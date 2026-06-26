@@ -253,11 +253,29 @@ export function DimensionInput({
     return { n: raw, unit: "px" };
   }
 
+  /**
+   * Converts a raw CSS-length string to a display number string in targetUnit.
+   * rem→px: multiplies by 16 and strips trailing zeros ("1.5rem"→"24", "0.875rem"→"14").
+   * All other unit pairs (px→px, %→%) pass the raw numeric part through unchanged.
+   * Returns "" for undefined/unparseable input.
+   */
+  function toDisplayNumber(raw: string | undefined, targetUnit: "px" | "%"): string {
+    if (!raw) return "";
+    const { n: num, unit } = parse(raw);
+    if (!num) return "";
+    if (unit === "rem" && targetUnit === "px") {
+      const px = Number(num) * 16;
+      if (!Number.isFinite(px)) return "";
+      return String(parseFloat(px.toFixed(10)));
+    }
+    return num;
+  }
+
   // Persist the unit independently — clearing the number value must not reset the unit.
   // Note: the UI select only offers px / % — "rem" is a read-only legacy unit.
   // If a block carries an explicit rem value (e.g. "1.5rem" from old defaults),
   // localUnit is initialised to "px" so the select renders without a missing
-  // option, but n (the numeric part) is preserved from the rem string. The first
+  // option, and the number is shown converted to px (× 16) for display. The first
   // edit the owner makes will write the value back as px. If the dev DB is ever
   // seeded with explicit rem padding, this is the place to add a rem option.
   const [localUnit, setLocalUnit] = useState<"px" | "%">(() => {
@@ -268,15 +286,13 @@ export function DimensionInput({
   // rem coerces to px so the select never holds an option it can't display.
   const parsedUnit = value ? parse(value).unit : localUnit;
   const activeUnit: "px" | "%" = parsedUnit === "rem" ? "px" : parsedUnit;
+  // Raw numeric part kept for compose-on-unit-change; displayN converts rem→px for the input.
   const n = value ? parse(value).n : "";
-  // Guard: if the stored value is rem, display the numeric part unchanged (1.5rem
-  // → shows "1.5" in the input). The unit select shows "px" as the closest
-  // available option. On any edit, compose() writes back as px — acceptable since
-  // rem padding is not produced by any current editor control.
+  const displayN = toDisplayNumber(value || undefined, activeUnit);
 
-  // Derive placeholder text from effectiveValue when value is unset.
+  // Derive placeholder text (px-converted) from effectiveValue when value is unset.
   const placeholder = value === undefined && effectiveValue !== undefined
-    ? parse(effectiveValue).n
+    ? toDisplayNumber(effectiveValue, activeUnit) || undefined
     : undefined;
 
   function compose(numStr: string, u: "px" | "%"): string | undefined {
@@ -316,7 +332,7 @@ export function DimensionInput({
           <input
             type="number"
             inputMode="numeric"
-            value={n}
+            value={displayN}
             placeholder={placeholder}
             onChange={handleNumberChange}
             onBlur={handleBlur}
@@ -474,11 +490,16 @@ export function FloatingLabelInput({
   value,
   onChange,
   type = "text",
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  /** Optional hint shown inside the input on focus (invisible at rest so it
+   *  never collides with the resting centered label). When omitted, falls back
+   *  to a single space — required for the CSS-only :placeholder-shown trick. */
+  placeholder?: string;
 }) {
   const id = useId();
   return (
@@ -489,10 +510,16 @@ export function FloatingLabelInput({
         // A single space placeholder is required so peer-[:not(:placeholder-shown)]
         // fires when the field has a real value typed in — without it the label
         // never "locks" in the floated state after blur.
-        placeholder=" "
+        // When a custom placeholder is provided it is rendered transparent at rest
+        // and visible on focus — :placeholder-shown still works correctly because
+        // any non-empty placeholder counts as "shown" when the field is empty.
+        placeholder={placeholder ?? " "}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className={cn(
+          "peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          placeholder && "placeholder:text-transparent focus:placeholder:text-muted-foreground"
+        )}
       />
       <label
         htmlFor={id}

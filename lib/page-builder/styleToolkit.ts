@@ -159,6 +159,24 @@ export type BlockStyle = {
   animation?: AnimationType; // entrance (plays when scrolled into view)
   animationDuration?: number; // ms
   hover?: HoverEffect;
+  // ContactDetails — per-target typography (label = the uppercase row header; value = the row value)
+  labelBold?: boolean;
+  labelItalic?: boolean;
+  labelUnderline?: boolean;
+  labelAlign?: TextAlign;
+  labelFontFamily?: PortfolioFontKey;
+  labelFontSize?: number; // px
+  labelColorToken?: StyleColorToken | string;
+  valueBold?: boolean;
+  valueItalic?: boolean;
+  valueUnderline?: boolean;
+  valueAlign?: TextAlign;
+  valueFontFamily?: PortfolioFontKey;
+  valueFontSize?: number; // px
+  valueColorToken?: StyleColorToken | string;
+  // ContactDetails — social icon controls
+  iconSize?: number; // px (default 20)
+  iconColorToken?: StyleColorToken | string;
 };
 
 export const ANIMATION_TYPES = ["none", "fade", "slide-up", "slide-down", "slide-left", "slide-right", "zoom"] as const;
@@ -437,6 +455,95 @@ export function resolveBlockAttrs(style?: BlockStyle | null): { "data-anim"?: An
   if (style.animation && style.animation !== "none") attrs["data-anim"] = style.animation;
   if (style.hover && style.hover !== "none") attrs["data-hover"] = style.hover;
   return attrs;
+}
+
+/**
+ * Build the CSSProperties for a ContactDetails label (`<dt>`).
+ * Applies sensible defaults (uppercase, muted) then layers the label* BlockStyle props on top.
+ */
+export function buildContactLabelStyle(style?: BlockStyle | null): React.CSSProperties {
+  const base: React.CSSProperties = {
+    fontSize: "0.6875rem",
+    fontWeight: 700,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--pf-color-fg)",
+    opacity: 0.45,
+  };
+  if (!style) return base;
+  const overrides: React.CSSProperties = {};
+  if (style.labelFontFamily) {
+    const f = fontFamilyValue(style.labelFontFamily);
+    if (f) overrides.fontFamily = f;
+  }
+  if (style.labelFontSize !== undefined) {
+    overrides.fontSize = `${clamp(style.labelFontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
+  }
+  if (style.labelColorToken) {
+    const c = colorTokenToVar(style.labelColorToken);
+    if (c) { overrides.color = c; overrides.opacity = 1; }
+  }
+  if (style.labelBold) overrides.fontWeight = 700;
+  if (style.labelItalic) overrides.fontStyle = "italic";
+  if (style.labelUnderline) overrides.textDecoration = "underline";
+  if (style.labelAlign) overrides.textAlign = style.labelAlign;
+  return { ...base, ...overrides };
+}
+
+/**
+ * Build the CSSProperties for a ContactDetails value (`<dd>`).
+ * Default color is accent so email/phone/socials show in the brand accent color.
+ * The value* BlockStyle props layer on top to override.
+ */
+export function buildContactValueStyle(style?: BlockStyle | null): React.CSSProperties {
+  const base: React.CSSProperties = {
+    margin: 0,
+    fontSize: "0.9375rem",
+    color: "var(--pf-color-accent)",
+  };
+  if (!style) return base;
+  const overrides: React.CSSProperties = {};
+  if (style.valueFontFamily) {
+    const f = fontFamilyValue(style.valueFontFamily);
+    if (f) overrides.fontFamily = f;
+  }
+  if (style.valueFontSize !== undefined) {
+    overrides.fontSize = `${clamp(style.valueFontSize, STYLE_LIMITS.fontSize.min, STYLE_LIMITS.fontSize.max)}px`;
+  }
+  if (style.valueColorToken) {
+    const c = colorTokenToVar(style.valueColorToken);
+    if (c) overrides.color = c;
+  }
+  if (style.valueBold) overrides.fontWeight = 700;
+  if (style.valueItalic) overrides.fontStyle = "italic";
+  if (style.valueUnderline) overrides.textDecoration = "underline";
+  if (style.valueAlign) overrides.textAlign = style.valueAlign;
+  return { ...base, ...overrides };
+}
+
+/**
+ * Resolve the CSS color for social icons in a ContactDetails block.
+ * Default: accent. Overridden by `_style.iconColorToken`.
+ */
+export function buildContactIconColor(style?: BlockStyle | null): string {
+  if (style?.iconColorToken) {
+    return colorTokenToVar(style.iconColorToken) ?? "var(--pf-color-accent)";
+  }
+  return "var(--pf-color-accent)";
+}
+
+/** Resolve the pixel size for ContactDetails social icons. Default 20px. */
+export function buildContactIconSize(style?: BlockStyle | null): number {
+  if (style?.iconSize && Number.isFinite(style.iconSize)) {
+    return Math.min(64, Math.max(12, Math.floor(style.iconSize)));
+  }
+  return 20;
+}
+
+/** Build the CSS `grid-template-columns` string for a ContactDetails grid. */
+export function contactGridTemplate(columns: number | undefined): string {
+  const n = columns && Number.isFinite(columns) && columns >= 1 ? Math.min(2, Math.floor(columns)) : 1;
+  return `repeat(${n}, minmax(0, 1fr))`;
 }
 
 /** The text-color token a Button actually renders when textColorToken is unset.

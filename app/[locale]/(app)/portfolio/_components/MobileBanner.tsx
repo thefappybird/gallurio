@@ -22,6 +22,7 @@ export function MobileBanner({ publicUrl }: { publicUrl: string }) {
             type="button"
             size="sm"
             variant="outline"
+            nativeButton={false}
             render={<a href={publicUrl} target="_blank" rel="noreferrer" />}
           >
             {t("openPreview")}

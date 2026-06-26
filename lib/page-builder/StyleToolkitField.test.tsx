@@ -444,6 +444,13 @@ describe("Sub-part 2 — gallery blocks hide bg-image picker, keep banner Color"
     render(<BannerSection s={{}} set={vi.fn()} hideBgImage={true} />);
     expect(screen.queryByText("Image")).toBeNull();
   });
+
+  it("BannerSection without container shows compact 'Choose photo' button (not inline photo grid)", () => {
+    // SingleImageControl renders a compact button picker; SingleImagePicker renders an inline grid/listbox.
+    render(<BannerSection s={{}} set={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /choose photo/i })).toBeInTheDocument();
+    expect(screen.queryByRole("listbox", { name: /photos/i })).toBeNull();
+  });
 });
 
 describe("GalleryLayoutControls — writes _style.galleryColumns on click", () => {
@@ -518,6 +525,17 @@ describe("ContentInputs — ContactDetails type", () => {
       />
     );
     expect(screen.getByText("Phone")).toBeTruthy();
+  });
+
+  it("renders a Columns section for ContactDetails type", () => {
+    render(
+      <ContentInputs
+        type="ContactDetails"
+        props={{}}
+        setProp={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/columns/i)).toBeTruthy();
   });
 });
 
@@ -906,7 +924,7 @@ describe("NumberInputRow (gap) — edit writes real value", () => {
 });
 
 describe("B2a: Container padding — effective-default display (placeholder)", () => {
-  it("LayoutTabBody for Container shows placeholder '1.5' on padding Top input when _style has no padding", () => {
+  it("LayoutTabBody for Container shows placeholder '24' on padding Top input when _style has no padding", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -922,8 +940,10 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
     fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
     // DimensionInput uses a <span> label, so we query all spinbuttons; Top is first.
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-    // First spinbutton is the Top padding number input
-    expect(spinbuttons[0].placeholder).toBe("1.5");
+    // First spinbutton is the Top padding number input.
+    // DimensionInput converts the effective rem value ("1.5rem") to px for display
+    // (1.5 × 16 = 24). See commit that introduced rem→px conversion.
+    expect(spinbuttons[0].placeholder).toBe("24");
   });
 });
 
@@ -960,5 +980,19 @@ describe("Font select — edit writes real selected font key", () => {
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
     expect(lastCall.fontFamily).toBeUndefined();
+  });
+});
+
+describe("DesignTab — ContactDetails", () => {
+  it("renders Labels and Inputs sub-tabs for ContactDetails", () => {
+    render(
+      <DesignTab
+        s={{}}
+        set={vi.fn()}
+        blockType="ContactDetails"
+      />
+    );
+    expect(screen.getByText("Labels")).toBeTruthy();
+    expect(screen.getByText("Inputs")).toBeTruthy();
   });
 });

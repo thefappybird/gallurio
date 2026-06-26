@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -63,6 +63,18 @@ export function mergeConflict(ev: CalendarEvent, conflictIds: Set<string>): Cale
 }
 
 /**
+ * Returns true if the given calendar event should be draggable.
+ * Only future, non-booked inquiry candles (those with a colorOverride) are draggable.
+ */
+export function isInquiryCandleDraggable(ev: CalendarEvent): boolean {
+  return (
+    ev.kind === "inquiry" &&
+    ev.colorOverride !== undefined &&
+    ev.end >= new Date()
+  );
+}
+
+/**
  * Calendar view for the inquiries page. New inquiry candles are draggable;
  * booking candles are not. On drop, persists via rescheduleInquirySessionAction
  * with optimistic update and revert on conflict/error.
@@ -94,6 +106,17 @@ export function InquiriesCalendarManager({
   );
   // Prevents concurrent drops on the same inquiry session.
   const inFlightRef = useRef<Set<string>>(new Set());
+
+  // When fresh server events arrive (after router.refresh()), clear any pending
+  // optimistic overrides so mergedEvents reflects authoritative positions without
+  // a gap where the stale server data would flash the old position.
+  const prevEventsRef = useRef(events);
+  useEffect(() => {
+    if (events !== prevEventsRef.current) {
+      prevEventsRef.current = events;
+      setOptimisticOverrides((prev) => (prev.size ? new Map() : prev));
+    }
+  }, [events]);
 
   // Merge server events with any pending optimistic overrides.
   const mergedEvents = useMemo(() => {
@@ -201,36 +224,32 @@ export function InquiriesCalendarManager({
         };
         setOptimisticOverrides((prev) => new Map(prev).set(ev.id, optimisticEvent));
 
-        const result = await rescheduleInquirySessionAction({
-          inquiryId: ev.inquiryId,
-          sessionIndex: ev.sessionIndex,
-          startDate,
-          startTime,
-          endTime,
-        });
-
-        if ("error" in result) {
-          // Revert optimistic move and toast the user.
-          setOptimisticOverrides((prev) => {
-            const next = new Map(prev);
-            next.set(ev.id, prevEvent);
-            return next;
-          });
-          if (result.error === "conflict") {
-            toast.error(t("rescheduleConflict"));
-          } else {
-            toast.error(t("rescheduleFailed"));
+        await toast.promise(
+          (async () => {
+            const result = await rescheduleInquirySessionAction({
+              inquiryId: ev.inquiryId!, // guarded by `!ev.inquiryId` check above
+              sessionIndex: ev.sessionIndex,
+              startDate,
+              startTime,
+              endTime,
+            });
+            if ("error" in result) throw result.error;
+            // Success -- trigger a data refresh; the useEffect on `events` clears
+            // the optimistic override once the authoritative position arrives,
+            // preventing any snap-back to the stale server state.
+            router.refresh();
+          })(),
+          {
+            loading: t("updating"),
+            success: t("updated"),
+            error: (err: unknown) => {
+              setOptimisticOverrides((prev) => new Map(prev).set(ev.id, prevEvent));
+              return typeof err === "string" && err === "conflict"
+                ? t("rescheduleConflict")
+                : t("rescheduleFailed");
+            },
           }
-          return;
-        }
-
-        // Success -- clear the override and trigger a data refresh.
-        setOptimisticOverrides((prev) => {
-          const next = new Map(prev);
-          next.delete(ev.id);
-          return next;
-        });
-        router.refresh();
+        );
       } finally {
         inFlightRef.current.delete(sessionKey);
       }
@@ -257,9 +276,9 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showNew ? "currentColor" : "var(--event-inquiry)" }}
+          style={{ background: "var(--event-inquiry)" }}
         />
-        {t("filters.new")}
+        {t("filters.inquiry")}
       </button>
       <button
         type="button"
@@ -270,7 +289,7 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showBooked ? "currentColor" : "var(--event-booked)" }}
+          style={{ background: "var(--event-booked)" }}
         />
         {t("filters.booked")}
       </button>
@@ -283,7 +302,7 @@ export function InquiriesCalendarManager({
         <span
           aria-hidden
           className="size-2.5 shrink-0"
-          style={{ background: showConflicted ? "currentColor" : "var(--danger)" }}
+          style={{ background: "var(--danger)" }}
         />
         {t("filters.conflicted")}
       </button>
@@ -304,10 +323,9 @@ export function InquiriesCalendarManager({
       onSelectEvent={handleSelectEvent}
       onEventDrop={handleInquiryDrop}
       onEventResize={handleInquiryDrop}
+      showPast={true}
       draggableAccessor={(ev: AnyCalendarEvent) =>
-        "kind" in ev &&
-        (ev as CalendarEvent).kind === "inquiry" &&
-        (ev as CalendarEvent).colorOverride !== undefined
+        "kind" in ev && isInquiryCandleDraggable(ev as CalendarEvent)
       }
       toolbarTrailing={toolbarTrailing}
       messages={{

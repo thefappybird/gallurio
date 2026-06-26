@@ -45,10 +45,14 @@ export type RenderWorkspace = {
    * calling getTranslations(). The `startingFrom` value is an ICU template with the
    * literal "{price}" token preserved for per-item substitution in ServicesListBlock.
    * `gallery` holds the localized empty/error/carousel strings for the gallery blocks.
+   * `socialLinkConfirm` is an ICU template with the literal "{url}" token preserved
+   * for per-link substitution in SocialIconLink — shown in window.confirm on click.
    */
   chrome?: {
     startingFrom?: string;
     gallery?: GalleryChromeLabels;
+    /** External-link confirm template. Contains literal "{url}" for per-link substitution. */
+    socialLinkConfirm?: string;
   } | null;
 };
 

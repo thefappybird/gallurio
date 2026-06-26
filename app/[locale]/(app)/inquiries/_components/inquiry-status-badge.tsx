@@ -12,7 +12,7 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
-  new: "default",
+  inquiry: "default",
   archived: "outline",
 };
 

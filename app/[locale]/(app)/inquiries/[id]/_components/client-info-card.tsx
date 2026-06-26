@@ -15,6 +15,7 @@ type Props = {
   phone: string | null;
   preferredContact: string;
   status: string;
+  readOnly?: boolean;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
 };
 
@@ -27,14 +28,14 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, onInquiryChanged }: Props) {
+export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tp = useTranslations("app.inquiries.preferred");
   const preferredLabel = (() => {
     try { return tp(preferredContact); } catch { return preferredContact; }
   })();
 
-  const locked = status === "booked" || status === "converted" || status === "archived";
+  const locked = readOnly || status === "booked" || status === "converted" || status === "archived";
   const [editingPhone, setEditingPhone] = useState(false);
   const [draftPhone, setDraftPhone] = useState(phone ?? "");
   const [saving, setSaving] = useState(false);
@@ -47,6 +48,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
       toast.error(res.error);
       return;
     }
+    toast.success(t("savedToast"));
     setEditingPhone(false);
     onInquiryChanged?.(inquiryId, { phone: draftPhone });
   }

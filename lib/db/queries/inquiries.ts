@@ -63,7 +63,7 @@ export async function listInquiries(
 
 export type InquiryStatusCounts = {
   all: number;
-  new: number;
+  inquiry: number;
   booked: number;
   archived: number;
 };
@@ -80,13 +80,13 @@ export async function getInquiryStatusCounts(
 
   const byStatus = new Map(rows.map((r) => [r._id, r.count]));
   const counts = {
-    new: byStatus.get("new") ?? 0,
+    inquiry: byStatus.get("inquiry") ?? 0,
     booked: (byStatus.get("booked") ?? 0) + (byStatus.get("converted") ?? 0),
     archived: byStatus.get("archived") ?? 0,
   };
   return {
     ...counts,
-    all: counts.new + counts.booked + counts.archived,
+    all: counts.inquiry + counts.booked + counts.archived,
   };
 }
 

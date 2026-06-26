@@ -19,7 +19,7 @@ const rows: InquiryRow[] = [
     id: "111111111111111111111111",
     name: "Emma Carter",
     email: "emma@example.com",
-    status: "new",
+    status: "inquiry",
     eventTitle: "Emma & Noah Wedding",
     eventDate: "2030-08-15T00:00:00.000Z",
     eventType: "wedding",

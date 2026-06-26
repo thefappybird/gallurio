@@ -1078,12 +1078,12 @@
       },
       "tabs": {
         "all": "Semua",
-        "new": "Baru",
+        "inquiry": "Pertanyaan",
         "booked": "Dipesan",
         "archived": "Diarsipkan"
       },
       "statusValues": {
-        "new": "Baru",
+        "inquiry": "Pertanyaan",
         "archived": "Diarsipkan",
         "booked": "Dipesan",
         "converted": "Dikonversi ke Pemesanan"
@@ -1139,7 +1139,8 @@
           "none": "—",
           "editPhone": "Edit",
           "savePhone": "Simpan",
-          "cancelEdit": "Batal"
+          "cancelEdit": "Batal",
+          "savedToast": "Telepon diperbarui."
         },
         "eventRequest": {
           "title": "Permintaan acara",
@@ -1202,7 +1203,9 @@
           "dateLabel": "Tanggal",
           "startLabel": "Waktu mulai",
           "endLabel": "Waktu selesai",
-          "alterOnlyError": "Jumlah sesi tidak dapat diubah."
+          "alterOnlyError": "Jumlah sesi tidak dapat diubah.",
+          "savedToast": "Sesi disimpan.",
+          "saveError": "Tidak dapat menyimpan sesi. Silakan coba lagi."
         }
       },
       "view": {
@@ -1212,12 +1215,14 @@
       "calendar": {
         "empty": "Tidak ada pertanyaan atau pemesanan untuk ditampilkan.",
         "filters": {
-          "new": "Baru",
+          "inquiry": "Pertanyaan",
           "booked": "Dipesan",
           "conflicted": "Konflik"
         },
         "rescheduleConflict": "Waktu ini bertentangan dengan pemesanan yang ada — pemindahan dibatalkan",
-        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi"
+        "rescheduleFailed": "Tidak dapat menjadwalkan ulang — silakan coba lagi",
+        "updating": "Menjadwalkan ulang…",
+        "updated": "Sesi dijadwalkan ulang"
       }
     },
     "pageBuilder": {
@@ -1724,6 +1729,7 @@
       "notFoundTitle": "Portofolio tidak ditemukan",
       "notFoundBody": "Portofolio ini tidak ada atau belum dipublikasikan.",
       "startingFrom": "Mulai dari {price}",
+      "socialLinkConfirm": "Anda mengunjungi situs eksternal: {url}. Lanjutkan?",
       "gallery": {
         "empty": "Belum ada foto di koleksi ini.",
         "noCollection": "Tidak ada koleksi yang dipilih.",

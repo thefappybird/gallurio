@@ -19,7 +19,7 @@ const baseProps = {
   email: "maria@example.com",
   phone: "+63912345678",
   preferredContact: "email",
-  status: "new",
+  status: "inquiry",
 };
 
 beforeEach(() => {

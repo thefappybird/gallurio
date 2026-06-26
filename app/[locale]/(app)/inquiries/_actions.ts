@@ -664,7 +664,7 @@ const rescheduleSessionSchema = z
 export type RescheduleSessionInput = z.infer<typeof rescheduleSessionSchema>;
 
 /**
- * Reschedule a single session on a "new" inquiry.
+ * Reschedule a single session on an "inquiry" status inquiry.
  * Blocked if the new slot conflicts with an existing real booking.
  * Idempotent: applying the same payload twice leaves state unchanged.
  */
@@ -686,8 +686,8 @@ export async function rescheduleInquirySessionAction(
   const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId }).lean();
   if (!inquiry) return { error: "not_found" };
 
-  // Only "new" inquiries are reschedulable.
-  if (inquiry.status !== "new") return { error: "not_reschedulable" };
+  // Only "inquiry" status inquiries are reschedulable.
+  if (inquiry.status !== "inquiry") return { error: "not_reschedulable" };
 
   if (sessionIndex >= inquiry.sessions.length) {
     return { error: "session_index_out_of_range" };

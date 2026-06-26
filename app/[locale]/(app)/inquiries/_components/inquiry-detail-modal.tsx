@@ -45,6 +45,8 @@ export type InquiryDetailModalData = {
   booking: InquiryBookingSummary | null;
   isOwner: boolean;
   hasConflict?: boolean;
+  /** When true the modal is display-only: actions are hidden and cards are non-editable. */
+  readOnly?: boolean;
 };
 
 export function InquiryDetailModal({
@@ -68,6 +70,7 @@ export function InquiryDetailModal({
 
   if (!detail) return null;
 
+  const readOnly = detail.readOnly ?? false;
   const submittedLabel = new Date(detail.submittedAt).toLocaleDateString(detail.locale, {
     month: "long",
     day: "numeric",
@@ -93,7 +96,7 @@ export function InquiryDetailModal({
               {t("submittedOn", { date: submittedLabel })}
             </p>
           </div>
-          <InquiryActions inquiryId={detail.inquiryId} status={detail.status} />
+          {!readOnly && <InquiryActions inquiryId={detail.inquiryId} status={detail.status} />}
         </div>
 
         {detail.hasConflict && (
@@ -114,7 +117,8 @@ export function InquiryDetailModal({
                 phone={detail.phone}
                 preferredContact={detail.preferredContact}
                 status={detail.status}
-                onInquiryChanged={onInquiryChanged}
+                readOnly={readOnly}
+                onInquiryChanged={readOnly ? undefined : onInquiryChanged}
               />
               <EventRequestCard
                 eventType={detail.eventType}
@@ -140,9 +144,10 @@ export function InquiryDetailModal({
                 sessions={detail.sessions}
                 locale={detail.locale}
                 hasConflict={detail.hasConflict}
-                onConverted={onConverted}
-                onConvertFailed={onConvertFailed}
-                onInquiryChanged={onInquiryChanged}
+                readOnly={readOnly}
+                onConverted={readOnly ? undefined : onConverted}
+                onConvertFailed={readOnly ? undefined : onConvertFailed}
+                onInquiryChanged={readOnly ? undefined : onInquiryChanged}
               />
 
               <div className="border border-border bg-card">

@@ -685,7 +685,7 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
 // MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
 // (positioned off that model) reliably tracks an empty container the same way it
 // does any other block. Never used on the public page (gated on puck.isEditing).
-const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
+export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   auto: 128,
   short: 320,
   medium: 480,
@@ -890,5 +890,47 @@ export const containerBlockConfig: ComponentConfig<ContainerBlockProps> = {
   defaultProps: containerDefaultProps,
   fields: containerFields,
   render: ContainerBlock,
+};
+
+// ---------------------------------------------------------------------------
+// ContainerAnchor — editor-only invisible "first child". See editorConfig.tsx
+// for the resolveData logic that maintains it.
+// ---------------------------------------------------------------------------
+
+export type ContainerAnchorProps = {
+  height: number;
+};
+
+export const containerAnchorDefaultProps: ContainerAnchorProps = { height: 128 };
+
+export function ContainerAnchorBlock({
+  height,
+  puck,
+}: ContainerAnchorProps & { puck?: BlockPuck }) {
+  // Public page: render nothing — anchor is editor infrastructure only.
+  if (!puck?.isEditing) return <></>;
+  return (
+    <div
+      aria-hidden
+      style={{ height: `${height}px`, width: "100%", pointerEvents: "none" }}
+    />
+  );
+}
+
+export const containerAnchorBlockConfig: ComponentConfig<ContainerAnchorProps> = {
+  label: "ContainerAnchor",
+  defaultProps: containerAnchorDefaultProps,
+  fields: {
+    height: { type: "number", label: "Height" } as Field<number>,
+  },
+  permissions: {
+    drag: false,
+    delete: false,
+    duplicate: false,
+    insert: false,
+    edit: false,
+  },
+  // TODO: suppress Puck selection outline / keyboard nav (spike deferred)
+  render: ContainerAnchorBlock as ComponentConfig<ContainerAnchorProps>["render"],
 };
 

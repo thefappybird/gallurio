@@ -232,6 +232,28 @@ describe("TimeBookingEvent pill", () => {
   });
 });
 
+describe("MonthBookingEvent inquiry candle", () => {
+  it("renders 'Inquiry' label in the status pill for an inquiry candle", () => {
+    const inquiryEvent: CalendarEvent = {
+      ...makeEvent({
+        kind: "inquiry",
+        colorOverride: "var(--event-inquiry)",
+        status: "booked" as const,
+      }),
+      inquiryId: "inq_1",
+      sessionIndex: 0,
+    };
+    // EventProps requires rbc internals never accessed for regular candles; cast to any.
+    const props = { event: inquiryEvent, continuesPrior: false, continuesAfter: false } as MonthProps;
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <MonthBookingEvent {...props} />
+      </NextIntlClientProvider>
+    );
+    expect(screen.getByText("Inquiry")).toBeInTheDocument();
+  });
+});
+
 describe("groupEventsForMonth (simple per-day overflow grouping)", () => {
   it("returns a single event for a day with one event", () => {
     const ev = makeEvent();

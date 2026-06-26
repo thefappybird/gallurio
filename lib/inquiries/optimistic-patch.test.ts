@@ -2,9 +2,9 @@ import { describe, it, expect } from "vitest";
 import { applyOptimisticPatch, type InquiryOptimisticPatch } from "./optimistic-patch";
 
 const baseRows = [
-  { id: "a", status: "new", name: "Alice" },
-  { id: "b", status: "new", name: "Bob" },
-  { id: "c", status: "new", name: "Carol" },
+  { id: "a", status: "inquiry", name: "Alice" },
+  { id: "b", status: "inquiry", name: "Bob" },
+  { id: "c", status: "inquiry", name: "Carol" },
 ];
 
 describe("applyOptimisticPatch", () => {
@@ -16,9 +16,9 @@ describe("applyOptimisticPatch", () => {
   it("applies a status patch to the matching row only", () => {
     const patches: Record<string, InquiryOptimisticPatch> = { b: { status: "booked" } };
     const result = applyOptimisticPatch(baseRows, patches);
-    expect(result[0].status).toBe("new");
+    expect(result[0].status).toBe("inquiry");
     expect(result[1].status).toBe("booked");
-    expect(result[2].status).toBe("new");
+    expect(result[2].status).toBe("inquiry");
   });
 
   it("merges multiple patch fields onto the row without affecting other rows", () => {
@@ -39,7 +39,7 @@ describe("applyOptimisticPatch", () => {
   it("does not mutate the original rows array", () => {
     const patches: Record<string, InquiryOptimisticPatch> = { a: { status: "booked" } };
     applyOptimisticPatch(baseRows, patches);
-    expect(baseRows[0].status).toBe("new");
+    expect(baseRows[0].status).toBe("inquiry");
   });
 });
 
@@ -106,7 +106,7 @@ describe("prune-on-match reconciliation", () => {
     const patches: Record<string, InquiryOptimisticPatch> = {
       c: { status: "archived" },
     };
-    const serverRows = [{ id: "c", status: "new", name: "Carol" }];
+    const serverRows = [{ id: "c", status: "inquiry", name: "Carol" }];
     const result = reconcile(patches, serverRows);
     // Identity check: same object reference means setState would not trigger a re-render.
     expect(result).toBe(patches);
@@ -119,7 +119,7 @@ describe("prune-on-match reconciliation", () => {
     };
     const serverRows = [
       { id: "a", status: "booked", name: "Alice" }, // caught up
-      { id: "b", status: "new", name: "Bob" },      // still stale
+      { id: "b", status: "inquiry", name: "Bob" },  // still stale
     ];
     const result = reconcile(patches, serverRows);
     expect(Object.keys(result)).toEqual(["b"]);
@@ -132,7 +132,7 @@ describe("prune-on-match reconciliation", () => {
     const patches: Record<string, InquiryOptimisticPatch> = {
       a: { phone: "+63912345678" },
     };
-    const serverRows = [{ id: "a", status: "new", name: "Alice" }];
+    const serverRows = [{ id: "a", status: "inquiry", name: "Alice" }];
     const result = reconcile(patches, serverRows);
     expect(Object.keys(result)).toHaveLength(0);
   });
@@ -143,7 +143,7 @@ describe("prune-on-match reconciliation", () => {
     const patches: Record<string, InquiryOptimisticPatch> = {
       b: { status: "booked" },
     };
-    const serverRows = [{ id: "b", status: "new", name: "Bob" }];
+    const serverRows = [{ id: "b", status: "inquiry", name: "Bob" }];
     const result = reconcile(patches, serverRows);
     expect(result["b"]).toEqual({ status: "booked" });
   });

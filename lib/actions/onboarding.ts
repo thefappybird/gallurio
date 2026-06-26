@@ -392,7 +392,7 @@ async function seedSampleData(workspaceId: string) {
       email: "lena.o@example.com",
       message: "Brand portrait session -- do you take corporate work?",
       eventType: "corporate",
-      status: "new",
+      status: "inquiry",
       eventDate: slot(21).start,
     },
   ]);

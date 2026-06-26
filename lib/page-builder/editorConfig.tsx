@@ -33,14 +33,24 @@ import { StyleToolkitField } from "./StyleToolkitField";
 import { RootStyleField } from "./RootStyleField";
 import type { RootPageStyle } from "./rootStyle";
 import { NumberInputRow } from "./toolbarPrimitives";
-import { resolveBlockStyle, type BlockStyle } from "./styleToolkit";
+import {
+  resolveBlockStyle,
+  buildContactLabelStyle,
+  buildContactValueStyle,
+  buildContactIconColor,
+  buildContactIconSize,
+  contactGridTemplate,
+  type BlockStyle,
+} from "./styleToolkit";
+import { SocialIconLink } from "./blocks/SocialIconLink";
 import { PRESET_BLOCK_KEYS, MANUAL_BLOCK_KEYS } from "./blockCategories";
 // Preset defaultProps
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 // Data blocks are SERVER modules (Mongo / node:async_hooks). Import their TYPES
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
-import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
+// normalizeSocialUrl is a pure utility with no server-only deps — safe to import.
+import { normalizeSocialUrl, type ContactDetailsProps } from "./blocks/ContactDetailsBlock";
 import { GalleryGridBlock, galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
@@ -53,6 +63,7 @@ import {
   videoDefaultProps,
   type VideoBlockProps,
 } from "./blocks/VideoBlock";
+import { EditorContainerAnchor } from "./blocks/EditorContainerAnchor";
 import {
   HeadingBlock,
   TextBlock,
@@ -70,6 +81,7 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
+  containerAnchorDefaultProps,
   type HeadingBlockProps,
   type TextBlockProps,
   type ImageBlockProps,
@@ -81,6 +93,7 @@ import {
   type ContainerHeight,
   type ContainerAlignX,
   type ContainerAlignY,
+  type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
 
 type EditorComponents = {
@@ -109,6 +122,7 @@ type EditorComponents = {
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
   Container: ContainerBlockProps;
+  ContainerAnchor: ContainerAnchorProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -512,23 +526,80 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
   resolveFields: (_data, { fields }) => {
     return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
   },
-  render: ({ _style, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
-    const overrides = [
-      email && "Email",
-      phone && "Phone",
-      address && "Address",
-      instagram && "Instagram",
-      facebook && "Facebook",
-      tiktok && "TikTok",
-      website && "Website",
-    ].filter(Boolean);
+  render: ({ _style, columns, email, phone, address, instagram, facebook, tiktok, website, puck }) => {
+    // WYSIWYG canvas: render the actual contact rows using prop values so the canvas
+    // reflects what the user typed in the Content tab. When all fields are blank
+    // the workspace contact data fills in at runtime; show a placeholder here.
+    // No confirmMessage passed → SocialIconLink clicks are no-ops in the editor.
+
+    // Pre-normalize social hrefs so we match production SocialsRow exactly
+    // (skips invalid URLs, avoids double-prefixing full https:// values).
+    const igHref = instagram ? normalizeSocialUrl("instagram", instagram) : null;
+    const fbHref = facebook ? normalizeSocialUrl("facebook", facebook) : null;
+    const ttHref = tiktok ? normalizeSocialUrl("tiktok", tiktok) : null;
+    const wsHref = website ? normalizeSocialUrl("website", website) : null;
+    const hasSocials = !!(igHref || fbHref || ttHref || wsHref);
+    const hasAny = email || phone || address || hasSocials;
+    const rowStyle = { display: "flex", flexDirection: "column" as const, gap: "0.125rem" };
+    const labelStyle = buildContactLabelStyle(_style);
+    const valueStyle = buildContactValueStyle(_style);
+    const iconColor = buildContactIconColor(_style);
+    const iconSize = buildContactIconSize(_style);
+    // Mirror SocialsRow: default to center when valueAlign is unset.
+    const iconJustify =
+      _style?.valueAlign === "left" ? "flex-start" :
+      _style?.valueAlign === "right" ? "flex-end" :
+      "center";
     return (
-      <Preview
-        label="Contact Details"
-        lines={[overrides.length > 0 ? overrides.join(" · ") + " overridden" : "Workspace contact details"]}
-        blockStyle={_style}
-        puck={puck}
-      />
+      <dl
+        ref={puck?.dragRef ?? undefined}
+        data-block="contact-details"
+        style={{
+          display: "grid",
+          gridTemplateColumns: contactGridTemplate(columns),
+          gap: "0.875rem",
+          margin: 0,
+          padding: "0.5rem 0",
+          fontFamily: "var(--pf-font-body)",
+          color: "var(--pf-color-fg)",
+          ...resolveBlockStyle(_style),
+        }}
+      >
+        {email && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Email</dt>
+            <dd style={{ ...valueStyle, textDecoration: "none" }}>{email}</dd>
+          </div>
+        )}
+        {phone && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Phone</dt>
+            <dd style={{ ...valueStyle, textDecoration: "none" }}>{phone}</dd>
+          </div>
+        )}
+        {address && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Address</dt>
+            <dd style={valueStyle}>{address}</dd>
+          </div>
+        )}
+        {hasSocials && (
+          <div style={rowStyle}>
+            <dt style={labelStyle}>Follow</dt>
+            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor, justifyContent: iconJustify }}>
+              {igHref && <SocialIconLink href={igHref} platform="instagram" size={iconSize} label="Instagram" />}
+              {fbHref && <SocialIconLink href={fbHref} platform="facebook" size={iconSize} label="Facebook" />}
+              {ttHref && <SocialIconLink href={ttHref} platform="tiktok" size={iconSize} label="TikTok" />}
+              {wsHref && <SocialIconLink href={wsHref} platform="website" size={iconSize} label="Website" />}
+            </dd>
+          </div>
+        )}
+        {!hasAny && (
+          <p style={{ margin: 0, fontSize: "0.875rem", opacity: 0.5, fontFamily: "var(--pf-font-body)" }}>
+            Workspace contact details
+          </p>
+        )}
+      </dl>
     );
   },
 };
@@ -711,6 +782,50 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   render: ColumnsBlock,
 };
 
+// ---------------------------------------------------------------------------
+// Anchor presence: resolveData ensures exactly one ContainerAnchor exists as
+// the FIRST slot child. Height is no longer maintained here — EditorContainerAnchor
+// computes its own height reactively from the parent's live children via
+// usePuckStore, avoiding the missing "move" trigger in Puck 0.20.2's
+// ResolveDataTrigger (only "insert"|"replace"|"load"|"force" are available).
+// IDEMPOTENCY: returns the same `data` reference if an anchor already leads the
+// slot so we never produce a spurious resolve → change → resolve loop.
+// ---------------------------------------------------------------------------
+
+type _SlotItem = { type: string; props: Record<string, unknown> };
+
+function resolveContainerData(data: unknown) {
+  const d = data as {
+    props: { id: string; content: _SlotItem[] };
+  };
+  const content: _SlotItem[] = d.props.content ?? [];
+
+  const isAnchor = (item: _SlotItem) => item.type === "ContainerAnchor";
+  const realChildren = content.filter((item) => !isAnchor(item));
+
+  // Idempotency: if an anchor already leads the slot, nothing to do.
+  const first = content[0];
+  if (first !== undefined && isAnchor(first) && content.length === realChildren.length + 1) {
+    return data;
+  }
+
+  // Height is intentionally 0 — EditorContainerAnchor computes it reactively.
+  const anchor: _SlotItem = {
+    type: "ContainerAnchor",
+    props: {
+      id: `${d.props.id}--anchor`,
+      height: 0,
+    },
+  };
+
+  return {
+    ...d,
+    props: { ...d.props, content: [anchor, ...realChildren] },
+  };
+}
+const resolveContainerDataTyped =
+  resolveContainerData as unknown as ComponentConfig<ContainerBlockProps>["resolveData"];
+
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   inline: true,
@@ -719,6 +834,7 @@ const container: ComponentConfig<ContainerBlockProps> = {
   },
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
+  resolveData: resolveContainerDataTyped,
   render: ContainerBlock,
 };
 
@@ -750,6 +866,26 @@ export const editorPuckConfig: Config<EditorComponents> = {
     Divider: divider,
     Columns: columns,
     Container: container,
+    ContainerAnchor: {
+      label: "ContainerAnchor",
+      defaultProps: containerAnchorDefaultProps,
+      fields: {
+        height: { type: "number", label: "Height" } as unknown as Field<number>,
+      },
+      permissions: {
+        drag: false,
+        delete: false,
+        duplicate: false,
+        insert: false,
+        edit: false,
+      },
+      // Thin wrapper: delegates to EditorContainerAnchor which self-sizes via
+      // usePuckStore and bounces selection to the parent container. Returns null
+      // on the public page (puck.isEditing is false/absent in <Render>).
+      render: (({ id, puck }: { id?: string; puck?: { isEditing?: boolean }; [k: string]: unknown }) =>
+        puck?.isEditing && id ? <EditorContainerAnchor id={id} /> : null
+      ) as unknown as ComponentConfig<ContainerAnchorProps>["render"],
+    } as ComponentConfig<ContainerAnchorProps>,
   },
   // No root.render in the editor: Puck wraps blocks in a DropZone div, so
   // blocks are not direct children of any wrapper here — adding root.render

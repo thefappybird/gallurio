@@ -112,7 +112,7 @@ async function seedPhoneInquiry() {
     workspaceId,
     name: "Test Client",
     email: "phone-test@example.com",
-    status: "new",
+    status: "inquiry",
     eventDate: utcStart,
     clientId: client._id,
     draftBookingId: booking._id,

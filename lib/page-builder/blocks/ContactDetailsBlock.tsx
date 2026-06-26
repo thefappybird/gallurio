@@ -9,10 +9,23 @@
 
 import type { ComponentConfig } from "@measured/puck";
 import { getRenderWorkspaceFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
-import { resolveBlockStyle, resolveBlockAttrs, productionStyleField, type BlockStyle } from "@/lib/page-builder/styleToolkit";
+import {
+  resolveBlockStyle,
+  resolveBlockAttrs,
+  productionStyleField,
+  buildContactLabelStyle,
+  buildContactValueStyle,
+  buildContactIconColor,
+  buildContactIconSize,
+  contactGridTemplate,
+  type BlockStyle,
+  type TextAlign,
+} from "@/lib/page-builder/styleToolkit";
+import { SocialIconLink, type SocialPlatform } from "./SocialIconLink";
 
 export type ContactDetailsProps = {
   _style?: BlockStyle;
+  columns?: number;
   email?: string;
   phone?: string;
   address?: string;
@@ -24,8 +37,39 @@ export type ContactDetailsProps = {
 
 export const contactDetailsDefaultProps: ContactDetailsProps = {};
 
+type Socials = {
+  instagram?: string | null;
+  facebook?: string | null;
+  tiktok?: string | null;
+  website?: string | null;
+};
+
+/**
+ * Normalize a social handle or URL to a fully-qualified https URL.
+ * Returns null for website values that can't be parsed as a URL.
+ * Exported for unit testing.
+ */
+export function normalizeSocialUrl(platform: SocialPlatform, raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  if (platform === "instagram") {
+    return v.startsWith("http") ? v : `https://instagram.com/${v}`;
+  }
+  if (platform === "facebook") {
+    return v.startsWith("http") ? v : `https://facebook.com/${v}`;
+  }
+  if (platform === "tiktok") {
+    return v.startsWith("http") ? v : `https://tiktok.com/@${v}`;
+  }
+  // website: accept http(s) URLs or bare domains (e.g. "example.com")
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^[\w-]+(\.[\w-]+)+/.test(v)) return `https://${v}`;
+  return null;
+}
+
 export function ContactDetailsBlock({
   _style,
+  columns,
   email,
   phone,
   address,
@@ -35,7 +79,9 @@ export function ContactDetailsBlock({
   website,
   puck,
 }: ContactDetailsProps & { puck?: BlockPuck }) {
-  const contact = getRenderWorkspaceFrom(puck)?.contact ?? null;
+  const workspace = getRenderWorkspaceFrom(puck);
+  const contact = workspace?.contact ?? null;
+  const confirmMessage = workspace?.chrome?.socialLinkConfirm;
 
   const effectiveEmail = email?.trim() || contact?.email;
   const effectivePhone = phone?.trim() || contact?.phone;
@@ -52,13 +98,18 @@ export function ContactDetailsBlock({
     effectiveSocials.tiktok ||
     effectiveSocials.website;
 
+  const labelStyle = buildContactLabelStyle(_style);
+  const valueStyle = buildContactValueStyle(_style);
+  const iconColor = buildContactIconColor(_style);
+  const iconSize = buildContactIconSize(_style);
+
   return (
     <dl
       ref={puck?.dragRef ?? undefined}
       data-block="contact-details"
       style={{
-        display: "flex",
-        flexDirection: "column",
+        display: "grid",
+        gridTemplateColumns: contactGridTemplate(columns),
         gap: "0.875rem",
         margin: 0,
         padding: "0.5rem 0",
@@ -71,102 +122,130 @@ export function ContactDetailsBlock({
       {effectiveEmail && (
         <ContactRow
           label="Email"
+          labelStyle={labelStyle}
           value={
-            <a href={`mailto:${effectiveEmail}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
+            <a
+              href={`mailto:${effectiveEmail}`}
+              style={{ ...valueStyle, textDecoration: "none" }}
+            >
               {effectiveEmail}
             </a>
           }
+          valueStyle={valueStyle}
         />
       )}
       {effectivePhone && (
         <ContactRow
           label="Phone"
+          labelStyle={labelStyle}
           value={
-            <a href={`tel:${effectivePhone}`} style={{ color: "var(--pf-color-accent)", textDecoration: "none", fontWeight: 500 }}>
+            <a
+              href={`tel:${effectivePhone}`}
+              style={{ ...valueStyle, textDecoration: "none" }}
+            >
               {effectivePhone}
             </a>
           }
+          valueStyle={valueStyle}
         />
       )}
-      {effectiveAddress && <ContactRow label="Address" value={effectiveAddress} />}
-      {hasSocials && <SocialsRow socials={effectiveSocials} />}
+      {effectiveAddress && (
+        <ContactRow
+          label="Address"
+          labelStyle={labelStyle}
+          value={effectiveAddress}
+          valueStyle={valueStyle}
+        />
+      )}
+      {hasSocials && (
+        <SocialsRow
+          socials={effectiveSocials}
+          labelStyle={labelStyle}
+          iconColor={iconColor}
+          iconSize={iconSize}
+          confirmMessage={confirmMessage}
+          valueAlign={_style?.valueAlign}
+        />
+      )}
     </dl>
   );
 }
 
-function ContactRow({ label, value }: { label: string; value: React.ReactNode }) {
+function ContactRow({
+  label,
+  value,
+  labelStyle,
+  valueStyle,
+}: {
+  label: string;
+  value: React.ReactNode;
+  labelStyle: React.CSSProperties;
+  valueStyle: React.CSSProperties;
+}) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-      <dt
-        style={{
-          fontSize: "0.6875rem",
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--pf-color-fg)",
-          opacity: 0.45,
-        }}
-      >
-        {label}
-      </dt>
-      <dd style={{ margin: 0, fontSize: "0.9375rem" }}>{value}</dd>
+      <dt style={labelStyle}>{label}</dt>
+      <dd style={valueStyle}>{value}</dd>
     </div>
   );
 }
 
-type Socials = {
-  instagram?: string | null;
-  facebook?: string | null;
-  tiktok?: string | null;
-  website?: string | null;
-};
-
-function safeWebsiteHref(raw: string): string | null {
-  const v = raw.trim();
-  if (/^https?:\/\//i.test(v)) return v;
-  if (/^[\w-]+(\.[\w-]+)+/.test(v)) return `https://${v}`;
-  return null;
-}
-
-function SocialsRow({ socials }: { socials: Socials }) {
-  const links: { label: string; href: string }[] = [];
-  if (socials.instagram)
-    links.push({ label: "Instagram", href: socials.instagram.startsWith("http") ? socials.instagram : `https://instagram.com/${socials.instagram}` });
-  if (socials.facebook)
-    links.push({ label: "Facebook", href: socials.facebook.startsWith("http") ? socials.facebook : `https://facebook.com/${socials.facebook}` });
-  if (socials.tiktok)
-    links.push({ label: "TikTok", href: socials.tiktok.startsWith("http") ? socials.tiktok : `https://tiktok.com/@${socials.tiktok}` });
+function SocialsRow({
+  socials,
+  labelStyle,
+  iconColor,
+  iconSize,
+  confirmMessage,
+  valueAlign,
+}: {
+  socials: Socials;
+  labelStyle: React.CSSProperties;
+  iconColor: string;
+  iconSize: number;
+  confirmMessage?: string;
+  /** Controls flex justify-content of the icons row. Unset → center (default). */
+  valueAlign?: TextAlign;
+}) {
+  const links: { label: string; href: string; platform: SocialPlatform }[] = [];
+  if (socials.instagram) {
+    const href = normalizeSocialUrl("instagram", socials.instagram);
+    if (href) links.push({ label: "Instagram", href, platform: "instagram" });
+  }
+  if (socials.facebook) {
+    const href = normalizeSocialUrl("facebook", socials.facebook);
+    if (href) links.push({ label: "Facebook", href, platform: "facebook" });
+  }
+  if (socials.tiktok) {
+    const href = normalizeSocialUrl("tiktok", socials.tiktok);
+    if (href) links.push({ label: "TikTok", href, platform: "tiktok" });
+  }
   if (socials.website) {
-    const href = safeWebsiteHref(socials.website);
-    if (href) links.push({ label: "Website", href });
+    const href = normalizeSocialUrl("website", socials.website);
+    if (href) links.push({ label: "Website", href, platform: "website" });
   }
   if (links.length === 0) return null;
 
+  const justifyContent =
+    valueAlign === "left" ? "flex-start" :
+    valueAlign === "right" ? "flex-end" :
+    "center";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-      <dt
-        style={{
-          fontSize: "0.6875rem",
-          fontWeight: 700,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "var(--pf-color-fg)",
-          opacity: 0.45,
-        }}
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      <dt style={labelStyle}>Follow</dt>
+      <dd
+        data-testid="socials-row"
+        style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor, justifyContent }}
       >
-        Follow
-      </dt>
-      <dd data-testid="socials-row" style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
-        {links.map(({ label, href }) => (
-          <a
-            key={label}
+        {links.map(({ label, href, platform }) => (
+          <SocialIconLink
+            key={platform}
             href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--pf-color-accent)", textDecoration: "none" }}
-          >
-            {label}
-          </a>
+            platform={platform}
+            size={iconSize}
+            confirmMessage={confirmMessage}
+            label={label}
+          />
         ))}
       </dd>
     </div>

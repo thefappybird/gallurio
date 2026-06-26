@@ -200,6 +200,33 @@
   --puck-color-azure-12: var(--muted);
 }
 
+/* ─── ContainerAnchor outline suppression ────────────────────────────────── */
+/*
+ * ContainerAnchors (id ends with "--anchor") are invisible structural spacers.
+ * Suppress Puck's hover/selection outline and action bar so they don't appear
+ * interactive. Clicks that land on the anchor are bounced to the parent
+ * Container by EditorContainerAnchor's selection useEffect.
+ *
+ * pointer-events on the wrapper itself is left alone (keeps Puck's internal
+ * drag-drop drop-zone detection working). We only suppress the visual overlay.
+ *
+ * The overlay and action bar elements use hashed CSS module class names that
+ * contain stable substring patterns (DraggableComponent-overlay /
+ * DraggableComponent-actionsOverlay). The [class*=] selector is used instead
+ * of an exact class match so this survives Puck patch-version hash rotation.
+ */
+[data-puck-component$="--anchor"] [class*="DraggableComponent-overlay"] {
+  outline: none !important;
+  background: transparent !important;
+}
+[data-puck-component$="--anchor"] [class*="DraggableComponent-actionsOverlay"] {
+  display: none !important;
+}
+[data-puck-component$="--anchor"]:focus-visible
+  > [class*="DraggableComponent-overlayWrapper"] {
+  outline: none !important;
+}
+
 /* ─── Specificity patches ─────────────────────────────────────────────────── */
 /*
  * Puck hardcodes `background: white` on the canvas root element (not a var):

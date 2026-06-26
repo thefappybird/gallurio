@@ -24,4 +24,22 @@ describe("CountControl — quick-pick buttons", () => {
     fireEvent.change(input, { target: { value: "9" } });
     expect(onChange).toHaveBeenCalledWith(6);
   });
+
+  it("hides the number input when hideInput is true", () => {
+    render(<CountControl value={1} onChange={vi.fn()} quickValues={[1, 2]} hideInput />);
+    expect(screen.queryByRole("spinbutton")).toBeNull();
+  });
+
+  it("still renders quick-value buttons when hideInput is true", () => {
+    render(<CountControl value={1} onChange={vi.fn()} quickValues={[1, 2]} hideInput />);
+    expect(screen.getByRole("button", { name: "1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "2" })).toBeTruthy();
+  });
+
+  it("calls onChange when a quick button is clicked with hideInput", () => {
+    const onChange = vi.fn();
+    render(<CountControl value={1} onChange={onChange} quickValues={[1, 2]} hideInput />);
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    expect(onChange).toHaveBeenCalledWith(2);
+  });
 });

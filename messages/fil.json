@@ -1078,12 +1078,12 @@
       },
       "tabs": {
         "all": "Lahat",
-        "new": "Bago",
+        "inquiry": "Inquiry",
         "booked": "Na-book",
         "archived": "Naka-archive"
       },
       "statusValues": {
-        "new": "Bago",
+        "inquiry": "Inquiry",
         "archived": "Naka-archive",
         "booked": "Na-book",
         "converted": "Na-convert sa Booking"
@@ -1139,7 +1139,8 @@
           "none": "—",
           "editPhone": "I-edit",
           "savePhone": "I-save",
-          "cancelEdit": "Kanselahin"
+          "cancelEdit": "Kanselahin",
+          "savedToast": "Na-update ang telepono."
         },
         "eventRequest": {
           "title": "Kahilingang kaganapan",
@@ -1202,7 +1203,9 @@
           "dateLabel": "Petsa",
           "startLabel": "Oras ng pagsisimula",
           "endLabel": "Oras ng pagtatapos",
-          "alterOnlyError": "Hindi mababago ang bilang ng mga sesyon."
+          "alterOnlyError": "Hindi mababago ang bilang ng mga sesyon.",
+          "savedToast": "Na-save ang mga session.",
+          "saveError": "Hindi ma-save ang mga session. Pakisubukang muli."
         }
       },
       "view": {
@@ -1212,12 +1215,14 @@
       "calendar": {
         "empty": "Walang mga katanungan o booking na ipapakita.",
         "filters": {
-          "new": "Bago",
+          "inquiry": "Inquiry",
           "booked": "Naka-book",
           "conflicted": "May Salungatan"
         },
         "rescheduleConflict": "Ang oras na ito ay may salungatan sa isang umiiral na booking — kinansela ang paglipat",
-        "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli"
+        "rescheduleFailed": "Hindi ma-reschedule — pakisubukang muli",
+        "updating": "Nire-reschedule…",
+        "updated": "Na-reschedule ang session"
       }
     },
     "pageBuilder": {
@@ -1724,6 +1729,7 @@
       "notFoundTitle": "Hindi natagpuan ang portfolio",
       "notFoundBody": "Wala ang portfolio na ito o hindi pa ito na-publish.",
       "startingFrom": "Nagsisimula sa {price}",
+      "socialLinkConfirm": "Binibisita mo ang isang panlabas na site: {url}. Ituloy?",
       "gallery": {
         "empty": "Wala pang larawan sa koleksiyong ito.",
         "noCollection": "Walang napiling koleksiyon.",

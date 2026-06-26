@@ -51,7 +51,7 @@ const inquirySchema = new Schema(
       utm_campaign: { type: String, default: null },
       referrer: { type: String, default: null },
     },
-    status: { type: String, enum: INQUIRY_STATUSES, default: "new", required: true },
+    status: { type: String, enum: INQUIRY_STATUSES, default: "inquiry", required: true },
     // Set at submission time (Phase 6): every inquiry matches-or-creates a Client
     // and an auto-created draft Booking. `converted*` fields are only set later,
     // when the owner approves the draft in the lead inbox (Phase 7).

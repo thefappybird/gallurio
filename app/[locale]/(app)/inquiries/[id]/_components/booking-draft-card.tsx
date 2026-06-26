@@ -46,6 +46,7 @@ type Props = {
   sessions?: InquirySessionView[];
   locale?: string;
   hasConflict?: boolean;
+  readOnly?: boolean;
   onConverted?: () => void;
   onConvertFailed?: () => void;
   onInquiryChanged?: (inquiryId: string, patch: InquiryOptimisticPatch) => void;
@@ -66,6 +67,7 @@ export function BookingDraftCard({
   sessions = [],
   locale,
   hasConflict = false,
+  readOnly = false,
   onConverted,
   onConvertFailed,
   onInquiryChanged,
@@ -96,6 +98,8 @@ export function BookingDraftCard({
     notes: initialNotes,
     teamId: initialTeamId ?? null,
   });
+
+  const fieldsLocked = !isOwner || readOnly;
 
   const isDirty =
     Number(total) !== Number(snapshot.total) ||
@@ -157,8 +161,10 @@ export function BookingDraftCard({
     setSessionsSaving(false);
     if ("ok" in result && result.ok) {
       setEditingSessions(false);
+      toast.success(ts("savedToast"));
     } else if ("error" in result) {
       setSessionsError(result.error);
+      toast.error(ts("saveError"));
     }
   }
 
@@ -246,23 +252,23 @@ export function BookingDraftCard({
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-total">{t("total")} ({currency})</Label>
-            <Input id="draft-total" type="number" inputMode="decimal" min={0} value={total} disabled={!isOwner} onChange={(e) => setTotal(e.target.value)} />
+            <Input id="draft-total" type="number" inputMode="decimal" min={0} value={total} disabled={fieldsLocked} onChange={(e) => setTotal(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-deposit">{t("deposit")} ({currency})</Label>
-            <Input id="draft-deposit" type="number" inputMode="decimal" min={0} value={deposit} disabled={!isOwner} onChange={(e) => setDeposit(e.target.value)} />
+            <Input id="draft-deposit" type="number" inputMode="decimal" min={0} value={deposit} disabled={fieldsLocked} onChange={(e) => setDeposit(e.target.value)} />
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="draft-notes">{t("notes")}</Label>
-          <Textarea id="draft-notes" rows={3} value={notes} disabled={!isOwner} placeholder={t("notesPlaceholder")} onChange={(e) => setNotes(e.target.value)} />
+          <Textarea id="draft-notes" rows={3} value={notes} disabled={fieldsLocked} placeholder={t("notesPlaceholder")} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
         {showTeamPicker ? (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="draft-team">{t("team")}</Label>
-            <Select<string> value={teamId ?? ""} disabled={!isOwner} onValueChange={(v) => setTeamId(v || null)}>
+            <Select<string> value={teamId ?? ""} disabled={fieldsLocked} onValueChange={(v) => setTeamId(v || null)}>
               <SelectTrigger id="draft-team">
                 <SelectValue placeholder={tTeam("allTeams")} />
               </SelectTrigger>
@@ -284,7 +290,7 @@ export function BookingDraftCard({
               <span className="text-xs uppercase tracking-wide text-muted-foreground">
                 {ter("sessions")}
               </span>
-              {!editingSessions ? (
+              {!readOnly && !editingSessions ? (
                 <button
                   type="button"
                   onClick={() => { setEditingSessions(true); setSessionsError(null); }}
@@ -380,9 +386,9 @@ export function BookingDraftCard({
           </div>
         )}
 
-        {!isOwner ? (
+        {!readOnly && !isOwner ? (
           <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>
-        ) : (
+        ) : !readOnly ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button
@@ -411,7 +417,7 @@ export function BookingDraftCard({
               </p>
             )}
           </>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );

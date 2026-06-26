@@ -29,7 +29,7 @@ vi.mock("..\/[id]\/_components\/event-request-card", () => ({
 }));
 
 vi.mock("..\/[id]\/_components\/inquiry-actions", () => ({
-  InquiryActions: () => <div />,
+  InquiryActions: () => <div data-testid="inquiry-actions" />,
 }));
 
 import { InquiryDetailModal, type InquiryDetailModalData } from "./inquiry-detail-modal";
@@ -41,7 +41,7 @@ const detail: InquiryDetailModalData = {
   email: "alice@example.com",
   phone: null,
   preferredContact: "email",
-  status: "new",
+  status: "inquiry",
   eventType: "wedding",
   guestCount: null,
   location: null,
@@ -55,6 +55,17 @@ const detail: InquiryDetailModalData = {
 };
 
 describe("InquiryDetailModal", () => {
+  it("hides InquiryActions when readOnly is true", () => {
+    renderWithProviders(
+      <InquiryDetailModal
+        detail={{ ...detail, readOnly: true }}
+        open
+        onClose={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId("inquiry-actions")).toBeNull();
+  });
+
   it("forwards onInquiryChanged to ClientInfoCard and BookingDraftCard", () => {
     const onInquiryChanged = vi.fn();
     renderWithProviders(
