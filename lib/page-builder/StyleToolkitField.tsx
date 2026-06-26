@@ -550,22 +550,26 @@ export function ContentInputs({
           onChange={(v) => setProp("address", v)}
         />
         <FloatingLabelInput
-          label="Instagram"
+          label="Instagram username"
+          placeholder="yourhandle"
           value={(props.instagram as string) ?? ""}
           onChange={(v) => setProp("instagram", v)}
         />
         <FloatingLabelInput
-          label="Facebook"
+          label="Facebook username"
+          placeholder="your.page"
           value={(props.facebook as string) ?? ""}
           onChange={(v) => setProp("facebook", v)}
         />
         <FloatingLabelInput
-          label="TikTok"
+          label="TikTok username"
+          placeholder="yourhandle"
           value={(props.tiktok as string) ?? ""}
           onChange={(v) => setProp("tiktok", v)}
         />
         <FloatingLabelInput
-          label="Website"
+          label="Website URL"
+          placeholder="yoursite.com"
           value={(props.website as string) ?? ""}
           onChange={(v) => setProp("website", v)}
           type="url"
@@ -917,7 +921,7 @@ export function DesignTab({
                     <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span className="text-xs text-muted-foreground">Label color</span>
                   </div>
-                  <ColorSwatchRow value={s.labelColorToken} onChange={(t) => set({ labelColorToken: t })} />
+                  <ColorSwatchRow value={s.labelColorToken} effectiveValue="foreground" onChange={(t) => set({ labelColorToken: t })} />
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="shrink-0 text-xs text-muted-foreground">Font</span>
@@ -951,7 +955,7 @@ export function DesignTab({
                     <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                     <span className="text-xs text-muted-foreground">Value color</span>
                   </div>
-                  <ColorSwatchRow value={s.valueColorToken} onChange={(t) => set({ valueColorToken: t })} />
+                  <ColorSwatchRow value={s.valueColorToken} effectiveValue="accent" onChange={(t) => set({ valueColorToken: t })} />
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="shrink-0 text-xs text-muted-foreground">Font</span>
@@ -978,7 +982,7 @@ export function DesignTab({
                 <Baseline className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="text-xs text-muted-foreground">Icon color</span>
               </div>
-              <ColorSwatchRow value={s.iconColorToken} onChange={(t) => set({ iconColorToken: t })} />
+              <ColorSwatchRow value={s.iconColorToken} effectiveValue="accent" onChange={(t) => set({ iconColorToken: t })} />
             </div>
           </EditorDrawerSection>
         </>
