@@ -924,7 +924,7 @@ describe("NumberInputRow (gap) — edit writes real value", () => {
 });
 
 describe("B2a: Container padding — effective-default display (placeholder)", () => {
-  it("LayoutTabBody for Container shows placeholder '1.5' on padding Top input when _style has no padding", () => {
+  it("LayoutTabBody for Container shows placeholder '24' on padding Top input when _style has no padding", () => {
     render(
       <LayoutTabBody
         s={{}}
@@ -940,8 +940,10 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
     fireEvent.click(screen.getByRole("button", { name: "Padding advanced options" }));
     // DimensionInput uses a <span> label, so we query all spinbuttons; Top is first.
     const spinbuttons = screen.getAllByRole("spinbutton") as HTMLInputElement[];
-    // First spinbutton is the Top padding number input
-    expect(spinbuttons[0].placeholder).toBe("1.5");
+    // First spinbutton is the Top padding number input.
+    // DimensionInput converts the effective rem value ("1.5rem") to px for display
+    // (1.5 × 16 = 24). See commit that introduced rem→px conversion.
+    expect(spinbuttons[0].placeholder).toBe("24");
   });
 });
 
