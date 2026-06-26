@@ -88,6 +88,23 @@ const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
 const CANVAS_PUCK_CANVAS_ROOT_CSS =
   `:has(> [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
 
+// The root page drop zone carries data-puck-dropzone="root:default-zone" (Puck's
+// hardcoded rootAreaId "root" + rootZone "default-zone"). All nested Container /
+// Columns slot zones use data-puck-dropzone="${componentId}:${zoneName}" — so the
+// exact-match attribute selector below is root-exclusive and does NOT touch nested
+// slots.
+//
+// Two rules on this droppable element:
+//   min-height: 100dvh — droppable region never shrinks below the viewport height.
+//   padding-bottom: 10rem — always adds a droppable tail below the last block so
+//     users can drop into the empty space without hunting for a thin target.
+//
+// Together the effective droppable height is max(100dvh, contentHeight) + 10rem.
+// Padding is part of the droppable element's box, so the 10rem tail is a real
+// drop target (dnd-kit / Puck pick up pointer events within the padding box).
+const CANVAS_ROOT_DROPZONE_CSS =
+  `[data-puck-dropzone="root:default-zone"] { min-height: 100dvh; padding-bottom: 10rem; }`;
+
 /**
  * Full canvas stylesheet: the page-container declaration + the responsive sheet
  * (always present, so the canvas reflows with the viewport toggle) with the
@@ -98,7 +115,7 @@ export function buildCanvasCss(style?: RootPageStyle | null): string {
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
 }
 
 /**
