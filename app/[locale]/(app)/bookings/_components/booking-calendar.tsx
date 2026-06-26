@@ -17,6 +17,7 @@ import withDragAndDrop, {
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { ChevronLeftIcon, ChevronRightIcon, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import {
   Popover,
   PopoverTrigger,
@@ -622,28 +623,29 @@ function CalendarToolbar({
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
       {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center">
+        {/* Nav pill: outer rounded container, ghost buttons, single shared border, inner dividers on Today */}
+        <div className="flex rounded-lg overflow-hidden border border-border bg-background">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
-            className="min-h-11"
+            className="min-h-11 rounded-none"
             onClick={() => onNavigate("PREV")}
             aria-label={messages.previous}
           >
             <ChevronLeftIcon className="size-4" />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="min-h-11 border-x-0"
+            className="min-h-11 rounded-none border-x border-border"
             onClick={() => onNavigate("TODAY")}
           >
             {messages.today}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
-            className="min-h-11"
+            className="min-h-11 rounded-none"
             onClick={() => onNavigate("NEXT")}
             aria-label={messages.next}
           >
@@ -705,20 +707,17 @@ function CalendarToolbar({
           </PopoverContent>
         </Popover>
 
-        {/* View switcher — button group (no gap, borders collapsed) */}
-        <div className="flex">
-          {([Views.MONTH, Views.WEEK, Views.DAY] as View[]).map((v, i) => (
-            <Button
-              key={v}
-              variant={view === v ? "default" : "outline"}
-              size="sm"
-              className={`min-h-11${i > 0 ? " border-l-0" : ""}`}
-              onClick={() => onView(v)}
-            >
-              {viewLabel[v] ?? v}
-            </Button>
-          ))}
-        </div>
+        {/* View switcher — pill matching table/calendar toggle; w-auto to stay inline in toolbar */}
+        <SegmentedToggle
+          value={view}
+          onChange={onView}
+          ariaLabel={messages.month}
+          options={([Views.MONTH, Views.WEEK, Views.DAY] as View[]).map((v) => ({
+            key: v,
+            label: viewLabel[v] ?? v,
+          }))}
+          className="w-auto"
+        />
       </div>
     </div>
   );
