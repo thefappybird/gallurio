@@ -685,7 +685,7 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
 // MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
 // (positioned off that model) reliably tracks an empty container the same way it
 // does any other block. Never used on the public page (gated on puck.isEditing).
-const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
+export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   auto: 128,
   short: 320,
   medium: 480,
