@@ -419,6 +419,10 @@ A task is done only when:
 ## References
 - `REUSABLE_CODE.md` (shared component/hook/helper catalog + extraction candidates — read before building shared code; see DRY & code reuse)
 - `docs/backend-audit-findings.md` (known backend lapses to remediate; see Endpoint hardening checklist)
+- `.claude/skills/` (domain-knowledge skills — consult the relevant one BEFORE editing that area; auto-surfaced in Claude Code, listed here as authoritative references):
+  - `calendar-management`, `optimistic-rendering` — the shared bookings/inquiries calendar + optimistic UI for tables and calendars (the snap-back anti-pattern lives here)
+  - `emails`, `notifications` — transactional email + in-app notification flows and triggers
+  - `portfolio-editor-architecture` (start here for the portfolio builder) → `portfolio-blocks-and-design`, `portfolio-effective-defaults`, `portfolio-theme-brand-kit`, `portfolio-drafts`, `portfolio-guide`, `portfolio-testing`
 - `SaaS-Blueprint.md`
 - `docs/portfolio-maker/`
 - `docs/RELEASE-CHECKLIST.md`
