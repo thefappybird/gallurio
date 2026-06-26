@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { ColorSwatchRow, FloatingLabelInput } from "./toolbarPrimitives";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { ColorSwatchRow, DimensionInput, FloatingLabelInput } from "./toolbarPrimitives";
 
 // Mock brandColors so tests don't need the full provider
 vi.mock("./brandColors", () => ({
@@ -77,5 +77,58 @@ describe("FloatingLabelInput", () => {
     const input = screen.getByRole("textbox");
     expect(input.className).toContain("placeholder:text-transparent");
     expect(input.className).toContain("focus:placeholder:text-muted-foreground");
+  });
+});
+
+describe("DimensionInput — rem→px display conversion", () => {
+  it("effectiveValue '1.5rem' → placeholder shows '24' under px unit", () => {
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={vi.fn()} effectiveValue="1.5rem" />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "24");
+  });
+
+  it("effectiveValue '1rem' → placeholder shows '16'", () => {
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={vi.fn()} effectiveValue="1rem" />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "16");
+  });
+
+  it("effectiveValue '0.875rem' → placeholder shows '14'", () => {
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={vi.fn()} effectiveValue="0.875rem" />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "14");
+  });
+
+  it("explicit value '1.5rem' → input displays 24 under px unit", () => {
+    render(
+      <DimensionInput label="Padding" value="1.5rem" onChange={vi.fn()} />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveValue(24);
+  });
+
+  it("px effectiveValue '20px' → placeholder passes through as '20'", () => {
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={vi.fn()} effectiveValue="20px" />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "20");
+  });
+
+  it("% effectiveValue '50%' → placeholder passes through as '50'", () => {
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={vi.fn()} effectiveValue="50%" />
+    );
+    expect(screen.getByRole("spinbutton")).toHaveAttribute("placeholder", "50");
+  });
+
+  it("typing a number when effectiveValue is rem writes px value to onChange", () => {
+    const onChange = vi.fn();
+    render(
+      <DimensionInput label="Padding" value={undefined} onChange={onChange} effectiveValue="1.5rem" />
+    );
+    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "30" } });
+    expect(onChange).toHaveBeenCalledWith("30px");
   });
 });
