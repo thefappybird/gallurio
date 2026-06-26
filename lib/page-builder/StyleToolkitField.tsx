@@ -529,6 +529,7 @@ export function ContentInputs({
             min={1}
             max={2}
             allowAuto={false}
+            hideInput
           />
         </div>
         <p className="text-xs text-muted-foreground">Leave blank to use your workspace contact details.</p>

@@ -9,6 +9,8 @@ interface CountControlProps {
   min?: number;
   max?: number;
   allowAuto?: boolean;
+  /** When true the trailing number input is hidden; only the quick-value buttons are shown. */
+  hideInput?: boolean;
 }
 
 const BTN_BASE =
@@ -22,6 +24,7 @@ export function CountControl({
   min = 1,
   max = 6,
   allowAuto = false,
+  hideInput = false,
 }: CountControlProps) {
   const isCustom = value !== undefined && !quickValues.includes(value);
 
@@ -69,25 +72,27 @@ export function CountControl({
           {v}
         </button>
       ))}
-      <input
-        type="number"
-        min={min}
-        max={max}
-        step={1}
-        aria-label="Custom count"
-        defaultValue={isCustom ? String(value) : ""}
-        key={isCustom ? String(value) : "idle"}
-        onChange={handleInputChange}
-        onBlur={handleInputBlur}
-        onKeyDown={handleInputKeyDown}
-        placeholder="…"
-        className={cn(
-          BTN_BASE,
-          "flex-1 px-1 text-center tabular-nums",
-          "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
-          isCustom && BTN_ACTIVE
-        )}
-      />
+      {!hideInput && (
+        <input
+          type="number"
+          min={min}
+          max={max}
+          step={1}
+          aria-label="Custom count"
+          defaultValue={isCustom ? String(value) : ""}
+          key={isCustom ? String(value) : "idle"}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={handleInputKeyDown}
+          placeholder="…"
+          className={cn(
+            BTN_BASE,
+            "flex-1 px-1 text-center tabular-nums",
+            "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+            isCustom && BTN_ACTIVE
+          )}
+        />
+      )}
     </div>
   );
 }

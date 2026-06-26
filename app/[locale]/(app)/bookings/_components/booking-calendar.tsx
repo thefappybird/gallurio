@@ -623,8 +623,8 @@ function CalendarToolbar({
     <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-border">
       {/* Left cluster: nav + optional trailing controls (legend chips, team filter) */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* Nav pill: outer rounded container, ghost buttons, single shared border, inner dividers on Today */}
-        <div className="flex rounded-lg overflow-hidden border border-border bg-background">
+        {/* Nav pill: outer rounded container owns the single border; divide-x provides per-button dividers */}
+        <div className="flex rounded-lg overflow-hidden border border-border bg-background divide-x divide-border">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -637,7 +637,7 @@ function CalendarToolbar({
           <Button
             variant="ghost"
             size="sm"
-            className="min-h-11 rounded-none border-x border-border"
+            className="min-h-11 rounded-none"
             onClick={() => onNavigate("TODAY")}
           >
             {messages.today}
