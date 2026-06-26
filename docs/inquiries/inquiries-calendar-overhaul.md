@@ -77,3 +77,60 @@ all-uploads grid to the shared modal `SingleImageControl` used by other blocks.
 - `readOnly` is derived from past-ness, so a past inquiry opened from the **table**
   view is also read-only (cannot be archived). Intentional per the "past →
   read-only" decision; revisit if archiving past inquiries is desired.
+
+## Round 2 — enhancements (legend, optimistic DnD, contact WYSIWYG, skills)
+
+### 4. Inquiry filter chips double as a legend (commit `ef15c59`)
+The three filter chips (Inquiry / Booked / Conflicted) in
+`inquiries-calendar-manager.tsx` previously hid their color swatch when the chip
+was active (the swatch inherited `currentColor`). The swatch now **always** shows
+its status color — slate `--event-inquiry`, teal `--event-booked`, red `--danger`
+— matching the candle fills, so the toolbar reads as a legend (same idea as the
+bookings `team-legend.tsx`). Tokens are the existing theme-invariant `--event-*`;
+no new CSS.
+
+### 5. Optimistic drag no longer snaps back (commit `ef15c59`)
+Dragging an inquiry candle flashed the candle back to its source for ~500ms before
+settling on the target. Root cause: the success path **deleted** the optimistic
+`Map` override and then called `router.refresh()`, so `mergedEvents` fell back to
+the stale server position until fresh data arrived. Fix mirrors the bookings
+calendar's keep-and-resync: the override stays applied; a `useEffect([events])`
+with a `prevEventsRef` clears the overrides only when the refreshed `events` prop
+lands (same render → no intermediate stale frame). Error path still reverts to the
+previous event. This pattern is now documented in the **optimistic-rendering**
+skill so it doesn't regress.
+
+### 6. Contact block — WYSIWYG enhancements (commit `99af0e1`)
+`lib/page-builder/blocks/ContactDetailsBlock.tsx` + `StyleToolkitField.tsx` +
+`styleToolkit.ts` + `editorConfig.tsx`, plus new
+`blocks/SocialIconLink.tsx`:
+- **Content tab — 1–2 column layout** for ALL fields (info rows + socials) via the
+  reused `CountControl` (`min=1`, `max=2`); render switched from flex `<dl>` to a
+  CSS grid (`contactGridTemplate`).
+- **Design drawer — Labels / Inputs typography tabs**: 16 new per-target
+  `BlockStyle` props (`label*` / `value*`) edited under a 2-tab segmented toggle,
+  applied to each `<dt>` / `<dd>` via `buildContactLabelStyle` /
+  `buildContactValueStyle`. This fixes typography only landing on one field — the
+  hardcoded inline label/value styles that blocked the cascade are now defaults the
+  controls override.
+- **Icons drawer** (separate from typography + effects): icon size + icon color
+  (`iconSize`, `iconColorToken`).
+- **Socials → centered monochrome SVG icon links** (Instagram/Facebook/TikTok +
+  globe for Website) that inherit the icon color control. On the **public site**
+  each is a confirm-gated external link: `window.confirm` with a locale-aware
+  "You're visiting an external site: {url}. Continue?" (added to
+  `publicPage.chrome.socialLinkConfirm` in all 4 locales and threaded through the
+  public/preview page `chrome`). In the editor the confirm prop is absent, so
+  clicks are inert. URLs normalized to https via `normalizeSocialUrl`.
+- Not Playwright-verified (Puck excluded per request); covered by unit tests for
+  the pure helpers + the new editor controls.
+
+### 7. New skills (commit `93846ad`)
+Two repo-local skills capture the now-shared patterns so future agents don't
+re-derive them:
+- `.claude/skills/calendar-management/` — the shared `BookingCalendar` API,
+  `CalendarEvent` shape, color/legend system, conflict detection, and how the
+  bookings vs inquiries consumers differ.
+- `.claude/skills/optimistic-rendering/` — the optimistic-UI shape for tables and
+  calendars, the four concrete variants in the repo, and the
+  delete-override-then-refresh snap-back anti-pattern (fixed in §5).
