@@ -65,4 +65,17 @@ describe("FloatingLabelInput", () => {
     expect(label.tagName).toBe("LABEL");
     expect(label).toHaveAttribute("for", input.id);
   });
+
+  it("uses the provided placeholder string when supplied", () => {
+    render(<FloatingLabelInput label="Handle" value="" onChange={vi.fn()} placeholder="yourhandle" />);
+    const input = screen.getByRole("textbox");
+    expect(input).toHaveAttribute("placeholder", "yourhandle");
+  });
+
+  it("applies transparent-at-rest classes when a custom placeholder is given", () => {
+    render(<FloatingLabelInput label="Handle" value="" onChange={vi.fn()} placeholder="yourhandle" />);
+    const input = screen.getByRole("textbox");
+    expect(input.className).toContain("placeholder:text-transparent");
+    expect(input.className).toContain("focus:placeholder:text-muted-foreground");
+  });
 });

@@ -474,11 +474,16 @@ export function FloatingLabelInput({
   value,
   onChange,
   type = "text",
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  /** Optional hint shown inside the input on focus (invisible at rest so it
+   *  never collides with the resting centered label). When omitted, falls back
+   *  to a single space — required for the CSS-only :placeholder-shown trick. */
+  placeholder?: string;
 }) {
   const id = useId();
   return (
@@ -489,10 +494,16 @@ export function FloatingLabelInput({
         // A single space placeholder is required so peer-[:not(:placeholder-shown)]
         // fires when the field has a real value typed in — without it the label
         // never "locks" in the floated state after blur.
-        placeholder=" "
+        // When a custom placeholder is provided it is rendered transparent at rest
+        // and visible on focus — :placeholder-shown still works correctly because
+        // any non-empty placeholder counts as "shown" when the field is empty.
+        placeholder={placeholder ?? " "}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className={cn(
+          "peer h-12 w-full border border-border bg-background px-3 pb-1 pt-5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          placeholder && "placeholder:text-transparent focus:placeholder:text-muted-foreground"
+        )}
       />
       <label
         htmlFor={id}
