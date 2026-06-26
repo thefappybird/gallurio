@@ -134,3 +134,80 @@ re-derive them:
 - `.claude/skills/optimistic-rendering/` — the optimistic-UI shape for tables and
   calendars, the four concrete variants in the repo, and the
   delete-override-then-refresh snap-back anti-pattern (fixed in §5).
+
+## Round 3 — portfolio editor + UI polish
+
+(This branch grew past the inquiries calendar into adjacent portfolio-editor and
+shared-UI work; all of it ships together here.)
+
+### 8. Segmented-control toggles (commits `3a1309c`, `45814f9`)
+The byte-identical bookings/inquiries table-vs-calendar toggle was extracted into one
+shared `components/ui/segmented-toggle.tsx` (single pill: outer corners at `--radius`,
+single `divide-x` inner dividers, active = brand; registered in `REUSABLE_CODE.md`).
+The shared calendar toolbar's nav (`< today >`) and view switcher (month/week/day) were
+restyled to the same pill — the Today button's doubled border was removed by letting the
+container own the dividers (`divide-x`).
+
+### 9. Contact block refinements (commits `0b5d670`, `b800058`, `22602ac`, `1d97640`, `45814f9`)
+- **Effective-default display ("float up"):** the Labels/Inputs/Icons color controls now
+  show their theme defaults (`foreground`/`accent`/`accent`) instead of blank, display-only
+  (prop stays unset) per the `portfolio-effective-defaults` skill.
+- **Social inputs** relabeled to handles ("Instagram username" …) with focus-only
+  placeholders (`FloatingLabelInput` gains an optional `placeholder`); the editor canvas now
+  routes social hrefs through `normalizeSocialUrl`, so a pasted full URL no longer doubles
+  into `instagram.com/https://…` — canvas == publish.
+- **Social icons** follow the Inputs alignment control, defaulting to centered.
+- **Columns control** shows only `[1] [2]` (new `CountControl` `hideInput` prop — the trailing
+  number field is dropped for the 1–2-only contact columns).
+
+### 10. `DimensionInput` rem→px display (commit `53032cc`)
+Padding controls showed the rem number under a px label (`1.5rem` → "1.5px"); a
+`toDisplayNumber` helper converts rem→px for display ("24px"), fixing Container/Columns
+effective padding everywhere. Display-only — the written `_style` value is unchanged.
+
+### 11. Editor canvas + draft flow (commits `0f50ce6`, `98af2f7`)
+- **Root droppable floor + tail:** `[data-puck-dropzone="root:default-zone"]` gets
+  `min-height: 100dvh; padding-bottom: 10rem` (editor-only, in `RootCanvasStyle`), a
+  root-zone-only selector that can't match nested Container/Columns slots. Droppable area =
+  `max(100dvh, content) + 10rem`.
+- **Single load cycle on discard→apply:** `pendingAction` now carries a `reseeds` flag; a
+  discard followed by a re-seeding action (apply template / switch draft) skips the redundant
+  intermediate canvas restore and its `seedNonce` bump, collapsing two `<Puck>` remounts into
+  one (one spinner, no silent pre-load behind the templates modal).
+
+### 12. Container "collapsing anchor" — sibling container drops (commits `4cd54f7`, `4f39009`, `b08cf9d`)
+Puck 0.20.2 won't let a 2nd Container drop into an empty parent Container as a **sibling** — it
+nests inside the first child (a dnd collision-detection limitation; a throwaway upgrade spike
+confirmed `@puckeditor/core` 0.22's reworked engine does **not** fix it either). The known
+manual workaround is that a container already holding a non-container child accepts sibling
+drops. We auto-provide that: an invisible `ContainerAnchor` is kept as the container's first
+slot child (`resolveData` ensures presence), and `EditorContainerAnchor` self-sizes at render
+from the parent's live child count (full footprint when empty → 4px bridge when it holds one
+container → 0 otherwise) and bounces click-selection to the parent. Renders `null` on the
+public page. **See the known limitation below — this ships with an accepted defect.**
+
+### 13. Sidebar + MobileBanner (commit `9ca6823`)
+Sidebar nav reordered to **Dashboard → Inquiries → Bookings → …**; the MobileBanner's
+anchor-rendered `Button` gets `nativeButton={false}` to clear a Base UI accessibility warning.
+
+## Round 3 — known limitations
+- **Container anchor causes a load-time stack overflow (accepted, non-blocking).** The anchor
+  is injected via the Container's `resolveData`; Puck 0.20.2's `walkAppState`/`resolveAllData`
+  applies `resolveData` **while walking slots**, so a slot-mutating `resolveData` re-feeds the
+  walker and overflows the stack once on canvas mount/refresh (`RangeError: Maximum call stack
+  size exceeded`, surfaced as an unhandled promise rejection). It does not block editing in
+  local/built use and is accepted for now. The proper fix is to move anchor maintenance out of
+  `resolveData` (e.g. into `EditorShell` `onChange`, post-processing emitted data) or to migrate
+  to `@puckeditor/core` 0.21+ (adds a `resolveData`-on-move trigger and a reworked walker).
+- **Anchor polish deferred:** publish/save stripping of anchors (they render `null` on public
+  but persist in draft data), and full keyboard/outline selection suppression on the anchor.
+
+## Verification (Round 2 + 3)
+- `pnpm typecheck` clean; `pnpm lint` clean (pre-existing warnings only).
+- Unit/component tests green across the touched suites (page-builder incl. ContactDetails /
+  StyleToolkitField / toolbarPrimitives / CountControl / segmented-toggle / containerAnchor,
+  inquiries, bookings, sidebar nav).
+- The portfolio editor was driven **manually in a browser** (Puck is intentionally not
+  Playwright-driven): sibling container drops, anchor self-size/collapse, click-selects-parent,
+  the single load cycle, and the 100dvh/+10rem droppable were all confirmed by hand. The
+  container-anchor load-time stack overflow above is known and accepted.
