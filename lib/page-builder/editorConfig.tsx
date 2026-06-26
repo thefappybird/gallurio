@@ -72,6 +72,7 @@ import {
   DividerBlock,
   ColumnsBlock,
   ContainerBlock,
+  ContainerAnchorBlock,
   headingDefaultProps,
   textDefaultProps,
   imageDefaultProps,
@@ -80,6 +81,8 @@ import {
   dividerDefaultProps,
   columnsDefaultProps,
   containerDefaultProps,
+  containerAnchorDefaultProps,
+  CONTAINER_EDITOR_HEIGHT_PX,
   type HeadingBlockProps,
   type TextBlockProps,
   type ImageBlockProps,
@@ -91,6 +94,7 @@ import {
   type ContainerHeight,
   type ContainerAlignX,
   type ContainerAlignY,
+  type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
 
 type EditorComponents = {
@@ -119,6 +123,7 @@ type EditorComponents = {
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
   Container: ContainerBlockProps;
+  ContainerAnchor: ContainerAnchorProps;
 };
 
 // ---------------------------------------------------------------------------
@@ -778,6 +783,65 @@ const columns: ComponentConfig<ColumnsBlockProps> = {
   render: ColumnsBlock,
 };
 
+// ---------------------------------------------------------------------------
+// Collapsing anchor: resolveData maintains one ContainerAnchor as the first
+// slot child so an empty Container has a droppable footprint and a 2nd
+// Container can be dropped as a sibling (not nested) by the time the 1st
+// Container has any non-container real child.
+// IDEMPOTENCY: returns the same `data` reference when nothing changes to
+// prevent a resolve → change → resolve loop.
+// ---------------------------------------------------------------------------
+
+type _SlotItem = { type: string; props: Record<string, unknown> };
+
+function resolveContainerData(data: unknown) {
+  const d = data as {
+    props: { id: string; minHeight?: ContainerHeight; content: _SlotItem[] };
+  };
+  const content: _SlotItem[] = d.props.content ?? [];
+
+  const isAnchor = (item: _SlotItem) => item.type === "ContainerAnchor";
+  const realChildren = content.filter((item) => !isAnchor(item));
+
+  const minH = d.props.minHeight;
+  let desiredHeight: number;
+  if (realChildren.length === 0) {
+    desiredHeight = CONTAINER_EDITOR_HEIGHT_PX[minH ?? "auto"];
+  } else if (realChildren.length === 1 && realChildren[0].type === "Container") {
+    // Bridge case: keep a 4px footprint so a 2nd Container can be dropped as
+    // a sibling (not nested). 4px is enough for Puck's drop-zone detection.
+    desiredHeight = 4;
+  } else {
+    desiredHeight = 0;
+  }
+
+  // Idempotency check — avoid returning a new object when nothing changed.
+  const first = content[0];
+  if (
+    first !== undefined &&
+    isAnchor(first) &&
+    (first.props as { height?: number }).height === desiredHeight &&
+    content.length === realChildren.length + 1
+  ) {
+    return data;
+  }
+
+  const anchor: _SlotItem = {
+    type: "ContainerAnchor",
+    props: {
+      id: `${d.props.id}--anchor`,
+      height: desiredHeight,
+    },
+  };
+
+  return {
+    ...d,
+    props: { ...d.props, content: [anchor, ...realChildren] },
+  };
+}
+const resolveContainerDataTyped =
+  resolveContainerData as unknown as ComponentConfig<ContainerBlockProps>["resolveData"];
+
 const container: ComponentConfig<ContainerBlockProps> = {
   label: "Container",
   inline: true,
@@ -786,6 +850,7 @@ const container: ComponentConfig<ContainerBlockProps> = {
   },
   fields: editorContainerFields,
   resolveFields: resolveContainerFieldsTyped,
+  resolveData: resolveContainerDataTyped,
   render: ContainerBlock,
 };
 
@@ -817,6 +882,21 @@ export const editorPuckConfig: Config<EditorComponents> = {
     Divider: divider,
     Columns: columns,
     Container: container,
+    ContainerAnchor: {
+      label: "ContainerAnchor",
+      defaultProps: containerAnchorDefaultProps,
+      fields: {
+        height: { type: "number", label: "Height" } as unknown as Field<number>,
+      },
+      permissions: {
+        drag: false,
+        delete: false,
+        duplicate: false,
+        insert: false,
+        edit: false,
+      },
+      render: ContainerAnchorBlock as ComponentConfig<ContainerAnchorProps>["render"],
+    } as ComponentConfig<ContainerAnchorProps>,
   },
   // No root.render in the editor: Puck wraps blocks in a DropZone div, so
   // blocks are not direct children of any wrapper here — adding root.render

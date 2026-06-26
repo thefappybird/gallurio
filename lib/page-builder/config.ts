@@ -35,7 +35,9 @@ import {
   dividerBlockConfig,
   columnsBlockConfig,
   containerBlockConfig,
+  containerAnchorBlockConfig,
   type ContainerBlockProps,
+  type ContainerAnchorProps,
 } from "./blocks/manualBlocks";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
@@ -83,6 +85,7 @@ type Components = {
   Divider: DividerBlockProps;
   Columns: ColumnsBlockProps;
   Container: ContainerBlockProps;
+  ContainerAnchor: ContainerAnchorProps;
 };
 
 // A composed-section preset is the Container render + fields, with a pre-filled
@@ -119,6 +122,7 @@ export const puckConfig: Config<Components> = {
     Divider: dividerBlockConfig,
     Columns: columnsBlockConfig,
     Container: containerBlockConfig,
+    ContainerAnchor: containerAnchorBlockConfig,
   },
   root: {
     fields: {},
