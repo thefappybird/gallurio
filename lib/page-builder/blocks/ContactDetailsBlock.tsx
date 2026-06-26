@@ -19,6 +19,7 @@ import {
   buildContactIconSize,
   contactGridTemplate,
   type BlockStyle,
+  type TextAlign,
 } from "@/lib/page-builder/styleToolkit";
 import { SocialIconLink, type SocialPlatform } from "./SocialIconLink";
 
@@ -163,6 +164,7 @@ export function ContactDetailsBlock({
           iconColor={iconColor}
           iconSize={iconSize}
           confirmMessage={confirmMessage}
+          valueAlign={_style?.valueAlign}
         />
       )}
     </dl>
@@ -194,12 +196,15 @@ function SocialsRow({
   iconColor,
   iconSize,
   confirmMessage,
+  valueAlign,
 }: {
   socials: Socials;
   labelStyle: React.CSSProperties;
   iconColor: string;
   iconSize: number;
   confirmMessage?: string;
+  /** Controls flex justify-content of the icons row. Unset → center (default). */
+  valueAlign?: TextAlign;
 }) {
   const links: { label: string; href: string; platform: SocialPlatform }[] = [];
   if (socials.instagram) {
@@ -220,12 +225,17 @@ function SocialsRow({
   }
   if (links.length === 0) return null;
 
+  const justifyContent =
+    valueAlign === "left" ? "flex-start" :
+    valueAlign === "right" ? "flex-end" :
+    "center";
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
       <dt style={labelStyle}>Follow</dt>
       <dd
         data-testid="socials-row"
-        style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor }}
+        style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor, justifyContent }}
       >
         {links.map(({ label, href, platform }) => (
           <SocialIconLink

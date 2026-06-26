@@ -134,6 +134,27 @@ describe("ContactDetailsBlock — null socials skipped", () => {
   });
 });
 
+describe("ContactDetailsBlock — SocialsRow justifyContent", () => {
+  it("defaults to justifyContent center when valueAlign is unset", () => {
+    const { container } = renderBlock(makeWorkspace(), {});
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd).not.toBeNull();
+    expect(dd.style.justifyContent).toBe("center");
+  });
+
+  it("uses flex-start when valueAlign is left", () => {
+    const { container } = renderBlock(makeWorkspace(), { _style: { valueAlign: "left" } });
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("flex-start");
+  });
+
+  it("uses flex-end when valueAlign is right", () => {
+    const { container } = renderBlock(makeWorkspace(), { _style: { valueAlign: "right" } });
+    const dd = container.querySelector("[data-testid='socials-row']") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("flex-end");
+  });
+});
+
 describe("ContactDetailsBlock — via buildRenderWorkspace", () => {
   it("renders email + phone from a built workspace doc", () => {
     const doc = {
