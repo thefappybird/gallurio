@@ -49,7 +49,8 @@ import { SECTION_PRESETS } from "./blocks/sectionPresets";
 // Data blocks are SERVER modules (Mongo / node:async_hooks). Import their TYPES
 // only — their value defaultProps are inlined below so this CLIENT config never
 // drags the server graph into the editor bundle (that breaks the build).
-import type { ContactDetailsProps } from "./blocks/ContactDetailsBlock";
+// normalizeSocialUrl is a pure utility with no server-only deps — safe to import.
+import { normalizeSocialUrl, type ContactDetailsProps } from "./blocks/ContactDetailsBlock";
 import { GalleryGridBlock, galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
 import type { GalleryGridProps } from "./blocks/GalleryGridBlock";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./blocks/GalleryMasonryBlock";
@@ -526,13 +527,25 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
     // reflects what the user typed in the Content tab. When all fields are blank
     // the workspace contact data fills in at runtime; show a placeholder here.
     // No confirmMessage passed → SocialIconLink clicks are no-ops in the editor.
-    const hasSocials = instagram || facebook || tiktok || website;
+
+    // Pre-normalize social hrefs so we match production SocialsRow exactly
+    // (skips invalid URLs, avoids double-prefixing full https:// values).
+    const igHref = instagram ? normalizeSocialUrl("instagram", instagram) : null;
+    const fbHref = facebook ? normalizeSocialUrl("facebook", facebook) : null;
+    const ttHref = tiktok ? normalizeSocialUrl("tiktok", tiktok) : null;
+    const wsHref = website ? normalizeSocialUrl("website", website) : null;
+    const hasSocials = !!(igHref || fbHref || ttHref || wsHref);
     const hasAny = email || phone || address || hasSocials;
     const rowStyle = { display: "flex", flexDirection: "column" as const, gap: "0.125rem" };
     const labelStyle = buildContactLabelStyle(_style);
     const valueStyle = buildContactValueStyle(_style);
     const iconColor = buildContactIconColor(_style);
     const iconSize = buildContactIconSize(_style);
+    // Mirror SocialsRow: default to center when valueAlign is unset.
+    const iconJustify =
+      _style?.valueAlign === "left" ? "flex-start" :
+      _style?.valueAlign === "right" ? "flex-end" :
+      "center";
     return (
       <dl
         ref={puck?.dragRef ?? undefined}
@@ -569,19 +582,11 @@ const contactDetails: ComponentConfig<ContactDetailsProps> = {
         {hasSocials && (
           <div style={rowStyle}>
             <dt style={labelStyle}>Follow</dt>
-            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor }}>
-              {instagram && (
-                <SocialIconLink href={`https://instagram.com/${instagram}`} platform="instagram" size={iconSize} label="Instagram" />
-              )}
-              {facebook && (
-                <SocialIconLink href={`https://facebook.com/${facebook}`} platform="facebook" size={iconSize} label="Facebook" />
-              )}
-              {tiktok && (
-                <SocialIconLink href={`https://tiktok.com/@${tiktok}`} platform="tiktok" size={iconSize} label="TikTok" />
-              )}
-              {website && (
-                <SocialIconLink href={website.startsWith("http") ? website : `https://${website}`} platform="website" size={iconSize} label="Website" />
-              )}
+            <dd style={{ margin: 0, display: "flex", flexWrap: "wrap", gap: "0.875rem", color: iconColor, justifyContent: iconJustify }}>
+              {igHref && <SocialIconLink href={igHref} platform="instagram" size={iconSize} label="Instagram" />}
+              {fbHref && <SocialIconLink href={fbHref} platform="facebook" size={iconSize} label="Facebook" />}
+              {ttHref && <SocialIconLink href={ttHref} platform="tiktok" size={iconSize} label="TikTok" />}
+              {wsHref && <SocialIconLink href={wsHref} platform="website" size={iconSize} label="Website" />}
             </dd>
           </div>
         )}

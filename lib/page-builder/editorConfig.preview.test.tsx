@@ -55,4 +55,47 @@ describe("editor ContactDetails WYSIWYG", () => {
     );
     expect(screen.getByText("Workspace contact details")).toBeInTheDocument();
   });
+
+  it("canvas normalizes a bare instagram handle to a full URL (no double-prefix)", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    render(
+      <Render
+        id="cd-social"
+        _style={undefined}
+        instagram="myhandle"
+        puck={{} as never}
+      />
+    );
+    const link = screen.getByRole("link", { name: "Instagram" }) as HTMLAnchorElement;
+    expect(link.href).toBe("https://instagram.com/myhandle");
+  });
+
+  it("canvas does not double-prefix a full https instagram URL", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    render(
+      <Render
+        id="cd-social-full"
+        _style={undefined}
+        instagram="https://instagram.com/myhandle"
+        puck={{} as never}
+      />
+    );
+    const link = screen.getByRole("link", { name: "Instagram" }) as HTMLAnchorElement;
+    expect(link.href).toBe("https://instagram.com/myhandle");
+    expect(link.href).not.toContain("instagram.com/https://");
+  });
+
+  it("canvas socials dd defaults to justifyContent center when valueAlign is unset", () => {
+    const Render = editorPuckConfig.components.ContactDetails.render;
+    const { container } = render(
+      <Render
+        id="cd-justify"
+        _style={undefined}
+        instagram="testhandle"
+        puck={{} as never}
+      />
+    );
+    const dd = container.querySelector("dd") as HTMLElement;
+    expect(dd.style.justifyContent).toBe("center");
+  });
 });
