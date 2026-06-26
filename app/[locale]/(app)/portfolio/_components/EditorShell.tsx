@@ -450,7 +450,7 @@ export function EditorShell({
     })();
     return !hasDrafts && !hasBuffer;
   });
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ run: () => void; reseeds: boolean } | null>(null);
   const [discarding, setDiscarding] = useState(false);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -721,9 +721,12 @@ export function EditorShell({
   }
 
   // ---- Unsaved-changes guard ----
-  function guardThenRun(run: () => void) {
+  // `reseeds` should be true for actions that fully re-seed the canvas
+  // (applyTemplate, applyDraft) so handleDiscardChanges can skip the redundant
+  // intermediate restore and avoid a double seedNonce bump.
+  function guardThenRun(run: () => void, reseeds = false) {
     if (activeDraftId === null || isDirty) {
-      setPendingAction(() => run);
+      setPendingAction({ run, reseeds });
     } else {
       run();
     }
@@ -793,29 +796,49 @@ export function EditorShell({
 
   // ---- Discard unsaved changes ----
   // Scrap the in-memory edits, restore a clean canvas (see resolveDiscardTarget),
-  // then perform the action the user was attempting. The pending action runs
-  // last, so when it loads its own data (apply draft/template) that target wins.
+  // then perform the action the user was attempting.
+  //
+  // When the pending action re-seeds the canvas itself (applyTemplate, applyDraft),
+  // the intermediate restore is skipped entirely — it would silently remount the
+  // canvas once, only for the pending action to immediately remount it again with
+  // the real target data. Skipping collapses to a single seedNonce bump and a
+  // single indicated load cycle (the pending action's own switching/discarding state).
   async function handleDiscardChanges() {
-    const run = pendingAction;
+    const pending = pendingAction;
     setPendingAction(null);
     setPublishOpen(false);
     setDiscarding(true);
     try {
       if (typeof window !== "undefined") window.localStorage.removeItem(draftKey);
-      if (activeDraftId !== null) {
-        // 5.2 — saved draft: re-fetch its stored data into the canvas.
-        await applyDraft(activeDraftId);
+
+      if (pending?.reseeds) {
+        // The pending action (applyTemplate / applyDraft) fully re-seeds all canvas
+        // state on its own — skip the intermediate canvas restore so there is only
+        // ONE seedNonce bump (one remount, one visible load cycle).
+        if (activeDraftId === null) {
+          // Was a new unsaved draft: clear the flag so it doesn't linger when the
+          // pending action (e.g. applyDraft) doesn't reset it itself.
+          setIsNewUnsavedDraft(false);
+        }
+        pending.run();
       } else {
-        // 5.1 — new, never-saved draft: drop it and open the next available
-        // draft (resolved from a fresh list), or an empty canvas when none.
-        const list = await listDraftsAction();
-        setDrafts(list);
-        setIsNewUnsavedDraft(false);
-        const target = resolveDiscardTarget(null, list);
-        if (target.type === "open") await applyDraft(target.id);
-        else resetToScratchCanvas();
+        // Non-reseeding pending action (e.g. open publish dialog): restore the
+        // canvas to a clean state first, then run the action.
+        if (activeDraftId !== null) {
+          // 5.2 — saved draft: re-fetch its stored data into the canvas.
+          await applyDraft(activeDraftId);
+        } else {
+          // 5.1 — new, never-saved draft: drop it and open the next available
+          // draft (resolved from a fresh list), or an empty canvas when none.
+          const list = await listDraftsAction();
+          setDrafts(list);
+          setIsNewUnsavedDraft(false);
+          const target = resolveDiscardTarget(null, list);
+          if (target.type === "open") await applyDraft(target.id);
+          else resetToScratchCanvas();
+        }
+        pending?.run();
       }
-      run?.();
     } finally {
       setDiscarding(false);
     }
@@ -925,7 +948,7 @@ export function EditorShell({
     if (activeDraftId === null || isDirty) {
       // Must save first — route through the unsaved-changes guard so the user
       // saves before we publish.
-      setPendingAction(() => () => setPublishOpen(true));
+      setPendingAction({ run: () => setPublishOpen(true), reseeds: false });
     } else {
       setPublishOpen(true);
     }
@@ -1603,7 +1626,7 @@ export function EditorShell({
         currentTemplateId={templateId}
         switching={switching}
         error={switchError}
-        onConfirm={(id) => guardThenRun(() => void applyTemplate(id))}
+        onConfirm={(id) => guardThenRun(() => void applyTemplate(id), true)}
       />
       {/* Welcome template modal — shown to brand-new users (no drafts, no buffer) instead of PortfolioEntryDialog. */}
       <TemplatePickerDialog
@@ -1647,7 +1670,7 @@ export function EditorShell({
         onOpenChange={setDraftsOpen}
         drafts={drafts}
         activeDraftId={activeDraftId}
-        onApply={(id) => guardThenRun(() => void applyDraft(id))}
+        onApply={(id) => guardThenRun(() => void applyDraft(id), true)}
         onDelete={(id) => void handleDeleteDraft(id)}
         onAddNew={handleAddNewDraft}
         deletingId={deletingDraftId}
@@ -1677,7 +1700,7 @@ export function EditorShell({
         onSave={async () => {
           const ok = await handleSaveChanges();
           if (ok) {
-            const run = pendingAction;
+            const run = pendingAction?.run;
             setPendingAction(null);
             run?.();
           }
