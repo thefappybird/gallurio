@@ -254,7 +254,7 @@ export function TeamDetailDrawer({
                                   <span
                                     id={`lead-warn-${m.workosUserId}`}
                                     role="alert"
-                                    className="absolute bottom-full right-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
+                                    className="absolute bottom-full end-0 z-50 mb-2 w-48 border border-destructive bg-popover p-2 text-xs leading-snug text-destructive shadow-md"
                                   >
                                     {t("drawer.leadOnlyOnePerTeam")}
                                   </span>
@@ -390,7 +390,7 @@ export function TeamDetailDrawer({
               className="self-start"
               onClick={() => onInvite(team)}
             >
-              <MailPlusIcon className="mr-2 size-4" />
+              <MailPlusIcon className="me-2 size-4" />
               {t("drawer.inviteToTeam")}
             </Button>
           </section>

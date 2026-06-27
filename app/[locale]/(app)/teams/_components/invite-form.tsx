@@ -197,11 +197,11 @@ export function InviteForm({
                         className="flex-1 cursor-pointer text-sm"
                       >
                         <span className="font-medium">{team.name}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">
+                        <span className="ms-2 text-xs text-muted-foreground">
                           {team.memberCount}/{team.maxMembersPerTeam}
                         </span>
                         {atCap && !selected && (
-                          <span className="ml-2 text-xs text-destructive">
+                          <span className="ms-2 text-xs text-destructive">
                             {t("invite.dialog.teamFull")}
                           </span>
                         )}
@@ -241,7 +241,7 @@ export function InviteForm({
           <Button disabled={pending || noTeamsAvailable} onClick={handleSubmit}>
             {pending ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="me-2 size-4 animate-spin" />
                 {t("invite.dialog.sending")}
               </>
             ) : (

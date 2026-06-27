@@ -195,7 +195,7 @@ export function TeamsTable({
           {table.getHeaderGroups().map((hg) => (
             <tr
               key={hg.id}
-              className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"
+              className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground"
             >
               {hg.headers.map((header) => {
                 const canSort = header.column.getCanSort();

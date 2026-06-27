@@ -189,14 +189,14 @@ export function TeamsPageClient({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <div className="relative w-full sm:w-80">
-            <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={t("toolbar.search")}
               aria-label={t("toolbar.searchLabel")}
-              className="pl-8"
+              className="ps-8"
             />
           </div>
           <div className="flex items-center gap-2">
