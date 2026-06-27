@@ -26,14 +26,25 @@ All four phases implemented, committed, and verified. 206 tests green; typecheck
   top-sources reads, headline cards + views/visitors bar + sources + per-page + publish
   status + site inquiries, with the date filter wired in (workspace-tz day buckets).
 
-**Verification:** Bookings dashboard driven in-browser at 375/768/1280 + dark mode (dark-mode
-chart tooltip now legible). Portfolio dashboard verified light/dark/375, populated (via seeded
-rollups, since cleaned) + empty states; the live beacon was confirmed recording end-to-end.
+**Unified date filter:** one date filter sits to the left of the tab switcher and applies to
+BOTH dashboards. Modes: All time / Up until / Between / Starting from (native `<input
+type=date>`, workspace-tz day boundaries). It threads through every windowed loader on both
+tabs — bookings KPIs (range-scoped totals; deltas vs the preceding equal window for a fully
+bounded range, hidden for half-open/all-time; outstanding stays point-in-time), revenue trend,
+event-type, team cards, and all portfolio reads. Inherently-current widgets (today/upcoming,
+the navigable mini-calendar) and the cumulative top-clients list are intentionally not
+range-scoped. Default landing: bookings = this month (with deltas), portfolio = all-time.
 
-**Deferred (one item):** the shared date filter is scoped to the Portfolio tab. Bookings KPIs
-are explicitly "this month" snapshots and `topClients` is a cumulative total, so an
-until/between/since filter doesn't map without relabeling. Threading the range through the
-windowed bookings loaders (revenue trend, event-type, team cards) is a clean follow-up.
+**Verification:** Both dashboards driven in-browser at 375/768/1280 + dark mode (dark-mode
+chart tooltip legible). Portfolio populated (via seeded rollups, since cleaned) + empty states;
+the live beacon was confirmed recording end-to-end. Unified filter verified: a "Between" June
+range re-scoped the bookings dashboard (event-type 25 → 3) and persists across the tab switch.
+
+**Security review:** no critical/high findings. Verified: the public beacon never trusts a
+client workspaceId, persists no raw IP/UA/referrer, is bot-filtered + layer-rate-limited, and
+always returns 204; tenant isolation holds on every new query; team-filter intersection is
+fail-closed. Low/medium findings (half-open ranges, per-page visitors, refund reconciliation,
+$lookup defense-in-depth) were fixed.
 
 **Env:** `PAGEVIEW_SALT_SECRET` (optional; falls back to `ACTIVE_WORKSPACE_COOKIE_SECRET`).
 
