@@ -155,9 +155,8 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
                 {perPage.map((p) => (
                   <li key={p.page} className="flex items-center justify-between gap-3 py-2 text-sm">
                     <span className="font-medium">{pageLabel(p.page)}</span>
-                    <span className="flex shrink-0 items-center gap-3 text-xs tabular-nums text-muted-foreground">
-                      <span>{nf.format(p.views)} {t("portfolio.views").toLowerCase()}</span>
-                      <span>{nf.format(p.visitors)} {t("portfolio.visitors").toLowerCase()}</span>
+                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                      {nf.format(p.views)} {t("portfolio.views").toLowerCase()}
                     </span>
                   </li>
                 ))}

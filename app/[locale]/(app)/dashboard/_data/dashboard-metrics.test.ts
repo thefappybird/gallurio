@@ -551,3 +551,37 @@ describe("getKpiSnapshotWithDeltas — bounded deltas + all-time default", () =>
   });
 
 });
+
+describe("getKpiSnapshotWithDeltas — half-open ranges", () => {
+  it("scopes revenue for an 'up until' range (to only)", async () => {
+    await seedTransaction(workspaceId, 3_000, new Date("2026-03-15T12:00:00Z"), "deposit");
+    await seedTransaction(workspaceId, 7_000, new Date("2027-01-15T12:00:00Z"), "deposit");
+    const { snapshot } = await getKpiSnapshotWithDeltas(workspaceId, {
+      from: null,
+      to: new Date("2026-12-31T23:59:59.999Z"),
+    });
+    expect(snapshot.revenueThisMonth).toBe(3_000);
+  });
+
+  it("scopes revenue for a 'starting from' range (from only)", async () => {
+    await seedTransaction(workspaceId, 4_000, new Date("2026-03-15T12:00:00Z"), "deposit");
+    await seedTransaction(workspaceId, 9_000, new Date("2020-01-15T12:00:00Z"), "deposit");
+    const { snapshot } = await getKpiSnapshotWithDeltas(workspaceId, {
+      from: new Date("2026-01-01T00:00:00.000Z"),
+      to: null,
+    });
+    expect(snapshot.revenueThisMonth).toBe(4_000);
+  });
+});
+
+describe("loaders — half-open ranges", () => {
+  it("getEventTypeBreakdown respects an 'up until' (to-only) range", async () => {
+    await seedBooking(workspaceId, { startAt: new Date("2026-03-15T12:00:00Z") });
+    await seedBooking(workspaceId, { startAt: new Date("2027-05-15T12:00:00Z") });
+    const rows = await getEventTypeBreakdown(workspaceId, {
+      from: null,
+      to: new Date("2026-12-31T23:59:59.999Z"),
+    });
+    expect(rows.reduce((s, r) => s + r.count, 0)).toBe(1);
+  });
+});
