@@ -18,6 +18,7 @@ import {
   getRevenueComparison,
   getKpiSnapshotWithDeltas,
   getBookingsCountByTeam,
+  getTransactionsByTeam,
 } from "./dashboard-metrics";
 
 const workspaceId = new Types.ObjectId();
@@ -451,4 +452,102 @@ describe("getBookingsCountByTeam", () => {
     expect(byId.get(teamB._id.toString())?.count).toBe(1);
     expect(rows.some((r) => r.count > 0 && r.teamId === teamA._id.toString())).toBe(true);
   });
+});
+
+describe("getKpiSnapshotWithDeltas — date range", () => {
+  it("scopes revenue and active bookings to an explicit range", async () => {
+    const inRange = new Date("2026-03-15T12:00:00Z");
+    const outRange = new Date("2026-01-10T12:00:00Z");
+    await seedTransaction(workspaceId, 8_000, inRange, "deposit");
+    await seedTransaction(workspaceId, 99_000, outRange, "deposit");
+    await seedBooking(workspaceId, { status: "booked", startAt: inRange });
+    await seedBooking(workspaceId, { status: "booked", startAt: outRange });
+
+    const { snapshot } = await getKpiSnapshotWithDeltas(workspaceId, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    });
+    expect(snapshot.revenueThisMonth).toBe(8_000);
+    expect(snapshot.activeBookingsThisMonth).toBe(1);
+  });
+});
+
+describe("getKpiSnapshotWithDeltas — range scopes inquiries + hides month deltas", () => {
+  it("scopes new inquiries to the range and nulls deltas for an explicit range", async () => {
+    // Two inquiries created now; a past range should count none of them.
+    await Inquiry.create({ workspaceId, name: "A", email: "a@x.com", status: "inquiry", eventDate: new Date("2030-01-01") });
+    await Inquiry.create({ workspaceId, name: "B", email: "b@x.com", status: "booked", eventDate: new Date("2030-01-01") });
+
+    const pastRange = {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    };
+    const res = await getKpiSnapshotWithDeltas(workspaceId, pastRange);
+    expect(res.snapshot.newInquiries).toBe(0);
+    expect(res.trends.revenue).toBeNull();
+    expect(res.trends.newInquiries).toBeNull();
+  });
+});
+
+describe("getEventTypeBreakdown — date range", () => {
+  it("scopes the breakdown to bookings starting in range", async () => {
+    await seedBooking(workspaceId, { startAt: new Date("2026-03-15T12:00:00Z") });
+    await seedBooking(workspaceId, { startAt: new Date("2026-01-15T12:00:00Z") });
+    const rows = await getEventTypeBreakdown(workspaceId, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    });
+    expect(rows.reduce((s, r) => s + r.count, 0)).toBe(1);
+  });
+});
+
+describe("getBookingsCountByTeam — date range", () => {
+  it("counts only bookings starting in range", async () => {
+    const team = await Team.create({ workspaceId, name: "T", color: "#102030", isActive: true, createdByWorkosUserId: "u" });
+    await seedBooking(workspaceId, { teamId: team._id, startAt: new Date("2026-03-15T12:00:00Z") });
+    await seedBooking(workspaceId, { teamId: team._id, startAt: new Date("2026-01-15T12:00:00Z") });
+    const rows = await getBookingsCountByTeam(workspaceId, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    });
+    expect(rows.find((r) => r.teamId === team._id.toString())?.count).toBe(1);
+  });
+});
+
+describe("getTransactionsByTeam — date range", () => {
+  it("sums team revenue only within the range", async () => {
+    const team = await Team.create({ workspaceId, name: "T2", color: "#203040", isActive: true, createdByWorkosUserId: "u" });
+    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 5_000, currency: "PHP", type: "deposit", method: "paddle", paidAt: new Date("2026-03-15T12:00:00Z") });
+    await Transaction.create({ workspaceId, teamId: team._id, bookingId: null, clientId: null, amount: 9_000, currency: "PHP", type: "deposit", method: "paddle", paidAt: new Date("2026-01-15T12:00:00Z") });
+    const rows = await getTransactionsByTeam(workspaceId, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    });
+    expect(rows.find((r) => r.teamId === team._id.toString())?.total).toBe(5_000);
+  });
+});
+
+describe("getRevenueTrend — date range", () => {
+  it("buckets each day across an explicit range", async () => {
+    await seedTransaction(workspaceId, 4_000, new Date("2026-03-02T12:00:00Z"), "deposit");
+    const trend = await getRevenueTrend(workspaceId, 30, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-03T23:59:59.999Z"),
+    });
+    expect(trend).toHaveLength(3);
+    expect(trend.find((p) => p.date === "2026-03-02")?.amount).toBe(4_000);
+  });
+});
+
+describe("getKpiSnapshotWithDeltas — bounded deltas + all-time default", () => {
+  it("shows a delta for a bounded range vs the preceding equal window", async () => {
+    await seedTransaction(workspaceId, 10_000, new Date("2026-03-15T12:00:00Z"), "deposit");
+    await seedTransaction(workspaceId, 5_000, new Date("2026-02-15T12:00:00Z"), "deposit");
+    const { trends } = await getKpiSnapshotWithDeltas(workspaceId, {
+      from: new Date("2026-03-01T00:00:00.000Z"),
+      to: new Date("2026-03-31T23:59:59.999Z"),
+    });
+    expect(trends.revenue?.value).toBeCloseTo(100, 5);
+  });
+
 });

@@ -126,8 +126,11 @@ async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
   return agg[0]?.total ?? 0;
 }
 
+export type DateRange = { from: Date | null; to: Date | null };
+
 export async function getKpiSnapshotWithDeltas(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  range?: DateRange
 ): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
   const now = new Date();
   const thisStart = startOfMonth(now);
@@ -159,6 +162,48 @@ export async function getKpiSnapshotWithDeltas(
       createdAt: { $gte: lastStart, $lte: lastEnd },
     }),
   ]);
+
+  // A bounded range scopes the period metrics and compares against the
+  // immediately-preceding equal-length window.
+  if (range?.from && range?.to) {
+    const len = range.to.getTime() - range.from.getTime();
+    const pStart = new Date(range.from.getTime() - 1 - len);
+    const pEnd = new Date(range.from.getTime() - 1);
+    const [rev, active, inq, pRev, pActive, pInq] = await Promise.all([
+      monthRevenue(workspaceId, range.from, range.to),
+      Booking.countDocuments({
+        workspaceId,
+        firstSessionStart: { $gte: range.from, $lte: range.to },
+        status: "booked",
+      }),
+      Inquiry.countDocuments({
+        workspaceId,
+        createdAt: { $gte: range.from, $lte: range.to },
+      }),
+      monthRevenue(workspaceId, pStart, pEnd),
+      Booking.countDocuments({
+        workspaceId,
+        firstSessionStart: { $gte: pStart, $lte: pEnd },
+        status: "booked",
+      }),
+      Inquiry.countDocuments({
+        workspaceId,
+        createdAt: { $gte: pStart, $lte: pEnd },
+      }),
+    ]);
+    snapshot.revenueThisMonth = rev;
+    snapshot.activeBookingsThisMonth = active;
+    snapshot.newInquiries = inq;
+    return {
+      snapshot,
+      trends: {
+        revenue: pctTrend(rev, pRev, true),
+        activeBookings: pctTrend(active, pActive, true),
+        newInquiries: pctTrend(inq, pInq, true),
+        outstandingBalance: null,
+      },
+    };
+  }
 
   return {
     snapshot,
@@ -217,17 +262,29 @@ export type RevenuePoint = { date: string; amount: number };
 
 export async function getRevenueTrend(
   workspaceId: WorkspaceId,
-  days = 30
+  days = 30,
+  range?: DateRange
 ): Promise<RevenuePoint[]> {
   // Bucket by UTC day. Workspace-local-timezone bucketing is a follow-up — we
   // need to thread workspace.timezone through to $dateToString.
-  const now = new Date();
-  const start = new Date(now);
-  start.setUTCHours(0, 0, 0, 0);
-  start.setUTCDate(start.getUTCDate() - (days - 1));
-
-  const end = new Date(now);
-  end.setUTCHours(23, 59, 59, 999);
+  let start: Date;
+  let end: Date;
+  let dayCount: number;
+  if (range?.from && range?.to) {
+    start = new Date(range.from);
+    start.setUTCHours(0, 0, 0, 0);
+    end = new Date(range.to);
+    end.setUTCHours(23, 59, 59, 999);
+    dayCount = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  } else {
+    const now = new Date();
+    start = new Date(now);
+    start.setUTCHours(0, 0, 0, 0);
+    start.setUTCDate(start.getUTCDate() - (days - 1));
+    end = new Date(now);
+    end.setUTCHours(23, 59, 59, 999);
+    dayCount = days;
+  }
 
   const rows = await Transaction.aggregate<{ _id: string; total: number }>([
     {
@@ -247,7 +304,7 @@ export async function getRevenueTrend(
 
   const byDate = new Map(rows.map((r) => [r._id, r.total]));
   const out: RevenuePoint[] = [];
-  for (let i = 0; i < days; i += 1) {
+  for (let i = 0; i < dayCount; i += 1) {
     const d = new Date(start);
     d.setUTCDate(start.getUTCDate() + i);
     const key = d.toISOString().slice(0, 10);
@@ -314,10 +371,15 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5) {
 export type EventTypeBreakdown = { eventType: string; count: number };
 
 export async function getEventTypeBreakdown(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  range?: DateRange
 ): Promise<EventTypeBreakdown[]> {
+  const match: Record<string, unknown> = { workspaceId, status: { $ne: "draft" } };
+  if (range?.from && range?.to) {
+    match.firstSessionStart = { $gte: range.from, $lte: range.to };
+  }
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
-    { $match: { workspaceId, status: { $ne: "draft" } } },
+    { $match: match },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
@@ -334,16 +396,22 @@ export type TransactionsByTeam = {
 
 export async function getTransactionsByTeam(
   workspaceId: WorkspaceId,
-  days = 90
+  range?: DateRange
 ): Promise<TransactionsByTeam[]> {
-  const start = new Date();
-  start.setDate(start.getDate() - days);
+  let paidAt: Record<string, Date>;
+  if (range?.from && range?.to) {
+    paidAt = { $gte: range.from, $lte: range.to };
+  } else {
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    paidAt = { $gte: start };
+  }
 
   const rows = await Transaction.aggregate<{ _id: Types.ObjectId | null; total: number }>([
     {
       $match: {
         workspaceId,
-        paidAt: { $gte: start },
+        paidAt,
         type: { $in: ["deposit", "balance"] },
       },
     },
@@ -386,10 +454,15 @@ export type TeamBookingsCount = {
 };
 
 export async function getBookingsCountByTeam(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  range?: DateRange
 ): Promise<TeamBookingsCount[]> {
+  const match: Record<string, unknown> = { workspaceId, status: { $ne: "draft" } };
+  if (range?.from && range?.to) {
+    match.firstSessionStart = { $gte: range.from, $lte: range.to };
+  }
   const rows = await Booking.aggregate<{ _id: Types.ObjectId | null; count: number }>([
-    { $match: { workspaceId, status: { $ne: "draft" } } },
+    { $match: match },
     { $group: { _id: "$teamId", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);

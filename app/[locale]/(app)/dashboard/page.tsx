@@ -24,6 +24,7 @@ import {
   getTransactionsByTeam,
   getBookingsCountByTeam,
   getTopClients,
+  type DateRange,
 } from "./_data/dashboard-metrics";
 import { KpiStrip } from "./_components/kpi-strip";
 import { TodaysEventsList } from "./_components/todays-events-list";
@@ -95,12 +96,12 @@ export default async function DashboardPage({
             })}
           </p>
         </div>
-        <DashboardTabs tab={tab} />
+        {/* One date filter for both dashboards, left of the tab switcher. */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <DashboardDateFilter />
+          <DashboardTabs tab={tab} />
+        </div>
       </div>
-
-      {/* Date filter drives the Portfolio time-series; the Bookings KPIs are
-          month/all-time snapshots, so the filter is scoped to Portfolio. */}
-      {tab === "portfolio" && <DashboardDateFilter />}
 
       {tab === "portfolio" ? (
         <PortfolioDashboard workspace={workspace} locale={locale} range={range} />
@@ -112,6 +113,7 @@ export default async function DashboardPage({
           t={t}
           role={role}
           userId={userId}
+          range={range}
         />
       )}
     </div>
@@ -127,6 +129,7 @@ async function BookingsTab({
   t,
   role,
   userId,
+  range,
 }: {
   wid: import("mongoose").Types.ObjectId;
   workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
@@ -134,6 +137,7 @@ async function BookingsTab({
   t: Awaited<ReturnType<typeof getTranslations>>;
   role: "owner" | "staff";
   userId: string;
+  range: DateRange;
 }) {
   const timeMode = await getUserTimeFormat();
 
@@ -151,16 +155,16 @@ async function BookingsTab({
     topClients,
     teamOptions,
   ] = await Promise.all([
-    getKpiSnapshotWithDeltas(wid),
+    getKpiSnapshotWithDeltas(wid, range),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
     getRecentInquiries(wid),
     getActivityFeed(wid, 20),
-    getRevenueTrend(wid, 30),
+    getRevenueTrend(wid, 30, range),
     getBookingsByDay(wid, new Date()),
-    getEventTypeBreakdown(wid),
-    getTransactionsByTeam(wid, 90),
-    getBookingsCountByTeam(wid),
+    getEventTypeBreakdown(wid, range),
+    getTransactionsByTeam(wid, range),
+    getBookingsCountByTeam(wid, range),
     getTopClients(wid, 5),
     getBookingTeamOptions({ role, userId, workspace }),
   ]);
