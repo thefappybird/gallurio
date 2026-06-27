@@ -90,8 +90,8 @@ export function EventTypeDonut({ data, title, empty }: Props) {
           <p className="py-12 text-center text-sm text-muted-foreground">{empty}</p>
         ) : (
           // Legend sits beside the pie so the card height matches its neighbors.
-          <div className="flex flex-col items-center gap-4 sm:flex-row">
-            <div className="relative h-36 w-36 shrink-0">
+          <div className="flex flex-col items-center gap-10 sm:flex-row sm:justify-center px-10">
+            <div className="relative h-48 w-48 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
