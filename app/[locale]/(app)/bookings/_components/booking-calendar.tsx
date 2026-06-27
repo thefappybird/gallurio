@@ -389,7 +389,7 @@ export function MonthBookingEvent({
     <span
       title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
       aria-label={candleAriaLabel}
-      className={`relative flex h-full w-full flex-col justify-center overflow-hidden ps-2 pe-1.5 py-0.5 text-white ${
+      className={`relative flex h-full w-full flex-col justify-center overflow-hidden ps-2 pe-1.5 py-0.5 text-start text-white ${
         isStatusMuted
           ? "line-through opacity-80"
           : showPastVisual
@@ -450,7 +450,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
     <div
       title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
       aria-label={candleAriaLabel}
-      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden ps-2.5 pe-2 py-1.5 text-white ${
+      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden ps-2.5 pe-2 py-1.5 text-start text-white ${
         isStatusMuted
           ? "line-through opacity-80"
           : showPastVisual

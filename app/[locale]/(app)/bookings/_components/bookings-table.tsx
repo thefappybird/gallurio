@@ -261,7 +261,7 @@ export function BookingsTable({
                   <th
                     key={header.id}
                     className={cn(
-                      "px-3 py-2 font-medium",
+                      "px-3 py-2 font-medium text-start",
                       canSort && "cursor-pointer select-none"
                     )}
                     onClick={

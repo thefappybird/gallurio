@@ -240,7 +240,7 @@ export function ClientsTable({
                     key={header.id}
                     scope="col"
                     aria-sort={ariaSort}
-                    className={cn("px-3 py-2 font-medium", alignRight && "text-end")}
+                    className={cn("px-3 py-2 font-medium", alignRight ? "text-end" : "text-start")}
                   >
                     {canSort ? (
                       <button
