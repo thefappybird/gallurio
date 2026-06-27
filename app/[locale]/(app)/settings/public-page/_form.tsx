@@ -179,13 +179,13 @@ export function PublicPageSettingsForm({
           <div className="flex flex-col gap-1.5">
             <Label>{t("publicUrl")}</Label>
             <div className="flex items-stretch">
-              <span className="flex min-h-[2.25rem] items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+              <span className="flex min-h-[2.25rem] items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
                 {publicUrl}
               </span>
               <Button
                 type="button"
                 variant="outline"
-                className="min-h-[2.25rem] shrink-0 border-l-0"
+                className="min-h-[2.25rem] shrink-0 border-s-0"
                 onClick={handleCopy}
               >
                 {copied ? t("copied") : t("copy")}
@@ -203,7 +203,7 @@ export function PublicPageSettingsForm({
             >
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
                   {t("saving")}
                 </>
               ) : isPublished ? (
@@ -373,7 +373,7 @@ export function PublicPageSettingsForm({
           <Button type="submit" disabled={isSubmitting || !isDirty}>
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 {t("saving")}
               </>
             ) : (

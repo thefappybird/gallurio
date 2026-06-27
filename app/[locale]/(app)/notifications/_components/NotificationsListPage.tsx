@@ -117,7 +117,7 @@ export function NotificationsListPage({
                 type="button"
                 onClick={() => handleMarkRead(item)}
                 className={[
-                  "flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   !item.read ? "bg-accent/40" : "",
                 ].join(" ")}
               >

@@ -317,7 +317,7 @@ export function BookingDraftCard({
                     <span className="text-xs text-muted-foreground">
                       {ts("sessionLabel", { n: i + 1 })}
                       {sessionConflicts[i] && (
-                        <span className="ml-2 font-medium text-destructive">· {ts("conflictInline")}</span>
+                        <span className="ms-2 font-medium text-destructive">· {ts("conflictInline")}</span>
                       )}
                     </span>
                     <div className="grid grid-cols-3 gap-2">

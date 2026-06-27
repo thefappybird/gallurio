@@ -42,7 +42,7 @@ type Props = {
   locationSubmitted?: boolean;
 };
 
-const Asterisk = () => <span className="ml-0.5 text-destructive">*</span>;
+const Asterisk = () => <span className="ms-0.5 text-destructive">*</span>;
 
 function safe(t: (k: string) => string, key: string, fallback: string) {
   try {

@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useIsRtl } from '@/lib/i18n/rtl'
 import {
   BellIcon,
   CalendarIcon,
@@ -61,7 +62,7 @@ function NotificationRow({
       type="button"
       onClick={handleClick}
       className={[
-        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+        'flex w-full items-start gap-3 px-4 py-3 text-start transition-colors',
         'hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         !notification.read ? 'bg-accent/30' : '',
       ]
@@ -191,10 +192,15 @@ export function NotificationPopover({
   onClose,
 }: NotificationPopoverProps) {
   const { state } = useSidebar()
-  const left =
+  // Anchor just inside the sidebar's inner edge. `inset-inline-start` maps to the
+  // left edge in LTR and the right edge in RTL automatically; isRtl is only still
+  // needed for the slide-in direction (no logical Tailwind animation utility).
+  const isRtl = useIsRtl()
+  const offset =
     state === 'collapsed'
       ? 'calc(var(--sidebar-width-icon, 4rem) + 1px)'
       : 'calc(var(--sidebar-width, 16rem) + 1px)'
+  const anchorStyle = { insetInlineStart: offset }
 
   if (!open) return null
 
@@ -205,20 +211,22 @@ export function NotificationPopover({
         <NotificationPanelContent onClose={onClose} />
       </div>
 
-      {/* Desktop: full-height side panel anchored to the right edge of the sidebar.
-          left tracks the actual sidebar state so it works for both expanded and collapsed.
-          --sidebar-width and --sidebar-width-icon are set by SidebarProvider as inline CSS vars
-          and are accessible from fixed descendants via CSS custom property inheritance. */}
+      {/* Desktop: full-height side panel anchored just inside the sidebar's inner
+          edge. The offset tracks the actual sidebar state so it works for both
+          expanded and collapsed. --sidebar-width and --sidebar-width-icon are set
+          by SidebarProvider as inline CSS vars and are accessible from fixed
+          descendants via CSS custom property inheritance. */}
       <div
         role="dialog"
         aria-label="Notifications"
-        style={{ left } as React.CSSProperties}
+        style={anchorStyle}
         className={[
           'fixed z-[9998] hidden md:flex',
           'top-0',
           'h-svh w-[360px] flex-col',
           'border border-border bg-background',
-          'animate-in fade-in-0 slide-in-from-left-2 duration-150',
+          'animate-in fade-in-0 duration-150',
+          isRtl ? 'slide-in-from-right-2' : 'slide-in-from-left-2',
         ].join(' ')}
       >
         <NotificationPanelContent onClose={onClose} />

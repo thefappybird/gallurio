@@ -47,7 +47,7 @@ export function ThemeToggle() {
           </SidebarMenuButton>
         }
       />
-      <DropdownMenuContent side="right" align="start">
+      <DropdownMenuContent side="inline-end" align="start">
         {THEMES.map((opt) => {
           const Icon = opt.icon;
           return (

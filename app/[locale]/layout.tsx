@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/app/theme-provider";
 import { routing } from "@/lib/i18n/routing";
+import { isRtl } from "@/lib/i18n/rtl";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import { appThemeAttributes, DEFAULT_APP_THEME } from "@/lib/theme/appTheme";
 import "../globals.css";
@@ -41,6 +42,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      dir={isRtl(locale) ? "rtl" : "ltr"}
       className={`${portfolioFontVariables} h-full antialiased`}
       // Default corner-style preset (app-shell theming seam). A future
       // user-theming UI resolves a persisted AppThemeConfig here instead of the

@@ -198,9 +198,29 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
   const intlResponse = intlMiddleware(req);
 
   // Merge any session-refresh headers from authkit into the intl response.
+  //
+  // Both middlewares inject *request* headers via Next.js's internal protocol:
+  // `x-middleware-override-headers` is a comma-separated manifest of header
+  // names to override, paired with one `x-middleware-request-<name>` value each.
+  // authkit uses this for its session headers (read by withAuth); next-intl uses
+  // it for `x-next-intl-locale` (read by getRequestConfig). A blind `set()` of
+  // authkit's manifest would clobber next-intl's, dropping the locale header and
+  // making hard-reloaded /{locale}/* pages fall back to the default locale.
+  // So we UNION the manifest and copy every other header through unchanged.
   if (authResponse) {
-    (authResponse as Response).headers.forEach((value, key) => {
-      intlResponse.headers.set(key, value);
+    const authHeaders = (authResponse as Response).headers;
+    authHeaders.forEach((value, key) => {
+      if (key.toLowerCase() === "x-middleware-override-headers") {
+        const merged = new Set(
+          [intlResponse.headers.get(key), value]
+            .filter((v): v is string => Boolean(v))
+            .flatMap((v) => v.split(",").map((s) => s.trim()))
+            .filter(Boolean),
+        );
+        intlResponse.headers.set(key, [...merged].join(","));
+      } else {
+        intlResponse.headers.set(key, value);
+      }
     });
   }
 

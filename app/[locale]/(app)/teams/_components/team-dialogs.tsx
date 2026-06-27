@@ -175,7 +175,7 @@ export function CreateDialog({
           <Button disabled={pending || !name.trim()} onClick={handleSubmit}>
             {pending ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="me-2 size-4 animate-spin" />
                 {t("createDialog.creating")}
               </>
             ) : (
@@ -315,7 +315,7 @@ export function EditDialog({
           <Button disabled={pending || !name.trim()} onClick={handleSubmit}>
             {pending ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="me-2 size-4 animate-spin" />
                 {t("editDialog.saving")}
               </>
             ) : (
@@ -383,7 +383,7 @@ export function DeactivateDialog({
           <Button variant="destructive" disabled={pending} onClick={handleDeactivate}>
             {pending ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="me-2 size-4 animate-spin" />
                 {t("deactivateDialog.deactivating")}
               </>
             ) : (
@@ -451,7 +451,7 @@ export function ReactivateDialog({
           <Button variant="default" disabled={pending} onClick={handleReactivate}>
             {pending ? (
               <>
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="me-2 size-4 animate-spin" />
                 {t("reactivateDialog.reactivating")}
               </>
             ) : (

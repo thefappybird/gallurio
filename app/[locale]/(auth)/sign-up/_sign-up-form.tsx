@@ -131,11 +131,11 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
               autoComplete="new-password"
               required
               disabled={pending}
-              className="pr-10"
+              className="pe-10"
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={
                 showPassword ? t("fields.hidePassword") : t("fields.showPassword")
@@ -164,12 +164,12 @@ export function SignUpForm({ lockedEmail = null }: SignUpFormProps) {
               autoComplete="new-password"
               required
               disabled={pending}
-              className="pr-10"
+              className="pe-10"
               aria-describedby={error ? "signup-error" : undefined}
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => setShowConfirm((v) => !v)}
               aria-label={
                 showConfirm ? t("fields.hidePassword") : t("fields.showPassword")

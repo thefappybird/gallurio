@@ -128,12 +128,12 @@ export function BookingsToolbar({
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
       <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative w-full sm:w-80">
-          <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("search")}
-            className="pl-8"
+            className="ps-8"
           />
         </div>
 
@@ -219,7 +219,7 @@ export function BookingsToolbar({
         <Button
           variant="outline"
           size="sm"
-          className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l"
+          className="min-h-11 flex-1 border-s-0 sm:flex-none sm:min-h-0 sm:border-s"
           title={tBookings("export.tooltip")}
           nativeButton={false}
           render={<a href={exportHref} download />}
@@ -236,7 +236,7 @@ export function BookingsToolbar({
           <Button
             variant="brand"
             size="sm"
-            className="min-h-11 flex-1 border-l-0 sm:flex-none sm:min-h-0 sm:border-l-0"
+            className="min-h-11 flex-1 border-s-0 sm:flex-none sm:min-h-0 sm:border-s-0"
             onClick={() => {
               if (onAddClick) {
                 onAddClick();

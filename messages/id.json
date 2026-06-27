@@ -788,7 +788,8 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia"
+          "id": "Bahasa Indonesia",
+          "ar": "العربية"
         },
         "timeFormatSection": "Format Waktu",
         "timeFormatHint": "Pilih cara waktu ditampilkan di seluruh aplikasi.",
@@ -1419,7 +1420,8 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia"
+            "id": "Bahasa Indonesia",
+            "ar": "العربية"
           },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",

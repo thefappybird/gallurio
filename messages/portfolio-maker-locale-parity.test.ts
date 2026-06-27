@@ -3,13 +3,14 @@ import en from "./en.json";
 import fil from "./fil.json";
 import id from "./id.json";
 import ms from "./ms.json";
+import ar from "./ar.json";
 
 // Guards against structural drift in the portfolio-maker locale blocks. A crash
 // or a mis-anchored translation insert once nested `pageBuilder` under
 // `inquiries`; this test would have caught it. We assert the three non-English
 // catalogs carry the exact same key tree as English for the blocks added across
 // Phases 6-9 (we do not assert translated values).
-const LOCALES = { fil, id, ms } as Record<string, typeof en>;
+const LOCALES = { fil, id, ms, ar } as Record<string, typeof en>;
 const BLOCKS = ["inquiries", "pageBuilder"] as const;
 // Root-level blocks added in Phase 5 (invite/team flow).
 const ROOT_BLOCKS = ["inviteAccept"] as const;
@@ -42,14 +43,21 @@ describe("portfolio-maker locale parity", () => {
   }
 
   for (const [locale, catalog] of Object.entries(LOCALES)) {
-    it(`${locale}: advertises only en, fil, ms, and id public-page language options`, () => {
-      expect(Object.keys(catalog.app.settings.customize.languages)).toEqual(["en", "fil", "ms", "id"]);
+    it(`${locale}: advertises en, fil, ms, id, and ar public-page language options`, () => {
+      expect(Object.keys(catalog.app.settings.customize.languages)).toEqual([
+        "en",
+        "fil",
+        "ms",
+        "id",
+        "ar",
+      ]);
       expect(Object.keys(catalog.app.pageBuilder.editor.contactDialog.languages)).toEqual([
         "auto",
         "en",
         "fil",
         "ms",
         "id",
+        "ar",
       ]);
     });
   }

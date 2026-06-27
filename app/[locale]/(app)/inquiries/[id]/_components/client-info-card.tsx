@@ -102,7 +102,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
                     type="button"
                     aria-label={t("editPhone")}
                     onClick={() => setEditingPhone(true)}
-                    className="ml-auto shrink-0 p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:bg-accent/70 disabled:pointer-events-none disabled:opacity-50"
+                    className="ms-auto shrink-0 p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:bg-accent/70 disabled:pointer-events-none disabled:opacity-50"
                   >
                     <PencilIcon className="h-3.5 w-3.5" />
                   </button>

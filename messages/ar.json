@@ -1,0 +1,1835 @@
+{
+  "marketing": {
+    "version": "Gallurio · v0.1.0",
+    "headline": "نظام إدارة العلاقات لأعمال المناسبات.",
+    "description": "الحجوزات والعملاء ومعارض الصور والاستفسارات — في مساحة عمل واحدة. مصمَّم للمصورين وقاعات المناسبات والمنظِّمين والمنسِّقين الذين سئموا جداول البيانات.",
+    "getStarted": "ابدأ الآن",
+    "signIn": "تسجيل الدخول"
+  },
+  "auth": {
+    "signInTitle": "تسجيل الدخول",
+    "signUpTitle": "إنشاء حساب",
+    "signIn": {
+      "title": "تسجيل الدخول",
+      "continueWithGoogle": "المتابعة باستخدام Google",
+      "or": "أو",
+      "submit": "تسجيل الدخول",
+      "forgotPassword": "هل نسيت كلمة المرور؟",
+      "noAccount": "ليس لديك حساب؟",
+      "createAccount": "أنشئ حسابًا"
+    },
+    "signUp": {
+      "title": "إنشاء حساب",
+      "continueWithGoogle": "المتابعة باستخدام Google",
+      "submit": "إنشاء حساب",
+      "passwordHint": "8 أحرف على الأقل",
+      "hasAccount": "هل لديك حساب بالفعل؟"
+    },
+    "mfa": {
+      "title": "التحقّق بخطوتين",
+      "description": "أدخِل الرمز المكوَّن من 6 أرقام من تطبيق المصادقة.",
+      "codeLabel": "رمز التحقّق",
+      "submit": "تحقّق",
+      "backToSignIn": "العودة إلى تسجيل الدخول"
+    },
+    "forgotPassword": {
+      "title": "إعادة تعيين كلمة المرور",
+      "description": "أدخِل بريدك الإلكتروني وسنرسل إليك رابط إعادة التعيين.",
+      "submit": "إرسال رابط إعادة التعيين",
+      "successMessage": "إذا كان هذا البريد مسجَّلًا، فإن رابط إعادة التعيين في طريقه إليك. تحقّق من صندوق الوارد.",
+      "backToSignIn": "العودة إلى تسجيل الدخول"
+    },
+    "resetPassword": {
+      "title": "تعيين كلمة مرور جديدة",
+      "description": "اختر كلمة مرور قوية لحسابك.",
+      "passwordLabel": "كلمة المرور الجديدة",
+      "submit": "تعيين كلمة المرور الجديدة",
+      "successMessage": "تم تحديث كلمة المرور. يمكنك الآن تسجيل الدخول.",
+      "signIn": "تسجيل الدخول",
+      "invalidToken": "رابط إعادة التعيين هذا غير صالح أو انتهت صلاحيته.",
+      "requestNewLink": "اطلب رابط إعادة تعيين جديد"
+    },
+    "verifyEmail": {
+      "title": "تأكيد بريدك الإلكتروني",
+      "description": "أدخِل الرمز المكوَّن من 6 أرقام الذي أرسلناه إلى بريدك الإلكتروني.",
+      "codeLabel": "رمز التحقّق",
+      "submit": "تأكيد البريد الإلكتروني",
+      "resend": "إعادة إرسال الرمز",
+      "resending": "جارٍ الإرسال…",
+      "resendSent": "تمت إعادة إرسال الرمز — تحقّق من صندوق الوارد."
+    },
+    "fields": {
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "optional": "اختياري",
+      "showPassword": "إظهار كلمة المرور",
+      "hidePassword": "إخفاء كلمة المرور"
+    },
+    "errors": {
+      "invalidInput": "يرجى التحقّق من المدخلات والمحاولة مرة أخرى.",
+      "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+      "botCheck": "فشل التحقّق من أنك لست برنامجًا آليًا. يرجى المحاولة مرة أخرى.",
+      "tooManyAttempts": "محاولات كثيرة جدًا. حاول مرة أخرى بعد {seconds} ثانية.",
+      "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+      "invalidCode": "رمز غير صالح أو منتهي الصلاحية. يرجى المحاولة مرة أخرى.",
+      "sessionExpired": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.",
+      "resetTokenInvalid": "هذا الرابط غير صالح أو انتهت صلاحيته. يرجى طلب رابط جديد."
+    }
+  },
+  "app": {
+    "dashboard": {
+      "title": "{workspaceName}",
+      "greeting": "مرحبًا بعودتك، {name}",
+      "kpi": {
+        "revenueThisMonth": "إيرادات هذا الشهر",
+        "activeBookings": "الحجوزات النشطة هذا الشهر",
+        "newInquiries": "استفسارات جديدة",
+        "outstandingBalance": "الرصيد المستحق"
+      },
+      "sections": {
+        "todaysEvents": "مناسبات اليوم",
+        "upcomingWeek": "القادم هذا الأسبوع",
+        "recentInquiries": "أحدث الاستفسارات",
+        "activity": "النشاط الأخير",
+        "pipeline": "مسار العمل",
+        "revenueTrend": "الإيرادات (آخر 30 يومًا)",
+        "calendar": "تقويم الحجوزات",
+        "eventTypes": "توزيع أنواع المناسبات",
+        "transactionsByMethod": "المدفوعات حسب الطريقة (90 يومًا)",
+        "transactionsByTeam": "الإيرادات حسب الفريق",
+        "weeklyBookings": "الحجوزات حسب يوم الأسبوع",
+        "topClients": "أكثر العملاء إنفاقًا"
+      },
+      "pipeline": {
+        "inquiries": "الاستفسارات",
+        "booked": "محجوز"
+      },
+      "quickAdd": {
+        "title": "إضافة سريعة",
+        "booking": "حجز جديد",
+        "client": "عميل جديد",
+        "inquiry": "استفسار جديد"
+      },
+      "empty": "لا يوجد شيء هنا بعد.",
+      "viewAll": "عرض الكل"
+    },
+    "calendar": {
+      "title": "التقويم",
+      "today": "اليوم",
+      "previous": "السابق",
+      "next": "التالي",
+      "date": "التاريخ",
+      "time": "الوقت",
+      "event": "المناسبة",
+      "noEventsInRange": "لا توجد مناسبات في هذا النطاق.",
+      "views": {
+        "day": "يوم",
+        "week": "أسبوع",
+        "month": "شهر",
+        "agenda": "جدول الأعمال"
+      },
+      "goTo": "الانتقال إلى تاريخ",
+      "scrollToTime": "التمرير إلى الوقت",
+      "go": "انتقل"
+    },
+    "bookings": {
+      "title": "الحجوزات",
+      "titleForTeam": "حجوزات {team}",
+      "view": {
+        "table": "جدول",
+        "calendar": "تقويم"
+      },
+      "toolbar": {
+        "search": "بحث في الحجوزات",
+        "statusAll": "كل الحالات",
+        "showCancelled": "إظهار الملغاة",
+        "showPast": "إظهار السابقة",
+        "import": "استيراد CSV",
+        "export": "تصدير CSV",
+        "add": "حجز جديد"
+      },
+      "teamPicker": {
+        "allTeams": "كل الفِرق",
+        "allMyTeams": "كل فِرقي",
+        "label": "تصفية حسب الفريق",
+        "inactive": "غير نشط",
+        "teams": "الفِرق",
+        "countLabel": "{count, plural, zero {لا فرق} one {فريق واحد} two {فريقان} few {# فرق} many {# فريقًا} other {# فريق}}"
+      },
+      "import": {
+        "title": "استيراد الحجوزات",
+        "dropzone": "أفلِت ملف CSV هنا، أو انقر للاختيار",
+        "dropzoneActive": "أفلِت للرفع",
+        "template": "تنزيل قالب CSV",
+        "preview": "تم العثور على {total} صف",
+        "validCount": "{count} صالح",
+        "invalidCount": "{count} بها أخطاء",
+        "importButton": "استيراد {count} حجز",
+        "importing": "جارٍ الاستيراد…",
+        "noValidRows": "لا توجد صفوف صالحة للاستيراد. صحِّح الأخطاء أعلاه.",
+        "success": "تم استيراد {count} حجز بنجاح.",
+        "partialSuccess": "تم استيراد {count} حجز. تعذّر استيراد {failed} صف.",
+        "parseError": "تعذّر قراءة هذا الملف. تأكّد من أنه ملف CSV صالح.",
+        "columns": {
+          "row": "#",
+          "title": "العنوان",
+          "client": "العميل",
+          "start": "البداية",
+          "error": "الخطأ"
+        },
+        "results": {
+          "title": "أخطاء الاستيراد",
+          "kindValidation": "تحقّق",
+          "kindLookup": "بحث",
+          "kindServer": "خادم",
+          "line": "السطر {csvLine}",
+          "rawRow": "الصف الخام",
+          "summary": "تم الاستيراد {created} · تم التخطّي {skipped}",
+          "hint": "صحِّح الصفوف أعلاه وأعد الرفع لاستيرادها."
+        },
+        "dialog": {
+          "columnHeader": "العمود",
+          "notesHeader": "ملاحظات",
+          "required": "مطلوب",
+          "optional": "اختياري",
+          "failedWithDetails": "فشل الاستيراد — راجِع التفاصيل",
+          "failedRetry": "فشل الاستيراد. يرجى المحاولة مرة أخرى.",
+          "close": "إغلاق",
+          "cancel": "إلغاء",
+          "viewErrors": "عرض {n} خطأ",
+          "spec": {
+            "clientName": {
+              "note": "الاسم الكامل للعميل"
+            },
+            "clientEmail": {
+              "note": "يُستخدم لإزالة تكرار العملاء الموجودين"
+            },
+            "startAt": {
+              "note": "ISO 8601 — مثال: 2026-06-15T09:00"
+            },
+            "endAt": {
+              "note": "يُضبط افتراضيًا على startAt إذا تُرك فارغًا"
+            },
+            "title": {
+              "note": "عنوان الحجز"
+            },
+            "eventType": {
+              "note": "زفاف، شركات، بورتريه، إلخ."
+            },
+            "status": {
+              "note": "محجوز، مكتمل، ملغى"
+            },
+            "amountTotal": {
+              "note": "المبلغ الإجمالي للحجز"
+            },
+            "amountDeposit": {
+              "note": "مبلغ العربون"
+            },
+            "currency": {
+              "note": "يُضبط افتراضيًا على عملة مساحة العمل"
+            },
+            "locationAddress": {
+              "note": "نص القاعة أو الموقع"
+            },
+            "notes": {
+              "note": "ملاحظات داخلية"
+            }
+          }
+        }
+      },
+      "export": {
+        "tooltip": "تنزيل الحجوزات بصيغة CSV",
+        "empty": "لا توجد حجوزات للتصدير"
+      },
+      "table": {
+        "empty": "لا توجد حجوزات تطابق عوامل التصفية.",
+        "past": "سابق",
+        "showPast": "إظهار السابقة",
+        "hidePast": "إخفاء السابقة",
+        "pastBookingsHidden": "{count, plural, zero {لا حجوزات سابقة مخفية} one {حجز سابق واحد مخفي} two {حجزان سابقان مخفيان} few {# حجوزات سابقة مخفية} many {# حجزًا سابقًا مخفيًا} other {# حجز سابق مخفي}}",
+        "col": {
+          "title": "الحجز",
+          "client": "العميل",
+          "date": "التاريخ",
+          "status": "الحالة",
+          "total": "الإجمالي",
+          "actions": "إجراءات",
+          "past": "سابق"
+        }
+      },
+      "row": {
+        "openMenu": "فتح إجراءات الحجز",
+        "view": "عرض",
+        "edit": "تعديل"
+      },
+      "statusValues": {
+        "booked": "محجوز",
+        "completed": "مكتمل",
+        "cancelled": "ملغى"
+      },
+      "locationPicker": {
+        "searchPlaceholder": "ابحث عن قاعة أو عنوان…",
+        "searching": "جارٍ البحث…",
+        "noResults": "لا توجد نتائج مطابقة. جرّب بحثًا مختلفًا.",
+        "dragHint": "اسحب الدبوس لضبط الموقع بدقّة.",
+        "clear": "مسح الموقع",
+        "changeLocation": "تغيير الموقع",
+        "acceptLocation": "تأكيد الموقع",
+        "discardLocation": "تجاهل التغييرات",
+        "accept": "قبول",
+        "cancel": "إلغاء",
+        "apply": "تطبيق",
+        "currentAddressLabel": "الموقع المحدد",
+        "viewInMap": "عرض على الخريطة"
+      },
+      "eventTypes": {
+        "wedding": "زفاف",
+        "corporate": "شركات",
+        "portrait": "بورتريه",
+        "engagement": "خطوبة",
+        "anniversary": "ذكرى سنوية",
+        "other": "أخرى"
+      },
+      "detail": {
+        "past": "سابق",
+        "showPast": "إظهار الجلسات السابقة",
+        "hidePast": "إخفاء الجلسات السابقة",
+        "pastSessionsHidden": "{count, plural, zero {لا جلسات سابقة مخفية} one {جلسة سابقة واحدة مخفية — بدِّل للإظهار} two {جلستان سابقتان مخفيتان — بدِّل للإظهار} few {# جلسات سابقة مخفية — بدِّل للإظهار} many {# جلسة سابقة مخفية — بدِّل للإظهار} other {# جلسة سابقة مخفية — بدِّل للإظهار}}",
+        "tabs": {
+          "client": "العميل",
+          "event": "المناسبة",
+          "pricing": "التسعير",
+          "eventPricing": "المناسبة والموقع",
+          "sessionsLocation": "الجلسات",
+          "activity": "الملاحظات والنشاط"
+        },
+        "sections": {
+          "schedule": "الجدول",
+          "pricing": "التسعير",
+          "history": "السجل"
+        },
+        "fields": {
+          "title": "العنوان",
+          "titleRequired": "لا يمكن أن يكون العنوان فارغًا.",
+          "clientName": "اسم العميل",
+          "status": "الحالة",
+          "eventType": "نوع المناسبة",
+          "date": "التاريخ",
+          "startAt": "بداية الوردية",
+          "startTime": "وقت البداية",
+          "endAt": "نهاية الوردية",
+          "endTime": "وقت النهاية",
+          "location": "الموقع",
+          "total": "الإجمالي",
+          "deposit": "العربون",
+          "depositExceedsTotal": "لا يمكن أن يتجاوز العربون الإجمالي.",
+          "currency": "العملة",
+          "outstanding": "الرصيد المستحق",
+          "notes": "ملاحظات",
+          "activityEmpty": "لا يوجد نشاط بعد.",
+          "viewAllHistory": "عرض كل الإدخالات ({count})",
+          "endBeforeStart": "لا يمكن أن تكون النهاية قبل البداية.",
+          "conflictsLabel": "ورديات موجودة بالفعل في {date}:",
+          "draftHint": "اضبط الأوقات أدناه، ثم انقر على حفظ التغييرات لإضافة هذه الجلسة.",
+          "email": "البريد الإلكتروني",
+          "phone": "الهاتف",
+          "openClient": "فتح العميل",
+          "viewClient": "عرض العميل",
+          "changeClient": "تغيير العميل",
+          "changeClientCancel": "الإبقاء على الحالي",
+          "changeClientSearch": "ابحث عن عملاء…",
+          "noEmail": "لا يوجد بريد إلكتروني",
+          "noPhone": "لا يوجد هاتف",
+          "noClientResults": "لم يُعثر على عملاء",
+          "changeClientMultiSession": "إعادة التعيين غير متاحة للحجوزات متعددة الجلسات",
+          "searchFailed": "فشل البحث. حاول مرة أخرى.",
+          "editTitle": "تعديل العنوان",
+          "confirmTitle": "تأكيد",
+          "cancelTitleEdit": "إلغاء",
+          "editEventType": "تغيير نوع المناسبة",
+          "editStatus": "تغيير الحالة",
+          "sendEmail": "إرسال بريد إلكتروني",
+          "callClient": "اتصال"
+        },
+        "cancelConfirm": {
+          "title": "إلغاء هذا الحجز؟",
+          "body": "سنضع علامة \"ملغى\" على \"{title}\". لن يُحذف الحجز — يمكنك استعادته من النافذة نفسها إذا عاد عميلك. يبقى سجل التدقيق سليمًا في الحالتين.",
+          "keep": "الإبقاء على الحجز",
+          "confirm": "نعم، ألغِ الحجز"
+        },
+        "history": {
+          "title": "سجل الحجز",
+          "totalCount": "{count} إدخال",
+          "pageOf": "الصفحة {page} من {total}",
+          "previous": "الصفحة السابقة",
+          "next": "الصفحة التالية",
+          "actions": {
+            "created": "أُنشئ",
+            "updated": "حُدِّث",
+            "status_changed": "تغيّرت الحالة",
+            "client_changed": "تغيّر العميل",
+            "deleted": "حُذف"
+          },
+          "today": "اليوم",
+          "yesterday": "أمس",
+          "timelineLabel": "المخطط الزمني للنشاط"
+        },
+        "cancel": "إلغاء الحجز",
+        "restore": "استعادة الحجز",
+        "discardChanges": "تجاهل التغييرات",
+        "saveChanges": "حفظ التغييرات",
+        "pendingBadge": "{count} غير محفوظ",
+        "unsavedConfirm": "لديك تغييرات غير محفوظة. هل تريد تجاهلها؟",
+        "discardTitle": "تجاهل التغييرات؟",
+        "discardDescription": "{count, plural, zero {لن تُفقد أي تغييرات.} one {سيُفقد تغيير واحد غير محفوظ.} two {سيُفقد تغييران غير محفوظين.} few {ستُفقد # تغييرات غير محفوظة.} many {سيُفقد # تغييرًا غير محفوظ.} other {سيُفقد # تغيير غير محفوظ.}}",
+        "discardConfirm": "تجاهل وإغلاق",
+        "keepEditing": "متابعة التعديل",
+        "savedToast": "تم تحديث الحجز.",
+        "cancelledToast": "تم إلغاء الحجز.",
+        "restoredToast": "تمت استعادة الحجز.",
+        "actionFailed": "حدث خطأ ما. حاول مرة أخرى.",
+        "notFound": "لم يُعثر على الحجز.",
+        "editAll": "تعديل الكل",
+        "conflictBlocksSave": "تتداخل هذه الأوقات مع وردية موجودة. عدِّل الوقت أو التاريخ قبل الحفظ.",
+        "unconfirmedDrafts": {
+          "title": "تغييرات غير مؤكَّدة",
+          "description": "{count, plural, zero {ليس لديك تغييرات غير مؤكَّدة.} one {لديك تغيير واحد غير مؤكَّد.} two {لديك تغييران غير مؤكَّدين.} few {لديك # تغييرات غير مؤكَّدة.} many {لديك # تغييرًا غير مؤكَّد.} other {لديك # تغيير غير مؤكَّد.}} أرسِلها مع تغييراتك المحفوظة، أو تجاهل غير المؤكَّدة واحفظ ما أكّدته فقط.",
+          "submitAll": "إرسال كل التغييرات",
+          "discard": "تجاهل غير المؤكَّدة والحفظ",
+          "cancel": "رجوع",
+          "invalidError": "بعض التغييرات بها أخطاء — صحِّحها قبل الإرسال."
+        }
+      },
+      "confirm": {
+        "title": "تطبيق التغييرات",
+        "body": "تمتد هذه الجلسة على {days} يومًا. ماذا تريد أن تفعل؟",
+        "thisDay": "التطبيق على هذا اليوم فقط",
+        "wholeSession": "التطبيق على الجلسة كاملةً",
+        "pastNote": "ستُحفظ الأيام السابقة ({count}).",
+        "cancel": "إلغاء"
+      },
+      "dnd": {
+        "pastDateWarning": "نُقل إلى تاريخ سابق",
+        "pastSplitWarning": "حُفظت الأيام السابقة — حُدِّثت الأيام المستقبلية فقط",
+        "thisDayOnlyOnPast": "لا يمكن تعديل يوم سابق",
+        "updating": "جارٍ تحديث الحجز…",
+        "updated": "تم تحديث الحجز",
+        "updateError": "فشل تحديث الحجز",
+        "conflictCheckFailed": "تعذّر التحقّق من التعارضات — يرجى المحاولة مرة أخرى",
+        "overnightNotAllowed": "لا يمكن أن تمتد الحجوزات بعد منتصف الليل — يرجى تعديل الوقت",
+        "conflictBlockSubmit": "حُلّ تعارضات الجلسات قبل الحفظ.",
+        "conflictBlockDnd": "يتداخل هذا الوقت مع \"{title}\" — أُلغي النقل",
+        "conflictBlockDndMany": "يتداخل هذا الوقت مع \"{title}\" و{more} وردية أخرى — أُلغي النقل",
+        "pastDropNotAllowed": "لا يمكن النقل إلى تاريخ أو وقت سابق."
+      },
+      "calendar": {
+        "past": "سابق",
+        "togglePast": "سابق",
+        "dropConflict": {
+          "title": "تعارض في الجدول يوم {date}",
+          "description": "نقل هذا الحجز يُحدث تداخلًا مع وردية موجودة أو أكثر. يمكنك نقله على أي حال أو الإلغاء.",
+          "cancel": "إلغاء",
+          "moveAnyway": "انقل على أي حال"
+        },
+        "pastDateConfirm": {
+          "title": "النقل إلى تاريخ سابق؟",
+          "description": "أنت تنقل هذا الحجز إلى تاريخ في الماضي. هذا مسموح لكنه غير معتاد — أكِّد للمتابعة.",
+          "confirm": "النقل إلى السابق",
+          "cancel": "إلغاء"
+        },
+        "showPast": "إظهار السابقة",
+        "hidePast": "إخفاء السابقة",
+        "filterByStatus": "تصفية حسب الحالة",
+        "filterActive": "تصفية حسب {status} — انقر مرة أخرى للمسح",
+        "teamsLegend": "الفِرق",
+        "inactiveTeam": "فريق غير نشط"
+      },
+      "sessions": {
+        "label": "الجلسة {n}",
+        "add": "إضافة جلسة",
+        "remove": "إزالة الجلسة",
+        "reviewLabel": "الجلسات",
+        "past": "سابق",
+        "showPast": "إظهار السابقة",
+        "hidePast": "إخفاء السابقة",
+        "pastHidden": "{count, plural, zero {لا جلسات سابقة مخفية} one {جلسة سابقة واحدة مخفية} two {جلستان سابقتان مخفيتان} few {# جلسات سابقة مخفية} many {# جلسة سابقة مخفية} other {# جلسة سابقة مخفية}} — بدِّل للإظهار",
+        "unsaved": "غير محفوظ"
+      },
+      "wizard": {
+        "createTitle": "حجز جديد",
+        "editTitle": "تعديل الحجز",
+        "editTitleNamed": "تعديل {title}",
+        "loading": "جارٍ تحميل الحجز…",
+        "previous": "السابق",
+        "next": "التالي",
+        "cancel": "إلغاء",
+        "create": "إنشاء الحجز",
+        "creating": "جارٍ الإنشاء…",
+        "save": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…",
+        "createdToast": "تم إنشاء الحجز.",
+        "savedToast": "تم تحديث الحجز.",
+        "depositExceedsTotal": "لا يمكن أن يتجاوز العربون الإجمالي.",
+        "unsavedConfirm": "ستفقد تقدّمك إذا خرجت الآن. هل أنت متأكّد؟",
+        "unsaved": {
+          "title": "تجاهل تغييراتك؟",
+          "body": "ستفقد كل ما أدخلته في هذا الحجز إذا غادرت الآن. لم تُحفظ تغييراتك.",
+          "keep": "متابعة التعديل",
+          "discard": "تجاهل وإغلاق"
+        },
+        "conflictConfirm": {
+          "title": "تم اكتشاف تعارضات في الجدول",
+          "description": "تتداخل جلسة واحدة أو أكثر مع حجوزات موجودة. يمكنك الإرسال على أي حال أو الرجوع لتعديل التواريخ.",
+          "confirm": "أرسِل على أي حال",
+          "cancel": "رجوع"
+        },
+        "steps": {
+          "client": "العميل",
+          "event": "المناسبة",
+          "pricing": "التسعير",
+          "eventPricing": "المناسبة والتسعير",
+          "sessionsLocation": "الجلسات",
+          "review": "المراجعة"
+        },
+        "client": {
+          "tabExisting": "عميل موجود",
+          "tabNew": "إنشاء جديد",
+          "searchPlaceholder": "ابحث بالاسم أو البريد الإلكتروني",
+          "noResults": "لا يوجد عملاء مطابقون. جرّب بحثًا مختلفًا.",
+          "selectRequired": "اختر عميلًا للمتابعة.",
+          "name": "الاسم",
+          "namePlaceholder": "مثال: إيما كارتر",
+          "email": "البريد الإلكتروني",
+          "emailPlaceholder": "emma@example.com",
+          "phone": "الهاتف",
+          "phonePlaceholder": "+63 917 555 0142",
+          "readOnlyLabel": "العميل",
+          "readOnlyHint": "إعادة تعيين حجز إلى عميل مختلف غير مدعومة في هذا العرض بعد.",
+          "multiSessionReadOnly": "العميل مقفل في الحجوزات متعددة الجلسات."
+        },
+        "event": {
+          "title": "العنوان",
+          "titleRequired": "أعطِ هذا الحجز عنوانًا.",
+          "titlePlaceholder": "مثال: زفاف كارتر — رصيف 27",
+          "eventType": "نوع المناسبة",
+          "startAt": "تاريخ بداية الوردية",
+          "startAtRequired": "اختر تاريخ بداية.",
+          "startTime": "وقت بداية الوردية",
+          "endAt": "تاريخ نهاية الوردية",
+          "endTime": "وقت نهاية الوردية",
+          "conflictsLabel": "ورديات موجودة بالفعل في {date}:",
+          "allowPastDate": "هل تضيف حجزًا قديمًا؟ اسمح بالتواريخ السابقة",
+          "location": "الموقع",
+          "checkingConflicts": "جارٍ التحقّق من التعارضات…",
+          "repeatingSessions": "جلسات متكرّرة",
+          "repeatingHint": "أنشئ جلسة واحدة في اليوم نفسه لكل يوم ضمن نطاق تواريخ.",
+          "rangeStartDate": "تاريخ البداية",
+          "rangeEndDate": "تاريخ النهاية",
+          "rangeApply": "تطبيق",
+          "rangeCancel": "إلغاء",
+          "rangeAllFieldsRequired": "املأ الحقول الأربعة جميعها.",
+          "rangeEndBeforeStart": "يجب أن يكون تاريخ النهاية في تاريخ البداية أو بعده.",
+          "rangeEndTimeBeforeStart": "يجب أن يكون وقت النهاية بعد وقت البداية.",
+          "rangeTooLong": "النطاق طويل جدًا (366 يومًا كحد أقصى).",
+          "startTimeRequired": "وقت البداية مطلوب.",
+          "endTimeRequired": "وقت النهاية مطلوب.",
+          "endTimeBeforeStart": "يجب أن يكون وقت النهاية بعد وقت البداية.",
+          "locationRequired": "اختر موقعًا قبل المتابعة."
+        },
+        "pricing": {
+          "total": "الإجمالي",
+          "deposit": "العربون",
+          "currency": "العملة",
+          "hint": "التسعير بعملة مساحة العمل الافتراضية. يمكنك تغيير العملة لكل حجز."
+        },
+        "review": {
+          "intro": "تحقّق سريع — تأكّد من أن كل شيء صحيح قبل الحفظ."
+        },
+        "teamLabel": "الفريق",
+        "teamPlaceholder": "اختر فريقًا"
+      }
+    },
+    "sidebar": {
+      "dashboard": "لوحة التحكّم",
+      "bookings": "الحجوزات",
+      "clients": "العملاء",
+      "calendar": "التقويم",
+      "inquiries": "الاستفسارات",
+      "gallery": "المعرض",
+      "teams": "الفِرق",
+      "settings": "الإعدادات",
+      "account": "الحساب",
+      "logOut": "تسجيل الخروج",
+      "logOutConfirmTitle": "تسجيل الخروج؟",
+      "logOutConfirmBody": "ستحتاج إلى تسجيل الدخول مرة أخرى للعودة إلى مساحة عملك.",
+      "logOutConfirmCancel": "إلغاء",
+      "portfolio": "معرض الأعمال",
+      "accountMenu": "قائمة الحساب"
+    },
+    "theme": {
+      "label": "السمة",
+      "light": "فاتح",
+      "dark": "داكن",
+      "system": "النظام"
+    },
+    "settings": {
+      "title": "الإعدادات",
+      "description": "أدِر حسابك ومساحة عملك وتفضيلاتك.",
+      "navigationLabel": "تنقّل الإعدادات",
+      "selectPage": "اختر صفحة من الشريط الجانبي.",
+      "workspaceSwitcher": {
+        "switchWorkspace": "تبديل مساحة العمل",
+        "yourWorkspaces": "مساحات عملك",
+        "noWorkspace": "لا توجد مساحة عمل"
+      },
+      "account": {
+        "profileSection": "الملف الشخصي",
+        "profileHint": "اسمك وصورتك الرمزية كما تظهر لزملائك.",
+        "avatarHint": "ارفع صورة مربّعة بصيغة JPG أو PNG أو WebP، حتى 10 ميغابايت.",
+        "avatarUpload": "رفع",
+        "avatarReplace": "استبدال",
+        "avatarRemove": "إزالة",
+        "avatarUploading": "جارٍ الرفع…",
+        "avatarSaving": "جارٍ الحفظ…",
+        "avatarSaved": "تم تحديث الصورة",
+        "avatarRemoved": "تمت إزالة الصورة",
+        "avatarUploadError": "تعذّر رفع صورتك. يرجى المحاولة مرة أخرى.",
+        "avatarTypeError": "نوع الملف هذا غير مدعوم. يرجى اختيار صورة JPG أو PNG أو WebP.",
+        "avatarSizeError": "هذه الصورة كبيرة جدًا. يرجى اختيار صورة أقل من 10 ميغابايت.",
+        "nameSection": "الاسم المعروض",
+        "nameLabel": "الاسم الكامل",
+        "emailLabel": "عنوان البريد الإلكتروني",
+        "emailReadOnly": "تغيير البريد الإلكتروني غير مدعوم بعد. تواصل مع الدعم.",
+        "saving": "جارٍ الحفظ…",
+        "saveName": "حفظ الاسم",
+        "nameSaved": "تم تحديث الاسم.",
+        "passwordSection": "كلمة المرور",
+        "passwordHint": "غيّر كلمة المرور التي تستخدمها لتسجيل الدخول.",
+        "currentPasswordLabel": "كلمة المرور الحالية",
+        "newPasswordLabel": "كلمة المرور الجديدة",
+        "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة",
+        "newPasswordHint": "8 أحرف على الأقل",
+        "changePassword": "تغيير كلمة المرور",
+        "updatingPassword": "جارٍ التحديث…",
+        "passwordSaved": "تم تحديث كلمة المرور.",
+        "passwordMismatch": "كلمتا المرور غير متطابقتين.",
+        "passwordTooShort": "يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل.",
+        "passwordRequired": "أدخِل كلمة المرور الحالية.",
+        "showPassword": "إظهار كلمة المرور",
+        "hidePassword": "إخفاء كلمة المرور",
+        "setPasswordHint": "أنت تسجّل الدخول باستخدام Google. سنرسل إليك رابطًا آمنًا عبر البريد لتعيين أو إعادة تعيين كلمة مرور لتسجيل الدخول بالبريد الإلكتروني.",
+        "setPassword": "تعيين كلمة مرور",
+        "sendingSetPassword": "جارٍ الإرسال…",
+        "setPasswordSent": "تحقّق من بريدك الإلكتروني للحصول على رابط لتعيين كلمة المرور.",
+        "resetPassword": "إعادة تعيين كلمة المرور",
+        "avatarPreview": "عرض الصورة كاملةً",
+        "avatarPreviewTitle": "صورة الملف الشخصي"
+      },
+      "security": {
+        "mfaSection": "المصادقة الثنائية",
+        "mfaHint": "أضِف طبقة أمان ثانية لحسابك باستخدام تطبيق مصادقة.",
+        "mfaEnabledLabel": "تطبيق المصادقة",
+        "mfaNotEnabledLabel": "المصادقة الثنائية غير مفعَّلة.",
+        "enabled": "مفعَّلة",
+        "mfaSetup": "إعداد تطبيق المصادقة",
+        "mfaStarting": "جارٍ البدء…",
+        "mfaDisable": "تعطيل المصادقة الثنائية",
+        "mfaDisableAriaLabel": "تعطيل المصادقة الثنائية لحسابك",
+        "disabling": "جارٍ التعطيل…",
+        "mfaEnabled": "تم تفعيل المصادقة الثنائية.",
+        "mfaDisabled": "تم تعطيل المصادقة الثنائية.",
+        "mfaScanHeading": "امسح رمز QR هذا",
+        "mfaScanHint": "افتح تطبيق المصادقة وامسح الرمز أدناه. إذا تعذّر المسح، أدخِل المفتاح السرّي يدويًا.",
+        "mfaQrAlt": "رمز QR لإعداد تطبيق المصادقة",
+        "mfaSecretLabel": "المفتاح السرّي",
+        "mfaSecretHint": "احتفظ بهذا المفتاح في مكان آمن. ستحتاج إليه لاستعادة الوصول إذا فقدت جهازك.",
+        "mfaCodeLabel": "رمز التحقّق",
+        "verifyCode": "تحقّق وفعِّل",
+        "verifying": "جارٍ التحقّق…",
+        "cancel": "إلغاء",
+        "mfaRefresh": "تحديث الرمز",
+        "mfaExpiresIn": "تنتهي الصلاحية خلال {time}",
+        "mfaExpired": "انتهت صلاحية رمز الإعداد هذا. حدِّثه للحصول على رمز جديد."
+      },
+      "tabs": {
+        "account": "الحساب",
+        "customize": "التخصيص",
+        "workspace": "مساحة العمل",
+        "teams": "الفِرق",
+        "publicPage": "الصفحة العامة",
+        "billing": "الفوترة",
+        "devPlan": "المطوِّر · الخطة",
+        "currentWorkspace": "مساحة العمل الحالية"
+      },
+      "billing": {
+        "currentPlanLabel": "الخطة الحالية",
+        "renewsOn": "تتجدّد في {date}",
+        "availablePlans": "الخطط المتاحة",
+        "perMonth": "/ شهر",
+        "upgradeTo": "الترقية إلى {plan}",
+        "upgradeToAriaLabel": "الترقية إلى خطة {plan}",
+        "opening": "جارٍ الفتح…",
+        "upgradeSuccess": "تم تفعيل الاشتراك! تم تحديث خطتك.",
+        "checkoutFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
+        "paddleNotReady": "نظام الدفع غير جاهز. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "paddleTokenMissingDev": "المتغيّر NEXT_PUBLIC_PADDLE_CLIENT_TOKEN غير مضبوط — نافذة الدفع غير متاحة في بيئة التطوير هذه.",
+        "subscriptionIssue": "توجد مشكلة في اشتراكك. يرجى التحقّق من طريقة الدفع أو التواصل مع الدعم.",
+        "subscriptionStatus": {
+          "active": "نشط",
+          "canceled": "ملغى",
+          "past_due": "متأخّر السداد",
+          "paused": "موقوف مؤقتًا",
+          "trialing": "فترة تجريبية"
+        },
+        "manageSection": "إدارة الاشتراك",
+        "manageDescription": "تُدار اشتراكاتك عبر Paddle. لتحديث طريقة الدفع أو عرض الفواتير، يرجى التواصل مع الدعم.",
+        "cancelNote": "لإلغاء اشتراكك، تواصل مع الدعم أو احذف مساحة عملك."
+      },
+      "devPlan": {
+        "title": "مبدِّل خطة المطوِّر",
+        "description": "غيّر workspace.plan دون المرور بـ Paddle. محظور تمامًا في بيئة الإنتاج. استخدم تبويب الفوترة لإدارة الاشتراك الفعلي.",
+        "currentLabel": "الخطة الحالية",
+        "teamsSuffix": "فِرق",
+        "perTeamSuffix": "أعضاء/فريق",
+        "active": "نشط",
+        "switch": "تبديل",
+        "toasts": {
+          "switched": "تم التبديل إلى خطة {plan}."
+        }
+      },
+      "workspace": {
+        "businessSection": "تفاصيل العمل",
+        "businessSectionHint": "هوية عملك ومكان نشاطك.",
+        "save": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…",
+        "savedToast": "تم تحديث مساحة العمل.",
+        "currencyWarning": "ينطبق على الحجوزات الجديدة. تحتفظ المبالغ الموجودة بعملتها الأصلية."
+      },
+      "customize": {
+        "themeSection": "السمة",
+        "themeHint": "الوضع الفاتح أو الداكن — محفوظ على هذا الجهاز.",
+        "languageSection": "اللغة",
+        "languageHint": "تبدّل واجهة التطبيق. سيتحدّث الرابط ليطابقها.",
+        "languages": {
+          "en": "English",
+          "fil": "Filipino",
+          "ms": "Bahasa Melayu",
+          "id": "Bahasa Indonesia",
+          "ar": "العربية"
+        },
+        "timeFormatSection": "تنسيق الوقت",
+        "timeFormatHint": "اختر كيفية عرض الأوقات في التطبيق.",
+        "time24h": "24 ساعة",
+        "time12h": "12 ساعة"
+      },
+      "publicPage": {
+        "visibilitySection": "الظهور",
+        "visibilityHint": "تحكّم في إمكانية الوصول إلى صفحتك العامة.",
+        "publish": "نشر",
+        "unpublish": "إلغاء النشر",
+        "publishedAt": "نُشرت في {date}",
+        "unpublished": "غير منشورة",
+        "publicUrl": "رابطك العام",
+        "copy": "نسخ",
+        "copied": "تم النسخ",
+        "seoSection": "تحسين محركات البحث",
+        "seoSectionHint": "العنوان والوصف اللذان يظهران عند مشاركة صفحتك أو فهرستها.",
+        "seoTitle": "عنوان SEO",
+        "seoTitlePlaceholder": "تصوير سارة بِل — زفاف وبورتريه",
+        "seoDescription": "وصف SEO",
+        "seoDescriptionPlaceholder": "تصوير الأعراس والبورتريه في منطقة الخليج…",
+        "inquirySection": "توجيه الاستفسارات",
+        "inquirySectionHint": "المكان الذي تُحوَّل إليه عمليات الإرسال من نموذج الاستفسار.",
+        "inquiryRecipientEmail": "بريد المستلِم",
+        "inquiryRecipientEmailPlaceholder": "you@example.com",
+        "save": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…",
+        "savedToast": "تم تحديث إعدادات الصفحة العامة.",
+        "visibilityUpdatedToast": "تم تحديث الظهور.",
+        "siteIconSection": "أيقونة الموقع",
+        "siteIconHint": "تظهر كأيقونة تبويب المتصفّح لصفحات معرض أعمالك العامة. تعود إلى شعار رأس الصفحة إذا لم تُضبط.",
+        "siteIconLabel": "رفع أيقونة الموقع",
+        "siteIconUpload": "اختيار صورة",
+        "siteIconUploading": "جارٍ الرفع…",
+        "siteIconRequirements": "PNG أو JPEG أو WebP أو AVIF · 1 ميغابايت كحد أقصى · حتى 512 × 512 بكسل",
+        "siteIconRemove": "إزالة",
+        "siteIconErrors": {
+          "type": "تُقبل ملفات PNG أو JPEG أو WebP أو AVIF فقط.",
+          "size": "يجب ألا يتجاوز حجم الملف 1 ميغابايت.",
+          "dimensions": "يجب ألا تتجاوز أبعاد الصورة 512 × 512 بكسل.",
+          "image": "تعذّر قراءة الصورة. يرجى تجربة ملف آخر.",
+          "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
+        }
+      }
+    },
+    "teams": {
+      "title": "الفِرق",
+      "description": "اجمع زملاءك في فِرق. لكل فريق تقويمه الخاص. يرى الأعضاء حجوزات الفِرق التي ينتمون إليها فقط.",
+      "listEmpty": "ليس لديك أي فِرق بعد.",
+      "createButton": "إنشاء فريق",
+      "toolbar": {
+        "search": "بحث في الفِرق",
+        "searchLabel": "بحث في الفِرق بالاسم",
+        "showDeactivated": "إظهار المعطّلة"
+      },
+      "table": {
+        "empty": "لا توجد فِرق تطابق بحثك.",
+        "col": {
+          "color": "اللون",
+          "name": "الفريق",
+          "members": "الأعضاء",
+          "actions": "إجراءات"
+        },
+        "details": "التفاصيل"
+      },
+      "colorPicker": {
+        "presetsLabel": "الجاهزة",
+        "customLabel": "لون مخصّص",
+        "hexLabel": "ست عشري"
+      },
+      "createDialog": {
+        "title": "إنشاء فريق",
+        "description": "أعطِ الفريق اسمًا واختر لونًا لشارات تقويمه.",
+        "nameLabel": "اسم الفريق",
+        "namePlaceholder": "مثال: طاقم الأعراس",
+        "colorLabel": "اللون",
+        "submit": "إنشاء فريق",
+        "cancel": "إلغاء",
+        "creating": "جارٍ الإنشاء…"
+      },
+      "renameDialog": {
+        "title": "إعادة تسمية الفريق",
+        "submit": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "cancel": "إلغاء"
+      },
+      "deactivateDialog": {
+        "title": "تعطيل الفريق؟",
+        "description": "سيُخفى \"{name}\" من فِرقك النشطة ولن يتمكّن من تلقّي حجوزات جديدة. يُحتفظ بأعضائه وحجوزاته وسجله، ويمكنك إعادة تفعيله في أي وقت.",
+        "confirm": "تعطيل الفريق",
+        "deactivating": "جارٍ التعطيل…",
+        "cancel": "إلغاء"
+      },
+      "reactivateDialog": {
+        "title": "إعادة تفعيل الفريق؟",
+        "description": "سيصبح \"{name}\" نشطًا مرة أخرى ويمكنه تلقّي حجوزات جديدة. يُحتسب ذلك ضمن حد الفِرق النشطة في خطتك.",
+        "confirm": "إعادة تفعيل الفريق",
+        "reactivating": "جارٍ إعادة التفعيل…",
+        "cancel": "إلغاء"
+      },
+      "team": {
+        "memberCount": "{count, plural, =0 {لا أعضاء بعد} =1 {عضو واحد} zero {لا أعضاء} two {عضوان} few {# أعضاء} many {# عضوًا} other {# عضو}}",
+        "defaultBadge": "افتراضي",
+        "edit": "تعديل",
+        "rename": "إعادة تسمية",
+        "changeColor": "تغيير اللون",
+        "invite": "دعوة زميل",
+        "actionsLabel": "إجراءات لـ {name}",
+        "deactivate": "تعطيل",
+        "reactivate": "إعادة تفعيل",
+        "inactiveBadge": "غير نشط"
+      },
+      "editDialog": {
+        "title": "تعديل الفريق",
+        "submit": "حفظ التغييرات",
+        "saving": "جارٍ الحفظ…"
+      },
+      "drawer": {
+        "membersHeading": "الأعضاء",
+        "memberCount": "{count}/{max} عضو",
+        "noMembers": "لا يوجد أعضاء في هذا الفريق بعد.",
+        "addMemberLabel": "إضافة عضو موجود",
+        "addMemberPlaceholder": "اختر عضوًا…",
+        "noAssignableMembers": "الجميع في مساحة العمل هذه موجودون بالفعل في هذا الفريق.",
+        "pendingHeading": "الدعوات المعلّقة",
+        "noPending": "لا توجد دعوات معلّقة لهذا الفريق.",
+        "inviteToTeam": "دعوة إلى هذا الفريق",
+        "leadToggleLabel": "قائد",
+        "leadOnlyOnePerTeam": "يمكن أن يكون للفريق قائد واحد فقط.",
+        "removeFromTeam": "إزالة",
+        "teamFull": "هذا الفريق ممتلئ.",
+        "close": "إغلاق"
+      },
+      "upsell": {
+        "atCapTitle": "لقد وصلت إلى حد الفِرق",
+        "atCapBody": "تتيح خطتك {plan} عددًا من الفِرق يبلغ {max, plural, =1 {فريقًا واحدًا} other {{max} فريق}}. قم بالترقية لإضافة المزيد.",
+        "cta": "عرض الخطط",
+        "proAtCapBody": "خطة Pro محدودة بـ {max} فريق. تواصل مع الدعم إذا احتجت إلى المزيد."
+      },
+      "errors": {
+        "nameRequired": "اسم الفريق مطلوب.",
+        "nameTooLong": "يجب ألا يتجاوز اسم الفريق 40 حرفًا.",
+        "duplicateName": "يوجد فريق بهذا الاسم بالفعل في مساحة العمل هذه.",
+        "teamNotFound": "لم يُعثر على الفريق.",
+        "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "cannotDeactivateDefault": "لا يمكن تعطيل الفريق الافتراضي.",
+        "reactivateCapExceeded": "ستتجاوز إعادة التفعيل حد الفِرق النشطة في خطتك. عطِّل فريقًا آخر أو قم بترقية خطتك أولًا."
+      },
+      "toasts": {
+        "created": "تم إنشاء الفريق.",
+        "renamed": "تمت إعادة تسمية الفريق.",
+        "colorChanged": "تم تحديث اللون.",
+        "saved": "تم تحديث الفريق.",
+        "deactivated": "تم تعطيل الفريق.",
+        "reactivated": "تمت إعادة تفعيل الفريق."
+      },
+      "teamsHeading": "الفِرق",
+      "invite": {
+        "button": "دعوة عضو",
+        "dialog": {
+          "title": "دعوة زميل",
+          "description": "سيتلقّى دعوة عبر البريد الإلكتروني. بمجرد قبولها، سيظهر في قائمة أعضائك مُعيَّنًا إلى الفِرق التي تختارها.",
+          "emailLabel": "عنوان البريد الإلكتروني",
+          "emailPlaceholder": "teammate@example.com",
+          "teamsLabel": "أضِف إلى هذه الفِرق",
+          "leadLabel": "قائد",
+          "teamFull": "ممتلئ",
+          "submit": "إرسال الدعوة",
+          "sending": "جارٍ الإرسال…"
+        },
+        "errors": {
+          "emailRequired": "أدخِل عنوان بريد إلكتروني صالحًا.",
+          "pickAtLeastOneTeam": "اختر فريقًا واحدًا على الأقل لإضافته إليه.",
+          "teamFull": "هذه الفِرق ممتلئة ولا يمكنها قبول أعضاء جدد: {teams}.",
+          "teamAlreadyHasLead": "هذه الفِرق لديها قائد معيَّن بالفعل: {teams}.",
+          "teamNotFound": "لم يُعثر على أحد الفِرق المحدّدة.",
+          "alreadyInvitedOrMember": "هذا البريد الإلكتروني لديه دعوة بالفعل أو هو عضو في مساحة العمل بالفعل.",
+          "noTeamsExist": "أنشئ فريقًا أولًا قبل دعوة الأعضاء."
+        },
+        "toasts": {
+          "sent": "تم إرسال الدعوة.",
+          "revoked": "تم إلغاء الدعوة."
+        },
+        "revokeDialog": {
+          "title": "إلغاء الدعوة؟",
+          "description": "ستُلغى الدعوة الموجّهة إلى {email} وستُحرَّر المقاعد المحجوزة في الفريق.",
+          "confirm": "إلغاء الدعوة"
+        }
+      },
+      "members": {
+        "heading": "الأعضاء",
+        "empty": "لا يوجد زملاء بعد. ادعُ شخصًا للبدء.",
+        "ownerBadge": "المالك",
+        "leadBadge": "قائد",
+        "pendingBadge": "معلّق",
+        "manageTeams": "إدارة الفِرق",
+        "removeFromWorkspace": "إزالة من مساحة العمل",
+        "revokeInvite": "إلغاء الدعوة",
+        "rowActionsLabel": "إجراءات لـ {name}",
+        "removeDialog": {
+          "title": "إزالة العضو؟",
+          "description": "سيفقد {name} الوصول إلى مساحة العمل هذه فورًا. تبقى حجوزاته؛ وتُحرَّر مقاعد الفريق. لا يمكن التراجع عن هذا.",
+          "confirm": "إزالة العضو"
+        },
+        "errors": {
+          "cannotRemoveOwner": "لا يمكن إزالة مالك مساحة العمل."
+        },
+        "toasts": {
+          "removed": "تمت إزالة العضو."
+        }
+      },
+      "assignment": {
+        "dialog": {
+          "title": "إدارة تعيينات الفِرق",
+          "description": "أضِف {name} إلى الفِرق أو أزِله منها. بدِّل شارة القائد لمنحه صلاحيات التعديل داخل الفريق.",
+          "add": "إضافة",
+          "remove": "إزالة",
+          "done": "تم"
+        },
+        "errors": {
+          "alreadyOnTeam": "هذا العضو موجود في هذا الفريق بالفعل."
+        },
+        "toasts": {
+          "added": "تمت الإضافة إلى الفريق.",
+          "removed": "تمت الإزالة من الفريق.",
+          "promoted": "تمت الترقية إلى قائد.",
+          "demoted": "تم التخفيض إلى عضو."
+        }
+      },
+      "downgradeBlock": {
+        "title": "تم حظر التخفيض",
+        "description": "أنت على خطة {currentPlan} بعدد فِرق أكبر مما تسمح به خطة {targetPlan} ({maxTeams} كحد أقصى). احذف {excess} فريقًا قبل تغيير الخطط.",
+        "teamsHeading": "الفِرق الحالية",
+        "dismiss": "فهمت",
+        "manageTeams": "إدارة الفِرق"
+      }
+    },
+    "clients": {
+      "title": "العملاء",
+      "toolbar": {
+        "search": "ابحث بالاسم أو البريد الإلكتروني",
+        "searchLabel": "بحث في العملاء",
+        "sourceAll": "كل المصادر",
+        "tagsAll": "كل الوسوم",
+        "tagsSelected": "{count} {count, plural, zero {وسم} one {وسم} two {وسمان} few {وسوم} many {وسمًا} other {وسم}}",
+        "showInactive": "إظهار غير النشطين",
+        "add": "إضافة عميل"
+      },
+      "sourceValues": {
+        "form": "نموذج",
+        "manual": "يدوي",
+        "referral": "إحالة",
+        "import": "استيراد"
+      },
+      "table": {
+        "empty": "لا يوجد عملاء يطابقون عوامل التصفية.",
+        "col": {
+          "name": "الاسم",
+          "contact": "جهة الاتصال",
+          "source": "المصدر",
+          "totalSpent": "إجمالي الإنفاق",
+          "actions": "إجراءات"
+        },
+        "bookings": "{count} حجز",
+        "lastBooking": "الأخير: {date}",
+        "noBookings": "لا توجد حجوزات بعد",
+        "openMenu": "فتح إجراءات العميل",
+        "openClient": "فتح {name}",
+        "view": "عرض",
+        "edit": "تعديل",
+        "deactivate": "تعطيل",
+        "reactivate": "إعادة تفعيل"
+      },
+      "form": {
+        "addTitle": "إضافة عميل",
+        "editTitle": "تعديل العميل",
+        "name": "الاسم",
+        "namePlaceholder": "مثال: ماريا سانتوس",
+        "email": "البريد الإلكتروني",
+        "emailPlaceholder": "maria@example.com",
+        "phone": "الهاتف",
+        "phonePlaceholder": "+63 917 555 0142",
+        "source": "المصدر",
+        "tags": "الوسوم",
+        "tagsPlaceholder": "أضِف وسمًا واضغط Enter",
+        "removeTag": "إزالة الوسم {tag}",
+        "notes": "ملاحظات",
+        "notesPlaceholder": "أي ملاحظات عن هذا العميل…",
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…",
+        "cancel": "إلغاء",
+        "createSuccess": "تم إنشاء العميل.",
+        "updateSuccess": "تم تحديث العميل.",
+        "error": "حدث خطأ ما. حاول مرة أخرى."
+      },
+      "detail": {
+        "inactive": "غير نشط",
+        "tabs": {
+          "overview": "نظرة عامة",
+          "bookings": "الحجوزات",
+          "payments": "المدفوعات"
+        },
+        "overview": {
+          "totalSpent": "إجمالي الإنفاق",
+          "bookingsCount": "الحجوزات",
+          "lastBooking": "آخر حجز",
+          "never": "أبدًا",
+          "contact": "جهة الاتصال",
+          "noEmail": "—",
+          "noPhone": "—",
+          "source": "المصدر",
+          "tags": "الوسوم",
+          "noTags": "لا توجد وسوم",
+          "notes": "ملاحظات",
+          "noNotes": "لا توجد ملاحظات"
+        },
+        "bookings": {
+          "loading": "جارٍ تحميل الحجوزات…",
+          "empty": "لا توجد حجوزات بعد.",
+          "error": "فشل تحميل الحجوزات."
+        },
+        "payments": {
+          "empty": "لا توجد سجلات مدفوعات بعد."
+        },
+        "edit": "تعديل",
+        "deactivate": "تعطيل",
+        "reactivate": "إعادة تفعيل",
+        "close": "إغلاق"
+      },
+      "deactivate": {
+        "title": "تعطيل هذا العميل؟",
+        "body": "سيُخفى هذا العميل من القائمة النشطة. يمكنك إعادة تفعيله في أي وقت بتمكين 'إظهار غير النشطين' في قائمة العملاء.",
+        "cancel": "إلغاء",
+        "confirm": "تعطيل"
+      },
+      "unsaved": {
+        "title": "تجاهل تغييراتك؟",
+        "body": "لديك تغييرات غير محفوظة على هذا العميل. ستُفقد إذا أغلقت الآن.",
+        "keep": "متابعة التعديل",
+        "discard": "تجاهل وإغلاق"
+      },
+      "toasts": {
+        "reactivating": "جارٍ إعادة تفعيل العميل…",
+        "deactivating": "جارٍ تعطيل العميل…"
+      }
+    },
+    "inquiries": {
+      "title": "الاستفسارات",
+      "subtitle": "طلبات الحجز من معرض أعمالك العام.",
+      "toolbar": {
+        "from": "من",
+        "to": "إلى",
+        "clear": "مسح التواريخ",
+        "date": "التاريخ",
+        "apply": "تطبيق"
+      },
+      "tabs": {
+        "all": "الكل",
+        "inquiry": "استفسار",
+        "booked": "محجوز",
+        "archived": "مؤرشف"
+      },
+      "statusValues": {
+        "inquiry": "استفسار",
+        "archived": "مؤرشف",
+        "booked": "محجوز",
+        "converted": "محوَّل إلى حجز"
+      },
+      "eventTypes": {
+        "wedding": "زفاف",
+        "corporate": "شركات",
+        "portrait": "بورتريه",
+        "engagement": "خطوبة",
+        "anniversary": "ذكرى سنوية",
+        "other": "أخرى"
+      },
+      "preferred": {
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "either": "أيٌّ منهما"
+      },
+      "table": {
+        "empty": "لا توجد استفسارات بعد.",
+        "emptyHint": "عندما يرسل شخص ما نموذج التواصل في معرض أعمالك، يصل طلبه إلى هنا.",
+        "viewPublicPage": "عرض صفحتك العامة",
+        "open": "فتح استفسار من {name}",
+        "noDate": "لا يوجد تاريخ",
+        "directSource": "مباشر",
+        "col": {
+          "status": "الحالة",
+          "client": "العميل",
+          "eventDate": "تاريخ المناسبة",
+          "eventType": "النوع",
+          "submitted": "تاريخ الإرسال",
+          "source": "المصدر",
+          "eventTitle": "عنوان المناسبة",
+          "actions": "إجراءات"
+        },
+        "noTitle": "مناسبة بلا عنوان",
+        "conflict": "تعارض",
+        "actions": {
+          "view": "عرض",
+          "menuLabel": "فتح إجراءات الاستفسار"
+        }
+      },
+      "detail": {
+        "back": "العودة إلى الاستفسارات",
+        "conflictBanner": "تتعارض جلسة واحدة أو أكثر مع حجوزات موجودة.",
+        "submittedOn": "أُرسل في {date}",
+        "notFound": "لم يُعثر على الاستفسار.",
+        "clientInfo": {
+          "title": "معلومات العميل",
+          "name": "الاسم",
+          "email": "البريد الإلكتروني",
+          "phone": "الهاتف",
+          "preferredContact": "وسيلة التواصل المفضّلة",
+          "none": "—",
+          "editPhone": "تعديل",
+          "savePhone": "حفظ",
+          "cancelEdit": "إلغاء",
+          "savedToast": "تم تحديث الهاتف."
+        },
+        "eventRequest": {
+          "title": "طلب المناسبة",
+          "eventType": "نوع المناسبة",
+          "guestCount": "الضيوف",
+          "location": "الموقع",
+          "sessions": "التواريخ المطلوبة",
+          "message": "الرسالة",
+          "none": "—"
+        },
+        "bookingDraft": {
+          "title": "مسوّدة الحجز",
+          "description": "تحويل هذا يُنشئ حجزًا في تقويمك. حدِّد سعرك الآن أو لاحقًا.",
+          "total": "الإجمالي",
+          "deposit": "العربون",
+          "notes": "ملاحظات داخلية",
+          "notesPlaceholder": "ملاحظات تراها أنت فقط…",
+          "save": "حفظ التعديلات",
+          "saving": "جارٍ الحفظ…",
+          "approve": "تحويل إلى حجز",
+          "approving": "جارٍ التحويل…",
+          "approved": "تم التحويل",
+          "missing": "لا توجد مسوّدة حجز مرتبطة بهذا الاستفسار.",
+          "alreadyConverted": "تمت الموافقة على هذا الاستفسار.",
+          "viewBooking": "عرض الحجز",
+          "approveError": "تعذّر التحويل. يرجى المحاولة مرة أخرى.",
+          "saveError": "تعذّر الحفظ. يرجى المحاولة مرة أخرى.",
+          "savedToast": "تم حفظ المسوّدة.",
+          "ownerOnly": "يمكن لمالك مساحة العمل فقط تحويل الحجوزات.",
+          "conflictBlocks": "حُلّ تعارض الجدول أعلاه قبل التحويل.",
+          "team": "الفريق"
+        },
+        "actions": {
+          "decline": "رفض وإشعار",
+          "declinedToast": "تم رفض الاستفسار — تم إشعار العميل.",
+          "archive": "أرشفة",
+          "working": "جارٍ الحفظ…",
+          "archivedToast": "تمت أرشفة الاستفسار.",
+          "approvedToast": "تم التحويل إلى حجز.",
+          "errorToast": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+        },
+        "history": {
+          "title": "السجل",
+          "submitted": "تم إرسال الاستفسار",
+          "booked": "تمت الموافقة على الحجز"
+        },
+        "sessionsEditor": {
+          "edit": "تعديل الجلسات",
+          "save": "حفظ التغييرات",
+          "saving": "جارٍ الحفظ…",
+          "discard": "تجاهل",
+          "conflictBlocks": "تتعارض جلسة واحدة أو أكثر مع حجوزات موجودة.",
+          "pastDate": "يجب أن تكون الجلسات في المستقبل.",
+          "lockedConverted": "الجلسات مقفلة بعد التحويل.",
+          "lockedArchived": "الجلسات مقفلة (مؤرشفة).",
+          "phoneLabel": "الهاتف",
+          "emailReadonly": "البريد الإلكتروني (للقراءة فقط)",
+          "sessionLabel": "الجلسة {n}",
+          "conflictInline": "تعارض",
+          "dateLabel": "التاريخ",
+          "startLabel": "وقت البداية",
+          "endLabel": "وقت النهاية",
+          "alterOnlyError": "لا يمكن تغيير عدد الجلسات.",
+          "savedToast": "تم حفظ الجلسات.",
+          "saveError": "تعذّر حفظ الجلسات. يرجى المحاولة مرة أخرى."
+        }
+      },
+      "view": {
+        "table": "جدول",
+        "calendar": "تقويم"
+      },
+      "calendar": {
+        "empty": "لا توجد استفسارات أو حجوزات لعرضها.",
+        "filters": {
+          "inquiry": "استفسار",
+          "booked": "محجوز",
+          "conflicted": "متعارض"
+        },
+        "rescheduleConflict": "يتعارض هذا الوقت مع حجز موجود؛ أُلغي النقل.",
+        "rescheduleFailed": "تعذّرت إعادة الجدولة — يرجى المحاولة مرة أخرى",
+        "updating": "جارٍ إعادة الجدولة…",
+        "updated": "تمت إعادة جدولة الجلسة"
+      }
+    },
+    "pageBuilder": {
+      "title": "منشئ الصفحات",
+      "editorComingSoon": "يصل المحرّر الكامل في التحديث القادم. معرض أعمالك جاهز ومُعدّ.",
+      "ownerOnly": "يمكن لمالك مساحة العمل فقط تعديل معرض الأعمال.",
+      "openPublicPage": "عرض الصفحة العامة",
+      "editPlaceholderHint": "يمكنك إعادة تشغيل الإعداد في أي وقت للبدء من قالب جديد.",
+      "rerunWizard": "إعادة تشغيل الإعداد",
+      "brandKit": {
+        "themePreset": "السمة",
+        "presets": {
+          "minimal": "بسيط",
+          "editorial": "تحريري",
+          "luxury": "فاخر",
+          "bold": "جريء",
+          "romantic": "رومانسي",
+          "modern": "عصري"
+        },
+        "fontPair": "الخطوط",
+        "colors": "الألوان",
+        "colorLabels": {
+          "primaryColor": "أساسي",
+          "secondaryColor": "ثانوي",
+          "accentColor": "مميِّز",
+          "backgroundColor": "الخلفية",
+          "foregroundColor": "النص"
+        },
+        "themes": "السمات",
+        "searchPlaceholder": "بحث في السمات",
+        "noThemesMatch": "لا توجد سمات تطابق بحثك.",
+        "prevPage": "السمات السابقة",
+        "nextPage": "المزيد من السمات",
+        "pageIndicator": "{current} / {total}",
+        "applyTheme": "تطبيق السمة: {name}",
+        "deleteTheme": "حذف السمة: {name}",
+        "saveCurrentAsTheme": "حفظ الحالية كسمة",
+        "themeNamePlaceholder": "اسم السمة",
+        "saveAction": "حفظ",
+        "enterThemeName": "أدخِل اسمًا لهذه السمة.",
+        "nameTooLong": "يجب ألا يتجاوز اسم السمة 60 حرفًا.",
+        "saveThemeError": "تعذّر حفظ السمة. يرجى المحاولة مرة أخرى.",
+        "themeLimitReached": "لقد وصلت إلى الحد الأقصى البالغ {max} سمة محفوظة.",
+        "currentTheme": "السمة الحالية",
+        "editTheme": "تعديل السمة: {name}",
+        "editThemeName": "اسم السمة",
+        "overrideCurrentTitle": "استبدال سمتك الحالية؟",
+        "overrideCurrentBody": "البناء على \"{name}\" سيستبدل سمتك الحالية غير المحفوظة.",
+        "continueAction": "متابعة",
+        "cancelAction": "إلغاء",
+        "unsavedChangesTitle": "لديك تغييرات غير محفوظة",
+        "unsavedChangesBody": "احفظ تغييراتك قبل الإغلاق، أو تجاهلها.",
+        "discardAction": "تجاهل",
+        "saveAndCloseAction": "حفظ وإغلاق",
+        "themeNameExists": "توجد سمة بهذا الاسم بالفعل.",
+        "applyAction": "تطبيق",
+        "saveThemeName": "حفظ السمة",
+        "cancelThemeEdit": "إلغاء تعديل السمة",
+        "addNewTheme": "إضافة سمة جديدة",
+        "addNewGuardTitle": "الحفظ قبل البدء من جديد؟",
+        "addNewGuardBody": "لديك تغييرات غير محفوظة. احفظ سمتك الحالية أولًا، أو تجاهلها للبدء من جديد.",
+        "addNewGuardNameLabel": "اسم السمة"
+      },
+      "editor": {
+        "zone": {
+          "home": "الرئيسية",
+          "gallery": "المعرض",
+          "contact": "نموذج التواصل",
+          "groupLabel": "قسم الصفحة",
+          "sectionsLabel": "أقسام معرض الأعمال"
+        },
+        "save": {
+          "saving": "جارٍ الحفظ…",
+          "saved": "تم الحفظ",
+          "idle": "تم حفظ كل التغييرات"
+        },
+        "publish": "نشر",
+        "publishing": "جارٍ النشر…",
+        "theme": "السمة",
+        "contact": "التواصل",
+        "publishedToast": "تم النشر! معرض أعمالك أصبح مباشرًا.",
+        "savedToast": "تم الحفظ.",
+        "errorToast": "تعذّر الحفظ. يرجى المحاولة مرة أخرى.",
+        "done": "تم",
+        "publishDialog": {
+          "title": "نشر معرض أعمالك؟",
+          "body": "سيرى أي شخص لديه الرابط أحدث تغييراتك فورًا.",
+          "confirm": "انشر الآن",
+          "cancel": "إلغاء",
+          "liveAt": "مباشر على {url}",
+          "copyLink": "نسخ الرابط",
+          "copied": "تم النسخ"
+        },
+        "themeDialog": {
+          "title": "السمة والعلامة التجارية"
+        },
+        "contactDialog": {
+          "title": "نموذج التواصل",
+          "formFixedNote": "حقول النموذج ثابتة. يمكنك تعديل العنوان والرسالة والزر فقط.",
+          "tabs": {
+            "setup": "الإعداد",
+            "design": "التصميم"
+          },
+          "titleLabel": "العنوان",
+          "titlePlaceholder": "لنعمل معًا",
+          "descriptionLabel": "الرسالة",
+          "descriptionPlaceholder": "أخبر الزوار بما يمكن توقّعه عند التواصل معك.",
+          "buttonStyleLabel": "نمط الزر",
+          "buttonColorLabel": "لون الزر",
+          "bgColorLabel": "لون الخلفية",
+          "textColorLabel": "لون النص",
+          "cornerRadiusLabel": "استدارة الزوايا",
+          "borderWidthLabel": "عرض الحدود",
+          "borderColorLabel": "لون الحدود",
+          "sectionPopup": "النافذة المنبثقة",
+          "sectionButton": "الزر",
+          "submitButtonSection": "زر الإرسال",
+          "addSessionButtonSection": "زر إضافة تواريخ",
+          "buttonStyles": {
+            "solid": "صلب",
+            "outline": "محدّد",
+            "soft": "ناعم"
+          },
+          "buttonColors": {
+            "primary": "أساسي",
+            "secondary": "ثانوي",
+            "accent": "مميِّز",
+            "background": "الخلفية",
+            "foreground": "النص"
+          },
+          "radius": {
+            "sharp": "حاد",
+            "subtle": "خفيف",
+            "rounded": "مستدير"
+          },
+          "close": "إغلاق",
+          "popupStyleLabel": "نمط النافذة المنبثقة",
+          "save": "حفظ",
+          "saving": "جارٍ الحفظ…",
+          "languageLabel": "لغة الصفحة العامة",
+          "languageHelp": "لغة نموذج الاستفسار والتنقّل والتذييل في صفحتك العامة.",
+          "languages": {
+            "auto": "تلقائي (حسب بلدك)",
+            "en": "English",
+            "fil": "Filipino",
+            "ms": "Bahasa Melayu",
+            "id": "Bahasa Indonesia",
+            "ar": "العربية"
+          },
+          "errorColorLabel": "لون رسالة الخطأ",
+          "sectionTabs": "علامات التبويب",
+          "inactiveTabsSection": "علامات التبويب غير النشطة",
+          "activeTabSection": "علامة التبويب النشطة",
+          "tabFontSizeLabel": "حجم علامة التبويب",
+          "tabFontSize": {
+            "sm": "ص",
+            "md": "م",
+            "lg": "ك"
+          },
+          "tabColorLabel": "لون نص علامة التبويب",
+          "activeTabColorLabel": "لون نص علامة التبويب النشطة",
+          "activeTabStyleLabel": "النمط",
+          "activeTabStyleScale": "تكبير",
+          "activeTabStyleHighlight": "تمييز",
+          "activeTabStyleUnderline": "تسطير",
+          "tabHighlightColorLabel": "لون التمييز",
+          "tabHighlightOpacityLabel": "شفافية التمييز",
+          "tabUnderlineColorLabel": "لون التسطير"
+        },
+        "headerDialog": {
+          "title": "التنقّل",
+          "close": "إغلاق",
+          "save": "حفظ",
+          "saving": "جارٍ الحفظ…",
+          "tabs": {
+            "setup": "الإعداد",
+            "design": "التصميم"
+          },
+          "brandTextLabel": "العنوان",
+          "brandTextHelp": "يظهر بجوار شعارك في شريط التنقّل. اتركه فارغًا لإظهار الشعار فقط.",
+          "logoLabel": "الشعار",
+          "logoHelp": "ارفع شعار عملك ليظهر بجوار اسمك في رأس الصفحة.",
+          "logoUpload": "رفع الشعار",
+          "logoUploading": "جارٍ الرفع…",
+          "logoRemove": "إزالة الشعار",
+          "logoRequirements": "PNG أو JPEG أو WEBP · 250 كيلوبايت كحد أقصى · حتى 512×256",
+          "logoErrors": {
+            "type": "يجب أن يكون الشعار صورة PNG أو JPEG أو WEBP. صيغة SVG غير مدعومة.",
+            "size": "يجب ألا يتجاوز حجم الشعار 250 كيلوبايت.",
+            "dimensions": "يجب ألا تتجاوز أبعاد الشعار 512 × 256 بكسل.",
+            "image": "تعذّرت قراءة صورة الشعار هذه.",
+            "upload": "فشل رفع الشعار. يرجى المحاولة مرة أخرى."
+          },
+          "sectionBanner": "اللافتة",
+          "sectionLinks": "الروابط",
+          "sectionActiveStyle": "نمط الرابط النشط",
+          "sectionContactButton": "زر التواصل",
+          "bgColorLabel": "لون الخلفية",
+          "bgOpacityLabel": "شفافية الخلفية",
+          "linkColorLabel": "لون نص الرابط",
+          "brandTextColorLabel": "لون العنوان",
+          "activeLinkColorLabel": "لون نص الرابط النشط",
+          "borderBottomLabel": "الحد السفلي",
+          "borderColorLabel": "لون الحدود",
+          "shadowLabel": "الظل المسقط",
+          "navbarSizeLabel": "حجم شريط التنقّل",
+          "fontSizeLabel": "حجم الرابط",
+          "activeStyleLabel": "النمط",
+          "activeStyleScale": "تكبير",
+          "activeStyleHighlight": "تمييز",
+          "activeStyleUnderline": "تسطير",
+          "highlightColorLabel": "لون التمييز",
+          "highlightOpacityLabel": "شفافية التمييز",
+          "cornerRadiusLabel": "استدارة الزوايا",
+          "underlineColorLabel": "لون التسطير",
+          "contactButtonColorLabel": "لون الزر",
+          "contactButtonOpacityLabel": "شفافية الزر",
+          "contactButtonTextColorLabel": "لون نص الزر",
+          "radius": {
+            "sharp": "حاد",
+            "subtle": "خفيف",
+            "rounded": "مستدير"
+          },
+          "shadow": {
+            "none": "بلا",
+            "sm": "صغير",
+            "md": "متوسط",
+            "lg": "كبير"
+          },
+          "navbarSize": {
+            "sleek": "أنيق",
+            "balanced": "متوازن",
+            "flashy": "لافت"
+          },
+          "fontSize": {
+            "sm": "ص",
+            "md": "م",
+            "lg": "ك"
+          }
+        },
+        "contactPreview": {
+          "title": "لنعمل معًا",
+          "description": "أخبرنا عن مناسبتك.",
+          "submit": "إرسال الاستفسار"
+        },
+        "mobileBanner": {
+          "title": "يعمل المحرّر بأفضل صورة على شاشة أكبر",
+          "body": "التعديل بالسحب والإفلات مصمَّم للأجهزة اللوحية وأجهزة سطح المكتب.",
+          "openPreview": "فتح المعاينة",
+          "continue": "المتابعة على أي حال"
+        },
+        "contactSettings": "تعديل إعدادات التواصل",
+        "contactSettingsShort": "نموذج التواصل",
+        "headerSettings": "التنقّل",
+        "preview": {
+          "show": "معاينة",
+          "edit": "تعديل",
+          "title": "معاينة مباشرة",
+          "empty": "لا يوجد شيء للمعاينة بعد. أضِف بعض الأقسام، ثم عُد.",
+          "openInTab": "فتح في تبويب جديد"
+        },
+        "photos": "الصور",
+        "templates": "القوالب",
+        "guide": "الدليل",
+        "templateSwitchedToast": "تم تطبيق القالب."
+      },
+      "wizard": {
+        "title": "لنبنِ معرض أعمالك",
+        "subtitle": "بضع خطوات سريعة وستحصل على صفحة مباشرة.",
+        "skip": "تخطّي الإعداد",
+        "back": "رجوع",
+        "next": "متابعة",
+        "launch": "تشغيل المحرّر",
+        "launching": "جارٍ الإعداد…",
+        "stepOf": "الخطوة {current} من {total}",
+        "overwrite": {
+          "title": "لديك معرض أعمال بالفعل",
+          "body": "إعادة تشغيل الإعداد تستبدل صفحاتك الحالية. تُؤرشف محتوياتك الموجودة لتتمكّن من استعادتها.",
+          "continue": "المتابعة على أي حال",
+          "cancel": "إلغاء"
+        },
+        "steps": {
+          "template": "القالب",
+          "branding": "العلامة التجارية",
+          "theme": "السمة",
+          "images": "الصور",
+          "review": "المراجعة"
+        },
+        "template": {
+          "title": "اختر نقطة بداية",
+          "subtitle": "يمكنك تغيير كل شيء لاحقًا."
+        },
+        "branding": {
+          "title": "أكِّد علامتك التجارية",
+          "subtitle": "مأخوذة من مساحة عملك — عدِّل أي شيء.",
+          "tagline": "العبارة التعريفية",
+          "taglinePlaceholder": "سطر قصير يلخّصك",
+          "description": "نبذة",
+          "descriptionPlaceholder": "جملة أو جملتان عن عملك"
+        },
+        "theme": {
+          "title": "اختر مظهرك",
+          "subtitle": "السمة والخطوط والألوان لصفحتك العامة."
+        },
+        "images": {
+          "title": "أضِف بضع صور",
+          "subtitle": "اسحب بضع صور لمعرضك — أو تخطَّ وأضِفها في أي وقت.",
+          "upload": "رفع الصور",
+          "uploading": "جارٍ الرفع…",
+          "remove": "إزالة الصورة",
+          "empty": "لا توجد صور بعد.",
+          "error": "فشل رفع بعض الصور. يرجى المحاولة مرة أخرى.",
+          "count": "{count} {count, plural, zero {صورة} one {صورة} two {صورتان} few {صور} many {صورة} other {صورة}}",
+          "dropZone": "اسحب الصور هنا أو انقر للاختيار",
+          "dropZoneActive": "أفلِت للرفع",
+          "spec": "JPEG أو PNG أو WebP أو AVIF · 10 ميغابايت كحد أقصى · 600 بكسل على الأقل للجانب الأقصر",
+          "optional": "يمكنك تخطّي هذه الخطوة ورفع الصور لاحقًا.",
+          "errorType": "تُقبل صور JPEG وPNG وWebP وAVIF فقط.",
+          "errorSize": "يجب أن تكون كل صورة أقل من 10 ميغابايت.",
+          "errorDim": "يجب أن تكون كل صورة 600 بكسل على الأقل في جانبها الأقصر (مثال: 600×800 أو 800×600)."
+        },
+        "review": {
+          "title": "المراجعة والتشغيل",
+          "subtitle": "هذا ما سنعدّه.",
+          "template": "القالب",
+          "theme": "السمة",
+          "images": "الصور",
+          "homeBlocks": "{count} قسم رئيسي",
+          "galleryBlocks": "{count} قسم معرض"
+        },
+        "toasts": {
+          "saved": "معرض أعمالك جاهز!",
+          "error": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+        }
+      }
+    },
+    "notifications": {
+      "bell": "الإشعارات",
+      "popoverTitle": "أحدث الإشعارات",
+      "markAllRead": "تعليم الكل كمقروء",
+      "seeAll": "عرض كل الإشعارات",
+      "empty": "أنت على اطّلاع بكل شيء",
+      "pageTitle": "الإشعارات",
+      "loadMore": "تحميل المزيد",
+      "types": {
+        "inquiry": {
+          "created": {
+            "title": "تم استلام استفسار جديد",
+            "body": "لديك استفسار جديد من {clientName}."
+          }
+        },
+        "booking": {
+          "team_assigned": {
+            "title": "تم تعيين حجز جديد لفريقك",
+            "body": "عيّن {assignerName} حجزًا لفريقك."
+          },
+          "status_changed": {
+            "title": "{newStatus, select, cancelled {تم إلغاء الحجز} completed {تم إكمال الحجز} booked {تم تأكيد الحجز} other {تم تحديث حالة الحجز}}",
+            "body": "{newStatus, select, cancelled {ألغى {actorName} حجزًا.} completed {وضع {actorName} علامة مكتمل على حجز.} booked {أكّد {actorName} حجزًا.} other {غيّر {actorName} حالة حجز إلى {newStatus}.}}"
+          }
+        },
+        "team": {
+          "invitation": {
+            "title": "تمت دعوتك إلى فريق",
+            "body": "دعاك {inviterName} للانضمام إلى {teamName}."
+          },
+          "removed": {
+            "title": "تمت إزالتك من الفريق",
+            "body": "تمت إزالتك من {teamName}."
+          },
+          "deleted": {
+            "title": "تم حل الفريق",
+            "body": "تم حذف {teamName}."
+          }
+        }
+      }
+    }
+  },
+  "common": {
+    "pagination": {
+      "showing": "عرض {from}–{to} من {total}",
+      "rowsPerPage": "لكل صفحة",
+      "previous": "السابق",
+      "next": "التالي"
+    },
+    "clearFilters": "مسح عوامل التصفية"
+  },
+  "onboarding": {
+    "shell": {
+      "stepCounter": "الخطوة {current} من {total}",
+      "previous": "السابق",
+      "continue": "متابعة",
+      "saving": "جارٍ الحفظ…"
+    },
+    "steps": {
+      "business": "العمل",
+      "plan": "الخطة",
+      "done": "إنهاء"
+    },
+    "business": {
+      "title": "أخبرنا عن عملك",
+      "description": "اسمك، وأساسيات عملك، ومكان نشاطك.",
+      "firstName": "الاسم الأول",
+      "firstNamePlaceholder": "سارة",
+      "lastName": "اسم العائلة",
+      "lastNamePlaceholder": "بِل",
+      "optional": "اختياري",
+      "businessName": "اسم العمل",
+      "businessNamePlaceholder": "مثال: تصوير سارة بِل",
+      "workspaceUrl": "رابط مساحة العمل",
+      "workspaceUrlNote": "(عنوان صفحتك العامة)",
+      "slugPlaceholder": "sarah-bell-photo",
+      "businessType": "نوع العمل",
+      "country": "الدولة",
+      "currency": "العملة",
+      "currencyHelp": "تُستخدم للحجوزات والمعاملات والإجماليات الجديدة المعروضة في مساحة عملك.",
+      "timezone": "المنطقة الزمنية",
+      "businessTypes": {
+        "photographer": "مصوّر",
+        "venue": "قاعة مناسبات",
+        "planner": "منظِّم أعراس / مناسبات",
+        "stylist": "منسِّق",
+        "catering": "تموين",
+        "entertainer": "فنان / دي جي / فرقة",
+        "other": "أخرى"
+      },
+      "slugChecking": "جارٍ التحقّق…",
+      "slugAvailable": "متاح",
+      "slugTaken": "محجوز بالفعل",
+      "slugInvalid": "تنسيق غير صالح"
+    },
+    "plan": {
+      "title": "اختر الخطة المناسبة",
+      "description": "يمكنك تغيير الخطط أو الإلغاء في أي وقت من إعدادات مساحة عملك.",
+      "popular": "الأكثر رواجًا",
+      "cadence": {
+        "forever": "للأبد",
+        "monthly": "/ شهر"
+      },
+      "checkoutNote": "ستُفتح نافذة دفع آمنة من Paddle. أدخِل بيانات بطاقتك (Visa أو Mastercard). تُحصَّل الدورة الأولى فورًا وتتجدّد شهريًا حتى تلغي.",
+      "ctaFree": "المتابعة بالخطة المجانية",
+      "ctaPaid": "اشترك — {price} / شهر",
+      "settingUp": "جارٍ الإعداد…",
+      "opening": "جارٍ فتح الدفع…",
+      "checkoutFailed": "فشل الدفع. يرجى المحاولة مرة أخرى.",
+      "paddleNotReady": "نظام الدفع غير جاهز. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+      "paddleTokenMissingDev": "المتغيّر NEXT_PUBLIC_PADDLE_CLIENT_TOKEN غير مضبوط — نافذة الدفع غير متاحة في بيئة التطوير هذه. استخدم اختصار المطوِّر أدناه.",
+      "dev": {
+        "label": "اختصار المطوِّر",
+        "description": "تجاوَز Paddle وضع علامة نشط على {planName}. للمطوِّر فقط.",
+        "activate": "تفعيل {planName} (مطوِّر)"
+      }
+    },
+    "done": {
+      "title": "كل شيء جاهز، {workspaceName}.",
+      "description": "خطتك {planLabel} نشطة. أمر أخير قبل أن ننقلك إلى لوحة التحكّم.",
+      "seedToggle": {
+        "label": "ابدأ ببيانات تجريبية",
+        "description": "سنضيف 5 عملاء تجريبيين و3 حجوزات تجريبية واستفسارًا تجريبيًا واحدًا لتتمكّن من استكشاف التطبيق. كل شيء موسوم كتجريبي لتتمكّن من حذفه بنقرة واحدة."
+      },
+      "settingUp": "جارٍ إعداد لوحة التحكّم…",
+      "goToDashboard": "الانتقال إلى لوحة التحكّم"
+    }
+  },
+  "plans": {
+    "free": {
+      "name": "مجاني",
+      "description": "ابدأ مجانًا",
+      "tagline": "جرّب المنتج، دون الحاجة إلى بطاقة.",
+      "features": {
+        "workspace": "مساحة عمل واحدة",
+        "bookings": "حتى 10 حجوزات",
+        "storage": "1 غيغابايت لتخزين الصور",
+        "publicPage": "صفحة هبوط عامة"
+      }
+    },
+    "starter": {
+      "name": "المبتدئة",
+      "description": "للمالكين المنفردين في بدايتهم.",
+      "tagline": "للمالكين المنفردين في بدايتهم.",
+      "features": {
+        "unlimitedBookings": "حجوزات غير محدودة",
+        "storage": "5 غيغابايت لتخزين الصور",
+        "brandedForm": "نموذج استفسار بعلامتك التجارية",
+        "acceptPayments": "اقبل GCash وMaya والبطاقات من العملاء"
+      }
+    },
+    "pro": {
+      "name": "الاحترافية",
+      "description": "فواتير + إزالة العلامة التجارية.",
+      "tagline": "فواتير + إزالة العلامة التجارية.",
+      "features": {
+        "everythingStarter": "كل ما في المبتدئة",
+        "storage": "50 غيغابايت للتخزين",
+        "invoicePdfs": "فواتير بصيغة PDF",
+        "removeBranding": "إزالة علامة Gallurio التجارية"
+      }
+    }
+  },
+  "publicPage": {
+    "chrome": {
+      "comingSoon": "قريبًا",
+      "poweredBy": "مشغَّل بواسطة Gallurio",
+      "notFoundEyebrow": "Gallurio",
+      "notFoundTitle": "لم يُعثر على معرض الأعمال",
+      "notFoundBody": "معرض الأعمال هذا غير موجود أو لم يُنشر بعد.",
+      "startingFrom": "ابتداءً من {price}",
+      "socialLinkConfirm": "أنت على وشك زيارة موقع خارجي: {url}. هل تريد المتابعة؟",
+      "gallery": {
+        "empty": "لا توجد صور في هذه المجموعة بعد.",
+        "noCollection": "لم تُحدَّد أي مجموعة.",
+        "unavailable": "المعرض غير متاح.",
+        "error": "المعرض غير متاح مؤقتًا.",
+        "featuredEmpty": "لم تُحدَّد صور مميَّزة بعد.",
+        "carouselHint": "اسحب أو استخدم الأسهم للتصفّح",
+        "carouselPrev": "الصورة السابقة",
+        "carouselNext": "الصورة التالية"
+      }
+    },
+    "nav": {
+      "home": "الرئيسية",
+      "gallery": "المعرض",
+      "contact": "تواصل",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة",
+      "navLandmark": "معرض الأعمال"
+    },
+    "inquiryForm": {
+      "title": "تواصل معنا",
+      "description": "أخبرنا عن مناسبتك وسنتواصل معك قريبًا.",
+      "close": "إغلاق",
+      "confirmTitle": "شكرًا — سنتواصل معك!",
+      "confirmBody": "تم إرسال استفسارك. سنتواصل معك قريبًا عبر وسيلة التواصل المفضّلة لديك.",
+      "confirmClose": "تم",
+      "tabClient": "بياناتك",
+      "tabEvent": "تفاصيل المناسبة",
+      "tabLocation": "الموقع والملاحظات",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف (اختياري)",
+      "preferredContact": "وسيلة التواصل المفضّلة",
+      "preferred": {
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "either": "أيٌّ منهما"
+      },
+      "sessionsLabel": "تواريخ المناسبة",
+      "sessionLabel": "اليوم {n}",
+      "startDate": "التاريخ",
+      "startTime": "وقت البداية",
+      "endTime": "وقت النهاية",
+      "addSession": "إضافة يوم آخر",
+      "removeSession": "إزالة",
+      "shiftHint": "كل يوم هو وردية واحدة — حدِّد وقت بدايتها ونهايتها. أضِف يومًا للمناسبات متعددة الأيام.",
+      "eventType": "نوع المناسبة",
+      "eventTypes": {
+        "wedding": "زفاف",
+        "corporate": "شركات",
+        "portrait": "بورتريه",
+        "engagement": "خطوبة",
+        "anniversary": "ذكرى سنوية",
+        "other": "أخرى"
+      },
+      "location": "الموقع",
+      "locationRequired": "يرجى اختيار موقع قبل الإرسال.",
+      "message": "أخبرنا المزيد",
+      "messagePlaceholder": "شارك تفاصيل عن مناسبتك…",
+      "submit": "إرسال الاستفسار",
+      "submitting": "جارٍ الإرسال…",
+      "errorGeneric": "تعذّر الإرسال — يرجى المحاولة لاحقًا.",
+      "requiredHint": "مطلوب",
+      "eventTitle": "عنوان المناسبة",
+      "continue": "متابعة"
+    }
+  },
+  "notFound": {
+    "title": "لم يُعثر على الصفحة",
+    "description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    "backToDashboard": "العودة إلى لوحة التحكّم"
+  },
+  "inviteAccept": {
+    "pageTitle": "قبول الدعوة",
+    "signIn": "تسجيل الدخول",
+    "goToDashboard": "الانتقال إلى لوحة التحكّم",
+    "errors": {
+      "invalid": {
+        "title": "لم يُعثر على رابط الدعوة",
+        "description": "رابط الدعوة هذا غير صالح أو سبق استخدامه. اطلب من مالك مساحة العمل إرسال رابط جديد."
+      },
+      "expired": {
+        "title": "انتهت صلاحية رابط الدعوة",
+        "description": "انتهت صلاحية رابط الدعوة هذا. اطلب من مالك مساحة العمل إرسال دعوة جديدة."
+      },
+      "already_accepted": {
+        "title": "عضو بالفعل",
+        "description": "لقد قبلت هذه الدعوة بالفعل وانضممت إلى مساحة العمل."
+      },
+      "email_mismatch": {
+        "title": "حساب خاطئ",
+        "description": "أُرسلت هذه الدعوة إلى عنوان بريد إلكتروني مختلف. سجّل الدخول بالعنوان المدعوّ لقبولها.",
+        "signedInAs": "أنت مسجَّل الدخول حاليًا باسم {email}."
+      },
+      "failed": {
+        "title": "حدث خطأ ما",
+        "description": "تعذّر علينا إكمال دعوتك. يرجى المحاولة مرة أخرى أو التواصل مع الدعم."
+      }
+    }
+  }
+}

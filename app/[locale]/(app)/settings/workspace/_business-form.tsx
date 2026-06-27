@@ -109,7 +109,7 @@ export function WorkspaceBusinessForm({
             <span className="font-normal text-muted-foreground">{tOnb("workspaceUrlNote")}</span>
           </Label>
           <div className="flex items-stretch">
-            <span className="flex items-center border border-r-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+            <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
               gallurio.com/w/
             </span>
             <Input
@@ -226,7 +226,7 @@ export function WorkspaceBusinessForm({
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 {t("saving")}
               </>
             ) : (

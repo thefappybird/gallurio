@@ -114,15 +114,15 @@ export function InquiryTable({ rows, locale, empty, emptyHint }: Props) {
       <div className="hidden overflow-x-auto border border-border bg-card md:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.status")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.client")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventTitle")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventType")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.eventDate")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.submitted")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">{t("table.col.source")}</th>
-              <th scope="col" className="px-3 py-2 font-medium">
+            <tr className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground">
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.status")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.client")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.eventTitle")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.eventType")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.eventDate")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.submitted")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">{t("table.col.source")}</th>
+              <th scope="col" className="px-3 py-2 font-medium text-start">
                 <span className="sr-only">{t("table.col.actions")}</span>
               </th>
             </tr>

@@ -123,7 +123,7 @@ export function TeamFilterControl({ teams, selected, isOwner, onChange }: Props)
             onClick={() => onChange([])}
             aria-pressed={allActive}
             className={cn(
-              "w-full border px-2 py-1.5 text-left text-xs font-medium transition-colors",
+              "w-full border px-2 py-1.5 text-start text-xs font-medium transition-colors",
               "hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               allActive ? "border-foreground text-foreground" : "border-border text-muted-foreground",
             )}

@@ -3,13 +3,18 @@
 import { useTheme } from "next-themes";
 import { Toaster as SonnerToaster, type ToasterProps } from "sonner";
 import { resolveScheme } from "@/lib/theme/themes";
+import { useIsRtl } from "@/lib/i18n/rtl";
 
 export function Toaster(props: ToasterProps) {
   const { resolvedTheme } = useTheme();
+  // RTL locales surface toasts on the inline-start (left) edge and flip the
+  // toast's own text direction so Arabic copy reads correctly.
+  const isRtl = useIsRtl();
   return (
     <SonnerToaster
       theme={resolveScheme(resolvedTheme)}
-      position="bottom-right"
+      position={isRtl ? "bottom-left" : "bottom-right"}
+      dir={isRtl ? "rtl" : "ltr"}
       duration={4000}
       richColors
       closeButton

@@ -67,7 +67,7 @@ export function ReviewStep({ values, locale, teams }: Props) {
           {(values.sessions ?? []).map((s, i) => (
             <li key={i} className="border border-border px-3 py-2 text-sm">
               <span className="font-medium">{tSessions("label", { n: i + 1 })}</span>
-              <span className="ml-2 text-muted-foreground">
+              <span className="ms-2 text-muted-foreground">
                 {formatSessionRange(s, locale)}
               </span>
             </li>

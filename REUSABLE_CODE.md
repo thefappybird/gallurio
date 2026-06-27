@@ -57,9 +57,10 @@ Composed, app-specific shared components.
 
 | Import | Exports | Purpose | Key props |
 |--------|---------|---------|-----------|
-| `components/app/app-sidebar.tsx` | `AppSidebar` | Full app sidebar: branding, role-based nav, theme toggle, user menu, sign-out | `role`, `workspaceName`, `workspaceLogoUrl`, `userName`, `userEmail`, `userAvatarUrl` |
+| `components/app/app-sidebar.tsx` | `AppSidebar` | Full app sidebar: branding, role-based nav, theme toggle, locale switcher, user menu, sign-out | `role`, `workspaceName`, `workspaceLogoUrl`, `userName`, `userEmail`, `userAvatarUrl` |
 | `components/app/theme-provider.tsx` | `ThemeProvider` | next-themes provider wrapper | class attribute, system default |
 | `components/app/theme-toggle.tsx` | `ThemeToggle` | Theme switcher dropdown | hydration-safe |
+| `components/app/locale-switcher.tsx` | `LocaleSwitcher` | Locale switcher dropdown (sidebar footer); reuses catalog native names, swaps locale via next-intl navigation keeping the path | none |
 | `components/app/table-skeleton.tsx` | `TableSkeleton` | Table loading skeleton w/ realistic column widths | `columns`, `rows?` (8) |
 | `components/app/page-size-select.tsx` | `PageSizeSelect` | Rows-per-page dropdown; syncs URL param, resets page | `value`, `paramName` ("limit"), `options` |
 | `components/app/clear-filters-button.tsx` | `ClearFiltersButton` | Clears filter params from URL; hidden when none active | `paramKeys`, `defaultValues?` |
@@ -76,6 +77,7 @@ Composed, app-specific shared components.
 | `lib/hooks/useGlobalContactTrigger.ts` | `useGlobalContactTrigger` | `(open: () => void) => void` | Register global contact-modal opener; cleans up on unmount |
 | `lib/page-builder/brandKitContext.tsx` | `useBrandKit` | `() => PortfolioBrandKit` | Read current workspace brand kit (throws outside provider) |
 | `hooks/useSlugAvailability.ts` | `useSlugAvailability`, `SlugStatus` | `(slug: string, currentSlug?: string) => { status: SlugStatus }` | Debounced (400ms) slug availability check via `checkSlugAvailabilityAction`; stale-response-safe via monotonic seq counter; statuses: idle/checking/available/taken/invalid; idle when slug is empty or equals currentSlug (own workspace) |
+| `lib/i18n/rtl.ts` | `isRtl`, `useIsRtl` | `isRtl(locale: string) => boolean` / `useIsRtl() => boolean` | Single source of truth for RTL locale detection. `isRtl` is pure (use in Server Components, e.g. the root layout `dir`); `useIsRtl` is the client hook reading the active request locale. Keep the `"ar"` literal here only. |
 
 ## 4. Helpers / utilities
 

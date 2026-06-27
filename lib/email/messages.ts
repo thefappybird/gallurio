@@ -1,8 +1,15 @@
 import { localeForCountry } from "@/lib/i18n/localeForCountry";
 
-export const emailLocale = localeForCountry;
-
 type Locale = "en" | "fil" | "ms" | "id";
+
+// Email copy is authored for en/fil/ms/id only — Arabic email copy is deferred
+// (see lib/i18n/localeForCountry.ts, which keeps Gulf tenants on "en" for now,
+// so localeForCountry never returns "ar" at runtime). The cast narrows the
+// return type to the email-supported locales; when the Arabic flip lands it must
+// add an "ar" EMAIL_COPY catalog and widen Locale here.
+export const emailLocale = localeForCountry as (
+  country: string | null | undefined,
+) => Locale;
 
 type TeamInviteCopy = {
   subject: (ws: string) => string;

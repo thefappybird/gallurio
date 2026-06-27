@@ -1,13 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { render, waitFor } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
 import { toast } from "sonner";
+import enMessages from "@/messages/en.json";
 import { Toaster } from "./sonner";
 
 // Toasts are interactive controls, not structural frames — they soften with the
 // control radius rather than being forced sharp.
 describe("toast corner radius", () => {
   it("renders toasts with the control radius", async () => {
-    render(<Toaster />);
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <Toaster />
+      </NextIntlClientProvider>,
+    );
     toast("saved");
     await waitFor(() => {
       const el = document.querySelector("[data-sonner-toast]");
