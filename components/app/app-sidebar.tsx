@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
+import { useIsRtl } from "@/lib/i18n/rtl";
 import {
   BellIcon,
   LayoutDashboardIcon,
@@ -83,7 +84,7 @@ export function AppSidebar({
   const pathname = usePathname();
   // RTL locales anchor the sidebar to the inline-start edge (the right side).
   // The Sidebar primitive already positions side="right" correctly.
-  const side = useLocale() === "ar" ? "right" : "left";
+  const side = useIsRtl() ? "right" : "left";
   const t = useTranslations("app.sidebar");
   const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);

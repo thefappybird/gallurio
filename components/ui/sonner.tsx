@@ -1,15 +1,15 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useLocale } from "next-intl";
 import { Toaster as SonnerToaster, type ToasterProps } from "sonner";
 import { resolveScheme } from "@/lib/theme/themes";
+import { useIsRtl } from "@/lib/i18n/rtl";
 
 export function Toaster(props: ToasterProps) {
   const { resolvedTheme } = useTheme();
   // RTL locales surface toasts on the inline-start (left) edge and flip the
   // toast's own text direction so Arabic copy reads correctly.
-  const isRtl = useLocale() === "ar";
+  const isRtl = useIsRtl();
   return (
     <SonnerToaster
       theme={resolveScheme(resolvedTheme)}

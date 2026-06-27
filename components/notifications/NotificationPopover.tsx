@@ -1,7 +1,8 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useLocale, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
+import { useIsRtl } from '@/lib/i18n/rtl'
 import {
   BellIcon,
   CalendarIcon,
@@ -191,14 +192,15 @@ export function NotificationPopover({
   onClose,
 }: NotificationPopoverProps) {
   const { state } = useSidebar()
-  // In RTL the sidebar is anchored to the right, so the panel must sit just
-  // inside its inner (left) edge — anchor with `right` and slide from the right.
-  const isRtl = useLocale() === 'ar'
+  // Anchor just inside the sidebar's inner edge. `inset-inline-start` maps to the
+  // left edge in LTR and the right edge in RTL automatically; isRtl is only still
+  // needed for the slide-in direction (no logical Tailwind animation utility).
+  const isRtl = useIsRtl()
   const offset =
     state === 'collapsed'
       ? 'calc(var(--sidebar-width-icon, 4rem) + 1px)'
       : 'calc(var(--sidebar-width, 16rem) + 1px)'
-  const anchorStyle = isRtl ? { right: offset } : { left: offset }
+  const anchorStyle = { insetInlineStart: offset }
 
   if (!open) return null
 
@@ -209,14 +211,15 @@ export function NotificationPopover({
         <NotificationPanelContent onClose={onClose} />
       </div>
 
-      {/* Desktop: full-height side panel anchored to the right edge of the sidebar.
-          left tracks the actual sidebar state so it works for both expanded and collapsed.
-          --sidebar-width and --sidebar-width-icon are set by SidebarProvider as inline CSS vars
-          and are accessible from fixed descendants via CSS custom property inheritance. */}
+      {/* Desktop: full-height side panel anchored just inside the sidebar's inner
+          edge. The offset tracks the actual sidebar state so it works for both
+          expanded and collapsed. --sidebar-width and --sidebar-width-icon are set
+          by SidebarProvider as inline CSS vars and are accessible from fixed
+          descendants via CSS custom property inheritance. */}
       <div
         role="dialog"
         aria-label="Notifications"
-        style={anchorStyle as React.CSSProperties}
+        style={anchorStyle}
         className={[
           'fixed z-[9998] hidden md:flex',
           'top-0',

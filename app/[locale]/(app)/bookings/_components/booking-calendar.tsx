@@ -1,7 +1,8 @@
 "use client";
 
 import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { useIsRtl } from "@/lib/i18n/rtl";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -847,7 +848,7 @@ export function BookingCalendar({
   toolbarTrailing,
   draggableAccessor,
 }: Props) {
-  const isRtl = useLocale() === "ar";
+  const isRtl = useIsRtl();
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
     if (colorMode === "team") {

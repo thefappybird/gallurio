@@ -77,6 +77,7 @@ Composed, app-specific shared components.
 | `lib/hooks/useGlobalContactTrigger.ts` | `useGlobalContactTrigger` | `(open: () => void) => void` | Register global contact-modal opener; cleans up on unmount |
 | `lib/page-builder/brandKitContext.tsx` | `useBrandKit` | `() => PortfolioBrandKit` | Read current workspace brand kit (throws outside provider) |
 | `hooks/useSlugAvailability.ts` | `useSlugAvailability`, `SlugStatus` | `(slug: string, currentSlug?: string) => { status: SlugStatus }` | Debounced (400ms) slug availability check via `checkSlugAvailabilityAction`; stale-response-safe via monotonic seq counter; statuses: idle/checking/available/taken/invalid; idle when slug is empty or equals currentSlug (own workspace) |
+| `lib/i18n/rtl.ts` | `isRtl`, `useIsRtl` | `isRtl(locale: string) => boolean` / `useIsRtl() => boolean` | Single source of truth for RTL locale detection. `isRtl` is pure (use in Server Components, e.g. the root layout `dir`); `useIsRtl` is the client hook reading the active request locale. Keep the `"ar"` literal here only. |
 
 ## 4. Helpers / utilities
 
