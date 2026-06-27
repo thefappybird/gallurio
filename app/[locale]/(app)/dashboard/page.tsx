@@ -160,7 +160,7 @@ async function BookingsTab({
     getUpcomingWeek(wid),
     getRecentInquiries(wid),
     getActivityFeed(wid, 20),
-    getRevenueTrend(wid, 30, range),
+    getRevenueTrend(wid, 30, range, resolveWorkspaceTimezone(workspace)),
     getBookingsByDay(wid, new Date()),
     getEventTypeBreakdown(wid, range),
     getTransactionsByTeam(wid, range),

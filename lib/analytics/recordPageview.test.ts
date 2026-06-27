@@ -49,4 +49,24 @@ describe("recordPageview", () => {
     expect(s?.views).toBe(3);
     expect(s?.visitors).toBe(2);
   });
+
+  it("counts unique visitors per page independently of the site total", async () => {
+    const ws = new Types.ObjectId();
+    const page = (p: "home" | "gallery") =>
+      PageviewRollup.findOne({ workspaceId: ws, date: day, page: p }).lean();
+
+    // One visitor sees home then gallery — each page gets one unique visitor.
+    await recordPageview({ workspaceId: ws, page: "home", visitorHash: "v1", source: "direct", day });
+    await recordPageview({ workspaceId: ws, page: "gallery", visitorHash: "v1", source: "direct", day });
+    expect((await page("home"))?.visitors).toBe(1);
+    expect((await page("gallery"))?.visitors).toBe(1);
+    // Site-wide still counts the visitor once.
+    expect((await site(ws))?.visitors).toBe(1);
+
+    // Same visitor revisits home → page unique visitors stays 1, views climb.
+    await recordPageview({ workspaceId: ws, page: "home", visitorHash: "v1", source: "direct", day });
+    const home = await page("home");
+    expect(home?.visitors).toBe(1);
+    expect(home?.views).toBe(2);
+  });
 });

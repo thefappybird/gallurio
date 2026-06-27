@@ -48,6 +48,13 @@ $lookup defense-in-depth) were fixed.
 
 **Env:** `PAGEVIEW_SALT_SECRET` (optional; falls back to `ACTIVE_WORKSPACE_COOKIE_SECRET`).
 
+**Follow-ups resolved (post-review):** (1) the revenue trend now buckets by the workspace
+timezone (threaded through `getRevenueTrend`'s `$dateToString` + local-day window/keys), so it
+agrees with bookings/inquiry events instead of drifting on UTC; (2) per-page **unique visitors**
+are now tracked — `recordPageview` runs a second per-page test-and-set against
+`PageviewVisitorSeen` (scope = page) in addition to the site-wide one, and the portfolio
+per-page card shows `views · visitors`.
+
 **Local tooling note:** `.claude/tdd-guard/data/config.json` (gitignored) adds `*.tsx` to
 ignorePatterns so the guard enforces TDD on `.ts` logic while Playwright covers `.tsx` views.
 

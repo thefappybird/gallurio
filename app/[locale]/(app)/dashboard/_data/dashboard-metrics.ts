@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -276,33 +277,40 @@ export type RevenuePoint = { date: string; amount: number };
 export async function getRevenueTrend(
   workspaceId: WorkspaceId,
   days = 30,
-  range?: DateRange
+  range?: DateRange,
+  timezone = "UTC"
 ): Promise<RevenuePoint[]> {
-  // Bucket by UTC day. Workspace-local-timezone bucketing is a follow-up — we
-  // need to thread workspace.timezone through to $dateToString.
-  let start: Date;
-  let end: Date;
-  let dayCount: number;
+  // Bucket by the workspace-local day so the trend agrees with bookings and
+  // inquiry events. The page passes the resolved workspace timezone; the "UTC"
+  // default keeps callers that don't care timezone-neutral.
+  const localKey = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
+
+  let startKey: string;
+  let endKey: string;
   if (range?.from || range?.to) {
     // Half-open: "starting from" runs to now; "up until" shows the `days`-long
     // window ending at `to`.
     const fromD =
       range.from ?? new Date((range.to as Date).getTime() - (days - 1) * 86_400_000);
     const toD = range.to ?? new Date();
-    start = new Date(fromD);
-    start.setUTCHours(0, 0, 0, 0);
-    end = new Date(toD);
-    end.setUTCHours(23, 59, 59, 999);
-    dayCount = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+    startKey = localKey(fromD);
+    endKey = localKey(toD);
   } else {
     const now = new Date();
-    start = new Date(now);
-    start.setUTCHours(0, 0, 0, 0);
-    start.setUTCDate(start.getUTCDate() - (days - 1));
-    end = new Date(now);
-    end.setUTCHours(23, 59, 59, 999);
-    dayCount = days;
+    endKey = localKey(now);
+    startKey = localKey(new Date(now.getTime() - (days - 1) * 86_400_000));
   }
+
+  // Full local-day window [start 00:00 .. end 23:59:59.999] so a same-day
+  // transaction is never clipped by the current wall-clock time.
+  const start = dayBoundInTz(startKey, timezone, 0, 0, 0, 0);
+  const end = dayBoundInTz(endKey, timezone, 23, 59, 59, 999);
 
   const rows = await Transaction.aggregate<{ _id: string; total: number }>([
     {
@@ -314,19 +322,24 @@ export async function getRevenueTrend(
     },
     {
       $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt" } },
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone } },
         total: { $sum: "$amount" },
       },
     },
   ]);
 
   const byDate = new Map(rows.map((r) => [r._id, r.total]));
+  // Walk local calendar days from startKey to endKey (cursor stays at UTC
+  // midnight — pure date arithmetic, DST-independent) so the emitted keys match
+  // the timezone-aware $dateToString grouping above.
   const out: RevenuePoint[] = [];
-  for (let i = 0; i < dayCount; i += 1) {
-    const d = new Date(start);
-    d.setUTCDate(start.getUTCDate() + i);
-    const key = d.toISOString().slice(0, 10);
+  const [sy, sm, sd] = startKey.split("-").map(Number);
+  const cursor = new Date(Date.UTC(sy, sm - 1, sd));
+  let key = startKey;
+  while (key <= endKey) {
     out.push({ date: key, amount: byDate.get(key) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    key = cursor.toISOString().slice(0, 10);
   }
   return out;
 }

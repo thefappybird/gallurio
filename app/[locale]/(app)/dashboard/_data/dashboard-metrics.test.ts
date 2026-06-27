@@ -539,6 +539,25 @@ describe("getRevenueTrend — date range", () => {
   });
 });
 
+describe("getRevenueTrend — workspace timezone bucketing", () => {
+  it("buckets a transaction into the workspace-local day, not the UTC day", async () => {
+    // 2026-03-02T18:00:00Z is 2026-03-03 02:00 in Asia/Manila (UTC+8), so it
+    // belongs to the owner's March 3, not the UTC March 2.
+    await seedTransaction(workspaceId, 6_000, new Date("2026-03-02T18:00:00Z"), "deposit");
+    const trend = await getRevenueTrend(
+      workspaceId,
+      30,
+      {
+        from: new Date("2026-02-28T16:00:00.000Z"), // Manila Mar 1 00:00
+        to: new Date("2026-03-03T15:59:59.999Z"), // Manila Mar 3 23:59:59.999
+      },
+      "Asia/Manila"
+    );
+    expect(trend.find((p) => p.date === "2026-03-03")?.amount).toBe(6_000);
+    expect(trend.find((p) => p.date === "2026-03-02")?.amount).toBe(0);
+  });
+});
+
 describe("getKpiSnapshotWithDeltas — bounded deltas + all-time default", () => {
   it("shows a delta for a bounded range vs the preceding equal window", async () => {
     await seedTransaction(workspaceId, 10_000, new Date("2026-03-15T12:00:00Z"), "deposit");
