@@ -10,6 +10,8 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
+import { parseDashboardRange } from "@/lib/dashboard/date-range";
+import { resolveWorkspaceTimezone } from "@/lib/utils/timezone";
 import {
   getKpiSnapshotWithDeltas,
   getTodaysEvents,
@@ -73,6 +75,7 @@ export default async function DashboardPage({
   const tab = await resolveStoredDashboardTab(
     typeof sp.tab === "string" ? sp.tab : undefined
   );
+  const range = parseDashboardRange(sp, resolveWorkspaceTimezone(workspace));
 
   const ownerFirstName = workspace.name.split(" ")[0] ?? "";
 
@@ -98,7 +101,7 @@ export default async function DashboardPage({
       <DashboardDateFilter />
 
       {tab === "portfolio" ? (
-        <PortfolioDashboard />
+        <PortfolioDashboard workspace={workspace} locale={locale} range={range} />
       ) : (
         <BookingsTab
           wid={wid}

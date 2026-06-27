@@ -125,7 +125,25 @@
       "empty": "Nothing here yet.",
       "viewAll": "View all",
       "portfolio": {
-        "analyticsSoon": "Portfolio analytics are coming soon."
+        "analyticsSoon": "Portfolio analytics are coming soon.",
+        "totalViews": "Total views",
+        "uniqueVisitors": "Unique visitors",
+        "inquiries": "Inquiries",
+        "conversionRate": "Conversion rate",
+        "viewsOverTime": "Views & visitors",
+        "views": "Views",
+        "visitors": "Visitors",
+        "topSources": "Top sources",
+        "perPage": "By page",
+        "siteInquiries": "Inquiries from your site",
+        "publishStatus": "Publish status",
+        "published": "Published",
+        "notPublished": "Not published yet",
+        "lastPublished": "Last published {date}",
+        "viewLive": "View live page",
+        "openEditor": "Open editor",
+        "noTraffic": "No visits yet in this period.",
+        "directSource": "Direct"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"

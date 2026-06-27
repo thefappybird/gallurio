@@ -125,7 +125,25 @@
       "empty": "Wala pa rito.",
       "viewAll": "Tingnan lahat",
       "portfolio": {
-        "analyticsSoon": "Malapit nang dumating ang portfolio analytics."
+        "analyticsSoon": "Malapit nang dumating ang portfolio analytics.",
+        "totalViews": "Kabuuang views",
+        "uniqueVisitors": "Natatanging bisita",
+        "inquiries": "Mga inquiry",
+        "conversionRate": "Conversion rate",
+        "viewsOverTime": "Views at bisita",
+        "views": "Views",
+        "visitors": "Bisita",
+        "topSources": "Nangungunang pinagmulan",
+        "perPage": "Ayon sa page",
+        "siteInquiries": "Mga inquiry mula sa site",
+        "publishStatus": "Status ng publish",
+        "published": "Nai-publish",
+        "notPublished": "Hindi pa nai-publish",
+        "lastPublished": "Huling na-publish {date}",
+        "viewLive": "Tingnan ang live na page",
+        "openEditor": "Buksan ang editor",
+        "noTraffic": "Wala pang bisita sa panahong ito.",
+        "directSource": "Diretso"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"

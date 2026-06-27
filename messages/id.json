@@ -125,7 +125,25 @@
       "empty": "Belum ada apa-apa di sini.",
       "viewAll": "Lihat semua",
       "portfolio": {
-        "analyticsSoon": "Analitik portofolio segera hadir."
+        "analyticsSoon": "Analitik portofolio segera hadir.",
+        "totalViews": "Total tampilan",
+        "uniqueVisitors": "Pengunjung unik",
+        "inquiries": "Pertanyaan",
+        "conversionRate": "Tingkat konversi",
+        "viewsOverTime": "Tampilan & pengunjung",
+        "views": "Tampilan",
+        "visitors": "Pengunjung",
+        "topSources": "Sumber teratas",
+        "perPage": "Per halaman",
+        "siteInquiries": "Pertanyaan dari situs Anda",
+        "publishStatus": "Status terbit",
+        "published": "Diterbitkan",
+        "notPublished": "Belum diterbitkan",
+        "lastPublished": "Terakhir terbit {date}",
+        "viewLive": "Lihat halaman langsung",
+        "openEditor": "Buka editor",
+        "noTraffic": "Belum ada kunjungan pada periode ini.",
+        "directSource": "Langsung"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
