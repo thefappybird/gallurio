@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, forwardRef, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -256,8 +256,8 @@ function OverflowPopoverRow({
         onClose();
         onSelectEvent?.(e);
       }}
-      className="flex flex-col items-start w-full px-2 py-1.5 text-left hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
-      style={{ borderLeft: `3px solid ${bg}` }}
+      className="flex flex-col items-start w-full px-2 py-1.5 text-start hover:bg-muted focus-visible:bg-muted active:bg-muted transition-colors cursor-grab active:cursor-grabbing"
+      style={{ borderInlineStart: `3px solid ${bg}` }}
     >
       <span className="truncate text-xs font-semibold text-foreground w-full">
         {e.title}
@@ -285,7 +285,7 @@ function PastPill({ label }: { label: string }) {
   return (
     <span
       aria-label={label}
-      className="absolute right-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
+      className="absolute end-1 top-1 inline-flex items-center border border-white/40 bg-black/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white"
     >
       {label}
     </span>
@@ -306,7 +306,7 @@ function StatusPill({
   labelOverride?: string;
 }) {
   return (
-    <div className="pointer-events-none absolute bottom-0.5 right-0.5 z-10 flex items-center">
+    <div className="pointer-events-none absolute bottom-0.5 end-0.5 z-10 flex items-center">
       <span className="inline-flex items-center gap-1 border border-border bg-background/95 px-1 py-px text-[9px] font-medium leading-tight text-foreground whitespace-nowrap">
         <span
           aria-hidden
@@ -345,7 +345,7 @@ export function MonthBookingEvent({
           render={
             <button
               type="button"
-              className="w-full text-left"
+              className="w-full text-start"
               aria-label={`Show ${ev.overflowCount} more event${ev.overflowCount === 1 ? "" : "s"}`}
             />
           }
@@ -389,7 +389,7 @@ export function MonthBookingEvent({
     <span
       title={`${booking.title} · ${clientDisplay} · ${timeRange}`}
       aria-label={candleAriaLabel}
-      className={`relative flex h-full w-full flex-col justify-center overflow-hidden pl-2 pr-1.5 py-0.5 text-white ${
+      className={`relative flex h-full w-full flex-col justify-center overflow-hidden ps-2 pe-1.5 py-0.5 text-white ${
         isStatusMuted
           ? "line-through opacity-80"
           : showPastVisual
@@ -399,7 +399,7 @@ export function MonthBookingEvent({
       style={{ backgroundColor: bg }}
     >
       <span
-        className="absolute inset-y-0 left-0 w-1"
+        className="absolute inset-y-0 start-0 w-1"
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
@@ -450,7 +450,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
     <div
       title={`${ev.title} · ${clientDisplay} · ${timeRange}`}
       aria-label={candleAriaLabel}
-      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden pl-2.5 pr-2 py-1.5 text-white ${
+      className={`relative flex h-full w-full flex-col justify-start gap-0.5 overflow-hidden ps-2.5 pe-2 py-1.5 text-white ${
         isStatusMuted
           ? "line-through opacity-80"
           : showPastVisual
@@ -465,7 +465,7 @@ function TimeBookingEvent({ event }: EventProps<AnyCalendarEvent>) {
       }}
     >
       <span
-        className="absolute inset-y-0 left-0 w-1"
+        className="absolute inset-y-0 start-0 w-1"
         aria-hidden
         style={{ background: stripeBg(bg) }}
       />
@@ -657,7 +657,7 @@ function CalendarToolbar({
 
       {/* Right cluster: date label + jump-to + view switcher */}
       <div className="flex items-center gap-2">
-        <span className="hidden lg:block font-semibold text-sm mr-1">{label}</span>
+        <span className="hidden lg:block font-semibold text-sm me-1">{label}</span>
         {/* Jump-to popover */}
         <Popover>
           <PopoverTrigger
@@ -847,6 +847,7 @@ export function BookingCalendar({
   toolbarTrailing,
   draggableAccessor,
 }: Props) {
+  const isRtl = useLocale() === "ar";
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
     if (ev.colorOverride) return ev.colorOverride;
     if (colorMode === "team") {
@@ -969,6 +970,7 @@ export function BookingCalendar({
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
         <DnDCalendar
+          rtl={isRtl}
           localizer={localizer}
           events={displayEvents}
           startAccessor="start"

@@ -318,7 +318,7 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
               onClick={downloadTemplate}
               className="self-start text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
-              <FileTextIcon className="mr-1 inline size-3" />
+              <FileTextIcon className="me-1 inline size-3" />
               {t("template")}
             </button>
 
@@ -338,27 +338,27 @@ export function CsvImportDialog({ open, onClose, defaultCurrency }: Props) {
                       {t("invalidCount", { count: invalidRows.length })}
                     </span>
                   ) : null}
-                  <span className="ml-auto text-xs text-muted-foreground">{fileName}</span>
+                  <span className="ms-auto text-xs text-muted-foreground">{fileName}</span>
                 </div>
 
                 <div className="max-h-64 overflow-auto border border-border">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-muted text-muted-foreground">
                       <tr>
-                        <th className="w-8 border-b border-border px-2 py-1.5 text-left font-medium">
+                        <th className="w-8 border-b border-border px-2 py-1.5 text-start font-medium">
                           {tCols("row")}
                         </th>
                         <th className="w-5 border-b border-border px-1 py-1.5" />
-                        <th className="border-b border-border px-2 py-1.5 text-left font-medium">
+                        <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                           {tCols("title")}
                         </th>
-                        <th className="border-b border-border px-2 py-1.5 text-left font-medium">
+                        <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                           {tCols("client")}
                         </th>
-                        <th className="border-b border-border px-2 py-1.5 text-left font-medium">
+                        <th className="border-b border-border px-2 py-1.5 text-start font-medium">
                           {tCols("start")}
                         </th>
-                        <th className="border-b border-border px-2 py-1.5 text-left font-medium text-destructive">
+                        <th className="border-b border-border px-2 py-1.5 text-start font-medium text-destructive">
                           {tCols("error")}
                         </th>
                       </tr>

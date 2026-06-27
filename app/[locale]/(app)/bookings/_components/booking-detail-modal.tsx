@@ -1530,7 +1530,7 @@ function DialogHeaderBar({
                   onClick={startTitleEdit}
                   disabled={disabled || isCancelled}
                   className={cn(
-                    "group flex min-w-0 items-center gap-1.5 text-left text-base font-semibold transition-colors",
+                    "group flex min-w-0 items-center gap-1.5 text-start text-base font-semibold transition-colors",
                     "hover:text-brand focus-visible:text-brand focus-visible:outline-none",
                     "disabled:pointer-events-none disabled:opacity-60",
                     hasTitlePending && "text-brand"
@@ -1638,7 +1638,7 @@ function DialogHeaderBar({
                 )}
                 {hasStatusPending ? (
                   <span
-                    className="absolute -right-1 -top-1 size-1.5 bg-brand"
+                    className="absolute -end-1 -top-1 size-1.5 bg-brand"
                     aria-hidden
                   />
                 ) : null}
@@ -2145,7 +2145,7 @@ function BookingTabs({
         ) : null}
 
         {/* Sessions list — only this region scrolls (mirrors the wizard). */}
-        <div className="flex max-h-100 flex-col gap-2 overflow-y-auto pr-1">
+        <div className="flex max-h-100 flex-col gap-2 overflow-y-auto pe-1">
           {visibleSessions.map((s, idx) => {
             const originalIdx = (booking?.sessions ?? []).findIndex(
               (orig) =>
@@ -3180,12 +3180,12 @@ function ClientReassignPicker({
         </button>
       </div>
       <div className="relative">
-        <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+        <SearchIcon className="pointer-events-none absolute start-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={tFields("changeClientSearch")}
-          className="h-8 pl-8 text-sm"
+          className="h-8 ps-8 text-sm"
           disabled={disabled}
           aria-label={tFields("changeClientSearch")}
         />
@@ -3213,7 +3213,7 @@ function ClientReassignPicker({
                   }}
                   disabled={disabled}
                   className={cn(
-                    "flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm transition-colors last:border-b-0",
+                    "flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-start text-sm transition-colors last:border-b-0",
                     "hover:bg-accent/40 focus-visible:bg-accent/40 focus-visible:outline-none",
                     "active:bg-accent/60",
                     "disabled:pointer-events-none disabled:opacity-50",

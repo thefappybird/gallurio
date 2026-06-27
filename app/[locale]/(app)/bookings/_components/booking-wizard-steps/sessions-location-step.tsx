@@ -183,7 +183,7 @@ function SessionCard({
       <div className="flex flex-col gap-1">
         <Label htmlFor={`wiz-startDate-${index}`}>
           {t("startAt")}
-          <span className="ml-0.5 text-destructive">*</span>
+          <span className="ms-0.5 text-destructive">*</span>
         </Label>
         <Input
           id={`wiz-startDate-${index}`}
@@ -326,7 +326,7 @@ export function SessionsLocationStep({
       ) : null}
 
       {/* Sessions list — only this region scrolls */}
-      <div className="flex max-h-100 flex-col gap-3 overflow-y-auto pr-1">
+      <div className="flex max-h-100 flex-col gap-3 overflow-y-auto pe-1">
         {fields.map((field, i) => {
           const sessionDate = watch(`sessions.${i}.startDate`);
           return (

@@ -176,7 +176,7 @@ export function BookingsTable({
       },
       {
         accessorKey: "total",
-        header: () => <span className="block text-right">{t("col.total")}</span>,
+        header: () => <span className="block text-end">{t("col.total")}</span>,
         cell: (info) => (
           <span className="tabular-nums">
             {formatMoney(
@@ -252,7 +252,7 @@ export function BookingsTable({
           {table.getHeaderGroups().map((hg) => (
             <tr
               key={hg.id}
-              className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"
+              className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground"
             >
               {hg.headers.map((header) => {
                 const canSort = header.column.getCanSort();

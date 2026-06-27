@@ -34,7 +34,7 @@ function ErrorRow({ entry }: { entry: ImportErrorEntry }) {
     <div className="border-b border-border last:border-0">
       <button
         type="button"
-        className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="flex w-full items-start gap-2 px-3 py-2 text-start hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         onClick={() => setExpanded((p) => !p)}
         aria-expanded={expanded}
       >
