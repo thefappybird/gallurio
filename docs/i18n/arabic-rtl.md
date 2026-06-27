@@ -44,6 +44,22 @@ RTL-correct.
 - **Phase 7 — Inquiries + detail:** table, back-arrow mirror, cards; the
   inquiries calendar reuses the (already-fixed) `BookingCalendar`.
 
+## Cross-cutting: middleware locale header (hard-reload fix)
+
+`proxy.ts` composes authkit + next-intl on protected routes by merging authkit's
+response headers onto next-intl's response. Both middlewares inject **request**
+headers through Next.js's `x-middleware-override-headers` manifest (a single
+comma-separated list of header names). The old merge `set()` authkit's manifest
+straight over next-intl's, dropping `x-next-intl-locale` — so a **hard reload**
+(full document load) of any non-default `/{locale}/*` page resolved the default
+locale and rendered English chrome under a correct `dir`/`lang`. (Soft client
+navigations were unaffected; `setRequestLocale` did not mask it because the
+prop-less `NextIntlClientProvider` resolves messages before it takes effect.)
+The merge now **unions** that manifest and copies every other header (incl.
+authkit's session headers + `set-cookie`) through unchanged. Regression coverage:
+`proxy.test.ts` (manifest union) and `e2e/i18n-hard-reload.spec.ts` (logged-in
+hard reload of `/ar` and `/id` renders translated chrome).
+
 ## Key conventions established
 
 - Logical Tailwind utilities only for direction-sensitive styles:

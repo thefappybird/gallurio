@@ -80,4 +80,38 @@ describe("proxy", () => {
     expect(redirected.pathname).toBe("/sign-in");
     expect(redirected.searchParams.get("returnTo")).toBe("/inquiries?inquiryId=abc123");
   });
+
+  it("unions both middlewares' request-header manifests so the locale header survives on protected routes", async () => {
+    // next-intl injects `x-next-intl-locale` via the override-headers manifest;
+    // authkit injects its session header the same way. A blind copy would drop
+    // next-intl's manifest, making hard-reloaded /{locale}/* pages fall back to
+    // the default locale. The merge must keep BOTH names + authkit's set-cookie.
+    intlMiddlewareMock.mockImplementationOnce(() => {
+      const res = NextResponse.next();
+      res.headers.set("x-middleware-override-headers", "x-next-intl-locale");
+      res.headers.set("x-middleware-request-x-next-intl-locale", "ar");
+      return res;
+    });
+    authMiddlewareMock.mockResolvedValueOnce(
+      (() => {
+        const res = NextResponse.next();
+        res.headers.set("x-middleware-override-headers", "x-workos-session");
+        res.headers.set("x-middleware-request-x-workos-session", "tok");
+        res.headers.set("set-cookie", "wos-session=abc; Path=/");
+        return res;
+      })(),
+    );
+
+    const { proxy } = await import("./proxy");
+    const req = new NextRequest("http://localhost/ar/bookings");
+    const response = (await proxy(req)) as Response;
+
+    const manifest = (response.headers.get("x-middleware-override-headers") ?? "")
+      .split(",")
+      .map((s) => s.trim());
+    expect(manifest).toContain("x-next-intl-locale");
+    expect(manifest).toContain("x-workos-session");
+    expect(response.headers.get("x-middleware-request-x-next-intl-locale")).toBe("ar");
+    expect(response.headers.get("set-cookie")).toContain("wos-session=abc");
+  });
 });
