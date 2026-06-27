@@ -25,3 +25,13 @@ export {
   type InvitationStatus,
 } from "./Invitation";
 export { PortfolioDraft, type PortfolioDraftDoc } from "./PortfolioDraft";
+export {
+  PageviewRollup,
+  PAGEVIEW_ROLLUP_PAGES,
+  type PageviewRollupDoc,
+  type PageviewRollupPage,
+} from "./PageviewRollup";
+export {
+  PageviewVisitorSeen,
+  type PageviewVisitorSeenDoc,
+} from "./PageviewVisitorSeen";
