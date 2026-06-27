@@ -5,6 +5,13 @@
 
 export const FALLBACK_TZ = "Asia/Manila";
 
+/** Resolve a workspace's IANA timezone, falling back to the platform default. */
+export function resolveWorkspaceTimezone(
+  workspace: { timezone?: string | null } | null | undefined
+): string {
+  return workspace?.timezone || FALLBACK_TZ;
+}
+
 /** Extract date/time parts from a UTC Date as seen in `timeZone`. */
 function intlParts(
   d: Date,

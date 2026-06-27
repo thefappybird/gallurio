@@ -9,6 +9,7 @@ import type {
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
+import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
 import {
   getKpiSnapshot,
   getTodaysEvents,
@@ -38,6 +39,9 @@ import { TopClientsBar } from "./_components/top-clients-bar";
 import { TransactionsByMethodBar } from "./_components/transactions-by-method-bar";
 import { TransactionsByTeamBar } from "./_components/transactions-by-team-bar";
 import { WeeklyBookingsBar } from "./_components/weekly-bookings-bar";
+import { DashboardTabs } from "./_components/dashboard-tabs";
+import { DashboardDateFilter } from "./_components/dashboard-date-filter";
+import { PortfolioDashboard } from "./_components/portfolio-dashboard";
 
 export async function generateMetadata({
   params,
@@ -60,8 +64,10 @@ const MOCK_TRENDS = {
 
 export default async function DashboardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
@@ -75,6 +81,56 @@ export default async function DashboardPage({
 
   await connectDB();
 
+  const sp = await searchParams;
+  const tab = await resolveStoredDashboardTab(
+    typeof sp.tab === "string" ? sp.tab : undefined
+  );
+
+  const ownerFirstName = workspace.name.split(" ")[0] ?? "";
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("greeting", { name: ownerFirstName })}
+          </h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {new Date().toLocaleDateString(locale, {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+        <DashboardTabs tab={tab} />
+      </div>
+
+      <DashboardDateFilter />
+
+      {tab === "portfolio" ? (
+        <PortfolioDashboard />
+      ) : (
+        <BookingsTab wid={wid} workspace={workspace} locale={locale} t={t} />
+      )}
+    </div>
+  );
+}
+
+// Bookings tab kept inline so only the active tab runs its queries. Phase 2
+// redesigns these widgets; Phase 4 threads the date filter into the loaders.
+async function BookingsTab({
+  wid,
+  workspace,
+  locale,
+  t,
+}: {
+  wid: import("mongoose").Types.ObjectId;
+  workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
+  locale: string;
+  t: Awaited<ReturnType<typeof getTranslations>>;
+}) {
   const timeMode = await getUserTimeFormat();
 
   const [
@@ -107,24 +163,8 @@ export default async function DashboardPage({
     getTopClients(wid, 5),
   ]);
 
-  const ownerFirstName = workspace.name.split(" ")[0] ?? "";
-
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("greeting", { name: ownerFirstName })}
-        </h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {new Date().toLocaleDateString(locale, {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-5">
       <KpiStrip
         snapshot={snapshot}
         currency={workspace.currency}
@@ -138,7 +178,7 @@ export default async function DashboardPage({
         trends={MOCK_TRENDS}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <MiniBookingCalendar
           month={new Date()}
           days={monthBookings}
@@ -168,7 +208,7 @@ export default async function DashboardPage({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
           <RevenueTrendChart
             data={revenue}
@@ -186,7 +226,7 @@ export default async function DashboardPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <PipelineFunnel
           counts={pipeline}
           title={t("sections.pipeline")}
@@ -205,7 +245,7 @@ export default async function DashboardPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
           <TodaysEventsList
             bookings={todays as BookingDoc[]}
@@ -224,7 +264,7 @@ export default async function DashboardPage({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
           <ActivityFeed
             activity={activity as ActivityLogDoc[]}

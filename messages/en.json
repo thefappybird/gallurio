@@ -84,6 +84,20 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Welcome back, {name}",
+      "tabs": {
+        "aria": "Switch dashboard",
+        "bookings": "Bookings",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Date range",
+        "allTime": "All time",
+        "until": "Up until",
+        "between": "Between",
+        "since": "Starting from",
+        "from": "From",
+        "to": "To"
+      },
       "kpi": {
         "revenueThisMonth": "Revenue this month",
         "activeBookings": "Active bookings this month",
@@ -115,7 +129,10 @@
         "inquiry": "New inquiry"
       },
       "empty": "Nothing here yet.",
-      "viewAll": "View all"
+      "viewAll": "View all",
+      "portfolio": {
+        "analyticsSoon": "Portfolio analytics are coming soon."
+      }
     },
     "calendar": {
       "title": "Calendar",

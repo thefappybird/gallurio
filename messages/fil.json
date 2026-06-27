@@ -84,6 +84,20 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Maligayang pagbabalik, {name}",
+      "tabs": {
+        "aria": "Magpalit ng dashboard",
+        "bookings": "Mga booking",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Saklaw ng petsa",
+        "allTime": "Lahat ng panahon",
+        "until": "Hanggang sa",
+        "between": "Sa pagitan",
+        "since": "Simula sa",
+        "from": "Mula",
+        "to": "Hanggang"
+      },
       "kpi": {
         "revenueThisMonth": "Kita ngayong buwan",
         "activeBookings": "Aktibong mga booking ngayong buwan",
@@ -115,7 +129,10 @@
         "inquiry": "Bagong inquiry"
       },
       "empty": "Wala pa rito.",
-      "viewAll": "Tingnan lahat"
+      "viewAll": "Tingnan lahat",
+      "portfolio": {
+        "analyticsSoon": "Malapit nang dumating ang portfolio analytics."
+      }
     },
     "calendar": {
       "title": "Calendar",

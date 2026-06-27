@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { dayBoundInTz, wallTimeInTzToUtc } from "./timezone";
+import {
+  dayBoundInTz,
+  resolveWorkspaceTimezone,
+  wallTimeInTzToUtc,
+  FALLBACK_TZ,
+} from "./timezone";
+
+describe("resolveWorkspaceTimezone", () => {
+  it("uses the workspace timezone when set, else the platform fallback", () => {
+    expect(resolveWorkspaceTimezone({ timezone: "Asia/Jakarta" })).toBe("Asia/Jakarta");
+    expect(resolveWorkspaceTimezone({ timezone: null })).toBe(FALLBACK_TZ);
+    expect(resolveWorkspaceTimezone({ timezone: "" })).toBe(FALLBACK_TZ);
+    expect(resolveWorkspaceTimezone(null)).toBe(FALLBACK_TZ);
+    expect(resolveWorkspaceTimezone(undefined)).toBe(FALLBACK_TZ);
+  });
+});
 
 describe("dayBoundInTz", () => {
   it("Manila Jan 1 start of day → Dec 31 16:00:00.000 UTC (UTC-8 offset inverted)", () => {

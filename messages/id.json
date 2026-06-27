@@ -84,6 +84,20 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Selamat datang kembali, {name}",
+      "tabs": {
+        "aria": "Ganti dasbor",
+        "bookings": "Pemesanan",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Rentang tanggal",
+        "allTime": "Sepanjang waktu",
+        "until": "Hingga",
+        "between": "Antara",
+        "since": "Mulai dari",
+        "from": "Dari",
+        "to": "Sampai"
+      },
       "kpi": {
         "revenueThisMonth": "Pendapatan bulan ini",
         "activeBookings": "Pemesanan aktif bulan ini",
@@ -115,7 +129,10 @@
         "inquiry": "Pertanyaan baru"
       },
       "empty": "Belum ada apa-apa di sini.",
-      "viewAll": "Lihat semua"
+      "viewAll": "Lihat semua",
+      "portfolio": {
+        "analyticsSoon": "Analitik portofolio segera hadir."
+      }
     },
     "calendar": {
       "title": "Calendar",
