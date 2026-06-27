@@ -1,5 +1,11 @@
 # Deferred: Arabic Locale and RTL Layout
 
+> **Status (implemented):** Phases 0–7 of this task have shipped — see
+> `docs/i18n/arabic-rtl.md`. Arabic is now a selectable RTL locale across all
+> non-deferred surfaces. The only part still deferred is the
+> `localeForCountry` Gulf→`ar` auto-default flip + Arabic `EMAIL_COPY`
+> (step 4 below), pending the Dashboard/Portfolio/Onboarding/Landing overhaul.
+
 ## What it is
 
 Adding Arabic (`ar`) as a sixth locale with full right-to-left (RTL) layout support, so that workspace owners in Gulf markets (UAE, Saudi Arabia, Qatar, Kuwait, Oman, Bahrain) get Arabic app chrome instead of English.
