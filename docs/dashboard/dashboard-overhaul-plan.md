@@ -4,6 +4,42 @@
 > Net-doc rule: consolidate into one summary doc under `docs/dashboard/` before the PR and
 > delete scratch.
 
+## Status — shipped (branch `enhance/dashboard`)
+
+All four phases implemented, committed, and verified. 206 tests green; typecheck + lint clean.
+
+- **Phase 1** — `[Bookings | Portfolio]` switcher, shared date filter, wider 8-color
+  on-brand chart palette (light+dark), `InfoHint`, shared `CHART_TOOLTIP` (dark-mode fix),
+  tab preferences, page split (hidden tab never queries).
+- **Phase 2** — Bookings redesign: compact KPI cards with real period-over-period deltas
+  (badge hidden when no baseline — fixes the "5% on 0 bookings" bug), side-by-side donut
+  legend, paginated activity, team-performance cards, mini-calendar team filter
+  (`/api/bookings/by-day?team=` intersected fail-closed with scope), color-coded +
+  capitalized status chips, info-hints, fixed quick-add (`?add=1` deep-links), and removal
+  of pipeline / payment-method / per-team-revenue / weekday widgets.
+- **Phase 3** — Privacy-clean page-view tracking: `PageviewRollup` + TTL `PageviewVisitorSeen`
+  models, salted daily `visitorHash` / `classifySource` / bot filter, `recordPageview`
+  (test-and-set unique visitors), hardened public beacon (bot filter → per-IP + per-(IP,slug,page)
+  rate limits → Zod → published-slug resolve → record, always 204), client `PageViewBeacon`
+  mounted in the public layout, and best-effort inquiry counter.
+- **Phase 4** — Portfolio analytics dashboard (Vercel-style): totals/timeseries/per-page/
+  top-sources reads, headline cards + views/visitors bar + sources + per-page + publish
+  status + site inquiries, with the date filter wired in (workspace-tz day buckets).
+
+**Verification:** Bookings dashboard driven in-browser at 375/768/1280 + dark mode (dark-mode
+chart tooltip now legible). Portfolio dashboard verified light/dark/375, populated (via seeded
+rollups, since cleaned) + empty states; the live beacon was confirmed recording end-to-end.
+
+**Deferred (one item):** the shared date filter is scoped to the Portfolio tab. Bookings KPIs
+are explicitly "this month" snapshots and `topClients` is a cumulative total, so an
+until/between/since filter doesn't map without relabeling. Threading the range through the
+windowed bookings loaders (revenue trend, event-type, team cards) is a clean follow-up.
+
+**Env:** `PAGEVIEW_SALT_SECRET` (optional; falls back to `ACTIVE_WORKSPACE_COOKIE_SECRET`).
+
+**Local tooling note:** `.claude/tdd-guard/data/config.json` (gitignored) adds `*.tsx` to
+ignorePatterns so the guard enforces TDD on `.ts` logic while Playwright covers `.tsx` views.
+
 ## Context
 
 Gallurio's feature set is complete; the dashboard now needs a redesign. Today there is a

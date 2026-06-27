@@ -98,7 +98,9 @@ export default async function DashboardPage({
         <DashboardTabs tab={tab} />
       </div>
 
-      <DashboardDateFilter />
+      {/* Date filter drives the Portfolio time-series; the Bookings KPIs are
+          month/all-time snapshots, so the filter is scoped to Portfolio. */}
+      {tab === "portfolio" && <DashboardDateFilter />}
 
       {tab === "portfolio" ? (
         <PortfolioDashboard workspace={workspace} locale={locale} range={range} />
