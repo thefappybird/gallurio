@@ -70,7 +70,7 @@ export function SettingsUserProfile({
         {/* Nav */}
         <nav
           aria-label={t("navigationLabel")}
-          className="flex w-48 shrink-0 flex-col border-r border-border bg-card"
+          className="flex w-48 shrink-0 flex-col border-e border-border bg-card"
         >
           {visiblePages.map((page) => {
             const isActive = page.slug === activeSlug;

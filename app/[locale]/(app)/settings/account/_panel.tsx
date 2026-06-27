@@ -207,12 +207,12 @@ export function AccountPanel({
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                    <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                     {t("avatarUploading")}
                   </>
                 ) : avatarPending ? (
                   <>
-                    <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                    <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                     {t("avatarSaving")}
                   </>
                 ) : avatarUrl ? (
@@ -325,7 +325,7 @@ export function AccountPanel({
             >
               {pending ? (
                 <>
-                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                  <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                   {t("saving")}
                 </>
               ) : (

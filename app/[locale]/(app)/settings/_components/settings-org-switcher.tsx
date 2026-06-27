@@ -53,7 +53,7 @@ export function SettingsOrgSwitcher({
           "disabled:pointer-events-none disabled:opacity-50",
         )}
       >
-        <span className="min-w-0 flex-1 truncate text-left font-medium">
+        <span className="min-w-0 flex-1 truncate text-start font-medium">
           {current?.name ?? t("noWorkspace")}
         </span>
         {pending ? (

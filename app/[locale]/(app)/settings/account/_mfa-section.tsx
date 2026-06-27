@@ -264,7 +264,7 @@ function MfaSetupFlow({
             >
               {verifyPending ? (
                 <>
-                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                  <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                   {t("verifying")}
                 </>
               ) : (
@@ -296,12 +296,12 @@ function MfaSetupFlow({
     >
       {enrollPending ? (
         <>
-          <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+          <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
           {t("mfaStarting")}
         </>
       ) : (
         <>
-          <ShieldCheck className="mr-2 size-4" aria-hidden />
+          <ShieldCheck className="me-2 size-4" aria-hidden />
           {t("mfaSetup")}
         </>
       )}
@@ -347,7 +347,7 @@ export function MfaSection({ mfaEnabled: initialMfaEnabled }: Props) {
           <div className="flex items-center gap-2 border border-border bg-card px-4 py-3">
             <ShieldCheck className="size-4 shrink-0 text-foreground" aria-hidden />
             <span className="text-sm font-medium">{t("mfaEnabledLabel")}</span>
-            <span className="ml-auto inline-flex items-center border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span className="ms-auto inline-flex items-center border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
               {t("enabled")}
             </span>
           </div>
@@ -362,12 +362,12 @@ export function MfaSection({ mfaEnabled: initialMfaEnabled }: Props) {
           >
             {disablePending ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                 {t("disabling")}
               </>
             ) : (
               <>
-                <ShieldOff className="mr-2 size-4" aria-hidden />
+                <ShieldOff className="me-2 size-4" aria-hidden />
                 {t("mfaDisable")}
               </>
             )}

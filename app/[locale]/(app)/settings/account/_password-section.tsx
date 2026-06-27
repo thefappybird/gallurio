@@ -114,14 +114,14 @@ function ChangePasswordForm() {
                 type={f.show ? "text" : "password"}
                 autoComplete={f.autoComplete}
                 disabled={pending}
-                className="pr-10"
+                className="pe-10"
                 aria-invalid={!!errors[f.name]}
                 aria-describedby={errors[f.name] ? `${f.id}-error` : undefined}
                 {...register(f.name)}
               />
               <button
                 type="button"
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute inset-y-0 end-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={f.toggle}
                 aria-label={f.show ? t("hidePassword") : t("showPassword")}
               >
@@ -154,7 +154,7 @@ function ChangePasswordForm() {
           >
             {pending ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                 {t("updatingPassword")}
               </>
             ) : (
@@ -205,7 +205,7 @@ function SetPasswordCard() {
           >
             {pending ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 className="me-2 size-4 animate-spin" aria-hidden />
                 {t("sendingSetPassword")}
               </>
             ) : (
