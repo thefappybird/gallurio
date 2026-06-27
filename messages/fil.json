@@ -120,7 +120,7 @@
         "title": "Mabilis na dagdag",
         "booking": "Bagong booking",
         "client": "Bagong kliyente",
-        "inquiry": "Bagong inquiry"
+        "inquiry": "Tingnan ang mga inquiry"
       },
       "empty": "Wala pa rito.",
       "viewAll": "Tingnan lahat",
@@ -145,6 +145,11 @@
         "recentInquiries": "Ang iyong pinakabagong mga inquiry.",
         "activity": "Mga kamakailang pagbabago sa iyong workspace.",
         "quickAdd": "Gumawa ng booking, kliyente, o inquiry."
+      },
+      "totalLabel": "Kabuuan",
+      "calendarTeam": {
+        "label": "I-filter ayon sa team",
+        "all": "Lahat ng team"
       }
     },
     "calendar": {

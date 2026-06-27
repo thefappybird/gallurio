@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -48,8 +48,8 @@ export function ClientsPageClient({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  // Modal state
-  const [formOpen, setFormOpen] = useState(false);
+  // Modal state. ?add=1 (e.g. dashboard quick-add) opens the add form on arrival.
+  const [formOpen, setFormOpen] = useState(searchParams.get("add") === "1");
   const [editTarget, setEditTarget] = useState<ClientRow | null>(null);
   const [formDirty, setFormDirty] = useState(false);
   const [pendingFormAction, setPendingFormAction] = useState<(() => void) | null>(null);
@@ -74,6 +74,18 @@ export function ClientsPageClient({
       setDetailOpen(true);
     }
   }
+
+  // The add form opens from ?add=1 via the formOpen initializer above; here we
+  // just strip the param once so a refresh/back-navigation doesn't reopen it.
+  useEffect(() => {
+    if (searchParams.get("add") !== "1") return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("add");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+    // Run once on mount for the incoming deep-link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function refreshPage() {
     startTransition(() => {

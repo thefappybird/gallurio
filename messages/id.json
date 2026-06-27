@@ -120,7 +120,7 @@
         "title": "Tambah cepat",
         "booking": "Pemesanan baru",
         "client": "Klien baru",
-        "inquiry": "Pertanyaan baru"
+        "inquiry": "Lihat pertanyaan"
       },
       "empty": "Belum ada apa-apa di sini.",
       "viewAll": "Lihat semua",
@@ -145,6 +145,11 @@
         "recentInquiries": "Pertanyaan masuk terbaru Anda.",
         "activity": "Perubahan terbaru di ruang kerja Anda.",
         "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
+      },
+      "totalLabel": "Total",
+      "calendarTeam": {
+        "label": "Filter berdasarkan tim",
+        "all": "Semua tim"
       }
     },
     "calendar": {

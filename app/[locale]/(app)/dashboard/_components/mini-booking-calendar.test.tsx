@@ -7,7 +7,7 @@ describe("MiniBookingCalendar", () => {
   it("renders the month name and year", () => {
     const month = new Date(2026, 4, 15); // May 2026
     renderWithProviders(
-      <MiniBookingCalendar month={month} days={[]} locale="en" title="Booking calendar" />
+      <MiniBookingCalendar month={month} days={[]} locale="en" title="Booking calendar" teams={[]} />
     );
     expect(screen.getByText("Booking calendar")).toBeInTheDocument();
     expect(screen.getByText(/May 2026/)).toBeInTheDocument();
@@ -16,7 +16,7 @@ describe("MiniBookingCalendar", () => {
   it("renders the right number of day cells for the month", () => {
     const month = new Date(2026, 1, 1); // February 2026 — 28 days
     renderWithProviders(
-      <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" />
+      <MiniBookingCalendar month={month} days={[]} locale="en" title="Calendar" teams={[]} />
     );
     // Day labels 1..28 are all rendered exactly once each.
     for (let d = 1; d <= 28; d += 1) {
@@ -35,6 +35,7 @@ describe("MiniBookingCalendar", () => {
         ]}
         locale="en"
         title="Calendar"
+        teams={[]}
       />
     );
     const links = container.querySelectorAll(

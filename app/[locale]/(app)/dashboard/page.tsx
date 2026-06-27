@@ -37,6 +37,7 @@ import { TeamPerformanceCards } from "./_components/team-performance-cards";
 import { DashboardTabs } from "./_components/dashboard-tabs";
 import { DashboardDateFilter } from "./_components/dashboard-date-filter";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
+import { getBookingTeamOptions } from "../bookings/_data/team-options";
 
 export async function generateMetadata({
   params,
@@ -60,7 +61,7 @@ export default async function DashboardPage({
   setRequestLocale(locale);
   const t = await getTranslations("app.dashboard");
 
-  const { role, workspace } = await requireOrg();
+  const { role, userId, workspace } = await requireOrg();
   // Dashboard is owner-only; members never see the nav link, and a direct URL
   // hit must 404 rather than leak workspace metrics.
   if (role !== "owner") notFound();
@@ -99,7 +100,14 @@ export default async function DashboardPage({
       {tab === "portfolio" ? (
         <PortfolioDashboard />
       ) : (
-        <BookingsTab wid={wid} workspace={workspace} locale={locale} t={t} />
+        <BookingsTab
+          wid={wid}
+          workspace={workspace}
+          locale={locale}
+          t={t}
+          role={role}
+          userId={userId}
+        />
       )}
     </div>
   );
@@ -112,11 +120,15 @@ async function BookingsTab({
   workspace,
   locale,
   t,
+  role,
+  userId,
 }: {
   wid: import("mongoose").Types.ObjectId;
   workspace: Awaited<ReturnType<typeof requireOrg>>["workspace"];
   locale: string;
   t: Awaited<ReturnType<typeof getTranslations>>;
+  role: "owner" | "staff";
+  userId: string;
 }) {
   const timeMode = await getUserTimeFormat();
 
@@ -132,6 +144,7 @@ async function BookingsTab({
     revenueByTeam,
     bookingsByTeam,
     topClients,
+    teamOptions,
   ] = await Promise.all([
     getKpiSnapshotWithDeltas(wid),
     getTodaysEvents(wid),
@@ -144,6 +157,7 @@ async function BookingsTab({
     getTransactionsByTeam(wid, 90),
     getBookingsCountByTeam(wid),
     getTopClients(wid, 5),
+    getBookingTeamOptions({ role, userId, workspace }),
   ]);
 
   return (
@@ -167,6 +181,7 @@ async function BookingsTab({
           days={monthBookings}
           locale={locale}
           title={t("sections.calendar")}
+          teams={teamOptions}
         />
         <EventTypeDonut
           data={eventTypes}

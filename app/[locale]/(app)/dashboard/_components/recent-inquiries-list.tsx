@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { InquiryDoc } from "@/lib/db/models";
 import { buildInquiryModalPath } from "@/lib/inquiries/links";
+import { StatusChip } from "./status-chip";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type Props = {
   inquiries: InquiryDoc[];
@@ -14,15 +15,18 @@ type Props = {
 
 export function RecentInquiriesList({ inquiries, locale, title, empty, viewAll }: Props) {
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Link
-          href="/inquiries"
-          className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          {viewAll}
-        </Link>
+        <span className="flex items-center gap-2">
+          <Link
+            href="/inquiries"
+            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+          >
+            {viewAll}
+          </Link>
+          <DashboardInfoHint hint="recentInquiries" />
+        </span>
       </CardHeader>
       <CardContent>
         {inquiries.length === 0 ? (
@@ -46,9 +50,7 @@ export function RecentInquiriesList({ inquiries, locale, title, empty, viewAll }
                       {q.eventType}
                     </span>
                   </div>
-                  <Badge variant="outline" className="font-normal shrink-0">
-                    {q.status}
-                  </Badge>
+                  <StatusChip status={q.status} kind="inquiry" />
                 </Link>
               </li>
             ))}

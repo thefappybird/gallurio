@@ -120,7 +120,7 @@
         "title": "Quick add",
         "booking": "New booking",
         "client": "New client",
-        "inquiry": "New inquiry"
+        "inquiry": "View inquiries"
       },
       "empty": "Nothing here yet.",
       "viewAll": "View all",
@@ -145,6 +145,11 @@
         "recentInquiries": "Your latest inbound inquiries.",
         "activity": "Recent changes across your workspace.",
         "quickAdd": "Create a booking, client, or inquiry."
+      },
+      "totalLabel": "Total",
+      "calendarTeam": {
+        "label": "Filter by team",
+        "all": "All teams"
       }
     },
     "calendar": {

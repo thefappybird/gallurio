@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { BookingDoc } from "@/lib/db/models";
+import { StatusChip } from "./status-chip";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type Props = {
   bookings: BookingDoc[];
@@ -13,15 +14,18 @@ type Props = {
 
 export function UpcomingWeekList({ bookings, locale, title, empty, viewAll }: Props) {
   return (
-    <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Link
-          href="/bookings"
-          className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          {viewAll}
-        </Link>
+        <span className="flex items-center gap-2">
+          <Link
+            href="/bookings"
+            className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+          >
+            {viewAll}
+          </Link>
+          <DashboardInfoHint hint="upcomingWeek" />
+        </span>
       </CardHeader>
       <CardContent>
         {bookings.length === 0 ? (
@@ -47,9 +51,7 @@ export function UpcomingWeekList({ bookings, locale, title, empty, viewAll }: Pr
                     {b.clientName}
                   </span>
                 </Link>
-                <Badge variant="outline" className="font-normal">
-                  {b.status}
-                </Badge>
+                <StatusChip status={b.status} kind="booking" />
               </li>
             ))}
           </ul>
