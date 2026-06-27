@@ -5,14 +5,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/i18n/navigation";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { CalendarDayCount } from "../_data/dashboard-metrics";
+import type { BookingTeamOption } from "../../bookings/_data/team-options";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type Props = {
   month: Date;
-  /** Server-rendered first-paint counts for the initial month. */
+  /** Server-rendered first-paint counts for the initial month (all teams). */
   days: CalendarDayCount[];
   locale: string;
   title: string;
+  /** Teams the owner can filter by; empty/1 hides the selector. */
+  teams: BookingTeamOption[];
 };
 
 function isoDate(d: Date) {
@@ -27,12 +32,16 @@ export function MiniBookingCalendar({
   days: initialDays,
   locale,
   title,
+  teams,
 }: Props) {
+  const t = useTranslations("app.dashboard");
   const [month, setMonth] = useState<Date>(
     new Date(initialMonth.getFullYear(), initialMonth.getMonth(), 1)
   );
   const [days, setDays] = useState<CalendarDayCount[]>(initialDays);
   const [loading, setLoading] = useState(false);
+  // "" = all teams (the server first-paint).
+  const [teamId, setTeamId] = useState("");
 
   const initialKey = `${initialMonth.getFullYear()}-${initialMonth.getMonth()}`;
   const monthKey = `${month.getFullYear()}-${month.getMonth()}`;
@@ -40,18 +49,20 @@ export function MiniBookingCalendar({
 
   useEffect(() => {
     let cancelled = false;
-    const initial = isInitial;
+    // The server first-paint covers only the initial month with all teams.
+    const useServerPaint = isInitial && teamId === "";
     const days0 = initialDays;
     const year = month.getFullYear();
     const mon = month.getMonth();
     Promise.resolve().then(() => {
       if (cancelled) return;
-      if (initial) {
+      if (useServerPaint) {
         setDays(days0);
         return;
       }
       setLoading(true);
-      fetch(`/api/bookings/by-day?year=${year}&month=${mon}`)
+      const teamParam = teamId ? `&team=${encodeURIComponent(teamId)}` : "";
+      fetch(`/api/bookings/by-day?year=${year}&month=${mon}${teamParam}`)
         .then((r) => (r.ok ? r.json() : []))
         .then((rows: CalendarDayCount[]) => {
           if (cancelled) return;
@@ -66,7 +77,7 @@ export function MiniBookingCalendar({
     return () => {
       cancelled = true;
     };
-  }, [monthKey, isInitial, initialDays, month]);
+  }, [monthKey, isInitial, initialDays, month, teamId]);
 
   const counts = new Map(days.map((d) => [d.date, d.count]));
   const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -107,9 +118,12 @@ export function MiniBookingCalendar({
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full rounded-[var(--radius)]">
       <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <span className="flex items-center gap-1.5">
+          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <DashboardInfoHint hint="calendar" />
+        </span>
         <div className="flex items-center gap-0.5">
           <Button
             type="button"
@@ -140,6 +154,21 @@ export function MiniBookingCalendar({
         </div>
       </CardHeader>
       <CardContent className="p-3 pt-0">
+        {teams.length > 1 && (
+          <select
+            value={teamId}
+            onChange={(e) => setTeamId(e.target.value)}
+            aria-label={t("calendarTeam.label")}
+            className="mb-2 h-8 w-full rounded-[var(--radius)] border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">{t("calendarTeam.all")}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        )}
         <div
           className={`grid grid-cols-7 gap-px bg-border transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}
         >

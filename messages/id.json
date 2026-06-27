@@ -84,6 +84,32 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Selamat datang kembali, {name}",
+      "tabs": {
+        "aria": "Ganti dasbor",
+        "bookings": "Pemesanan",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Rentang tanggal",
+        "filter": "Filter",
+        "day": "Harian",
+        "month": "Bulanan",
+        "year": "Tahunan",
+        "custom": "Kustom",
+        "all": "Sepanjang waktu",
+        "allTimeHint": "Menampilkan semua tanggal.",
+        "clear": "Hapus",
+        "apply": "Terapkan",
+        "from": "Dari",
+        "to": "Sampai",
+        "since": "Mulai dari",
+        "until": "Hingga"
+      },
+      "pagination": {
+        "prev": "Sebelumnya",
+        "next": "Berikutnya",
+        "status": "{page} dari {total}"
+      },
       "kpi": {
         "revenueThisMonth": "Pendapatan bulan ini",
         "activeBookings": "Pemesanan aktif bulan ini",
@@ -95,27 +121,71 @@
         "upcomingWeek": "Akan datang minggu ini",
         "recentInquiries": "Pertanyaan terbaru",
         "activity": "Aktivitas terbaru",
-        "pipeline": "Pipeline",
-        "revenueTrend": "Pendapatan (30 hari terakhir)",
+        "revenueTrend": "Pendapatan",
         "calendar": "Kalender pemesanan",
         "eventTypes": "Rincian jenis acara",
-        "transactionsByMethod": "Pembayaran per metode (90 hari)",
-        "transactionsByTeam": "Pendapatan per tim",
-        "weeklyBookings": "Pemesanan per hari dalam seminggu",
-        "topClients": "Klien teratas berdasarkan pengeluaran"
-      },
-      "pipeline": {
-        "inquiries": "Pertanyaan",
-        "booked": "Dipesan"
+        "topClients": "Klien teratas berdasarkan pengeluaran",
+        "teamPerformance": "Kinerja tim",
+        "bookingsPerTeam": "Pemesanan per tim"
       },
       "quickAdd": {
         "title": "Tambah cepat",
         "booking": "Pemesanan baru",
         "client": "Klien baru",
-        "inquiry": "Pertanyaan baru"
+        "inquiry": "Lihat pertanyaan"
       },
       "empty": "Belum ada apa-apa di sini.",
-      "viewAll": "Lihat semua"
+      "viewAll": "Lihat semua",
+      "portfolio": {
+        "analyticsSoon": "Analitik portofolio segera hadir.",
+        "totalViews": "Total tampilan",
+        "uniqueVisitors": "Pengunjung unik",
+        "inquiries": "Pertanyaan",
+        "conversionRate": "Tingkat konversi",
+        "viewsOverTime": "Tampilan & pengunjung",
+        "views": "Tampilan",
+        "visitors": "Pengunjung",
+        "topSources": "Sumber teratas",
+        "perPage": "Per halaman",
+        "siteInquiries": "Pertanyaan dari situs Anda",
+        "publishStatus": "Status terbit",
+        "published": "Diterbitkan",
+        "notPublished": "Belum diterbitkan",
+        "lastPublished": "Terakhir terbit {date}",
+        "viewLive": "Lihat halaman langsung",
+        "openEditor": "Buka editor",
+        "noTraffic": "Belum ada kunjungan pada periode ini.",
+        "directSource": "Langsung",
+        "inquiryInsights": "Wawasan pertanyaan",
+        "inquiryToBooking": "Pertanyaan → pemesanan",
+        "bookedFromInquiries": "Dipesan dari pertanyaan",
+        "newClientsFromForm": "Klien baru dari formulir"
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
+      },
+      "showMore": "Tampilkan lebih",
+      "showLess": "Tampilkan lebih sedikit",
+      "hints": {
+        "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
+        "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
+        "eventTypes": "Bagian pemesanan menurut jenis acara.",
+        "teamPerformance": "Kinerja tiap tim berdasarkan pendapatan dan jumlah pemesanan.",
+        "bookingsPerTeam": "Jumlah pemesanan yang ditangani tiap tim.",
+        "revenueTrend": "Pendapatan dibayar dalam periode yang dipilih.",
+        "inquiryInsights": "Konversi dari kunjungan dan pertanyaan, ditambah klien baru dari formulir kontak Anda.",
+        "topClients": "Klien menurut total pengeluaran.",
+        "todaysEvents": "Pemesanan yang mulai hari ini.",
+        "upcomingWeek": "Pemesanan terkonfirmasi dalam 7 hari ke depan.",
+        "recentInquiries": "Pertanyaan masuk terbaru Anda.",
+        "activity": "Perubahan terbaru di ruang kerja Anda.",
+        "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
+      },
+      "totalLabel": "Total",
+      "calendarTeam": {
+        "label": "Filter berdasarkan tim",
+        "all": "Semua tim"
+      }
     },
     "calendar": {
       "title": "Calendar",

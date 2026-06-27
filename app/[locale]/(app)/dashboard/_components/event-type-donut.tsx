@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Cell, Pie, PieChart, ResponsiveContainer, Sector, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoHint } from "@/components/ui/info-hint";
+import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 import type { EventTypeBreakdown } from "../_data/dashboard-metrics";
 
 type ActiveSectorProps = {
@@ -58,6 +61,9 @@ const PALETTE = [
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
+  "var(--chart-6)",
+  "var(--chart-7)",
+  "var(--chart-8)",
 ];
 
 function capitalize(s: string) {
@@ -65,6 +71,7 @@ function capitalize(s: string) {
 }
 
 export function EventTypeDonut({ data, title, empty }: Props) {
+  const t = useTranslations("app.dashboard");
   const total = data.reduce((sum, d) => sum + d.count, 0);
   const slices = data.map((d, i) => ({
     name: capitalize(d.eventType),
@@ -73,16 +80,18 @@ export function EventTypeDonut({ data, title, empty }: Props) {
   }));
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <InfoHint label={t("hints.eventTypes")} />
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 p-4 pt-0">
+      <CardContent className="p-4 pt-0">
         {total === 0 ? (
           <p className="py-12 text-center text-sm text-muted-foreground">{empty}</p>
         ) : (
-          <>
-            <div className="relative mx-auto h-44 w-44">
+          // Legend sits beside the pie so the card height matches its neighbors.
+          <div className="flex flex-col items-center gap-10 sm:flex-row sm:justify-center px-10">
+            <div className="relative h-48 w-48 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -104,16 +113,8 @@ export function EventTypeDonut({ data, title, empty }: Props) {
                     ))}
                   </Pie>
                   <Tooltip
+                    {...CHART_TOOLTIP}
                     cursor={false}
-                    wrapperStyle={{ zIndex: 50, outline: "none" }}
-                    contentStyle={{
-                      background: "var(--popover)",
-                      color: "var(--popover-foreground)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 0,
-                      fontSize: 12,
-                      padding: "6px 10px",
-                    }}
                     formatter={(value, name) => [
                       `${value} · ${total > 0 ? Math.round((Number(value) / total) * 100) : 0}%`,
                       String(name ?? ""),
@@ -126,18 +127,18 @@ export function EventTypeDonut({ data, title, empty }: Props) {
                   {total}
                 </span>
                 <span className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  Bookings
+                  {t("totalLabel")}
                 </span>
               </div>
             </div>
-            <ul className="flex flex-col gap-1.5">
-              {slices.slice(0, 5).map((s) => {
+            <ul className="flex w-full min-w-0 flex-1 flex-col gap-1.5">
+              {slices.slice(0, 6).map((s) => {
                 const pct = ((s.value / total) * 100).toFixed(0);
                 return (
                   <li key={s.name} className="flex items-center justify-between gap-2 text-xs">
                     <span className="flex items-center gap-2 min-w-0">
                       <span
-                        className="size-2.5 shrink-0"
+                        className="size-2.5 shrink-0 rounded-full"
                         style={{ background: s.fill }}
                         aria-hidden
                       />
@@ -150,7 +151,7 @@ export function EventTypeDonut({ data, title, empty }: Props) {
                 );
               })}
             </ul>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

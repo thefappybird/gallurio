@@ -60,8 +60,9 @@ describe("RecentInquiriesList", () => {
     );
     expect(screen.getByText("Lena Okafor")).toBeInTheDocument();
     expect(screen.getByText("Jordan Patel")).toBeInTheDocument();
-    expect(screen.getByText("inquiry")).toBeInTheDocument();
-    expect(screen.getByText("booked")).toBeInTheDocument();
+    // StatusChip renders the capitalized i18n label, not the raw status.
+    expect(screen.getByText("Inquiry")).toBeInTheDocument();
+    expect(screen.getByText("Booked")).toBeInTheDocument();
   });
 
   it("links each inquiry to the inbox modal deep-link", () => {

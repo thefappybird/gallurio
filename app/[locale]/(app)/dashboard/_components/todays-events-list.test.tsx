@@ -64,6 +64,7 @@ describe("TodaysEventsList", () => {
         timeMode="12h"
       />
     );
-    expect(screen.getByText("booked")).toBeInTheDocument();
+    // StatusChip renders the capitalized i18n label, not the raw status.
+    expect(screen.getByText("Booked")).toBeInTheDocument();
   });
 });

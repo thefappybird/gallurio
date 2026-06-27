@@ -18,6 +18,9 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-8: var(--chart-8);
+  --color-chart-7: var(--chart-7);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -91,13 +94,19 @@
   --brand-2: oklch(0.65 0.10 195);
   --brand-3: oklch(0.78 0.08 195);
   --brand-4: oklch(0.88 0.05 195);
-  /* Chart palette: mix of brand teals + median greys so categories read as
-     distinct at a glance. See CLAUDE.md → Brand accent. */
-  --chart-1: var(--brand);
-  --chart-2: var(--brand-3);
-  --chart-3: oklch(0.65 0 0);
-  --chart-4: var(--brand-2);
-  --chart-5: oklch(0.45 0 0);
+  /* Chart palette: teal (brand) stays the lead accent (chart-1); the rest fan
+     out across distinct hues at mid-luminance / moderate chroma so multiple
+     datasets read apart at a glance while staying on-brand and legible on the
+     light card surface. Dark mode lifts L (.dark block) so they pop on charcoal.
+     See CLAUDE.md → Design rules (brand accent ~10–20%). */
+  --chart-1: var(--brand);                 /* teal 195 — lead accent */
+  --chart-2: oklch(0.58 0.13 250);         /* indigo */
+  --chart-3: oklch(0.68 0.14 60);          /* amber */
+  --chart-4: oklch(0.58 0.15 25);          /* coral */
+  --chart-5: oklch(0.55 0.14 300);         /* violet */
+  --chart-6: oklch(0.60 0.13 150);         /* green */
+  --chart-7: oklch(0.66 0.12 95);          /* gold-olive */
+  --chart-8: oklch(0.58 0.02 255);         /* slate — neutral */
   /* Event status colors — theme-invariant by design (same in light and dark
      mode) so calendar events read as a stable vocabulary regardless of the
      surrounding scheme. Saturated mid-luminance palette: white text always
@@ -155,11 +164,14 @@
   --brand-2: oklch(0.62 0.10 195);
   --brand-3: oklch(0.50 0.10 195);
   --brand-4: oklch(0.42 0.08 195);
-  --chart-1: var(--brand);
-  --chart-2: var(--brand-2);
-  --chart-3: oklch(0.65 0 0);
-  --chart-4: var(--brand-3);
-  --chart-5: oklch(0.75 0 0);
+  --chart-1: var(--brand);                 /* teal 195 — lead accent */
+  --chart-2: oklch(0.70 0.13 250);         /* indigo */
+  --chart-3: oklch(0.78 0.14 60);          /* amber */
+  --chart-4: oklch(0.68 0.15 25);          /* coral */
+  --chart-5: oklch(0.70 0.14 300);         /* violet */
+  --chart-6: oklch(0.74 0.13 150);         /* green */
+  --chart-7: oklch(0.78 0.12 95);          /* gold-olive */
+  --chart-8: oklch(0.72 0.02 255);         /* slate — neutral */
   --danger: oklch(0.60 0.18 25);
   --sidebar: oklch(0.235 0.006 255);
   --sidebar-foreground: oklch(0.92 0.004 235);

@@ -3,7 +3,9 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 import type { RevenuePoint } from "../_data/dashboard-metrics";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type Props = {
   data: RevenuePoint[];
@@ -14,9 +16,10 @@ type Props = {
 
 export function RevenueTrendChart({ data, currency, locale, title }: Props) {
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <DashboardInfoHint hint="revenueTrend" />
       </CardHeader>
       <CardContent className="h-48 p-0 pl-1">
         <ResponsiveContainer width="100%" height="100%">
@@ -50,15 +53,7 @@ export function RevenueTrendChart({ data, currency, locale, title }: Props) {
               width={40}
             />
             <Tooltip
-              cursor={{ fill: "var(--muted)", fillOpacity: 0.4 }}
-              wrapperStyle={{ zIndex: 50, outline: "none" }}
-              contentStyle={{
-                background: "var(--popover)",
-                color: "var(--popover-foreground)",
-                border: "1px solid var(--border)",
-                borderRadius: 0,
-                fontSize: 12,
-              }}
+              {...CHART_TOOLTIP}
               formatter={(value) => formatMoney(Number(value), currency, locale)}
               labelFormatter={(label) =>
                 new Date(String(label)).toLocaleDateString(locale, {

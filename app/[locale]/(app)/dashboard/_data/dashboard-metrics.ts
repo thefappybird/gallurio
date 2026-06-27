@@ -2,6 +2,7 @@ import "server-only";
 import { Types } from "mongoose";
 import { Booking, Client, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -62,11 +63,18 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
       {
         $lookup: {
           from: "transactions",
-          let: { bookingId: "$_id" },
+          let: { bookingId: "$_id", wsId: "$workspaceId" },
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ["$bookingId", "$$bookingId"] },
+                // Anchor to workspaceId too (defense-in-depth) — booking _ids are
+                // globally unique, but never join across tenants regardless.
+                $expr: {
+                  $and: [
+                    { $eq: ["$bookingId", "$$bookingId"] },
+                    { $eq: ["$workspaceId", "$$wsId"] },
+                  ],
+                },
                 type: { $in: ["deposit", "balance"] },
               },
             },
@@ -93,6 +101,133 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
       0,
       (outstandingAgg[0]?.total ?? 0) - (outstandingAgg[0]?.paid ?? 0)
     ),
+  };
+}
+
+export type KpiTrend = { value: number; positiveIsGood: boolean } | null;
+
+export type KpiTrends = {
+  revenue: KpiTrend;
+  activeBookings: KpiTrend;
+  newInquiries: KpiTrend;
+  outstandingBalance: KpiTrend;
+};
+
+// Hide the badge (null) when there's no prior-period baseline — a percentage off
+// zero is meaningless and produced the "5% with 0 bookings" bug.
+function pctTrend(current: number, prior: number, positiveIsGood: boolean): KpiTrend {
+  if (prior === 0) return null;
+  return { value: ((current - prior) / prior) * 100, positiveIsGood };
+}
+
+async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
+  const agg = await Transaction.aggregate<{ total: number }>([
+    {
+      $match: {
+        workspaceId,
+        paidAt: { $gte: start, $lte: end },
+        type: { $in: ["deposit", "balance", "refund"] },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  return agg[0]?.total ?? 0;
+}
+
+export type DateRange = { from: Date | null; to: Date | null };
+
+export async function getKpiSnapshotWithDeltas(
+  workspaceId: WorkspaceId,
+  range?: DateRange
+): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
+  const now = new Date();
+  const thisStart = startOfMonth(now);
+  const thisEnd = endOfMonth(now);
+  const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastStart = startOfMonth(lastDate);
+  const lastEnd = endOfMonth(lastDate);
+
+  const [
+    snapshot,
+    lastRevenue,
+    lastActiveBookings,
+    thisInquiriesCreated,
+    lastInquiriesCreated,
+  ] = await Promise.all([
+    getKpiSnapshot(workspaceId),
+    monthRevenue(workspaceId, lastStart, lastEnd),
+    Booking.countDocuments({
+      workspaceId,
+      firstSessionStart: { $gte: lastStart, $lte: lastEnd },
+      status: "booked",
+    }),
+    Inquiry.countDocuments({
+      workspaceId,
+      createdAt: { $gte: thisStart, $lte: thisEnd },
+    }),
+    Inquiry.countDocuments({
+      workspaceId,
+      createdAt: { $gte: lastStart, $lte: lastEnd },
+    }),
+  ]);
+
+  // Any explicit range scopes the period metrics. A fully-bounded range also
+  // compares against the immediately-preceding equal-length window; half-open
+  // ranges (up-until / starting-from) scope the totals but show no delta.
+  if (range?.from || range?.to) {
+    const start = range.from ?? new Date(0);
+    const end = range.to ?? new Date();
+    const [rev, active, inq] = await Promise.all([
+      monthRevenue(workspaceId, start, end),
+      Booking.countDocuments({
+        workspaceId,
+        firstSessionStart: { $gte: start, $lte: end },
+        status: "booked",
+      }),
+      Inquiry.countDocuments({ workspaceId, createdAt: { $gte: start, $lte: end } }),
+    ]);
+    snapshot.revenueThisMonth = rev;
+    snapshot.activeBookingsThisMonth = active;
+    snapshot.newInquiries = inq;
+
+    if (range.from && range.to) {
+      const len = range.to.getTime() - range.from.getTime();
+      const pStart = new Date(range.from.getTime() - 1 - len);
+      const pEnd = new Date(range.from.getTime() - 1);
+      const [pRev, pActive, pInq] = await Promise.all([
+        monthRevenue(workspaceId, pStart, pEnd),
+        Booking.countDocuments({
+          workspaceId,
+          firstSessionStart: { $gte: pStart, $lte: pEnd },
+          status: "booked",
+        }),
+        Inquiry.countDocuments({ workspaceId, createdAt: { $gte: pStart, $lte: pEnd } }),
+      ]);
+      return {
+        snapshot,
+        trends: {
+          revenue: pctTrend(rev, pRev, true),
+          activeBookings: pctTrend(active, pActive, true),
+          newInquiries: pctTrend(inq, pInq, true),
+          outstandingBalance: null,
+        },
+      };
+    }
+    return {
+      snapshot,
+      trends: { revenue: null, activeBookings: null, newInquiries: null, outstandingBalance: null },
+    };
+  }
+
+  return {
+    snapshot,
+    trends: {
+      revenue: pctTrend(snapshot.revenueThisMonth, lastRevenue, true),
+      activeBookings: pctTrend(snapshot.activeBookingsThisMonth, lastActiveBookings, true),
+      newInquiries: pctTrend(thisInquiriesCreated, lastInquiriesCreated, true),
+      // Point-in-time snapshot — a period delta would be misleading.
+      outstandingBalance: null,
+    },
   };
 }
 
@@ -137,34 +272,45 @@ export async function getActivityFeed(workspaceId: WorkspaceId, limit = 10) {
     .lean();
 }
 
-export type PipelineCounts = {
-  inquiries: number;
-  booked: number;
-};
-
-export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
-  const [inquiries, booked] = await Promise.all([
-    Inquiry.countDocuments({ workspaceId, status: "inquiry" }),
-    Booking.countDocuments({ workspaceId, status: "booked" }),
-  ]);
-  return { inquiries, booked };
-}
-
 export type RevenuePoint = { date: string; amount: number };
 
 export async function getRevenueTrend(
   workspaceId: WorkspaceId,
-  days = 30
+  days = 30,
+  range?: DateRange,
+  timezone = "UTC"
 ): Promise<RevenuePoint[]> {
-  // Bucket by UTC day. Workspace-local-timezone bucketing is a follow-up — we
-  // need to thread workspace.timezone through to $dateToString.
-  const now = new Date();
-  const start = new Date(now);
-  start.setUTCHours(0, 0, 0, 0);
-  start.setUTCDate(start.getUTCDate() - (days - 1));
+  // Bucket by the workspace-local day so the trend agrees with bookings and
+  // inquiry events. The page passes the resolved workspace timezone; the "UTC"
+  // default keeps callers that don't care timezone-neutral.
+  const localKey = (d: Date) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(d);
 
-  const end = new Date(now);
-  end.setUTCHours(23, 59, 59, 999);
+  let startKey: string;
+  let endKey: string;
+  if (range?.from || range?.to) {
+    // Half-open: "starting from" runs to now; "up until" shows the `days`-long
+    // window ending at `to`.
+    const fromD =
+      range.from ?? new Date((range.to as Date).getTime() - (days - 1) * 86_400_000);
+    const toD = range.to ?? new Date();
+    startKey = localKey(fromD);
+    endKey = localKey(toD);
+  } else {
+    const now = new Date();
+    endKey = localKey(now);
+    startKey = localKey(new Date(now.getTime() - (days - 1) * 86_400_000));
+  }
+
+  // Full local-day window [start 00:00 .. end 23:59:59.999] so a same-day
+  // transaction is never clipped by the current wall-clock time.
+  const start = dayBoundInTz(startKey, timezone, 0, 0, 0, 0);
+  const end = dayBoundInTz(endKey, timezone, 23, 59, 59, 999);
 
   const rows = await Transaction.aggregate<{ _id: string; total: number }>([
     {
@@ -176,19 +322,24 @@ export async function getRevenueTrend(
     },
     {
       $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt" } },
+        _id: { $dateToString: { format: "%Y-%m-%d", date: "$paidAt", timezone } },
         total: { $sum: "$amount" },
       },
     },
   ]);
 
   const byDate = new Map(rows.map((r) => [r._id, r.total]));
+  // Walk local calendar days from startKey to endKey (cursor stays at UTC
+  // midnight — pure date arithmetic, DST-independent) so the emitted keys match
+  // the timezone-aware $dateToString grouping above.
   const out: RevenuePoint[] = [];
-  for (let i = 0; i < days; i += 1) {
-    const d = new Date(start);
-    d.setUTCDate(start.getUTCDate() + i);
-    const key = d.toISOString().slice(0, 10);
+  const [sy, sm, sd] = startKey.split("-").map(Number);
+  const cursor = new Date(Date.UTC(sy, sm - 1, sd));
+  let key = startKey;
+  while (key <= endKey) {
     out.push({ date: key, amount: byDate.get(key) ?? 0 });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    key = cursor.toISOString().slice(0, 10);
   }
   return out;
 }
@@ -251,36 +402,22 @@ export async function getTopClients(workspaceId: WorkspaceId, limit = 5) {
 export type EventTypeBreakdown = { eventType: string; count: number };
 
 export async function getEventTypeBreakdown(
-  workspaceId: WorkspaceId
+  workspaceId: WorkspaceId,
+  range?: DateRange
 ): Promise<EventTypeBreakdown[]> {
+  const match: Record<string, unknown> = { workspaceId, status: { $ne: "draft" } };
+  if (range?.from || range?.to) {
+    const c: { $gte?: Date; $lte?: Date } = {};
+    if (range.from) c.$gte = range.from;
+    if (range.to) c.$lte = range.to;
+    match.firstSessionStart = c;
+  }
   const rows = await Booking.aggregate<{ _id: string; count: number }>([
-    { $match: { workspaceId, status: { $ne: "draft" } } },
+    { $match: match },
     { $group: { _id: "$eventType", count: { $sum: 1 } } },
     { $sort: { count: -1 } },
   ]);
   return rows.map((r) => ({ eventType: r._id ?? "other", count: r.count }));
-}
-
-export type TransactionsByMethod = { method: string; total: number };
-
-export async function getTransactionsByMethod(
-  workspaceId: WorkspaceId,
-  days = 90
-): Promise<TransactionsByMethod[]> {
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  const rows = await Transaction.aggregate<{ _id: string; total: number }>([
-    {
-      $match: {
-        workspaceId,
-        paidAt: { $gte: start },
-        type: { $in: ["deposit", "balance"] },
-      },
-    },
-    { $group: { _id: "$method", total: { $sum: "$amount" } } },
-    { $sort: { total: -1 } },
-  ]);
-  return rows.map((r) => ({ method: r._id ?? "other", total: r.total }));
 }
 
 export type TransactionsByTeam = {
@@ -293,17 +430,26 @@ export type TransactionsByTeam = {
 
 export async function getTransactionsByTeam(
   workspaceId: WorkspaceId,
-  days = 90
+  range?: DateRange
 ): Promise<TransactionsByTeam[]> {
-  const start = new Date();
-  start.setDate(start.getDate() - days);
+  let paidAt: Record<string, Date>;
+  if (range?.from || range?.to) {
+    paidAt = {};
+    if (range.from) paidAt.$gte = range.from;
+    if (range.to) paidAt.$lte = range.to;
+  } else {
+    const start = new Date();
+    start.setDate(start.getDate() - 90);
+    paidAt = { $gte: start };
+  }
 
   const rows = await Transaction.aggregate<{ _id: Types.ObjectId | null; total: number }>([
     {
       $match: {
         workspaceId,
-        paidAt: { $gte: start },
-        type: { $in: ["deposit", "balance"] },
+        paidAt,
+        // Net revenue (incl. refunds) to reconcile with the KPI revenue card.
+        type: { $in: ["deposit", "balance", "refund"] },
       },
     },
     { $group: { _id: "$teamId", total: { $sum: "$amount" } } },
@@ -331,6 +477,57 @@ export async function getTransactionsByTeam(
         color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
         isActive: team.isActive,
         total: r.total,
+      },
+    ];
+  });
+}
+
+export type TeamBookingsCount = {
+  teamId: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  count: number;
+};
+
+export async function getBookingsCountByTeam(
+  workspaceId: WorkspaceId,
+  range?: DateRange
+): Promise<TeamBookingsCount[]> {
+  const match: Record<string, unknown> = { workspaceId, status: { $ne: "draft" } };
+  if (range?.from || range?.to) {
+    const c: { $gte?: Date; $lte?: Date } = {};
+    if (range.from) c.$gte = range.from;
+    if (range.to) c.$lte = range.to;
+    match.firstSessionStart = c;
+  }
+  const rows = await Booking.aggregate<{ _id: Types.ObjectId | null; count: number }>([
+    { $match: match },
+    { $group: { _id: "$teamId", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+  ]);
+
+  const withTeam = rows.filter((r) => r._id != null) as {
+    _id: Types.ObjectId;
+    count: number;
+  }[];
+  if (withTeam.length === 0) return [];
+
+  const teams = await Team.find({ workspaceId, _id: { $in: withTeam.map((r) => r._id) } })
+    .select({ _id: 1, name: 1, color: 1, isActive: 1 })
+    .lean();
+  const teamMap = new Map(teams.map((t) => [t._id.toString(), t]));
+
+  return withTeam.flatMap((r) => {
+    const team = teamMap.get(r._id.toString());
+    if (!team) return [];
+    return [
+      {
+        teamId: r._id.toString(),
+        name: team.name,
+        color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
+        isActive: team.isActive,
+        count: r.count,
       },
     ];
   });
@@ -381,21 +578,3 @@ export async function getRevenueComparison(
   return { thisMonth, lastMonth, deltaPct };
 }
 
-export type WeeklyBookingsPoint = { day: string; count: number };
-const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-export async function getBookingsByWeekday(
-  workspaceId: WorkspaceId
-): Promise<WeeklyBookingsPoint[]> {
-  const rows = await Booking.aggregate<{ _id: number; count: number }>([
-    { $match: { workspaceId, status: { $ne: "draft" } } },
-    {
-      $group: {
-        _id: { $dayOfWeek: "$firstSessionStart" }, // 1=Sun .. 7=Sat (Mongo)
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-  const counts = new Map(rows.map((r) => [r._id - 1, r.count]));
-  return WEEKDAY_LABELS.map((day, i) => ({ day, count: counts.get(i) ?? 0 }));
-}

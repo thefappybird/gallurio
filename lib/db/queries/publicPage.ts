@@ -20,6 +20,29 @@ import { Workspace } from "@/lib/db/models/Workspace";
  * deferred until the Phase 9 publish action exists to invalidate it — without
  * an invalidation counterpart, a persistent cache would serve stale pages.
  */
+/**
+ * Slim slug -> {_id, timezone} resolver for the public page-view beacon: avoids
+ * pulling the heavy publicPage subtree on every hit. Published-only, lowercased
+ * slug; never trusts a client-supplied workspaceId.
+ */
+export const resolveWorkspaceIdBySlug = cache(
+  async (
+    slug: string
+  ): Promise<{ _id: import("mongoose").Types.ObjectId; timezone: string | null } | null> => {
+    const normalized = slug.trim().toLowerCase();
+    if (!normalized) return null;
+    await connectDB();
+    const ws = await Workspace.findOne({
+      slug: normalized,
+      "publicPage.publishedAt": { $ne: null },
+    })
+      .select({ _id: 1, timezone: 1 })
+      .lean<{ _id: import("mongoose").Types.ObjectId; timezone?: string | null }>();
+    if (!ws) return null;
+    return { _id: ws._id, timezone: ws.timezone ?? null };
+  }
+);
+
 export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
   const normalized = slug.trim().toLowerCase();
   if (!normalized) return null;

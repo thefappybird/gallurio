@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Link } from "@/lib/i18n/navigation";
 import type { BookingDoc } from "@/lib/db/models";
 import { formatTime, type TimeMode } from "@/lib/utils/time-format";
+import { StatusChip } from "./status-chip";
+import { DashboardInfoHint } from "./dashboard-info-hint";
+import { PagedList } from "./paged-list";
 
 type Props = {
   bookings: BookingDoc[];
@@ -14,16 +16,17 @@ type Props = {
 
 export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <DashboardInfoHint hint="todaysEvents" />
       </CardHeader>
       <CardContent>
         {bookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">{empty}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {bookings.map((b) => (
+          <PagedList
+            items={bookings.map((b) => (
               <li key={String(b._id)} className="flex items-center justify-between gap-3 py-2.5">
                 <Link
                   href={`/bookings/${b._id.toString()}`}
@@ -38,20 +41,10 @@ export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
                     {b.clientName}
                   </span>
                 </Link>
-                <Badge
-                  variant={b.status === "booked" ? "default" : "outline"}
-                  className={
-                    "font-normal capitalize" +
-                    (b.status === "booked"
-                      ? " bg-brand text-brand-foreground"
-                      : "")
-                  }
-                >
-                  {b.status}
-                </Badge>
+                <StatusChip status={b.status} kind="booking" />
               </li>
             ))}
-          </ul>
+          />
         )}
       </CardContent>
     </Card>

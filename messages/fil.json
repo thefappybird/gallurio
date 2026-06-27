@@ -84,6 +84,32 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Maligayang pagbabalik, {name}",
+      "tabs": {
+        "aria": "Magpalit ng dashboard",
+        "bookings": "Mga booking",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Saklaw ng petsa",
+        "filter": "Salain",
+        "day": "Araw-araw",
+        "month": "Buwanan",
+        "year": "Taunan",
+        "custom": "Pasadya",
+        "all": "Lahat ng panahon",
+        "allTimeHint": "Ipinapakita ang lahat ng petsa.",
+        "clear": "I-clear",
+        "apply": "Ilapat",
+        "from": "Mula",
+        "to": "Hanggang",
+        "since": "Simula sa",
+        "until": "Hanggang sa"
+      },
+      "pagination": {
+        "prev": "Nakaraan",
+        "next": "Susunod",
+        "status": "{page} ng {total}"
+      },
       "kpi": {
         "revenueThisMonth": "Kita ngayong buwan",
         "activeBookings": "Aktibong mga booking ngayong buwan",
@@ -95,27 +121,71 @@
         "upcomingWeek": "Paparating ngayong linggo",
         "recentInquiries": "Mga kamakailang inquiry",
         "activity": "Kamakailang aktibidad",
-        "pipeline": "Pipeline",
-        "revenueTrend": "Kita (nakaraang 30 araw)",
+        "revenueTrend": "Kita",
         "calendar": "Booking calendar",
         "eventTypes": "Breakdown ng uri ng event",
-        "transactionsByMethod": "Mga bayad ayon sa paraan (90d)",
-        "transactionsByTeam": "Kita ayon sa koponan",
-        "weeklyBookings": "Mga booking ayon sa araw ng linggo",
-        "topClients": "Mga nangungunang kliyente ayon sa gastos"
-      },
-      "pipeline": {
-        "inquiries": "Mga inquiry",
-        "booked": "Naka-book"
+        "topClients": "Mga nangungunang kliyente ayon sa gastos",
+        "teamPerformance": "Performance ng team",
+        "bookingsPerTeam": "Mga booking kada team"
       },
       "quickAdd": {
         "title": "Mabilis na dagdag",
         "booking": "Bagong booking",
         "client": "Bagong kliyente",
-        "inquiry": "Bagong inquiry"
+        "inquiry": "Tingnan ang mga inquiry"
       },
       "empty": "Wala pa rito.",
-      "viewAll": "Tingnan lahat"
+      "viewAll": "Tingnan lahat",
+      "portfolio": {
+        "analyticsSoon": "Malapit nang dumating ang portfolio analytics.",
+        "totalViews": "Kabuuang views",
+        "uniqueVisitors": "Natatanging bisita",
+        "inquiries": "Mga inquiry",
+        "conversionRate": "Conversion rate",
+        "viewsOverTime": "Views at bisita",
+        "views": "Views",
+        "visitors": "Bisita",
+        "topSources": "Nangungunang pinagmulan",
+        "perPage": "Ayon sa page",
+        "siteInquiries": "Mga inquiry mula sa site",
+        "publishStatus": "Status ng publish",
+        "published": "Nai-publish",
+        "notPublished": "Hindi pa nai-publish",
+        "lastPublished": "Huling na-publish {date}",
+        "viewLive": "Tingnan ang live na page",
+        "openEditor": "Buksan ang editor",
+        "noTraffic": "Wala pang bisita sa panahong ito.",
+        "directSource": "Diretso",
+        "inquiryInsights": "Mga insight sa inquiry",
+        "inquiryToBooking": "Inquiry → booking",
+        "bookedFromInquiries": "Na-book mula sa inquiry",
+        "newClientsFromForm": "Bagong kliyente mula sa form"
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"
+      },
+      "showMore": "Magpakita pa",
+      "showLess": "Bawasan",
+      "hints": {
+        "kpi": "Mga kabuuan para sa buwang ito. Inihahambing ng mga arrow sa nakaraang buwan.",
+        "calendar": "Mga booking kada araw. Mag-filter ayon sa team; i-tap ang isang araw para buksan ang kalendaryo doon.",
+        "eventTypes": "Bahagi ng mga booking ayon sa uri ng event.",
+        "teamPerformance": "Kung paano gumaganap ang bawat team ayon sa kita at dami ng booking.",
+        "bookingsPerTeam": "Bilang ng mga booking na hinawakan ng bawat team.",
+        "revenueTrend": "Kita mula sa bayad sa napiling panahon.",
+        "inquiryInsights": "Conversion mula sa mga bisita at inquiry, kasama ang mga bagong kliyente mula sa iyong contact form.",
+        "topClients": "Mga kliyente ayon sa kabuuang nagastos.",
+        "todaysEvents": "Mga booking na nagsisimula ngayon.",
+        "upcomingWeek": "Mga kumpirmadong booking sa susunod na 7 araw.",
+        "recentInquiries": "Ang iyong pinakabagong mga inquiry.",
+        "activity": "Mga kamakailang pagbabago sa iyong workspace.",
+        "quickAdd": "Gumawa ng booking, kliyente, o inquiry."
+      },
+      "totalLabel": "Kabuuan",
+      "calendarTeam": {
+        "label": "I-filter ayon sa team",
+        "all": "Lahat ng team"
+      }
     },
     "calendar": {
       "title": "Calendar",

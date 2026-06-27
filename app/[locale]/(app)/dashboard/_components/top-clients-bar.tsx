@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/lib/utils/format-currency";
+import { DashboardInfoHint } from "./dashboard-info-hint";
 
 type ClientLike = {
   _id: { toString(): string };
@@ -19,9 +20,10 @@ export function TopClientsBar({ clients, currency, locale, title, empty }: Props
   const max = Math.max(1, ...clients.map((c) => c.totalSpent ?? 0));
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <DashboardInfoHint hint="topClients" />
       </CardHeader>
       <CardContent className="flex flex-col gap-3 p-4 pt-0">
         {clients.length === 0 ? (

@@ -5,6 +5,28 @@
 
 export const FALLBACK_TZ = "Asia/Manila";
 
+/** Resolve a workspace's IANA timezone, falling back to the platform default. */
+export function resolveWorkspaceTimezone(
+  workspace: { timezone?: string | null } | null | undefined
+): string {
+  return workspace?.timezone || FALLBACK_TZ;
+}
+
+/**
+ * UTC instant of the current local day's midnight in `timeZone` — the rollup
+ * day bucket so a day's analytics align with the owner's calendar day.
+ */
+export function localDayStart(timeZone: string, now: Date): Date {
+  // en-CA formats as YYYY-MM-DD.
+  const dateStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  return dayBoundInTz(dateStr, timeZone, 0, 0, 0, 0);
+}
+
 /** Extract date/time parts from a UTC Date as seen in `timeZone`. */
 function intlParts(
   d: Date,

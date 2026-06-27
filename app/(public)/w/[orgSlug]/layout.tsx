@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
+import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
 import ContactTriggerDelegate from "@/lib/page-builder/contactTrigger.client";
 import type { PortfolioContactConfig, PortfolioHeaderConfig } from "@/lib/page-builder/types";
@@ -73,6 +74,7 @@ export default async function PublicPortfolioLayout({
         config={headerConfig}
       />
       {children}
+      <PageViewBeacon orgSlug={workspace.slug} />
       <MotionObserver />
       <ContactTriggerDelegate />
       <ContactModal

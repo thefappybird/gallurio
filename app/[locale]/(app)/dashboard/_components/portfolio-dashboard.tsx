@@ -1,0 +1,232 @@
+import { getTranslations } from "next-intl/server";
+import {
+  EyeIcon,
+  UsersIcon,
+  MessageSquareIcon,
+  TrendingUpIcon,
+  ExternalLinkIcon,
+  PencilIcon,
+  type LucideIcon,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "@/lib/i18n/navigation";
+import type { InquiryDoc, WorkspaceDoc } from "@/lib/db/models";
+import {
+  getAnalyticsTotals,
+  getPageviewTimeSeries,
+  getInquiryInsights,
+  getTopSources,
+  type DateRange,
+} from "../_data/portfolio-analytics";
+import { getRecentInquiries } from "../_data/dashboard-metrics";
+import { RecentInquiriesList } from "./recent-inquiries-list";
+import { PortfolioViewsChart } from "./portfolio-views-chart";
+import { DashboardInfoHint } from "./dashboard-info-hint";
+
+type Props = {
+  workspace: WorkspaceDoc;
+  locale: string;
+  range: DateRange;
+};
+
+function MetricCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <Card className="rounded-[var(--radius)] border-border">
+      <CardContent className="flex items-center gap-3 px-3 py-2">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
+          <Icon className="size-5" />
+        </span>
+        <div className="flex min-w-0 flex-col">
+          <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+          <span className="text-xl font-semibold tracking-tight">{value}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export async function PortfolioDashboard({ workspace, locale, range }: Props) {
+  const t = await getTranslations("app.dashboard");
+  const wid = workspace._id;
+
+  const [totals, series, insights, sources, inquiries] = await Promise.all([
+    getAnalyticsTotals(wid, range),
+    getPageviewTimeSeries(wid, range),
+    getInquiryInsights(wid, range),
+    getTopSources(wid, range, 8),
+    getRecentInquiries(wid, 5),
+  ]);
+
+  const nf = new Intl.NumberFormat(locale);
+  const pct = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+  const publishedAt = workspace.publicPage?.publishedAt
+    ? new Date(workspace.publicPage.publishedAt as unknown as Date)
+    : null;
+  const maxSource = Math.max(1, ...sources.map((s) => s.visitors));
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <MetricCard label={t("portfolio.totalViews")} value={nf.format(totals.views)} icon={EyeIcon} />
+        <MetricCard label={t("portfolio.uniqueVisitors")} value={nf.format(totals.visitors)} icon={UsersIcon} />
+        <MetricCard label={t("portfolio.inquiries")} value={nf.format(totals.inquiries)} icon={MessageSquareIcon} />
+        <MetricCard
+          label={t("portfolio.conversionRate")}
+          value={pct.format(totals.conversionRate)}
+          icon={TrendingUpIcon}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <Card className="rounded-[var(--radius)] lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium">{t("portfolio.viewsOverTime")}</CardTitle>
+            <DashboardInfoHint hint="revenueTrend" />
+          </CardHeader>
+          <CardContent className="h-56 p-0 pr-2">
+            {series.length === 0 ? (
+              <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {t("portfolio.noTraffic")}
+              </p>
+            ) : (
+              <PortfolioViewsChart
+                data={series}
+                locale={locale}
+                labels={{ views: t("portfolio.views"), visitors: t("portfolio.visitors") }}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[var(--radius)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">{t("portfolio.topSources")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sources.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("portfolio.noTraffic")}</p>
+            ) : (
+              <ul className="flex flex-col gap-2.5">
+                {sources.map((s) => (
+                  <li key={s.source} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate font-medium">
+                        {s.source === "direct" ? t("portfolio.directSource") : s.source}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">
+                        {nf.format(s.visitors)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-brand"
+                        style={{ width: `${Math.round((s.visitors / maxSource) * 100)}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <Card className="rounded-[var(--radius)]">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium">
+              {t("portfolio.inquiryInsights")}
+            </CardTitle>
+            <DashboardInfoHint hint="inquiryInsights" />
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col divide-y divide-border">
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.conversionRate")}</span>
+                <span className="font-medium tabular-nums">{pct.format(totals.conversionRate)}</span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.inquiryToBooking")}</span>
+                <span className="font-medium tabular-nums">
+                  {pct.format(insights.inquiryToBookingRate)}
+                </span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.bookedFromInquiries")}</span>
+                <span className="font-medium tabular-nums">{nf.format(insights.bookedCount)}</span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.newClientsFromForm")}</span>
+                <span className="font-medium tabular-nums">
+                  {nf.format(insights.newClientsFromForm)}
+                </span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-[var(--radius)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            <span
+              className={`inline-flex w-fit items-center rounded-[var(--radius)] px-2 py-0.5 text-[11px] font-medium ${
+                publishedAt ? "bg-[var(--event-completed)] text-white" : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {publishedAt ? t("portfolio.published") : t("portfolio.notPublished")}
+            </span>
+            {publishedAt && (
+              <span className="text-xs text-muted-foreground">
+                {t("portfolio.lastPublished", {
+                  date: publishedAt.toLocaleDateString(locale, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  }),
+                })}
+              </span>
+            )}
+            <div className="mt-1 flex flex-col gap-1">
+              <a
+                href={`/w/${workspace.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <ExternalLinkIcon className="size-4" />
+                {t("portfolio.viewLive")}
+              </a>
+              <Link
+                href="/portfolio"
+                className="flex items-center gap-2 rounded-[var(--radius)] border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <PencilIcon className="size-4" />
+                {t("portfolio.openEditor")}
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <RecentInquiriesList
+          inquiries={inquiries as InquiryDoc[]}
+          locale={locale}
+          title={t("portfolio.siteInquiries")}
+          empty={t("empty")}
+          viewAll={t("viewAll")}
+        />
+      </div>
+    </div>
+  );
+}

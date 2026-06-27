@@ -1,5 +1,10 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { InfoHint } from "@/components/ui/info-hint";
 import type { ActivityLogDoc } from "@/lib/db/models";
+import { PagedList } from "./paged-list";
 
 type Props = {
   activity: ActivityLogDoc[];
@@ -21,18 +26,24 @@ function formatRelative(date: Date, locale: string) {
 }
 
 export function ActivityFeed({ activity, locale, title, empty }: Props) {
+  const t = useTranslations("app.dashboard");
+
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="h-full rounded-[var(--radius)]">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <InfoHint label={t("hints.activity")} />
       </CardHeader>
       <CardContent>
         {activity.length === 0 ? (
           <p className="text-sm text-muted-foreground">{empty}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {activity.map((a) => (
-              <li key={String(a._id)} className="flex items-center justify-between gap-3 py-2 text-xs">
+          <PagedList
+            items={activity.map((a) => (
+              <li
+                key={String(a._id)}
+                className="flex items-center justify-between gap-3 py-2 text-xs"
+              >
                 <span className="capitalize text-foreground">
                   {a.entity} {a.action.replace("_", " ")}
                 </span>
@@ -41,7 +52,7 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
                 </span>
               </li>
             ))}
-          </ul>
+          />
         )}
       </CardContent>
     </Card>

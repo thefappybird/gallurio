@@ -84,6 +84,32 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "Selamat kembali, {name}",
+      "tabs": {
+        "aria": "Tukar papan pemuka",
+        "bookings": "Tempahan",
+        "portfolio": "Portfolio"
+      },
+      "dateFilter": {
+        "label": "Julat tarikh",
+        "filter": "Tapis",
+        "day": "Harian",
+        "month": "Bulanan",
+        "year": "Tahunan",
+        "custom": "Tersuai",
+        "all": "Sepanjang masa",
+        "allTimeHint": "Memaparkan semua tarikh.",
+        "clear": "Kosongkan",
+        "apply": "Guna",
+        "from": "Dari",
+        "to": "Hingga",
+        "since": "Bermula dari",
+        "until": "Sehingga"
+      },
+      "pagination": {
+        "prev": "Sebelumnya",
+        "next": "Seterusnya",
+        "status": "{page} daripada {total}"
+      },
       "kpi": {
         "revenueThisMonth": "Pendapatan bulan ini",
         "activeBookings": "Tempahan aktif bulan ini",
@@ -95,27 +121,71 @@
         "upcomingWeek": "Akan datang minggu ini",
         "recentInquiries": "Pertanyaan terkini",
         "activity": "Aktiviti terkini",
-        "pipeline": "Saluran paip",
-        "revenueTrend": "Pendapatan (30 hari lepas)",
+        "revenueTrend": "Pendapatan",
         "calendar": "Kalendar tempahan",
         "eventTypes": "Pecahan jenis acara",
-        "transactionsByMethod": "Pembayaran mengikut kaedah (90 hari)",
-        "transactionsByTeam": "Hasil mengikut pasukan",
-        "weeklyBookings": "Tempahan mengikut hari dalam seminggu",
-        "topClients": "Pelanggan teratas mengikut perbelanjaan"
-      },
-      "pipeline": {
-        "inquiries": "Pertanyaan",
-        "booked": "Ditempah"
+        "topClients": "Pelanggan teratas mengikut perbelanjaan",
+        "teamPerformance": "Prestasi pasukan",
+        "bookingsPerTeam": "Tempahan mengikut pasukan"
       },
       "quickAdd": {
         "title": "Tambah cepat",
         "booking": "Tempahan baru",
         "client": "Pelanggan baru",
-        "inquiry": "Pertanyaan baru"
+        "inquiry": "Lihat pertanyaan"
       },
       "empty": "Tiada apa-apa lagi di sini.",
-      "viewAll": "Lihat semua"
+      "viewAll": "Lihat semua",
+      "portfolio": {
+        "analyticsSoon": "Analitik portfolio akan datang tidak lama lagi.",
+        "totalViews": "Jumlah tontonan",
+        "uniqueVisitors": "Pelawat unik",
+        "inquiries": "Pertanyaan",
+        "conversionRate": "Kadar penukaran",
+        "viewsOverTime": "Tontonan & pelawat",
+        "views": "Tontonan",
+        "visitors": "Pelawat",
+        "topSources": "Sumber teratas",
+        "perPage": "Mengikut halaman",
+        "siteInquiries": "Pertanyaan dari laman anda",
+        "publishStatus": "Status terbitan",
+        "published": "Diterbitkan",
+        "notPublished": "Belum diterbitkan",
+        "lastPublished": "Terbit terakhir {date}",
+        "viewLive": "Lihat laman langsung",
+        "openEditor": "Buka editor",
+        "noTraffic": "Belum ada lawatan dalam tempoh ini.",
+        "directSource": "Terus",
+        "inquiryInsights": "Cerapan pertanyaan",
+        "inquiryToBooking": "Pertanyaan → tempahan",
+        "bookedFromInquiries": "Ditempah daripada pertanyaan",
+        "newClientsFromForm": "Pelanggan baharu daripada borang"
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# tempahan} other {# tempahan}}"
+      },
+      "showMore": "Tunjuk lagi",
+      "showLess": "Tunjuk kurang",
+      "hints": {
+        "kpi": "Jumlah bagi bulan ini. Anak panah membandingkan dengan bulan lepas.",
+        "calendar": "Tempahan setiap hari. Tapis mengikut pasukan; ketik satu hari untuk membuka kalendar di situ.",
+        "eventTypes": "Bahagian tempahan mengikut jenis acara.",
+        "teamPerformance": "Prestasi setiap pasukan mengikut hasil dan jumlah tempahan.",
+        "bookingsPerTeam": "Bilangan tempahan yang dikendalikan oleh setiap pasukan.",
+        "revenueTrend": "Hasil dibayar dalam tempoh yang dipilih.",
+        "inquiryInsights": "Penukaran daripada lawatan dan pertanyaan, serta pelanggan baharu daripada borang hubungan anda.",
+        "topClients": "Pelanggan mengikut jumlah perbelanjaan.",
+        "todaysEvents": "Tempahan bermula hari ini.",
+        "upcomingWeek": "Tempahan disahkan dalam 7 hari akan datang.",
+        "recentInquiries": "Pertanyaan masuk terkini anda.",
+        "activity": "Perubahan terkini di ruang kerja anda.",
+        "quickAdd": "Cipta tempahan, pelanggan, atau pertanyaan."
+      },
+      "totalLabel": "Jumlah",
+      "calendarTeam": {
+        "label": "Tapis mengikut pasukan",
+        "all": "Semua pasukan"
+      }
     },
     "calendar": {
       "title": "Calendar",
