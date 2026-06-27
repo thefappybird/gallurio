@@ -4,6 +4,7 @@ import type { BookingDoc } from "@/lib/db/models";
 import { formatTime, type TimeMode } from "@/lib/utils/time-format";
 import { StatusChip } from "./status-chip";
 import { DashboardInfoHint } from "./dashboard-info-hint";
+import { PagedList } from "./paged-list";
 
 type Props = {
   bookings: BookingDoc[];
@@ -24,8 +25,8 @@ export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
         {bookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">{empty}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {bookings.map((b) => (
+          <PagedList
+            items={bookings.map((b) => (
               <li key={String(b._id)} className="flex items-center justify-between gap-3 py-2.5">
                 <Link
                   href={`/bookings/${b._id.toString()}`}
@@ -43,7 +44,7 @@ export function TodaysEventsList({ bookings, title, empty, timeMode }: Props) {
                 <StatusChip status={b.status} kind="booking" />
               </li>
             ))}
-          </ul>
+          />
         )}
       </CardContent>
     </Card>

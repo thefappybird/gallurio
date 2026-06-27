@@ -91,12 +91,24 @@
       },
       "dateFilter": {
         "label": "Saklaw ng petsa",
-        "allTime": "Lahat ng panahon",
-        "until": "Hanggang sa",
-        "between": "Sa pagitan",
-        "since": "Simula sa",
+        "filter": "Salain",
+        "day": "Araw-araw",
+        "month": "Buwanan",
+        "year": "Taunan",
+        "custom": "Pasadya",
+        "all": "Lahat ng panahon",
+        "allTimeHint": "Ipinapakita ang lahat ng petsa.",
+        "clear": "I-clear",
+        "apply": "Ilapat",
         "from": "Mula",
-        "to": "Hanggang"
+        "to": "Hanggang",
+        "since": "Simula sa",
+        "until": "Hanggang sa"
+      },
+      "pagination": {
+        "prev": "Nakaraan",
+        "next": "Susunod",
+        "status": "{page} ng {total}"
       },
       "kpi": {
         "revenueThisMonth": "Kita ngayong buwan",
@@ -109,7 +121,7 @@
         "upcomingWeek": "Paparating ngayong linggo",
         "recentInquiries": "Mga kamakailang inquiry",
         "activity": "Kamakailang aktibidad",
-        "revenueTrend": "Kita (nakaraang 30 araw)",
+        "revenueTrend": "Kita",
         "calendar": "Booking calendar",
         "eventTypes": "Breakdown ng uri ng event",
         "topClients": "Mga nangungunang kliyente ayon sa gastos",
@@ -143,7 +155,11 @@
         "viewLive": "Tingnan ang live na page",
         "openEditor": "Buksan ang editor",
         "noTraffic": "Wala pang bisita sa panahong ito.",
-        "directSource": "Diretso"
+        "directSource": "Diretso",
+        "inquiryInsights": "Mga insight sa inquiry",
+        "inquiryToBooking": "Inquiry → booking",
+        "bookedFromInquiries": "Na-book mula sa inquiry",
+        "newClientsFromForm": "Bagong kliyente mula sa form"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# na booking}}"
@@ -156,7 +172,8 @@
         "eventTypes": "Bahagi ng mga booking ayon sa uri ng event.",
         "teamPerformance": "Kung paano gumaganap ang bawat team ayon sa kita at dami ng booking.",
         "bookingsPerTeam": "Bilang ng mga booking na hinawakan ng bawat team.",
-        "revenueTrend": "Kita mula sa bayad sa nakaraang 30 araw.",
+        "revenueTrend": "Kita mula sa bayad sa napiling panahon.",
+        "inquiryInsights": "Conversion mula sa mga bisita at inquiry, kasama ang mga bagong kliyente mula sa iyong contact form.",
         "topClients": "Mga kliyente ayon sa kabuuang nagastos.",
         "todaysEvents": "Mga booking na nagsisimula ngayon.",
         "upcomingWeek": "Mga kumpirmadong booking sa susunod na 7 araw.",

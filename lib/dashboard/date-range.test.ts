@@ -5,32 +5,49 @@ import { parseDashboardRange } from "./date-range";
 const TZ = "Asia/Manila";
 
 describe("parseDashboardRange", () => {
-  it("resolves the three modes against the workspace timezone", () => {
-    // between: from = local start-of-day, to = local end-of-day, as UTC instants.
-    const between = parseDashboardRange(
-      { dmode: "between", from: "2026-06-01", to: "2026-06-30" },
+  it("resolves day mode to a single local day", () => {
+    const day = parseDashboardRange({ df: "day", d: "2026-06-15" }, TZ);
+    expect(day.mode).toBe("day");
+    expect(day.from?.toISOString()).toBe("2026-06-14T16:00:00.000Z");
+    expect(day.to?.toISOString()).toBe("2026-06-15T15:59:59.999Z");
+  });
+
+  it("resolves month mode to the full local month", () => {
+    const month = parseDashboardRange({ df: "month", m: "2026-06" }, TZ);
+    expect(month.mode).toBe("month");
+    expect(month.from?.toISOString()).toBe("2026-05-31T16:00:00.000Z");
+    expect(month.to?.toISOString()).toBe("2026-06-30T15:59:59.999Z");
+  });
+
+  it("resolves year mode to the full local year", () => {
+    const year = parseDashboardRange({ df: "year", y: "2026" }, TZ);
+    expect(year.mode).toBe("year");
+    expect(year.from?.toISOString()).toBe("2025-12-31T16:00:00.000Z");
+    expect(year.to?.toISOString()).toBe("2026-12-31T15:59:59.999Z");
+  });
+
+  it("resolves custom mode to explicit from/to local days", () => {
+    const custom = parseDashboardRange(
+      { df: "custom", from: "2026-06-01", to: "2026-06-30" },
       TZ
     );
-    expect(between.mode).toBe("between");
-    expect(between.from?.toISOString()).toBe("2026-05-31T16:00:00.000Z");
-    expect(between.to?.toISOString()).toBe("2026-06-30T15:59:59.999Z");
+    expect(custom.mode).toBe("custom");
+    expect(custom.from?.toISOString()).toBe("2026-05-31T16:00:00.000Z");
+    expect(custom.to?.toISOString()).toBe("2026-06-30T15:59:59.999Z");
+  });
 
-    // until: only the upper bound is meaningful.
-    const until = parseDashboardRange({ dmode: "until", to: "2026-06-30" }, TZ);
-    expect(until.mode).toBe("until");
-    expect(until.from).toBeNull();
-    expect(until.to?.toISOString()).toBe("2026-06-30T15:59:59.999Z");
+  it("treats an explicit all-time filter as unbounded", () => {
+    const all = parseDashboardRange({ df: "all" }, TZ);
+    expect(all.mode).toBe("all");
+    expect(all.from).toBeNull();
+    expect(all.to).toBeNull();
+  });
 
-    // since: only the lower bound is meaningful.
-    const since = parseDashboardRange({ dmode: "since", from: "2026-06-01" }, TZ);
-    expect(since.mode).toBe("since");
-    expect(since.from?.toISOString()).toBe("2026-05-31T16:00:00.000Z");
-    expect(since.to).toBeNull();
-
-    // no mode / garbage → all-time, no bounds.
-    expect(parseDashboardRange({}, TZ)).toEqual({ from: null, to: null, mode: null });
-    expect(
-      parseDashboardRange({ dmode: "between", from: "not-a-date", to: "2026-06-30" }, TZ).from
-    ).toBeNull();
+  it("defaults to the current month when no filter is given", () => {
+    const now = new Date("2026-06-15T10:00:00Z"); // 18:00 Jun 15 in Manila
+    const def = parseDashboardRange({}, TZ, now);
+    expect(def.mode).toBe("month");
+    expect(def.from?.toISOString()).toBe("2026-05-31T16:00:00.000Z");
+    expect(def.to?.toISOString()).toBe("2026-06-30T15:59:59.999Z");
   });
 });

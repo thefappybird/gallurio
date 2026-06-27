@@ -55,6 +55,25 @@ are now tracked — `recordPageview` runs a second per-page test-and-set against
 `PageviewVisitorSeen` (scope = page) in addition to the site-wide one, and the portfolio
 per-page card shows `views · visitors`.
 
+**Round 2 refinements (post-review iteration):**
+- **Date filter reworked** to period presets: **Daily / Monthly / Yearly / All time / Custom**,
+  inside a popover under a **Filter** button (with an active-range label beside it). Each preset
+  defaults to the current day/month/year; pickers are native (`<input type=date|month>` + a year
+  `<select>`); future dates are disabled (picker `max` = workspace-tz today/month/year) and a
+  custom range's `from` can't exceed `to`. **The default view is the current month** (no params →
+  month). `parseDashboardRange(sp, tz, now)` parses `?df=day|month|year|custom|all` + `d|m|y|from|to`
+  into tz-aware day bounds; the tab switcher preserves all filter params.
+- **Pagination**: Today's events + Recent activity now show **5 per page** with Previous/Next
+  controls (shared `PagedList`), replacing the activity show-more toggle.
+- **Inquiry consolidation**: the Portfolio "By page" card is replaced by an **Inquiry insights**
+  card (visitor→inquiry conversion, inquiry→booking rate, booked-from-inquiries, new clients from
+  the contact form via `getInquiryInsights`); the **Recent inquiries** list moved off the Bookings
+  dashboard (Bookings keeps the New-inquiries KPI). Per-page visitor tracking stays in the data
+  layer even though the card is gone.
+- **Compactness**: the 4 header KPI cards lost vertical padding (`p-3` → `px-3 py-2`) and the
+  stacked section gap now matches the inline column gap (`gap-5` → `gap-3`). Revenue-trend title
+  is period-neutral ("Revenue") since it follows the filter.
+
 **Local tooling note:** `.claude/tdd-guard/data/config.json` (gitignored) adds `*.tsx` to
 ignorePatterns so the guard enforces TDD on `.ts` logic while Playwright covers `.tsx` views.
 

@@ -91,12 +91,24 @@
       },
       "dateFilter": {
         "label": "Date range",
-        "allTime": "All time",
-        "until": "Up until",
-        "between": "Between",
-        "since": "Starting from",
+        "filter": "Filter",
+        "day": "Daily",
+        "month": "Monthly",
+        "year": "Yearly",
+        "custom": "Custom",
+        "all": "All time",
+        "allTimeHint": "Showing all dates.",
+        "clear": "Clear",
+        "apply": "Apply",
         "from": "From",
-        "to": "To"
+        "to": "To",
+        "since": "Since",
+        "until": "Until"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next",
+        "status": "{page} of {total}"
       },
       "kpi": {
         "revenueThisMonth": "Revenue this month",
@@ -109,7 +121,7 @@
         "upcomingWeek": "Upcoming this week",
         "recentInquiries": "Recent inquiries",
         "activity": "Recent activity",
-        "revenueTrend": "Revenue (last 30 days)",
+        "revenueTrend": "Revenue",
         "calendar": "Booking calendar",
         "eventTypes": "Event type breakdown",
         "topClients": "Top clients by spend",
@@ -143,7 +155,11 @@
         "viewLive": "View live page",
         "openEditor": "Open editor",
         "noTraffic": "No visits yet in this period.",
-        "directSource": "Direct"
+        "directSource": "Direct",
+        "inquiryInsights": "Inquiry insights",
+        "inquiryToBooking": "Inquiry → booking",
+        "bookedFromInquiries": "Booked from inquiries",
+        "newClientsFromForm": "New clients from form"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
@@ -156,7 +172,8 @@
         "eventTypes": "Share of bookings by event type.",
         "teamPerformance": "How each team is performing by revenue and booking volume.",
         "bookingsPerTeam": "Number of bookings handled by each team.",
-        "revenueTrend": "Paid revenue over the last 30 days.",
+        "revenueTrend": "Paid revenue over the selected period.",
+        "inquiryInsights": "Conversion from visits and inquiries, plus new clients captured by your contact form.",
         "topClients": "Clients ranked by total spend.",
         "todaysEvents": "Bookings starting today.",
         "upcomingWeek": "Confirmed bookings in the next 7 days.",

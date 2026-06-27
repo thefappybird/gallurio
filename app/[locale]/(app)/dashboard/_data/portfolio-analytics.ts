@@ -1,6 +1,7 @@
 import "server-only";
 import { Types } from "mongoose";
-import { PageviewRollup } from "@/lib/db/models";
+import { PageviewRollup, Inquiry, Client } from "@/lib/db/models";
+import { BOOKED_INQUIRY_STATUS, CONVERTED_INQUIRY_STATUS } from "@/lib/inquiries/status";
 
 type WorkspaceId = Types.ObjectId;
 
@@ -110,6 +111,40 @@ export async function getPageviewTimeSeries(
     views: r.views ?? 0,
     visitors: r.visitors ?? 0,
   }));
+}
+
+export type InquiryInsights = {
+  totalInquiries: number;
+  bookedCount: number;
+  inquiryToBookingRate: number;
+  newClientsFromForm: number;
+};
+
+export async function getInquiryInsights(
+  workspaceId: WorkspaceId,
+  range: DateRange
+): Promise<InquiryInsights> {
+  const created = dateClause(range);
+  const inquiryMatch: Record<string, unknown> = { workspaceId };
+  if (created) inquiryMatch.createdAt = created;
+  const clientMatch: Record<string, unknown> = { workspaceId, source: "form" };
+  if (created) clientMatch.createdAt = created;
+
+  const [totalInquiries, bookedCount, newClientsFromForm] = await Promise.all([
+    Inquiry.countDocuments(inquiryMatch),
+    Inquiry.countDocuments({
+      ...inquiryMatch,
+      status: { $in: [BOOKED_INQUIRY_STATUS, CONVERTED_INQUIRY_STATUS] },
+    }),
+    Client.countDocuments(clientMatch),
+  ]);
+
+  return {
+    totalInquiries,
+    bookedCount,
+    inquiryToBookingRate: bookedCount / Math.max(totalInquiries, 1),
+    newClientsFromForm,
+  };
 }
 
 export type SourceCount = { source: string; visitors: number };

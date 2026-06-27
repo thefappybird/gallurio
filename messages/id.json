@@ -91,12 +91,24 @@
       },
       "dateFilter": {
         "label": "Rentang tanggal",
-        "allTime": "Sepanjang waktu",
-        "until": "Hingga",
-        "between": "Antara",
-        "since": "Mulai dari",
+        "filter": "Filter",
+        "day": "Harian",
+        "month": "Bulanan",
+        "year": "Tahunan",
+        "custom": "Kustom",
+        "all": "Sepanjang waktu",
+        "allTimeHint": "Menampilkan semua tanggal.",
+        "clear": "Hapus",
+        "apply": "Terapkan",
         "from": "Dari",
-        "to": "Sampai"
+        "to": "Sampai",
+        "since": "Mulai dari",
+        "until": "Hingga"
+      },
+      "pagination": {
+        "prev": "Sebelumnya",
+        "next": "Berikutnya",
+        "status": "{page} dari {total}"
       },
       "kpi": {
         "revenueThisMonth": "Pendapatan bulan ini",
@@ -109,7 +121,7 @@
         "upcomingWeek": "Akan datang minggu ini",
         "recentInquiries": "Pertanyaan terbaru",
         "activity": "Aktivitas terbaru",
-        "revenueTrend": "Pendapatan (30 hari terakhir)",
+        "revenueTrend": "Pendapatan",
         "calendar": "Kalender pemesanan",
         "eventTypes": "Rincian jenis acara",
         "topClients": "Klien teratas berdasarkan pengeluaran",
@@ -143,7 +155,11 @@
         "viewLive": "Lihat halaman langsung",
         "openEditor": "Buka editor",
         "noTraffic": "Belum ada kunjungan pada periode ini.",
-        "directSource": "Langsung"
+        "directSource": "Langsung",
+        "inquiryInsights": "Wawasan pertanyaan",
+        "inquiryToBooking": "Pertanyaan → pemesanan",
+        "bookedFromInquiries": "Dipesan dari pertanyaan",
+        "newClientsFromForm": "Klien baru dari formulir"
       },
       "team": {
         "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
@@ -156,7 +172,8 @@
         "eventTypes": "Bagian pemesanan menurut jenis acara.",
         "teamPerformance": "Kinerja tiap tim berdasarkan pendapatan dan jumlah pemesanan.",
         "bookingsPerTeam": "Jumlah pemesanan yang ditangani tiap tim.",
-        "revenueTrend": "Pendapatan dibayar dalam 30 hari terakhir.",
+        "revenueTrend": "Pendapatan dibayar dalam periode yang dipilih.",
+        "inquiryInsights": "Konversi dari kunjungan dan pertanyaan, ditambah klien baru dari formulir kontak Anda.",
         "topClients": "Klien menurut total pengeluaran.",
         "todaysEvents": "Pemesanan yang mulai hari ini.",
         "upcomingWeek": "Pemesanan terkonfirmasi dalam 7 hari ke depan.",

@@ -29,7 +29,7 @@ export function DashboardTabs({ tab }: Props) {
       // ignore — persistence is best-effort
     }
 
-    // Preserve the date filter (from/to/dmode) across the switch.
+    // Preserve the date filter (df/d/m/y/from/to) across the switch.
     const params = new URLSearchParams(searchParams.toString());
     if (next === "bookings") {
       params.delete("tab");

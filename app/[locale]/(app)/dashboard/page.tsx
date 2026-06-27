@@ -1,11 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import type {
-  BookingDoc,
-  InquiryDoc,
-  ActivityLogDoc,
-} from "@/lib/db/models";
+import type { BookingDoc, ActivityLogDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
@@ -16,7 +12,6 @@ import {
   getKpiSnapshotWithDeltas,
   getTodaysEvents,
   getUpcomingWeek,
-  getRecentInquiries,
   getActivityFeed,
   getRevenueTrend,
   getBookingsByDay,
@@ -29,7 +24,6 @@ import {
 import { KpiStrip } from "./_components/kpi-strip";
 import { TodaysEventsList } from "./_components/todays-events-list";
 import { UpcomingWeekList } from "./_components/upcoming-week-list";
-import { RecentInquiriesList } from "./_components/recent-inquiries-list";
 import { ActivityFeed } from "./_components/activity-feed";
 import { QuickAdd } from "./_components/quick-add";
 import { RevenueTrendChart } from "./_components/revenue-trend-chart";
@@ -76,12 +70,21 @@ export default async function DashboardPage({
   const tab = await resolveStoredDashboardTab(
     typeof sp.tab === "string" ? sp.tab : undefined
   );
-  const range = parseDashboardRange(sp, resolveWorkspaceTimezone(workspace));
+  const tz = resolveWorkspaceTimezone(workspace);
+  const range = parseDashboardRange(sp, tz);
+
+  // Workspace-local current period — picker defaults + future-date cap.
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()); // YYYY-MM-DD
 
   const ownerFirstName = workspace.name.split(" ")[0] ?? "";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -98,7 +101,11 @@ export default async function DashboardPage({
         </div>
         {/* One date filter for both dashboards, left of the tab switcher. */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <DashboardDateFilter />
+          <DashboardDateFilter
+            today={today}
+            currentMonth={today.slice(0, 7)}
+            currentYear={Number(today.slice(0, 4))}
+          />
           <DashboardTabs tab={tab} />
         </div>
       </div>
@@ -145,7 +152,6 @@ async function BookingsTab({
     kpi,
     todays,
     upcoming,
-    inquiries,
     activity,
     revenue,
     monthBookings,
@@ -158,7 +164,6 @@ async function BookingsTab({
     getKpiSnapshotWithDeltas(wid, range),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
-    getRecentInquiries(wid),
     getActivityFeed(wid, 20),
     getRevenueTrend(wid, 30, range, resolveWorkspaceTimezone(workspace)),
     getBookingsByDay(wid, new Date()),
@@ -170,7 +175,7 @@ async function BookingsTab({
   ]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <KpiStrip
         snapshot={kpi.snapshot}
         trends={kpi.trends}
@@ -241,24 +246,6 @@ async function BookingsTab({
             timeMode={timeMode}
           />
         </div>
-        <RecentInquiriesList
-          inquiries={inquiries as InquiryDoc[]}
-          locale={locale}
-          title={t("sections.recentInquiries")}
-          empty={t("empty")}
-          viewAll={t("viewAll")}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <div className="lg:col-span-2 h-full">
-          <ActivityFeed
-            activity={activity as ActivityLogDoc[]}
-            locale={locale}
-            title={t("sections.activity")}
-            empty={t("empty")}
-          />
-        </div>
         <QuickAdd
           title={t("quickAdd.title")}
           labels={{
@@ -268,6 +255,13 @@ async function BookingsTab({
           }}
         />
       </div>
+
+      <ActivityFeed
+        activity={activity as ActivityLogDoc[]}
+        locale={locale}
+        title={t("sections.activity")}
+        empty={t("empty")}
+      />
     </div>
   );
 }

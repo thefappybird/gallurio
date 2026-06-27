@@ -14,7 +14,7 @@ import type { InquiryDoc, WorkspaceDoc } from "@/lib/db/models";
 import {
   getAnalyticsTotals,
   getPageviewTimeSeries,
-  getPerPageBreakdown,
+  getInquiryInsights,
   getTopSources,
   type DateRange,
 } from "../_data/portfolio-analytics";
@@ -40,7 +40,7 @@ function MetricCard({
 }) {
   return (
     <Card className="rounded-[var(--radius)] border-border">
-      <CardContent className="flex items-center gap-3 p-3">
+      <CardContent className="flex items-center gap-3 px-3 py-2">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
           <Icon className="size-5" />
         </span>
@@ -59,10 +59,10 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
   const t = await getTranslations("app.dashboard");
   const wid = workspace._id;
 
-  const [totals, series, perPage, sources, inquiries] = await Promise.all([
+  const [totals, series, insights, sources, inquiries] = await Promise.all([
     getAnalyticsTotals(wid, range),
     getPageviewTimeSeries(wid, range),
-    getPerPageBreakdown(wid, range),
+    getInquiryInsights(wid, range),
     getTopSources(wid, range, 8),
     getRecentInquiries(wid, 5),
   ]);
@@ -73,10 +73,9 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
     ? new Date(workspace.publicPage.publishedAt as unknown as Date)
     : null;
   const maxSource = Math.max(1, ...sources.map((s) => s.visitors));
-  const pageLabel = (p: string) => p.charAt(0).toUpperCase() + p.slice(1);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <MetricCard label={t("portfolio.totalViews")} value={nf.format(totals.views)} icon={EyeIcon} />
         <MetricCard label={t("portfolio.uniqueVisitors")} value={nf.format(totals.visitors)} icon={UsersIcon} />
@@ -144,25 +143,35 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <Card className="rounded-[var(--radius)]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">{t("portfolio.perPage")}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardTitle className="text-sm font-medium">
+              {t("portfolio.inquiryInsights")}
+            </CardTitle>
+            <DashboardInfoHint hint="inquiryInsights" />
           </CardHeader>
           <CardContent>
-            {perPage.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("portfolio.noTraffic")}</p>
-            ) : (
-              <ul className="flex flex-col divide-y divide-border">
-                {perPage.map((p) => (
-                  <li key={p.page} className="flex items-center justify-between gap-3 py-2 text-sm">
-                    <span className="font-medium">{pageLabel(p.page)}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                      {nf.format(p.views)} {t("portfolio.views").toLowerCase()} ·{" "}
-                      {nf.format(p.visitors)} {t("portfolio.visitors").toLowerCase()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul className="flex flex-col divide-y divide-border">
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.conversionRate")}</span>
+                <span className="font-medium tabular-nums">{pct.format(totals.conversionRate)}</span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.inquiryToBooking")}</span>
+                <span className="font-medium tabular-nums">
+                  {pct.format(insights.inquiryToBookingRate)}
+                </span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.bookedFromInquiries")}</span>
+                <span className="font-medium tabular-nums">{nf.format(insights.bookedCount)}</span>
+              </li>
+              <li className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{t("portfolio.newClientsFromForm")}</span>
+                <span className="font-medium tabular-nums">
+                  {nf.format(insights.newClientsFromForm)}
+                </span>
+              </li>
+            </ul>
           </CardContent>
         </Card>
 

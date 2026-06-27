@@ -5,8 +5,14 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { PageviewRollup } from "@/lib/db/models";
-import { getAnalyticsTotals, getPageviewTimeSeries, getPerPageBreakdown, getTopSources } from "./portfolio-analytics";
+import { PageviewRollup, Inquiry, Client } from "@/lib/db/models";
+import {
+  getAnalyticsTotals,
+  getPageviewTimeSeries,
+  getPerPageBreakdown,
+  getTopSources,
+  getInquiryInsights,
+} from "./portfolio-analytics";
 
 const wid = new Types.ObjectId();
 const other = new Types.ObjectId();
@@ -79,5 +85,31 @@ describe("getTopSources", () => {
       { source: "direct", visitors: 7 },
       { source: "instagram", visitors: 2 },
     ]);
+  });
+});
+
+describe("getInquiryInsights", () => {
+  it("computes inquiry totals, booking conversion, and new form clients in range", async () => {
+    const ed = new Date("2026-06-10T00:00:00.000Z");
+    await Inquiry.create([
+      { workspaceId: wid, name: "A", email: "a@x.com", eventDate: ed, status: "inquiry" },
+      { workspaceId: wid, name: "B", email: "b@x.com", eventDate: ed, status: "inquiry" },
+      { workspaceId: wid, name: "C", email: "c@x.com", eventDate: ed, status: "inquiry" },
+      { workspaceId: wid, name: "D", email: "d@x.com", eventDate: ed, status: "booked" },
+      { workspaceId: wid, name: "E", email: "e@x.com", eventDate: ed, status: "converted" },
+      { workspaceId: other, name: "Z", email: "z@x.com", eventDate: ed, status: "booked" },
+    ]);
+    await Client.create([
+      { workspaceId: wid, name: "FC1", source: "form" },
+      { workspaceId: wid, name: "FC2", source: "form" },
+      { workspaceId: wid, name: "M1", source: "manual" },
+      { workspaceId: other, name: "OZ", source: "form" },
+    ]);
+
+    const ins = await getInquiryInsights(wid, { from: null, to: null });
+    expect(ins.totalInquiries).toBe(5);
+    expect(ins.bookedCount).toBe(2);
+    expect(ins.inquiryToBookingRate).toBeCloseTo(2 / 5, 5);
+    expect(ins.newClientsFromForm).toBe(2);
   });
 });

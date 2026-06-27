@@ -59,7 +59,7 @@ function KpiCard({
   // Compact: larger icon on the left; label + trend on row 1, value on row 2.
   return (
     <Card className="rounded-[var(--radius)] border-border">
-      <CardContent className="flex items-center gap-3 p-3">
+      <CardContent className="flex items-center gap-3 px-3 py-2">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
           <Icon className="size-5" />
         </span>
