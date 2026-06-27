@@ -276,7 +276,7 @@ html[data-radius="rounded"] {
   border-color: var(--brand);
 }
 .rbc-calendar .rbc-toolbar .rbc-btn-group > button + button {
-  margin-left: -1px;
+  margin-inline-start: -1px;
 }
 .rbc-toolbar-label {
   @apply text-base font-semibold;

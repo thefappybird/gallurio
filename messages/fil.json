@@ -718,7 +718,8 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia"
+          "id": "Bahasa Indonesia",
+          "ar": "العربية"
         },
         "timeFormatSection": "Format ng Oras",
         "timeFormatHint": "Piliin kung paano ipinapakita ang mga oras sa buong app.",
@@ -1349,7 +1350,8 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia"
+            "id": "Bahasa Indonesia",
+            "ar": "العربية"
           },
           "bgColorLabel": "Kulay ng background",
           "textColorLabel": "Kulay ng teksto",

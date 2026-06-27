@@ -51,7 +51,7 @@ Operate as a senior full-stack engineer with strong mobile-first UI and backend/
 - Every async surface ships loading/empty/error/populated. Every interactive control ships idle/hover-focus-visible/active/disabled.
 - No hover-only UX. Drag interactions need visible affordances. Large mobile flows use steps/tabs, not tall scroll-heavy modals.
 - Accessibility required: semantic HTML, labels, keyboard support, focus management, color never the sole signal.
-- Update all 4 locales together (`en`, `fil`, `ms`, `id`). Prefer optimistic UI for high-confidence mutations.
+- Update all 5 locales together (`en`, `fil`, `ms`, `id`, `ar`). Prefer optimistic UI for high-confidence mutations.
 
 ### Backend
 - Server Components by default; Server Actions for in-app mutations; Route Handlers for webhooks/public APIs. Node runtime unless Edge is justified.
@@ -116,7 +116,8 @@ Monolith Next.js app; shared-DB multi-tenancy via `workspaceId`. Workspaces are 
 - Deploys via GitHub Actions gated on tests + lint + typecheck + build. Audit any Vercel-coupled capability before a full cutover. Configure logs, restarts, backups, health checks, TLS before calling it production-ready.
 
 ## i18n
-- Locales: `en`, `fil`, `ms`, `id`. Thai (`th`) phased out 2026-06-11 — no `th` file/routes/strings; do not reintroduce.
+- Locales: `en`, `fil`, `ms`, `id`, `ar` (Arabic is RTL). Thai (`th`) phased out 2026-06-11 — no `th` file/routes/strings; do not reintroduce.
+- RTL: `<html dir>` is set from the locale in `app/[locale]/layout.tsx`. Use logical Tailwind utilities (`ms/me/ps/pe/start/end/text-start`) not physical (`ml/mr/pl/pr/left/right/text-left`); mirror directional icons with `rtl:-scale-x-100`. Arabic is user-selectable (sidebar/settings switcher) but `localeForCountry` does NOT yet auto-default Gulf tenants to it.
 - Routes under `app/[locale]/...`; ICU message formatting. Public workspace chrome uses workspace country locale, not visitor locale.
 
 ## Encoding safety

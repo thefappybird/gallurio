@@ -57,9 +57,10 @@ Composed, app-specific shared components.
 
 | Import | Exports | Purpose | Key props |
 |--------|---------|---------|-----------|
-| `components/app/app-sidebar.tsx` | `AppSidebar` | Full app sidebar: branding, role-based nav, theme toggle, user menu, sign-out | `role`, `workspaceName`, `workspaceLogoUrl`, `userName`, `userEmail`, `userAvatarUrl` |
+| `components/app/app-sidebar.tsx` | `AppSidebar` | Full app sidebar: branding, role-based nav, theme toggle, locale switcher, user menu, sign-out | `role`, `workspaceName`, `workspaceLogoUrl`, `userName`, `userEmail`, `userAvatarUrl` |
 | `components/app/theme-provider.tsx` | `ThemeProvider` | next-themes provider wrapper | class attribute, system default |
 | `components/app/theme-toggle.tsx` | `ThemeToggle` | Theme switcher dropdown | hydration-safe |
+| `components/app/locale-switcher.tsx` | `LocaleSwitcher` | Locale switcher dropdown (sidebar footer); reuses catalog native names, swaps locale via next-intl navigation keeping the path | none |
 | `components/app/table-skeleton.tsx` | `TableSkeleton` | Table loading skeleton w/ realistic column widths | `columns`, `rows?` (8) |
 | `components/app/page-size-select.tsx` | `PageSizeSelect` | Rows-per-page dropdown; syncs URL param, resets page | `value`, `paramName` ("limit"), `options` |
 | `components/app/clear-filters-button.tsx` | `ClearFiltersButton` | Clears filter params from URL; hidden when none active | `paramKeys`, `defaultValues?` |

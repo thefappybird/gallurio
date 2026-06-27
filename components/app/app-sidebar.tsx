@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/lib/i18n/navigation";
 import {
   BellIcon,
@@ -35,6 +35,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/app/theme-toggle";
+import { LocaleSwitcher } from "@/components/app/locale-switcher";
 
 const OWNER_NAV = [
   { href: "/dashboard" as const, labelKey: "dashboard", icon: LayoutDashboardIcon },
@@ -80,6 +81,9 @@ export function AppSidebar({
   userAvatarUrl,
 }: AppSidebarProps) {
   const pathname = usePathname();
+  // RTL locales anchor the sidebar to the inline-start edge (the right side).
+  // The Sidebar primitive already positions side="right" correctly.
+  const side = useLocale() === "ar" ? "right" : "left";
   const t = useTranslations("app.sidebar");
   const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -106,7 +110,7 @@ export function AppSidebar({
   const accountInitials = getInitials(userName, userEmail);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" side={side}>
       <SidebarHeader className="pb-0">
         <div
           data-testid="sidebar-workspace-header"
@@ -197,6 +201,9 @@ export function AppSidebar({
         <SidebarMenu className="gap-1">
           <SidebarMenuItem>
             <ThemeToggle />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <LocaleSwitcher />
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton

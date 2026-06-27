@@ -718,7 +718,8 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia"
+          "id": "Bahasa Indonesia",
+          "ar": "العربية"
         },
         "timeFormatSection": "Format Masa",
         "timeFormatHint": "Pilih cara masa dipaparkan dalam seluruh apl.",
@@ -1349,7 +1350,8 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia"
+            "id": "Bahasa Indonesia",
+            "ar": "العربية"
           },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",

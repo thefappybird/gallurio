@@ -41,6 +41,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${portfolioFontVariables} h-full antialiased`}
       // Default corner-style preset (app-shell theming seam). A future
       // user-theming UI resolves a persisted AppThemeConfig here instead of the

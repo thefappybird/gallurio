@@ -13,9 +13,11 @@ export function localeForCountry(country: string | null | undefined): Locale {
       return "ms";
     case "ID":
       return "id";
-    // Gulf markets fall back to English chrome until the Arabic locale ships —
-    // see docs/paddle-integration/arabic-rtl.md. When ready, change these
-    // cases to return "ar".
+    // Gulf markets stay on English chrome for now. The Arabic locale ("ar")
+    // exists and is user-selectable, but auto-defaulting Gulf tenants to it is
+    // deferred until the remaining surfaces (dashboard, portfolio, onboarding,
+    // landing) are RTL-ready and Arabic EMAIL_COPY lands. When ready, return
+    // "ar" here and update localeForCountry.test.ts.
     case "AE":
     case "SA":
     case "QA":

@@ -718,7 +718,8 @@
           "en": "English",
           "fil": "Filipino",
           "ms": "Bahasa Melayu",
-          "id": "Bahasa Indonesia"
+          "id": "Bahasa Indonesia",
+          "ar": "العربية"
         },
         "timeFormatSection": "Time Format",
         "timeFormatHint": "Choose how times are displayed across the app.",
@@ -1369,7 +1370,8 @@
             "en": "English",
             "fil": "Filipino",
             "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia"
+            "id": "Bahasa Indonesia",
+            "ar": "العربية"
           },
           "errorColorLabel": "Error message color",
           "sectionTabs": "Tabs",
