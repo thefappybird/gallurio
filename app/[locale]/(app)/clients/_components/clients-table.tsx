@@ -222,7 +222,7 @@ export function ClientsTable({
           {table.getHeaderGroups().map((hg) => (
             <tr
               key={hg.id}
-              className="border-b border-border bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground"
+              className="border-b border-border bg-muted/30 text-start text-xs uppercase tracking-wide text-muted-foreground"
             >
               {hg.headers.map((header) => {
                 const canSort = header.column.getCanSort();
@@ -240,7 +240,7 @@ export function ClientsTable({
                     key={header.id}
                     scope="col"
                     aria-sort={ariaSort}
-                    className={cn("px-3 py-2 font-medium", alignRight && "text-right")}
+                    className={cn("px-3 py-2 font-medium", alignRight && "text-end")}
                   >
                     {canSort ? (
                       <button
@@ -303,7 +303,7 @@ export function ClientsTable({
                   key={cell.id}
                   className={cn(
                     "px-3 py-2.5 align-middle",
-                    cell.column.columnDef.meta?.align === "right" && "text-right"
+                    cell.column.columnDef.meta?.align === "right" && "text-end"
                   )}
                   onClick={(e) => {
                     if (cell.column.id === "actions") e.stopPropagation();
