@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import {
   BellIcon,
   CalendarIcon,
@@ -61,7 +61,7 @@ function NotificationRow({
       type="button"
       onClick={handleClick}
       className={[
-        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors',
+        'flex w-full items-start gap-3 px-4 py-3 text-start transition-colors',
         'hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         !notification.read ? 'bg-accent/30' : '',
       ]
@@ -191,10 +191,14 @@ export function NotificationPopover({
   onClose,
 }: NotificationPopoverProps) {
   const { state } = useSidebar()
-  const left =
+  // In RTL the sidebar is anchored to the right, so the panel must sit just
+  // inside its inner (left) edge — anchor with `right` and slide from the right.
+  const isRtl = useLocale() === 'ar'
+  const offset =
     state === 'collapsed'
       ? 'calc(var(--sidebar-width-icon, 4rem) + 1px)'
       : 'calc(var(--sidebar-width, 16rem) + 1px)'
+  const anchorStyle = isRtl ? { right: offset } : { left: offset }
 
   if (!open) return null
 
@@ -212,13 +216,14 @@ export function NotificationPopover({
       <div
         role="dialog"
         aria-label="Notifications"
-        style={{ left } as React.CSSProperties}
+        style={anchorStyle as React.CSSProperties}
         className={[
           'fixed z-[9998] hidden md:flex',
           'top-0',
           'h-svh w-[360px] flex-col',
           'border border-border bg-background',
-          'animate-in fade-in-0 slide-in-from-left-2 duration-150',
+          'animate-in fade-in-0 duration-150',
+          isRtl ? 'slide-in-from-right-2' : 'slide-in-from-left-2',
         ].join(' ')}
       >
         <NotificationPanelContent onClose={onClose} />
