@@ -51,7 +51,7 @@ export default async function InquiryDetailPage({
           href="/inquiries"
           className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:underline"
         >
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon className="size-4 rtl:-scale-x-100" />
           {t("back")}
         </Link>
 
