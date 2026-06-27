@@ -22,7 +22,8 @@ vi.mock("@/lib/notifications/send", () => ({
 }));
 
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
-import { Workspace, Client, Inquiry, Booking } from "@/lib/db/models";
+import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
+import { localDayStart } from "@/lib/utils/timezone";
 import { submitInquiry } from "./inquirySubmission";
 import type { InquirySubmissionInput } from "@/lib/validators/inquiry";
 
@@ -78,6 +79,20 @@ afterEach(() => {
 });
 
 describe("submitInquiry", () => {
+  it("bumps the portfolio analytics inquiry counter for the workspace-local day", async () => {
+    const ws = await Workspace.create(makeWorkspace());
+    const res = await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });
+    expect(res.ok).toBe(true);
+
+    const day = localDayStart("Asia/Manila", new Date());
+    const site = await PageviewRollup.findOne({
+      workspaceId: ws._id,
+      date: day,
+      page: "_site",
+    }).lean();
+    expect(site?.inquiries).toBe(1);
+  });
+
   it("creates one inquiry, one client, and one linked draft booking", async () => {
     const ws = await Workspace.create(makeWorkspace());
     const res = await submitInquiry({ workspaceSlug: "studio-aurora", payload: makePayload() });

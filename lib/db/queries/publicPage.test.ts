@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models/Workspace";
-import { findPublishedWorkspaceBySlug } from "./publicPage";
+import { findPublishedWorkspaceBySlug, resolveWorkspaceIdBySlug } from "./publicPage";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -209,5 +209,28 @@ describe("findPublishedWorkspaceBySlug", () => {
     expect(doc.country).toBe("PH");
     expect(doc.publicPage).toBeDefined();
     expect(doc.contact).toBeDefined();
+  });
+});
+
+describe("resolveWorkspaceIdBySlug", () => {
+  it("returns id + timezone for a published workspace, null otherwise", async () => {
+    await Workspace.create(
+      makeWorkspaceBase({ slug: "beacon-ws", timezone: "Asia/Jakarta" })
+    );
+    const ok = await resolveWorkspaceIdBySlug("BEACON-WS");
+    expect(ok).not.toBeNull();
+    expect(ok?.timezone).toBe("Asia/Jakarta");
+    expect(String(ok?._id)).toMatch(/^[a-f0-9]{24}$/);
+
+    expect(await resolveWorkspaceIdBySlug("")).toBeNull();
+    expect(await resolveWorkspaceIdBySlug("nope")).toBeNull();
+
+    await Workspace.create(
+      makeWorkspaceBase({
+        slug: "draft-ws",
+        publicPage: { publishedAt: null, data: { home: null, gallery: null } },
+      })
+    );
+    expect(await resolveWorkspaceIdBySlug("draft-ws")).toBeNull();
   });
 });

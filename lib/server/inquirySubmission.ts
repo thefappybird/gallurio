@@ -1,12 +1,12 @@
 import "server-only";
 import mongoose from "mongoose";
 import { connectDB } from "@/lib/db/mongoose";
-import { Workspace, Client, Inquiry, Booking } from "@/lib/db/models";
+import { Workspace, Client, Inquiry, Booking, PageviewRollup } from "@/lib/db/models";
 import {
   inquirySessionsToBookingSessions,
   type InquirySubmissionInput,
 } from "@/lib/validators/inquiry";
-import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { FALLBACK_TZ, localDayStart } from "@/lib/utils/timezone";
 import { sendInquiryNotification } from "@/lib/email/inquiryNotification";
 import { sendInquiryClientConfirmation } from "@/lib/email/inquiryClientConfirmation";
 import { resolveWorkspaceBrand } from "@/lib/email/brand";
@@ -189,6 +189,19 @@ export async function submitInquiry(
 
   if (!inquiryId || !draftBookingId || !clientId) {
     return { ok: false, error: "submission_failed" };
+  }
+
+  // Bump the portfolio analytics inquiry counter for the day — outside the
+  // transaction (analytics must never roll back a committed inquiry), awaited so
+  // the dashboard reflects it, but never fatal.
+  try {
+    await PageviewRollup.updateOne(
+      { workspaceId, date: localDayStart(timeZone, new Date()), page: "_site" },
+      { $inc: { inquiries: 1 } },
+      { upsert: true }
+    );
+  } catch (err) {
+    console.error("[inquiry] rollup inquiry counter failed (non-fatal):", err);
   }
 
   const recipient =

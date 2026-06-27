@@ -3,8 +3,19 @@ import {
   dayBoundInTz,
   resolveWorkspaceTimezone,
   wallTimeInTzToUtc,
+  localDayStart,
   FALLBACK_TZ,
 } from "./timezone";
+
+describe("localDayStart", () => {
+  it("returns the UTC instant of the current local day's midnight", () => {
+    // 2026-06-01 20:00 UTC is already 2026-06-02 04:00 in Manila (UTC+8),
+    // so the local day is June 2 and its midnight is June 1 16:00 UTC.
+    expect(
+      localDayStart("Asia/Manila", new Date("2026-06-01T20:00:00Z")).toISOString()
+    ).toBe("2026-06-01T16:00:00.000Z");
+  });
+});
 
 describe("resolveWorkspaceTimezone", () => {
   it("uses the workspace timezone when set, else the platform fallback", () => {
