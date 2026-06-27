@@ -10,6 +10,10 @@ vi.mock("@/lib/i18n/navigation", () => ({
   useRouter: () => ({ replace }),
   usePathname: () => "/clients",
 }));
+let searchString = "";
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(searchString),
+}));
 
 beforeAll(() => {
   // SidebarProvider's mobile detection needs matchMedia, absent in happy-dom.
@@ -45,5 +49,19 @@ describe("LocaleSwitcher", () => {
     fireEvent.click(screen.getByRole("button", { name: /english/i }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "العربية" }));
     expect(replace).toHaveBeenCalledWith("/clients", { locale: "ar" });
+  });
+
+  it("preserves the current query string when switching locale", async () => {
+    searchString = "status=pending&view=calendar";
+    try {
+      renderAt("en");
+      fireEvent.click(screen.getByRole("button", { name: /english/i }));
+      fireEvent.click(await screen.findByRole("menuitem", { name: "العربية" }));
+      expect(replace).toHaveBeenCalledWith("/clients?status=pending&view=calendar", {
+        locale: "ar",
+      });
+    } finally {
+      searchString = "";
+    }
   });
 });
