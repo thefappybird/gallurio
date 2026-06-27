@@ -10,9 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { formatMoney } from "@/lib/utils/format-currency";
-import type { KpiSnapshot } from "../_data/dashboard-metrics";
-
-type Trend = { value: number; positiveIsGood: boolean };
+import type { KpiSnapshot, KpiTrend, KpiTrends } from "../_data/dashboard-metrics";
 
 type Props = {
   snapshot: KpiSnapshot;
@@ -24,16 +22,12 @@ type Props = {
     newInquiries: string;
     outstandingBalance: string;
   };
-  // Mock trends — real comparison-to-last-period wiring is a follow-up.
-  trends?: {
-    revenue?: Trend;
-    activeBookings?: Trend;
-    newInquiries?: Trend;
-    outstandingBalance?: Trend;
-  };
+  // Real period-over-period deltas; a metric is null when there's no prior
+  // baseline (badge hidden) or when it's a point-in-time snapshot.
+  trends: KpiTrends;
 };
 
-function TrendBadge({ trend }: { trend?: Trend }) {
+function TrendBadge({ trend }: { trend: KpiTrend }) {
   if (!trend) return null;
   const isFlat = Math.abs(trend.value) < 0.5;
   const Icon = isFlat ? MinusIcon : trend.value > 0 ? ArrowUpRightIcon : ArrowDownRightIcon;
@@ -60,22 +54,21 @@ function KpiCard({
   label: string;
   value: string;
   icon: LucideIcon;
-  trend?: Trend;
+  trend: KpiTrend;
 }) {
+  // Compact: larger icon on the left; label + trend on row 1, value on row 2.
   return (
-    <Card className="border-border">
-      <CardContent className="flex flex-col gap-3 p-4">
-        <div className="flex items-center justify-between">
-          <span className="flex size-9 items-center justify-center border border-brand/30 bg-brand-4 text-brand">
-            <Icon className="size-4" />
+    <Card className="rounded-[var(--radius)] border-border">
+      <CardContent className="flex items-center gap-3 p-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius)] border border-brand/30 bg-brand-4 text-brand">
+          <Icon className="size-5" />
+        </span>
+        <div className="flex min-w-0 flex-col">
+          <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="truncate">{label}</span>
+            <TrendBadge trend={trend} />
           </span>
-          <TrendBadge trend={trend} />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {label}
-          </span>
-          <span className="text-2xl font-semibold tracking-tight">{value}</span>
+          <span className="text-xl font-semibold tracking-tight">{value}</span>
         </div>
       </CardContent>
     </Card>
@@ -84,30 +77,30 @@ function KpiCard({
 
 export function KpiStrip({ snapshot, currency, locale, labels, trends }: Props) {
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <KpiCard
         label={labels.revenueThisMonth}
         value={formatMoney(snapshot.revenueThisMonth, currency, locale)}
         icon={WalletIcon}
-        trend={trends?.revenue}
+        trend={trends.revenue}
       />
       <KpiCard
         label={labels.activeBookings}
         value={snapshot.activeBookingsThisMonth.toString()}
         icon={CalendarCheck2Icon}
-        trend={trends?.activeBookings}
+        trend={trends.activeBookings}
       />
       <KpiCard
         label={labels.newInquiries}
         value={snapshot.newInquiries.toString()}
         icon={MessageSquareIcon}
-        trend={trends?.newInquiries}
+        trend={trends.newInquiries}
       />
       <KpiCard
         label={labels.outstandingBalance}
         value={formatMoney(snapshot.outstandingBalance, currency, locale)}
         icon={CircleDollarSignIcon}
-        trend={trends?.outstandingBalance}
+        trend={trends.outstandingBalance}
       />
     </div>
   );

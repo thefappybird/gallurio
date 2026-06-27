@@ -109,18 +109,12 @@
         "upcomingWeek": "Akan datang minggu ini",
         "recentInquiries": "Pertanyaan terkini",
         "activity": "Aktiviti terkini",
-        "pipeline": "Saluran paip",
         "revenueTrend": "Pendapatan (30 hari lepas)",
         "calendar": "Kalendar tempahan",
         "eventTypes": "Pecahan jenis acara",
-        "transactionsByMethod": "Pembayaran mengikut kaedah (90 hari)",
-        "transactionsByTeam": "Hasil mengikut pasukan",
-        "weeklyBookings": "Tempahan mengikut hari dalam seminggu",
-        "topClients": "Pelanggan teratas mengikut perbelanjaan"
-      },
-      "pipeline": {
-        "inquiries": "Pertanyaan",
-        "booked": "Ditempah"
+        "topClients": "Pelanggan teratas mengikut perbelanjaan",
+        "teamPerformance": "Prestasi pasukan",
+        "bookingsPerTeam": "Tempahan mengikut pasukan"
       },
       "quickAdd": {
         "title": "Tambah cepat",
@@ -132,6 +126,25 @@
       "viewAll": "Lihat semua",
       "portfolio": {
         "analyticsSoon": "Analitik portfolio akan datang tidak lama lagi."
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# tempahan} other {# tempahan}}"
+      },
+      "showMore": "Tunjuk lagi",
+      "showLess": "Tunjuk kurang",
+      "hints": {
+        "kpi": "Jumlah bagi bulan ini. Anak panah membandingkan dengan bulan lepas.",
+        "calendar": "Tempahan setiap hari. Tapis mengikut pasukan; ketik satu hari untuk membuka kalendar di situ.",
+        "eventTypes": "Bahagian tempahan mengikut jenis acara.",
+        "teamPerformance": "Prestasi setiap pasukan mengikut hasil dan jumlah tempahan.",
+        "bookingsPerTeam": "Bilangan tempahan yang dikendalikan oleh setiap pasukan.",
+        "revenueTrend": "Hasil dibayar dalam 30 hari lepas.",
+        "topClients": "Pelanggan mengikut jumlah perbelanjaan.",
+        "todaysEvents": "Tempahan bermula hari ini.",
+        "upcomingWeek": "Tempahan disahkan dalam 7 hari akan datang.",
+        "recentInquiries": "Pertanyaan masuk terkini anda.",
+        "activity": "Perubahan terkini di ruang kerja anda.",
+        "quickAdd": "Cipta tempahan, pelanggan, atau pertanyaan."
       }
     },
     "calendar": {

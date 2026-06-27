@@ -109,18 +109,12 @@
         "upcomingWeek": "Upcoming this week",
         "recentInquiries": "Recent inquiries",
         "activity": "Recent activity",
-        "pipeline": "Pipeline",
         "revenueTrend": "Revenue (last 30 days)",
         "calendar": "Booking calendar",
         "eventTypes": "Event type breakdown",
-        "transactionsByMethod": "Payments by method (90d)",
-        "transactionsByTeam": "Revenue by team",
-        "weeklyBookings": "Bookings by weekday",
-        "topClients": "Top clients by spend"
-      },
-      "pipeline": {
-        "inquiries": "Inquiries",
-        "booked": "Booked"
+        "topClients": "Top clients by spend",
+        "teamPerformance": "Team performance",
+        "bookingsPerTeam": "Bookings by team"
       },
       "quickAdd": {
         "title": "Quick add",
@@ -132,6 +126,25 @@
       "viewAll": "View all",
       "portfolio": {
         "analyticsSoon": "Portfolio analytics are coming soon."
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# booking} other {# bookings}}"
+      },
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "hints": {
+        "kpi": "Totals for this month. Arrows compare to last month.",
+        "calendar": "Bookings per day. Filter by team; tap a day to open the calendar there.",
+        "eventTypes": "Share of bookings by event type.",
+        "teamPerformance": "How each team is performing by revenue and booking volume.",
+        "bookingsPerTeam": "Number of bookings handled by each team.",
+        "revenueTrend": "Paid revenue over the last 30 days.",
+        "topClients": "Clients ranked by total spend.",
+        "todaysEvents": "Bookings starting today.",
+        "upcomingWeek": "Confirmed bookings in the next 7 days.",
+        "recentInquiries": "Your latest inbound inquiries.",
+        "activity": "Recent changes across your workspace.",
+        "quickAdd": "Create a booking, client, or inquiry."
       }
     },
     "calendar": {

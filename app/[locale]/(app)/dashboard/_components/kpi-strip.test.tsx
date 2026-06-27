@@ -10,6 +10,13 @@ const labels = {
   outstandingBalance: "Outstanding",
 };
 
+const noTrends = {
+  revenue: null,
+  activeBookings: null,
+  newInquiries: null,
+  outstandingBalance: null,
+};
+
 describe("KpiStrip", () => {
   it("renders all four KPI labels", () => {
     renderWithProviders(
@@ -23,6 +30,7 @@ describe("KpiStrip", () => {
         currency="PHP"
         locale="en"
         labels={labels}
+        trends={noTrends}
       />
     );
     expect(screen.getByText("Revenue")).toBeInTheDocument();
@@ -43,6 +51,7 @@ describe("KpiStrip", () => {
         currency="PHP"
         locale="en"
         labels={labels}
+        trends={noTrends}
       />
     );
     expect(screen.getByText(/24,850/)).toBeInTheDocument();
@@ -61,6 +70,7 @@ describe("KpiStrip", () => {
         currency="PHP"
         locale="en"
         labels={labels}
+        trends={noTrends}
       />
     );
     expect(screen.getByText("18")).toBeInTheDocument();

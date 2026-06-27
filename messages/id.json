@@ -109,18 +109,12 @@
         "upcomingWeek": "Akan datang minggu ini",
         "recentInquiries": "Pertanyaan terbaru",
         "activity": "Aktivitas terbaru",
-        "pipeline": "Pipeline",
         "revenueTrend": "Pendapatan (30 hari terakhir)",
         "calendar": "Kalender pemesanan",
         "eventTypes": "Rincian jenis acara",
-        "transactionsByMethod": "Pembayaran per metode (90 hari)",
-        "transactionsByTeam": "Pendapatan per tim",
-        "weeklyBookings": "Pemesanan per hari dalam seminggu",
-        "topClients": "Klien teratas berdasarkan pengeluaran"
-      },
-      "pipeline": {
-        "inquiries": "Pertanyaan",
-        "booked": "Dipesan"
+        "topClients": "Klien teratas berdasarkan pengeluaran",
+        "teamPerformance": "Kinerja tim",
+        "bookingsPerTeam": "Pemesanan per tim"
       },
       "quickAdd": {
         "title": "Tambah cepat",
@@ -132,6 +126,25 @@
       "viewAll": "Lihat semua",
       "portfolio": {
         "analyticsSoon": "Analitik portofolio segera hadir."
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# pemesanan} other {# pemesanan}}"
+      },
+      "showMore": "Tampilkan lebih",
+      "showLess": "Tampilkan lebih sedikit",
+      "hints": {
+        "kpi": "Total untuk bulan ini. Panah membandingkan dengan bulan lalu.",
+        "calendar": "Pemesanan per hari. Filter berdasarkan tim; ketuk satu hari untuk membuka kalender di sana.",
+        "eventTypes": "Bagian pemesanan menurut jenis acara.",
+        "teamPerformance": "Kinerja tiap tim berdasarkan pendapatan dan jumlah pemesanan.",
+        "bookingsPerTeam": "Jumlah pemesanan yang ditangani tiap tim.",
+        "revenueTrend": "Pendapatan dibayar dalam 30 hari terakhir.",
+        "topClients": "Klien menurut total pengeluaran.",
+        "todaysEvents": "Pemesanan yang mulai hari ini.",
+        "upcomingWeek": "Pemesanan terkonfirmasi dalam 7 hari ke depan.",
+        "recentInquiries": "Pertanyaan masuk terbaru Anda.",
+        "activity": "Perubahan terbaru di ruang kerja Anda.",
+        "quickAdd": "Buat pemesanan, klien, atau pertanyaan."
       }
     },
     "calendar": {

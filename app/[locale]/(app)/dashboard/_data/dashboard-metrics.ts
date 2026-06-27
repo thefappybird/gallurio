@@ -96,6 +96,82 @@ export async function getKpiSnapshot(workspaceId: WorkspaceId): Promise<KpiSnaps
   };
 }
 
+export type KpiTrend = { value: number; positiveIsGood: boolean } | null;
+
+export type KpiTrends = {
+  revenue: KpiTrend;
+  activeBookings: KpiTrend;
+  newInquiries: KpiTrend;
+  outstandingBalance: KpiTrend;
+};
+
+// Hide the badge (null) when there's no prior-period baseline — a percentage off
+// zero is meaningless and produced the "5% with 0 bookings" bug.
+function pctTrend(current: number, prior: number, positiveIsGood: boolean): KpiTrend {
+  if (prior === 0) return null;
+  return { value: ((current - prior) / prior) * 100, positiveIsGood };
+}
+
+async function monthRevenue(workspaceId: WorkspaceId, start: Date, end: Date) {
+  const agg = await Transaction.aggregate<{ total: number }>([
+    {
+      $match: {
+        workspaceId,
+        paidAt: { $gte: start, $lte: end },
+        type: { $in: ["deposit", "balance", "refund"] },
+      },
+    },
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+  return agg[0]?.total ?? 0;
+}
+
+export async function getKpiSnapshotWithDeltas(
+  workspaceId: WorkspaceId
+): Promise<{ snapshot: KpiSnapshot; trends: KpiTrends }> {
+  const now = new Date();
+  const thisStart = startOfMonth(now);
+  const thisEnd = endOfMonth(now);
+  const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastStart = startOfMonth(lastDate);
+  const lastEnd = endOfMonth(lastDate);
+
+  const [
+    snapshot,
+    lastRevenue,
+    lastActiveBookings,
+    thisInquiriesCreated,
+    lastInquiriesCreated,
+  ] = await Promise.all([
+    getKpiSnapshot(workspaceId),
+    monthRevenue(workspaceId, lastStart, lastEnd),
+    Booking.countDocuments({
+      workspaceId,
+      firstSessionStart: { $gte: lastStart, $lte: lastEnd },
+      status: "booked",
+    }),
+    Inquiry.countDocuments({
+      workspaceId,
+      createdAt: { $gte: thisStart, $lte: thisEnd },
+    }),
+    Inquiry.countDocuments({
+      workspaceId,
+      createdAt: { $gte: lastStart, $lte: lastEnd },
+    }),
+  ]);
+
+  return {
+    snapshot,
+    trends: {
+      revenue: pctTrend(snapshot.revenueThisMonth, lastRevenue, true),
+      activeBookings: pctTrend(snapshot.activeBookingsThisMonth, lastActiveBookings, true),
+      newInquiries: pctTrend(thisInquiriesCreated, lastInquiriesCreated, true),
+      // Point-in-time snapshot — a period delta would be misleading.
+      outstandingBalance: null,
+    },
+  };
+}
+
 export async function getTodaysEvents(workspaceId: WorkspaceId) {
   const now = new Date();
   // "Starts today" — firstSessionStart within today's bounds.
@@ -135,19 +211,6 @@ export async function getActivityFeed(workspaceId: WorkspaceId, limit = 10) {
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
-}
-
-export type PipelineCounts = {
-  inquiries: number;
-  booked: number;
-};
-
-export async function getPipelineCounts(workspaceId: WorkspaceId): Promise<PipelineCounts> {
-  const [inquiries, booked] = await Promise.all([
-    Inquiry.countDocuments({ workspaceId, status: "inquiry" }),
-    Booking.countDocuments({ workspaceId, status: "booked" }),
-  ]);
-  return { inquiries, booked };
 }
 
 export type RevenuePoint = { date: string; amount: number };
@@ -261,28 +324,6 @@ export async function getEventTypeBreakdown(
   return rows.map((r) => ({ eventType: r._id ?? "other", count: r.count }));
 }
 
-export type TransactionsByMethod = { method: string; total: number };
-
-export async function getTransactionsByMethod(
-  workspaceId: WorkspaceId,
-  days = 90
-): Promise<TransactionsByMethod[]> {
-  const start = new Date();
-  start.setDate(start.getDate() - days);
-  const rows = await Transaction.aggregate<{ _id: string; total: number }>([
-    {
-      $match: {
-        workspaceId,
-        paidAt: { $gte: start },
-        type: { $in: ["deposit", "balance"] },
-      },
-    },
-    { $group: { _id: "$method", total: { $sum: "$amount" } } },
-    { $sort: { total: -1 } },
-  ]);
-  return rows.map((r) => ({ method: r._id ?? "other", total: r.total }));
-}
-
 export type TransactionsByTeam = {
   teamId: string;
   name: string;
@@ -336,6 +377,49 @@ export async function getTransactionsByTeam(
   });
 }
 
+export type TeamBookingsCount = {
+  teamId: string;
+  name: string;
+  color: string;
+  isActive: boolean;
+  count: number;
+};
+
+export async function getBookingsCountByTeam(
+  workspaceId: WorkspaceId
+): Promise<TeamBookingsCount[]> {
+  const rows = await Booking.aggregate<{ _id: Types.ObjectId | null; count: number }>([
+    { $match: { workspaceId, status: { $ne: "draft" } } },
+    { $group: { _id: "$teamId", count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+  ]);
+
+  const withTeam = rows.filter((r) => r._id != null) as {
+    _id: Types.ObjectId;
+    count: number;
+  }[];
+  if (withTeam.length === 0) return [];
+
+  const teams = await Team.find({ workspaceId, _id: { $in: withTeam.map((r) => r._id) } })
+    .select({ _id: 1, name: 1, color: 1, isActive: 1 })
+    .lean();
+  const teamMap = new Map(teams.map((t) => [t._id.toString(), t]));
+
+  return withTeam.flatMap((r) => {
+    const team = teamMap.get(r._id.toString());
+    if (!team) return [];
+    return [
+      {
+        teamId: r._id.toString(),
+        name: team.name,
+        color: team.isActive ? team.color : INACTIVE_TEAM_COLOR,
+        isActive: team.isActive,
+        count: r.count,
+      },
+    ];
+  });
+}
+
 export type RevenueComparison = {
   thisMonth: number;
   lastMonth: number;
@@ -381,21 +465,3 @@ export async function getRevenueComparison(
   return { thisMonth, lastMonth, deltaPct };
 }
 
-export type WeeklyBookingsPoint = { day: string; count: number };
-const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-export async function getBookingsByWeekday(
-  workspaceId: WorkspaceId
-): Promise<WeeklyBookingsPoint[]> {
-  const rows = await Booking.aggregate<{ _id: number; count: number }>([
-    { $match: { workspaceId, status: { $ne: "draft" } } },
-    {
-      $group: {
-        _id: { $dayOfWeek: "$firstSessionStart" }, // 1=Sun .. 7=Sat (Mongo)
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-  const counts = new Map(rows.map((r) => [r._id - 1, r.count]));
-  return WEEKDAY_LABELS.map((day, i) => ({ day, count: counts.get(i) ?? 0 }));
-}

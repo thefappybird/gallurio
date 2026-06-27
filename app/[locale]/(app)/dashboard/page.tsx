@@ -11,18 +11,16 @@ import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
 import { resolveStoredDashboardTab } from "@/lib/dashboard-preferences.server";
 import {
-  getKpiSnapshot,
+  getKpiSnapshotWithDeltas,
   getTodaysEvents,
   getUpcomingWeek,
   getRecentInquiries,
   getActivityFeed,
-  getPipelineCounts,
   getRevenueTrend,
   getBookingsByDay,
   getEventTypeBreakdown,
-  getTransactionsByMethod,
   getTransactionsByTeam,
-  getBookingsByWeekday,
+  getBookingsCountByTeam,
   getTopClients,
 } from "./_data/dashboard-metrics";
 import { KpiStrip } from "./_components/kpi-strip";
@@ -31,14 +29,11 @@ import { UpcomingWeekList } from "./_components/upcoming-week-list";
 import { RecentInquiriesList } from "./_components/recent-inquiries-list";
 import { ActivityFeed } from "./_components/activity-feed";
 import { QuickAdd } from "./_components/quick-add";
-import { PipelineFunnel } from "./_components/pipeline-funnel";
 import { RevenueTrendChart } from "./_components/revenue-trend-chart";
 import { MiniBookingCalendar } from "./_components/mini-booking-calendar";
 import { EventTypeDonut } from "./_components/event-type-donut";
 import { TopClientsBar } from "./_components/top-clients-bar";
-import { TransactionsByMethodBar } from "./_components/transactions-by-method-bar";
-import { TransactionsByTeamBar } from "./_components/transactions-by-team-bar";
-import { WeeklyBookingsBar } from "./_components/weekly-bookings-bar";
+import { TeamPerformanceCards } from "./_components/team-performance-cards";
 import { DashboardTabs } from "./_components/dashboard-tabs";
 import { DashboardDateFilter } from "./_components/dashboard-date-filter";
 import { PortfolioDashboard } from "./_components/portfolio-dashboard";
@@ -53,14 +48,6 @@ export async function generateMetadata({
   const t = await getTranslations("app.sidebar");
   return { title: t("dashboard") };
 }
-
-// Mock trends until we wire historical comparison. Keeps the visual story for now.
-const MOCK_TRENDS = {
-  revenue: { value: 12.4, positiveIsGood: true },
-  activeBookings: { value: 5.1, positiveIsGood: true },
-  newInquiries: { value: -2.3, positiveIsGood: true },
-  outstandingBalance: { value: -8.6, positiveIsGood: false },
-};
 
 export default async function DashboardPage({
   params,
@@ -118,8 +105,8 @@ export default async function DashboardPage({
   );
 }
 
-// Bookings tab kept inline so only the active tab runs its queries. Phase 2
-// redesigns these widgets; Phase 4 threads the date filter into the loaders.
+// Bookings tab kept inline so only the active tab runs its queries. Phase 4
+// threads the date filter into the loaders.
 async function BookingsTab({
   wid,
   workspace,
@@ -134,39 +121,36 @@ async function BookingsTab({
   const timeMode = await getUserTimeFormat();
 
   const [
-    snapshot,
+    kpi,
     todays,
     upcoming,
     inquiries,
     activity,
-    pipeline,
     revenue,
     monthBookings,
     eventTypes,
-    txByMethod,
-    txByTeam,
-    weekly,
+    revenueByTeam,
+    bookingsByTeam,
     topClients,
   ] = await Promise.all([
-    getKpiSnapshot(wid),
+    getKpiSnapshotWithDeltas(wid),
     getTodaysEvents(wid),
     getUpcomingWeek(wid),
     getRecentInquiries(wid),
-    getActivityFeed(wid),
-    getPipelineCounts(wid),
+    getActivityFeed(wid, 20),
     getRevenueTrend(wid, 30),
     getBookingsByDay(wid, new Date()),
     getEventTypeBreakdown(wid),
-    getTransactionsByMethod(wid, 90),
     getTransactionsByTeam(wid, 90),
-    getBookingsByWeekday(wid),
+    getBookingsCountByTeam(wid),
     getTopClients(wid, 5),
   ]);
 
   return (
     <div className="flex flex-col gap-5">
       <KpiStrip
-        snapshot={snapshot}
+        snapshot={kpi.snapshot}
+        trends={kpi.trends}
         currency={workspace.currency}
         locale={locale}
         labels={{
@@ -175,7 +159,6 @@ async function BookingsTab({
           newInquiries: t("kpi.newInquiries"),
           outstandingBalance: t("kpi.outstandingBalance"),
         }}
-        trends={MOCK_TRENDS}
       />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
@@ -190,23 +173,21 @@ async function BookingsTab({
           title={t("sections.eventTypes")}
           empty={t("empty")}
         />
-        <TransactionsByMethodBar
-          data={txByMethod}
+        <TopClientsBar
+          clients={topClients}
           currency={workspace.currency}
           locale={locale}
-          title={t("sections.transactionsByMethod")}
+          title={t("sections.topClients")}
           empty={t("empty")}
         />
-        {txByTeam.length > 1 && (
-          <TransactionsByTeamBar
-            data={txByTeam}
-            currency={workspace.currency}
-            locale={locale}
-            title={t("sections.transactionsByTeam")}
-            empty={t("empty")}
-          />
-        )}
       </div>
+
+      <TeamPerformanceCards
+        revenueByTeam={revenueByTeam}
+        bookingsByTeam={bookingsByTeam}
+        currency={workspace.currency}
+        locale={locale}
+      />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="lg:col-span-2 h-full">
@@ -217,25 +198,6 @@ async function BookingsTab({
             title={t("sections.revenueTrend")}
           />
         </div>
-        <TopClientsBar
-          clients={topClients}
-          currency={workspace.currency}
-          locale={locale}
-          title={t("sections.topClients")}
-          empty={t("empty")}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-        <PipelineFunnel
-          counts={pipeline}
-          title={t("sections.pipeline")}
-          labels={{
-            inquiries: t("pipeline.inquiries"),
-            booked: t("pipeline.booked"),
-          }}
-        />
-        <WeeklyBookingsBar data={weekly} title={t("sections.weeklyBookings")} />
         <UpcomingWeekList
           bookings={upcoming as BookingDoc[]}
           locale={locale}

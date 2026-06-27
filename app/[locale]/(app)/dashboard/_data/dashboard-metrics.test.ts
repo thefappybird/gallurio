@@ -5,20 +5,19 @@ import {
   stopInMemoryMongo,
   clearCollections,
 } from "@/test-utils/mongo";
-import { Booking, Inquiry, Transaction, ActivityLog } from "@/lib/db/models";
+import { Booking, Inquiry, Transaction, ActivityLog, Team } from "@/lib/db/models";
 import {
   getKpiSnapshot,
   getTodaysEvents,
   getUpcomingWeek,
   getRecentInquiries,
   getActivityFeed,
-  getPipelineCounts,
   getRevenueTrend,
   getBookingsByDay,
   getEventTypeBreakdown,
-  getTransactionsByMethod,
   getRevenueComparison,
-  getBookingsByWeekday,
+  getKpiSnapshotWithDeltas,
+  getBookingsCountByTeam,
 } from "./dashboard-metrics";
 
 const workspaceId = new Types.ObjectId();
@@ -257,19 +256,6 @@ describe("getUpcomingWeek", () => {
   });
 });
 
-describe("getPipelineCounts", () => {
-  it("counts new inquiries and booked bookings separately", async () => {
-    const ed = new Date("2030-08-15T00:00:00Z");
-    await Inquiry.create({ workspaceId, name: "N", email: "n@x.com", status: "inquiry", eventDate: ed });
-    await Inquiry.create({ workspaceId, name: "C", email: "c@x.com", status: "converted", eventDate: ed });
-    await Inquiry.create({ workspaceId, name: "X", email: "x@x.com", status: "archived", eventDate: ed });
-    await seedBooking(workspaceId, { status: "booked" });
-
-    const counts = await getPipelineCounts(workspaceId);
-    expect(counts).toEqual({ inquiries: 1, booked: 1 });
-  });
-});
-
 describe("getRevenueTrend", () => {
   it("returns exactly `days` daily buckets, including empty days", async () => {
     const trend = await getRevenueTrend(workspaceId, 30);
@@ -387,37 +373,6 @@ describe("getEventTypeBreakdown", () => {
   });
 });
 
-describe("getTransactionsByMethod", () => {
-  it("sums by method for transactions within the window", async () => {
-    await seedTransaction(workspaceId, 10_000, daysFromNow(-5), "deposit");
-    await Transaction.updateMany({ workspaceId }, { method: "paddle" });
-    await seedTransaction(workspaceId, 5_000, daysFromNow(-10), "balance");
-    await seedTransaction(workspaceId, 2_000, daysFromNow(-95), "deposit");
-    await Transaction.updateMany({ method: { $exists: false } }, { method: "cash" });
-
-    const rows = await getTransactionsByMethod(workspaceId, 90);
-    const total = rows.reduce((s, r) => s + r.total, 0);
-    expect(total).toBeLessThanOrEqual(15_000);
-    expect(total).toBeGreaterThan(0);
-  });
-
-  it("excludes refunds and subscription rows", async () => {
-    await seedTransaction(workspaceId, -2_000, daysFromNow(-3), "refund");
-    await Transaction.create({
-      workspaceId,
-      amount: 9_999,
-      currency: "PHP",
-      type: "subscription",
-      method: "paddle",
-      paidAt: daysFromNow(-3),
-    });
-
-    const rows = await getTransactionsByMethod(workspaceId, 90);
-    const total = rows.reduce((s, r) => s + r.total, 0);
-    expect(total).toBe(0);
-  });
-});
-
 describe("getRevenueComparison", () => {
   it("computes a positive delta when this month exceeds last month", async () => {
     const now = new Date();
@@ -438,22 +393,62 @@ describe("getRevenueComparison", () => {
   });
 });
 
-describe("getBookingsByWeekday", () => {
-  it("returns exactly 7 days starting from Sunday", async () => {
-    const rows = await getBookingsByWeekday(workspaceId);
-    expect(rows).toHaveLength(7);
-    expect(rows[0].day).toBe("Sun");
-    expect(rows[6].day).toBe("Sat");
+
+describe("getKpiSnapshotWithDeltas", () => {
+  it("computes period-over-period deltas, hides them when there is no prior baseline, and never trends the outstanding snapshot", async () => {
+    const now = new Date();
+    const lastMonth = new Date();
+    lastMonth.setDate(15);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    // Revenue: this month 12k vs last month 6k → +100%.
+    await seedTransaction(workspaceId, 12_000, now, "deposit");
+    await seedTransaction(workspaceId, 6_000, lastMonth, "deposit");
+
+    const { snapshot, trends } = await getKpiSnapshotWithDeltas(workspaceId);
+
+    expect(snapshot.revenueThisMonth).toBe(12_000);
+    expect(trends.revenue).not.toBeNull();
+    expect(trends.revenue?.value).toBeCloseTo(100, 5);
+    expect(trends.revenue?.positiveIsGood).toBe(true);
+
+    // No prior inquiries this period → delta hidden (null), not a fake percentage.
+    expect(trends.newInquiries).toBeNull();
+
+    // Outstanding balance is a point-in-time snapshot, never a trend.
+    expect(trends.outstandingBalance).toBeNull();
   });
+});
 
-  it("counts bookings in the correct weekday bucket", async () => {
-    // Pick a known Wednesday (2026-05-20 is a Wednesday — UTC noon avoids timezone edge cases)
-    const wed = new Date(Date.UTC(2026, 4, 20, 12, 0, 0));
-    await seedBooking(workspaceId, { startAt: wed });
-    await seedBooking(workspaceId, { startAt: wed });
+describe("getBookingsCountByTeam", () => {
+  it("counts non-draft bookings per team with team metadata, scoped to the workspace", async () => {
+    const teamA = await Team.create({
+      workspaceId,
+      name: "Studio A",
+      color: "#112233",
+      isActive: true,
+      createdByWorkosUserId: "u_1",
+    });
+    const teamB = await Team.create({
+      workspaceId,
+      name: "Studio B",
+      color: "#445566",
+      isActive: true,
+      createdByWorkosUserId: "u_1",
+    });
 
-    const rows = await getBookingsByWeekday(workspaceId);
-    expect(rows.find((r) => r.day === "Wed")?.count).toBe(2);
-    expect(rows.find((r) => r.day === "Tue")?.count).toBe(0);
+    await seedBooking(workspaceId, { teamId: teamA._id, status: "booked" });
+    await seedBooking(workspaceId, { teamId: teamA._id, status: "completed" });
+    await seedBooking(workspaceId, { teamId: teamA._id, status: "draft" }); // excluded
+    await seedBooking(workspaceId, { teamId: teamB._id, status: "booked" });
+    await seedBooking(otherWorkspaceId, { teamId: teamA._id, status: "booked" }); // other ws
+
+    const rows = await getBookingsCountByTeam(workspaceId);
+    const byId = new Map(rows.map((r) => [r.teamId, r]));
+
+    expect(byId.get(teamA._id.toString())?.count).toBe(2);
+    expect(byId.get(teamA._id.toString())?.name).toBe("Studio A");
+    expect(byId.get(teamB._id.toString())?.count).toBe(1);
+    expect(rows.some((r) => r.count > 0 && r.teamId === teamA._id.toString())).toBe(true);
   });
 });
