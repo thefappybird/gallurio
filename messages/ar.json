@@ -84,6 +84,32 @@
     "dashboard": {
       "title": "{workspaceName}",
       "greeting": "مرحبًا بعودتك، {name}",
+      "tabs": {
+        "aria": "تبديل لوحة التحكم",
+        "bookings": "الحجوزات",
+        "portfolio": "معرض الأعمال"
+      },
+      "dateFilter": {
+        "label": "النطاق الزمني",
+        "filter": "تصفية",
+        "day": "يومي",
+        "month": "شهري",
+        "year": "سنوي",
+        "custom": "مخصص",
+        "all": "كل الأوقات",
+        "allTimeHint": "عرض جميع التواريخ.",
+        "clear": "مسح",
+        "apply": "تطبيق",
+        "from": "من",
+        "to": "إلى",
+        "since": "منذ",
+        "until": "حتى"
+      },
+      "pagination": {
+        "prev": "السابق",
+        "next": "التالي",
+        "status": "{page} من {total}"
+      },
       "kpi": {
         "revenueThisMonth": "إيرادات هذا الشهر",
         "activeBookings": "الحجوزات النشطة هذا الشهر",
@@ -95,27 +121,71 @@
         "upcomingWeek": "القادم هذا الأسبوع",
         "recentInquiries": "أحدث الاستفسارات",
         "activity": "النشاط الأخير",
-        "pipeline": "مسار العمل",
-        "revenueTrend": "الإيرادات (آخر 30 يومًا)",
+        "revenueTrend": "الإيرادات",
         "calendar": "تقويم الحجوزات",
         "eventTypes": "توزيع أنواع المناسبات",
-        "transactionsByMethod": "المدفوعات حسب الطريقة (90 يومًا)",
-        "transactionsByTeam": "الإيرادات حسب الفريق",
-        "weeklyBookings": "الحجوزات حسب يوم الأسبوع",
-        "topClients": "أكثر العملاء إنفاقًا"
-      },
-      "pipeline": {
-        "inquiries": "الاستفسارات",
-        "booked": "محجوز"
+        "topClients": "أكثر العملاء إنفاقًا",
+        "teamPerformance": "أداء الفريق",
+        "bookingsPerTeam": "الحجوزات حسب الفريق"
       },
       "quickAdd": {
         "title": "إضافة سريعة",
         "booking": "حجز جديد",
         "client": "عميل جديد",
-        "inquiry": "استفسار جديد"
+        "inquiry": "عرض الاستفسارات"
       },
       "empty": "لا يوجد شيء هنا بعد.",
-      "viewAll": "عرض الكل"
+      "viewAll": "عرض الكل",
+      "portfolio": {
+        "analyticsSoon": "تحليلات معرض الأعمال قادمة قريبًا.",
+        "totalViews": "إجمالي المشاهدات",
+        "uniqueVisitors": "زوار فريدون",
+        "inquiries": "الاستفسارات",
+        "conversionRate": "معدل التحويل",
+        "viewsOverTime": "المشاهدات والزوار",
+        "views": "المشاهدات",
+        "visitors": "الزوار",
+        "topSources": "أهم المصادر",
+        "perPage": "حسب الصفحة",
+        "siteInquiries": "الاستفسارات من موقعك",
+        "publishStatus": "حالة النشر",
+        "published": "منشور",
+        "notPublished": "لم يُنشر بعد",
+        "lastPublished": "آخر نشر {date}",
+        "viewLive": "عرض الصفحة المباشرة",
+        "openEditor": "فتح المحرر",
+        "noTraffic": "لا زيارات بعد في هذه الفترة.",
+        "directSource": "مباشر",
+        "inquiryInsights": "رؤى الاستفسارات",
+        "inquiryToBooking": "من استفسار إلى حجز",
+        "bookedFromInquiries": "محجوز من الاستفسارات",
+        "newClientsFromForm": "عملاء جدد من النموذج"
+      },
+      "team": {
+        "bookingsCount": "{count, plural, one {# حجز} other {# حجوزات}}"
+      },
+      "showMore": "عرض المزيد",
+      "showLess": "عرض أقل",
+      "hints": {
+        "kpi": "إجماليات هذا الشهر. الأسهم تقارن بالشهر الماضي.",
+        "calendar": "الحجوزات لكل يوم. صفِّ حسب الفريق؛ اضغط على يوم لفتح التقويم عنده.",
+        "eventTypes": "حصة الحجوزات حسب نوع المناسبة.",
+        "teamPerformance": "أداء كل فريق حسب الإيرادات وعدد الحجوزات.",
+        "bookingsPerTeam": "عدد الحجوزات التي يديرها كل فريق.",
+        "revenueTrend": "الإيرادات المدفوعة خلال الفترة المحددة.",
+        "inquiryInsights": "التحويل من الزيارات والاستفسارات، إضافة إلى العملاء الجدد عبر نموذج التواصل.",
+        "topClients": "العملاء مرتبون حسب إجمالي الإنفاق.",
+        "todaysEvents": "الحجوزات التي تبدأ اليوم.",
+        "upcomingWeek": "الحجوزات المؤكدة خلال الأيام السبعة القادمة.",
+        "recentInquiries": "أحدث استفساراتك الواردة.",
+        "activity": "أحدث التغييرات في مساحة عملك.",
+        "quickAdd": "أنشئ حجزًا أو عميلًا أو استفسارًا."
+      },
+      "totalLabel": "الإجمالي",
+      "calendarTeam": {
+        "label": "تصفية حسب الفريق",
+        "all": "كل الفرق"
+      }
     },
     "calendar": {
       "title": "التقويم",
