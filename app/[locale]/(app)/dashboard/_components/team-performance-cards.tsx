@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { useTranslations } from "next-intl";
+import { useIsRtl } from "@/lib/i18n/rtl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoHint } from "@/components/ui/info-hint";
 import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
@@ -76,6 +77,7 @@ export function TeamPerformanceCards({
   locale,
 }: Props) {
   const t = useTranslations("app.dashboard");
+  const isRtl = useIsRtl();
   const rows = mergeTeams(revenueByTeam, bookingsByTeam);
   if (rows.length === 0) return null;
 
@@ -144,12 +146,13 @@ export function TeamPerformanceCards({
             <BarChart
               data={barData}
               layout="vertical"
-              margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
+              margin={{ top: 0, right: isRtl ? 0 : 8, bottom: 0, left: isRtl ? 8 : 0 }}
             >
-              <XAxis type="number" hide allowDecimals={false} />
+              <XAxis type="number" hide allowDecimals={false} reversed={isRtl} />
               <YAxis
                 type="category"
                 dataKey="name"
+                orientation={isRtl ? "right" : "left"}
                 width={72}
                 tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 tickLine={false}
