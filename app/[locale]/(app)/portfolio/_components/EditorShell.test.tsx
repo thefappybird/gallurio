@@ -124,7 +124,7 @@ const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
-const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" } } });
+const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" }, header: {}, collectionsPopup: {} } });
 vi.mock("../_draftActions", () => ({
   createDraftAction: (...a: unknown[]) => createDraftAction(...a),
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
@@ -592,6 +592,28 @@ describe("EditorShell", () => {
     expect(
       slot!.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+  });
+
+  it("shows the Current badge in template picker immediately after applying a template (canvas still matches seed)", async () => {
+    // Start clean (isDirty=false) so guardThenRun runs applyTemplate without a guard prompt.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Open template picker via Drafts → Add new draft (handleAddNewDraft is unguarded).
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    await screen.findByText("Choose a template");
+
+    // Apply Minimal (clean draft → no guard fires).
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Picker closes after apply. Re-open it without triggering a guard.
+    await waitFor(() => expect(screen.queryByText("Choose a template")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+
+    // The Current badge must be visible for Minimal since no edits have been made.
+    expect(await screen.findByText(/current/i)).toBeInTheDocument();
   });
 
   it("opens the template picker directly from Add new draft, then prompts once when a template is applied", async () => {

@@ -405,6 +405,9 @@ export function EditorShell({
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templateId, setTemplateId] = useState(currentTemplateId);
+  // JSON snapshot of the zone data at the time the last template was applied.
+  // Compared against renderDraftData to detect canvas divergence for the "Current" badge.
+  const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   // The guide auto-opens on first run (until the owner persisted a dismissal),
@@ -556,6 +559,12 @@ export function EditorShell({
       formLocale,
     };
   }
+
+  // True when the canvas exactly matches the seed that was applied via applyTemplate.
+  // Drives the "Current" badge in TemplatePickerDialog (B2).
+  const isCanvasMatchingSeed =
+    templateSeedSnapshot !== null &&
+    JSON.stringify(renderDraftData) === templateSeedSnapshot;
 
   // Derived: isDirty is computed from savedSnapshot state + current render state so it
   // stays in sync without any effects. renderDraftData drives re-renders on Puck edits.
@@ -1068,23 +1077,28 @@ export function EditorShell({
       return;
     }
     const { seed } = res;
-    zoneDataRef.current = {
-      home: seed.data.home as PuckData,
-      gallery: seed.data.gallery as PuckData,
-    };
+    // Prepare both zones so zoneDataRef, renderDraftData, and templateSeedSnapshot
+    // are all in the same shape — consistent with the applyDraft path (B3).
+    const homeData = prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    const galleryData = prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(seed.brandKit as PortfolioBrandKit);
     setContact(seed.contact as PortfolioContactConfig);
     setHeaderConfig((seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG);
     setCollectionsPopup((seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {});
     setTemplateId(seed.templateId);
+    // Snapshot the seed data so the template picker can show the "Current" badge
+    // only while the canvas matches this exact seed (B2).
+    setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
     setActiveDraftId(null);
     setIsNewUnsavedDraft(true);
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
     setSavedSnapshot(null);
     ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
+    // Already prepared — pass directly to Puck without double-prepareForEditor.
+    setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
@@ -1660,6 +1674,7 @@ export function EditorShell({
         }}
         templates={templates}
         currentTemplateId={templateId}
+        isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id), true)}
@@ -1670,6 +1685,7 @@ export function EditorShell({
         onOpenChange={() => {/* non-dismissible in welcome mode */}}
         templates={templates}
         currentTemplateId={templateId}
+        isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
         onConfirm={(id) => { void applyTemplate(id); setWelcomeTemplatesOpen(false); }}

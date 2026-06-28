@@ -11,11 +11,15 @@ const templates: EditorTemplateSummary[] = [
 ];
 
 // Shared default props — override only what a test needs.
+// isCanvasMatchingSeed defaults to true so badge-visibility tests keep working
+// without being forced to opt-in; tests that check badge-hidden behavior
+// explicitly pass isCanvasMatchingSeed={false}.
 const defaultProps = {
   open: true,
   onOpenChange: vi.fn(),
   templates,
   currentTemplateId: "minimal",
+  isCanvasMatchingSeed: true,
   switching: false,
   error: null,
   onConfirm: vi.fn(),
@@ -73,6 +77,13 @@ describe("TemplatePickerDialog", () => {
     expect(screen.queryByText("Switch template?")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
     expect(onConfirm).toHaveBeenCalledWith("bold");
+  });
+
+  it("hides the Current badge when isCanvasMatchingSeed is false (canvas has diverged)", () => {
+    renderWithProviders(
+      <TemplatePickerDialog {...defaultProps} currentTemplateId="minimal" isCanvasMatchingSeed={false} />
+    );
+    expect(screen.queryByText(/current/i)).toBeNull();
   });
 
   it("disables Use this template until a template is selected", () => {
