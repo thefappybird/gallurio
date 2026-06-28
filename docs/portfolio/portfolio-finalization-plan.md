@@ -66,13 +66,13 @@ Files: `lib/page-builder/templates/*`, `TemplatePickerDialog.tsx`, `EditorShell.
 Files: `app/(public)/w/[orgSlug]/_components/{ContactForm,PortfolioHeader,contactButtonAppearance}.tsx`,
 `ContactPanelDialog.tsx`, `HeaderPanelDialog.tsx`, `styleToolkit.ts`, `rootStyle.ts`,
 `RootCanvasStyle.tsx`, `resolveBrandKit.ts`, `types.ts`. (effective-defaults skill)
-- [ ] **C1 (item 14)** Fix tab color token→var via `colorTokenToVar`; audit other `--pf-color-${token}` builders.
-- [ ] **C2 (item 10)** Float active-link underline (effective default, not hardcoded-on) + default theme color.
-- [ ] **C3 (item 15)** Independent Subtle + Compact inactive-tab toggles in ContactPanelDialog; apply in ContactForm.
-- [ ] **C4 (item 16)** New-dates button dotted outline floated; width/color controls update the dotted border.
-- [ ] **C5 (item 24)** Navbar active-link style floats in preview mode.
-- [ ] **C6 (item 12)** Canvas reflects floated root background theme value (Luxury banner) — materialize
-      effective root bg for canvas; watch `CANVAS_COLOR_ISOLATION_CSS`.
+- [x] **C1 (item 14)** Fix tab color token→var via `colorTokenToVar`; audit other `--pf-color-${token}` builders. (1e8b582)
+- [x] **C2 (item 10)** Float active-link underline (effective default, not hardcoded-on) + default theme color. (2bfe9e4)
+- [x] **C3 (item 15)** Independent Subtle + Compact inactive-tab toggles in ContactPanelDialog; apply in ContactForm. (7c8c5b3)
+- [x] **C4 (item 16)** New-dates button dotted outline floated; width/color controls update the dotted border. (6de5f90)
+- [x] **C5 (item 24)** Navbar active-link style floats in preview mode. (b4e871f — verify only, auto after C2)
+- [x] **C6 (item 12)** Canvas reflects floated root background theme value (Luxury banner) — materialize
+      effective root bg for canvas; watch `CANVAS_COLOR_ISOLATION_CSS`. (bfbcbf2)
 
 ## Phase D — i18n editor chrome
 Files: `messages/{en,fil,ms,id,ar}.json`, `editorConfig.tsx`, `manualBlocks.tsx`, `sectionPresets.ts`,
@@ -110,3 +110,4 @@ tests + `pnpm typecheck` + `pnpm lint`; all 5 locales updated.
 ## Done log
 - Phase A complete (2026-06-28): A1 334b5e8, A2 7e0ee39 + 334b5e8, A3 4ebd211, A4 7f35fa3, A5 b7a83df, A6 de35ce0, A7 4a2b3de. typecheck + lint clean; 278 tests passing across 4 test files.
 - Phase B complete (2026-06-28): B1 b79af8d, B2 16c81c6, B3 d598ad9 + 16c81c6, B4 d598ad9. typecheck + lint clean; 56 tests passing in EditorShell.test (1 pre-existing fail at port 3000).
+- Phase C complete (2026-06-28): C1 1e8b582, C2 2bfe9e4, C3 7c8c5b3, C4 6de5f90, C5 b4e871f, C6 bfbcbf2. typecheck + lint clean on changed files.
