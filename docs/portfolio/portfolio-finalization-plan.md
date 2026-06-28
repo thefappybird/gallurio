@@ -119,3 +119,36 @@ tests + `pnpm typecheck` + `pnpm lint`; all 5 locales updated.
 - Verification (2026-06-28): `pnpm typecheck` clean; `eslint` 0 errors on all 31 changed source files; Playwright
   confirmed template picker renders Bold/Luxury/Editorial/Minimal + scratch (stale templates gone) + canvas renders.
   Full vitest sweep re-run pre-PR. Crash repro (4-col, col3 span 2) left for manual browser check per plan.
+
+---
+
+## Follow-up batch (2026-06-28/29) — post-PR-45 review findings
+User forks resolved: #2 skipped; #5 = editable slug in Publish dialog reusing the existing checker, keep `/w/slug`
+routing (display `slug.gallurio.com`); #6 = detailed SEO audit + proposed fields, implement after approval; no template revert.
+Two message-batches folded together; fanned out to disjoint Sonnet executors, controller committed serially.
+- [x] **G1 (#7)** Theme modal one width (`sm:w-full sm:max-w-2xl`) + "Add new theme" seeds a visible editable tile
+      (`startNewTheme(value)` ⇒ `hasUnsavedCurrent`). (c1824be)
+- [x] **G2 (#8)** Edit-mode close → discard guard: existing `attemptClose`→`requestExit`→`UnsavedEditDialog` wiring
+      verified + test added. (c1824be) — **left for user visual check** (repro may be a no-diff/X-close path).
+- [x] **G3 (#1)** Contact active tab forced `opacity:1` + grounded `--pf-color-fg` so it reads full/white under Subtle. (547febe)
+- [x] **G4 (#3)** Active-tab styles in preview — fixed behaviorally via G3/item4 (shared component; preview==public). (547febe)
+- [x] **G5 (#4)** "Use this template" always-dirty — `applyTemplate` re-baselines `savedSnapshot` like `applyDraft`. (53bc5ea)
+- [x] **G6 (#5)** Editable slug in Publish dialog: `updatePortfolioSlugAction` (owner-only, tenant-scoped, E11000→taken)
+      + `useSlugAvailability`/`SlugStatusIndicator`, displayed `slug.gallurio.com`, routing unchanged. (53bc5ea, b1d22fd)
+- [x] **G7 (#9 + item2)** Columns canvas↔public parity: `align-items:stretch` (siblings fill tall cell) + full-bleed
+      gated on `isEditing` (100% in canvas, 100vw public). (8cae664)
+- [x] **item1** Properties-panel overflow — `flex-wrap` on IconRow/min-height rows; reset buttons no longer clipped. (9915026)
+- [x] **item4** Float contact defaults: inactive tab text→`foreground`, add-session button→`outline`, active underline→ON. (547febe)
+- [x] **item5** Float featured-popup defaults: background→`--pf-color-bg` (fixed bogus `--pf-color-surface`), title
+      font-size→16, close-button corner→`rounded`. (5d97f46)
+- [x] **item3** Re-port updated `sarah-bell-photo` drafts → 4 templates, tenant-neutral (empty images, no asset ids). (cdb012a)
+- [x] **G8 (#6)** SEO audit deliverable `docs/portfolio/seo-audit.md` + prioritized proposed fields (no impl — awaiting approval).
+- [x] **G9** Locales: 11 `publishDialog` slug keys ×5 (en in 53bc5ea; fil/ms/id/ar in 9be2232). Playwright pass **waived by user** (self-verifying).
+
+### Done log (follow-up)
+- 2026-06-29: 8 parallel agents (theme-modal, EditorShell, contact, columns, properties, popup, templates, SEO).
+  All `pnpm typecheck` clean; `eslint` 0 errors / 95 warnings (baseline; 2 new harmless unused-disable directives).
+  Per-track targeted vitest green (brand-kit 118, contact 60, popup 57, columns 166, properties 111, templates 79, EditorShell suite).
+  Browser/Playwright verification waived by user — user self-verifies #8 close-guard, popup close-button corner, and the visual diffs.
+- **Open for approval:** SEO P0 fields (`seo.ogImageUrl`+`ogImageAssetId`, `seo.galleryDescription`, `seo.noindex`) + zero-UI
+  structural fixes (`metadataBase`, `sitemap.ts`, `robots.ts`, LocalBusiness JSON-LD, `<html lang/dir>` per-tenant, gallery image dims).
