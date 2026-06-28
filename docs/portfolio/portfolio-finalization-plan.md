@@ -54,13 +54,13 @@ Files: `lib/page-builder/blocks/manualBlocks.tsx`, `StyleToolkitField.tsx`, `too
 ## Phase B — Templates & drafts
 Files: `lib/page-builder/templates/*`, `TemplatePickerDialog.tsx`, `EditorShell.tsx`,
 `_draftActions.ts`, `lib/db/models/PortfolioDraft`.
-- [ ] **B1 (item 2,17,18)** One-off read-only DB script → generate 4 template files from
-      sarah-bell-photo drafts (title = theme name); delete 5 themed templates; keep scratch; update `index.ts`.
-- [ ] **B2 (item 11)** Template-picker "current" badge only when canvas == template seed (snapshot
-      seed on apply, compare; hide on divergence).
-- [ ] **B3 (item 22)** Unify save snapshot + dirty-check serialization so post-save isn't "dirty";
-      Publish no longer triggers discard guard. Verify discard still restores.
-- [ ] **B4 (item 23)** Save commits a mid-edit pending name first, then saves; Enter submits (already).
+- [x] **B1 (item 2,17,18)** One-off read-only DB script → generate 4 template files from
+      sarah-bell-photo drafts (title = theme name); delete 5 themed templates; keep scratch; update `index.ts`. (b79af8d)
+- [x] **B2 (item 11)** Template-picker "current" badge only when canvas == template seed (snapshot
+      seed on apply, compare; hide on divergence). (16c81c6)
+- [x] **B3 (item 22)** Unify save snapshot + dirty-check serialization so post-save isn't "dirty";
+      Publish no longer triggers discard guard. Verify discard still restores. (d598ad9, 16c81c6)
+- [x] **B4 (item 23)** Save commits a mid-edit pending name first, then saves; Enter submits (already). (d598ad9)
 
 ## Phase C — Contact form / navbar styling + canvas parity
 Files: `app/(public)/w/[orgSlug]/_components/{ContactForm,PortfolioHeader,contactButtonAppearance}.tsx`,
@@ -109,3 +109,4 @@ tests + `pnpm typecheck` + `pnpm lint`; all 5 locales updated.
 
 ## Done log
 - Phase A complete (2026-06-28): A1 334b5e8, A2 7e0ee39 + 334b5e8, A3 4ebd211, A4 7f35fa3, A5 b7a83df, A6 de35ce0, A7 4a2b3de. typecheck + lint clean; 278 tests passing across 4 test files.
+- Phase B complete (2026-06-28): B1 b79af8d, B2 16c81c6, B3 d598ad9 + 16c81c6, B4 d598ad9. typecheck + lint clean; 56 tests passing in EditorShell.test (1 pre-existing fail at port 3000).
