@@ -489,6 +489,9 @@ export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
 // ---------------------------------------------------------------------------
 
 export type ColumnsBlockProps = {
+  /** Puck-injected unique block id — scopes per-instance CSS so multiple
+   *  Columns blocks never share @container rules (prevents cross-contamination). */
+  id?: string;
   _style?: BlockStyle;
   /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
   columns: number;
@@ -517,12 +520,14 @@ export const columnsDefaultProps: ColumnsBlockProps = {
 };
 
 export function ColumnsBlock({
+  id,
   _style,
   columns,
   rows,
   content: Content,
   puck,
 }: {
+  id?: string;
   _style?: BlockStyle;
   columns: number;
   rows?: number;
@@ -541,6 +546,27 @@ export function ColumnsBlock({
   // Whether we are inside the Puck editor canvas. Puck injects `isEditing: true`
   // into the puck prop during editing; it is false (or absent) during public render.
   const isEditing = puck?.isEditing === true;
+
+  // Per-instance CSS scoping (A1 — items 3/4/6): each Columns block gets its own
+  // containerName and CSS class so multiple instances on the same page are fully
+  // isolated. The old shared containerName "pf-cols" caused ALL @container rules
+  // to fire for ALL Columns elements simultaneously: a colSpan resize in one block
+  // could retrigger every other block's container query, creating an oscillation
+  // that culminated in a crash (4-col + col3 GalleryLanding spanning 2 tracks).
+  // Unique names per-instance eliminate this cross-contamination entirely.
+  //
+  // Puck injects a unique `id` (e.g. "Columns-1a2b") into every block's top-level
+  // props. We sanitize it to a valid CSS ident fragment (letters/digits/hyphens only)
+  // and use it to namespace:
+  //   - outer element's containerName  → pfcols-${instanceId}
+  //   - inner grid's CSS class          → .pf-cols-${instanceId}
+  //   - optional rows class             → .pf-cols-rows-${instanceId}
+  // Falls back to "inst" when rendered outside Puck (unit tests).
+  const instanceId = id ? id.replace(/[^a-zA-Z0-9_-]/g, "") : "inst";
+  const instanceClass = `pf-cols-${instanceId}`;
+  const instanceContainer = `pfcols-${instanceId}`;
+  const instanceRowsClass = `pf-cols-rows-${instanceId}`;
+
   // Build per-instance scoped CSS rules for this column/row count.
   // Container queries (keyed off the block's own width via `container-type:inline-size`
   // on the outer div) are used instead of viewport min-width media queries. This is
@@ -553,21 +579,26 @@ export function ColumnsBlock({
   //
   // The editor canvas is only ~428px wide (both panels open at 1280px viewport), so the
   // 480px breakpoint never fires there — which would make the editor always look 1-column.
-  // Instead, when isEditing is true we inject a direct inline gridTemplateColumns so the
-  // editor always shows the actual configured column count (bypassing the media queries).
+  // Instead, when isEditing is true we inject direct inline gridTemplate* overrides so
+  // the editor always shows the actual configured column and row counts without relying
+  // on container-query breakpoints that could oscillate.
   const colsRule = cols === 1
     ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
-    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+    : `@container ${instanceContainer} (min-width:480px){.${instanceClass}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
       (cols > 2
-        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        ? `@container ${instanceContainer} (min-width:720px){.${instanceClass}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
         : "");
   const rowsRule = hasRows
-    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container ${instanceContainer} (min-width:480px){.${instanceRowsClass}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
-  // Editor-only: show the real column count regardless of canvas width.
-  // This is an inline override so it outranks the container-query class rules.
+  // Editor-only (A1/A3): inline override outranks @container class rules so the
+  // canvas grid is driven purely by these values, not by breakpoint oscillation.
   const editorGridCols = isEditing && cols > 1
     ? `repeat(${cols},minmax(0,1fr))`
+    : undefined;
+  // Editor-only (A2): show the configured row count WYSIWYG in the narrow canvas.
+  const editorGridRows = isEditing && hasRows
+    ? `repeat(${rowCount},minmax(0,auto))`
     : undefined;
   // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
   const gapValue =
@@ -586,26 +617,29 @@ export function ColumnsBlock({
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
         ...outerStyle,
         containerType: "inline-size",
-        containerName: "pf-cols",
+        containerName: instanceContainer,
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.
-          Container queries (not viewport min-width) are used so colSpan/rowSpan
-          work correctly when the editor canvas is narrower than the viewport.
-          Inline styles can't hold @container rules, so scoped classes + a <style>
-          drive the breakpoints. */}
+      {/* Per-instance scoped @container rules: each Columns block gets its own
+          unique containerName and CSS class so multiple blocks on the same page
+          are fully isolated. Container queries (not viewport media queries) are
+          used so colSpan/rowSpan work correctly in the narrow editor canvas. */}
       <style>{`
-        .pf-cols{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        .${instanceClass}{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
         ${colsRule}
         ${rowsRule}
       `}</style>
       {Content({
-        className: `pf-cols pf-cols-${cols}${hasRows ? ` pf-cols-rows-${rowCount}` : ""}`,
-        // In the editor, bypass the container-query breakpoints so the chosen
-        // column count is visible in the narrow (~428px) canvas. On the public
-        // page this stays empty and the @container rules drive the layout.
-        style: editorGridCols ? { gridTemplateColumns: editorGridCols } : {},
+        className: `${instanceClass}${hasRows ? ` ${instanceRowsClass}` : ""}`,
+        // Editor: inline styles bypass container-query breakpoints so columns and
+        // rows are WYSIWYG in the narrow (~428px) canvas. Inline > @container in
+        // CSS specificity so these always take priority. Public: empty objects —
+        // @container rules drive the responsive layout.
+        style: {
+          ...(editorGridCols ? { gridTemplateColumns: editorGridCols } : {}),
+          ...(editorGridRows ? { gridTemplateRows: editorGridRows } : {}),
+        },
       })}
     </div>
   );

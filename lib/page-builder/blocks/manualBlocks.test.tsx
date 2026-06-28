@@ -838,29 +838,33 @@ describe("ColumnsBlock", () => {
     expect(screen.getByTestId("slot")).toBeTruthy();
   });
 
-  it("applies the responsive 2-column class for columns=2", () => {
+  it("slot receives the per-instance grid class (A1: class is pf-cols-inst when no Puck id in tests)", () => {
     render(<ColumnsBlock columns={2} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols");
-    expect(slot.className).toContain("pf-cols-2");
+    // After per-instance scoping: class is pf-cols-<instanceId>; tests fall back to "inst".
+    expect(slot.className).toContain("pf-cols-inst");
+    // Column count is now in the CSS rules, not in the class name.
+    expect(slot.className).not.toContain("pf-cols-2");
   });
 
-  it("applies the responsive 3-column class for columns=3", () => {
+  it("instance class is same for all column counts — count is in @container CSS rule (A1)", () => {
     render(<ColumnsBlock columns={3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-3");
+    expect(slot.className).toContain("pf-cols-inst");
+    expect(slot.className).not.toContain("pf-cols-3");
   });
 
-  it("columns=7 clamps to 6 and renders pf-cols-6", () => {
-    render(<ColumnsBlock columns={7} content={stubSlot} />);
-    const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-6");
+  it("columns=7 clamps to 6: CSS @container rule uses repeat(6,...) (A1)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={7} content={stubSlot} />);
+    expect(html).toContain("repeat(6,minmax(0,1fr))");
   });
 
-  it("rows=3 adds a rows class to the slot element", () => {
+  it("rows=3 adds the per-instance rows class to the slot element (A1)", () => {
     render(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-rows-3");
+    // Per-instance rows class: pf-cols-rows-inst when no Puck id in tests.
+    expect(slot.className).toContain("pf-cols-rows-inst");
+    expect(slot.className).not.toContain("pf-cols-rows-3");
   });
 
   it("rows=1 does NOT add a rows class (auto-row behaviour preserved)", () => {
@@ -869,16 +873,25 @@ describe("ColumnsBlock", () => {
     expect(slot.className).not.toContain("pf-cols-rows-");
   });
 
-  it("columns=1 applies pf-cols-1 class", () => {
+  it("columns=1 renders with the per-instance grid class (A1)", () => {
     render(<ColumnsBlock columns={1 as number} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-1");
+    expect(slot.className).toContain("pf-cols-inst");
   });
 
-  it("columns=4 applies pf-cols-4 class", () => {
+  it("columns=4 renders with the per-instance grid class (A1)", () => {
     render(<ColumnsBlock columns={4} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-4");
+    expect(slot.className).toContain("pf-cols-inst");
+  });
+
+  it("each Columns instance uses a unique containerName derived from its Puck id (A1)", () => {
+    const html1 = renderToStaticMarkup(<ColumnsBlock id="Columns-aaa" columns={2} content={stubSlot} />);
+    const html2 = renderToStaticMarkup(<ColumnsBlock id="Columns-bbb" columns={2} content={stubSlot} />);
+    expect(html1).toContain("pfcols-Columns-aaa");
+    expect(html2).toContain("pfcols-Columns-bbb");
+    expect(html1).not.toContain("pfcols-Columns-bbb");
+    expect(html2).not.toContain("pfcols-Columns-aaa");
   });
 
   it("columns=6 generates repeat(6,...) in the desktop CSS rule", () => {
