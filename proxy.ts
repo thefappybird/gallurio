@@ -24,6 +24,13 @@ const intlMiddleware = createIntlMiddleware(routing);
 const UNAUTHENTICATED_PATHS = [
   // Marketing / public
   "/",
+  // Locale-prefixed roots ("/ar", "/fil", ...). The root is routed through
+  // authkit (so the landing page can read the session and redirect signed-in
+  // visitors), so authkit must see these as public — otherwise it would force
+  // anonymous visitors on "/ar" to sign in. The default locale has no prefix.
+  ...routing.locales
+    .filter((l) => l !== routing.defaultLocale)
+    .map((l) => `/${l}`),
   "/pricing",
   "/about",
   // Auth UI (our first-party forms)
@@ -135,8 +142,17 @@ export async function proxy(req: NextRequest): Promise<NextMiddlewareResult> {
 
   // -------------------------------------------------------------------------
   // 4. Public routes — skip auth check, run intl for locale routing.
+  //
+  //    EXCEPTION: the marketing root ("/" for any locale) needs authkit session
+  //    context so the page can read the session and redirect an already-signed-in
+  //    visitor to their app landing (owner -> /dashboard, member -> /bookings).
+  //    It stays in UNAUTHENTICATED_PATHS, so authkit refreshes the session for
+  //    logged-in users but never forces an anonymous visitor to sign in — they
+  //    fall through to the protected branch, authkit returns no redirect, and the
+  //    landing page renders normally.
   // -------------------------------------------------------------------------
-  if (isPublicRoute(req)) {
+  const isRoot = stripLocale(pathname) === "/";
+  if (isPublicRoute(req) && !isRoot) {
     return intlMiddleware(req);
   }
 

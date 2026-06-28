@@ -1,5 +1,10 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { redirect } from "next/navigation";
 import { Link } from "@/lib/i18n/navigation";
+import { getAuthUser } from "@/lib/auth/session";
+import { defaultPostAuthPath } from "@/lib/auth/postAuthLanding";
+import { connectDB } from "@/lib/db/mongoose";
+import { User } from "@/lib/db/models";
 
 export default async function Home({
   params,
@@ -8,6 +13,20 @@ export default async function Home({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  // Authenticated visitors never see the landing page — send them to their
+  // first accessible surface (owner -> dashboard, staff/team member -> bookings,
+  // no workspace yet -> onboarding). Mirrors the post-sign-in redirect.
+  const authUser = await getAuthUser();
+  if (authUser) {
+    await connectDB();
+    const user = await User.findOne({ workosUserId: authUser.workosUserId })
+      .select("memberships onboardingCompletedAt")
+      .lean();
+    // A missing User doc is effectively "no memberships" -> onboarding.
+    redirect(defaultPostAuthPath(user ?? { memberships: [] }, locale));
+  }
+
   const t = await getTranslations("marketing");
 
   return (
