@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 
 // A checkout the user abandons (overlay closed before paying) leaves a workflow
 // run blocked on its hook token indefinitely. Starting a new run with the same
-// token then throws HookConflictError. Cancel any in-flight run first — looking
+// token then throws HookConflictError. Cancel any in-flight run first - looking
 // it up by the deterministic token (not the stored run id) also reclaims runs
 // that an earlier start overwrote in the DB. Best-effort: a cancel failure must
 // not block a fresh checkout.
@@ -24,7 +24,7 @@ async function cancelInFlightCheckout(token: string): Promise<void> {
       await getRun(hook.runId).cancel();
     }
   } catch {
-    // No hook in flight (the common path), or it already settled — nothing to do.
+    // No hook in flight (the common path), or it already settled - nothing to do.
   }
 }
 
@@ -39,16 +39,13 @@ export async function POST(req: Request) {
   const json = await req.json().catch(() => ({}));
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.errors[0]?.message ?? "Invalid request" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
   const { plan } = parsed.data;
 
   if (!isPaidPlan(plan)) {
     return NextResponse.json(
-      { error: "Free plan does not require checkout" },
+      { error: "free_plan_no_checkout" },
       { status: 400 },
     );
   }
@@ -56,7 +53,7 @@ export async function POST(req: Request) {
   const catalog = getPlanCatalog(plan);
   if (!catalog.priceId) {
     return NextResponse.json(
-      { error: "Paddle price not configured for this plan" },
+      { error: "paddle_price_not_configured" },
       { status: 500 },
     );
   }
@@ -66,18 +63,12 @@ export async function POST(req: Request) {
   // Resolve email and name from WorkOS session for the Paddle customer record.
   const authUser = await getAuthUser();
   if (!authUser) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
   }
 
   const email = authUser.email;
   if (!email) {
-    return NextResponse.json(
-      {
-        error:
-          "No verified email on file — add one in your account before continuing.",
-      },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "no_verified_email" }, { status: 400 });
   }
 
   const name = authUser.name || ctx.workspace.name;
@@ -99,11 +90,7 @@ export async function POST(req: Request) {
     ]);
   } catch (err) {
     console.error("[billing.checkout] paddle/workflow init failed", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json(
-      { error: `Failed to initialise checkout: ${msg}` },
-      { status: 502 },
-    );
+    return NextResponse.json({ error: "checkout_init_failed" }, { status: 502 });
   }
 
   await Workspace.updateOne(

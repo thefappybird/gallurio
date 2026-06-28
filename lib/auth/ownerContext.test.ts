@@ -101,7 +101,7 @@ describe("ownerContext — auth checks", () => {
     const { ownerContext } = await load();
     const result = await ownerContext();
     expect("error" in result).toBe(true);
-    if ("error" in result) expect(result.error).toMatch(/not authenticated/i);
+    if ("error" in result) expect(result.error).toBe("not_authenticated");
   });
 
   it("returns error when user has no memberships", async () => {

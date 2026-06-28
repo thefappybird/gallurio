@@ -66,7 +66,7 @@ describe("PasswordSection", () => {
 
   it("shows an error toast when updatePasswordAction returns an error", async () => {
     mockUpdatePassword.mockResolvedValue({
-      error: "Current password is incorrect.",
+      error: "current_password_incorrect",
     });
     renderWithProviders(<PasswordSection hasOAuth={false} />);
 
@@ -84,7 +84,7 @@ describe("PasswordSection", () => {
     );
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Current password is incorrect.");
+      expect(toast.error).toHaveBeenCalledWith("Your current password is incorrect.");
     });
   });
 });

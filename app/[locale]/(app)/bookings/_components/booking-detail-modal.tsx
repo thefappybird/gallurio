@@ -11,6 +11,7 @@ import {
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
 import {
   ArrowUpRightIcon,
@@ -167,6 +168,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
   const t = useTranslations("app.bookings.detail");
   const tDnd = useTranslations("app.bookings.dnd");
   const tEvent = useTranslations("app.bookings.eventTypes");
+  const errMsg = useActionError();
   const [, startTransition] = useTransition();
 
   const eventTypeOptions = useMemo(
@@ -303,7 +305,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
     const res = await getClientByIdAction(booking.client.id);
     setViewClientLoading(false);
     if ("error" in res) {
-      toast.error(res.error);
+      toast.error(errMsg(res.error));
       return;
     }
     setViewClient(res);
@@ -776,7 +778,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Save failed");
+        throw new Error(errMsg(data.error, data.params));
       }
       const updated: BookingDoc = await res.json();
       // The PATCH response does not include the `client` block (the GET does).
@@ -802,7 +804,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setActivityTotal(previousTotal);
       setDraftSessions(previousDrafts);
       setPendingSessionEdits(previousSessionEdits);
-      const msg = err instanceof Error ? err.message : "Couldn't save";
+      const msg = err instanceof Error ? err.message : errMsg(null);
       setSaveError(msg);
       toast.error(msg);
     } finally {
@@ -842,7 +844,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Save failed");
+        throw new Error(errMsg(data.error, data.params));
       }
       const updated: BookingDoc = await res.json();
       setBooking(updated);
@@ -853,7 +855,7 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
       setBooking(previous);
       setActivity(previousActivity);
       setActivityTotal(previousTotal);
-      const msg = err instanceof Error ? err.message : "Couldn't save";
+      const msg = err instanceof Error ? err.message : errMsg(null);
       toast.error(msg);
     } finally {
       setSaving(false);

@@ -1572,101 +1572,7 @@
         },
         "photos": "Foto",
         "templates": "Template",
-        "guide": {
-          "next": "Berikutnya",
-          "back": "Kembali",
-          "finish": "Selesai",
-          "skip": "Lewati Panduan",
-          "dontShow": "Jangan tampilkan lagi",
-          "tryIt": "Coba untuk melanjutkan ke langkah berikutnya",
-          "progress": "{n} dari {total}",
-          "loading": "Memuat",
-          "skipConfirm": {
-            "heading": "Lewati panduan?",
-            "body": "Anda akan kehilangan posisi Anda dalam tur. Anda dapat memulainya ulang kapan saja.",
-            "back": "Kembali",
-            "dontShow": "Jangan tampilkan lagi",
-            "skip": "Lewati Panduan"
-          },
-          "steps": {
-            "welcome": {
-              "title": "Selamat datang di editor portofolio Anda",
-              "body": "Berikut tur singkat dan praktis untuk membantu Anda memulai. Anda dapat melewatinya kapan saja."
-            },
-            "dragBlock": {
-              "title": "Seret blok ke halaman Anda",
-              "body": "Panel mencantumkan setiap blok yang tersedia. Seret blok apa pun dari sini ke kanvas untuk menambahkannya ke halaman Anda."
-            },
-            "blockProps": {
-              "title": "Properti blok ada di sini",
-              "body": "Menjatuhkan blok memilihnya secara otomatis — pengaturannya muncul di panel ini."
-            },
-            "contentTab": {
-              "title": "Konten: teks dan media blok",
-              "body": "Tab Konten adalah tempat Anda mengedit teks, gambar, dan tautan blok yang sebenarnya."
-            },
-            "designTab": {
-              "title": "Desain: warna, batas, dan sudut",
-              "body": "Tab Desain mengontrol tipografi, warna latar belakang, batas, bayangan, dan animasi."
-            },
-            "layoutTab": {
-              "title": "Tata Letak: ukuran, jarak, dan posisi",
-              "body": "Tab Tata Letak mengontrol jarak, tinggi minimum, perataan, dan penempatan grid."
-            },
-            "switchPages": {
-              "title": "Beralih antar halaman",
-              "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
-            },
-            "openNav": {
-              "title": "Buka Navigasi",
-              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
-            },
-            "navSetup": {
-              "title": "Navigasi · Pengaturan",
-              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
-            },
-            "logo": {
-              "title": "Logo Anda ada di sini",
-              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
-            },
-            "navDesign": {
-              "title": "Navigasi · Desain",
-              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
-            },
-            "contactForm": {
-              "title": "Formulir pertanyaan Anda",
-              "body": "Klik Formulir Kontak untuk mengatur formulir yang digunakan pengunjung untuk menghubungi Anda."
-            },
-            "contactSetup": {
-              "title": "Kontak · Pengaturan",
-              "body": "Tab Pengaturan menentukan bahasa, judul, dan deskripsi formulir. Kolom dan tata letak formulir sudah tetap."
-            },
-            "contactDesign": {
-              "title": "Kontak · Desain",
-              "body": "Tab Desain mengubah tampilan formulir — warna teks dan latar belakang sesuai merek Anda. Anda tidak dapat menyembunyikan kolom, hanya mengubah tampilannya."
-            },
-            "photos": {
-              "title": "Unggah dan atur foto",
-              "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
-            },
-            "theme": {
-              "title": "Pilih warna dan font Anda",
-              "body": "Tema mengontrol lima warna merek dan tipografi Anda. Setiap opsi gaya blok menggunakan palet ini."
-            },
-            "preview": {
-              "title": "Pratinjau situs Anda di ukuran layar apa pun",
-              "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
-            },
-            "publish": {
-              "title": "Terbitkan untuk tayang",
-              "body": "Saat Anda puas dengan perubahan Anda, klik Terbitkan untuk mendorongnya ke halaman publik Anda."
-            },
-            "draftsStep": {
-              "title": "Simpan draf dan ganti versi",
-              "body": "Simpan perubahan kapan saja. Gunakan Draf untuk mengelola beberapa versi. Buka kembali tur ini melalui tombol Panduan."
-            }
-          }
-        },
+        "guide": "Panduan",
         "templateSwitchedToast": "Template diterapkan.",
         "devices": {
           "mobile": "Mobile",
@@ -1768,6 +1674,101 @@
             "sharp": "Tajam",
             "subtle": "Halus",
             "rounded": "Membulat"
+          }
+        },
+        "tour": {
+          "next": "Berikutnya",
+          "back": "Kembali",
+          "finish": "Selesai",
+          "skip": "Lewati Panduan",
+          "dontShow": "Jangan tampilkan lagi",
+          "tryIt": "Coba untuk melanjutkan ke langkah berikutnya",
+          "progress": "{n} dari {total}",
+          "loading": "Memuat",
+          "skipConfirm": {
+            "heading": "Lewati panduan?",
+            "body": "Anda akan kehilangan posisi Anda dalam tur. Anda dapat memulainya ulang kapan saja.",
+            "back": "Kembali",
+            "dontShow": "Jangan tampilkan lagi",
+            "skip": "Lewati Panduan"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Selamat datang di editor portofolio Anda",
+              "body": "Berikut tur singkat dan praktis untuk membantu Anda memulai. Anda dapat melewatinya kapan saja."
+            },
+            "dragBlock": {
+              "title": "Seret blok ke halaman Anda",
+              "body": "Panel mencantumkan setiap blok yang tersedia. Seret blok apa pun dari sini ke kanvas untuk menambahkannya ke halaman Anda."
+            },
+            "blockProps": {
+              "title": "Properti blok ada di sini",
+              "body": "Menjatuhkan blok memilihnya secara otomatis — pengaturannya muncul di panel ini."
+            },
+            "contentTab": {
+              "title": "Konten: teks dan media blok",
+              "body": "Tab Konten adalah tempat Anda mengedit teks, gambar, dan tautan blok yang sebenarnya."
+            },
+            "designTab": {
+              "title": "Desain: warna, batas, dan sudut",
+              "body": "Tab Desain mengontrol tipografi, warna latar belakang, batas, bayangan, dan animasi."
+            },
+            "layoutTab": {
+              "title": "Tata Letak: ukuran, jarak, dan posisi",
+              "body": "Tab Tata Letak mengontrol jarak, tinggi minimum, perataan, dan penempatan grid."
+            },
+            "switchPages": {
+              "title": "Beralih antar halaman",
+              "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
+            },
+            "openNav": {
+              "title": "Buka Navigasi",
+              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
+            },
+            "navSetup": {
+              "title": "Navigasi · Pengaturan",
+              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
+            },
+            "logo": {
+              "title": "Logo Anda ada di sini",
+              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
+            },
+            "navDesign": {
+              "title": "Navigasi · Desain",
+              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
+            },
+            "contactForm": {
+              "title": "Formulir pertanyaan Anda",
+              "body": "Klik Formulir Kontak untuk mengatur formulir yang digunakan pengunjung untuk menghubungi Anda."
+            },
+            "contactSetup": {
+              "title": "Kontak · Pengaturan",
+              "body": "Tab Pengaturan menentukan bahasa, judul, dan deskripsi formulir. Kolom dan tata letak formulir sudah tetap."
+            },
+            "contactDesign": {
+              "title": "Kontak · Desain",
+              "body": "Tab Desain mengubah tampilan formulir — warna teks dan latar belakang sesuai merek Anda. Anda tidak dapat menyembunyikan kolom, hanya mengubah tampilannya."
+            },
+            "photos": {
+              "title": "Unggah dan atur foto",
+              "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
+            },
+            "theme": {
+              "title": "Pilih warna dan font Anda",
+              "body": "Tema mengontrol lima warna merek dan tipografi Anda. Setiap opsi gaya blok menggunakan palet ini."
+            },
+            "preview": {
+              "title": "Pratinjau situs Anda di ukuran layar apa pun",
+              "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
+            },
+            "publish": {
+              "title": "Terbitkan untuk tayang",
+              "body": "Saat Anda puas dengan perubahan Anda, klik Terbitkan untuk mendorongnya ke halaman publik Anda."
+            },
+            "draftsStep": {
+              "title": "Simpan draf dan ganti versi",
+              "body": "Simpan perubahan kapan saja. Gunakan Draf untuk mengelola beberapa versi. Buka kembali tur ini melalui tombol Panduan."
+            }
           }
         }
       },
@@ -1881,6 +1882,75 @@
           }
         }
       }
+    },
+    "errors": {
+      "generic": "Terjadi kesalahan. Silakan coba lagi.",
+      "not_authenticated": "Anda belum masuk. Silakan masuk dan coba lagi.",
+      "no_active_workspace": "Tidak ada ruang kerja aktif. Pilih ruang kerja dan coba lagi.",
+      "workspace_not_found": "Ruang kerja tidak ditemukan.",
+      "owner_only": "Hanya pemilik ruang kerja yang dapat melakukan ini.",
+      "finish_onboarding": "Selesaikan orientasi sebelum mengubah pengaturan ruang kerja.",
+      "invalid_input": "Periksa formulir dan coba lagi.",
+      "rate_limited": "Terlalu banyak percobaan. Coba lagi dalam {seconds} detik.",
+      "user_not_found": "Pengguna tidak ditemukan.",
+      "url_taken": "URL tersebut sudah digunakan — coba yang lain.",
+      "name_update_failed": "Gagal memperbarui nama Anda. Silakan coba lagi.",
+      "mfa_start_failed": "Gagal memulai penyiapan autentikator. Silakan coba lagi.",
+      "code_six_digits": "Masukkan kode 6 digit.",
+      "enrollment_expired": "Sesi penyiapan kedaluwarsa. Mulai lagi.",
+      "invalid_code": "Kode tidak valid. Silakan coba lagi.",
+      "mfa_disable_failed": "Gagal menonaktifkan verifikasi dua faktor. Silakan coba lagi.",
+      "passwords_mismatch": "Kata sandi tidak cocok.",
+      "current_password_incorrect": "Kata sandi saat ini salah.",
+      "password_verify_failed": "Gagal memverifikasi kata sandi saat ini. Silakan coba lagi.",
+      "password_update_failed": "Gagal memperbarui kata sandi. Silakan coba lagi.",
+      "avatar_update_failed": "Gagal memperbarui foto Anda. Silakan coba lagi.",
+      "email_send_failed": "Gagal mengirim email. Silakan coba lagi.",
+      "onboarding_no_active_workspace": "Tidak ada ruang kerja aktif — mulai ulang orientasi.",
+      "client_create_failed": "Gagal membuat klien. Silakan coba lagi.",
+      "client_not_found": "Klien tidak ditemukan.",
+      "client_update_failed": "Gagal memperbarui klien. Silakan coba lagi.",
+      "client_deactivate_failed": "Gagal menonaktifkan klien. Silakan coba lagi.",
+      "client_has_active_bookings": "Klien ini memiliki pemesanan aktif dan tidak dapat dinonaktifkan.",
+      "client_reactivate_failed": "Gagal mengaktifkan kembali klien. Silakan coba lagi.",
+      "bookings_load_failed": "Gagal memuat pemesanan. Silakan coba lagi.",
+      "client_load_failed": "Gagal memuat klien. Silakan coba lagi.",
+      "invalid_id": "Permintaan tidak valid.",
+      "not_found": "Tidak ditemukan.",
+      "forbidden": "Anda tidak memiliki akses untuk melakukan itu.",
+      "team_not_found": "Tim tidak ditemukan.",
+      "team_deactivated": "Anda tidak dapat menugaskan pemesanan ke tim yang dinonaktifkan.",
+      "session_crosses_midnight": "Sesi {index} melewati tengah malam di zona waktu ruang kerja.",
+      "client_change_multi_session": "Anda tidak dapat mengganti klien pada pemesanan multi-sesi.",
+      "invalid_client_id": "Klien tidak valid.",
+      "client_not_found_workspace": "Klien tidak ditemukan di ruang kerja ini.",
+      "invalid_request": "Permintaan tidak valid.",
+      "export_too_large": "Terlalu banyak pemesanan untuk diekspor. Persempit filter dan coba lagi.",
+      "free_plan_no_checkout": "Paket gratis tidak memerlukan pembayaran.",
+      "paddle_price_not_configured": "Paket ini tidak tersedia saat ini. Hubungi dukungan.",
+      "no_verified_email": "Tambahkan dan verifikasi email sebelum berlangganan.",
+      "checkout_init_failed": "Gagal memulai pembayaran. Silakan coba lagi.",
+      "locked": "Item ini terkunci dan tidak dapat diedit saat ini.",
+      "conflict": "Waktu tersebut bertabrakan dengan pemesanan lain.",
+      "edit_sessions_failed": "Gagal memperbarui sesi. Silakan coba lagi.",
+      "session_index_out_of_range": "Sesi tersebut sudah tidak ada.",
+      "invalid": "Periksa input Anda dan coba lagi.",
+      "field_required": "Kolom ini wajib diisi.",
+      "name_taken": "Draf dengan nama ini sudah ada.",
+      "draft_limit_reached": "Anda telah mencapai batas draf.",
+      "draft_save_failed": "Gagal menyimpan draf. Silakan coba lagi.",
+      "draft_load_failed": "Gagal memuat draf. Silakan coba lagi.",
+      "draft_delete_failed": "Gagal menghapus draf. Silakan coba lagi.",
+      "theme_delete_failed": "Gagal menghapus tema. Silakan coba lagi.",
+      "theme_name_exists": "Sudah ada tema dengan nama ini.",
+      "max_themes_reached": "Anda telah mencapai batas tema ({count}).",
+      "payload_too_large": "Ukurannya terlalu besar untuk disimpan. Kurangi ukurannya dan coba lagi.",
+      "collection_load_failed": "Gagal memuat koleksi. Silakan coba lagi.",
+      "collection_rename_failed": "Gagal mengganti nama koleksi. Silakan coba lagi.",
+      "cover_set_failed": "Gagal mengatur sampul. Silakan coba lagi.",
+      "order_save_failed": "Gagal menyimpan urutan baru. Silakan coba lagi.",
+      "photo_remove_failed": "Gagal menghapus foto. Silakan coba lagi.",
+      "photo_add_failed": "Gagal menambahkan foto. Silakan coba lagi."
     }
   },
   "common": {

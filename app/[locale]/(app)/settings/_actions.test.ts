@@ -235,7 +235,7 @@ describe("updateWorkspaceBusinessAction", () => {
       slug: "other-studio",
     });
 
-    expect(result.error).toMatch(/already taken/i);
+    expect(result.error).toBe("url_taken");
 
     const wsA = await Workspace.findById(WS_A_ID).lean();
     expect(wsA?.slug).toBe("sarah-photo");
@@ -272,7 +272,7 @@ describe("updateWorkspaceBusinessAction", () => {
     });
 
     updateOneSpy.mockRestore();
-    expect(result.error).toMatch(/already taken/i);
+    expect(result.error).toBe("url_taken");
     expect(mongooseModule).toBeDefined(); // sanity
   });
 
@@ -301,7 +301,7 @@ describe("updateWorkspaceBusinessAction", () => {
       name: "Hacked Name",
     });
 
-    expect(result.error).toBe("Only the workspace owner can change this");
+    expect(result.error).toBe("owner_only");
 
     const ws = await Workspace.findById(WS_A_ID).lean();
     expect(ws?.name).toBe("Sarah Photography");
@@ -486,7 +486,7 @@ describe("updateProfileNameAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
 
     const result = await updateProfileNameAction({ name: "Name" });
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 });
 
@@ -664,7 +664,7 @@ describe("verifyMfaEnrollmentAction", () => {
     vi.mocked(cookies).mockResolvedValue(mockCookieStore as never);
 
     const result = await verifyMfaEnrollmentAction({ code: "123456" });
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 });
 
@@ -697,7 +697,7 @@ describe("disableMfaAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
 
     const result = await disableMfaAction();
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 
   it("cannot affect another user — userId comes only from getAuthUser()", async () => {
@@ -764,7 +764,7 @@ describe("setActiveWorkspaceAction", () => {
     mockGetAuthUser.mockResolvedValue(null);
 
     const result = await setActiveWorkspaceAction(String(WS_A_ID));
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 });
 
@@ -809,7 +809,7 @@ describe("updatePasswordAction", () => {
     );
 
     const result = await updatePasswordAction(validInput);
-    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(result).toEqual({ error: "current_password_incorrect" });
     expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
   });
 
@@ -853,7 +853,7 @@ describe("updatePasswordAction", () => {
     );
 
     const result = await updatePasswordAction(validInput);
-    expect(result).toEqual({ error: "Current password is incorrect." });
+    expect(result).toEqual({ error: "current_password_incorrect" });
     expect(mockWorkos.userManagement.updateUser).not.toHaveBeenCalled();
   });
 
@@ -862,7 +862,7 @@ describe("updatePasswordAction", () => {
       ...validInput,
       confirmPassword: "different123",
     });
-    expect(result).toEqual({ error: "Passwords do not match." });
+    expect(result).toEqual({ error: "passwords_mismatch" });
     expect(
       mockWorkos.userManagement.authenticateWithPassword,
     ).not.toHaveBeenCalled();
@@ -895,7 +895,7 @@ describe("updatePasswordAction", () => {
   it("rejects an unauthenticated caller", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await updatePasswordAction(validInput);
-    expect(result).toEqual({ error: "Not authenticated" });
+    expect(result).toEqual({ error: "not_authenticated" });
   });
 });
 
@@ -943,7 +943,7 @@ describe("sendSetPasswordEmailAction", () => {
   it("rejects an unauthenticated caller", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await sendSetPasswordEmailAction();
-    expect(result).toEqual({ error: "Not authenticated" });
+    expect(result).toEqual({ error: "not_authenticated" });
   });
 });
 
@@ -1046,6 +1046,6 @@ describe("updateAvatarAction", () => {
       avatarAssetId: null,
     });
 
-    expect(result).toEqual({ error: "Not authenticated" });
+    expect(result).toEqual({ error: "not_authenticated" });
   });
 });

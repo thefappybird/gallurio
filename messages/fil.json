@@ -1572,101 +1572,7 @@
         },
         "photos": "Mga Larawan",
         "templates": "Mga Template",
-        "guide": {
-          "next": "Susunod",
-          "back": "Bumalik",
-          "finish": "Tapusin",
-          "skip": "Laktawan ang Gabay",
-          "dontShow": "Huwag ipakita muli",
-          "tryIt": "Subukan ito para mapunta sa susunod na hakbang",
-          "progress": "{n} ng {total}",
-          "loading": "Nilo-load",
-          "skipConfirm": {
-            "heading": "Laktawan ang gabay?",
-            "body": "Mawawala ang iyong lugar sa walkthrough. Maaari mo itong i-restart anumang oras.",
-            "back": "Bumalik",
-            "dontShow": "Huwag ipakita muli",
-            "skip": "Laktawan ang Gabay"
-          },
-          "steps": {
-            "welcome": {
-              "title": "Maligayang pagdating sa iyong portfolio editor",
-              "body": "Narito ang isang mabilis na hands-on na tour para makapagsimula ka. Maaari kang lumabas anumang oras."
-            },
-            "dragBlock": {
-              "title": "Mag-drag ng block sa iyong pahina",
-              "body": "Naglilista ang panel ng bawat available na block. Mag-drag ng anumang block mula dito papunta sa canvas para idagdag ito sa iyong pahina."
-            },
-            "blockProps": {
-              "title": "Nandito ang mga properties ng block",
-              "body": "Awtomatikong napipili ang block kapag binitiwan mo ito — ang mga setting nito ay lilitaw sa panel na ito."
-            },
-            "contentTab": {
-              "title": "Content: ang teksto at media ng block",
-              "body": "Ang tab na Content ang lugar kung saan mo ine-edit ang aktwal na teksto, mga larawan, at mga link ng block."
-            },
-            "designTab": {
-              "title": "Design: mga kulay, border, at sulok",
-              "body": "Kinokontrol ng tab na Design ang typography, kulay ng background, mga border, shadow, at mga animasyon."
-            },
-            "layoutTab": {
-              "title": "Layout: laki, espasyo, at posisyon",
-              "body": "Kinokontrol ng tab na Layout ang gap, min-height, alignment, at grid placement."
-            },
-            "switchPages": {
-              "title": "Lumipat sa pagitan ng mga pahina",
-              "body": "Lumipat sa pagitan ng iba't ibang bahagi ng iyong portfolio website."
-            },
-            "openNav": {
-              "title": "Buksan ang Navigation",
-              "body": "I-click ang Navigation para i-set up ang header ng iyong site — brand, logo, mga link ng menu, at styling."
-            },
-            "navSetup": {
-              "title": "Navigation · Setup",
-              "body": "Ang tab na Setup ang lugar kung saan mo itatakda ang iyong brand text, laki ng navbar, logo, at mga link ng menu."
-            },
-            "logo": {
-              "title": "Nandito ang iyong logo",
-              "body": "Ito ang iyong logo uploader — ang PNG, JPEG, o WEBP na idinagdag dito ay lilitaw sa header ng iyong live na pahina."
-            },
-            "navDesign": {
-              "title": "Navigation · Design",
-              "body": "Kinokontrol ng tab na Design ang mga kulay ng header, mga border, at typography para sa iyong mga nav link."
-            },
-            "contactForm": {
-              "title": "Ang iyong inquiry form",
-              "body": "I-click ang Contact Form para i-set up ang form na ginagamit ng mga bisita para makipag-ugnayan sa iyo."
-            },
-            "contactSetup": {
-              "title": "Contact · Setup",
-              "body": "Itinatakda ng tab na Setup ang wika, pamagat, at paglalarawan ng form. Ang mga field at layout ng form ay nakapirmi."
-            },
-            "contactDesign": {
-              "title": "Contact · Design",
-              "body": "Bino-restyle ng tab na Design ang form — mga kulay ng teksto at background para tumugma sa iyong brand. Hindi mo maaaring itago ang mga field, ang hitsura lamang ang maaaring baguhin."
-            },
-            "photos": {
-              "title": "Mag-upload at mag-organisa ng mga larawan",
-              "body": "Buksan ang Photos para gumawa ng mga koleksyon at mag-upload ng mga larawan. Kumukuha ang mga Gallery block mula sa isang koleksyon."
-            },
-            "theme": {
-              "title": "Pumili ng iyong mga kulay at font",
-              "body": "Kinokontrol ng tema ang iyong limang brand color at typography. Ginagamit ng mga opsyon sa estilo ng bawat block ang palette na ito."
-            },
-            "preview": {
-              "title": "I-preview ang iyong site sa anumang laki ng screen",
-              "body": "Lumipat sa preview mode at gamitin ang device toggle para suriin ang iyong layout sa mobile, tablet, at desktop."
-            },
-            "publish": {
-              "title": "Mag-publish para maging live",
-              "body": "Kapag nasisiyahan ka na sa iyong mga pagbabago, i-click ang I-publish para ipadala ang mga ito sa iyong pampublikong pahina."
-            },
-            "draftsStep": {
-              "title": "Mag-save ng mga draft at magpalit ng bersyon",
-              "body": "Mag-save ng mga pagbabago kahit kailan. Gamitin ang Mga Draft para pamahalaan ang maraming bersyon. Muling buksan ang tour na ito sa pamamagitan ng button na Gabay."
-            }
-          }
-        },
+        "guide": "Gabay",
         "templateSwitchedToast": "Na-apply ang template.",
         "devices": {
           "mobile": "Mobile",
@@ -1768,6 +1674,101 @@
             "sharp": "Matalim",
             "subtle": "Banayad",
             "rounded": "Bilugan"
+          }
+        },
+        "tour": {
+          "next": "Susunod",
+          "back": "Bumalik",
+          "finish": "Tapusin",
+          "skip": "Laktawan ang Gabay",
+          "dontShow": "Huwag ipakita muli",
+          "tryIt": "Subukan ito para mapunta sa susunod na hakbang",
+          "progress": "{n} ng {total}",
+          "loading": "Nilo-load",
+          "skipConfirm": {
+            "heading": "Laktawan ang gabay?",
+            "body": "Mawawala ang iyong lugar sa walkthrough. Maaari mo itong i-restart anumang oras.",
+            "back": "Bumalik",
+            "dontShow": "Huwag ipakita muli",
+            "skip": "Laktawan ang Gabay"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Maligayang pagdating sa iyong portfolio editor",
+              "body": "Narito ang isang mabilis na hands-on na tour para makapagsimula ka. Maaari kang lumabas anumang oras."
+            },
+            "dragBlock": {
+              "title": "Mag-drag ng block sa iyong pahina",
+              "body": "Naglilista ang panel ng bawat available na block. Mag-drag ng anumang block mula dito papunta sa canvas para idagdag ito sa iyong pahina."
+            },
+            "blockProps": {
+              "title": "Nandito ang mga properties ng block",
+              "body": "Awtomatikong napipili ang block kapag binitiwan mo ito — ang mga setting nito ay lilitaw sa panel na ito."
+            },
+            "contentTab": {
+              "title": "Content: ang teksto at media ng block",
+              "body": "Ang tab na Content ang lugar kung saan mo ine-edit ang aktwal na teksto, mga larawan, at mga link ng block."
+            },
+            "designTab": {
+              "title": "Design: mga kulay, border, at sulok",
+              "body": "Kinokontrol ng tab na Design ang typography, kulay ng background, mga border, shadow, at mga animasyon."
+            },
+            "layoutTab": {
+              "title": "Layout: laki, espasyo, at posisyon",
+              "body": "Kinokontrol ng tab na Layout ang gap, min-height, alignment, at grid placement."
+            },
+            "switchPages": {
+              "title": "Lumipat sa pagitan ng mga pahina",
+              "body": "Lumipat sa pagitan ng iba't ibang bahagi ng iyong portfolio website."
+            },
+            "openNav": {
+              "title": "Buksan ang Navigation",
+              "body": "I-click ang Navigation para i-set up ang header ng iyong site — brand, logo, mga link ng menu, at styling."
+            },
+            "navSetup": {
+              "title": "Navigation · Setup",
+              "body": "Ang tab na Setup ang lugar kung saan mo itatakda ang iyong brand text, laki ng navbar, logo, at mga link ng menu."
+            },
+            "logo": {
+              "title": "Nandito ang iyong logo",
+              "body": "Ito ang iyong logo uploader — ang PNG, JPEG, o WEBP na idinagdag dito ay lilitaw sa header ng iyong live na pahina."
+            },
+            "navDesign": {
+              "title": "Navigation · Design",
+              "body": "Kinokontrol ng tab na Design ang mga kulay ng header, mga border, at typography para sa iyong mga nav link."
+            },
+            "contactForm": {
+              "title": "Ang iyong inquiry form",
+              "body": "I-click ang Contact Form para i-set up ang form na ginagamit ng mga bisita para makipag-ugnayan sa iyo."
+            },
+            "contactSetup": {
+              "title": "Contact · Setup",
+              "body": "Itinatakda ng tab na Setup ang wika, pamagat, at paglalarawan ng form. Ang mga field at layout ng form ay nakapirmi."
+            },
+            "contactDesign": {
+              "title": "Contact · Design",
+              "body": "Bino-restyle ng tab na Design ang form — mga kulay ng teksto at background para tumugma sa iyong brand. Hindi mo maaaring itago ang mga field, ang hitsura lamang ang maaaring baguhin."
+            },
+            "photos": {
+              "title": "Mag-upload at mag-organisa ng mga larawan",
+              "body": "Buksan ang Photos para gumawa ng mga koleksyon at mag-upload ng mga larawan. Kumukuha ang mga Gallery block mula sa isang koleksyon."
+            },
+            "theme": {
+              "title": "Pumili ng iyong mga kulay at font",
+              "body": "Kinokontrol ng tema ang iyong limang brand color at typography. Ginagamit ng mga opsyon sa estilo ng bawat block ang palette na ito."
+            },
+            "preview": {
+              "title": "I-preview ang iyong site sa anumang laki ng screen",
+              "body": "Lumipat sa preview mode at gamitin ang device toggle para suriin ang iyong layout sa mobile, tablet, at desktop."
+            },
+            "publish": {
+              "title": "Mag-publish para maging live",
+              "body": "Kapag nasisiyahan ka na sa iyong mga pagbabago, i-click ang I-publish para ipadala ang mga ito sa iyong pampublikong pahina."
+            },
+            "draftsStep": {
+              "title": "Mag-save ng mga draft at magpalit ng bersyon",
+              "body": "Mag-save ng mga pagbabago kahit kailan. Gamitin ang Mga Draft para pamahalaan ang maraming bersyon. Muling buksan ang tour na ito sa pamamagitan ng button na Gabay."
+            }
           }
         }
       },
@@ -1881,6 +1882,75 @@
           }
         }
       }
+    },
+    "errors": {
+      "generic": "May nangyaring mali. Pakisubukan muli.",
+      "not_authenticated": "Hindi ka naka-sign in. Mag-sign in at subukan muli.",
+      "no_active_workspace": "Walang aktibong workspace. Pumili ng workspace at subukan muli.",
+      "workspace_not_found": "Hindi natagpuan ang workspace.",
+      "owner_only": "Ang may-ari lang ng workspace ang makakagawa nito.",
+      "finish_onboarding": "Tapusin muna ang onboarding bago baguhin ang mga setting ng workspace.",
+      "invalid_input": "Pakitingnan ang form at subukan muli.",
+      "rate_limited": "Masyadong maraming pagtatangka. Subukan muli pagkatapos ng {seconds} segundo.",
+      "user_not_found": "Hindi natagpuan ang user.",
+      "url_taken": "Nakuha na ang URL na iyon — subukan ang isa pa.",
+      "name_update_failed": "Hindi na-update ang iyong pangalan. Pakisubukan muli.",
+      "mfa_start_failed": "Hindi masimulaan ang pag-set up ng authenticator. Pakisubukan muli.",
+      "code_six_digits": "Ilagay ang 6-digit na code.",
+      "enrollment_expired": "Nag-expire na ang setup session. Magsimula muli.",
+      "invalid_code": "Hindi tamang code. Pakisubukan muli.",
+      "mfa_disable_failed": "Hindi ma-disable ang two-factor. Pakisubukan muli.",
+      "passwords_mismatch": "Hindi magkatugma ang mga password.",
+      "current_password_incorrect": "Hindi tama ang iyong kasalukuyang password.",
+      "password_verify_failed": "Hindi ma-verify ang iyong kasalukuyang password. Pakisubukan muli.",
+      "password_update_failed": "Hindi na-update ang iyong password. Pakisubukan muli.",
+      "avatar_update_failed": "Hindi na-update ang iyong larawan. Pakisubukan muli.",
+      "email_send_failed": "Hindi maipadala ang email. Pakisubukan muli.",
+      "onboarding_no_active_workspace": "Walang aktibong workspace — simulan muli ang onboarding.",
+      "client_create_failed": "Hindi nagawa ang kliyente. Pakisubukan muli.",
+      "client_not_found": "Hindi natagpuan ang kliyente.",
+      "client_update_failed": "Hindi na-update ang kliyente. Pakisubukan muli.",
+      "client_deactivate_failed": "Hindi na-deactivate ang kliyente. Pakisubukan muli.",
+      "client_has_active_bookings": "May aktibong mga booking ang kliyenteng ito at hindi maaaring i-deactivate.",
+      "client_reactivate_failed": "Hindi na-reactivate ang kliyente. Pakisubukan muli.",
+      "bookings_load_failed": "Hindi ma-load ang mga booking. Pakisubukan muli.",
+      "client_load_failed": "Hindi ma-load ang kliyente. Pakisubukan muli.",
+      "invalid_id": "Hindi wastong kahilingan.",
+      "not_found": "Hindi natagpuan.",
+      "forbidden": "Wala kang access na gawin iyon.",
+      "team_not_found": "Hindi natagpuan ang koponan.",
+      "team_deactivated": "Hindi maaaring mag-assign ng booking sa isang na-deactivate na koponan.",
+      "session_crosses_midnight": "Ang sesyon {index} ay tumatawid ng hatinggabi sa time zone ng workspace.",
+      "client_change_multi_session": "Hindi maaaring palitan ang kliyente sa isang multi-session na booking.",
+      "invalid_client_id": "Hindi wastong kliyente.",
+      "client_not_found_workspace": "Hindi natagpuan ang kliyente sa workspace na ito.",
+      "invalid_request": "Hindi wastong kahilingan.",
+      "export_too_large": "Masyadong maraming booking para i-export. I-paliitin ang iyong mga filter at subukan muli.",
+      "free_plan_no_checkout": "Hindi kailangan ng checkout ang libreng plano.",
+      "paddle_price_not_configured": "Hindi available ang planong ito ngayon. Makipag-ugnayan sa suporta.",
+      "no_verified_email": "Magdagdag at mag-verify ng email bago mag-subscribe.",
+      "checkout_init_failed": "Hindi masimulaan ang checkout. Pakisubukan muli.",
+      "locked": "Naka-lock ang item na ito at hindi maaaring i-edit ngayon.",
+      "conflict": "May salungatan ang oras na iyon sa ibang booking.",
+      "edit_sessions_failed": "Hindi na-update ang mga sesyon. Pakisubukan muli.",
+      "session_index_out_of_range": "Hindi na umiiral ang sesyong iyon.",
+      "invalid": "Pakitingnan ang iyong input at subukan muli.",
+      "field_required": "Kinakailangan ang field na ito.",
+      "name_taken": "Mayroon nang draft na may ganitong pangalan.",
+      "draft_limit_reached": "Naabot mo na ang iyong limitasyon sa draft.",
+      "draft_save_failed": "Hindi na-save ang draft. Pakisubukan muli.",
+      "draft_load_failed": "Hindi ma-load ang draft. Pakisubukan muli.",
+      "draft_delete_failed": "Hindi matanggal ang draft. Pakisubukan muli.",
+      "theme_delete_failed": "Hindi matanggal ang tema. Pakisubukan muli.",
+      "theme_name_exists": "Mayroon nang tema na may ganitong pangalan.",
+      "max_themes_reached": "Naabot mo na ang iyong limitasyon sa tema ({count}).",
+      "payload_too_large": "Masyadong malaki para i-save. Bawasan ang laki at subukan muli.",
+      "collection_load_failed": "Hindi ma-load ang koleksyon. Pakisubukan muli.",
+      "collection_rename_failed": "Hindi mabago ang pangalan ng koleksyon. Pakisubukan muli.",
+      "cover_set_failed": "Hindi matakda ang cover. Pakisubukan muli.",
+      "order_save_failed": "Hindi ma-save ang bagong order. Pakisubukan muli.",
+      "photo_remove_failed": "Hindi maalis ang larawan. Pakisubukan muli.",
+      "photo_add_failed": "Hindi maidagdag ang larawan. Pakisubukan muli."
     }
   },
   "common": {

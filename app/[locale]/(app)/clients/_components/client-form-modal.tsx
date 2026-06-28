@@ -14,6 +14,7 @@ import { PhoneInput } from "@/components/ui/phone-input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { clientFormSchema, type ClientFormInput } from "@/lib/validators/client";
 import { createClientAction, updateClientAction } from "@/lib/actions/clients";
+import { useActionError } from "@/lib/i18n/actionError";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 
 // ClientRow shape needed for pre-fill (edit mode)
@@ -39,6 +40,7 @@ const SOURCES = ["form", "manual", "referral", "import"] as const;
 
 export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, onDirtyChange }: Props) {
   const t = useTranslations("app.clients");
+  const errMsg = useActionError();
   const isEdit = !!initialData?.id;
 
   const form = useForm<ClientFormInput>({
@@ -109,7 +111,7 @@ export function ClientFormModal({ open, onOpenChange, initialData, onSuccess, on
       : await createClientAction(data);
 
     if ("error" in result) {
-      form.setError("root", { message: result.error });
+      form.setError("root", { message: errMsg(result.error) });
       return;
     }
 

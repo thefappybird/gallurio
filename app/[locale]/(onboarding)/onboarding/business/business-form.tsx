@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
+import { useActionError } from "@/lib/i18n/actionError";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -92,6 +93,7 @@ export function BusinessStepForm({
 }) {
   const t = useTranslations("onboarding.business");
   const tShell = useTranslations("onboarding.shell");
+  const errMsg = useActionError();
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -119,7 +121,7 @@ export function BusinessStepForm({
   async function onSubmit(data: BusinessStepInput) {
     const result = await businessStepAction(data);
     if (result?.error) {
-      toast.error(result.error);
+      toast.error(errMsg(result.error));
       return;
     }
     startTransition(() => router.push("/onboarding/plan"));

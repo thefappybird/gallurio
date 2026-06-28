@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { PageSizeSelect } from "@/components/app/page-size-select";
 import { TableSkeleton } from "@/components/app/table-skeleton";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
+import { useActionError } from "@/lib/i18n/actionError";
 
 // ClientsTable has: name, contact, source, totalSpent, actions = 5 columns
 const CLIENTS_TABLE_COLUMNS = 5;
@@ -43,6 +44,7 @@ export function ClientsPageClient({
 }: Props) {
   const t = useTranslations("app.clients");
   const tc = useTranslations("common.pagination");
+  const errMsg = useActionError();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -154,7 +156,7 @@ export function ClientsPageClient({
       try {
         const result = await reactivateClientAction(client.id);
         if ("error" in result) {
-          toast.error(result.error, { id: toastId });
+          toast.error(errMsg(result.error), { id: toastId });
           return;
         }
         toast.success(t("form.updateSuccess"), { id: toastId });

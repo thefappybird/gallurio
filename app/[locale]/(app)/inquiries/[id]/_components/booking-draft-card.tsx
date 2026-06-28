@@ -30,6 +30,7 @@ import {
 import type { InquiryOptimisticPatch } from "@/lib/inquiries/optimistic-patch";
 import { useTimeFormat } from "@/lib/time-format/context";
 import { formatSessionTimeRange } from "@/lib/inquiries/session-time";
+import { useActionError } from "@/lib/i18n/actionError";
 
 type Props = {
   inquiryId: string;
@@ -79,6 +80,7 @@ export function BookingDraftCard({
   const tTeam = useTranslations("app.bookings.teamPicker");
   const router = useRouter();
   const timeMode = useTimeFormat();
+  const errMsg = useActionError();
 
   const [total, setTotal] = useState(String(initialTotal));
   const [deposit, setDeposit] = useState(String(initialDeposit));
@@ -360,7 +362,7 @@ export function BookingDraftCard({
                 )}
                 {sessionsError && !hasSessionConflict && !hasInvalidSession && (
                   <p className="text-xs text-destructive">
-                    {sessionsError === "alter_only" ? ts("alterOnlyError") : `Error: ${sessionsError}`}
+                    {sessionsError === "alter_only" ? ts("alterOnlyError") : errMsg(sessionsError)}
                   </p>
                 )}
 

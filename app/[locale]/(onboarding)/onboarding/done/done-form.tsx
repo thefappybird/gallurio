@@ -7,6 +7,7 @@ import { ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { completeOnboardingAction } from "@/lib/actions/onboarding";
+import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { DoneIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function DoneStepForm({
 }) {
   const t = useTranslations("onboarding.done");
   const tPlans = useTranslations("plans");
+  const errMsg = useActionError();
   const [seedSampleData, setSeedSampleData] = useState(true);
   const [pending, startTransition] = useTransition();
 
@@ -31,7 +33,7 @@ export function DoneStepForm({
   function finish() {
     startTransition(async () => {
       const result = await completeOnboardingAction({ seedSampleData });
-      if (result?.error) toast.error(result.error);
+      if (result?.error) toast.error(errMsg(result.error));
     });
   }
 

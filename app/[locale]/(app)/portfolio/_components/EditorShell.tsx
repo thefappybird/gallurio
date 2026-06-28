@@ -51,6 +51,7 @@ import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
 import { useIsRtl } from "@/lib/i18n/rtl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
@@ -377,6 +378,7 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
+  const errMsg = useActionError();
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -667,11 +669,11 @@ export function EditorShell({
   // ---- Draft name validation ----
   function validateDraftName(name: string): string | null {
     const trimmed = name.trim();
-    if (!trimmed) return "This field is required";
+    if (!trimmed) return errMsg("field_required");
     const clash = drafts.some(
       (d) => d.id !== activeDraftId && d.name.trim().toLowerCase() === trimmed.toLowerCase()
     );
-    if (clash) return "A draft with this name already exists";
+    if (clash) return errMsg("name_taken");
     return null;
   }
 
@@ -714,15 +716,15 @@ export function EditorShell({
       if ("error" in res) {
         const err = res.error;
         if (err === "name_required") {
-          setNameError("This field is required");
-          if (shouldToastValidationError) toast.error("This field is required");
+          const msg = errMsg("field_required");
+          setNameError(msg);
+          if (shouldToastValidationError) toast.error(msg);
         } else if (err === "name_taken") {
-          setNameError("A draft with this name already exists");
-          if (shouldToastValidationError) toast.error("A draft with this name already exists");
-        } else if (err.startsWith("draft_limit_reached")) {
-          toast.error("You've reached your draft limit.");
+          const msg = errMsg(err);
+          setNameError(msg);
+          if (shouldToastValidationError) toast.error(msg);
         } else {
-          toast.error("Could not save draft. Please try again.");
+          toast.error(errMsg(err));
         }
         return false;
       }
@@ -759,7 +761,7 @@ export function EditorShell({
   async function applyDraft(id: string) {
     const res = await getDraftAction(id);
     if ("error" in res) {
-      toast.error("Could not load draft. Please try again.");
+      toast.error(errMsg("draft_load_failed"));
       return;
     }
     const d = res.draft;
@@ -876,11 +878,11 @@ export function EditorShell({
       const refreshed = await listDraftsAction();
       setDrafts(refreshed);
       if ("error" in res) {
-        toast.error("Could not delete draft. Please try again.");
+        toast.error(errMsg("draft_delete_failed"));
         return;
       }
       if (
-        nameError === "A draft with this name already exists" &&
+        nameError === errMsg("name_taken") &&
         refreshed.every((d) => d.name.trim().toLowerCase() !== draftName.trim().toLowerCase())
       ) {
         setNameError(null);

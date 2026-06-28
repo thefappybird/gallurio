@@ -108,14 +108,14 @@ describe("MfaSection — not enabled", () => {
   });
 
   it("shows error toast when enrollMfaAction returns an error", async () => {
-    mockEnroll.mockResolvedValue({ error: "Enrollment failed" });
+    mockEnroll.mockResolvedValue({ error: "mfa_start_failed" });
 
     renderWithProviders(<MfaSection mfaEnabled={false} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Set up authenticator/i }));
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Enrollment failed");
+      expect(toast.error).toHaveBeenCalledWith("Couldn't start authenticator setup. Please try again.");
     });
   });
 });
@@ -168,7 +168,7 @@ describe("MfaSection — enabled", () => {
   });
 
   it("shows error toast when disableMfaAction returns an error", async () => {
-    mockDisable.mockResolvedValue({ error: "Could not disable MFA" });
+    mockDisable.mockResolvedValue({ error: "mfa_disable_failed" });
 
     renderWithProviders(<MfaSection mfaEnabled={true} />);
 
@@ -179,7 +179,7 @@ describe("MfaSection — enabled", () => {
     );
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith("Could not disable MFA");
+      expect(toast.error).toHaveBeenCalledWith("Couldn't turn off two-factor. Please try again.");
     });
   });
 });

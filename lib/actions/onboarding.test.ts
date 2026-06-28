@@ -79,7 +79,7 @@ describe("businessStepAction", () => {
   it("rejects unauthenticated requests", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await businessStepAction(validBusinessInput);
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 
   it("creates workspace + default team + owner membership on first run", async () => {
@@ -158,7 +158,7 @@ describe("businessStepAction", () => {
 
     mockGetAuthUser.mockResolvedValue(makeAuthUser("wos_user_001"));
     const result = await businessStepAction(validBusinessInput);
-    expect(result.error).toMatch(/already taken/i);
+    expect(result.error).toBe("url_taken");
   });
 
   it("maps E11000 duplicate-key error on slug to a friendly taken message", async () => {
@@ -220,7 +220,7 @@ describe("businessStepAction", () => {
       ...validBusinessInput,
       slug: "race-slug",
     });
-    expect(result.error).toMatch(/already taken/i);
+    expect(result.error).toBe("url_taken");
   });
 
   it("does not throw when E11000 race fires on slug — returns friendly error", async () => {
@@ -244,7 +244,7 @@ describe("businessStepAction", () => {
 
     startSessionSpy.mockRestore();
     // Must not throw; must map to friendly error
-    expect(result.error).toMatch(/already taken/i);
+    expect(result.error).toBe("url_taken");
   });
 
   it("allows the user to keep their own slug on re-run", async () => {
@@ -305,7 +305,7 @@ describe("selectFreePlanAction", () => {
   it("rejects unauthenticated requests", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await selectFreePlanAction();
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 
   it("sets plan to free and advances step", async () => {
@@ -331,7 +331,7 @@ describe("completeOnboardingAction", () => {
   it("rejects unauthenticated requests", async () => {
     mockGetAuthUser.mockResolvedValue(null);
     const result = await completeOnboardingAction({ seedSampleData: false });
-    expect(result.error).toBe("Not authenticated");
+    expect(result.error).toBe("not_authenticated");
   });
 
   it("marks workspace and user as onboarding-complete and redirects", async () => {

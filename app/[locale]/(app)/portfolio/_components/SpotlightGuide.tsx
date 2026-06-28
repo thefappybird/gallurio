@@ -311,7 +311,7 @@ type SkipConfirmModalProps = {
 };
 
 function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps) {
-  const tg = useTranslations("app.pageBuilder.editor.guide");
+  const tg = useTranslations("app.pageBuilder.editor.tour");
   const backRef = useRef<HTMLButtonElement | null>(null);
 
   // Focus the Back button when the modal mounts
@@ -431,7 +431,7 @@ function TooltipCard({
   onKeyDown,
   cardRef,
 }: TooltipCardProps) {
-  const tg = useTranslations("app.pageBuilder.editor.guide");
+  const tg = useTranslations("app.pageBuilder.editor.tour");
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === total - 1;
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);

@@ -12,7 +12,11 @@ export type OwnerContext = {
   workspace: WorkspaceDoc;
 };
 
-export type ActionResult = { ok?: boolean; error?: string };
+export type ActionResult = {
+  ok?: boolean;
+  error?: string;
+  params?: Record<string, string | number>;
+};
 
 /**
  * Server-action guard that resolves the active workspace and asserts ownership.
@@ -22,7 +26,7 @@ export type ActionResult = { ok?: boolean; error?: string };
  * where a redirect is appropriate.
  *
  * Resolution:
- *   1. getAuthUser() — null -> { error: "Not authenticated" }
+ *   1. getAuthUser() — null -> { error: "not_authenticated" }
  *   2. Load User by workosUserId; resolve active workspace
  *   3. Load Workspace by _id
  *   4. Assert ownership (ownerUserId === workosUserId)
@@ -32,27 +36,27 @@ export async function ownerContext(
   opts: { allowDuringOnboarding?: boolean } = {},
 ): Promise<OwnerContext | { error: string }> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   await connectDB();
 
   const user = await User.findOne({ workosUserId: authUser.workosUserId }).lean();
-  if (!user) return { error: "No active workspace" };
+  if (!user) return { error: "no_active_workspace" };
 
   const workspaceId = await getActiveWorkspaceId(user.memberships);
-  if (!workspaceId) return { error: "No active workspace" };
+  if (!workspaceId) return { error: "no_active_workspace" };
 
   const workspace = await Workspace.findById(workspaceId);
-  if (!workspace) return { error: "Workspace not found" };
+  if (!workspace) return { error: "workspace_not_found" };
 
   const isOwner = workspace.ownerUserId === authUser.workosUserId;
-  if (!isOwner) return { error: "Only the workspace owner can change this" };
+  if (!isOwner) return { error: "owner_only" };
 
   // Mirror requireOrg()'s onboarding gate so direct server-action calls can't
   // bypass the page-level redirect. Defense-in-depth for the action surface.
   if (!opts.allowDuringOnboarding) {
     if (!user.onboardingCompletedAt) {
-      return { error: "Finish onboarding before changing workspace settings" };
+      return { error: "finish_onboarding" };
     }
   }
 

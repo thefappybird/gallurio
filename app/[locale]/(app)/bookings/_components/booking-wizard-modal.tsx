@@ -5,6 +5,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { useRouter, usePathname } from "@/lib/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { toast } from "sonner";
 import {
   ChevronLeftIcon,
@@ -114,6 +115,7 @@ export function BookingWizardModal({
   const searchParams = useSearchParams();
   const t = useTranslations("app.bookings.wizard");
   const tDnd = useTranslations("app.bookings.dnd");
+  const errMsg = useActionError();
   const [, startTransition] = useTransition();
 
   const [open, setOpen] = useState(true);
@@ -540,7 +542,7 @@ export function BookingWizardModal({
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Couldn't create booking");
+          throw new Error(errMsg(data.error, data.params));
         }
         toast.success(t("createdToast"));
         // If a new client was created, notify the parent so it can refresh
@@ -575,7 +577,7 @@ export function BookingWizardModal({
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Couldn't save booking");
+          throw new Error(errMsg(data.error, data.params));
         }
         toast.success(t("savedToast"));
       }
@@ -583,7 +585,7 @@ export function BookingWizardModal({
       // Success path: close() strips URL params before the router refresh lands.
       close();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Couldn't save");
+      setSubmitError(err instanceof Error ? err.message : errMsg(null));
       // Failed submit: strip URL params so the stale ?edit= doesn't persist if
       // the user navigates away after seeing the error.
       if (!onClose) {

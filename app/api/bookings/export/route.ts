@@ -64,10 +64,7 @@ export async function GET(req: Request) {
   const total = await Booking.countDocuments(filter);
   if (total > EXPORT_ROW_LIMIT) {
     return NextResponse.json(
-      {
-        error:
-          "Too many bookings to export at once. Use date range or status filters to narrow the export.",
-      },
+      { error: "export_too_large" },
       { status: 413 }
     );
   }

@@ -46,7 +46,7 @@ export async function updateWorkspaceBusinessAction(
     slug,
     _id: { $ne: ctx.workspace._id },
   }).lean();
-  if (slugClash) return { error: "That URL is already taken — try another." };
+  if (slugClash) return { error: "url_taken" };
 
   try {
     await Workspace.updateOne(
@@ -61,7 +61,7 @@ export async function updateWorkspaceBusinessAction(
       "code" in err &&
       (err as { code: unknown }).code === 11000
     ) {
-      return { error: "That URL is already taken — try another." };
+      return { error: "url_taken" };
     }
     throw err;
   }
@@ -167,7 +167,7 @@ export async function updateProfileNameAction(input: {
   name: string;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const parsed = updateNameSchema.safeParse(input);
   if (!parsed.success)
@@ -185,7 +185,7 @@ export async function updateProfileNameAction(input: {
     });
   } catch (err) {
     console.error("[settings] WorkOS updateUser failed", err);
-    return { error: "Failed to update name. Please try again." };
+    return { error: "name_update_failed" };
   }
 
   await connectDB();
@@ -215,7 +215,7 @@ export type EnrollMfaResult =
 
 export async function enrollMfaAction(): Promise<EnrollMfaResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   try {
     const { authenticationFactor, authenticationChallenge } =
@@ -256,7 +256,7 @@ export async function enrollMfaAction(): Promise<EnrollMfaResult> {
     };
   } catch (err) {
     console.error("[settings] createUserAuthFactor failed", err);
-    return { error: "Failed to start MFA setup. Please try again." };
+    return { error: "mfa_start_failed" };
   }
 }
 
@@ -270,16 +270,15 @@ export async function verifyMfaEnrollmentAction(input: {
   code: string;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const codeSchema = z.string().regex(/^\d{6}$/, "Code must be 6 digits");
   if (!codeSchema.safeParse(input.code).success)
-    return { error: "Code must be 6 digits" };
+    return { error: "code_six_digits" };
 
   const jar = await cookies();
   const rawCookie = jar.get(MFA_ENROLL_COOKIE)?.value;
-  if (!rawCookie)
-    return { error: "Enrollment session expired. Restart setup." };
+  if (!rawCookie) return { error: "enrollment_expired" };
 
   // The challenge is bound to this authenticated user: it was minted by
   // enrollMfaAction() and stored in a server-set, httpOnly cookie the client
@@ -295,11 +294,11 @@ export async function verifyMfaEnrollmentAction(input: {
       parsed === null ||
       typeof (parsed as Record<string, unknown>).challengeId !== "string"
     ) {
-      return { error: "Enrollment session expired. Restart setup." };
+      return { error: "enrollment_expired" };
     }
     challengeId = (parsed as Record<string, string>).challengeId;
   } catch {
-    return { error: "Enrollment session expired. Restart setup." };
+    return { error: "enrollment_expired" };
   }
 
   try {
@@ -308,10 +307,10 @@ export async function verifyMfaEnrollmentAction(input: {
       code: input.code,
     });
 
-    if (!result.valid) return { error: "Invalid code. Please try again." };
+    if (!result.valid) return { error: "invalid_code" };
   } catch (err) {
     console.error("[settings] verifyChallenge failed", err);
-    return { error: "Invalid or expired code. Please try again." };
+    return { error: "invalid_code" };
   }
 
   await connectDB();
@@ -332,7 +331,7 @@ export async function verifyMfaEnrollmentAction(input: {
 
 export async function disableMfaAction(): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   try {
     const factors = await workos.multiFactorAuth.listUserAuthFactors({
@@ -344,7 +343,7 @@ export async function disableMfaAction(): Promise<ActionResult> {
     );
   } catch (err) {
     console.error("[settings] deleteFactor failed", err);
-    return { error: "Failed to disable MFA. Please try again." };
+    return { error: "mfa_disable_failed" };
   }
 
   await connectDB();
@@ -365,19 +364,19 @@ export async function setActiveWorkspaceAction(
   workspaceId: string,
 ): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   await connectDB();
 
   const user = await User.findOne({
     workosUserId: authUser.workosUserId,
   }).lean();
-  if (!user) return { error: "User not found" };
+  if (!user) return { error: "user_not_found" };
 
   const isMember = user.memberships.some(
     (m) => String(m.workspaceId) === workspaceId,
   );
-  if (!isMember) return { error: "Workspace not found" };
+  if (!isMember) return { error: "workspace_not_found" };
 
   await setActiveWorkspace(authUser.workosUserId, workspaceId);
 
@@ -424,7 +423,7 @@ export async function updatePasswordAction(input: {
   confirmPassword: string;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const parsed = updatePasswordSchema.safeParse(input);
   if (!parsed.success)
@@ -432,13 +431,11 @@ export async function updatePasswordAction(input: {
 
   const { currentPassword, newPassword, confirmPassword } = parsed.data;
   if (newPassword !== confirmPassword)
-    return { error: "Passwords do not match." };
+    return { error: "passwords_mismatch" };
 
   const rl = await checkAuthRateLimit({ email: authUser.email });
   if (!rl.ok)
-    return {
-      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
-    };
+    return { error: "rate_limited", params: { seconds: rl.retryAfterSec } };
 
   // Verify the current password by attempting authentication.
   try {
@@ -450,14 +447,12 @@ export async function updatePasswordAction(input: {
   } catch (err) {
     if (err instanceof AuthenticationException) {
       if (!PASSWORD_OK_CODES.has(err.code)) {
-        return { error: "Current password is incorrect." };
+        return { error: "current_password_incorrect" };
       }
       // Password was correct; a pending step (e.g. MFA) is fine here.
     } else {
       console.error("[settings] authenticateWithPassword failed", err);
-      return {
-        error: "Could not verify your current password. Please try again.",
-      };
+      return { error: "password_verify_failed" };
     }
   }
 
@@ -468,7 +463,7 @@ export async function updatePasswordAction(input: {
     });
   } catch (err) {
     console.error("[settings] updateUser(password) failed", err);
-    return { error: "Failed to update password. Please try again." };
+    return { error: "password_update_failed" };
   }
 
   return { ok: true };
@@ -492,7 +487,7 @@ export async function updateAvatarAction(input: {
   avatarAssetId: string | null;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const parsed = updateAvatarSchema.safeParse(input);
   if (!parsed.success)
@@ -521,7 +516,7 @@ export async function updateAvatarAction(input: {
     );
   } catch (err) {
     console.error("[settings] updateAvatarAction DB write failed", err);
-    return { error: "Failed to update photo. Please try again." };
+    return { error: "avatar_update_failed" };
   }
 
   if (previousPublicId && previousPublicId !== nextPublicId) {
@@ -544,13 +539,11 @@ export async function updateAvatarAction(input: {
 
 export async function sendSetPasswordEmailAction(): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const rl = await checkAuthRateLimit({ email: authUser.email });
   if (!rl.ok)
-    return {
-      error: `Too many attempts. Try again in ${rl.retryAfterSec} seconds.`,
-    };
+    return { error: "rate_limited", params: { seconds: rl.retryAfterSec } };
 
   try {
     const reset = await workos.userManagement.createPasswordReset({
@@ -559,7 +552,7 @@ export async function sendSetPasswordEmailAction(): Promise<ActionResult> {
     await sendPasswordResetEmail(authUser.email, reset.passwordResetToken);
   } catch (err) {
     console.error("[settings] sendSetPasswordEmail failed", err);
-    return { error: "Could not send the email. Please try again." };
+    return { error: "email_send_failed" };
   }
 
   return { ok: true };

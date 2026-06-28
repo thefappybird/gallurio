@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { Loader2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ type DevPlanPanelProps = {
 
 export function DevPlanPanel({ currentPlan }: DevPlanPanelProps) {
   const t = useTranslations("app.settings.devPlan");
+  const errMsg = useActionError();
   const [pending, startTransition] = useTransition();
   const [busyTier, setBusyTier] = useState<PlanTier | null>(null);
   const [blocked, setBlocked] = useState<DevPlanActionResult["blocked"] | null>(null);
@@ -33,7 +35,7 @@ export function DevPlanPanel({ currentPlan }: DevPlanPanelProps) {
         return;
       }
       if (result.error) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error));
         return;
       }
       toast.success(t("toasts.switched", { plan }));

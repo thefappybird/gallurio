@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useActionError } from "@/lib/i18n/actionError";
 import { GripVerticalIcon, ImagePlusIcon, Loader2Icon, StarIcon, Trash2Icon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -24,6 +25,7 @@ export function EditCollectionDialog({
   collection: PickerCollection | null;
   onChanged: () => void;
 }) {
+  const errMsg = useActionError();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -57,7 +59,7 @@ export function EditCollectionDialog({
       }
       setItems(acc);
     } catch {
-      setError("Could not load this collection's photos.");
+      setError(errMsg("collection_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ export function EditCollectionDialog({
       if (!res.ok) throw new Error();
       onChanged();
     } catch {
-      setError("Could not rename the collection.");
+      setError(errMsg("collection_rename_failed"));
     } finally {
       setSavingName(false);
     }
@@ -115,7 +117,7 @@ export function EditCollectionDialog({
       onChanged();
     } catch {
       setCoverPublicId(prev);
-      setError("Could not set the cover.");
+      setError(errMsg("cover_set_failed"));
     }
   }
 
@@ -133,8 +135,8 @@ export function EditCollectionDialog({
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderedItemIds: next.map((i) => i.id) }),
     })
-      .then((res) => { if (!res.ok) setError("Could not save the new order."); })
-      .catch(() => setError("Could not save the new order."));
+      .then((res) => { if (!res.ok) setError(errMsg("order_save_failed")); })
+      .catch(() => setError(errMsg("order_save_failed")));
   }
 
   function reorder(fromId: string, toId: string) {
@@ -174,7 +176,7 @@ export function EditCollectionDialog({
       setSelected(new Set());
       onChanged();
     } catch {
-      setError("Could not remove the selected photos.");
+      setError(errMsg("photo_remove_failed"));
     } finally {
       setBusy(false);
     }
@@ -193,7 +195,7 @@ export function EditCollectionDialog({
       setConfirmDelete(false);
       onChanged();
     } catch {
-      setError("Could not delete the selected photos.");
+      setError(errMsg("photo_remove_failed"));
     } finally {
       setBusy(false);
     }
@@ -216,10 +218,10 @@ export function EditCollectionDialog({
             const created = (await res.json()) as { id: string; thumbUrl: string; caption: string | null };
             setItems((prev) => [...prev, { id: created.id, publicId: up.assetId, thumbUrl: created.thumbUrl, caption: created.caption }]);
           } else {
-            setError("Some photos could not be added.");
+            setError(errMsg("photo_add_failed"));
           }
         } catch {
-          setError("Some photos could not be added.");
+          setError(errMsg("photo_add_failed"));
         }
       }
       setUploading(false);
@@ -240,7 +242,7 @@ export function EditCollectionDialog({
       setItems((prev) => [...prev, ...data.items]);
       onChanged();
     } catch {
-      setError("Could not add the selected photos.");
+      setError(errMsg("photo_add_failed"));
     }
   }
 

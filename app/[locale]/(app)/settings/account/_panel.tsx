@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ export function AccountPanel({
   mfaEnabled,
 }: Props) {
   const t = useTranslations("app.settings.account");
+  const errMsg = useActionError();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [avatarPending, startAvatarTransition] = useTransition();
@@ -88,7 +90,7 @@ export function AccountPanel({
     startTransition(async () => {
       const result = await updateProfileNameAction(values);
       if (result && "error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
       } else {
         setDisplayName(values.name);
         toast.success(t("nameSaved"));
@@ -126,7 +128,7 @@ export function AccountPanel({
         if (result && "error" in result) {
           setAvatarUrl(prevUrl);
           setAvatarPublicId(prevPublicId);
-          setAvatarError(result.error ?? t("avatarUploadError"));
+          setAvatarError(result.error ? errMsg(result.error, result.params) : t("avatarUploadError"));
         } else {
           toast.success(t("avatarSaved"));
           // Re-render server components (e.g. the sidebar avatar) with fresh data.
@@ -156,7 +158,7 @@ export function AccountPanel({
       if (result && "error" in result) {
         setAvatarUrl(prevUrl);
         setAvatarPublicId(prevPublicId);
-        setAvatarError(result.error ?? t("avatarUploadError"));
+        setAvatarError(result.error ? errMsg(result.error, result.params) : t("avatarUploadError"));
       } else {
         toast.success(t("avatarRemoved"));
         router.refresh();
