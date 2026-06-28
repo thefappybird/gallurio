@@ -77,11 +77,11 @@ Files: `app/(public)/w/[orgSlug]/_components/{ContactForm,PortfolioHeader,contac
 ## Phase D — i18n editor chrome
 Files: `messages/{en,fil,ms,id,ar}.json`, `editorConfig.tsx`, `manualBlocks.tsx`, `sectionPresets.ts`,
 `galleryPicker/CollectionsManagerDialog.tsx`, `EditorShell.tsx`.
-- [ ] **D1 (item 19)** Translate Photos & Collections modal (`L` object → catalog).
-- [ ] **D2 (item 20)** Locale-aware `editorConfig` factory: block labels, field labels, dropdown
-      options, drawer categories; Puck built-ins where its API allows. All 5 locales.
-- [ ] **D3 (item 21)** Replace hardcoded toasts (`EditorShell.tsx:741` etc.) with `t()`.
-- [ ] **D4** Update RELEASE-CHECKLIST §4f / architecture skill: chrome no longer English-only.
+- [x] **D1 (item 19)** Translate Photos & Collections modal (`L` object → catalog). (D1 commit from prior session)
+- [x] **D2 (item 20)** Locale-aware `editorConfig` factory: block labels, field labels, dropdown
+      options, drawer categories; 91 keys × 5 locales. (a305426)
+- [x] **D3 (item 21)** Replace hardcoded toast `"Draft saved."` with `t("savedToast")`. (ed80934)
+- [x] **D4** Update RELEASE-CHECKLIST §4f / architecture skill: chrome no longer English-only. (this commit)
 
 ## Phase E — Modal stacking
 File: `app/globals.css`.
