@@ -246,6 +246,27 @@ describe("ContactFormPreview", () => {
     expect(activeTab.style.color).toBe("#cc2200");
   });
 
+  it("active tab shows underline by default in preview (fix #3 — canvas==preview==publish parity)", () => {
+    renderWithProviders(
+      <ContactFormPreview
+        contact={{}}
+        brandKit={DEFAULT_BRAND_KIT}
+        labels={labels}
+        submitAppearance={submitAppearance}
+        addSessionAppearance={addSessionAppearance}
+        defaultTitle="Default title"
+        defaultDescription="Default description"
+      />
+    );
+
+    // Active tab (Client) should have the underline border because activeTabUnderline
+    // effective default = ON (undefined !== false). This verifies preview matches public.
+    // Use getAttribute("style") — jsdom cannot parse CSS vars inside shorthand properties.
+    const activeTab = screen.getByRole("tab", { name: "Client" });
+    const styleAttr = activeTab.getAttribute("style") ?? "";
+    expect(styleAttr).toContain("border-bottom");
+  });
+
   it("shows validation states in preview without submitting the inquiry", async () => {
     renderWithProviders(
       <ContactFormPreview

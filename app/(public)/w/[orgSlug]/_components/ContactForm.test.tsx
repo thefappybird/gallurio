@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { ContactForm, getActiveTabExtraStyle, type InquiryFormLabels } from "./ContactForm";
 
@@ -379,12 +379,13 @@ describe("ContactForm", () => {
 // ---------------------------------------------------------------------------
 
 describe("getActiveTabExtraStyle", () => {
-  it("returns an empty-ish style with default activeTabColor when config is null", () => {
+  it("returns default styles when config is null -- underline ON (effective default), scale/highlight off", () => {
     const style = getActiveTabExtraStyle(null);
     expect(style.color).toBe("var(--pf-color-fg)");
     expect(style.transform).toBeUndefined();
     expect(style.backgroundColor).toBeUndefined();
-    expect(style.borderBottom).toBeUndefined();
+    // Underline effective default = ON: null config means activeTabUnderline is unset, not false
+    expect(style.borderBottom).toBe("3px solid var(--pf-color-accent)");
   });
 
   it("includes transform when activeTabScale is true", () => {
@@ -487,5 +488,38 @@ describe("ContactForm — responsive container", () => {
     const form = document.querySelector("form.pf-contact-form") as HTMLElement;
     expect(form).toBeTruthy();
     expect(form.style.containerType).toBe("inline-size");
+  });
+});
+
+describe("getActiveTabExtraStyle — underline effective default ON (item 4c)", () => {
+  it("includes borderBottom when activeTabUnderline is undefined (effective default ON)", () => {
+    const style = getActiveTabExtraStyle({});
+    expect(style.borderBottom).toBeDefined();
+    expect(style.borderBottom).toContain("var(--pf-color-accent");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fix #1 — Active tab full opacity (unambiguous contrast vs dimmed inactive)
+// ---------------------------------------------------------------------------
+
+describe("ContactForm — active tab full opacity (fix #1)", () => {
+  it("active tab has explicit opacity: 1 even when inactiveTabSubtle is on", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const clientTab = screen.getByRole("tab", { name: "Your details" });
+    expect(clientTab.style.opacity).toBe("1");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Item 4a — Inactive tab foreground color effective default
+// ---------------------------------------------------------------------------
+
+describe("ContactForm — inactive tab foreground color effective default (item 4a)", () => {
+  it("inactive tabs get var(--pf-color-fg) color when tabColor is unset", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const eventTab = screen.getByRole("tab", { name: "Event details" });
+    // Effective default: fg color (not empty, prevents inherit-only color in canvas)
+    expect(eventTab.style.color).toContain("--pf-color-fg");
   });
 });

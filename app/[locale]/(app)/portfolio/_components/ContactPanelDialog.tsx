@@ -263,8 +263,13 @@ export function ContactPanelDialog({
     set(key, contact[key] === radius ? undefined : radius);
   }
 
-  function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight" | "activeTabUnderline">(key: K) {
+  function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight">(key: K) {
     set(key, !contact[key]);
+  }
+
+  /** Underline: effective default ON. Cycles: undefined/true → false → undefined. */
+  function toggleTabUnderline() {
+    set("activeTabUnderline", contact.activeTabUnderline !== false ? false : undefined);
   }
 
   /** Subtle: effective default ON. Cycles: undefined/true → false → undefined. */
@@ -481,11 +486,12 @@ export function ContactPanelDialog({
 
               {/* Inactive tabs sub-section */}
               <EditorDrawerSection title={t("inactiveTabsSection")}>
-                {/* inactive tab color: resolveTabColor falls back to "" (no color applied) — no effective token */}
+                {/* inactive tab color: resolveTabColor fallback = var(--pf-color-fg) → effective default "foreground" */}
                 <LabeledSwatchRow
                   label={t("tabColorLabel")}
                   value={contact.tabColor}
                   onChange={(c) => set("tabColor", c)}
+                  effectiveValue="foreground"
                 />
                 {/* Subtle (effective default ON) + Compact (effective default OFF) */}
                 <div className="flex flex-col gap-1.5">
@@ -528,7 +534,11 @@ export function ContactPanelDialog({
                     <ToggleButton active={!!contact.activeTabHighlight} onClick={() => toggleTabBool("activeTabHighlight")}>
                       {t("activeTabStyleHighlight")}
                     </ToggleButton>
-                    <ToggleButton active={!!contact.activeTabUnderline} onClick={() => toggleTabBool("activeTabUnderline")}>
+                    <ToggleButton
+                      active={contact.activeTabUnderline !== false}
+                      isEffective={contact.activeTabUnderline === undefined}
+                      onClick={toggleTabUnderline}
+                    >
                       {t("activeTabStyleUnderline")}
                     </ToggleButton>
                   </div>
@@ -563,7 +573,7 @@ export function ContactPanelDialog({
                 )}
 
                 {/* Conditional: underline color — resolveTabColor falls back to var(--pf-color-accent) → "accent" */}
-                {contact.activeTabUnderline && (
+                {contact.activeTabUnderline !== false && (
                   <LabeledSwatchRow
                     label={t("tabUnderlineColorLabel")}
                     value={contact.tabUnderlineColor}
@@ -662,17 +672,21 @@ function ButtonControlsSection({
         <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
         <div className="flex">
           {BRAND_KIT_BUTTON_STYLES.map((style) => {
-            const active = styleValue === style;
+            const isActive = styleValue === style;
+            // When no explicit style is set, show the defaultStyle as a lighter
+            // "following theme" indicator (mechanism-1 display-only effective default).
+            const isEffective = !styleValue && style === defaultStyle;
             return (
               <button
                 key={style}
                 type="button"
                 aria-label={t(`buttonStyles.${style}`)}
-                aria-pressed={active}
+                aria-pressed={isActive || isEffective}
                 onClick={() => onStyleToggle(style)}
                 className={cn(
                   "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  active && "bg-foreground text-background hover:bg-foreground",
+                  isActive && "bg-foreground text-background hover:bg-foreground",
+                  isEffective && "border-foreground opacity-70",
                 )}
               >
                 {t(`buttonStyles.${style}`)}

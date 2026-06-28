@@ -164,8 +164,9 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
       ? (TAB_RADIUS_MAP[config.activeTabRadius] ?? "var(--pf-radius)")
       : "var(--pf-radius)";
   }
-  if (config?.activeTabUnderline) {
-    style.borderBottom = `3px solid ${resolveTabColor(config.tabUnderlineColor, "var(--pf-color-accent)")}`;
+  // Effective default ON: underline shows unless explicitly disabled (=== false).
+  if (config?.activeTabUnderline !== false) {
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
   }
   return style;
 }
@@ -345,7 +346,8 @@ export function ContactForm({
             const tabFontSize = contactConfig?.tabFontSize
               ? (TAB_FONT_SIZE_MAP[contactConfig.tabFontSize] ?? "0.9375rem")
               : "0.9375rem";
-            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "");
+            // Effective default: foreground color (not empty string — prevents bare inherit in canvas context).
+            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "var(--pf-color-fg)");
             const activeExtraStyle = getActiveTabExtraStyle(contactConfig);
             // inactiveTabSubtle: effective default ON (undefined = true) → dim at 0.55
             const isSubtle = contactConfig?.inactiveTabSubtle !== false;
@@ -353,7 +355,7 @@ export function ContactForm({
             const isCompact = contactConfig?.inactiveTabCompact === true;
             const compactFontSize = isCompact ? "0.75rem" : tabFontSize;
             const tabStyle: CSSProperties = isActive
-              ? { fontSize: tabFontSize, ...activeExtraStyle }
+              ? { fontSize: tabFontSize, opacity: 1, ...activeExtraStyle }
               : {
                   fontSize: compactFontSize,
                   ...(inactiveColor ? { color: inactiveColor } : {}),
