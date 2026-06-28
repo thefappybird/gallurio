@@ -771,6 +771,25 @@ describe("A5: LayoutTabBody — Container min-height Custom option shows Dimensi
   });
 });
 
+describe("A7: LayoutTabBody — Columns Overall Width control", () => {
+  it("shows Page fit and Full buttons for Columns block in Layout tab (A7)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Columns"
+        p={{ overallWidth: "page-fit" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Full" })).toBeTruthy();
+  });
+});
+
 describe("A6: LayoutTabBody — Align/Justify IconRow shows Reset button when value set", () => {
   it("Align Reset button appears when alignItems is explicitly set (A6)", () => {
     render(

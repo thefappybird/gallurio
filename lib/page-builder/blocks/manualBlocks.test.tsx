@@ -1320,6 +1320,15 @@ describe("A5: ContainerBlock custom min-height", () => {
   });
 });
 
+describe("A7: ColumnsBlock overallWidth prop", () => {
+  it("overallWidth=full applies full-bleed CSS on the outer wrapper (A7)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} />
+    );
+    expect(html).toContain("width:100vw");
+  });
+});
+
 describe("A5: ColumnsBlock min-height prop", () => {
   it("renders min-height when minHeight prop is set (A5)", () => {
     const html = renderToStaticMarkup(

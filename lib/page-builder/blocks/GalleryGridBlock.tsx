@@ -69,6 +69,7 @@ export const GALLERY_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
   short: "40vh",
   medium: "60vh",
   tall: "80vh",
+  custom: undefined,
 };
 
 /** Resolve a background image public ID to a full-bleed cover URL (client-safe). */

@@ -502,6 +502,9 @@ export type ColumnsBlockProps = {
   /** CSS length minimum height for the grid outer wrapper, e.g. "200px" or "30%".
    *  Unset = no min-height constraint (content-sized). */
   minHeight?: string;
+  /** Layout: "page-fit" (default) keeps max-width:80rem;margin:0 auto.
+   *  "full" breaks out of any max-width parent via width:100vw + negative margin. */
+  overallWidth?: "page-fit" | "full";
   content: Slot;
 };
 
@@ -516,6 +519,7 @@ export const COLUMNS_EFFECTIVE_PAD = {
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
+  overallWidth: "page-fit",
   content: [],
   _style: {
     gap: 16,
@@ -528,6 +532,7 @@ export function ColumnsBlock({
   columns,
   rows,
   minHeight,
+  overallWidth,
   content: Content,
   puck,
 }: {
@@ -536,6 +541,7 @@ export function ColumnsBlock({
   columns: number;
   rows?: number;
   minHeight?: string;
+  overallWidth?: "page-fit" | "full";
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
@@ -621,6 +627,10 @@ export function ColumnsBlock({
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
         minHeight: minHeight ?? undefined,
+        // A7: full-bleed breaks out of any max-width parent container.
+        ...(overallWidth === "full"
+          ? { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          : {}),
         ...outerStyle,
         containerType: "inline-size",
         containerName: instanceContainer,
@@ -632,7 +642,7 @@ export function ColumnsBlock({
           are fully isolated. Container queries (not viewport media queries) are
           used so colSpan/rowSpan work correctly in the narrow editor canvas. */}
       <style>{`
-        .${instanceClass}{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        .${instanceClass}{display:grid;gap:${gapValue};${overallWidth === "full" ? "" : "max-width:80rem;margin:0 auto;"}grid-template-columns:1fr;}
         ${colsRule}
         ${rowsRule}
       `}</style>
