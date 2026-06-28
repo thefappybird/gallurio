@@ -191,7 +191,7 @@ describe("ClientsPageClient", () => {
   });
 
   it("reactivation surfaces an error toast and does not refresh on server error", async () => {
-    reactivateMock.mockResolvedValue({ error: "boom" });
+    reactivateMock.mockResolvedValue({ error: "client_reactivate_failed" });
 
     renderWithProviders(<ClientsPageClient {...build()} />);
 
@@ -203,7 +203,10 @@ describe("ClientsPageClient", () => {
     // The guarded action handles the failure via toast and never throws, so
     // there is no unhandled rejection to suppress here.
     await waitFor(() =>
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("boom", { id: "toast-id" })
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        "Couldn't reactivate the client. Please try again.",
+        { id: "toast-id" }
+      )
     );
     expect(routerRefresh).not.toHaveBeenCalled();
   });

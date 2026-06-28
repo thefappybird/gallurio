@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
@@ -39,6 +40,7 @@ export function BillingPanel({
 }: BillingPanelProps) {
   const t = useTranslations("app.settings.billing");
   const tPlans = useTranslations("plans");
+  const errMsg = useActionError();
 
   const [loadingPlan, setLoadingPlan] = useState<PlanTier | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
@@ -96,7 +98,11 @@ export function BillingPanel({
         error?: string;
       };
       if (!res.ok) {
-        throw new Error(data.error ?? `Request failed (${res.status})`);
+        const msg = errMsg(data.error);
+        setCheckoutError(msg);
+        toast.error(msg);
+        setLoadingPlan(null);
+        return;
       }
       if (!data.priceId) {
         throw new Error("Missing priceId in checkout response");

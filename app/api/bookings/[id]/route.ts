@@ -44,7 +44,7 @@ export async function GET(_req: Request, { params }: Params) {
   const { id } = await params;
 
   if (!isValidObjectId(id)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
   await connectDB();
@@ -65,7 +65,7 @@ export async function GET(_req: Request, { params }: Params) {
   const booking = await Booking.findOne(query).lean();
 
   if (!booking) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
   const client = await buildClientBlock(booking.clientId, ctx.workspace._id);
@@ -78,14 +78,14 @@ export async function PATCH(req: Request, { params }: Params) {
   const { id } = await params;
 
   if (!isValidObjectId(id)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+    return NextResponse.json({ error: "invalid_id" }, { status: 400 });
   }
 
   const json = await req.json().catch(() => ({}));
   const parsed = bookingPatchSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.errors[0]?.message ?? "Invalid request" },
+      { error: "invalid_request" },
       { status: 400 }
     );
   }
@@ -109,7 +109,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   const existing = await Booking.findOne(existingFilter);
   if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
   // Edit authorization. Owners may edit any booking (incl. one whose team was
@@ -135,7 +135,7 @@ export async function PATCH(req: Request, { params }: Params) {
       team
     );
     if (!allowed) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
   }
 
@@ -151,11 +151,11 @@ export async function PATCH(req: Request, { params }: Params) {
       .select({ _id: 1, isActive: 1 })
       .lean();
     if (!target) {
-      return NextResponse.json({ error: "Team not found" }, { status: 404 });
+      return NextResponse.json({ error: "team_not_found" }, { status: 404 });
     }
     if (target.isActive === false) {
       return NextResponse.json(
-        { error: "Cannot assign a booking to a deactivated team" },
+        { error: "team_deactivated" },
         { status: 400 }
       );
     }
@@ -167,7 +167,7 @@ export async function PATCH(req: Request, { params }: Params) {
         { id: String(target._id), isActive: true }
       )
     ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     teamReassignment = {
       from: existing.teamId ? String(existing.teamId) : null,
@@ -184,9 +184,7 @@ export async function PATCH(req: Request, { params }: Params) {
     );
     if (!tzCheck.ok) {
       return NextResponse.json(
-        {
-          error: `Session ${tzCheck.sessionIndex} crosses midnight in the workspace timezone`,
-        },
+        { error: "session_crosses_midnight", params: { index: tzCheck.sessionIndex } },
         { status: 400 }
       );
     }
@@ -201,7 +199,7 @@ export async function PATCH(req: Request, { params }: Params) {
     existing.sessions.length > 1
   ) {
     return NextResponse.json(
-      { error: "Cannot change client on a multi-session booking" },
+      { error: "client_change_multi_session" },
       { status: 422 }
     );
   }
@@ -214,7 +212,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (incomingClientId && incomingClientId !== String(existing.clientId)) {
     if (!isValidObjectId(incomingClientId)) {
-      return NextResponse.json({ error: "Invalid clientId" }, { status: 400 });
+      return NextResponse.json({ error: "invalid_client_id" }, { status: 400 });
     }
     const newClient = await Client.findOne({
       _id: incomingClientId,
@@ -222,7 +220,7 @@ export async function PATCH(req: Request, { params }: Params) {
     }).lean();
     if (!newClient) {
       return NextResponse.json(
-        { error: "Client not found in this workspace" },
+        { error: "client_not_found_workspace" },
         { status: 404 }
       );
     }

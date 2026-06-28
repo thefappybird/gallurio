@@ -94,6 +94,16 @@ describe('getUnreadCount', () => {
   })
 })
 
+describe('params field', () => {
+  it('includes params in returned notification docs', async () => {
+    const params = { clientName: 'Test User' }
+    await Notification.create({ ...makeNotification(), params })
+
+    const results = await getRecentNotifications(String(WS_A), USER_A)
+    expect((results[0] as unknown as { params: typeof params }).params).toEqual(params)
+  })
+})
+
 describe('getRecentNotifications', () => {
   it('returns newest first up to the given limit', async () => {
     const dates = [

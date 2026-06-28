@@ -22,7 +22,7 @@ export async function createClientAction(input: ClientFormInput): Promise<Mutati
 
     const parsed = clientFormSchema.safeParse(input);
     if (!parsed.success) {
-      return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+      return { error: "invalid_input" };
     }
 
     await Client.create({
@@ -33,7 +33,7 @@ export async function createClientAction(input: ClientFormInput): Promise<Mutati
     revalidatePath("/clients");
     return { ok: true };
   } catch {
-    return { error: "Failed to create client" };
+    return { error: "client_create_failed" };
   }
 }
 
@@ -47,7 +47,7 @@ export async function updateClientAction(
 
     const parsed = clientFormSchema.safeParse(input);
     if (!parsed.success) {
-      return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+      return { error: "invalid_input" };
     }
 
     const updated = await Client.findOneAndUpdate(
@@ -56,12 +56,12 @@ export async function updateClientAction(
       { new: true }
     );
 
-    if (!updated) return { error: "Client not found" };
+    if (!updated) return { error: "client_not_found" };
 
     revalidatePath("/clients");
     return { ok: true };
   } catch {
-    return { error: "Failed to update client" };
+    return { error: "client_update_failed" };
   }
 }
 
@@ -76,12 +76,12 @@ export async function deactivateClientAction(clientId: string): Promise<Mutation
       { new: true }
     );
 
-    if (!updated) return { error: "Client not found" };
+    if (!updated) return { error: "client_not_found" };
 
     revalidatePath("/clients");
     return { ok: true };
   } catch {
-    return { error: "Failed to deactivate client" };
+    return { error: "client_deactivate_failed" };
   }
 }
 
@@ -96,12 +96,12 @@ export async function reactivateClientAction(clientId: string): Promise<Mutation
       { new: true }
     );
 
-    if (!updated) return { error: "Client not found" };
+    if (!updated) return { error: "client_not_found" };
 
     revalidatePath("/clients");
     return { ok: true };
   } catch {
-    return { error: "Failed to reactivate client" };
+    return { error: "client_reactivate_failed" };
   }
 }
 
@@ -117,7 +117,7 @@ export async function getClientBookingsAction(
       new Types.ObjectId(clientId)
     );
   } catch {
-    return { error: "Failed to load bookings" };
+    return { error: "bookings_load_failed" };
   }
 }
 
@@ -129,7 +129,7 @@ export async function getClientByIdAction(
     await connectDB();
 
     const c = await getClientById(ctx.workspace._id, clientId);
-    if (!c) return { error: "Client not found" };
+    if (!c) return { error: "client_not_found" };
 
     return {
       id: String(c._id),
@@ -146,6 +146,6 @@ export async function getClientByIdAction(
       currency: ctx.workspace.currency ?? "PHP",
     };
   } catch {
-    return { error: "Failed to load client" };
+    return { error: "client_load_failed" };
   }
 }

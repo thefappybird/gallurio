@@ -537,7 +537,7 @@ describe("PATCH /api/bookings/[id] — client reassignment", () => {
     );
     expect(res.status).toBe(422);
     const json = await res.json();
-    expect(json.error).toMatch(/multi-session/i);
+    expect(json.error).toBe("client_change_multi_session");
   });
 
   it("tenant isolation: rejects clientId from another workspace with 404", async () => {

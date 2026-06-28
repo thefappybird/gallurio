@@ -25,6 +25,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { createUsePuck } from "@measured/puck";
 import { ArrowUp, ArrowDown, ArrowUpFromLine, Copy, Trash2 } from "lucide-react";
 import { selectedBlockActions } from "@/lib/page-builder/moveBlockToRoot";
@@ -182,6 +183,7 @@ function ToolbarButton({ label, onClick, disabled, hidden, children }: ToolbarBu
 // ---------------------------------------------------------------------------
 
 export function BlockActionsToolbar() {
+  const t = useTranslations("app.pageBuilder.editor");
   const selectedItem = usePuckSel((s) => s.selectedItem);
   const itemSelector = usePuckSel((s) => s.appState?.ui?.itemSelector ?? null);
   const rootLen = usePuckSel((s) => s.appState?.data?.content?.length ?? 0);
@@ -214,12 +216,12 @@ export function BlockActionsToolbar() {
   if (top + TOOLBAR_H > anchor.canvasBottom) return null;
 
   const left = anchor.blockRight;
-  const label = (selectedItem as { type?: string }).type ?? "Block";
+  const label = (selectedItem as { type?: string }).type ?? t("blockActions.fallbackLabel");
 
   const toolbar = (
     <div
       role="toolbar"
-      aria-label={`${label} actions`}
+      aria-label={t("blockActions.actionsAria", { label })}
       style={{
         position: "fixed",
         top,
@@ -233,33 +235,33 @@ export function BlockActionsToolbar() {
       <span className="select-none px-1 text-xs font-medium text-muted-foreground">{label}</span>
       <div className="mx-1 h-4 w-px bg-border" />
       <ToolbarButton
-        label="Move up"
+        label={t("blockActions.moveUp")}
         disabled={!actions.moveUp}
         onClick={() => actions.moveUp && dispatch(actions.moveUp)}
       >
         <ArrowUp size={14} aria-hidden />
       </ToolbarButton>
       <ToolbarButton
-        label="Move down"
+        label={t("blockActions.moveDown")}
         onClick={() => dispatch(actions.moveDown)}
       >
         <ArrowDown size={14} aria-hidden />
       </ToolbarButton>
       <ToolbarButton
-        label="Move out"
+        label={t("blockActions.moveOut")}
         hidden={!actions.moveOut}
         onClick={() => actions.moveOut && dispatch(actions.moveOut)}
       >
         <ArrowUpFromLine size={14} aria-hidden />
       </ToolbarButton>
       <ToolbarButton
-        label="Duplicate"
+        label={t("blockActions.duplicate")}
         onClick={() => dispatch(actions.duplicate)}
       >
         <Copy size={14} aria-hidden />
       </ToolbarButton>
       <ToolbarButton
-        label="Delete"
+        label={t("blockActions.delete")}
         onClick={() => dispatch(actions.remove)}
       >
         <Trash2 size={14} aria-hidden />

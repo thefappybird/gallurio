@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "Filter by team",
         "all": "All teams"
+      },
+      "activityEntity": {
+        "booking": "booking",
+        "client": "client",
+        "inquiry": "inquiry",
+        "gallery": "gallery",
+        "transaction": "transaction",
+        "workspace": "workspace"
+      },
+      "activityAction": {
+        "created": "created",
+        "updated": "updated",
+        "deleted": "deleted",
+        "status_changed": "status changed",
+        "client_changed": "client changed"
       }
     },
     "calendar": {
@@ -1558,7 +1573,204 @@
         "photos": "Photos",
         "templates": "Templates",
         "guide": "Guide",
-        "templateSwitchedToast": "Template applied."
+        "templateSwitchedToast": "Template applied.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Editor controls",
+          "toggleBlocks": "Toggle blocks panel",
+          "toggleProperties": "Toggle properties panel",
+          "previewDevice": "Preview device",
+          "undoTitle": "Undo (Ctrl+Z)",
+          "redoTitle": "Redo (Ctrl+Shift+Z)"
+        },
+        "drafts": "Drafts",
+        "saveChanges": "Save changes",
+        "loadingDraft": "Loading draft",
+        "loadingDraftEllipsis": "Loading draft…",
+        "featuredPopup": "Featured Popup",
+        "draftNameLabel": "Draft name",
+        "draftsDialog": {
+          "title": "Your drafts",
+          "subtitle": "Pick a saved layout to load it onto the canvas. Loading replaces what you're editing now.",
+          "empty": "No drafts yet. Save your current work, or start a new one from a template.",
+          "active": "Active",
+          "addNew": "Add new draft",
+          "close": "Close",
+          "confirmTitle": "Delete this draft?",
+          "confirmBody": "This permanently removes the saved draft. This can't be undone.",
+          "confirmAction": "Delete draft",
+          "cancel": "Cancel",
+          "unsaved": "Unsaved",
+          "applyAria": "Apply {name}",
+          "deletingAria": "Deleting {name}",
+          "deleteAria": "Delete {name}"
+        },
+        "entryDialog": {
+          "title": "Welcome back",
+          "description": "Where would you like to start?",
+          "resumeTitle": "Continue where you left off",
+          "resumeHint": "Resume your most recent unsaved edits.",
+          "loadDraftTitle": "Load an existing draft",
+          "loadDraftHint": "Open one of your saved portfolio layouts.",
+          "scratchTitle": "Start from scratch",
+          "scratchHint": "Pick a template (or an empty canvas) and begin a new draft."
+        },
+        "templatePicker": {
+          "title": "Choose a template",
+          "subtitle": "Switching applies a starter layout, colors, and fonts. Your photos and collections stay; only the page layout and theme change.",
+          "welcomeTitle": "Pick a template to start",
+          "welcomeSubtitle": "Choose a starter layout to kick off your portfolio. You can switch templates any time.",
+          "current": "Current",
+          "use": "Use this template",
+          "scratch": "Start from scratch",
+          "cancel": "Cancel",
+          "switching": "Switching…",
+          "error": "Could not switch the template. Please try again."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Name",
+          "title": "Save your changes?",
+          "body": "You have unsaved changes on this draft. Switching now will lose them unless you save.",
+          "keepEditing": "Keep editing",
+          "discard": "Discard",
+          "save": "Save changes"
+        },
+        "blockActions": {
+          "fallbackLabel": "Block",
+          "actionsAria": "{label} actions",
+          "moveUp": "Move up",
+          "moveDown": "Move down",
+          "moveOut": "Move out",
+          "duplicate": "Duplicate",
+          "delete": "Delete"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Featured popup",
+          "popup": "Popup",
+          "background": "Background",
+          "border": "Border",
+          "borderColor": "Border color",
+          "corners": "Corners",
+          "titleStyles": "Title styles",
+          "headerText": "Header text",
+          "headerPlaceholder": "Defaults to collection name",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "alignAria": "Align {align}",
+          "font": "Font",
+          "themeFont": "Theme font",
+          "fontSize": "Font size",
+          "titleColor": "Title color",
+          "buttonStyles": "Button styles",
+          "buttonSize": "Button size",
+          "opacity": "Opacity",
+          "sampleCollection": "Sample Collection",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          }
+        },
+        "tour": {
+          "next": "Next",
+          "back": "Back",
+          "skip": "Skip Guide",
+          "steps": {
+            "welcome": {
+              "title": "Welcome to your portfolio editor",
+              "body": "Here's a quick, hands-on tour to get you up to speed. You can skip anytime."
+            },
+            "dragBlock": {
+              "title": "Drag a block onto your page",
+              "body": "The panel lists every available block. Drag any block from here onto the canvas to add it to your page."
+            },
+            "blockProps": {
+              "title": "Block properties live here",
+              "body": "Dropping a block selects it automatically — its settings appear in this panel."
+            },
+            "contentTab": {
+              "title": "Content: the block's text and media",
+              "body": "The Content tab is where you edit the block's actual text, images, and links."
+            },
+            "designTab": {
+              "title": "Design: colors, borders, and corners",
+              "body": "The Design tab controls typography, background color, borders, shadows, and animations."
+            },
+            "layoutTab": {
+              "title": "Layout: size, spacing, and position",
+              "body": "The Layout tab controls gap, min-height, alignment, and grid placement."
+            },
+            "switchPages": {
+              "title": "Switch between pages",
+              "body": "Switch between the different parts of your portfolio website."
+            },
+            "openNav": {
+              "title": "Open Navigation",
+              "body": "Click Navigation to set up your site's header — brand, logo, menu links, and styling."
+            },
+            "navSetup": {
+              "title": "Navigation · Setup",
+              "body": "The Setup tab is where you set your brand text, navbar size, logo, and menu links."
+            },
+            "logo": {
+              "title": "Your logo lives here",
+              "body": "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page."
+            },
+            "navDesign": {
+              "title": "Navigation · Design",
+              "body": "The Design tab controls header colors, borders, and typography for your nav links."
+            },
+            "contactForm": {
+              "title": "Your inquiry form",
+              "body": "Click Contact Form to set up the form visitors use to reach you."
+            },
+            "contactSetup": {
+              "title": "Contact · Setup",
+              "body": "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed."
+            },
+            "contactDesign": {
+              "title": "Contact · Design",
+              "body": "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look."
+            },
+            "photos": {
+              "title": "Upload and organize photos",
+              "body": "Open Photos to create collections and upload images. Gallery blocks pull from a collection."
+            },
+            "theme": {
+              "title": "Pick your colors and fonts",
+              "body": "Theme controls your five brand colors and typography. Every block's style options use this palette."
+            },
+            "preview": {
+              "title": "Preview your site at any screen size",
+              "body": "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop."
+            },
+            "publish": {
+              "title": "Publish to go live",
+              "body": "When you're happy with your changes, click Publish to push them to your public page."
+            },
+            "draftsStep": {
+              "title": "Save drafts and switch versions",
+              "body": "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button."
+            }
+          },
+          "finish": "Finish",
+          "dontShow": "Don't show again",
+          "tryIt": "Try it to continue to the next step",
+          "progress": "{n} of {total}",
+          "loading": "Loading",
+          "skipConfirm": {
+            "heading": "Skip the guide?",
+            "body": "You'll lose your place in the walkthrough. You can restart it anytime.",
+            "back": "Back",
+            "dontShow": "Don't show again",
+            "skip": "Skip Guide"
+          }
+        }
       },
       "wizard": {
         "title": "Let's build your portfolio",
@@ -1670,6 +1882,75 @@
           }
         }
       }
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "not_authenticated": "You're not signed in. Please sign in and try again.",
+      "no_active_workspace": "No active workspace. Pick a workspace and try again.",
+      "workspace_not_found": "Workspace not found.",
+      "owner_only": "Only the workspace owner can do this.",
+      "finish_onboarding": "Finish onboarding before changing workspace settings.",
+      "invalid_input": "Please check the form and try again.",
+      "rate_limited": "Too many attempts. Try again in {seconds} seconds.",
+      "user_not_found": "User not found.",
+      "url_taken": "That URL is already taken — try another.",
+      "name_update_failed": "Couldn't update your name. Please try again.",
+      "mfa_start_failed": "Couldn't start authenticator setup. Please try again.",
+      "code_six_digits": "Enter the 6-digit code.",
+      "enrollment_expired": "Setup session expired. Start again.",
+      "invalid_code": "Invalid code. Please try again.",
+      "mfa_disable_failed": "Couldn't turn off two-factor. Please try again.",
+      "passwords_mismatch": "Passwords don't match.",
+      "current_password_incorrect": "Your current password is incorrect.",
+      "password_verify_failed": "Couldn't verify your current password. Please try again.",
+      "password_update_failed": "Couldn't update your password. Please try again.",
+      "avatar_update_failed": "Couldn't update your photo. Please try again.",
+      "email_send_failed": "Couldn't send the email. Please try again.",
+      "onboarding_no_active_workspace": "No active workspace — restart onboarding.",
+      "client_create_failed": "Couldn't create the client. Please try again.",
+      "client_not_found": "Client not found.",
+      "client_update_failed": "Couldn't update the client. Please try again.",
+      "client_deactivate_failed": "Couldn't deactivate the client. Please try again.",
+      "client_has_active_bookings": "This client has active bookings and can't be deactivated.",
+      "client_reactivate_failed": "Couldn't reactivate the client. Please try again.",
+      "bookings_load_failed": "Couldn't load bookings. Please try again.",
+      "client_load_failed": "Couldn't load the client. Please try again.",
+      "invalid_id": "Invalid request.",
+      "not_found": "Not found.",
+      "forbidden": "You don't have access to do that.",
+      "team_not_found": "Team not found.",
+      "team_deactivated": "You can't assign a booking to a deactivated team.",
+      "session_crosses_midnight": "Session {index} crosses midnight in the workspace time zone.",
+      "client_change_multi_session": "You can't change the client on a multi-session booking.",
+      "invalid_client_id": "Invalid client.",
+      "client_not_found_workspace": "Client not found in this workspace.",
+      "invalid_request": "Invalid request.",
+      "export_too_large": "Too many bookings to export. Narrow your filters and try again.",
+      "free_plan_no_checkout": "The free plan doesn't require checkout.",
+      "paddle_price_not_configured": "This plan isn't available right now. Please contact support.",
+      "no_verified_email": "Add and verify an email before subscribing.",
+      "checkout_init_failed": "Couldn't start checkout. Please try again.",
+      "locked": "This item is locked and can't be edited right now.",
+      "conflict": "That time conflicts with another booking.",
+      "edit_sessions_failed": "Couldn't update the sessions. Please try again.",
+      "session_index_out_of_range": "That session no longer exists.",
+      "invalid": "Please check your input and try again.",
+      "field_required": "This field is required.",
+      "name_taken": "A draft with this name already exists.",
+      "draft_limit_reached": "You've reached your draft limit.",
+      "draft_save_failed": "Couldn't save the draft. Please try again.",
+      "draft_load_failed": "Couldn't load the draft. Please try again.",
+      "draft_delete_failed": "Couldn't delete the draft. Please try again.",
+      "theme_delete_failed": "Couldn't delete the theme. Please try again.",
+      "theme_name_exists": "A theme with this name already exists.",
+      "max_themes_reached": "You've reached your theme limit ({count}).",
+      "payload_too_large": "That's too large to save. Please reduce the size and try again.",
+      "collection_load_failed": "Couldn't load the collection. Please try again.",
+      "collection_rename_failed": "Couldn't rename the collection. Please try again.",
+      "cover_set_failed": "Couldn't set the cover. Please try again.",
+      "order_save_failed": "Couldn't save the new order. Please try again.",
+      "photo_remove_failed": "Couldn't remove the photo. Please try again.",
+      "photo_add_failed": "Couldn't add the photo. Please try again."
     }
   },
   "common": {

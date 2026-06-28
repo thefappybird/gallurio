@@ -1,12 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  render,
   screen,
   fireEvent,
   act,
   cleanup,
 } from "@testing-library/react";
-import { SpotlightGuide, type SpotlightStep } from "./SpotlightGuide";
+import { renderWithProviders } from "@/test-utils/render";
+import {
+  SpotlightGuide,
+  calcTooltipPosition,
+  type SpotlightStep,
+} from "./SpotlightGuide";
+
+// SpotlightGuide pulls nav chrome (Next/Back/Skip/progress) from the guide i18n
+// namespace, so it renders inside an intl provider (renderWithProviders). The
+// step fixtures below omit `slug`, so their literal title/body render as-is. The
+// rtl direction is stubbed to LTR; RTL is covered directly via calcTooltipPosition.
+vi.mock("@/lib/i18n/rtl", () => ({
+  isRtl: (locale: string) => locale === "ar",
+  useIsRtl: () => false,
+}));
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -51,7 +64,7 @@ const defaultProps = {
 
 function renderGuide(overrides: Partial<typeof defaultProps> = {}) {
   const props = { ...defaultProps, ...overrides };
-  return render(<SpotlightGuide {...props} />);
+  return renderWithProviders(<SpotlightGuide {...props} />);
 }
 
 /** Inject an anchor element into document.body and return a cleanup fn. */
@@ -391,7 +404,7 @@ describe("SpotlightGuide", () => {
       passthrough: true,
     };
 
-    render(
+    renderWithProviders(
       <SpotlightGuide
         open={true}
         steps={[twoAnchorStep]}
@@ -445,5 +458,20 @@ describe("SpotlightGuide", () => {
     ).toBeInTheDocument();
 
     removeAnchor();
+  });
+});
+
+describe("calcTooltipPosition RTL", () => {
+  // A centered anchor with room on both sides, so "left" and "right" resolve to
+  // distinct x positions and a swap is observable.
+  const rect = { top: 380, left: 500, width: 100, height: 40, bottom: 420, right: 600 };
+
+  it("mirrors a 'left'-placed tooltip to the right side in RTL", () => {
+    const ltr = calcTooltipPosition(rect, "left", 1280, 800);
+    const rtlRight = calcTooltipPosition(rect, "right", 1280, 800);
+    // In RTL, a step that prefers "left" should land where "right" would in LTR.
+    const rtl = calcTooltipPosition(rect, "left", 1280, 800, true);
+    expect(rtl.left).toBe(rtlRight.left);
+    expect(rtl.left).not.toBe(ltr.left);
   });
 });

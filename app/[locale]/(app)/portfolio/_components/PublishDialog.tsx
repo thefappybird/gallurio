@@ -56,7 +56,7 @@ export function PublishDialog({ open, onOpenChange, onConfirm, publicUrl }: Prop
           <span className="min-w-0 flex-1 truncate text-muted-foreground">{publicUrl}</span>
           <Button type="button" size="sm" variant="ghost" className="shrink-0" onClick={copyLink} aria-label={t("copyLink")}>
             {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
-            <span className="ml-1">{copied ? t("copied") : t("copyLink")}</span>
+            <span className="ms-1">{copied ? t("copied") : t("copyLink")}</span>
           </Button>
         </div>
 

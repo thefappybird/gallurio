@@ -223,7 +223,7 @@ describe("AccountPanel — avatar upload", () => {
   });
 
   it("shows an inline error when removing the avatar fails", async () => {
-    mockUpdateAvatar.mockResolvedValue({ error: "Not authenticated" });
+    mockUpdateAvatar.mockResolvedValue({ error: "not_authenticated" });
 
     renderWithProviders(
       <AccountPanel
@@ -236,7 +236,7 @@ describe("AccountPanel — avatar upload", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Not authenticated")).toBeInTheDocument();
+      expect(screen.getByText("You're not signed in. Please sign in and try again.")).toBeInTheDocument();
     });
   });
 
@@ -247,9 +247,7 @@ describe("AccountPanel — avatar upload", () => {
         "gallurio/ws/avatars/new",
       ),
     );
-    mockUpdateAvatar.mockResolvedValue({
-      error: "Failed to update photo. Please try again.",
-    });
+    mockUpdateAvatar.mockResolvedValue({ error: "avatar_update_failed" });
 
     renderWithProviders(
       <AccountPanel
@@ -267,7 +265,7 @@ describe("AccountPanel — avatar upload", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Failed to update photo. Please try again."),
+        screen.getByText("Couldn't update your photo. Please try again."),
       ).toBeInTheDocument();
     });
 
@@ -282,9 +280,7 @@ describe("AccountPanel — avatar upload", () => {
   });
 
   it("restores the prior avatar when persistence fails after Remove", async () => {
-    mockUpdateAvatar.mockResolvedValue({
-      error: "Failed to update photo. Please try again.",
-    });
+    mockUpdateAvatar.mockResolvedValue({ error: "avatar_update_failed" });
 
     renderWithProviders(
       <AccountPanel
@@ -298,7 +294,7 @@ describe("AccountPanel — avatar upload", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Failed to update photo. Please try again."),
+        screen.getByText("Couldn't update your photo. Please try again."),
       ).toBeInTheDocument();
     });
 

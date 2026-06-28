@@ -43,13 +43,13 @@ describe("ClientFormModal", () => {
 
   it("shows inline error on action failure", async () => {
     const { createClientAction } = await import("@/lib/actions/clients");
-    vi.mocked(createClientAction).mockResolvedValueOnce({ error: "Failed to create client" });
+    vi.mocked(createClientAction).mockResolvedValueOnce({ error: "client_create_failed" });
 
     renderWithProviders(<ClientFormModal {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText(/maria santos/i), { target: { value: "Test Client" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
 
-    await waitFor(() => expect(screen.getByText("Failed to create client")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Couldn't create the client. Please try again.")).toBeInTheDocument());
   });
 
   it("shows name validation error on empty submit", async () => {

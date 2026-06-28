@@ -199,7 +199,7 @@ export function MiniBookingCalendar({
                 <span className="text-[11px] leading-none">{cell.day}</span>
                 {hasBookings ? (
                   <span
-                    className={`absolute right-0.5 top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[8px] font-semibold leading-none transition-colors ${
+                    className={`absolute end-0.5 top-0.5 inline-flex h-3.5 min-w-3.5 items-center justify-center px-0.5 text-[8px] font-semibold leading-none transition-colors ${
                       isToday
                         ? "bg-brand-foreground text-brand"
                         : "bg-brand text-brand-foreground group-hover/cell:bg-background group-hover/cell:text-foreground"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { useActionError } from "@/lib/i18n/actionError";
 import { PencilIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateInquiryPhoneAction } from "@/app/[locale]/(app)/inquiries/_actions";
@@ -31,6 +32,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact, status, readOnly = false, onInquiryChanged }: Props) {
   const t = useTranslations("app.inquiries.detail.clientInfo");
   const tp = useTranslations("app.inquiries.preferred");
+  const errMsg = useActionError();
   const preferredLabel = (() => {
     try { return tp(preferredContact); } catch { return preferredContact; }
   })();
@@ -45,7 +47,7 @@ export function ClientInfoCard({ inquiryId, name, email, phone, preferredContact
     const res = await updateInquiryPhoneAction(inquiryId, draftPhone);
     setSaving(false);
     if ("error" in res) {
-      toast.error(res.error);
+      toast.error(errMsg(res.error));
       return;
     }
     toast.success(t("savedToast"));

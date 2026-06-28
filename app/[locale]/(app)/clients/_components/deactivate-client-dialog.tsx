@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { deactivateClientAction } from "@/lib/actions/clients";
 import { useGuardedAction } from "@/hooks/use-guarded-action";
+import { useActionError } from "@/lib/i18n/actionError";
 
 type Props = {
   clientId: string;
@@ -28,6 +29,7 @@ export function DeactivateClientDialog({
   onSuccess,
 }: Props) {
   const t = useTranslations("app.clients");
+  const errMsg = useActionError();
 
   const { loading, trigger: triggerDeactivate } = useGuardedAction(
     async () => {
@@ -35,7 +37,7 @@ export function DeactivateClientDialog({
       const result = await deactivateClientAction(clientId);
       if ("error" in result) {
         // Error surfaced via toast; keep the dialog open so the user can retry.
-        toast.error(result.error, { id: id_toast });
+        toast.error(errMsg(result.error), { id: id_toast });
         return;
       }
       toast.success(t("form.updateSuccess"), { id: id_toast });

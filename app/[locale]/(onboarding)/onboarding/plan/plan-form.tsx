@@ -11,6 +11,7 @@ import type { OnboardingStep, PlanTier } from "@/lib/db/models";
 import { selectFreePlanAction } from "@/lib/actions/onboarding";
 import { devActivatePlanAction } from "@/lib/actions/dev";
 import { PLAN_CATALOG } from "@/lib/paddle/plans";
+import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { PlanIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export function PlanStepForm({
 }) {
   const t = useTranslations("onboarding.plan");
   const tPlans = useTranslations("plans");
+  const errMsg = useActionError();
   const router = useRouter();
   const [selected, setSelected] = useState<PlanTier>(
     currentPlan === "pro" ? "pro" : currentPlan === "starter" ? "starter" : "free"
@@ -73,7 +75,7 @@ export function PlanStepForm({
       startTransition(async () => {
         const result = await selectFreePlanAction();
         if (result?.error) {
-          toast.error(result.error);
+          toast.error(errMsg(result.error));
           return;
         }
         router.push("/onboarding/done");
@@ -112,9 +114,10 @@ export function PlanStepForm({
         customData: { workspaceId: data.workspaceId },
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t("checkoutFailed");
-      setCheckoutError(msg);
-      toast.error(msg);
+      const rawMsg = err instanceof Error ? err.message : "checkout_init_failed";
+      const displayMsg = errMsg(rawMsg);
+      setCheckoutError(displayMsg);
+      toast.error(displayMsg);
     } finally {
       setLoading(false);
     }
@@ -125,7 +128,7 @@ export function PlanStepForm({
     startTransition(async () => {
       const result = await devActivatePlanAction(selected);
       if (result?.error) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error));
         return;
       }
       router.push("/onboarding/done");

@@ -61,7 +61,7 @@ describe("DeactivateClientDialog", () => {
   });
 
   it("on server error surfaces a toast, keeps the dialog open, and does not call onSuccess", async () => {
-    vi.mocked(deactivateClientAction).mockResolvedValue({ error: "has active bookings" });
+    vi.mocked(deactivateClientAction).mockResolvedValue({ error: "client_has_active_bookings" });
     const onSuccess = vi.fn();
     const onOpenChange = vi.fn();
     renderWithProviders(
@@ -76,9 +76,10 @@ describe("DeactivateClientDialog", () => {
     await waitFor(() => expect(deactivateClientAction).toHaveBeenCalledWith("c1"));
     // No throw / unhandled rejection: failure is handled via toast.
     await waitFor(() =>
-      expect(vi.mocked(toast.error)).toHaveBeenCalledWith("has active bookings", {
-        id: "toast-id",
-      })
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(
+        "This client has active bookings and can't be deactivated.",
+        { id: "toast-id" }
+      )
     );
     expect(onSuccess).not.toHaveBeenCalled();
     // Dialog stays open so the user can retry — onOpenChange(false) not called.

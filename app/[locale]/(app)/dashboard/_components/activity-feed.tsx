@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoHint } from "@/components/ui/info-hint";
 import type { ActivityLogDoc } from "@/lib/db/models";
 import { PagedList } from "./paged-list";
+import { formatRelativeTime } from "@/lib/i18n/relativeTime";
 
 type Props = {
   activity: ActivityLogDoc[];
@@ -12,18 +13,6 @@ type Props = {
   title: string;
   empty: string;
 };
-
-function formatRelative(date: Date, locale: string) {
-  const diffMs = Date.now() - date.getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
-}
 
 export function ActivityFeed({ activity, locale, title, empty }: Props) {
   const t = useTranslations("app.dashboard");
@@ -45,10 +34,10 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
                 className="flex items-center justify-between gap-3 py-2 text-xs"
               >
                 <span className="capitalize text-foreground">
-                  {a.entity} {a.action.replace("_", " ")}
+                  {t(`activityEntity.${a.entity}`)} {t(`activityAction.${a.action}`)}
                 </span>
                 <span className="shrink-0 text-muted-foreground">
-                  {formatRelative(new Date(a.createdAt as unknown as Date), locale)}
+                  {formatRelativeTime(new Date(a.createdAt as unknown as Date), locale)}
                 </span>
               </li>
             ))}

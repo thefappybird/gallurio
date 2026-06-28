@@ -19,7 +19,8 @@ RTL-correct.
 - **Phased by surface**, committed per phase.
 - **Deferred surfaces (out of scope):** Dashboard, Portfolio editor + public
   portfolio (`/w/[orgSlug]`), Onboarding, Landing/marketing — these are being
-  overhauled separately.
+  overhauled separately. (Dashboard + Portfolio editor owner chrome were
+  completed in a follow-up — see "Phase 8" below.)
 
 ## Changes by phase
 
@@ -43,6 +44,37 @@ RTL-correct.
   toolbar, CSV import, wizard steps.
 - **Phase 7 — Inquiries + detail:** table, back-arrow mirror, cards; the
   inquiries calendar reuses the (already-fixed) `BookingCalendar`.
+- **Phase 8 — Dashboard + Portfolio editor (owner chrome, follow-up):**
+  - *Translations:* `messages/ar.json` `app.dashboard` had drifted from `en`
+    (the dashboard-enhancement PR added 64 keys — `tabs`, `dateFilter`,
+    `pagination`, `portfolio.*`, `hints.*`, `totalLabel`, `team` — only to
+    en/fil/ms/id, and `ar` kept 6 stale keys). Reconciled `ar`; the Arabic
+    dashboard no longer renders raw key paths. Added keyed `activityEntity` /
+    `activityAction` labels in **all 5** locales so the activity feed stops
+    leaking raw DB enums ("booking updated"). Relative timestamps keep their
+    compact English-ish format (`2d ago`) — a deliberate, separate follow-up.
+  - *Dashboard RTL:* the page already inherits `dir=rtl` and uses logical
+    utilities, so it mostly flips for free. Charts (recharts) **keep their LTR
+    plot orientation by design** (time/value reads left→right); only the
+    surrounding chrome flips. Fixed the mini-calendar day-count badge to anchor
+    `end-0.5`. Chart-container nudge paddings (`pl-1`/`pr-2`) intentionally stay
+    physical to align with the LTR plot.
+  - *Portfolio editor RTL:* Puck's grid mirrors automatically under `dir=rtl`
+    (named grid areas + logical CSS), so the component drawer and properties
+    panel swap sides with no override — the custom header tabs/buttons were
+    already translated and flip correctly. Remaining direction-sensitive chrome
+    fixed: side-panel dialogs (`border-l`→`border-s`), publish copy-link gap and
+    entry/template option alignment (→ logical), the draft loading overlay
+    (`left`→`insetInlineStart`), and `SpotlightGuide` tooltip placement (swaps
+    left/right in RTL — unit-tested via the now-exported `calcTooltipPosition`).
+    Public portfolio + Puck block/canvas content remain out of scope.
+- **Bundled fix — authenticated marketing-root redirect:** visiting `/` (any
+  locale) while signed in rendered the landing page instead of the app. The root
+  page now reads the session and redirects to the first accessible surface
+  (owner→`/dashboard`, member→`/bookings`, no workspace→`/onboarding`) via the
+  existing `defaultPostAuthPath`. `proxy.ts` routes every locale root through
+  authkit (so the page can read the session) while keeping them in
+  `UNAUTHENTICATED_PATHS`, so anonymous visitors still see the landing page.
 
 ## Cross-cutting: middleware locale header (hard-reload fix)
 
@@ -81,7 +113,11 @@ hard reload of `/ar` and `/id` renders translated chrome).
 
 ## Deferred (follow-up, not in this PR)
 
-Once the deferred surfaces (Dashboard, Portfolio, Onboarding, Landing) are
-RTL-ready, a final change flips `localeForCountry` Gulf cases → `ar`, adds an
-Arabic `EMAIL_COPY` catalog (the `emailLocale` cast must widen to include `ar`),
-and updates `lib/i18n/localeForCountry.test.ts`.
+Still deferred: public portfolio (`/w/[orgSlug]`) + Puck block/canvas content,
+Onboarding, Landing/marketing, and the activity-feed relative-timestamp format.
+Once the remaining surfaces are RTL-ready, a final change flips
+`localeForCountry` Gulf cases → `ar`, adds an Arabic `EMAIL_COPY` catalog (the
+`emailLocale` cast must widen to include `ar`), and updates
+`lib/i18n/localeForCountry.test.ts`.
+
+Dashboard + Portfolio editor owner chrome are now done (Phase 8 above).

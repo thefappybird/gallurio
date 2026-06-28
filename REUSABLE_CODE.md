@@ -78,6 +78,7 @@ Composed, app-specific shared components.
 | `lib/page-builder/brandKitContext.tsx` | `useBrandKit` | `() => PortfolioBrandKit` | Read current workspace brand kit (throws outside provider) |
 | `hooks/useSlugAvailability.ts` | `useSlugAvailability`, `SlugStatus` | `(slug: string, currentSlug?: string) => { status: SlugStatus }` | Debounced (400ms) slug availability check via `checkSlugAvailabilityAction`; stale-response-safe via monotonic seq counter; statuses: idle/checking/available/taken/invalid; idle when slug is empty or equals currentSlug (own workspace) |
 | `lib/i18n/rtl.ts` | `isRtl`, `useIsRtl` | `isRtl(locale: string) => boolean` / `useIsRtl() => boolean` | Single source of truth for RTL locale detection. `isRtl` is pure (use in Server Components, e.g. the root layout `dir`); `useIsRtl` is the client hook reading the active request locale. Keep the `"ar"` literal here only. |
+| `lib/i18n/relativeTime.ts` | `formatRelativeTime` | `(date: Date \| string, locale: string) => string` | Locale-aware relative time via `Intl.RelativeTimeFormat(locale, {numeric:'auto'})`. Buckets: <60 s → seconds, <60 m → minutes, <24 h → hours, <7 d → days; ≥7 d falls back to `toLocaleDateString(locale, {month:'short', day:'numeric'})`. Use this everywhere instead of hand-rolled formatters. |
 
 ## 4. Helpers / utilities
 

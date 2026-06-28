@@ -13,21 +13,7 @@ import {
 import { useNotifications } from '@/lib/hooks/useNotifications'
 import type { SerializedNotification } from '@/components/notifications/NotificationProvider'
 import { useSidebar } from '@/components/ui/sidebar'
-
-// ─── Relative time helper ────────────────────────────────────────────────────
-
-function relativeTime(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime()
-  const seconds = Math.floor(diff / 1000)
-  if (seconds < 60) return 'just now'
-  const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d ago`
-  return new Date(isoDate).toLocaleDateString()
-}
+import { formatRelativeTime } from '@/lib/i18n/relativeTime'
 
 // ─── Per-type icon ────────────────────────────────────────────────────────────
 
@@ -43,13 +29,22 @@ function NotificationIcon({ type }: { type: string }) {
 
 function NotificationRow({
   notification,
+  locale,
   onClose,
 }: {
   notification: SerializedNotification
+  locale: string
   onClose: () => void
 }) {
   const { markRead } = useNotifications()
   const router = useRouter()
+  const tt = useTranslations('app.notifications.types')
+
+  const hasParams = !!notification.params && Object.keys(notification.params).length > 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const title = hasParams ? (tt as any)(`${notification.type}.title`, notification.params) as string : notification.title
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = hasParams ? (tt as any)(`${notification.type}.body`, notification.params) as string : notification.body
 
   function handleClick() {
     if (!notification.read) markRead(notification._id)
@@ -79,15 +74,15 @@ function NotificationRow({
             !notification.read ? 'font-semibold' : 'font-normal',
           ].join(' ')}
         >
-          {notification.title}
+          {title}
         </span>
         <span className="line-clamp-2 text-xs text-muted-foreground">
-          {notification.body}
+          {body}
         </span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {relativeTime(notification.createdAt)}
+          {formatRelativeTime(notification.createdAt, locale)}
         </span>
         {!notification.read && (
           <span
@@ -151,7 +146,7 @@ function NotificationPanelContent({ onClose }: { onClose: () => void }) {
           <ul role="list" className="divide-y divide-border">
             {displayList.map((n) => (
               <li key={n._id}>
-                <NotificationRow notification={n} onClose={onClose} />
+                <NotificationRow notification={n} locale={locale} onClose={onClose} />
               </li>
             ))}
           </ul>

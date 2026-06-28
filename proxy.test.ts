@@ -29,6 +29,20 @@ describe("proxy", () => {
     expect(intlMiddlewareMock).not.toHaveBeenCalled();
   });
 
+  it("routes the marketing root (any locale) through AuthKit so the landing page can read the session", async () => {
+    const { proxy } = await import("./proxy");
+    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar"]) {
+      authMiddlewareMock.mockClear();
+      intlMiddlewareMock.mockClear();
+      await proxy(new NextRequest(url));
+      // AuthKit must run so withAuth() works in the page; intl runs after for
+      // locale routing. The mock returns next() (not a redirect), so anonymous
+      // visitors are NOT bounced to sign-in — the root stays public.
+      expect(authMiddlewareMock, `authkit on ${url}`).toHaveBeenCalledTimes(1);
+      expect(intlMiddlewareMock, `intl on ${url}`).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it("does not run AuthKit on public localized pages", async () => {
     const { proxy } = await import("./proxy");
     const req = new NextRequest("http://localhost/en/sign-in");

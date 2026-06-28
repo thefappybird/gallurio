@@ -4,9 +4,9 @@ import { useRef, useState, useTransition, useOptimistic } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
-import { toastActionResult } from "@/lib/utils/handleActionResult";
 import {
   publicPageSettingsSchema,
   type PublicPageSettingsInput,
@@ -36,6 +36,7 @@ export function PublicPageSettingsForm({
   locale: string;
 }) {
   const t = useTranslations("app.settings.publicPage");
+  const errMsg = useActionError();
   const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -77,7 +78,7 @@ export function PublicPageSettingsForm({
       const result = await togglePublicPagePublishedAction(next);
       if (result?.error) {
         setOptimisticPublishedAt(optimisticPublishedAt);
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
       } else {
         toast.success(t("visibilityUpdatedToast"));
       }
@@ -86,7 +87,11 @@ export function PublicPageSettingsForm({
 
   async function onSubmit(data: PublicPageSettingsInput) {
     const result = await updatePublicPageSettingsAction(data);
-    if (!toastActionResult(result, t("savedToast"))) return;
+    if (!result?.ok) {
+      toast.error(errMsg(result?.error, result?.params));
+      return;
+    }
+    toast.success(t("savedToast"));
     reset(data);
   }
 

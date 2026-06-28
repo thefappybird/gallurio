@@ -295,7 +295,7 @@ describe("GET /api/bookings/export", () => {
       const res = await callExport();
       expect(res.status).toBe(413);
       const body = await res.json();
-      expect(body.error).toMatch(/Too many bookings/);
+      expect(body.error).toBe("export_too_large");
     } finally {
       spy.mockRestore();
     }

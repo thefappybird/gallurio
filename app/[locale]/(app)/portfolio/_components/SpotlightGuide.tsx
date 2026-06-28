@@ -9,14 +9,22 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircleIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useElementRect, type ElementRect } from "./useElementRect";
+import { useIsRtl } from "@/lib/i18n/rtl";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type SpotlightStep = {
   id: string;
+  /**
+   * i18n key suffix used to look up step.title / step.body in the guide
+   * namespace. When omitted (e.g. ad-hoc test fixtures), the literal
+   * `title`/`body` fields are rendered as-is.
+   */
+  slug?: string;
   anchorId?: string;
   /**
    * Optional second region highlighted alongside the primary anchor.
@@ -56,25 +64,6 @@ export type SpotlightGuideProps = {
   queryRoot?: Element | null;
 };
 
-// ─── Labels ─────────────────────────────────────────────────────────────────
-
-const L = {
-  back: "Back",
-  next: "Next",
-  finish: "Finish",
-  skip: "Skip Guide",
-  dontShow: "Don't show again",
-  tryIt: "Try it to continue to the next step",
-  progress: (n: number, total: number) => `${n} of ${total}`,
-  skipConfirm: {
-    heading: "Skip the guide?",
-    body: "You'll lose your place in the walkthrough. You can restart it anytime.",
-    back: "Back",
-    dontShow: "Don't show again",
-    skip: "Skip Guide",
-  },
-};
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 /** Padding (px) added around the anchor element's bounding rect for the cutout. */
@@ -93,12 +82,21 @@ type Position = { top: number; left: number };
  * Calculate the tooltip's top/left so it sits next to the cutout rect
  * on the preferred side, clamped to stay within the viewport.
  */
-function calcTooltipPosition(
+export function calcTooltipPosition(
   rect: ElementRect,
   placement: SpotlightStep["placement"] = "bottom",
   vpW: number,
-  vpH: number
+  vpH: number,
+  isRtl = false
 ): Position {
+  // The side a step prefers ("left"/"right") is direction-relative: in RTL the
+  // visual sides swap. The top/left math below works in viewport coords, so
+  // swapping the preference is all that's needed to mirror the tooltip.
+  if (isRtl) {
+    if (placement === "left") placement = "right";
+    else if (placement === "right") placement = "left";
+  }
+
   const pad = CUTOUT_PADDING;
   const margin = VIEWPORT_MARGIN;
   const w = TOOLTIP_W;
@@ -313,6 +311,7 @@ type SkipConfirmModalProps = {
 };
 
 function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps) {
+  const tg = useTranslations("app.pageBuilder.editor.tour");
   const backRef = useRef<HTMLButtonElement | null>(null);
 
   // Focus the Back button when the modal mounts
@@ -348,7 +347,7 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={L.skipConfirm.heading}
+        aria-label={tg("skipConfirm.heading")}
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
@@ -365,10 +364,10 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <h2 className="font-heading text-base font-medium leading-none text-foreground">
-              {L.skipConfirm.heading}
+              {tg("skipConfirm.heading")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {L.skipConfirm.body}
+              {tg("skipConfirm.body")}
             </p>
           </div>
         </div>
@@ -381,7 +380,7 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
             size="sm"
             onClick={onBack}
           >
-            {L.skipConfirm.back}
+            {tg("skipConfirm.back")}
           </Button>
           <Button
             type="button"
@@ -389,10 +388,10 @@ function SkipConfirmModal({ onBack, onDontShow, onSkip }: SkipConfirmModalProps)
             size="sm"
             onClick={onDontShow}
           >
-            {L.skipConfirm.dontShow}
+            {tg("skipConfirm.dontShow")}
           </Button>
           <Button type="button" size="sm" onClick={onSkip}>
-            {L.skipConfirm.skip}
+            {tg("skipConfirm.skip")}
           </Button>
         </div>
       </div>
@@ -432,6 +431,7 @@ function TooltipCard({
   onKeyDown,
   cardRef,
 }: TooltipCardProps) {
+  const tg = useTranslations("app.pageBuilder.editor.tour");
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === total - 1;
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
@@ -446,7 +446,7 @@ function TooltipCard({
       ref={cardRef}
       role="dialog"
       aria-modal="true"
-      aria-label={step.title}
+      aria-label={step.slug ? tg(`steps.${step.slug}.title`) : step.title}
       aria-busy={loading || undefined}
       tabIndex={-1}
       onKeyDown={onKeyDown}
@@ -467,10 +467,10 @@ function TooltipCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">
-            {L.progress(stepIndex + 1, total)}
+            {tg("progress", { n: stepIndex + 1, total })}
           </span>
           <p className="text-sm font-semibold leading-snug text-foreground">
-            {step.title}
+            {step.slug ? tg(`steps.${step.slug}.title`) : step.title}
           </p>
         </div>
       </div>
@@ -481,7 +481,7 @@ function TooltipCard({
         // a half-positioned state. Revealed once the anchor resolves.
         <div
           role="status"
-          aria-label="Loading"
+          aria-label={tg("loading")}
           className="flex items-center justify-center py-8"
         >
           <span
@@ -493,7 +493,7 @@ function TooltipCard({
         <>
           {/* Body */}
           <p className="text-sm leading-relaxed text-muted-foreground">
-            {step.body}
+            {step.slug ? tg(`steps.${step.slug}.body`) : step.body}
           </p>
 
           {/* Gated hint — visually prominent so users notice the call to action */}
@@ -504,7 +504,7 @@ function TooltipCard({
                 aria-hidden
                 className="size-2 shrink-0 animate-pulse rounded-full bg-[color:var(--accent)]"
               />
-              <p className="text-xs font-semibold text-foreground">{L.tryIt}</p>
+              <p className="text-xs font-semibold text-foreground">{tg("tryIt")}</p>
             </div>
           )}
 
@@ -542,7 +542,7 @@ function TooltipCard({
                   className="h-7 px-3 text-xs"
                   onClick={onBack}
                 >
-                  {L.back}
+                  {tg("back")}
                 </Button>
               )}
               <Button
@@ -552,7 +552,7 @@ function TooltipCard({
                 className="h-7 px-2 text-xs text-muted-foreground"
                 onClick={() => setShowSkipConfirm(true)}
               >
-                {L.skip}
+                {tg("skip")}
               </Button>
             </div>
 
@@ -563,7 +563,7 @@ function TooltipCard({
                 className="h-7 px-3 text-xs"
                 onClick={() => onFinish(true)}
               >
-                {L.finish}
+                {tg("finish")}
               </Button>
             ) : hideNext ? (
               // Actionable step, gate not yet satisfied: no Next — the "Try it…"
@@ -576,7 +576,7 @@ function TooltipCard({
                 className="h-7 px-3 text-xs"
                 onClick={onNext}
               >
-                {L.next}
+                {tg("next")}
               </Button>
             )}
           </div>
@@ -608,6 +608,7 @@ export function SpotlightGuide({
 }: SpotlightGuideProps) {
   const step = steps[stepIndex];
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const isRtl = useIsRtl();
 
   // Measure the active anchor element, scoped to queryRoot when provided to
   // avoid resolving to a sibling editor shell's element with the same tour id.
@@ -722,7 +723,7 @@ export function SpotlightGuide({
   const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
   const vpH = typeof window !== "undefined" ? window.innerHeight : 800;
   const livePosition: Position = hasMeaningfulRect
-    ? calcTooltipPosition(rect!, step.placement, vpW, vpH)
+    ? calcTooltipPosition(rect!, step.placement, vpW, vpH, isRtl)
     : { top: vpH / 2 - TOOLTIP_H / 2, left: vpW / 2 - TOOLTIP_W / 2 };
   // Track the live position while not loading so a subsequent load can freeze
   // to it. Guarded so the render-phase update only fires when it actually moves.

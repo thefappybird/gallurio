@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner"; // still used by handleDeleteTheme
+import { useActionError } from "@/lib/i18n/actionError";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ export function ThemePanelDialog({
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor");
   const tk = useTranslations("app.pageBuilder.brandKit");
+  const errMsg = useActionError();
   const [closeGuardOpen, setCloseGuardOpen] = useState(false);
 
   const onSaveTheme = async (name: string) => {
@@ -94,7 +96,7 @@ export function ThemePanelDialog({
     const res = await deleteThemeAction(id);
     if ("error" in res) {
       onSavedThemesChange(previous);
-      toast.error("Could not delete theme. Please try again.");
+      toast.error(errMsg("theme_delete_failed"));
     }
   }
 

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import {
   Loader2,
   ShieldCheck,
@@ -100,6 +101,7 @@ function MfaSetupFlow({
   onDone: () => void;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const errMsg = useActionError();
   const [enrollState, setEnrollState] = useState<EnrollState>({ step: "idle" });
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [enrollPending, startEnroll] = useTransition();
@@ -131,7 +133,7 @@ function MfaSetupFlow({
     startEnroll(async () => {
       const result: EnrollMfaResult = await enrollMfaAction();
       if ("error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error));
         return;
       }
       setEnrollState({ step: "qr", ...result });
@@ -149,7 +151,7 @@ function MfaSetupFlow({
         code: values.code,
       });
       if (result && "error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
         return;
       }
       reset();
@@ -319,6 +321,7 @@ type Props = {
 
 export function MfaSection({ mfaEnabled: initialMfaEnabled }: Props) {
   const t = useTranslations("app.settings.security");
+  const errMsg = useActionError();
   const [mfaEnabled, setMfaEnabled] = useState(initialMfaEnabled);
   const [disablePending, startDisable] = useTransition();
 
@@ -326,7 +329,7 @@ export function MfaSection({ mfaEnabled: initialMfaEnabled }: Props) {
     startDisable(async () => {
       const result = await disableMfaAction();
       if (result && "error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
         return;
       }
       setMfaEnabled(false);

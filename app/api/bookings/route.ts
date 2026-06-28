@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   const parsed = bookingCreateSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: parsed.error.errors[0]?.message ?? "Invalid request" },
+      { error: "invalid_request" },
       { status: 400 }
     );
   }
@@ -35,14 +35,14 @@ export async function POST(req: Request) {
     .select({ _id: 1, isActive: 1 })
     .lean();
   if (!team) {
-    return NextResponse.json({ error: "Team not found" }, { status: 404 });
+    return NextResponse.json({ error: "team_not_found" }, { status: 404 });
   }
   // Treat a missing isActive (legacy teams created before the field existed) as
   // active — only an EXPLICIT false counts as deactivated. (.lean() doesn't apply
   // the schema default.)
   if (team.isActive === false) {
     return NextResponse.json(
-      { error: "Cannot assign a new booking to a deactivated team" },
+      { error: "team_deactivated" },
       { status: 400 }
     );
   }
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       { id: String(team._id), isActive: true }
     )
   ) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   // Authoritative timezone-aware midnight check.
@@ -65,9 +65,7 @@ export async function POST(req: Request) {
   );
   if (!tzCheck.ok) {
     return NextResponse.json(
-      {
-        error: `Session ${tzCheck.sessionIndex} crosses midnight in the workspace timezone`,
-      },
+      { error: "session_crosses_midnight", params: { index: tzCheck.sessionIndex } },
       { status: 400 }
     );
   }
@@ -80,7 +78,7 @@ export async function POST(req: Request) {
       workspaceId: ctx.workspace._id,
     }).lean();
     if (!existing) {
-      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+      return NextResponse.json({ error: "client_not_found_workspace" }, { status: 404 });
     }
   }
 
@@ -109,7 +107,7 @@ export async function POST(req: Request) {
           { session }
         ).lean();
         if (!existing) {
-          throw new Error("Client not found");
+          throw new Error("client_not_found_workspace");
         }
         clientId = existing._id;
         clientName = existing.name;

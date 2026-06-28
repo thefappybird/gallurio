@@ -47,6 +47,7 @@ export default async function NotificationsPage({
     read: n.read,
     readAt: n.readAt ? new Date(n.readAt as unknown as Date).toISOString() : null,
     createdAt: new Date(n.createdAt as unknown as Date).toISOString(),
+    params: n.params as Record<string, string | undefined> | undefined,
   }));
 
   return (

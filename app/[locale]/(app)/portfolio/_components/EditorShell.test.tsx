@@ -502,7 +502,7 @@ describe("EditorShell", () => {
     fireEvent.change(input, { target: { value: "Summer" } });
     fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
+    expect(await screen.findByText("A draft with this name already exists.")).toBeInTheDocument();
     expect(updateDraftAction).not.toHaveBeenCalled();
     expect(toast.error).not.toHaveBeenCalled();
   });
@@ -631,8 +631,8 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
     fireEvent.click(await screen.findByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalledWith("A draft with this name already exists");
+    expect(await screen.findByText("A draft with this name already exists.")).toBeInTheDocument();
+    expect(toast.error).toHaveBeenCalledWith("A draft with this name already exists.");
   });
 
   it("clears the duplicate-name error after deleting the conflicting draft", async () => {
@@ -648,14 +648,14 @@ describe("EditorShell", () => {
     fireEvent.change(screen.getByLabelText("Draft name"), { target: { value: "Summer" } });
     fireEvent.click(screen.getByRole("button", { name: "Confirm name" }));
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(await screen.findByText("A draft with this name already exists")).toBeInTheDocument();
+    expect(await screen.findByText("A draft with this name already exists.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
     fireEvent.click(await screen.findByRole("button", { name: "Delete Summer" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Delete draft$/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText("A draft with this name already exists")).not.toBeInTheDocument();
+      expect(screen.queryByText("A draft with this name already exists.")).not.toBeInTheDocument();
     });
   });
 

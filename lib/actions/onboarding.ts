@@ -46,10 +46,10 @@ export async function businessStepAction(
   input: BusinessStepInput
 ): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   const parsed = businessStepSchema.safeParse(input);
-  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+  if (!parsed.success) return { error: "invalid_input" };
 
   const {
     firstName,
@@ -78,7 +78,7 @@ export async function businessStepAction(
     slug,
     ...(ownedWorkspaceId ? { _id: { $ne: ownedWorkspaceId } } : {}),
   }).lean();
-  if (slugClash) return { error: "That URL is already taken — try another." };
+  if (slugClash) return { error: "url_taken" };
 
   let workspaceId: string;
   let session: mongoose.ClientSession | null = null;
@@ -135,7 +135,7 @@ export async function businessStepAction(
       "code" in err &&
       (err as { code: unknown }).code === 11000
     ) {
-      return { error: "That URL is already taken — try another." };
+      return { error: "url_taken" };
     }
     throw err;
   } finally {
@@ -158,7 +158,7 @@ export async function businessStepAction(
 export async function selectFreePlanAction(): Promise<ActionResult> {
   // Free plan path: no Paddle checkout, just record the choice and advance.
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   await connectDB();
 
@@ -167,7 +167,7 @@ export async function selectFreePlanAction(): Promise<ActionResult> {
     { memberships: 1 }
   ).lean();
   const ownerMembership = user?.memberships.find((m) => m.role === "owner");
-  if (!ownerMembership) return { error: "No active workspace — restart onboarding." };
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
   await Workspace.updateOne(
     { _id: ownerMembership.workspaceId },
@@ -252,7 +252,7 @@ export async function completeOnboardingAction(opts: {
   seedSampleData: boolean;
 }): Promise<ActionResult> {
   const authUser = await getAuthUser();
-  if (!authUser) return { error: "Not authenticated" };
+  if (!authUser) return { error: "not_authenticated" };
 
   await connectDB();
 
@@ -261,10 +261,10 @@ export async function completeOnboardingAction(opts: {
     { memberships: 1 }
   ).lean();
   const ownerMembership = user?.memberships.find((m) => m.role === "owner");
-  if (!ownerMembership) return { error: "No active workspace — restart onboarding." };
+  if (!ownerMembership) return { error: "onboarding_no_active_workspace" };
 
   const workspace = await Workspace.findOne({ _id: ownerMembership.workspaceId });
-  if (!workspace) return { error: "Workspace not found." };
+  if (!workspace) return { error: "workspace_not_found" };
 
   if (opts.seedSampleData) {
     await seedSampleData(workspace._id.toString());

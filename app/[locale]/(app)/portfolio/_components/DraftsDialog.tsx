@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -22,23 +23,6 @@ import { Button } from "@/components/ui/button";
 import { Check, Loader2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { DraftSummary } from "../_draftActions";
-
-// Plain strings — Puck editor chrome is English (see RELEASE-CHECKLIST §4f).
-const L = {
-  title: "Your drafts",
-  subtitle:
-    "Pick a saved layout to load it onto the canvas. Loading replaces what you're editing now.",
-  empty:
-    "No drafts yet. Save your current work, or start a new one from a template.",
-  active: "Active",
-  addNew: "Add new draft",
-  close: "Close",
-  confirmTitle: "Delete this draft?",
-  confirmBody:
-    "This permanently removes the saved draft. This can't be undone.",
-  confirmAction: "Delete draft",
-  cancel: "Cancel",
-};
 
 export function DraftsDialog({
   open,
@@ -63,6 +47,7 @@ export function DraftsDialog({
   /** When non-null, an unsaved draft with this name is shown at the top of the list. */
   unsavedDraftName?: string | null;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   const [pendingDelete, setPendingDelete] = useState<DraftSummary | null>(null);
 
   // Clear pending delete when the dialog closes so it can't linger.
@@ -84,15 +69,15 @@ export function DraftsDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[85vh] flex-col overflow-hidden sm:max-w-2xl lg:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{L.title}</DialogTitle>
+          <DialogTitle>{t("draftsDialog.title")}</DialogTitle>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-          <p className="text-sm text-muted-foreground">{L.subtitle}</p>
+          <p className="text-sm text-muted-foreground">{t("draftsDialog.subtitle")}</p>
 
           {drafts.length === 0 && !hasUnsaved ? (
             <p className="border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-              {L.empty}
+              {t("draftsDialog.empty")}
             </p>
           ) : (
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -105,12 +90,12 @@ export function DraftsDialog({
                         {unsavedDraftName}
                       </span>
                       <span className="shrink-0 border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                        Unsaved
+                        {t("draftsDialog.unsaved")}
                       </span>
                     </div>
                     <div className="flex shrink-0 items-center justify-end gap-1">
                       <span className="border border-foreground px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                        {L.active}
+                        {t("draftsDialog.active")}
                       </span>
                     </div>
                   </div>
@@ -134,15 +119,15 @@ export function DraftsDialog({
                       <div className="flex w-[7.5rem] shrink-0 items-center justify-end gap-1">
                         {isActive && (
                           <span className="border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                            {L.active}
+                            {t("draftsDialog.active")}
                           </span>
                         )}
                         <Button
                           type="button"
                           size="icon-sm"
                           variant="outline"
-                          aria-label={`Apply ${d.name}`}
-                          title={`Apply ${d.name}`}
+                          aria-label={t("draftsDialog.applyAria", { name: d.name })}
+                          title={t("draftsDialog.applyAria", { name: d.name })}
                           disabled={isDeleting}
                           onClick={() => onApply(d.id)}
                         >
@@ -153,7 +138,7 @@ export function DraftsDialog({
                             type="button"
                             size="icon-sm"
                             variant="ghost"
-                            aria-label={`Deleting ${d.name}`}
+                            aria-label={t("draftsDialog.deletingAria", { name: d.name })}
                             disabled
                           >
                             <Loader2 className="animate-spin" />
@@ -163,8 +148,8 @@ export function DraftsDialog({
                             type="button"
                             size="icon-sm"
                             variant="ghost"
-                            aria-label={`Delete ${d.name}`}
-                            title={`Delete ${d.name}`}
+                            aria-label={t("draftsDialog.deleteAria", { name: d.name })}
+                            title={t("draftsDialog.deleteAria", { name: d.name })}
                             disabled={isDeleting}
                             onClick={() => setPendingDelete(d)}
                           >
@@ -182,10 +167,10 @@ export function DraftsDialog({
 
         <DialogFooter className="gap-2 sm:justify-between">
           <Button type="button" variant="outline" disabled={isDeleting} onClick={() => onOpenChange(false)}>
-            {L.close}
+            {t("draftsDialog.close")}
           </Button>
           <Button type="button" disabled={isDeleting} onClick={onAddNew}>
-            {L.addNew}
+            {t("draftsDialog.addNew")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -198,12 +183,12 @@ export function DraftsDialog({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{L.confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{L.confirmBody}</AlertDialogDescription>
+            <AlertDialogTitle>{t("draftsDialog.confirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("draftsDialog.confirmBody")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingDelete(null)}>
-              {L.cancel}
+              {t("draftsDialog.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
@@ -211,7 +196,7 @@ export function DraftsDialog({
                 setPendingDelete(null);
               }}
             >
-              {L.confirmAction}
+              {t("draftsDialog.confirmAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 
 function setup(props: Partial<React.ComponentProps<typeof PortfolioEntryDialog>> = {}) {
-  return render(
+  return renderWithProviders(
     <PortfolioEntryDialog
       open
       canContinue

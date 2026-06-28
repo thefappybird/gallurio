@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export function PasswordSection({ hasOAuth }: Props) {
 
 function ChangePasswordForm() {
   const t = useTranslations("app.settings.account");
+  const errMsg = useActionError();
   const [pending, startTransition] = useTransition();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -56,7 +58,7 @@ function ChangePasswordForm() {
     startTransition(async () => {
       const result = await updatePasswordAction(values);
       if (result && "error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
       } else {
         toast.success(t("passwordSaved"));
         reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -169,6 +171,7 @@ function ChangePasswordForm() {
 
 function SetPasswordCard() {
   const t = useTranslations("app.settings.account");
+  const errMsg = useActionError();
   const [pending, startTransition] = useTransition();
   const [sent, setSent] = useState(false);
 
@@ -176,7 +179,7 @@ function SetPasswordCard() {
     startTransition(async () => {
       const result = await sendSetPasswordEmailAction();
       if (result && "error" in result) {
-        toast.error(result.error);
+        toast.error(errMsg(result.error, result.params));
       } else {
         setSent(true);
         toast.success(t("setPasswordSent"));

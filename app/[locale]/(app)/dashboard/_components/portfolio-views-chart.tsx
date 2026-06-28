@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useIsRtl } from "@/lib/i18n/rtl";
 import { CHART_TOOLTIP } from "@/lib/charts/tooltip";
 import type { PageviewPoint } from "../_data/portfolio-analytics";
 
@@ -19,11 +20,17 @@ type Props = {
 };
 
 export function PortfolioViewsChart({ data, locale, labels }: Props) {
+  const isRtl = useIsRtl();
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }} barGap={2}>
+      <BarChart
+        data={data}
+        margin={{ top: 8, right: isRtl ? 0 : 12, bottom: 0, left: isRtl ? 12 : 0 }}
+        barGap={2}
+      >
         <XAxis
           dataKey="date"
+          reversed={isRtl}
           tickFormatter={(d: string) =>
             new Date(`${d}T00:00:00Z`).toLocaleDateString(locale, {
               month: "short",
@@ -37,6 +44,7 @@ export function PortfolioViewsChart({ data, locale, labels }: Props) {
           tickLine={false}
         />
         <YAxis
+          orientation={isRtl ? "right" : "left"}
           allowDecimals={false}
           tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
           axisLine={false}

@@ -76,7 +76,7 @@ describe("createClientAction", () => {
 
     const result = await createClientAction({ ...validInput, name: "" });
 
-    expect(result).toEqual({ error: "Name is required" });
+    expect(result).toEqual({ error: "invalid_input" });
     const count = await Client.countDocuments({ workspaceId });
     expect(count).toBe(0);
   });
@@ -86,7 +86,7 @@ describe("createClientAction", () => {
 
     const result = await createClientAction(validInput);
 
-    expect(result).toEqual({ error: "Failed to create client" });
+    expect(result).toEqual({ error: "client_create_failed" });
   });
 });
 
@@ -113,7 +113,7 @@ describe("updateClientAction", () => {
     expect(updated?.name).toBe("Updated Name");
   });
 
-  it("wrong workspaceId (cross-workspace) returns { error: 'Client not found' }", async () => {
+  it("wrong workspaceId (cross-workspace) returns { error: 'client_not_found' }", async () => {
     // Client belongs to otherWorkspaceId but action uses workspaceId
     const client = await Client.create({
       workspaceId: otherWorkspaceId,
@@ -126,7 +126,7 @@ describe("updateClientAction", () => {
 
     const result = await updateClientAction(client._id.toString(), validInput);
 
-    expect(result).toEqual({ error: "Client not found" });
+    expect(result).toEqual({ error: "client_not_found" });
   });
 
   it("missing name fails validation", async () => {
@@ -144,7 +144,7 @@ describe("updateClientAction", () => {
       name: "",
     });
 
-    expect(result).toEqual({ error: "Name is required" });
+    expect(result).toEqual({ error: "invalid_input" });
   });
 });
 
@@ -169,7 +169,7 @@ describe("deactivateClientAction", () => {
     expect(updated?.isActive).toBe(false);
   });
 
-  it("wrong workspaceId returns { error: 'Client not found' }", async () => {
+  it("wrong workspaceId returns { error: 'client_not_found' }", async () => {
     const client = await Client.create({
       workspaceId: otherWorkspaceId,
       name: "Other WS Client",
@@ -181,7 +181,7 @@ describe("deactivateClientAction", () => {
 
     const result = await deactivateClientAction(client._id.toString());
 
-    expect(result).toEqual({ error: "Client not found" });
+    expect(result).toEqual({ error: "client_not_found" });
   });
 });
 
@@ -206,7 +206,7 @@ describe("reactivateClientAction", () => {
     expect(updated?.isActive).toBe(true);
   });
 
-  it("wrong workspaceId returns { error: 'Client not found' }", async () => {
+  it("wrong workspaceId returns { error: 'client_not_found' }", async () => {
     const client = await Client.create({
       workspaceId: otherWorkspaceId,
       name: "Other WS Client",
@@ -219,7 +219,7 @@ describe("reactivateClientAction", () => {
 
     const result = await reactivateClientAction(client._id.toString());
 
-    expect(result).toEqual({ error: "Client not found" });
+    expect(result).toEqual({ error: "client_not_found" });
   });
 });
 

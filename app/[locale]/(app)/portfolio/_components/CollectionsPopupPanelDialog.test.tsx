@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import React from "react";
 import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import type {
@@ -31,7 +32,7 @@ const baseConfig: PortfolioCollectionsPopupConfig = {
 describe("CollectionsPopupPanelDialog", () => {
   it("renders background color, border, and radius controls inside the Popup section", () => {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={onChange}
@@ -58,7 +59,7 @@ describe("CollectionsPopupPanelDialog", () => {
 
   it("calls onChange with updated radius when a radius button is clicked", () => {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={onChange}
@@ -77,7 +78,7 @@ describe("CollectionsPopupPanelDialog", () => {
       ...baseConfig,
       radius: "subtle",
     };
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={configWithRadius}
         onChange={onChange}
@@ -92,7 +93,7 @@ describe("CollectionsPopupPanelDialog", () => {
 
   it("calls onChange with updated borderWidth when the border input changes", () => {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={onChange}
@@ -110,7 +111,7 @@ describe("CollectionsPopupPanelDialog", () => {
 
   // The tiny inline preview has been removed; live preview lives in the left pane.
   it("does not render the inline preview swatch", () => {
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={vi.fn()}
@@ -124,7 +125,7 @@ describe("CollectionsPopupPanelDialog", () => {
     const onSaved = vi.fn();
     const onCancel = vi.fn();
     expect(() =>
-      render(
+      renderWithProviders(
         <CollectionsPopupPanelDialog
           config={baseConfig}
           onChange={vi.fn()}
@@ -139,7 +140,7 @@ describe("CollectionsPopupPanelDialog", () => {
 
 describe("CollectionsPopupPanelDialog shared EditorDrawerSection structure", () => {
   it("renders Popup, Title styles, and Button styles as EditorDrawerSection headings (shared panel structure)", () => {
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={vi.fn()}
@@ -153,7 +154,7 @@ describe("CollectionsPopupPanelDialog shared EditorDrawerSection structure", () 
   });
 
   it("shows title color Text swatch as effective (aria-pressed, following-theme) when titleColorToken is unset", () => {
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={baseConfig}
         onChange={vi.fn()}
@@ -172,7 +173,7 @@ describe("CollectionsPopupPanelDialog shared EditorDrawerSection structure", () 
 describe("CollectionsPopupPanelDialog header styles", () => {
   function setup(config: Partial<PortfolioCollectionsPopupConfig> = {}) {
     const onChange = vi.fn();
-    render(
+    renderWithProviders(
       <CollectionsPopupPanelDialog
         config={config as PortfolioCollectionsPopupConfig}
         onChange={onChange}

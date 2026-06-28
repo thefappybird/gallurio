@@ -50,6 +50,8 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
+import { useIsRtl } from "@/lib/i18n/rtl";
+import { useActionError } from "@/lib/i18n/actionError";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
@@ -201,10 +203,10 @@ function RightPanelTourMarker() {
 // Device preview widths — shared by the in-canvas (Puck viewport) toggle and the
 // standalone iframe preview. Mirrors the <Puck viewports> prop.
 type PreviewDevice = "mobile" | "tablet" | "desktop";
-const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon: typeof Monitor }[] = [
-  { key: "mobile", label: "Mobile", width: 390, Icon: Smartphone },
-  { key: "tablet", label: "Tablet", width: 768, Icon: Tablet },
-  { key: "desktop", label: "Desktop", width: 1280, Icon: Monitor },
+const DEVICES: readonly { key: PreviewDevice; width: number; Icon: typeof Monitor }[] = [
+  { key: "mobile", width: 390, Icon: Smartphone },
+  { key: "tablet", width: 768, Icon: Tablet },
+  { key: "desktop", width: 1280, Icon: Monitor },
 ] as const;
 
 /**
@@ -214,6 +216,7 @@ const DEVICES: readonly { key: PreviewDevice; label: string; width: number; Icon
  * edit canvas. Lives inside Puck so `usePuck` has context.
  */
 function EditCanvasControls() {
+  const t = useTranslations("app.pageBuilder.editor");
   const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
   const rightSideBarVisible = usePuckStore((s) => s.appState.ui.rightSideBarVisible);
   const dispatch = usePuckStore((s) => s.dispatch);
@@ -222,14 +225,14 @@ function EditCanvasControls() {
   const back = usePuckStore((s) => s.history.back);
   const forward = usePuckStore((s) => s.history.forward);
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Editor controls">
+    <div className="flex items-center gap-1" role="group" aria-label={t("controls.editorControls")}>
       <Button
         type="button"
         size="icon-sm"
         variant={leftSideBarVisible ? "default" : "outline"}
         aria-pressed={leftSideBarVisible}
-        aria-label="Toggle blocks panel"
-        title="Toggle blocks panel"
+        aria-label={t("controls.toggleBlocks")}
+        title={t("controls.toggleBlocks")}
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ leftSideBarVisible: !p.leftSideBarVisible }) })}
       >
         <PanelLeft className="size-4" aria-hidden />
@@ -240,7 +243,7 @@ function EditCanvasControls() {
         size="icon-sm"
         variant="outline"
         aria-label="Undo"
-        title="Undo (Ctrl+Z)"
+        title={t("controls.undoTitle")}
         disabled={!hasPast}
         onClick={back}
       >
@@ -251,7 +254,7 @@ function EditCanvasControls() {
         size="icon-sm"
         variant="outline"
         aria-label="Redo"
-        title="Redo (Ctrl+Shift+Z)"
+        title={t("controls.redoTitle")}
         disabled={!hasFuture}
         onClick={forward}
       >
@@ -263,8 +266,8 @@ function EditCanvasControls() {
         size="icon-sm"
         variant={rightSideBarVisible ? "default" : "outline"}
         aria-pressed={rightSideBarVisible}
-        aria-label="Toggle properties panel"
-        title="Toggle properties panel"
+        aria-label={t("controls.toggleProperties")}
+        title={t("controls.toggleProperties")}
         data-tour-id="properties-panel"
         onClick={() => dispatch({ type: "setUi", ui: (p) => ({ rightSideBarVisible: !p.rightSideBarVisible }) })}
       >
@@ -282,22 +285,26 @@ function DeviceTogglePreview({
   value: PreviewDevice;
   onChange: (next: PreviewDevice) => void;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   return (
-    <div className="flex items-center gap-1" role="group" aria-label="Preview device" data-tour-id="device-toggle">
-      {DEVICES.map(({ key, label, Icon }) => (
-        <Button
-          key={key}
-          type="button"
-          size="icon-sm"
-          variant={value === key ? "default" : "outline"}
-          aria-pressed={value === key}
-          aria-label={label}
-          title={label}
-          onClick={() => onChange(key)}
-        >
-          <Icon className="size-4" aria-hidden />
-        </Button>
-      ))}
+    <div className="flex items-center gap-1" role="group" aria-label={t("controls.previewDevice")} data-tour-id="device-toggle">
+      {DEVICES.map(({ key, Icon }) => {
+        const label = t(`devices.${key}`);
+        return (
+          <Button
+            key={key}
+            type="button"
+            size="icon-sm"
+            variant={value === key ? "default" : "outline"}
+            aria-pressed={value === key}
+            aria-label={label}
+            title={label}
+            onClick={() => onChange(key)}
+          >
+            <Icon className="size-4" aria-hidden />
+          </Button>
+        );
+      })}
     </div>
   );
 }
@@ -371,6 +378,7 @@ export function EditorShell({
   const t = useTranslations("app.pageBuilder.editor");
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
+  const errMsg = useActionError();
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -407,6 +415,23 @@ export function EditorShell({
   const [puckContentCount, setPuckContentCount] = useState(0);
   // Baseline content count captured when the drag-block step becomes active
   const [dragBaseline, setDragBaseline] = useState<number | null>(null);
+
+  // Restart the spotlight tour when the writing direction flips (LTR<->RTL)
+  // mid-tour — e.g. the owner switches to/from Arabic while the guide is open.
+  // The mirrored layout invalidates the active step's anchor geometry, so we
+  // re-run from step 0 for a clean re-flow rather than leaving a stale cutout.
+  // Only direction flips restart; same-direction language swaps (en<->fil) keep
+  // the user's place and just re-translate.
+  // Restart from step 0 only on a direction flip (the mirrored layout
+  // invalidates the active step's anchor geometry). Tracked via prev-state
+  // compared during render — React's sanctioned "store info from previous
+  // renders" pattern — so there's no effect or ref access during render.
+  const guideIsRtl = useIsRtl();
+  const [prevGuideRtl, setPrevGuideRtl] = useState(guideIsRtl);
+  if (prevGuideRtl !== guideIsRtl) {
+    setPrevGuideRtl(guideIsRtl);
+    if (guideOpen) setSpotlightStepIndex(0);
+  }
 
   // ---- Draft state ----
   const [drafts, setDrafts] = useState<DraftSummary[]>(initialDrafts);
@@ -644,11 +669,11 @@ export function EditorShell({
   // ---- Draft name validation ----
   function validateDraftName(name: string): string | null {
     const trimmed = name.trim();
-    if (!trimmed) return "This field is required";
+    if (!trimmed) return errMsg("field_required");
     const clash = drafts.some(
       (d) => d.id !== activeDraftId && d.name.trim().toLowerCase() === trimmed.toLowerCase()
     );
-    if (clash) return "A draft with this name already exists";
+    if (clash) return errMsg("name_taken");
     return null;
   }
 
@@ -691,15 +716,15 @@ export function EditorShell({
       if ("error" in res) {
         const err = res.error;
         if (err === "name_required") {
-          setNameError("This field is required");
-          if (shouldToastValidationError) toast.error("This field is required");
+          const msg = errMsg("field_required");
+          setNameError(msg);
+          if (shouldToastValidationError) toast.error(msg);
         } else if (err === "name_taken") {
-          setNameError("A draft with this name already exists");
-          if (shouldToastValidationError) toast.error("A draft with this name already exists");
-        } else if (err.startsWith("draft_limit_reached")) {
-          toast.error("You've reached your draft limit.");
+          const msg = errMsg(err);
+          setNameError(msg);
+          if (shouldToastValidationError) toast.error(msg);
         } else {
-          toast.error("Could not save draft. Please try again.");
+          toast.error(errMsg(err));
         }
         return false;
       }
@@ -736,7 +761,7 @@ export function EditorShell({
   async function applyDraft(id: string) {
     const res = await getDraftAction(id);
     if ("error" in res) {
-      toast.error("Could not load draft. Please try again.");
+      toast.error(errMsg("draft_load_failed"));
       return;
     }
     const d = res.draft;
@@ -853,11 +878,11 @@ export function EditorShell({
       const refreshed = await listDraftsAction();
       setDrafts(refreshed);
       if ("error" in res) {
-        toast.error("Could not delete draft. Please try again.");
+        toast.error(errMsg("draft_delete_failed"));
         return;
       }
       if (
-        nameError === "A draft with this name already exists" &&
+        nameError === errMsg("name_taken") &&
         refreshed.every((d) => d.name.trim().toLowerCase() !== draftName.trim().toLowerCase())
       ) {
         setNameError(null);
@@ -1206,7 +1231,7 @@ export function EditorShell({
       : activeSection === "contact"
         ? t("contactSettingsShort")
         : activeSection === "collectionsPopup"
-          ? "Featured Popup"
+          ? t("featuredPopup")
           : t(`zone.${activeSection}`);
   const headerTitle = `${workspaceName} · ${activeSectionTitle}`;
   const contactLabels = buildContactLabels(
@@ -1273,7 +1298,7 @@ export function EditorShell({
                 : section === "contact"
                   ? t("contactSettingsShort")
                   : section === "collectionsPopup"
-                    ? "Featured Popup"
+                    ? t("featuredPopup")
                     : t(`zone.${section}`);
             // Tour anchor: header and contact get dedicated ids for their own
             // gated steps (step 8 and step 12); page tabs have no individual id.
@@ -1371,7 +1396,7 @@ export function EditorShell({
           data-tour-id="drafts"
           onClick={() => setDraftsOpen(true)}
         >
-          Drafts
+          {t("drafts")}
         </Button>
         <div
           data-testid="draft-title-slot"
@@ -1393,7 +1418,7 @@ export function EditorShell({
           loading={savingChanges}
           onClick={() => void handleSaveChanges()}
         >
-          Save changes
+          {t("saveChanges")}
         </Button>
         <div className="order-9">{publishSlot}</div>
       </>
@@ -1424,19 +1449,21 @@ export function EditorShell({
       >
         {/* Page-wide loading overlay shown during draft discard/load transitions.
             Positioned to cover the editor canvas area; when Puck is visible the
-            left sidebar (~260px) is excluded by the left offset so only the
-            canvas + properties panel area is covered. */}
+            inline-start sidebar (~260px) is excluded by the inline-start offset
+            so only the canvas + properties panel area is covered. */}
         {discarding && (
           <div
             role="status"
             aria-live="polite"
-            aria-label="Loading draft"
+            aria-label={t("loadingDraft")}
             className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-            style={{ left: showPuck ? "260px" : 0 }}
+            // Puck's left sidebar (~260px) sits at the inline-start edge in both
+            // LTR and RTL (the grid mirrors under dir=rtl); exclude it logically.
+            style={{ insetInlineStart: showPuck ? "260px" : 0 }}
           >
             <div className="flex flex-col items-center gap-3 rounded-lg bg-card px-8 py-6 shadow-lg border border-border">
               <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
-              <p className="text-sm font-medium text-foreground">Loading draft…</p>
+              <p className="text-sm font-medium text-foreground">{t("loadingDraftEllipsis")}</p>
             </div>
           </div>
         )}
@@ -1461,9 +1488,9 @@ export function EditorShell({
               },
             }}
             viewports={[
-              { width: 1280, label: "Desktop", icon: "Monitor" },
-              { width: 768, label: "Tablet", icon: "Tablet" },
-              { width: 390, label: "Mobile", icon: "Smartphone" },
+              { width: 1280, label: t("devices.desktop"), icon: "Monitor" },
+              { width: 768, label: t("devices.tablet"), icon: "Tablet" },
+              { width: 390, label: t("devices.mobile"), icon: "Smartphone" },
             ]}
             overrides={{
               // Full custom header: nav left · canvas controls center · tools +
@@ -1695,7 +1722,7 @@ export function EditorShell({
         discarding={discarding}
         name={draftName}
         onNameChange={(next) => { setDraftName(next); setNameError(validateDraftName(next)); }}
-        nameLabel="Draft name"
+        nameLabel={t("draftNameLabel")}
         nameError={nameError}
         onSave={async () => {
           const ok = await handleSaveChanges();
