@@ -111,3 +111,11 @@ tests + `pnpm typecheck` + `pnpm lint`; all 5 locales updated.
 - Phase A complete (2026-06-28): A1 334b5e8, A2 7e0ee39 + 334b5e8, A3 4ebd211, A4 7f35fa3, A5 b7a83df, A6 de35ce0, A7 4a2b3de. typecheck + lint clean; 278 tests passing across 4 test files.
 - Phase B complete (2026-06-28): B1 b79af8d, B2 16c81c6, B3 d598ad9 + 16c81c6, B4 d598ad9. typecheck + lint clean; 56 tests passing in EditorShell.test (1 pre-existing fail at port 3000).
 - Phase C complete (2026-06-28): C1 1e8b582, C2 2bfe9e4, C3 7c8c5b3, C4 6de5f90, C5 b4e871f, C6 bfbcbf2. typecheck + lint clean on changed files.
+- Phase D complete (2026-06-28): D1 a662ad3, D2 a305426 + ed80934, D3 ed80934, D4 dfebf00. Locale-aware editorConfig
+  factory; 91 puckConfig + 17 photosDialog keys ×5 locales; toasts localized. Puck 0.20 built-ins (drawer "Add",
+  drag tooltips, Props/Outline headers) have no public i18n API — left English, noted in RELEASE-CHECKLIST §4f.
+- Phase E + F complete (2026-06-28): E1 + F1 c35fa1b. Leaflet stacking isolation; notification viewer-locale verified
+  (no code change — `params` + viewer `useTranslations` already handle it).
+- Verification (2026-06-28): `pnpm typecheck` clean; `eslint` 0 errors on all 31 changed source files; Playwright
+  confirmed template picker renders Bold/Luxury/Editorial/Minimal + scratch (stale templates gone) + canvas renders.
+  Full vitest sweep re-run pre-PR. Crash repro (4-col, col3 span 2) left for manual browser check per plan.
