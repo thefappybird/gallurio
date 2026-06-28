@@ -116,6 +116,7 @@ vi.mock("../_actions", () => ({
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
+  updatePortfolioSlugAction: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
@@ -136,6 +137,12 @@ vi.mock("../_draftActions", () => ({
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
+// useSlugAvailability (inside PublishDialog) calls checkSlugAvailabilityAction
+// which transitively imports authkit-nextjs. Mock the action to prevent that.
+vi.mock("@/lib/actions/slug", () => ({
+  checkSlugAvailabilityAction: vi.fn().mockResolvedValue({ available: true }),
+}));
 
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";

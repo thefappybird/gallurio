@@ -29,6 +29,7 @@ import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import {
   dismissPortfolioGuideAction,
+  updatePortfolioSlugAction,
 } from "../_actions";
 import {
   createDraftAction,
@@ -396,6 +397,8 @@ export function EditorShell({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
   }));
+  // currentSlug tracks the live slug after in-dialog edits (optimistic update).
+  const [currentSlug, setCurrentSlug] = useState(slug);
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -1474,7 +1477,7 @@ export function EditorShell({
 
   return (
     <GalleryPickerCacheProvider>
-      <MobileBanner publicUrl={`${publicOrigin}/w/${slug}`} />
+      <MobileBanner publicUrl={`${publicOrigin}/w/${currentSlug}`} />
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
@@ -1667,7 +1670,10 @@ export function EditorShell({
         open={publishOpen}
         onOpenChange={setPublishOpen}
         onConfirm={doPublish}
-        publicUrl={`${publicOrigin}/w/${slug}`}
+        publicUrl={`${publicOrigin}/w/${currentSlug}`}
+        currentSlug={currentSlug}
+        onSlugSaved={setCurrentSlug}
+        onUpdateSlug={updatePortfolioSlugAction}
       />
       <ThemePanelDialog
         open={themeOpen}

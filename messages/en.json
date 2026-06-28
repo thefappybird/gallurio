@@ -1400,7 +1400,18 @@
           "cancel": "Cancel",
           "liveAt": "Live at {url}",
           "copyLink": "Copy link",
-          "copied": "Copied"
+          "copied": "Copied",
+          "slugLabel": "Portfolio URL",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Save URL",
+          "slugSaving": "Saving...",
+          "slugSaved": "Saved",
+          "slugError": "Could not update URL, please try again",
+          "slugUrlTaken": "That URL is already taken",
+          "slugChecking": "Checking...",
+          "slugAvailable": "Available",
+          "slugTaken": "Already taken",
+          "slugInvalid": "Invalid format"
         },
         "themeDialog": {
           "title": "Theme & brand"
