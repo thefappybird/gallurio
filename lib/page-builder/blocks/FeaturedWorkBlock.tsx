@@ -26,7 +26,7 @@ import {
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
 import { padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { GALLERY_MIN_HEIGHT, resolveBannerLayers } from "./GalleryGridBlock";
+import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import type { ContainerHeight } from "./manualBlocks";
 
@@ -50,6 +50,8 @@ export type FeaturedWorkProps = {
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
+  minHeightValue?: string;
 };
 
 export const featuredWorkDefaultProps: FeaturedWorkProps = {
@@ -114,6 +116,7 @@ export function FeaturedWorkBlock({
   bgSpeed,
   overlayOpacity,
   minHeight,
+  minHeightValue,
   puck,
 }: FeaturedWorkProps & { puck?: BlockPuck }) {
   const columns: GalleryColumns = _style?.galleryColumns ?? 3;
@@ -147,7 +150,7 @@ export function FeaturedWorkBlock({
         position: "relative",
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
-        minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+        minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
         padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,

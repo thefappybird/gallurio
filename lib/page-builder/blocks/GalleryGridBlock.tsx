@@ -43,6 +43,8 @@ export type GalleryGridProps = {
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
+  minHeightValue?: string;
 };
 
 export const galleryGridDefaultProps: GalleryGridProps = {
@@ -71,6 +73,16 @@ export const GALLERY_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
   tall: "80vh",
   custom: undefined,
 };
+
+/** Resolve the CSS min-height value for a gallery block.
+ *  When minHeight is "custom", uses minHeightValue (undefined = no constraint). */
+export function resolveGalleryMinHeight(
+  minHeight: ContainerHeight | undefined,
+  minHeightValue?: string
+): string | undefined {
+  if ((minHeight ?? "auto") === "custom") return minHeightValue || undefined;
+  return GALLERY_MIN_HEIGHT[minHeight ?? "auto"];
+}
 
 /** Resolve a background image public ID to a full-bleed cover URL (client-safe). */
 function bgImageUrl(publicId: string): string | null {
@@ -139,6 +151,7 @@ export function GalleryGridBlock({
   bgSpeed,
   overlayOpacity,
   minHeight,
+  minHeightValue,
   puck,
 }: GalleryGridProps & { puck?: BlockPuck }) {
   const columns = _style?.galleryColumns ?? 3;
@@ -162,7 +175,7 @@ export function GalleryGridBlock({
           position: "relative",
           overflow: "hidden",
           backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
-          minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+          minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
           padding: padVar("4rem 1.5rem"),
           display: "flex",
           alignItems: "center",
@@ -199,7 +212,7 @@ export function GalleryGridBlock({
         position: "relative",
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
-        minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+        minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
         padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
