@@ -19,6 +19,8 @@ export interface SerializedNotification {
   readAt: string | null
   silent?: boolean
   createdAt: string
+  /** Template vars for render-time translation. Absent on legacy rows — fall back to title/body. */
+  params?: Record<string, string | undefined>
 }
 
 interface NotificationContextValue {

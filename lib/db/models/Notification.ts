@@ -25,6 +25,9 @@ const notificationSchema = new Schema(
     title: { type: String, required: true },
     body: { type: String, required: true },
     href: { type: String, required: true },
+    // Dynamic template vars used to re-render the notification in the viewer's locale at read time.
+    // Stored as Mixed so the shape can evolve without a schema migration.
+    params: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 )
@@ -40,8 +43,10 @@ export type NotificationType =
   | 'team.removed'
   | 'team.deleted'
 
-export type INotification = InferSchemaType<typeof notificationSchema> & {
+export type INotification = Omit<InferSchemaType<typeof notificationSchema>, 'params'> & {
   _id: mongoose.Types.ObjectId
+  /** Template vars for render-time i18n translation. Missing on legacy rows — fall back to title/body. */
+  params?: Record<string, string | undefined>
 }
 
 export const Notification: Model<INotification> =

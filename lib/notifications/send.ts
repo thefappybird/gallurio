@@ -3,7 +3,7 @@ import { Notification } from '@/lib/db/models/Notification'
 import { getIO } from '@/lib/sockets/io'
 import { buildNotificationContent } from './messages'
 import { sendNotificationEmail } from '@/lib/email/notifications'
-import type { SendNotificationOptions, SerializedNotificationPayload } from './types'
+import type { SendNotificationOptions, SerializedNotificationPayload, NotificationVars } from './types'
 
 export async function sendNotification(opts: SendNotificationOptions): Promise<void> {
   if (opts.recipients.length === 0) return
@@ -33,6 +33,7 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         title,
         body,
         href,
+        params: opts.vars ?? {},
       }
     }),
   )
@@ -62,6 +63,7 @@ export async function sendNotification(opts: SendNotificationOptions): Promise<v
         readAt: null,
         silent: false,
         createdAt: doc.createdAt,
+        params: doc.params as NotificationVars | undefined,
       }
       io.to(`user:${doc.recipientWorkosUserId}`).emit('notification:new', payload)
     }

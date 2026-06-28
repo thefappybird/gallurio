@@ -46,4 +46,6 @@ export interface SerializedNotificationPayload {
   readAt: string | null
   silent?: boolean
   createdAt: Date | string
+  /** Template vars forwarded for render-time translation in the viewer's locale. */
+  params?: NotificationVars
 }

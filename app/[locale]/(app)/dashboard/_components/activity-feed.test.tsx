@@ -70,6 +70,7 @@ describe("ActivityFeed", () => {
         empty="Nothing here yet."
       />
     );
-    expect(screen.getByText(/1h ago/)).toBeInTheDocument();
+    // Intl.RelativeTimeFormat('en', {numeric:'auto'}).format(-1,'hour') → "1 hour ago"
+    expect(screen.getByText(/1 hour ago/)).toBeInTheDocument();
   });
 });

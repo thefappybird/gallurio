@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Bell, MessageSquare, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,21 +11,7 @@ import {
   loadMoreNotificationsAction,
   type SerializedNotification,
 } from "@/app/[locale]/(app)/notifications/_load-more-action";
-
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const secs = Math.floor(diff / 1000);
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
-  return `${Math.floor(months / 12)}y ago`;
-}
+import { formatRelativeTime } from "@/lib/i18n/relativeTime";
 
 function notificationIcon(type: string) {
   if (type.startsWith("inquiry")) return <MessageSquare className="size-4 shrink-0" />;
@@ -48,9 +35,11 @@ interface Props {
 export function NotificationsListPage({
   initialItems,
   initialNextCursor,
+  locale,
   messages,
 }: Props) {
   const router = useRouter();
+  const tt = useTranslations("app.notifications.types");
   const [items, setItems] = useState<SerializedNotification[]>(initialItems);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -111,48 +100,55 @@ export function NotificationsListPage({
         </div>
       ) : (
         <ul className="divide-y">
-          {items.map((item) => (
-            <li key={item._id}>
-              <button
-                type="button"
-                onClick={() => handleMarkRead(item)}
-                className={[
-                  "flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  !item.read ? "bg-accent/40" : "",
-                ].join(" ")}
-              >
-                <span
+          {items.map((item) => {
+            const hasParams = !!item.params && Object.keys(item.params).length > 0;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const displayTitle = hasParams ? (tt as any)(`${item.type}.title`, item.params) as string : item.title;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const displayBody = hasParams ? (tt as any)(`${item.type}.body`, item.params) as string : item.body;
+            return (
+              <li key={item._id}>
+                <button
+                  type="button"
+                  onClick={() => handleMarkRead(item)}
                   className={[
-                    "mt-0.5 flex size-8 shrink-0 items-center justify-center border",
-                    !item.read ? "text-foreground" : "text-muted-foreground",
+                    "flex w-full items-start gap-3 px-4 py-3 text-start transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    !item.read ? "bg-accent/40" : "",
                   ].join(" ")}
                 >
-                  {notificationIcon(item.type)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p
+                  <span
                     className={[
-                      "text-sm leading-snug",
-                      !item.read ? "font-semibold" : "font-medium",
+                      "mt-0.5 flex size-8 shrink-0 items-center justify-center border",
+                      !item.read ? "text-foreground" : "text-muted-foreground",
                     ].join(" ")}
                   >
-                    {item.title}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                    {item.body.length > 80 ? `${item.body.slice(0, 80)}…` : item.body}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {relativeTime(item.createdAt)}
+                    {notificationIcon(item.type)}
                   </span>
-                  {!item.read && (
-                    <span className="size-2 bg-primary" aria-hidden="true" />
-                  )}
-                </div>
-              </button>
-            </li>
-          ))}
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={[
+                        "text-sm leading-snug",
+                        !item.read ? "font-semibold" : "font-medium",
+                      ].join(" ")}
+                    >
+                      {displayTitle}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                      {displayBody.length > 80 ? `${displayBody.slice(0, 80)}…` : displayBody}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatRelativeTime(item.createdAt, locale)}
+                    </span>
+                    {!item.read && (
+                      <span className="size-2 bg-primary" aria-hidden="true" />
+                    )}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 

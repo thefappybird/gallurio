@@ -14,6 +14,8 @@ export interface SerializedNotification {
   read: boolean;
   readAt: string | null;
   createdAt: string;
+  /** Template vars for render-time translation. Absent on legacy rows — fall back to title/body. */
+  params?: Record<string, string | undefined>;
 }
 
 export async function loadMoreNotificationsAction(
@@ -40,6 +42,7 @@ export async function loadMoreNotificationsAction(
       read: n.read,
       readAt: n.readAt ? new Date(n.readAt as unknown as Date).toISOString() : null,
       createdAt: new Date(n.createdAt as unknown as Date).toISOString(),
+      params: n.params as Record<string, string | undefined> | undefined,
     })),
     nextCursor,
   };

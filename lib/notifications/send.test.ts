@@ -264,6 +264,52 @@ describe('sendNotification', () => {
     })
   })
 
+  describe('params persistence', () => {
+    it('persists params from opts.vars onto each inserted doc', async () => {
+      const vars = { clientName: 'Alice' }
+      await sendNotification(
+        makeOpts({
+          vars,
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+
+      const docs = (Notification.insertMany as ReturnType<typeof vi.fn>).mock.calls[0][0] as Array<{
+        params: typeof vars
+      }>
+      expect(docs[0].params).toEqual(vars)
+    })
+
+    it('persists empty params object when vars is undefined', async () => {
+      await sendNotification(
+        makeOpts({
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+
+      const docs = (Notification.insertMany as ReturnType<typeof vi.fn>).mock.calls[0][0] as Array<{
+        params: Record<string, unknown>
+      }>
+      expect(docs[0].params).toEqual({})
+    })
+
+    it('includes params in the socket emit payload', async () => {
+      const vars = { clientName: 'Bob' }
+      await sendNotification(
+        makeOpts({
+          vars,
+          recipients: [{ workosUserId: 'user-A', email: 'a@x.com' }],
+          triggeredByWorkosUserId: 'trigger',
+        }),
+      )
+
+      const emitArgs = mockEmit.mock.calls[0] as [string, { params?: typeof vars }]
+      expect(emitArgs[1].params).toEqual(vars)
+    })
+  })
+
   describe('tenant isolation', () => {
     it('scopes every inserted doc to the given workspaceId', async () => {
       const targetWsId = String(new Types.ObjectId())
