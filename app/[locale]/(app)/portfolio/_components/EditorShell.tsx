@@ -1096,7 +1096,19 @@ export function EditorShell({
     setIsNewUnsavedDraft(true);
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
-    setSavedSnapshot(null);
+    // Re-baseline savedSnapshot to the just-applied state so isDirty is false
+    // immediately after applyTemplate. Mirrors applyDraft's pattern exactly —
+    // field order must match the isDirty serialisation (~line 574).
+    setSavedSnapshot(JSON.stringify({
+      name: DEFAULT_DRAFT_NAME,
+      templateId: seed.templateId,
+      data: zoneDataRef.current,
+      brandKit: seed.brandKit as PortfolioBrandKit,
+      contact: seed.contact as PortfolioContactConfig,
+      header: (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG,
+      collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
+      formLocale,
+    }));
     ignoreNextChange.current = true;
     // Already prepared — pass directly to Puck without double-prepareForEditor.
     setPuckSeed(homeData as unknown as Data);

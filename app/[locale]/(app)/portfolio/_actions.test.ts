@@ -29,6 +29,7 @@ import {
   dismissPortfolioGuideAction,
   saveThemeAction,
   updateThemeAction,
+  updatePortfolioSlugAction,
 } from "./_actions";
 
 let workspaceId: Types.ObjectId;
@@ -428,5 +429,56 @@ describe("updateThemeAction", () => {
     await updateThemeAction("a", "Hijacked", DEFAULT_BRAND_KIT);
     const theirs = await Workspace.findById(otherWs._id).lean();
     expect(theirs!.publicPage!.savedThemes![0].name).toBe("Theirs");
+  });
+});
+
+describe("updatePortfolioSlugAction", () => {
+  it("owner happy path — updates slug and returns ok", async () => {
+    const result = await updatePortfolioSlugAction("new-slug");
+    expect(result).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.slug).toBe("new-slug");
+  });
+
+  it("staff role — returns owner_only, slug unchanged", async () => {
+    mockCtx.role = "staff";
+    const result = await updatePortfolioSlugAction("new-slug");
+    expect(result).toEqual({ error: "owner_only" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.slug).toBe("studio-aurora");
+  });
+
+  it("invalid slug (too short) — returns invalid_slug", async () => {
+    const result = await updatePortfolioSlugAction("ab");
+    expect(result).toEqual({ error: "invalid_slug" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.slug).toBe("studio-aurora");
+  });
+
+  it("taken by another workspace — returns url_taken", async () => {
+    await Workspace.create({
+      slug: "taken-slug",
+      name: "Another Studio",
+      ownerUserId: "user_other",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+    });
+    const result = await updatePortfolioSlugAction("taken-slug");
+    expect(result).toEqual({ error: "url_taken" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws?.slug).toBe("studio-aurora");
+  });
+
+  it("tenant isolation — does not modify other workspace's slug", async () => {
+    const otherWs = await Workspace.create({
+      slug: "other-studio",
+      name: "Other Studio",
+      ownerUserId: "user_other",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+    });
+    await updatePortfolioSlugAction("new-slug");
+    const other = await Workspace.findById(otherWs._id).lean();
+    expect(other?.slug).toBe("other-studio");
   });
 });

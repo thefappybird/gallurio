@@ -11,6 +11,7 @@ import {
   portfolioHeaderConfigSchema,
   portfolioCollectionsPopupConfigSchema,
 } from "@/lib/validators/publicPage";
+import { slugSchema } from "@/lib/validators/workspace";
 import { reseedPortfolioFromTemplate, type PortfolioSeed } from "@/lib/page-builder/seedPortfolio";
 import { PORTFOLIO_TEMPLATE_IDS } from "@/lib/page-builder/templates/types";
 import { SAVED_THEMES_MAX, type PortfolioSavedTheme } from "@/lib/page-builder/types";
@@ -386,6 +387,44 @@ export async function updateThemeAction(
     }
   );
   return { ok: true, theme: updated };
+}
+
+/**
+ * Update the workspace's public URL slug. Owner-only.
+ * Maps E11000 (unique index race) and pre-flight slug clash to "url_taken".
+ */
+export async function updatePortfolioSlugAction(
+  slug: unknown,
+): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = slugSchema.safeParse(slug);
+  if (!parsed.success) return { error: "invalid_slug" };
+
+  await connectDB();
+  const clash = await Workspace.findOne({
+    slug: parsed.data,
+    _id: { $ne: ctx.workspace._id },
+  }).lean();
+  if (clash) return { error: "url_taken" };
+
+  try {
+    await Workspace.updateOne({ _id: ctx.workspace._id }, { slug: parsed.data });
+    revalidatePath(`/w/${parsed.data}`);
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code: unknown }).code === 11000
+    ) {
+      return { error: "url_taken" };
+    }
+    throw err;
+  }
+
+  return { ok: true };
 }
 
 /**

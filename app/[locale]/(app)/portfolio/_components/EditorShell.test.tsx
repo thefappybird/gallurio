@@ -1083,4 +1083,35 @@ describe("EditorShell", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (mockPuckApi.appState as any).ui = origUi;
   });
+
+  it("editor is not dirty immediately after applying a template (Fix #4)", async () => {
+    // Start with a clean draft so the guard fires immediately without the
+    // unsaved-changes modal (baseProps has activeDraftId="d1" + matching snapshot).
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Open template picker via Drafts → Add new draft (clean draft → no guard).
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    await screen.findByText("Choose a template");
+
+    // Apply Minimal — no unsaved-changes guard fires.
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Template picker closes; wait for Puck to remount and all state to settle.
+    await waitFor(() =>
+      expect(screen.queryByText("Choose a template")).not.toBeInTheDocument(),
+    );
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    // isDirty drives the beforeunload guard: if isDirty=true the handler calls
+    // e.preventDefault(). After applyTemplate with the fix, isDirty=false so
+    // preventDefault must NOT be called.
+    await waitFor(() => {
+      const event = new Event("beforeunload", { cancelable: true });
+      const spy = vi.spyOn(event, "preventDefault");
+      window.dispatchEvent(event);
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
 });
