@@ -218,4 +218,14 @@ describe("PortfolioHeader", () => {
     const galleryLinks = screen.getAllByRole("link", { name: "Gallery" });
     expect(galleryLinks[0]).toHaveAttribute("href", "/w/luna-studio/gallery");
   });
+
+  // C2: active-link underline effective default — undefined must show the underline
+  it("active link shows underline by default (no config = effective default ON)", () => {
+    render(<PortfolioHeader slug="luna-studio" labels={labels} />);
+    const homeLink = screen.getByRole("link", { name: "Home" });
+    // happy-dom parses the border shorthand — check the individual borderBottomColor
+    // is the accent token, NOT transparent
+    expect(homeLink.style.borderBottomColor).not.toBe("transparent");
+    expect(homeLink.getAttribute("style")).toContain("--pf-color-accent");
+  });
 });
