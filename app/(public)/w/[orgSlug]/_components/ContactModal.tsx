@@ -5,7 +5,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 import { useGlobalContactTrigger } from "@/lib/hooks/useGlobalContactTrigger";
 import { ContactForm, type InquiryFormLabels } from "./ContactForm";
-import { resolveAddSessionAppearance, resolveSubmitAppearance } from "./contactButtonAppearance";
+import { resolveAddSessionAppearance, resolveSubmitAppearance, resolveContactColor } from "./contactButtonAppearance";
 import { ContactConfirmation } from "./ContactConfirmation";
 
 export type ContactModalLabels = {
@@ -25,12 +25,6 @@ const CONTACT_RADIUS_MAP: Record<string, string> = {
   subtle: "0.25rem",
   rounded: "0.5rem",
 };
-
-function resolveContactColor(value: string | undefined, fallback: string): string {
-  if (!value) return fallback;
-  if (value.startsWith("#")) return value;
-  return `var(--pf-color-${value}, ${fallback})`;
-}
 
 function resolvePopupExtraStyles(popupStyle?: string): React.CSSProperties {
   if (popupStyle === "outline") {

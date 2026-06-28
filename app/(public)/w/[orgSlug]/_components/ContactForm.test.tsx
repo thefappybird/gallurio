@@ -450,6 +450,23 @@ describe("getActiveTabExtraStyle", () => {
     const style = getActiveTabExtraStyle({ activeTabColor: "primary" });
     expect(style.color).toBe("var(--pf-color-primary, var(--pf-color-fg))");
   });
+
+  // C1: 'background' must resolve to --pf-color-bg, NOT --pf-color-background
+  it("'background' token → --pf-color-bg (not --pf-color-background)", () => {
+    const style = getActiveTabExtraStyle({ activeTabColor: "background" });
+    expect(style.color).toContain("--pf-color-bg");
+    expect(style.color).not.toContain("--pf-color-background");
+  });
+
+  // C1: underline color 'background' → --pf-color-bg, not --pf-color-background
+  it("'background' token for underline → --pf-color-bg (not --pf-color-background)", () => {
+    const style = getActiveTabExtraStyle({
+      activeTabUnderline: true,
+      tabUnderlineColor: "background",
+    });
+    expect(style.borderBottom).toContain("--pf-color-bg");
+    expect(style.borderBottom).not.toContain("--pf-color-background");
+  });
 });
 
 describe("ContactForm — responsive container", () => {

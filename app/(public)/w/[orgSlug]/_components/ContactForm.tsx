@@ -18,6 +18,7 @@ import {
   CRM_ERROR_COLOR,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
+import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
@@ -133,7 +134,11 @@ const TAB_RADIUS_MAP: Record<string, string> = {
 function resolveTabColor(token: string | undefined, fallback: string): string {
   if (!token) return fallback;
   if (token.startsWith("#")) return token;
-  return `var(--pf-color-${token}, ${fallback})`;
+  // Route through the canonical helper so "background" → "--pf-color-bg", not "--pf-color-background".
+  const cssVar = colorTokenToVar(token);
+  if (!cssVar || !cssVar.startsWith("var(")) return fallback;
+  // Insert fallback before closing paren: "var(--pf-color-bg)" → "var(--pf-color-bg, fallback)"
+  return `${cssVar.slice(0, -1)}, ${fallback})`;
 }
 
 function buildTabColorWithOpacity(color: string, opacity: number): string {
