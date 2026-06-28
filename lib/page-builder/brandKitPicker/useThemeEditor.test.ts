@@ -234,12 +234,14 @@ describe("useThemeEditor", () => {
   });
 
   describe("requestAddNew guard", () => {
-    it("requestAddNew with NO unsaved state starts a blank new theme immediately (no guard)", () => {
+    it("requestAddNew with NO unsaved state seeds a new editable current tile immediately (hasUnsavedCurrent = true)", () => {
       const h = harness();
       act(() => h.result.current.requestAddNew());
       expect(h.result.current.addNewGuardOpen).toBe(false);
-      // currentTheme is already null, selection remains none — no error
-      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      // A new editable tile is seeded from the current canvas kit — user can immediately name + save it
+      expect(h.result.current.hasUnsavedCurrent).toBe(true);
+      expect(h.result.current.selection).toEqual({ kind: "current" });
+      expect(h.result.current.currentThemeName).toBe("");
     });
 
     it("requestAddNew while editing a saved theme with a dirty diff opens the guard", () => {
@@ -279,7 +281,7 @@ describe("useThemeEditor", () => {
       expect(h.result.current.hasUnsavedCurrent).toBe(true);
     });
 
-    it("Save in the add-new guard with a unique name persists the draft and starts the new theme", async () => {
+    it("Save in the add-new guard with a unique name persists the draft and seeds a fresh editable tile", async () => {
       const h = harness();
       act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
       act(() => h.result.current.requestAddNew());
@@ -287,19 +289,22 @@ describe("useThemeEditor", () => {
       await act(async () => { await h.result.current.saveAndAddNew(); });
       expect(h.onSaveTheme).toHaveBeenCalledWith("Brand New");
       expect(h.result.current.addNewGuardOpen).toBe(false);
-      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      // A fresh editable tile is seeded — user can immediately start the next theme
+      expect(h.result.current.hasUnsavedCurrent).toBe(true);
       expect(h.result.current.editing).toBeNull();
     });
 
-    it("Discard in the add-new guard drops the unsaved draft and reverts the canvas", () => {
+    it("Discard in the add-new guard reverts the canvas and seeds a fresh editable tile", () => {
       const h = harness();
       act(() => h.result.current.changeControl({ ...DEFAULT_BRAND_KIT, accentColor: "#abcabc" }));
       act(() => h.result.current.requestAddNew());
       h.onChange.mockClear();
       act(() => h.result.current.discardAndAddNew());
       expect(h.result.current.addNewGuardOpen).toBe(false);
-      expect(h.result.current.hasUnsavedCurrent).toBe(false);
+      // Canvas reverted to the last applied tile kit
       expect(h.onChange).toHaveBeenCalledWith(DEFAULT_BRAND_KIT);
+      // A fresh editable tile seeded from the reverted kit
+      expect(h.result.current.hasUnsavedCurrent).toBe(true);
     });
 
     it("Keep editing (cancelAddNew) closes the guard and stays on the current theme", () => {
