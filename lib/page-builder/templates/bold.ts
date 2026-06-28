@@ -3,7 +3,7 @@ import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
 /**
- * Bold — high-contrast dark-navy accent, Montserrat headings, grid mosaic hero.
+ * Bold — High-contrast navy accent, grid mosaic hero, strong typographic presence.
  * Faithful to the "Bold" draft (themePreset: bold).
  * ContainerAnchor children omitted — fillBlockDefaults re-injects them on apply.
  */
@@ -25,7 +25,7 @@ export const boldTemplate: PortfolioTemplate = {
     addSessionButtonTextColor: "accent",
     addSessionButtonRadius: "subtle",
     tabFontSize: "sm",
-    tabColor: "background",
+    tabColor: "foreground",
     activeTabScale: false,
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
@@ -46,247 +46,448 @@ export const boldTemplate: PortfolioTemplate = {
   },
   defaultCollectionsPopup: {},
   seedData: () => ({
-    home: zone([
-      {
-        type: "Columns",
-        props: {
-          id: "Columns-bold-home-hero",
-          columns: 4,
-          _style: { gap: 0, paddingLeft: "0px", paddingRight: "0px", paddingTop: "0px", paddingBottom: "0px" },
-          content: [
-            {
-              type: "HeroPreset",
-              props: {
-                id: "HeroPreset-bold-hero",
-                backgroundImages: [],
-                overlayOpacity: 50,
-                minHeight: "tall",
-                alignX: "center",
-                alignY: "center",
-                _style: { bgColorToken: "accent", colSpan: 2, alignItems: "center" },
-                content: [
-                  {
-                    type: "Heading",
-                    props: {
-                      id: "Heading-bold-hero-h1",
-                      level: "h1",
-                      text: "Capturing moments that last forever",
-                      _style: { textColorToken: "background", bold: true },
+    home: zone(
+      [
+        {
+          type: "Columns",
+          props: {
+            content: [
+              {
+                type: "HeroPreset",
+                props: {
+                  content: [
+                    {
+                      type: "Heading",
+                      props: {
+                        id: "Heading-bold-home-3",
+                        level: "h1",
+                        text: "Capturing moments that last forever",
+                        _style: {
+                          textColorToken: "background",
+                          bold: true,
+                        },
+                      },
                     },
-                  },
-                  {
-                    type: "Text",
-                    props: {
-                      id: "Text-bold-hero-sub",
-                      text: "Fine art photography for weddings, portraits, and events.",
-                      _style: { textColorToken: "background" },
+                    {
+                      type: "Text",
+                      props: {
+                        id: "Text-bold-home-4",
+                        text: "Fine art photography for weddings, portraits, and events.",
+                        _style: {
+                          textColorToken: "background",
+                        },
+                      },
                     },
-                  },
-                  {
-                    type: "Button",
-                    props: {
-                      id: "Button-bold-hero-cta",
-                      label: "Get in Touch",
-                      action: "open-contact",
-                      align: "center",
+                    {
+                      type: "Button",
+                      props: {
+                        id: "Button-bold-home-5",
+                        label: "Get in Touch",
+                        action: "open-contact",
+                        align: "center",
+                      },
                     },
+                  ],
+                  id: "HeroPreset-bold-home-2",
+                  backgroundImages: [],
+                  overlayOpacity: 50,
+                  minHeight: "tall",
+                  alignX: "center",
+                  alignY: "center",
+                  _style: {
+                    bgColorToken: "accent",
+                    colSpan: 2,
+                    alignItems: "center",
                   },
-                ],
+                },
               },
-            },
-            {
-              type: "Container",
-              props: {
-                id: "Container-bold-home-c1",
-                backgroundImages: [],
-                bgAnimation: "crossfade",
-                bgSpeed: "medium",
-                overlayOpacity: 0,
-                minHeight: "auto",
-                alignX: "left",
-                alignY: "top",
-                _style: { bgColorToken: "primary" },
-                content: [],
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-bold-home-7",
+                        height: 0,
+                      },
+                    },
+                  ],
+                  id: "Container-bold-home-6",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "primary",
+                  },
+                },
               },
-            },
-            {
-              type: "Container",
-              props: {
-                id: "Container-bold-home-c2",
-                backgroundImages: [],
-                bgAnimation: "crossfade",
-                bgSpeed: "medium",
-                overlayOpacity: 0,
-                minHeight: "auto",
-                alignX: "left",
-                alignY: "top",
-                _style: { bgColorToken: "accent" },
-                content: [],
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-bold-home-9",
+                        height: 0,
+                      },
+                    },
+                  ],
+                  id: "Container-bold-home-8",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "accent",
+                  },
+                },
               },
+            ],
+            id: "Columns-bold-home-1",
+            columns: 4,
+            _style: {
+              gap: 0,
+              paddingLeft: "0px",
+              paddingRight: "0px",
+              paddingTop: "0px",
+              paddingBottom: "0px",
             },
-          ],
+            overallWidth: "full",
+          },
         },
-      },
-      {
-        type: "ServicesPreset",
-        props: {
-          id: "ServicesPreset-bold",
-          backgroundImages: [],
-          overlayOpacity: 0,
-          minHeight: "auto",
-          alignX: "center",
-          alignY: "top",
-          content: [
-            {
-              type: "Heading",
-              props: { id: "Heading-bold-svc-h2", level: "h2", text: "Services" },
-            },
-            {
-              type: "Columns",
-              props: {
-                id: "Columns-bold-svc",
-                columns: 3,
-                content: [
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-bold-svc-1",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-bold-svc-1", level: "h3", text: "Wedding Photography" } },
-                        { type: "Text", props: { id: "Text-bold-svc-1a", text: "Full-day coverage of your most important day." } },
-                        { type: "Text", props: { id: "Text-bold-svc-1b", text: "From ₱30,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
-                    },
-                  },
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-bold-svc-2",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-bold-svc-2", level: "h3", text: "Portrait Sessions" } },
-                        { type: "Text", props: { id: "Text-bold-svc-2a", text: "Individual or family portraits in natural light." } },
-                        { type: "Text", props: { id: "Text-bold-svc-2b", text: "From ₱8,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
-                    },
-                  },
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-bold-svc-3",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 24, paddingX: 24 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-bold-svc-3", level: "h3", text: "Event Coverage" } },
-                        { type: "Text", props: { id: "Text-bold-svc-3a", text: "Corporate events, debuts, and intimate gatherings." } },
-                        { type: "Text", props: { id: "Text-bold-svc-3b", text: "From ₱15,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
-                    },
-                  },
-                ],
+        {
+          type: "ServicesPreset",
+          props: {
+            content: [
+              {
+                type: "Heading",
+                props: {
+                  id: "Heading-bold-home-11",
+                  level: "h2",
+                  text: "Services",
+                },
               },
-            },
-          ],
+              {
+                type: "Columns",
+                props: {
+                  content: [
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-bold-home-14",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-bold-home-15",
+                              level: "h3",
+                              text: "Wedding Photography",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-16",
+                              text: "Full-day coverage of your most important day.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-17",
+                              text: "From ₱30,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-bold-home-13",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
+                    },
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-bold-home-19",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-bold-home-20",
+                              level: "h3",
+                              text: "Portrait Sessions",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-21",
+                              text: "Individual or family portraits in natural light.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-22",
+                              text: "From ₱8,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-bold-home-18",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
+                    },
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-bold-home-24",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-bold-home-25",
+                              level: "h3",
+                              text: "Event Coverage",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-26",
+                              text: "Corporate events, debuts, and intimate gatherings.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-bold-home-27",
+                              text: "From ₱15,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-bold-home-23",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
+                    },
+                  ],
+                  id: "Columns-bold-home-12",
+                  columns: 3,
+                },
+              },
+            ],
+            id: "ServicesPreset-bold-home-10",
+            backgroundImages: [],
+            overlayOpacity: 0,
+            minHeight: "auto",
+            alignX: "center",
+            alignY: "top",
+            bgAnimation: "crossfade",
+            bgSpeed: "medium",
+          },
         },
-      },
-    ]),
-    gallery: zone([
-      {
-        type: "Columns",
-        props: {
-          id: "Columns-bold-gal-grid",
-          columns: 4,
-          _style: { gap: 0, paddingLeft: "0px", paddingRight: "0px", paddingTop: "0px", paddingBottom: "0px" },
-          content: [
-            {
-              type: "Container",
-              props: {
-                id: "Container-bold-gal-c1",
-                backgroundImages: [],
-                bgAnimation: "crossfade",
-                bgSpeed: "medium",
-                overlayOpacity: 0,
-                minHeight: "auto",
-                alignX: "left",
-                alignY: "top",
-                _style: { bgColorToken: "accent" },
-                content: [],
-              },
-            },
-            {
-              type: "Container",
-              props: {
-                id: "Container-bold-gal-c2",
-                backgroundImages: [],
-                bgAnimation: "crossfade",
-                bgSpeed: "medium",
-                overlayOpacity: 0,
-                minHeight: "auto",
-                alignX: "left",
-                alignY: "top",
-                _style: { bgColorToken: "primary" },
-                content: [],
-              },
-            },
-            {
-              type: "GalleryLandingPreset",
-              props: {
-                id: "GalleryLandingPreset-bold",
-                backgroundImages: [],
-                overlayOpacity: 40,
-                minHeight: "medium",
-                alignX: "center",
-                alignY: "center",
-                _style: { bgColorToken: "accent", colSpan: 2, alignItems: "center" },
-                content: [
-                  {
-                    type: "Heading",
-                    props: {
-                      id: "Heading-bold-glp-h2",
-                      level: "h2",
-                      text: "Our gallery",
-                      _style: { textColorToken: "background", bold: true },
+      ]
+    ),
+    gallery: zone(
+      [
+        {
+          type: "Columns",
+          props: {
+            content: [
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-bold-gal-3",
+                        height: 0,
+                      },
                     },
+                  ],
+                  id: "Container-bold-gal-2",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "accent",
                   },
-                  {
-                    type: "Text",
-                    props: {
-                      id: "Text-bold-glp-sub",
-                      text: "A curated look at our work.",
-                      _style: { textColorToken: "background" },
-                    },
-                  },
-                ],
+                },
               },
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-bold-gal-5",
+                        height: 0,
+                      },
+                    },
+                  ],
+                  id: "Container-bold-gal-4",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "primary",
+                  },
+                },
+              },
+              {
+                type: "GalleryLandingPreset",
+                props: {
+                  content: [
+                    {
+                      type: "Heading",
+                      props: {
+                        id: "Heading-bold-gal-7",
+                        level: "h2",
+                        text: "Our gallery",
+                        _style: {
+                          textColorToken: "background",
+                          bold: true,
+                        },
+                      },
+                    },
+                    {
+                      type: "Text",
+                      props: {
+                        id: "Text-bold-gal-8",
+                        text: "A curated look at our work.",
+                        _style: {
+                          textColorToken: "background",
+                        },
+                      },
+                    },
+                  ],
+                  id: "GalleryLandingPreset-bold-gal-6",
+                  backgroundImages: [],
+                  overlayOpacity: 40,
+                  minHeight: "medium",
+                  alignX: "center",
+                  alignY: "center",
+                  _style: {
+                    bgColorToken: "accent",
+                    colSpan: 2,
+                    alignItems: "center",
+                  },
+                },
+              },
+            ],
+            id: "Columns-bold-gal-1",
+            columns: 4,
+            _style: {
+              gap: 0,
+              paddingLeft: "0px",
+              paddingRight: "0px",
+              paddingTop: "0px",
+              paddingBottom: "0px",
             },
-          ],
+            overallWidth: "full",
+          },
         },
-      },
-      {
-        type: "GalleryGridPreset",
-        props: {
-          id: "GalleryGridPreset-bold",
-          backgroundImages: [],
-          overlayOpacity: 0,
-          minHeight: "auto",
-          alignX: "left",
-          alignY: "top",
-          content: [
-            {
-              type: "Heading",
-              props: { id: "Heading-bold-ggp-h2", level: "h2", text: "Gallery highlights" },
-            },
-            {
-              type: "Text",
-              props: { id: "Text-bold-ggp-sub", text: "A curated selection from one collection." },
-            },
-            {
-              type: "GalleryGrid",
-              props: { id: "GalleryGrid-bold", images: [], columns: 3, gap: "normal" },
-            },
-          ],
+        {
+          type: "GalleryGridPreset",
+          props: {
+            content: [
+              {
+                type: "Heading",
+                props: {
+                  id: "Heading-bold-gal-10",
+                  level: "h2",
+                  text: "Gallery highlights",
+                },
+              },
+              {
+                type: "Text",
+                props: {
+                  id: "Text-bold-gal-11",
+                  text: "A curated selection from one collection.",
+                },
+              },
+              {
+                type: "GalleryGrid",
+                props: {
+                  id: "GalleryGrid-bold-gal-12",
+                  images: [],
+                  columns: 3,
+                  gap: "normal",
+                },
+              },
+            ],
+            id: "GalleryGridPreset-bold-gal-9",
+            backgroundImages: [],
+            overlayOpacity: 0,
+            minHeight: "auto",
+            alignX: "left",
+            alignY: "top",
+            bgAnimation: "crossfade",
+            bgSpeed: "medium",
+          },
         },
-      },
-    ]),
+      ]
+    ),
   }),
 };

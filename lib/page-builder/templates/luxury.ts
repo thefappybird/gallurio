@@ -3,7 +3,7 @@ import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
 /**
- * Luxury — warm gold accent, Cormorant Garamond headings, split-panel editorial hero.
+ * Luxury — Warm gold accent, editorial split-panel hero, refined typographic hierarchy.
  * Faithful to the "Venue & Stylist" draft (themePreset: luxury).
  * ContainerAnchor children omitted — fillBlockDefaults re-injects them on apply.
  */
@@ -15,258 +15,409 @@ export const luxuryTemplate: PortfolioTemplate = {
   previewImage: "/template-previews/luxury.svg",
   defaultBrandKit: { ...THEME_PRESET_DEFINITIONS.luxury.brandKit },
   defaultContact: {
-    title: "Inquire now",
-    description: "We'd love to learn about your vision.",
-    buttonStyle: "outline",
-    buttonColor: "foreground",
-    buttonRadius: "sharp",
-    addSessionButtonStyle: "solid",
+    title: "Get in touch",
+    description: "Send a message and we'll get back to you soon.",
+    buttonStyle: "solid",
+    buttonColor: "accent",
+    buttonTextColor: "secondary",
+    buttonRadius: "subtle",
+    addSessionButtonStyle: "outline",
     addSessionButtonColor: "accent",
-    addSessionButtonTextColor: "background",
-    addSessionButtonRadius: "sharp",
+    addSessionButtonTextColor: "accent",
+    addSessionButtonRadius: "subtle",
     tabFontSize: "sm",
-    tabColor: "background",
-    activeTabScale: false,
+    tabColor: "foreground",
+    activeTabColor: "accent",
     activeTabUnderline: true,
     tabUnderlineColor: "accent",
   },
   defaultHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: "foreground",
-    navbarSize: "balanced",
-    activeLinkScale: false,
+    fontSize: "sm",
+    activeLinkScale: true,
     activeLinkHighlight: false,
     highlightOpacity: 100,
-    activeLinkRadius: "sharp",
-    activeLinkUnderline: true,
-    contactButtonColor: "foreground",
-    contactButtonTextColor: "background",
+    contactButtonColor: "accent",
+    contactButtonTextColor: "secondary",
     contactButtonOpacity: 100,
-    contactButtonRadius: "sharp",
+    contactButtonRadius: "",
   },
   defaultCollectionsPopup: {},
   seedData: () => ({
-    home: zone([
-      {
-        type: "Columns",
-        props: {
-          id: "Columns-luxury-hero",
-          columns: 2,
-          _style: { gap: 0, paddingLeft: "0px", paddingRight: "0px", paddingTop: "0px", paddingBottom: "0px" },
-          content: [
-            {
-              type: "HeroPreset",
-              props: {
-                id: "HeroPreset-luxury-hero",
-                backgroundImages: [],
-                overlayOpacity: 50,
-                minHeight: "tall",
-                alignX: "center",
-                alignY: "center",
-                _style: { bgColorToken: "accent", alignItems: "center" },
-                content: [
-                  {
-                    type: "Heading",
-                    props: {
-                      id: "Heading-luxury-hero-h1",
-                      level: "h1",
-                      text: "An extraordinary venue for extraordinary moments",
-                      _style: { textColorToken: "background", bold: true },
-                    },
+    home: zone(
+      [
+        {
+          type: "HeroPreset",
+          props: {
+            id: "HeroPreset-luxury-home-1",
+            content: [
+              {
+                type: "Heading",
+                props: {
+                  id: "Heading-luxury-home-2",
+                  level: "h1",
+                  text: "Capturing moments that last forever",
+                  _style: {
+                    textColorToken: "background",
+                    bold: true,
                   },
-                  {
-                    type: "Text",
-                    props: {
-                      id: "Text-luxury-hero-sub",
-                      text: "Elegance, warmth, and impeccable service for every event.",
-                      _style: { textColorToken: "background" },
-                    },
-                  },
-                  {
-                    type: "Button",
-                    props: {
-                      id: "Button-luxury-hero-cta",
-                      label: "Inquire Now",
-                      action: "open-contact",
-                      align: "center",
-                      _style: { buttonStyle: "outline" },
-                    },
-                  },
-                ],
+                },
               },
-            },
-            {
-              type: "Container",
-              props: {
-                id: "Container-luxury-hero-panel",
-                backgroundImages: [],
-                bgAnimation: "crossfade",
-                bgSpeed: "medium",
-                overlayOpacity: 0,
-                minHeight: "auto",
-                alignX: "left",
-                alignY: "top",
-                _style: { bgColorToken: "primary" },
-                content: [],
+              {
+                type: "Text",
+                props: {
+                  id: "Text-luxury-home-3",
+                  text: "Fine art photography for weddings, portraits, and events.",
+                  _style: {
+                    textColorToken: "background",
+                  },
+                },
               },
+              {
+                type: "Button",
+                props: {
+                  id: "Button-luxury-home-4",
+                  label: "Get in Touch",
+                  action: "open-contact",
+                  align: "center",
+                },
+              },
+            ],
+            backgroundImages: [],
+            overlayOpacity: 50,
+            minHeight: "tall",
+            alignX: "center",
+            alignY: "center",
+            _style: {
+              bgColorToken: "accent",
             },
-          ],
+            bgAnimation: "crossfade",
+            bgSpeed: "medium",
+          },
         },
-      },
-      {
-        type: "AboutPreset",
-        props: {
-          id: "AboutPreset-luxury",
-          backgroundImages: [],
-          overlayOpacity: 0,
-          minHeight: "auto",
-          alignX: "center",
-          alignY: "top",
-          content: [
-            {
-              type: "Heading",
-              props: { id: "Heading-luxury-about-h2", level: "h2", text: "Our Story" },
-            },
-            {
-              type: "Text",
-              props: {
-                id: "Text-luxury-about-body",
-                text: "We are passionate creators dedicated to crafting unforgettable experiences. From intimate gatherings to grand celebrations, every event is a masterpiece in the making.",
+        {
+          type: "ServicesPreset",
+          props: {
+            id: "ServicesPreset-luxury-home-5",
+            content: [
+              {
+                type: "Heading",
+                props: {
+                  id: "Heading-luxury-home-6",
+                  level: "h2",
+                  text: "Services",
+                },
               },
-            },
-            {
-              type: "Button",
-              props: {
-                id: "Button-luxury-about-cta",
-                label: "View Our Work",
-                action: "go-to-gallery",
-                align: "center",
-                _style: { buttonStyle: "outline" },
-              },
-            },
-          ],
-        },
-      },
-      {
-        type: "ServicesPreset",
-        props: {
-          id: "ServicesPreset-luxury",
-          backgroundImages: [],
-          overlayOpacity: 0,
-          minHeight: "auto",
-          alignX: "center",
-          alignY: "top",
-          content: [
-            {
-              type: "Heading",
-              props: { id: "Heading-luxury-svc-h2", level: "h2", text: "Services" },
-            },
-            {
-              type: "Columns",
-              props: {
-                id: "Columns-luxury-svc",
-                columns: 3,
-                content: [
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-luxury-svc-1",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 32, paddingX: 32 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-luxury-svc-1", level: "h3", text: "Full Venue Rental" } },
-                        { type: "Text", props: { id: "Text-luxury-svc-1a", text: "Exclusive access to our space for your special event." } },
-                        { type: "Text", props: { id: "Text-luxury-svc-1b", text: "From ₱80,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
+              {
+                type: "Columns",
+                props: {
+                  content: [
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-luxury-home-9",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-luxury-home-10",
+                              level: "h3",
+                              text: "Wedding Photography",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-11",
+                              text: "Full-day coverage of your most important day.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-12",
+                              text: "From ₱30,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-luxury-home-8",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
                     },
-                  },
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-luxury-svc-2",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 32, paddingX: 32 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-luxury-svc-2", level: "h3", text: "Styling & Design" } },
-                        { type: "Text", props: { id: "Text-luxury-svc-2a", text: "Full décor design, sourcing, and setup for your vision." } },
-                        { type: "Text", props: { id: "Text-luxury-svc-2b", text: "From ₱25,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-luxury-home-14",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-luxury-home-15",
+                              level: "h3",
+                              text: "Portrait Sessions",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-16",
+                              text: "Individual or family portraits in natural light.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-17",
+                              text: "From ₱8,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-luxury-home-13",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
                     },
-                  },
-                  {
-                    type: "Container",
-                    props: {
-                      id: "Container-luxury-svc-3",
-                      _style: { borderWidth: 1, borderColorToken: "foreground", paddingY: 32, paddingX: 32 },
-                      content: [
-                        { type: "Heading", props: { id: "Heading-luxury-svc-3", level: "h3", text: "Day-of Coordination" } },
-                        { type: "Text", props: { id: "Text-luxury-svc-3a", text: "Seamless execution so you can enjoy every moment." } },
-                        { type: "Text", props: { id: "Text-luxury-svc-3b", text: "From ₱15,000", _style: { textColorToken: "accent", bold: true } } },
-                      ],
+                    {
+                      type: "Container",
+                      props: {
+                        content: [
+                          {
+                            type: "ContainerAnchor",
+                            props: {
+                              id: "ContainerAnchor-luxury-home-19",
+                              height: 0,
+                            },
+                          },
+                          {
+                            type: "Heading",
+                            props: {
+                              id: "Heading-luxury-home-20",
+                              level: "h3",
+                              text: "Event Coverage",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-21",
+                              text: "Corporate events, debuts, and intimate gatherings.",
+                            },
+                          },
+                          {
+                            type: "Text",
+                            props: {
+                              id: "Text-luxury-home-22",
+                              text: "From ₱15,000",
+                              _style: {
+                                textColorToken: "accent",
+                                bold: true,
+                              },
+                            },
+                          },
+                        ],
+                        id: "Container-luxury-home-18",
+                        _style: {
+                          borderWidth: 1,
+                          borderColorToken: "foreground",
+                          paddingY: 24,
+                          paddingX: 24,
+                        },
+                      },
                     },
+                  ],
+                  id: "Columns-luxury-home-7",
+                  columns: 3,
+                },
+              },
+            ],
+            backgroundImages: [],
+            overlayOpacity: 0,
+            minHeight: "auto",
+            alignX: "center",
+            alignY: "top",
+            bgAnimation: "crossfade",
+            bgSpeed: "medium",
+          },
+        },
+      ]
+    ),
+    gallery: zone(
+      [
+        {
+          type: "Columns",
+          props: {
+            content: [
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-luxury-gal-3",
+                        height: 0,
+                      },
+                    },
+                  ],
+                  id: "Container-luxury-gal-2",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "secondary",
                   },
-                ],
+                },
               },
-            },
-          ],
-        },
-      },
-    ]),
-    gallery: zone([
-      {
-        type: "GalleryLandingPreset",
-        props: {
-          id: "GalleryLandingPreset-luxury",
-          backgroundImages: [],
-          overlayOpacity: 50,
-          minHeight: "medium",
-          alignX: "center",
-          alignY: "center",
-          _style: { bgColorToken: "accent", alignItems: "center" },
-          content: [
-            {
-              type: "Heading",
-              props: {
-                id: "Heading-luxury-glp-h1",
-                level: "h1",
-                text: "Gallery",
-                _style: { textColorToken: "background", bold: true },
+              {
+                type: "GalleryLandingPreset",
+                props: {
+                  content: [
+                    {
+                      type: "Heading",
+                      props: {
+                        id: "Heading-luxury-gal-5",
+                        level: "h2",
+                        text: "Our gallery",
+                        _style: {
+                          textColorToken: "background",
+                          bold: true,
+                        },
+                      },
+                    },
+                    {
+                      type: "Text",
+                      props: {
+                        id: "Text-luxury-gal-6",
+                        text: "A curated look at our work.",
+                        _style: {
+                          textColorToken: "background",
+                        },
+                      },
+                    },
+                  ],
+                  id: "GalleryLandingPreset-luxury-gal-4",
+                  backgroundImages: [],
+                  overlayOpacity: 40,
+                  minHeight: "medium",
+                  alignX: "center",
+                  alignY: "center",
+                  _style: {
+                    bgColorToken: "accent",
+                    colSpan: 2,
+                    alignItems: "center",
+                  },
+                },
               },
-            },
-            {
-              type: "Text",
-              props: {
-                id: "Text-luxury-glp-sub",
-                text: "A curated collection of moments we've had the privilege to create.",
-                _style: { textColorToken: "background" },
+              {
+                type: "Container",
+                props: {
+                  content: [
+                    {
+                      type: "ContainerAnchor",
+                      props: {
+                        id: "ContainerAnchor-luxury-gal-8",
+                        height: 0,
+                      },
+                    },
+                  ],
+                  id: "Container-luxury-gal-7",
+                  backgroundImages: [],
+                  bgAnimation: "crossfade",
+                  bgSpeed: "medium",
+                  overlayOpacity: 0,
+                  minHeight: "auto",
+                  alignX: "left",
+                  alignY: "top",
+                  _style: {
+                    bgColorToken: "secondary",
+                    colSpan: 1,
+                  },
+                },
               },
+            ],
+            id: "Columns-luxury-gal-1",
+            columns: 4,
+            _style: {
+              gap: 0,
+              paddingLeft: "0px",
+              paddingRight: "0px",
+              paddingTop: "0px",
+              paddingBottom: "0px",
             },
-          ],
+            overallWidth: "full",
+          },
         },
-      },
-      {
-        type: "GalleryGridPreset",
-        props: {
-          id: "GalleryGridPreset-luxury",
-          backgroundImages: [],
-          overlayOpacity: 0,
-          minHeight: "auto",
-          alignX: "left",
-          alignY: "top",
-          content: [
-            {
-              type: "Heading",
-              props: { id: "Heading-luxury-ggp-h2", level: "h2", text: "Venues & Celebrations" },
-            },
-            {
-              type: "Text",
-              props: { id: "Text-luxury-ggp-sub", text: "A selection of our finest work." },
-            },
-            {
-              type: "GalleryGrid",
-              props: { id: "GalleryGrid-luxury", images: [], columns: 3, gap: "normal" },
-            },
-          ],
+        {
+          type: "FeaturedWorkPreset",
+          props: {
+            content: [
+              {
+                type: "Heading",
+                props: {
+                  id: "Heading-luxury-gal-10",
+                  level: "h2",
+                  text: "Featured work",
+                },
+              },
+              {
+                type: "Text",
+                props: {
+                  id: "Text-luxury-gal-11",
+                  text: "Spotlight a few signature images.",
+                },
+              },
+              {
+                type: "FeaturedWork",
+                props: {
+                  id: "FeaturedWork-luxury-gal-12",
+                  collections: [],
+                  columns: 3,
+                },
+              },
+            ],
+            id: "FeaturedWorkPreset-luxury-gal-9",
+            backgroundImages: [],
+            overlayOpacity: 0,
+            minHeight: "auto",
+            alignX: "left",
+            alignY: "top",
+            bgAnimation: "crossfade",
+            bgSpeed: "medium",
+          },
         },
-      },
-    ]),
+      ]
+    ),
   }),
 };
