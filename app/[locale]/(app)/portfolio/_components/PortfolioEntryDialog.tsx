@@ -37,7 +37,7 @@ function Option({
       variant="outline"
       disabled={disabled}
       onClick={onClick}
-      className="flex h-auto w-full flex-col items-start gap-1 p-4 text-left"
+      className="flex h-auto w-full flex-col items-start gap-1 p-4 text-start"
     >
       <span className="font-semibold">{label}</span>
       <span className="text-xs font-normal text-muted-foreground">{hint}</span>

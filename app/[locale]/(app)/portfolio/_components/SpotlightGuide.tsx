@@ -12,6 +12,7 @@ import { AlertCircleIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useElementRect, type ElementRect } from "./useElementRect";
+import { useIsRtl } from "@/lib/i18n/rtl";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -93,12 +94,21 @@ type Position = { top: number; left: number };
  * Calculate the tooltip's top/left so it sits next to the cutout rect
  * on the preferred side, clamped to stay within the viewport.
  */
-function calcTooltipPosition(
+export function calcTooltipPosition(
   rect: ElementRect,
   placement: SpotlightStep["placement"] = "bottom",
   vpW: number,
-  vpH: number
+  vpH: number,
+  isRtl = false
 ): Position {
+  // The side a step prefers ("left"/"right") is direction-relative: in RTL the
+  // visual sides swap. The top/left math below works in viewport coords, so
+  // swapping the preference is all that's needed to mirror the tooltip.
+  if (isRtl) {
+    if (placement === "left") placement = "right";
+    else if (placement === "right") placement = "left";
+  }
+
   const pad = CUTOUT_PADDING;
   const margin = VIEWPORT_MARGIN;
   const w = TOOLTIP_W;
@@ -608,6 +618,7 @@ export function SpotlightGuide({
 }: SpotlightGuideProps) {
   const step = steps[stepIndex];
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const isRtl = useIsRtl();
 
   // Measure the active anchor element, scoped to queryRoot when provided to
   // avoid resolving to a sibling editor shell's element with the same tour id.
@@ -722,7 +733,7 @@ export function SpotlightGuide({
   const vpW = typeof window !== "undefined" ? window.innerWidth : 1280;
   const vpH = typeof window !== "undefined" ? window.innerHeight : 800;
   const livePosition: Position = hasMeaningfulRect
-    ? calcTooltipPosition(rect!, step.placement, vpW, vpH)
+    ? calcTooltipPosition(rect!, step.placement, vpW, vpH, isRtl)
     : { top: vpH / 2 - TOOLTIP_H / 2, left: vpW / 2 - TOOLTIP_W / 2 };
   // Track the live position while not loading so a subsequent load can freeze
   // to it. Guarded so the render-phase update only fires when it actually moves.

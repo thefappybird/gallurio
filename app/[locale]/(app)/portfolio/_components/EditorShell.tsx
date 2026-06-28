@@ -1424,15 +1424,17 @@ export function EditorShell({
       >
         {/* Page-wide loading overlay shown during draft discard/load transitions.
             Positioned to cover the editor canvas area; when Puck is visible the
-            left sidebar (~260px) is excluded by the left offset so only the
-            canvas + properties panel area is covered. */}
+            inline-start sidebar (~260px) is excluded by the inline-start offset
+            so only the canvas + properties panel area is covered. */}
         {discarding && (
           <div
             role="status"
             aria-live="polite"
             aria-label="Loading draft"
             className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
-            style={{ left: showPuck ? "260px" : 0 }}
+            // Puck's left sidebar (~260px) sits at the inline-start edge in both
+            // LTR and RTL (the grid mirrors under dir=rtl); exclude it logically.
+            style={{ insetInlineStart: showPuck ? "260px" : 0 }}
           >
             <div className="flex flex-col items-center gap-3 rounded-lg bg-card px-8 py-6 shadow-lg border border-border">
               <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />

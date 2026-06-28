@@ -265,7 +265,7 @@ export function ContactPanelDialog({
 
   return (
     <div
-      className="flex w-[360px] flex-col border-l border-border bg-card"
+      className="flex w-[360px] flex-col border-s border-border bg-card"
       role="complementary"
       aria-label={t("title")}
     >

@@ -98,7 +98,7 @@ export function TemplatePickerDialog({
                     disabled={switching}
                     onClick={() => setPending(tpl)}
                     className={cn(
-                      "flex w-full flex-col gap-3 border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50",
+                      "flex w-full flex-col gap-3 border p-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50",
                       pending?.id === tpl.id
                         ? "border-foreground ring-1 ring-ring"
                         : isCurrent

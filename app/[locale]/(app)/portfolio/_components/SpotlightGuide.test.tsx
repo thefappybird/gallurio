@@ -6,7 +6,19 @@ import {
   act,
   cleanup,
 } from "@testing-library/react";
-import { SpotlightGuide, type SpotlightStep } from "./SpotlightGuide";
+import {
+  SpotlightGuide,
+  calcTooltipPosition,
+  type SpotlightStep,
+} from "./SpotlightGuide";
+
+// SpotlightGuide reads the locale direction via useIsRtl() (next-intl useLocale),
+// which needs an intl provider these render-only tests don't set up. Stub it to
+// LTR; the RTL behaviour is covered directly through calcTooltipPosition below.
+vi.mock("@/lib/i18n/rtl", () => ({
+  isRtl: (locale: string) => locale === "ar",
+  useIsRtl: () => false,
+}));
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -445,5 +457,20 @@ describe("SpotlightGuide", () => {
     ).toBeInTheDocument();
 
     removeAnchor();
+  });
+});
+
+describe("calcTooltipPosition RTL", () => {
+  // A centered anchor with room on both sides, so "left" and "right" resolve to
+  // distinct x positions and a swap is observable.
+  const rect = { top: 380, left: 500, width: 100, height: 40, bottom: 420, right: 600 };
+
+  it("mirrors a 'left'-placed tooltip to the right side in RTL", () => {
+    const ltr = calcTooltipPosition(rect, "left", 1280, 800);
+    const rtlRight = calcTooltipPosition(rect, "right", 1280, 800);
+    // In RTL, a step that prefers "left" should land where "right" would in LTR.
+    const rtl = calcTooltipPosition(rect, "left", 1280, 800, true);
+    expect(rtl.left).toBe(rtlRight.left);
+    expect(rtl.left).not.toBe(ltr.left);
   });
 });
