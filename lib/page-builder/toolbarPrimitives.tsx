@@ -463,7 +463,7 @@ export function IconRow<T extends string>({
   return (
     <div className="flex items-center justify-between gap-2">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         {options.map(({ value: v, label: l, Icon }) => (
           <ToolbarToggle
             key={v}

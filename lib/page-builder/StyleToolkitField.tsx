@@ -1467,7 +1467,7 @@ export function LayoutTabBody({
             {p !== undefined && setProp !== undefined && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
                     const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
                     // Effective default: when minHeight is unset, "auto" is the fallback.
@@ -1632,7 +1632,7 @@ export function LayoutTabBody({
         {isFlexContainer && p !== undefined && setProp && (
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
                 const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
                 // Effective default: when minHeight is unset, "auto" is the fallback.

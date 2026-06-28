@@ -749,6 +749,27 @@ describe("LayoutTabBody — Min height buttons show effective default 'auto' whe
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("renders all 5 min-height options including Custom (overflow fix: all options must be in the DOM)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    // All 5 options must be reachable — previously "Custom" was clipped by panel overflow.
+    expect(screen.getByRole("button", { name: "Auto" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Short" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Medium" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tall" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Custom" })).toBeInTheDocument();
+  });
 });
 
 describe("A5: LayoutTabBody — Container min-height Custom option shows DimensionInput", () => {
