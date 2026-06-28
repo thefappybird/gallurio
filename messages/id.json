@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "Filter berdasarkan tim",
         "all": "Semua tim"
+      },
+      "activityEntity": {
+        "booking": "pemesanan",
+        "client": "klien",
+        "inquiry": "pertanyaan",
+        "gallery": "galeri",
+        "transaction": "transaksi",
+        "workspace": "ruang kerja"
+      },
+      "activityAction": {
+        "created": "dibuat",
+        "updated": "diperbarui",
+        "deleted": "dihapus",
+        "status_changed": "status diubah",
+        "client_changed": "klien diubah"
       }
     },
     "calendar": {

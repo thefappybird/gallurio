@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "Tapis mengikut pasukan",
         "all": "Semua pasukan"
+      },
+      "activityEntity": {
+        "booking": "tempahan",
+        "client": "pelanggan",
+        "inquiry": "pertanyaan",
+        "gallery": "galeri",
+        "transaction": "transaksi",
+        "workspace": "ruang kerja"
+      },
+      "activityAction": {
+        "created": "dicipta",
+        "updated": "dikemas kini",
+        "deleted": "dipadam",
+        "status_changed": "status ditukar",
+        "client_changed": "pelanggan ditukar"
       }
     },
     "calendar": {

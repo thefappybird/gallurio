@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Types } from "mongoose";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
+import arMessages from "@/messages/ar.json";
 import { ActivityFeed } from "./activity-feed";
 import type { ActivityLogDoc } from "@/lib/db/models";
 
@@ -41,6 +42,22 @@ describe("ActivityFeed", () => {
     );
     expect(screen.getByText(/booking created/i)).toBeInTheDocument();
     expect(screen.getByText(/inquiry status changed/i)).toBeInTheDocument();
+  });
+
+  it("translates the entity and action labels for non-English locales", () => {
+    renderWithProviders(
+      <ActivityFeed
+        activity={[makeActivity({ entity: "booking", action: "updated" })]}
+        locale="ar"
+        title="النشاط الأخير"
+        empty="لا يوجد شيء هنا بعد."
+      />,
+      { locale: "ar", messages: arMessages as never }
+    );
+    // Arabic for "booking" / "updated" — the raw enum must not leak through.
+    expect(screen.getByText(/حجز/)).toBeInTheDocument();
+    expect(screen.getByText(/حُدّث/)).toBeInTheDocument();
+    expect(screen.queryByText(/booking/i)).toBeNull();
   });
 
   it("formats createdAt as a relative time", () => {

@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "I-filter ayon sa team",
         "all": "Lahat ng team"
+      },
+      "activityEntity": {
+        "booking": "booking",
+        "client": "kliyente",
+        "inquiry": "katanungan",
+        "gallery": "gallery",
+        "transaction": "transaksiyon",
+        "workspace": "workspace"
+      },
+      "activityAction": {
+        "created": "ginawa",
+        "updated": "na-update",
+        "deleted": "tinanggal",
+        "status_changed": "binago ang status",
+        "client_changed": "binago ang kliyente"
       }
     },
     "calendar": {

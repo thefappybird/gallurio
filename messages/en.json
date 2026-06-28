@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "Filter by team",
         "all": "All teams"
+      },
+      "activityEntity": {
+        "booking": "booking",
+        "client": "client",
+        "inquiry": "inquiry",
+        "gallery": "gallery",
+        "transaction": "transaction",
+        "workspace": "workspace"
+      },
+      "activityAction": {
+        "created": "created",
+        "updated": "updated",
+        "deleted": "deleted",
+        "status_changed": "status changed",
+        "client_changed": "client changed"
       }
     },
     "calendar": {

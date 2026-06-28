@@ -185,6 +185,21 @@
       "calendarTeam": {
         "label": "تصفية حسب الفريق",
         "all": "كل الفرق"
+      },
+      "activityEntity": {
+        "booking": "حجز",
+        "client": "عميل",
+        "inquiry": "استفسار",
+        "gallery": "معرض",
+        "transaction": "معاملة",
+        "workspace": "مساحة العمل"
+      },
+      "activityAction": {
+        "created": "أُنشئ",
+        "updated": "حُدّث",
+        "deleted": "حُذف",
+        "status_changed": "تغيّرت الحالة",
+        "client_changed": "تغيّر العميل"
       }
     },
     "calendar": {
