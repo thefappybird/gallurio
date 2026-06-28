@@ -67,6 +67,21 @@ describe("ContactPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
 
+  // C4: add-session border row shows effective default width = 1 (dashed default border exists)
+  it("add-session border width input shows effective default of 1 (a dashed default exists)", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    fireEvent.click(screen.getByRole("button", { name: "New dates button" }));
+
+    // The spinbutton in the border-width row for add-session should have placeholder="1"
+    // (effective default: 1px dashed border always rendered when width is unset)
+    const spinbuttons = screen.getAllByRole("spinbutton");
+    // The last spinbutton in this section is the border width
+    const borderWidth = spinbuttons[spinbuttons.length - 1];
+    expect(borderWidth).toHaveAttribute("placeholder", "1");
+  });
+
   // C3: Subtle toggle (effective default ON) shows in inactive tabs section
   it("Subtle toggle appears lighter-active when inactiveTabSubtle is unset (effective default ON)", () => {
     renderWithProviders(<ContactPanelDialog {...baseProps} />);

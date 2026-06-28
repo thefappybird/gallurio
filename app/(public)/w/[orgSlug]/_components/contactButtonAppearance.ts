@@ -114,8 +114,9 @@ export function resolveSubmitAppearance(contact?: PortfolioContactConfig | null)
 }
 
 export function resolveAddSessionAppearance(contact?: PortfolioContactConfig | null): ButtonAppearance {
+  // Always dashed — width/color controls let the user tune it, but the style stays dotted.
   const border = contact?.addSessionButtonBorderWidth
-    ? `${contact.addSessionButtonBorderWidth}px solid ${resolveContactColor(contact.addSessionButtonBorderColor, "currentColor")}`
+    ? `${contact.addSessionButtonBorderWidth}px dashed ${resolveContactColor(contact.addSessionButtonBorderColor, "currentColor")}`
     : "1px dashed color-mix(in srgb, var(--pf-color-fg) 40%, transparent)";
 
   return {

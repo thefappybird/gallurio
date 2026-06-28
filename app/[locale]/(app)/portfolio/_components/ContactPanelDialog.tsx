@@ -83,6 +83,7 @@ function BorderRow({
   color,
   onWidthChange,
   onColorChange,
+  effectiveWidth = 0,
 }: {
   widthLabel: string;
   colorLabel: string;
@@ -90,6 +91,8 @@ function BorderRow({
   color: string | undefined;
   onWidthChange: (v: number | undefined) => void;
   onColorChange: (v: string | undefined) => void;
+  /** Effective default width to display when unset. Default = 0. */
+  effectiveWidth?: number;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -99,7 +102,7 @@ function BorderRow({
         min={0}
         max={12}
         onChange={onWidthChange}
-        effectiveValue={0}
+        effectiveValue={effectiveWidth}
       />
       {!!width && (
         // borderColor fallback varies; leave effectiveValue unset
@@ -443,6 +446,7 @@ export function ContactPanelDialog({
                 effectiveBrandRadius={effectiveBrandRadius}
                 defaultStyle="outline"
                 defaultButtonColorToken="foreground"
+                borderEffectiveWidth={1}
                 t={t}
               />
             </EditorDrawerSection>
@@ -617,6 +621,7 @@ function ButtonControlsSection({
   effectiveBrandRadius,
   defaultStyle,
   defaultButtonColorToken,
+  borderEffectiveWidth = 0,
   t,
 }: {
   title: string;
@@ -637,6 +642,8 @@ function ButtonControlsSection({
   defaultStyle: "solid" | "outline";
   /** Default button color token when buttonColorValue is unset and style is outline/soft. */
   defaultButtonColorToken: StyleColorToken;
+  /** Effective border width to show when unset (0 = no border; 1 for add-session dashed default). */
+  borderEffectiveWidth?: number;
   t: ReturnType<typeof useTranslations>;
 }) {
   const activeStyle = styleValue ?? defaultStyle;
@@ -706,6 +713,7 @@ function ButtonControlsSection({
         color={borderColorValue}
         onWidthChange={onBorderWidthChange}
         onColorChange={onBorderColorChange}
+        effectiveWidth={borderEffectiveWidth}
       />
     </EditorDrawerSection>
   );
