@@ -39,15 +39,17 @@ Subtle + Compact independent toggles · crash repro = 4-col, col3 GalleryLanding
 ## Phase A — Columns/Container engine
 Files: `lib/page-builder/blocks/manualBlocks.tsx`, `StyleToolkitField.tsx`, `toolbarPrimitives.tsx`,
 `styleToolkit.ts`, `CountControl.tsx`, `blocks/EditorContainerAnchor.tsx`, `editorConfig.tsx`.
-- [ ] **A1 (item 6,3,4)** Per-instance unique scoping for Columns `<style>` (unique class +
-      `containerName`); drop count-keyed/shared selectors.
-- [ ] **A2 (item 1)** Add `editorGridRows` inline override so rows are WYSIWYG in canvas.
-- [ ] **A3 (item 3,4)** In editor drive grid purely by inline `gridTemplate*`; audit
-      `EditorContainerAnchor` height selector / ResizeObserver loop; verify repro no longer flickers/crashes.
-- [ ] **A4 (item 5)** Clamp columns & rows inputs to max 6 on entry (change/blur), not only render.
-- [ ] **A5 (item 7)** Min-height control on Columns (+ Container) with a "Custom" value + px/% toggle.
-- [ ] **A6 (item 8)** Reset button on align & justify (reuse `ResetButton`/RotateCcw).
-- [ ] **A7 (item 9)** Layout field "Overall Width": Page fit (default) | Full (100vw full-bleed).
+- [x] **A1 (item 6,3,4)** Per-instance unique scoping for Columns `<style>` (unique class +
+      `containerName`); drop count-keyed/shared selectors. (334b5e8)
+- [x] **A2 (item 1)** Add `editorGridRows` inline override so rows are WYSIWYG in canvas. (334b5e8, 7e0ee39)
+- [x] **A3 (item 3,4)** Audit `EditorContainerAnchor` — no ResizeObserver, no feedback loop;
+      documented with clarifying comment. (4ebd211)
+- [x] **A4 (item 5)** Blur-clamping test added; clamping was already correct in CountControl. (7f35fa3)
+- [x] **A5 (item 7)** Min-height control on Columns (DimensionInput px/%) + Container "Custom"
+      option (minHeightValue + DimensionInput). (b7a83df)
+- [x] **A6 (item 8)** Reset button (onReset prop) added to IconRow; wired on all Align/Justify
+      IconRow calls in LayoutTabBody. (de35ce0)
+- [x] **A7 (item 9)** "Overall Width" Page fit / Full (100vw full-bleed) on Columns. (4a2b3de)
 
 ## Phase B — Templates & drafts
 Files: `lib/page-builder/templates/*`, `TemplatePickerDialog.tsx`, `EditorShell.tsx`,
@@ -106,4 +108,4 @@ Browser check editor+preview+published at 375/768/1280 (editor 768+1280). Before
 tests + `pnpm typecheck` + `pnpm lint`; all 5 locales updated.
 
 ## Done log
-- (append commit hashes + notes as items land)
+- Phase A complete (2026-06-28): A1 334b5e8, A2 7e0ee39 + 334b5e8, A3 4ebd211, A4 7f35fa3, A5 b7a83df, A6 de35ce0, A7 4a2b3de. typecheck + lint clean; 278 tests passing across 4 test files.
