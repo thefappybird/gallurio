@@ -1572,8 +1572,204 @@
         },
         "photos": "Mga Larawan",
         "templates": "Mga Template",
-        "guide": "Gabay",
-        "templateSwitchedToast": "Na-apply ang template."
+        "guide": {
+          "next": "Susunod",
+          "back": "Bumalik",
+          "finish": "Tapusin",
+          "skip": "Laktawan ang Gabay",
+          "dontShow": "Huwag ipakita muli",
+          "tryIt": "Subukan ito para mapunta sa susunod na hakbang",
+          "progress": "{n} ng {total}",
+          "loading": "Nilo-load",
+          "skipConfirm": {
+            "heading": "Laktawan ang gabay?",
+            "body": "Mawawala ang iyong lugar sa walkthrough. Maaari mo itong i-restart anumang oras.",
+            "back": "Bumalik",
+            "dontShow": "Huwag ipakita muli",
+            "skip": "Laktawan ang Gabay"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Maligayang pagdating sa iyong portfolio editor",
+              "body": "Narito ang isang mabilis na hands-on na tour para makapagsimula ka. Maaari kang lumabas anumang oras."
+            },
+            "dragBlock": {
+              "title": "Mag-drag ng block sa iyong pahina",
+              "body": "Naglilista ang panel ng bawat available na block. Mag-drag ng anumang block mula dito papunta sa canvas para idagdag ito sa iyong pahina."
+            },
+            "blockProps": {
+              "title": "Nandito ang mga properties ng block",
+              "body": "Awtomatikong napipili ang block kapag binitiwan mo ito — ang mga setting nito ay lilitaw sa panel na ito."
+            },
+            "contentTab": {
+              "title": "Content: ang teksto at media ng block",
+              "body": "Ang tab na Content ang lugar kung saan mo ine-edit ang aktwal na teksto, mga larawan, at mga link ng block."
+            },
+            "designTab": {
+              "title": "Design: mga kulay, border, at sulok",
+              "body": "Kinokontrol ng tab na Design ang typography, kulay ng background, mga border, shadow, at mga animasyon."
+            },
+            "layoutTab": {
+              "title": "Layout: laki, espasyo, at posisyon",
+              "body": "Kinokontrol ng tab na Layout ang gap, min-height, alignment, at grid placement."
+            },
+            "switchPages": {
+              "title": "Lumipat sa pagitan ng mga pahina",
+              "body": "Lumipat sa pagitan ng iba't ibang bahagi ng iyong portfolio website."
+            },
+            "openNav": {
+              "title": "Buksan ang Navigation",
+              "body": "I-click ang Navigation para i-set up ang header ng iyong site — brand, logo, mga link ng menu, at styling."
+            },
+            "navSetup": {
+              "title": "Navigation · Setup",
+              "body": "Ang tab na Setup ang lugar kung saan mo itatakda ang iyong brand text, laki ng navbar, logo, at mga link ng menu."
+            },
+            "logo": {
+              "title": "Nandito ang iyong logo",
+              "body": "Ito ang iyong logo uploader — ang PNG, JPEG, o WEBP na idinagdag dito ay lilitaw sa header ng iyong live na pahina."
+            },
+            "navDesign": {
+              "title": "Navigation · Design",
+              "body": "Kinokontrol ng tab na Design ang mga kulay ng header, mga border, at typography para sa iyong mga nav link."
+            },
+            "contactForm": {
+              "title": "Ang iyong inquiry form",
+              "body": "I-click ang Contact Form para i-set up ang form na ginagamit ng mga bisita para makipag-ugnayan sa iyo."
+            },
+            "contactSetup": {
+              "title": "Contact · Setup",
+              "body": "Itinatakda ng tab na Setup ang wika, pamagat, at paglalarawan ng form. Ang mga field at layout ng form ay nakapirmi."
+            },
+            "contactDesign": {
+              "title": "Contact · Design",
+              "body": "Bino-restyle ng tab na Design ang form — mga kulay ng teksto at background para tumugma sa iyong brand. Hindi mo maaaring itago ang mga field, ang hitsura lamang ang maaaring baguhin."
+            },
+            "photos": {
+              "title": "Mag-upload at mag-organisa ng mga larawan",
+              "body": "Buksan ang Photos para gumawa ng mga koleksyon at mag-upload ng mga larawan. Kumukuha ang mga Gallery block mula sa isang koleksyon."
+            },
+            "theme": {
+              "title": "Pumili ng iyong mga kulay at font",
+              "body": "Kinokontrol ng tema ang iyong limang brand color at typography. Ginagamit ng mga opsyon sa estilo ng bawat block ang palette na ito."
+            },
+            "preview": {
+              "title": "I-preview ang iyong site sa anumang laki ng screen",
+              "body": "Lumipat sa preview mode at gamitin ang device toggle para suriin ang iyong layout sa mobile, tablet, at desktop."
+            },
+            "publish": {
+              "title": "Mag-publish para maging live",
+              "body": "Kapag nasisiyahan ka na sa iyong mga pagbabago, i-click ang I-publish para ipadala ang mga ito sa iyong pampublikong pahina."
+            },
+            "draftsStep": {
+              "title": "Mag-save ng mga draft at magpalit ng bersyon",
+              "body": "Mag-save ng mga pagbabago kahit kailan. Gamitin ang Mga Draft para pamahalaan ang maraming bersyon. Muling buksan ang tour na ito sa pamamagitan ng button na Gabay."
+            }
+          }
+        },
+        "templateSwitchedToast": "Na-apply ang template.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Mga kontrol ng editor",
+          "toggleBlocks": "I-toggle ang panel ng mga block",
+          "toggleProperties": "I-toggle ang panel ng mga properties",
+          "previewDevice": "Device para sa preview",
+          "undoTitle": "I-undo (Ctrl+Z)",
+          "redoTitle": "I-redo (Ctrl+Shift+Z)"
+        },
+        "drafts": "Mga Draft",
+        "saveChanges": "I-save ang mga pagbabago",
+        "loadingDraft": "Nilo-load ang draft",
+        "loadingDraftEllipsis": "Nilo-load ang draft…",
+        "featuredPopup": "Featured popup",
+        "draftNameLabel": "Pangalan ng draft",
+        "draftsDialog": {
+          "title": "Ang iyong mga draft",
+          "subtitle": "Pumili ng naka-save na layout para i-load sa canvas. Papalitan ng pag-load ang iyong nire-edit ngayon.",
+          "empty": "Wala pang draft. I-save ang iyong kasalukuyang trabaho, o magsimula ng bago mula sa template.",
+          "active": "Aktibo",
+          "addNew": "Magdagdag ng bagong draft",
+          "close": "Isara",
+          "confirmTitle": "Burahin ang draft na ito?",
+          "confirmBody": "Permanenteng aalisin ang naka-save na draft. Hindi ito mababawi.",
+          "confirmAction": "Burahin ang draft",
+          "cancel": "Kanselahin",
+          "unsaved": "Hindi pa nai-save",
+          "applyAria": "Ilapat ang {name}",
+          "deletingAria": "Binubura ang {name}",
+          "deleteAria": "Burahin ang {name}"
+        },
+        "entryDialog": {
+          "title": "Maligayang pagbabalik",
+          "description": "Saan mo gustong magsimula?",
+          "resumeTitle": "Ituloy mula sa naihinto mo",
+          "resumeHint": "Ipagpatuloy ang iyong pinakabagong hindi pa nai-save na mga edit.",
+          "loadDraftTitle": "Mag-load ng kasalukuyang draft",
+          "loadDraftHint": "Buksan ang isa sa iyong mga naka-save na layout ng portfolio.",
+          "scratchTitle": "Magsimula mula sa simula",
+          "scratchHint": "Pumili ng template (o blangkong canvas) at magsimula ng bagong draft."
+        },
+        "templatePicker": {
+          "title": "Pumili ng template",
+          "subtitle": "Sa pagpapalit ng template, nalalapat ang bagong layout, mga kulay, at mga font. Nananatili ang iyong mga litrato at koleksyon; ang layout ng pahina at tema lamang ang magbabago.",
+          "welcomeTitle": "Pumili ng template para magsimula",
+          "welcomeSubtitle": "Pumili ng starter na layout para simulan ang iyong portfolio. Maaari kang magpalit ng template anumang oras.",
+          "current": "Kasalukuyan",
+          "use": "Gamitin ang template na ito",
+          "scratch": "Magsimula mula sa simula",
+          "cancel": "Kanselahin",
+          "switching": "Nagpapalit…",
+          "error": "Hindi maaaring palitan ang template. Pakisubukan muli."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Pangalan",
+          "title": "I-save ang iyong mga pagbabago?",
+          "body": "Mayroon kang hindi pa nai-save na mga pagbabago sa draft na ito. Mawawala ang mga ito kapag lumipat ka malibang mag-save ka.",
+          "keepEditing": "Ipagpatuloy ang pag-edit",
+          "discard": "Itapon",
+          "save": "I-save ang mga pagbabago"
+        },
+        "blockActions": {
+          "fallbackLabel": "Block",
+          "actionsAria": "Mga aksyon ng {label}",
+          "moveUp": "Ilipat pataas",
+          "moveDown": "Ilipat pababa",
+          "moveOut": "Ilipat palabas",
+          "duplicate": "I-duplicate",
+          "delete": "Burahin"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Featured popup",
+          "popup": "Popup",
+          "background": "Background",
+          "border": "Border",
+          "borderColor": "Kulay ng border",
+          "corners": "Mga sulok",
+          "titleStyles": "Estilo ng pamagat",
+          "headerText": "Teksto ng header",
+          "headerPlaceholder": "Default sa pangalan ng koleksyon",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "alignAria": "I-align {align}",
+          "font": "Font",
+          "themeFont": "Font ng tema",
+          "fontSize": "Laki ng font",
+          "titleColor": "Kulay ng pamagat",
+          "buttonStyles": "Estilo ng button",
+          "buttonSize": "Laki ng button",
+          "opacity": "Opacity",
+          "sampleCollection": "Sample na Koleksyon",
+          "radius": {
+            "sharp": "Matalim",
+            "subtle": "Banayad",
+            "rounded": "Bilugan"
+          }
+        }
       },
       "wizard": {
         "title": "Buuin natin ang iyong portfolio",

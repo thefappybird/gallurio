@@ -1572,8 +1572,204 @@
         },
         "photos": "Photos",
         "templates": "Templates",
-        "guide": "Guide",
-        "templateSwitchedToast": "Template applied."
+        "guide": {
+          "next": "Next",
+          "back": "Back",
+          "skip": "Skip Guide",
+          "steps": {
+            "welcome": {
+              "title": "Welcome to your portfolio editor",
+              "body": "Here's a quick, hands-on tour to get you up to speed. You can skip anytime."
+            },
+            "dragBlock": {
+              "title": "Drag a block onto your page",
+              "body": "The panel lists every available block. Drag any block from here onto the canvas to add it to your page."
+            },
+            "blockProps": {
+              "title": "Block properties live here",
+              "body": "Dropping a block selects it automatically — its settings appear in this panel."
+            },
+            "contentTab": {
+              "title": "Content: the block's text and media",
+              "body": "The Content tab is where you edit the block's actual text, images, and links."
+            },
+            "designTab": {
+              "title": "Design: colors, borders, and corners",
+              "body": "The Design tab controls typography, background color, borders, shadows, and animations."
+            },
+            "layoutTab": {
+              "title": "Layout: size, spacing, and position",
+              "body": "The Layout tab controls gap, min-height, alignment, and grid placement."
+            },
+            "switchPages": {
+              "title": "Switch between pages",
+              "body": "Switch between the different parts of your portfolio website."
+            },
+            "openNav": {
+              "title": "Open Navigation",
+              "body": "Click Navigation to set up your site's header — brand, logo, menu links, and styling."
+            },
+            "navSetup": {
+              "title": "Navigation · Setup",
+              "body": "The Setup tab is where you set your brand text, navbar size, logo, and menu links."
+            },
+            "logo": {
+              "title": "Your logo lives here",
+              "body": "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page."
+            },
+            "navDesign": {
+              "title": "Navigation · Design",
+              "body": "The Design tab controls header colors, borders, and typography for your nav links."
+            },
+            "contactForm": {
+              "title": "Your inquiry form",
+              "body": "Click Contact Form to set up the form visitors use to reach you."
+            },
+            "contactSetup": {
+              "title": "Contact · Setup",
+              "body": "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed."
+            },
+            "contactDesign": {
+              "title": "Contact · Design",
+              "body": "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look."
+            },
+            "photos": {
+              "title": "Upload and organize photos",
+              "body": "Open Photos to create collections and upload images. Gallery blocks pull from a collection."
+            },
+            "theme": {
+              "title": "Pick your colors and fonts",
+              "body": "Theme controls your five brand colors and typography. Every block's style options use this palette."
+            },
+            "preview": {
+              "title": "Preview your site at any screen size",
+              "body": "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop."
+            },
+            "publish": {
+              "title": "Publish to go live",
+              "body": "When you're happy with your changes, click Publish to push them to your public page."
+            },
+            "draftsStep": {
+              "title": "Save drafts and switch versions",
+              "body": "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button."
+            }
+          },
+          "finish": "Finish",
+          "dontShow": "Don't show again",
+          "tryIt": "Try it to continue to the next step",
+          "progress": "{n} of {total}",
+          "loading": "Loading",
+          "skipConfirm": {
+            "heading": "Skip the guide?",
+            "body": "You'll lose your place in the walkthrough. You can restart it anytime.",
+            "back": "Back",
+            "dontShow": "Don't show again",
+            "skip": "Skip Guide"
+          }
+        },
+        "templateSwitchedToast": "Template applied.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Editor controls",
+          "toggleBlocks": "Toggle blocks panel",
+          "toggleProperties": "Toggle properties panel",
+          "previewDevice": "Preview device",
+          "undoTitle": "Undo (Ctrl+Z)",
+          "redoTitle": "Redo (Ctrl+Shift+Z)"
+        },
+        "drafts": "Drafts",
+        "saveChanges": "Save changes",
+        "loadingDraft": "Loading draft",
+        "loadingDraftEllipsis": "Loading draft…",
+        "featuredPopup": "Featured popup",
+        "draftNameLabel": "Draft name",
+        "draftsDialog": {
+          "title": "Your drafts",
+          "subtitle": "Pick a saved layout to load it onto the canvas. Loading replaces what you're editing now.",
+          "empty": "No drafts yet. Save your current work, or start a new one from a template.",
+          "active": "Active",
+          "addNew": "Add new draft",
+          "close": "Close",
+          "confirmTitle": "Delete this draft?",
+          "confirmBody": "This permanently removes the saved draft. This can't be undone.",
+          "confirmAction": "Delete draft",
+          "cancel": "Cancel",
+          "unsaved": "Unsaved",
+          "applyAria": "Apply {name}",
+          "deletingAria": "Deleting {name}",
+          "deleteAria": "Delete {name}"
+        },
+        "entryDialog": {
+          "title": "Welcome back",
+          "description": "Where would you like to start?",
+          "resumeTitle": "Continue where you left off",
+          "resumeHint": "Resume your most recent unsaved edits.",
+          "loadDraftTitle": "Load an existing draft",
+          "loadDraftHint": "Open one of your saved portfolio layouts.",
+          "scratchTitle": "Start from scratch",
+          "scratchHint": "Pick a template (or an empty canvas) and begin a new draft."
+        },
+        "templatePicker": {
+          "title": "Choose a template",
+          "subtitle": "Switching applies a starter layout, colors, and fonts. Your photos and collections stay; only the page layout and theme change.",
+          "welcomeTitle": "Pick a template to start",
+          "welcomeSubtitle": "Choose a starter layout to kick off your portfolio. You can switch templates any time.",
+          "current": "Current",
+          "use": "Use this template",
+          "scratch": "Start from scratch",
+          "cancel": "Cancel",
+          "switching": "Switching…",
+          "error": "Could not switch the template. Please try again."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Name",
+          "title": "Save your changes?",
+          "body": "You have unsaved changes on this draft. Switching now will lose them unless you save.",
+          "keepEditing": "Keep editing",
+          "discard": "Discard",
+          "save": "Save changes"
+        },
+        "blockActions": {
+          "fallbackLabel": "Block",
+          "actionsAria": "{label} actions",
+          "moveUp": "Move up",
+          "moveDown": "Move down",
+          "moveOut": "Move out",
+          "duplicate": "Duplicate",
+          "delete": "Delete"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Featured popup",
+          "popup": "Popup",
+          "background": "Background",
+          "border": "Border",
+          "borderColor": "Border color",
+          "corners": "Corners",
+          "titleStyles": "Title styles",
+          "headerText": "Header text",
+          "headerPlaceholder": "Defaults to collection name",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "alignAria": "Align {align}",
+          "font": "Font",
+          "themeFont": "Theme font",
+          "fontSize": "Font size",
+          "titleColor": "Title color",
+          "buttonStyles": "Button styles",
+          "buttonSize": "Button size",
+          "opacity": "Opacity",
+          "sampleCollection": "Sample Collection",
+          "radius": {
+            "sharp": "Sharp",
+            "subtle": "Subtle",
+            "rounded": "Rounded"
+          }
+        }
       },
       "wizard": {
         "title": "Let's build your portfolio",

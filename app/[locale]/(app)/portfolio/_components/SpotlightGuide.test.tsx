@@ -1,20 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  render,
   screen,
   fireEvent,
   act,
   cleanup,
 } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import {
   SpotlightGuide,
   calcTooltipPosition,
   type SpotlightStep,
 } from "./SpotlightGuide";
 
-// SpotlightGuide reads the locale direction via useIsRtl() (next-intl useLocale),
-// which needs an intl provider these render-only tests don't set up. Stub it to
-// LTR; the RTL behaviour is covered directly through calcTooltipPosition below.
+// SpotlightGuide pulls nav chrome (Next/Back/Skip/progress) from the guide i18n
+// namespace, so it renders inside an intl provider (renderWithProviders). The
+// step fixtures below omit `slug`, so their literal title/body render as-is. The
+// rtl direction is stubbed to LTR; RTL is covered directly via calcTooltipPosition.
 vi.mock("@/lib/i18n/rtl", () => ({
   isRtl: (locale: string) => locale === "ar",
   useIsRtl: () => false,
@@ -63,7 +64,7 @@ const defaultProps = {
 
 function renderGuide(overrides: Partial<typeof defaultProps> = {}) {
   const props = { ...defaultProps, ...overrides };
-  return render(<SpotlightGuide {...props} />);
+  return renderWithProviders(<SpotlightGuide {...props} />);
 }
 
 /** Inject an anchor element into document.body and return a cleanup fn. */
@@ -403,7 +404,7 @@ describe("SpotlightGuide", () => {
       passthrough: true,
     };
 
-    render(
+    renderWithProviders(
       <SpotlightGuide
         open={true}
         steps={[twoAnchorStep]}

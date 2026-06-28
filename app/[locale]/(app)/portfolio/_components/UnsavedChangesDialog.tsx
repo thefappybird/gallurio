@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -25,10 +26,10 @@ export function UnsavedChangesDialog({
   onCancel,
   name,
   onNameChange,
-  nameLabel = "Name",
+  nameLabel,
   nameError,
-  title = "Save your changes?",
-  body = "You have unsaved changes on this draft. Switching now will lose them unless you save.",
+  title,
+  body,
 }: {
   open: boolean;
   saving: boolean;
@@ -44,18 +45,19 @@ export function UnsavedChangesDialog({
   title?: string;
   body?: string;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   const busy = saving || discarding;
   return (
     <AlertDialog open={open} onOpenChange={(next) => (!next && !busy ? onCancel() : undefined)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{body}</AlertDialogDescription>
+          <AlertDialogTitle>{title ?? t("unsavedDialog.title")}</AlertDialogTitle>
+          <AlertDialogDescription>{body ?? t("unsavedDialog.body")}</AlertDialogDescription>
         </AlertDialogHeader>
 
         {name !== undefined && onNameChange !== undefined && (
           <div className="flex flex-col gap-1.5 px-4 pt-2">
-            <Label htmlFor="unsaved-dialog-name">{nameLabel}</Label>
+            <Label htmlFor="unsaved-dialog-name">{nameLabel ?? t("unsavedDialog.nameLabel")}</Label>
             <Input
               id="unsaved-dialog-name"
               value={name}
@@ -68,10 +70,10 @@ export function UnsavedChangesDialog({
 
         <AlertDialogFooter className="gap-2">
           <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
-            Keep editing
+            {t("unsavedDialog.keepEditing")}
           </Button>
           <Button type="button" variant="outline" onClick={onDiscard} loading={discarding} disabled={busy}>
-            Discard
+            {t("unsavedDialog.discard")}
           </Button>
           <div className="flex flex-col items-stretch gap-1">
             {nameError && (
@@ -85,7 +87,7 @@ export function UnsavedChangesDialog({
               loading={saving}
               disabled={busy || !!nameError}
             >
-              Save changes
+              {t("unsavedDialog.save")}
             </Button>
           </div>
         </AlertDialogFooter>

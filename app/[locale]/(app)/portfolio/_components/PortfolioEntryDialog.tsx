@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -8,17 +9,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-
-const L = {
-  title: "Welcome back",
-  subtitle: "Where would you like to start?",
-  continue: "Continue where you left off",
-  continueHint: "Resume your most recent unsaved edits.",
-  load: "Load an existing draft",
-  loadHint: "Open one of your saved portfolio layouts.",
-  scratch: "Start from scratch",
-  scratchHint: "Pick a template (or an empty canvas) and begin a new draft.",
-};
 
 function Option({
   label,
@@ -60,6 +50,7 @@ export function PortfolioEntryDialog({
   onLoadExisting: () => void;
   onStartScratch: () => void;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   // The entry chooser must remain open until the user picks an option — there is no
   // way to dismiss it without making a choice.  Non-dismissal is achieved by two
   // complementary mechanisms that together cover every dismissal path:
@@ -82,25 +73,25 @@ export function PortfolioEntryDialog({
     >
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>
-          <DialogTitle>{L.title}</DialogTitle>
-          <DialogDescription>{L.subtitle}</DialogDescription>
+          <DialogTitle>{t("entryDialog.title")}</DialogTitle>
+          <DialogDescription>{t("entryDialog.description")}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Option
-            label={L.continue}
-            hint={L.continueHint}
+            label={t("entryDialog.resumeTitle")}
+            hint={t("entryDialog.resumeHint")}
             disabled={!canContinue}
             onClick={onContinue}
           />
           <Option
-            label={L.load}
-            hint={L.loadHint}
+            label={t("entryDialog.loadDraftTitle")}
+            hint={t("entryDialog.loadDraftHint")}
             disabled={!hasDrafts}
             onClick={onLoadExisting}
           />
           <Option
-            label={L.scratch}
-            hint={L.scratchHint}
+            label={t("entryDialog.scratchTitle")}
+            hint={t("entryDialog.scratchHint")}
             onClick={onStartScratch}
           />
         </div>

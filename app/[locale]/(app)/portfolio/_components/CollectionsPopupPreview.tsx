@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useTranslations } from "next-intl";
 import type { PortfolioBrandKit, PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "@/lib/page-builder/blocks/CollectionPopupChrome";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
@@ -12,12 +13,13 @@ export function CollectionsPopupPreview({
   config: PortfolioCollectionsPopupConfig;
   brandKit: PortfolioBrandKit;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   const { cssVars, className } = resolveBrandKit(brandKit);
   return (
     <div data-testid="collections-popup-preview-root" className={`h-full ${className}`} style={{ ...(cssVars as React.CSSProperties) }}>
       <div className="relative h-full w-full overflow-hidden bg-black/45">
         <CollectionPopupChrome
-          collectionName="Sample Collection"
+          collectionName={t("collectionsDialog.sampleCollection")}
           config={config}
           onClose={() => {}}
           preview

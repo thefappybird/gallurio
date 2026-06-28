@@ -1572,8 +1572,204 @@
         },
         "photos": "Foto",
         "templates": "Template",
-        "guide": "Panduan",
-        "templateSwitchedToast": "Template diterapkan."
+        "guide": {
+          "next": "Berikutnya",
+          "back": "Kembali",
+          "finish": "Selesai",
+          "skip": "Lewati Panduan",
+          "dontShow": "Jangan tampilkan lagi",
+          "tryIt": "Coba untuk melanjutkan ke langkah berikutnya",
+          "progress": "{n} dari {total}",
+          "loading": "Memuat",
+          "skipConfirm": {
+            "heading": "Lewati panduan?",
+            "body": "Anda akan kehilangan posisi Anda dalam tur. Anda dapat memulainya ulang kapan saja.",
+            "back": "Kembali",
+            "dontShow": "Jangan tampilkan lagi",
+            "skip": "Lewati Panduan"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Selamat datang di editor portofolio Anda",
+              "body": "Berikut tur singkat dan praktis untuk membantu Anda memulai. Anda dapat melewatinya kapan saja."
+            },
+            "dragBlock": {
+              "title": "Seret blok ke halaman Anda",
+              "body": "Panel mencantumkan setiap blok yang tersedia. Seret blok apa pun dari sini ke kanvas untuk menambahkannya ke halaman Anda."
+            },
+            "blockProps": {
+              "title": "Properti blok ada di sini",
+              "body": "Menjatuhkan blok memilihnya secara otomatis — pengaturannya muncul di panel ini."
+            },
+            "contentTab": {
+              "title": "Konten: teks dan media blok",
+              "body": "Tab Konten adalah tempat Anda mengedit teks, gambar, dan tautan blok yang sebenarnya."
+            },
+            "designTab": {
+              "title": "Desain: warna, batas, dan sudut",
+              "body": "Tab Desain mengontrol tipografi, warna latar belakang, batas, bayangan, dan animasi."
+            },
+            "layoutTab": {
+              "title": "Tata Letak: ukuran, jarak, dan posisi",
+              "body": "Tab Tata Letak mengontrol jarak, tinggi minimum, perataan, dan penempatan grid."
+            },
+            "switchPages": {
+              "title": "Beralih antar halaman",
+              "body": "Beralih antar bagian berbeda dari situs web portofolio Anda."
+            },
+            "openNav": {
+              "title": "Buka Navigasi",
+              "body": "Klik Navigasi untuk mengatur header situs Anda — merek, logo, tautan menu, dan gaya."
+            },
+            "navSetup": {
+              "title": "Navigasi · Pengaturan",
+              "body": "Tab Pengaturan adalah tempat Anda mengatur teks merek, ukuran navbar, logo, dan tautan menu."
+            },
+            "logo": {
+              "title": "Logo Anda ada di sini",
+              "body": "Ini adalah pengunggah logo Anda — PNG, JPEG, atau WEBP yang diunggah di sini akan tampil di header halaman live Anda."
+            },
+            "navDesign": {
+              "title": "Navigasi · Desain",
+              "body": "Tab Desain mengontrol warna header, batas, dan tipografi untuk tautan navigasi Anda."
+            },
+            "contactForm": {
+              "title": "Formulir pertanyaan Anda",
+              "body": "Klik Formulir Kontak untuk mengatur formulir yang digunakan pengunjung untuk menghubungi Anda."
+            },
+            "contactSetup": {
+              "title": "Kontak · Pengaturan",
+              "body": "Tab Pengaturan menentukan bahasa, judul, dan deskripsi formulir. Kolom dan tata letak formulir sudah tetap."
+            },
+            "contactDesign": {
+              "title": "Kontak · Desain",
+              "body": "Tab Desain mengubah tampilan formulir — warna teks dan latar belakang sesuai merek Anda. Anda tidak dapat menyembunyikan kolom, hanya mengubah tampilannya."
+            },
+            "photos": {
+              "title": "Unggah dan atur foto",
+              "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
+            },
+            "theme": {
+              "title": "Pilih warna dan font Anda",
+              "body": "Tema mengontrol lima warna merek dan tipografi Anda. Setiap opsi gaya blok menggunakan palet ini."
+            },
+            "preview": {
+              "title": "Pratinjau situs Anda di ukuran layar apa pun",
+              "body": "Beralih ke mode pratinjau dan gunakan tombol perangkat untuk memeriksa tata letak Anda di perangkat mobile, tablet, dan desktop."
+            },
+            "publish": {
+              "title": "Terbitkan untuk tayang",
+              "body": "Saat Anda puas dengan perubahan Anda, klik Terbitkan untuk mendorongnya ke halaman publik Anda."
+            },
+            "draftsStep": {
+              "title": "Simpan draf dan ganti versi",
+              "body": "Simpan perubahan kapan saja. Gunakan Draf untuk mengelola beberapa versi. Buka kembali tur ini melalui tombol Panduan."
+            }
+          }
+        },
+        "templateSwitchedToast": "Template diterapkan.",
+        "devices": {
+          "mobile": "Mobile",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Kontrol editor",
+          "toggleBlocks": "Alihkan panel blok",
+          "toggleProperties": "Alihkan panel properti",
+          "previewDevice": "Pratinjau perangkat",
+          "undoTitle": "Urungkan (Ctrl+Z)",
+          "redoTitle": "Ulangi (Ctrl+Shift+Z)"
+        },
+        "drafts": "Draf",
+        "saveChanges": "Simpan perubahan",
+        "loadingDraft": "Memuat draf",
+        "loadingDraftEllipsis": "Memuat draf…",
+        "featuredPopup": "Popup unggulan",
+        "draftNameLabel": "Nama draf",
+        "draftsDialog": {
+          "title": "Draf Anda",
+          "subtitle": "Pilih tata letak tersimpan untuk memuatnya ke kanvas. Memuat akan mengganti yang sedang Anda edit.",
+          "empty": "Belum ada draf. Simpan pekerjaan Anda saat ini, atau mulai baru dari templat.",
+          "active": "Aktif",
+          "addNew": "Tambah draf baru",
+          "close": "Tutup",
+          "confirmTitle": "Hapus draf ini?",
+          "confirmBody": "Ini akan menghapus draf tersimpan secara permanen. Tindakan ini tidak dapat dibatalkan.",
+          "confirmAction": "Hapus draf",
+          "cancel": "Batal",
+          "unsaved": "Belum disimpan",
+          "applyAria": "Terapkan {name}",
+          "deletingAria": "Menghapus {name}",
+          "deleteAria": "Hapus {name}"
+        },
+        "entryDialog": {
+          "title": "Selamat datang kembali",
+          "description": "Dari mana Anda ingin memulai?",
+          "resumeTitle": "Lanjutkan dari terakhir kali",
+          "resumeHint": "Lanjutkan pengeditan terbaru Anda yang belum disimpan.",
+          "loadDraftTitle": "Muat draf yang ada",
+          "loadDraftHint": "Buka salah satu tata letak portofolio tersimpan Anda.",
+          "scratchTitle": "Mulai dari awal",
+          "scratchHint": "Pilih templat (atau kanvas kosong) dan mulai draf baru."
+        },
+        "templatePicker": {
+          "title": "Pilih templat",
+          "subtitle": "Mengganti templat menerapkan tata letak awal, warna, dan font. Foto dan koleksi Anda tetap ada; hanya tata letak halaman dan tema yang berubah.",
+          "welcomeTitle": "Pilih templat untuk memulai",
+          "welcomeSubtitle": "Pilih tata letak awal untuk memulai portofolio Anda. Anda dapat mengganti templat kapan saja.",
+          "current": "Saat ini",
+          "use": "Gunakan templat ini",
+          "scratch": "Mulai dari awal",
+          "cancel": "Batal",
+          "switching": "Mengganti…",
+          "error": "Tidak dapat mengganti templat. Silakan coba lagi."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Nama",
+          "title": "Simpan perubahan Anda?",
+          "body": "Anda memiliki perubahan yang belum disimpan pada draf ini. Beralih sekarang akan menghilangkannya jika Anda tidak menyimpan.",
+          "keepEditing": "Lanjutkan mengedit",
+          "discard": "Buang",
+          "save": "Simpan perubahan"
+        },
+        "blockActions": {
+          "fallbackLabel": "Blok",
+          "actionsAria": "Tindakan {label}",
+          "moveUp": "Pindah ke atas",
+          "moveDown": "Pindah ke bawah",
+          "moveOut": "Pindah ke luar",
+          "duplicate": "Duplikat",
+          "delete": "Hapus"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Popup unggulan",
+          "popup": "Popup",
+          "background": "Latar belakang",
+          "border": "Batas",
+          "borderColor": "Warna batas",
+          "corners": "Sudut",
+          "titleStyles": "Gaya judul",
+          "headerText": "Teks header",
+          "headerPlaceholder": "Default ke nama koleksi",
+          "bold": "Tebal",
+          "italic": "Miring",
+          "underline": "Garis bawah",
+          "alignAria": "Ratakan {align}",
+          "font": "Font",
+          "themeFont": "Font tema",
+          "fontSize": "Ukuran font",
+          "titleColor": "Warna judul",
+          "buttonStyles": "Gaya tombol",
+          "buttonSize": "Ukuran tombol",
+          "opacity": "Opasitas",
+          "sampleCollection": "Koleksi Contoh",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Membulat"
+          }
+        }
       },
       "wizard": {
         "title": "Mari buat portofolio Anda",

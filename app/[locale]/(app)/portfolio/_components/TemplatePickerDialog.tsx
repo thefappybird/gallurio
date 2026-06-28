@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -12,22 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { EditorTemplateSummary } from "./EditorShell";
-
-// Plain strings — Puck editor chrome is English (see RELEASE-CHECKLIST §4f).
-const L = {
-  title: "Choose a template",
-  subtitle:
-    "Switching applies a starter layout, colors, and fonts. Your photos and collections stay; only the page layout and theme change.",
-  welcomeTitle: "Pick a template to start",
-  welcomeSubtitle:
-    "Choose a starter layout to kick off your portfolio. You can switch templates any time.",
-  current: "Current",
-  use: "Use this template",
-  startScratch: "Start from scratch",
-  cancel: "Cancel",
-  switching: "Switching…",
-  error: "Could not switch the template. Please try again.",
-};
 
 export function TemplatePickerDialog({
   open,
@@ -52,6 +37,7 @@ export function TemplatePickerDialog({
   /** Called when the user picks "Start from scratch" (only visible when welcome=true). */
   onStartScratch?: () => void;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   const [pending, setPending] = useState<EditorTemplateSummary | null>(null);
 
   // Clear pending selection whenever the picker closes (including the success
@@ -64,8 +50,8 @@ export function TemplatePickerDialog({
     if (!open) setPending(null);
   }
 
-  const title = welcome ? L.welcomeTitle : L.title;
-  const subtitle = welcome ? L.welcomeSubtitle : L.subtitle;
+  const title = welcome ? t("templatePicker.welcomeTitle") : t("templatePicker.title");
+  const subtitle = welcome ? t("templatePicker.welcomeSubtitle") : t("templatePicker.subtitle");
 
   return (
     <Dialog
@@ -121,7 +107,7 @@ export function TemplatePickerDialog({
                         <span className="font-semibold">{tpl.label}</span>
                         {isCurrent && (
                           <span className="border border-border px-1.5 py-0.5 text-[0.625rem] uppercase tracking-wide text-muted-foreground">
-                            {L.current}
+                            {t("templatePicker.current")}
                           </span>
                         )}
                       </span>
@@ -148,7 +134,7 @@ export function TemplatePickerDialog({
                 onClick={() => onStartScratch?.()}
                 disabled={switching}
               >
-                {L.startScratch}
+                {t("templatePicker.scratch")}
               </Button>
               <Button
                 type="button"
@@ -156,13 +142,13 @@ export function TemplatePickerDialog({
                 loading={switching}
                 disabled={switching || pending === null}
               >
-                {switching ? L.switching : L.use}
+                {switching ? t("templatePicker.switching") : t("templatePicker.use")}
               </Button>
             </>
           ) : (
             <>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={switching}>
-                {L.cancel}
+                {t("templatePicker.cancel")}
               </Button>
               <Button
                 type="button"
@@ -170,7 +156,7 @@ export function TemplatePickerDialog({
                 loading={switching}
                 disabled={switching || pending === null}
               >
-                {switching ? L.switching : L.use}
+                {switching ? t("templatePicker.switching") : t("templatePicker.use")}
               </Button>
             </>
           )}

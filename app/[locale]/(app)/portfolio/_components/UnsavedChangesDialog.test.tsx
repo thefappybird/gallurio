@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 
 describe("UnsavedChangesDialog", () => {
@@ -7,7 +8,7 @@ describe("UnsavedChangesDialog", () => {
     const onSave = vi.fn();
     const onDiscard = vi.fn();
     const onCancel = vi.fn();
-    render(
+    renderWithProviders(
       <UnsavedChangesDialog open onSave={onSave} onDiscard={onDiscard} onCancel={onCancel} saving={false} />
     );
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
@@ -20,7 +21,7 @@ describe("UnsavedChangesDialog", () => {
 
   it("renders the name Input seeded with the provided name when name and onNameChange are supplied", () => {
     const onNameChange = vi.fn();
-    render(
+    renderWithProviders(
       <UnsavedChangesDialog
         open
         saving={false}
@@ -40,7 +41,7 @@ describe("UnsavedChangesDialog", () => {
   });
 
   it("renders a role=alert error above Save and disables Save when nameError is set", () => {
-    render(
+    renderWithProviders(
       <UnsavedChangesDialog
         open
         saving={false}

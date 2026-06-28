@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
@@ -97,10 +98,11 @@ function RadiusRow({
   onToggle: (radius: BrandKitRadius | "") => void;
   effectiveValue?: BrandKitRadius;
 }) {
+  const t = useTranslations("app.pageBuilder.editor");
   const radiusLabels: Record<BrandKitRadius, string> = {
-    sharp: "Sharp",
-    subtle: "Subtle",
-    rounded: "Rounded",
+    sharp: t("collectionsDialog.radius.sharp"),
+    subtle: t("collectionsDialog.radius.subtle"),
+    rounded: t("collectionsDialog.radius.rounded"),
   };
 
   return (
@@ -151,6 +153,7 @@ export function CollectionsPopupPanelDialog({
 }: Props) {
   // Effective brand radius for the radius pickers (display-only, theme-coupled)
   const effectiveBrandRadius = useBrandRadius();
+  const t = useTranslations("app.pageBuilder.editor");
 
   function set<K extends keyof PortfolioCollectionsPopupConfig>(
     key: K,
@@ -168,7 +171,7 @@ export function CollectionsPopupPanelDialog({
       {/* Header */}
       <div className="flex items-center border-b border-border px-4 py-3">
         <span className="text-sm font-semibold text-foreground">
-          Featured popup
+          {t("collectionsDialog.featuredPopup")}
         </span>
       </div>
 
@@ -176,18 +179,18 @@ export function CollectionsPopupPanelDialog({
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3">
         <EditorDrawerGroup plain>
           {/* ── Popup ────────────────────────────── */}
-          <EditorDrawerSection title="Popup">
+          <EditorDrawerSection title={t("collectionsDialog.popup")}>
             {/* backgroundColor: fallback = var(--pf-color-surface, #fff)
                 surface is not a brand palette token — effectiveValue left unset */}
             <LabeledSwatchRow
-              label="Background"
+              label={t("collectionsDialog.background")}
               value={config.backgroundColor}
               onChange={(c) => set("backgroundColor", c)}
             />
 
             <BorderRow
-              widthLabel="Border"
-              colorLabel="Border color"
+              widthLabel={t("collectionsDialog.border")}
+              colorLabel={t("collectionsDialog.borderColor")}
               width={config.borderWidth}
               color={config.borderColor}
               onWidthChange={(v) => set("borderWidth", v)}
@@ -196,7 +199,7 @@ export function CollectionsPopupPanelDialog({
 
             {/* radius: fallback = "0px" (sharp) when unset → effective = brand radius */}
             <RadiusRow
-              label="Corners"
+              label={t("collectionsDialog.corners")}
               active={config.radius}
               onToggle={(r) => set("radius", r)}
               effectiveValue={effectiveBrandRadius}
@@ -204,19 +207,19 @@ export function CollectionsPopupPanelDialog({
           </EditorDrawerSection>
 
           {/* ── Title styles ──────────────────────── */}
-          <EditorDrawerSection title="Title styles">
+          <EditorDrawerSection title={t("collectionsDialog.titleStyles")}>
             <div className="flex flex-col gap-1.5">
               <label
                 className="text-xs text-muted-foreground"
                 htmlFor="popup-title-text"
               >
-                Header text
+                {t("collectionsDialog.headerText")}
               </label>
               <input
                 id="popup-title-text"
                 type="text"
                 value={config.titleText ?? ""}
-                placeholder="Defaults to collection name"
+                placeholder={t("collectionsDialog.headerPlaceholder")}
                 onChange={(e) => set("titleText", e.target.value || undefined)}
                 className="h-8 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
@@ -226,7 +229,7 @@ export function CollectionsPopupPanelDialog({
               <button
                 type="button"
                 aria-pressed={!!config.titleBold}
-                aria-label="Bold"
+                aria-label={t("collectionsDialog.bold")}
                 onClick={() => set("titleBold", !config.titleBold)}
                 className={cn(
                   "inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs font-bold",
@@ -238,7 +241,7 @@ export function CollectionsPopupPanelDialog({
               <button
                 type="button"
                 aria-pressed={!!config.titleItalic}
-                aria-label="Italic"
+                aria-label={t("collectionsDialog.italic")}
                 onClick={() => set("titleItalic", !config.titleItalic)}
                 className={cn(
                   "inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs italic",
@@ -250,7 +253,7 @@ export function CollectionsPopupPanelDialog({
               <button
                 type="button"
                 aria-pressed={!!config.titleUnderline}
-                aria-label="Underline"
+                aria-label={t("collectionsDialog.underline")}
                 onClick={() => set("titleUnderline", !config.titleUnderline)}
                 className={cn(
                   "inline-flex h-7 w-7 items-center justify-center border border-border bg-background text-xs underline",
@@ -264,7 +267,7 @@ export function CollectionsPopupPanelDialog({
                   key={a}
                   type="button"
                   aria-pressed={config.titleAlign === a}
-                  aria-label={`Align ${a}`}
+                  aria-label={t("collectionsDialog.alignAria", { align: a })}
                   onClick={() =>
                     set("titleAlign", config.titleAlign === a ? undefined : a)
                   }
@@ -279,7 +282,7 @@ export function CollectionsPopupPanelDialog({
             </div>
 
             <div className="flex items-center justify-between gap-2">
-              <span className="shrink-0 text-xs text-muted-foreground">Font</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{t("collectionsDialog.font")}</span>
               <select
                 value={config.titleFontFamily ?? ""}
                 onChange={(e) =>
@@ -290,7 +293,7 @@ export function CollectionsPopupPanelDialog({
                 }
                 className="h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                <option value="">Theme font</option>
+                <option value="">{t("collectionsDialog.themeFont")}</option>
                 {PORTFOLIO_FONT_KEYS.map((key) => (
                   <option key={key} value={key}>
                     {PORTFOLIO_FONTS[key].label}
@@ -301,7 +304,7 @@ export function CollectionsPopupPanelDialog({
 
             {/* titleFontSize: fallback = 1.125rem (18px) — no standard token; effectiveValue unset */}
             <NumberInputRow
-              label="Font size"
+              label={t("collectionsDialog.fontSize")}
               value={config.titleFontSize}
               min={10}
               max={120}
@@ -311,7 +314,7 @@ export function CollectionsPopupPanelDialog({
 
             {/* titleColorToken: fallback = var(--pf-color-foreground, #111) → "foreground" */}
             <LabeledSwatchRow
-              label="Title color"
+              label={t("collectionsDialog.titleColor")}
               value={config.titleColorToken}
               onChange={(c) => set("titleColorToken", c)}
               effectiveValue="foreground"
@@ -319,10 +322,10 @@ export function CollectionsPopupPanelDialog({
           </EditorDrawerSection>
 
           {/* ── Button styles ─────────────────────── */}
-          <EditorDrawerSection title="Button styles">
+          <EditorDrawerSection title={t("collectionsDialog.buttonStyles")}>
             {/* closeButtonSize: fallback = 36px */}
             <NumberInputRow
-              label="Button size"
+              label={t("collectionsDialog.buttonSize")}
               value={config.closeButtonSize}
               min={24}
               max={72}
@@ -333,14 +336,14 @@ export function CollectionsPopupPanelDialog({
 
             {/* closeButtonRadius: fallback = "50%" when unset — not a BrandKitRadius; effectiveValue unset */}
             <RadiusRow
-              label="Corners"
+              label={t("collectionsDialog.corners")}
               active={config.closeButtonRadius}
               onToggle={(r) => set("closeButtonRadius", r)}
             />
 
             <BorderRow
-              widthLabel="Border"
-              colorLabel="Border color"
+              widthLabel={t("collectionsDialog.border")}
+              colorLabel={t("collectionsDialog.borderColor")}
               width={config.closeButtonBorderWidth}
               color={config.closeButtonBorderColorToken}
               onWidthChange={(v) => set("closeButtonBorderWidth", v)}
@@ -349,7 +352,7 @@ export function CollectionsPopupPanelDialog({
 
             {/* closeButtonOpacity: fallback = 100 */}
             <NumberInputRow
-              label="Opacity"
+              label={t("collectionsDialog.opacity")}
               value={config.closeButtonOpacity}
               min={0}
               max={100}
@@ -360,7 +363,7 @@ export function CollectionsPopupPanelDialog({
 
             {/* closeButtonBgColorToken: fallback = var(--pf-color-surface, #fff) — no palette token; effectiveValue unset */}
             <LabeledSwatchRow
-              label="Background"
+              label={t("collectionsDialog.background")}
               value={config.closeButtonBgColorToken}
               onChange={(c) => set("closeButtonBgColorToken", c)}
             />

@@ -1572,8 +1572,204 @@
         },
         "photos": "Foto",
         "templates": "Templat",
-        "guide": "Panduan",
-        "templateSwitchedToast": "Templat digunakan."
+        "guide": {
+          "next": "Seterusnya",
+          "back": "Kembali",
+          "finish": "Selesai",
+          "skip": "Langkau Panduan",
+          "dontShow": "Jangan tunjuk lagi",
+          "tryIt": "Cuba untuk meneruskan ke langkah seterusnya",
+          "progress": "{n} daripada {total}",
+          "loading": "Memuatkan",
+          "skipConfirm": {
+            "heading": "Langkau panduan?",
+            "body": "Anda akan kehilangan kedudukan anda dalam panduan. Anda boleh memulakan semula pada bila-bila masa.",
+            "back": "Kembali",
+            "dontShow": "Jangan tunjuk lagi",
+            "skip": "Langkau Panduan"
+          },
+          "steps": {
+            "welcome": {
+              "title": "Selamat ke editor portfolio anda",
+              "body": "Ini ialah panduan ringkas dan praktikal untuk membantu anda bermula. Anda boleh melangkau pada bila-bila masa."
+            },
+            "dragBlock": {
+              "title": "Seret blok ke halaman anda",
+              "body": "Panel menyenaraikan setiap blok yang tersedia. Seret mana-mana blok dari sini ke kanvas untuk menambahkannya ke halaman anda."
+            },
+            "blockProps": {
+              "title": "Sifat blok berada di sini",
+              "body": "Menjatuhkan blok memilihnya secara automatik — tetapannya muncul dalam panel ini."
+            },
+            "contentTab": {
+              "title": "Kandungan: teks dan media blok",
+              "body": "Tab Kandungan adalah tempat anda menyunting teks, imej, dan pautan sebenar blok."
+            },
+            "designTab": {
+              "title": "Reka Bentuk: warna, sempadan, dan sudut",
+              "body": "Tab Reka Bentuk mengawal tipografi, warna latar belakang, sempadan, bayang, dan animasi."
+            },
+            "layoutTab": {
+              "title": "Susun Atur: saiz, jarak, dan kedudukan",
+              "body": "Tab Susun Atur mengawal jurang, ketinggian minimum, penjajaran, dan penempatan grid."
+            },
+            "switchPages": {
+              "title": "Tukar antara halaman",
+              "body": "Tukar antara bahagian-bahagian berbeza laman web portfolio anda."
+            },
+            "openNav": {
+              "title": "Buka Navigasi",
+              "body": "Klik Navigasi untuk menyediakan pengepala laman anda — jenama, logo, pautan menu, dan gaya."
+            },
+            "navSetup": {
+              "title": "Navigasi · Persediaan",
+              "body": "Tab Persediaan adalah tempat anda menetapkan teks jenama, saiz bar nav, logo, dan pautan menu."
+            },
+            "logo": {
+              "title": "Logo anda berada di sini",
+              "body": "Ini ialah pemuat naik logo anda — PNG, JPEG, atau WEBP yang ditambah di sini akan dipaparkan dalam pengepala halaman langsung anda."
+            },
+            "navDesign": {
+              "title": "Navigasi · Reka Bentuk",
+              "body": "Tab Reka Bentuk mengawal warna pengepala, sempadan, dan tipografi untuk pautan nav anda."
+            },
+            "contactForm": {
+              "title": "Borang pertanyaan anda",
+              "body": "Klik Borang Hubungi untuk menyediakan borang yang digunakan pelawat untuk menghubungi anda."
+            },
+            "contactSetup": {
+              "title": "Hubungi · Persediaan",
+              "body": "Tab Persediaan menetapkan bahasa borang, tajuk, dan penerangan. Medan dan susun atur borang adalah tetap."
+            },
+            "contactDesign": {
+              "title": "Hubungi · Reka Bentuk",
+              "body": "Tab Reka Bentuk mengubah gaya borang — warna teks dan latar belakang untuk sepadan dengan jenama anda. Anda tidak boleh menyembunyikan medan, hanya mengubah penampilannya."
+            },
+            "photos": {
+              "title": "Muat naik dan susun foto",
+              "body": "Buka Foto untuk membuat koleksi dan memuat naik imej. Blok Galeri mengambil daripada koleksi."
+            },
+            "theme": {
+              "title": "Pilih warna dan fon anda",
+              "body": "Tema mengawal lima warna jenama dan tipografi anda. Setiap pilihan gaya blok menggunakan palet ini."
+            },
+            "preview": {
+              "title": "Pratonton laman anda pada sebarang saiz skrin",
+              "body": "Tukar ke mod pratonton dan gunakan togol peranti untuk menyemak susun atur anda pada mudah alih, tablet, dan desktop."
+            },
+            "publish": {
+              "title": "Terbitkan untuk disiarkan",
+              "body": "Apabila anda berpuas hati dengan perubahan anda, klik Terbitkan untuk mendorong perubahan tersebut ke halaman awam anda."
+            },
+            "draftsStep": {
+              "title": "Simpan draf dan tukar versi",
+              "body": "Simpan perubahan pada bila-bila masa. Gunakan Draf untuk mengurus pelbagai versi. Buka semula panduan ini melalui butang Panduan."
+            }
+          }
+        },
+        "templateSwitchedToast": "Templat digunakan.",
+        "devices": {
+          "mobile": "Mudah alih",
+          "tablet": "Tablet",
+          "desktop": "Desktop"
+        },
+        "controls": {
+          "editorControls": "Kawalan editor",
+          "toggleBlocks": "Togol panel blok",
+          "toggleProperties": "Togol panel sifat",
+          "previewDevice": "Peranti pratonton",
+          "undoTitle": "Buat asal (Ctrl+Z)",
+          "redoTitle": "Buat semula (Ctrl+Shift+Z)"
+        },
+        "drafts": "Draf",
+        "saveChanges": "Simpan perubahan",
+        "loadingDraft": "Memuatkan draf",
+        "loadingDraftEllipsis": "Memuatkan draf…",
+        "featuredPopup": "Tetingkap timbul pilihan",
+        "draftNameLabel": "Nama draf",
+        "draftsDialog": {
+          "title": "Draf anda",
+          "subtitle": "Pilih susun atur yang disimpan untuk dimuatkan ke kanvas. Memuatkan akan menggantikan apa yang sedang anda sunting sekarang.",
+          "empty": "Tiada draf lagi. Simpan kerja semasa anda, atau mulakan yang baharu daripada templat.",
+          "active": "Aktif",
+          "addNew": "Tambah draf baharu",
+          "close": "Tutup",
+          "confirmTitle": "Padam draf ini?",
+          "confirmBody": "Ini akan memadamkan draf yang disimpan secara kekal. Tindakan ini tidak boleh dibatalkan.",
+          "confirmAction": "Padam draf",
+          "cancel": "Batal",
+          "unsaved": "Belum disimpan",
+          "applyAria": "Guna {name}",
+          "deletingAria": "Memadam {name}",
+          "deleteAria": "Padam {name}"
+        },
+        "entryDialog": {
+          "title": "Selamat kembali",
+          "description": "Di mana anda ingin bermula?",
+          "resumeTitle": "Teruskan dari tempat anda tinggalkan",
+          "resumeHint": "Sambung semula suntingan terbaru anda yang belum disimpan.",
+          "loadDraftTitle": "Muat draf sedia ada",
+          "loadDraftHint": "Buka salah satu susun atur portfolio anda yang disimpan.",
+          "scratchTitle": "Mulakan dari awal",
+          "scratchHint": "Pilih templat (atau kanvas kosong) dan mulakan draf baharu."
+        },
+        "templatePicker": {
+          "title": "Pilih templat",
+          "subtitle": "Penukaran menggunakan susun atur permulaan, warna, dan fon. Foto dan koleksi anda kekal; hanya susun atur halaman dan tema yang berubah.",
+          "welcomeTitle": "Pilih templat untuk bermula",
+          "welcomeSubtitle": "Pilih susun atur permulaan untuk memulakan portfolio anda. Anda boleh menukar templat pada bila-bila masa.",
+          "current": "Semasa",
+          "use": "Guna templat ini",
+          "scratch": "Mulakan dari awal",
+          "cancel": "Batal",
+          "switching": "Menukar…",
+          "error": "Tidak dapat menukar templat. Sila cuba lagi."
+        },
+        "unsavedDialog": {
+          "nameLabel": "Nama",
+          "title": "Simpan perubahan anda?",
+          "body": "Anda mempunyai perubahan yang belum disimpan pada draf ini. Menukar sekarang akan kehilangan perubahan tersebut melainkan anda simpan.",
+          "keepEditing": "Teruskan menyunting",
+          "discard": "Buang",
+          "save": "Simpan perubahan"
+        },
+        "blockActions": {
+          "fallbackLabel": "Blok",
+          "actionsAria": "Tindakan {label}",
+          "moveUp": "Gerak ke atas",
+          "moveDown": "Gerak ke bawah",
+          "moveOut": "Gerak keluar",
+          "duplicate": "Gandakan",
+          "delete": "Padam"
+        },
+        "collectionsDialog": {
+          "featuredPopup": "Tetingkap timbul pilihan",
+          "popup": "Tetingkap timbul",
+          "background": "Latar belakang",
+          "border": "Sempadan",
+          "borderColor": "Warna sempadan",
+          "corners": "Sudut",
+          "titleStyles": "Gaya tajuk",
+          "headerText": "Teks pengepala",
+          "headerPlaceholder": "Lalai kepada nama koleksi",
+          "bold": "Tebal",
+          "italic": "Italik",
+          "underline": "Garis bawah",
+          "alignAria": "Jajar {align}",
+          "font": "Fon",
+          "themeFont": "Fon tema",
+          "fontSize": "Saiz fon",
+          "titleColor": "Warna tajuk",
+          "buttonStyles": "Gaya butang",
+          "buttonSize": "Saiz butang",
+          "opacity": "Kelegapan",
+          "sampleCollection": "Koleksi Sampel",
+          "radius": {
+            "sharp": "Tajam",
+            "subtle": "Halus",
+            "rounded": "Membulat"
+          }
+        }
       },
       "wizard": {
         "title": "Mari bina portfolio anda",

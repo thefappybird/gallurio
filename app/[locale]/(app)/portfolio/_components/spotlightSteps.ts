@@ -23,6 +23,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Welcome (centred, no anchor)
   {
     id: "welcome",
+    slug: "welcome",
     title: "Welcome to your portfolio editor",
     body: "Here's a quick, hands-on tour to get you up to speed. You can skip anytime.",
   },
@@ -32,6 +33,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // secondaryAnchorId highlights the canvas as the drop target alongside the panel.
   {
     id: "drag-block",
+    slug: "dragBlock",
     anchorId: "blocks-panel",
     secondaryAnchorId: "canvas",
     title: "Drag a block onto your page",
@@ -45,6 +47,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // (marked by RightPanelTourMarker inside the fields override in EditorShell).
   {
     id: "properties-panel",
+    slug: "blockProps",
     anchorId: "properties-panel-full",
     title: "Block properties live here",
     body: "Dropping a block selects it automatically — its settings appear in this panel on the right.",
@@ -54,6 +57,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Content tab (passive — tab changes happen inside the panel)
   {
     id: "style-tab-content",
+    slug: "contentTab",
     anchorId: "style-tab-content",
     title: "Content: the block's text and media",
     body: "The Content tab is where you edit the block's actual text, images, and links.",
@@ -63,6 +67,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Design tab (passive)
   {
     id: "style-tab-design",
+    slug: "designTab",
     anchorId: "style-tab-design",
     title: "Design: colors, borders, and corners",
     body: "The Design tab controls typography, background color, borders, shadows, and animations.",
@@ -72,6 +77,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Layout tab (passive)
   {
     id: "style-tab-layout",
+    slug: "layoutTab",
     anchorId: "style-tab-layout",
     title: "Layout: size, spacing, and position",
     body: "The Layout tab controls gap, min-height, alignment, and grid placement.",
@@ -81,6 +87,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Section tabs — spans all five page tabs (Home → Contact Form), non-gated.
   {
     id: "section-tabs",
+    slug: "switchPages",
     anchorId: "section-tabs",
     title: "Switch between pages",
     body: "Switch between the different parts of your portfolio website.",
@@ -90,6 +97,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Navigation tab (actionable: open the Navigation panel)
   {
     id: "header-tab",
+    slug: "openNav",
     anchorId: "header-tab",
     title: "Open Navigation",
     body: "Click Navigation to set up your site's header — brand, logo, menu links, and styling.",
@@ -100,6 +108,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Navigation · Setup tab
   {
     id: "header-setup-tab",
+    slug: "navSetup",
     anchorId: "header-setup-tab",
     title: "Navigation · Setup",
     body: "The Setup tab is where you set your brand text, navbar size, logo, and menu links.",
@@ -109,6 +118,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Logo uploader (passive detail)
   {
     id: "logo-uploader",
+    slug: "logo",
     anchorId: "logo-uploader",
     title: "Your logo lives here",
     body: "This is your logo uploader — a PNG, JPEG, or WEBP added here shows in the header on your live page.",
@@ -118,6 +128,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Navigation · Design tab
   {
     id: "header-design-tab",
+    slug: "navDesign",
     anchorId: "header-design-tab",
     title: "Navigation · Design",
     body: "The Design tab controls header colors, borders, and typography for your nav links.",
@@ -127,6 +138,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Contact tab (actionable: open the contact panel)
   {
     id: "contact-tab",
+    slug: "contactForm",
     anchorId: "contact-tab",
     title: "Your inquiry form",
     body: "Click Contact Form to set up the form visitors use to reach you.",
@@ -137,6 +149,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Contact · Setup tab
   {
     id: "contact-setup-tab",
+    slug: "contactSetup",
     anchorId: "contact-setup-tab",
     title: "Contact · Setup",
     body: "The Setup tab sets the form's language, title, and description. The form's fields and layout are fixed.",
@@ -146,6 +159,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Contact · Design tab
   {
     id: "contact-design-tab",
+    slug: "contactDesign",
     anchorId: "contact-design-tab",
     title: "Contact · Design",
     body: "The Design tab restyles the form — text and background colors to match your brand. You can't hide fields, only change how they look.",
@@ -155,6 +169,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Photos
   {
     id: "photos",
+    slug: "photos",
     anchorId: "photos",
     title: "Upload and organize photos",
     body: "Open Photos to create collections and upload images. Gallery blocks pull from a collection.",
@@ -164,6 +179,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Theme
   {
     id: "theme",
+    slug: "theme",
     anchorId: "theme",
     title: "Pick your colors and fonts",
     body: "Theme controls your five brand colors and typography. Every block's style options use this palette.",
@@ -173,6 +189,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Preview + device toggle
   {
     id: "preview-device",
+    slug: "preview",
     anchorId: "preview-toggle",
     title: "Preview your site at any screen size",
     body: "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop.",
@@ -182,6 +199,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Publish
   {
     id: "publish",
+    slug: "publish",
     anchorId: "publish",
     title: "Publish to go live",
     body: "When you're happy with your changes, click Publish to push them to your public page.",
@@ -191,6 +209,7 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Save + Drafts
   {
     id: "save-drafts",
+    slug: "draftsStep",
     anchorId: "save-changes",
     title: "Save drafts and switch versions",
     body: "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button.",

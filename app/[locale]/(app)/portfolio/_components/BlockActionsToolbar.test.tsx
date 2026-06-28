@@ -6,7 +6,8 @@
  * test stubs the DOM nodes + getBoundingClientRect the rAF loop reads.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { screen, cleanup } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 
 type MockApi = {
   appState: {
@@ -65,7 +66,7 @@ describe("scrollParent", () => {
 describe("BlockActionsToolbar", () => {
   it("renders nothing when no item is selected", () => {
     mockApi = { appState: { ui: { itemSelector: null }, data: { content: [] } }, selectedItem: null, dispatch: vi.fn() };
-    const { container } = render(<BlockActionsToolbar />);
+    const { container } = renderWithProviders(<BlockActionsToolbar />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -78,7 +79,7 @@ describe("BlockActionsToolbar", () => {
     mount("", "canvas", { top: 100, bottom: 700, left: 0, right: 500, width: 500, height: 600 });
     mount("hero-1", "block", { top: 200, bottom: 400, left: 0, right: 500, width: 500, height: 200 });
 
-    render(<BlockActionsToolbar />);
+    renderWithProviders(<BlockActionsToolbar />);
     expect(await screen.findByRole("button", { name: "Move up" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Move down" })).not.toBeDisabled();
   });
@@ -95,7 +96,7 @@ describe("BlockActionsToolbar", () => {
     dialog.setAttribute("role", "dialog");
     document.body.appendChild(dialog);
 
-    render(<BlockActionsToolbar />);
+    renderWithProviders(<BlockActionsToolbar />);
     // Give the rAF loop a few frames; the toolbar must never appear.
     await new Promise((r) => setTimeout(r, 60));
     expect(screen.queryByRole("button", { name: "Move up" })).toBeNull();
