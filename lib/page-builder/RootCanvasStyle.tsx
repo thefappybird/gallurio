@@ -110,12 +110,22 @@ const CANVAS_ROOT_DROPZONE_CSS =
  * (always present, so the canvas reflows with the viewport toggle) with the
  * dynamic per-page root style layered on top.
  */
+/**
+ * Materialize the brand background on the canvas surface so it matches
+ * preview/publish. PreviewBrandShell sets `backgroundColor: var(--pf-color-bg)`
+ * explicitly; the canvas has no such wrapper, so we inject it here.
+ * Placed BEFORE rootRule so an explicit bgColorToken in the page style still wins
+ * (same selector, last rule wins in CSS cascade).
+ */
+const CANVAS_EFFECTIVE_BG_CSS =
+  `${CANVAS_SURFACE_SELECTOR} { background-color: var(--pf-color-bg); }`;
+
 export function buildCanvasCss(style?: RootPageStyle | null): string {
   const decls = rootCanvasCssText(style);
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${CANVAS_EFFECTIVE_BG_CSS}\n${rootRule}`;
 }
 
 /**

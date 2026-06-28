@@ -84,4 +84,18 @@ describe("buildCanvasCss", () => {
     expect(css).toContain(":has(> [data-puck-preview])");
     expect(css).toMatch(/:has\(> \[data-puck-preview\]\)\s*{[^}]*position: relative/);
   });
+
+  // C6: canvas must materialize the brand background so Luxury theme shows correctly
+  it("materializes var(--pf-color-bg) as canvas background so brand bg shows in editor (C6)", () => {
+    const css = buildCanvasCss(undefined);
+    // Must inject a background-color rule using the brand bg var on the canvas surface
+    expect(css).toContain("background-color: var(--pf-color-bg)");
+    // Must appear BEFORE any explicit rootRule (so explicit overrides still win)
+    const bgIdx = css.indexOf("background-color: var(--pf-color-bg)");
+    // rootRule for explicit bgColorToken appears only when style has bgColorToken set
+    const explicitBgCss = buildCanvasCss({ bgColorToken: "primary" });
+    const explicitBgIdx = explicitBgCss.lastIndexOf("background-color");
+    expect(bgIdx).toBeGreaterThan(-1);
+    expect(explicitBgIdx).toBeGreaterThan(bgIdx);
+  });
 });
