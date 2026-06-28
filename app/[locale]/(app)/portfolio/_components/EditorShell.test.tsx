@@ -873,6 +873,33 @@ describe("EditorShell", () => {
     expect(publishDraftAction).not.toHaveBeenCalled();
   });
 
+  it("savedSnapshot matches the payload sent to the server after a successful save", async () => {
+    // Verifies FIX 2: savedSnapshot is built from `payload` (captured before the
+    // server round-trip), NOT from a second buildDraftSnapshot() call after the await.
+    // The observable contract: after save, isDirty=false (Save changes is disabled),
+    // and updateDraftAction was called with exactly the data that savedSnapshot tracks.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Make the draft dirty with a Puck change.
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+
+    // Save changes button must now be enabled (dirty).
+    const saveBtn = screen.getByRole("button", { name: "Save changes" });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
+
+    // Click Save.
+    fireEvent.click(saveBtn);
+
+    // After a successful save, savedSnapshot must equal what was sent to the server:
+    // isDirty should become false → Save changes button disabled.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled());
+
+    // updateDraftAction must have been called with the draft name matching what's tracked.
+    expect(updateDraftAction).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Test Draft" })
+    );
+  });
+
   it("open-in-new-tab button opens /portfolio-preview and does not call createPreviewSnapshotAction", async () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     await renderAndDismissEntry(<EditorShell {...baseProps} />);

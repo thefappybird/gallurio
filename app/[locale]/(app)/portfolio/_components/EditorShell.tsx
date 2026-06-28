@@ -749,7 +749,7 @@ export function EditorShell({
         const without = prev.filter((d) => d.id !== saved.id);
         return [saved, ...without];
       });
-      const snapshotStr = JSON.stringify({ name: nameToSave, ...buildDraftSnapshot() });
+      const snapshotStr = JSON.stringify(payload);
       setSavedSnapshot(snapshotStr);
       persistLocalDraft();
       toast.success(t("savedToast"));
