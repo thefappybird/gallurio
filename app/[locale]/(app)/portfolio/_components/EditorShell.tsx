@@ -50,6 +50,7 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
+import { useIsRtl } from "@/lib/i18n/rtl";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
 import { SandboxEditorGuide } from "./SandboxEditorGuide";
@@ -407,6 +408,21 @@ export function EditorShell({
   const [puckContentCount, setPuckContentCount] = useState(0);
   // Baseline content count captured when the drag-block step becomes active
   const [dragBaseline, setDragBaseline] = useState<number | null>(null);
+
+  // Restart the spotlight tour when the writing direction flips (LTR<->RTL)
+  // mid-tour — e.g. the owner switches to/from Arabic while the guide is open.
+  // The mirrored layout invalidates the active step's anchor geometry, so we
+  // re-run from step 0 for a clean re-flow rather than leaving a stale cutout.
+  // Only direction flips restart; same-direction language swaps (en<->fil) keep
+  // the user's place and just re-translate.
+  const guideIsRtl = useIsRtl();
+  const prevGuideRtlRef = useRef(guideIsRtl);
+  useEffect(() => {
+    if (prevGuideRtlRef.current !== guideIsRtl) {
+      prevGuideRtlRef.current = guideIsRtl;
+      if (guideOpen) setSpotlightStepIndex(0);
+    }
+  }, [guideIsRtl, guideOpen]);
 
   // ---- Draft state ----
   const [drafts, setDrafts] = useState<DraftSummary[]>(initialDrafts);
