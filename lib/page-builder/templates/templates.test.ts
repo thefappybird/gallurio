@@ -57,6 +57,26 @@ describe("portfolio template registry", () => {
         }
       });
 
+      it("only references registered block types when recursively walking nested props.content", () => {
+        // Walks every block including those nested inside Columns/Container props.content slots.
+        // The existing registry test above only walks top-level blocks — this one catches
+        // type mismatches in nested content (e.g. CTAPreset → CtaPreset inside a Columns block).
+        function walkBlocks(blocks: { type: string; props?: Record<string, unknown> }[]) {
+          for (const block of blocks) {
+            expect(
+              REGISTERED_BLOCKS.has(block.type),
+              `Template '${template.id}': nested block type '${block.type}' is not in the Puck registry`
+            ).toBe(true);
+            const nested = block.props?.content;
+            if (Array.isArray(nested)) walkBlocks(nested as typeof blocks);
+          }
+        }
+        walkBlocks([
+          ...(data.home?.content ?? []),
+          ...(data.gallery?.content ?? []),
+        ]);
+      });
+
       it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)

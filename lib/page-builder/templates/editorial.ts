@@ -159,9 +159,9 @@ export const editorialTemplate: PortfolioTemplate = {
               },
             },
             {
-              type: "CTAPreset",
+              type: "CtaPreset",
               props: {
-                id: "CTAPreset-editorial",
+                id: "CtaPreset-editorial",
                 backgroundImages: [],
                 overlayOpacity: 60,
                 minHeight: "auto",
