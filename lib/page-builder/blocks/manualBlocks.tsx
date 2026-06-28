@@ -630,8 +630,13 @@ export function ColumnsBlock({
         ...outerStyle,
         // A7: full-bleed breaks out of any max-width parent container.
         // Placed after outerStyle so full-bleed width/marginLeft always wins.
+        // Bug #9: cap to canvas width in editor so 100vw (= full viewport with
+        // both Puck panels) does not overflow the narrow canvas (~428px). On the
+        // public page the true 100vw full-bleed is kept intact.
         ...(overallWidth === "full"
-          ? { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          ? isEditing
+            ? { width: "100%", marginLeft: 0 }
+            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
           : {}),
         containerType: "inline-size",
         containerName: instanceContainer,
@@ -643,7 +648,7 @@ export function ColumnsBlock({
           are fully isolated. Container queries (not viewport media queries) are
           used so colSpan/rowSpan work correctly in the narrow editor canvas. */}
       <style>{`
-        .${instanceClass}{display:grid;gap:${gapValue};${overallWidth === "full" ? "" : "max-width:80rem;margin:0 auto;"}grid-template-columns:1fr;}
+        .${instanceClass}{display:grid;align-items:stretch;gap:${gapValue};${overallWidth === "full" ? "" : "max-width:80rem;margin:0 auto;"}grid-template-columns:1fr;}
         ${colsRule}
         ${rowsRule}
       `}</style>

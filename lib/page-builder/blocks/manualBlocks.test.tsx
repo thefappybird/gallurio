@@ -1338,6 +1338,45 @@ describe("A5: ColumnsBlock min-height prop", () => {
   });
 });
 
+describe("#2: ColumnsBlock grid — align-items stretch for public-page parity", () => {
+  it("base grid CSS rule contains align-items:stretch so public-page sibling cells fill the row track (Bug #2)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={5} content={stubSlot} />);
+    expect(html).toContain("align-items:stretch");
+  });
+
+  it("@container rows rule and editor inline gridTemplateRows use identical track sizing (Bug #2 parity)", () => {
+    const publicHtml = renderToStaticMarkup(
+      <ColumnsBlock columns={5} rows={2} content={stubSlot} puck={{ isEditing: false }} />
+    );
+    const editorHtml = renderToStaticMarkup(
+      <ColumnsBlock columns={5} rows={2} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    const containerMatch = publicHtml.match(/grid-template-rows:repeat\(\d+,([^}]+?)\)/);
+    const inlineMatch = editorHtml.match(/grid-template-rows:repeat\(\d+,([^"]+?)\)/);
+    expect(containerMatch).not.toBeNull();
+    expect(inlineMatch).not.toBeNull();
+    expect(containerMatch![1]).toBe(inlineMatch![1]);
+  });
+});
+
+describe("#9: ColumnsBlock overallWidth full — editor canvas constraint", () => {
+  it("overallWidth=full in editor context: outer wrapper uses width:100% not 100vw (Bug #9)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).not.toContain("width:100vw");
+    expect(html).toContain("width:100%");
+  });
+
+  it("overallWidth=full on the public page: outer wrapper uses width:100vw (true full-bleed preserved)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} puck={{ isEditing: false }} />
+    );
+    expect(html).toContain("width:100vw");
+    expect(html).not.toContain("width:100%");
+  });
+});
+
 describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
   it("renders top/bottom 1rem, left/right 1.5rem when _style has no padding", () => {
     const html = renderToStaticMarkup(
