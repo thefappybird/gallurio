@@ -170,6 +170,99 @@ describe("CollectionsPopupPanelDialog shared EditorDrawerSection structure", () 
   });
 });
 
+describe("CollectionsPopupPanelDialog effective-default: field (a) popup background color", () => {
+  it("shows Background swatch as effective (aria-pressed=true) when backgroundColor is unset", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
+    const bgSwatch = screen.getByRole("button", { name: "Background" });
+    expect(bgSwatch).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("CollectionsPopupPanelDialog effective-default: field (a) explicit wins", () => {
+  it("Background swatch NOT effective when backgroundColor explicitly set to accent", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, backgroundColor: "accent" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^popup$/i }));
+    expect(screen.getByRole("button", { name: "Background" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Accent" })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("CollectionsPopupPanelDialog effective-default: field (b) title font size", () => {
+  it("titleFontSize spinner shows placeholder 16 when size is unset (effective default)", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    const spinners = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const fontSizeInput = spinners.find((el) => el.placeholder === "16");
+    expect(fontSizeInput).toBeDefined();
+  });
+});
+
+describe("CollectionsPopupPanelDialog effective-default: field (b) explicit wins", () => {
+  it("titleFontSize spinner shows explicit value (24) when size is set", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, titleFontSize: 24 }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /title styles/i }));
+    const spinners = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+    const fontSizeInput = spinners.find((el) => el.value === "24");
+    expect(fontSizeInput).toBeDefined();
+  });
+});
+
+describe("CollectionsPopupPanelDialog effective-default: field (c) close button radius", () => {
+  it("shows Rounded as effective (aria-pressed=true) in Button styles when closeButtonRadius is unset", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={baseConfig}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    // Expand only Button styles so only its RadiusRow is visible (no Popup section ambiguity)
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    const roundedBtn = screen.getByRole("button", { name: /^rounded$/i });
+    expect(roundedBtn).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("CollectionsPopupPanelDialog effective-default: field (c) explicit wins", () => {
+  it("Rounded NOT effective when closeButtonRadius explicitly set to sharp", () => {
+    renderWithProviders(
+      <CollectionsPopupPanelDialog
+        config={{ ...baseConfig, closeButtonRadius: "sharp" }}
+        onChange={vi.fn()}
+        brandKit={stubBrandKit}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /button styles/i }));
+    expect(screen.getByRole("button", { name: /^rounded$/i })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: /^sharp$/i })).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
 describe("CollectionsPopupPanelDialog header styles", () => {
   function setup(config: Partial<PortfolioCollectionsPopupConfig> = {}) {
     const onChange = vi.fn();
