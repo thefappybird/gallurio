@@ -1698,6 +1698,132 @@
             "rounded": "مستدير"
           }
         },
+        "puckConfig": {
+          "categories": {
+            "presets": "أقسام جاهزة",
+            "manual": "أقسام يدوية"
+          },
+          "blocks": {
+            "heroPreset": "رئيسي",
+            "aboutPreset": "نبذة عني",
+            "servicesPreset": "الخدمات",
+            "ctaPreset": "دعوة للتصرّف",
+            "contactPreset": "تواصل",
+            "galleryGridPreset": "شبكة المعرض",
+            "galleryMasonryPreset": "معرض متداخل",
+            "featuredWorkPreset": "أعمال مميَّزة",
+            "galleryLandingPreset": "صفحة المعرض",
+            "galleryGrid": "شبكة الصور",
+            "galleryMasonry": "تخطيط متداخل",
+            "featuredWork": "أبرز الأعمال",
+            "video": "فيديو",
+            "contactDetails": "بيانات التواصل",
+            "heading": "عنوان",
+            "text": "نص",
+            "image": "صورة",
+            "button": "زر",
+            "spacer": "فراغ",
+            "divider": "فاصل",
+            "columns": "أعمدة",
+            "container": "حاوية"
+          },
+          "fields": {
+            "style": "النمط",
+            "pageStyle": "نمط الصفحة",
+            "bgAnimation": "حركة الخلفية",
+            "bgAnimationShort": "حركة BG",
+            "bgSpeed": "سرعة الحركة",
+            "bgSpeedShort": "السرعة",
+            "overlayOpacity": "شفافية الطبقة العلوية (0-100)",
+            "minHeight": "الارتفاع الأدنى",
+            "alignX": "المحاذاة الأفقية",
+            "alignY": "المحاذاة العمودية",
+            "backgroundImages": "صور الخلفية",
+            "headingText": "نص العنوان",
+            "headingLevel": "المستوى",
+            "textContent": "النص",
+            "videoUrl": "رابط YouTube أو Vimeo",
+            "videoDescription": "وصف (اختياري)",
+            "videoFooter": "تذييل (اختياري)",
+            "imageField": "صورة",
+            "imageUrl": "رابط الصورة (بديل)",
+            "imageAlt": "النص البديل",
+            "imageFit": "الملاءمة",
+            "buttonLabel": "نص الزر",
+            "buttonSize": "الحجم",
+            "buttonAction": "الإجراء",
+            "buttonAlign": "المحاذاة",
+            "spacerHeight": "الارتفاع",
+            "dividerThickness": "السُّمك (px)",
+            "columnsCount": "الأعمدة",
+            "rowsCount": "الصفوف"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "تلاشٍ",
+              "kenburns": "كين بيرنز",
+              "slide": "انزلاق"
+            },
+            "bgSpeed": {
+              "slow": "بطيء (7ث)",
+              "medium": "متوسط (5ث)",
+              "fast": "سريع (3ث)"
+            },
+            "bgSpeedShort": {
+              "slow": "بطيء",
+              "medium": "متوسط",
+              "fast": "سريع"
+            },
+            "minHeight": {
+              "auto": "تلقائي",
+              "short": "قصير (40vh)",
+              "medium": "متوسط (60vh)",
+              "tall": "طويل (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "تلقائي",
+              "short": "قصير",
+              "medium": "متوسط",
+              "tall": "طويل"
+            },
+            "alignX": {
+              "left": "يسار",
+              "center": "وسط",
+              "right": "يمين"
+            },
+            "alignY": {
+              "top": "أعلى",
+              "center": "وسط",
+              "bottom": "أسفل"
+            },
+            "headingLevel": {
+              "h1": "عرض",
+              "h2": "عنوان رئيسي",
+              "h3": "عنوان",
+              "h4": "عنوان فرعي",
+              "h5": "تسمية توضيحية",
+              "h6": "تسمية"
+            },
+            "imageFit": {
+              "cover": "تغطية",
+              "contain": "احتواء"
+            },
+            "buttonSize": {
+              "sm": "صغير",
+              "md": "متوسط",
+              "lg": "كبير"
+            },
+            "buttonAction": {
+              "openContact": "فتح نموذج التواصل",
+              "goToGallery": "الذهاب إلى صفحة المعرض"
+            },
+            "buttonAlign": {
+              "left": "يسار",
+              "center": "وسط",
+              "right": "يمين"
+            }
+          }
+        },
         "tour": {
           "next": "التالي",
           "back": "رجوع",

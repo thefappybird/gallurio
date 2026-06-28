@@ -1698,6 +1698,132 @@
             "rounded": "Rounded"
           }
         },
+        "puckConfig": {
+          "categories": {
+            "presets": "Preset blocks",
+            "manual": "Manual blocks"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "About",
+            "servicesPreset": "Services",
+            "ctaPreset": "Call to action",
+            "contactPreset": "Contact",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Featured Work",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Highlights",
+            "video": "Video",
+            "contactDetails": "Contact Details",
+            "heading": "Heading",
+            "text": "Text",
+            "image": "Image",
+            "button": "Button",
+            "spacer": "Spacer",
+            "divider": "Divider",
+            "columns": "Columns",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Style",
+            "pageStyle": "Page style",
+            "bgAnimation": "Background animation",
+            "bgAnimationShort": "BG animation",
+            "bgSpeed": "Animation speed",
+            "bgSpeedShort": "BG speed",
+            "overlayOpacity": "Overlay opacity (0-100)",
+            "minHeight": "Min height",
+            "alignX": "Horizontal align",
+            "alignY": "Vertical align",
+            "backgroundImages": "Background images",
+            "headingText": "Heading text",
+            "headingLevel": "Level",
+            "textContent": "Text",
+            "videoUrl": "YouTube or Vimeo URL",
+            "videoDescription": "Description (optional)",
+            "videoFooter": "Footer (optional)",
+            "imageField": "Image",
+            "imageUrl": "Image URL (fallback)",
+            "imageAlt": "Alt text",
+            "imageFit": "Fit",
+            "buttonLabel": "Button label",
+            "buttonSize": "Size",
+            "buttonAction": "Action",
+            "buttonAlign": "Alignment",
+            "spacerHeight": "Height",
+            "dividerThickness": "Thickness (px)",
+            "columnsCount": "Columns",
+            "rowsCount": "Rows"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slide"
+            },
+            "bgSpeed": {
+              "slow": "Slow (7s)",
+              "medium": "Medium (5s)",
+              "fast": "Fast (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Slow",
+              "medium": "Medium",
+              "fast": "Fast"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Short (40vh)",
+              "medium": "Medium (60vh)",
+              "tall": "Tall (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Short",
+              "medium": "Medium",
+              "tall": "Tall"
+            },
+            "alignX": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            },
+            "alignY": {
+              "top": "Top",
+              "center": "Center",
+              "bottom": "Bottom"
+            },
+            "headingLevel": {
+              "h1": "Display",
+              "h2": "Title",
+              "h3": "Heading",
+              "h4": "Subheading",
+              "h5": "Caption",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            },
+            "buttonAction": {
+              "openContact": "Open contact form",
+              "goToGallery": "Go to Gallery page"
+            },
+            "buttonAlign": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            }
+          }
+        },
         "tour": {
           "next": "Next",
           "back": "Back",

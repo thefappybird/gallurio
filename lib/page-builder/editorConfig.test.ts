@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { editorPuckConfig } from "./editorConfig";
+import { editorPuckConfig, createEditorConfig } from "./editorConfig";
 import { puckConfig } from "./config";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
@@ -163,6 +163,17 @@ describe("preset section blocks are inline so grid placement applies", () => {
       expect(cfg?.inline).toBe(true);
     });
   }
+});
+
+describe("createEditorConfig factory", () => {
+  it("uses translated block labels when called with a custom translator", () => {
+    const mockT = (key: string) => `[${key}]`;
+    const cfg = createEditorConfig(mockT);
+    const components = cfg.components as Record<string, { label?: string }>;
+    expect(components.GalleryGrid?.label).toBe("[puckConfig.blocks.galleryGrid]");
+    expect(components.HeroPreset?.label).toBe("[puckConfig.blocks.heroPreset]");
+    expect(components.Container?.label).toBe("[puckConfig.blocks.container]");
+  });
 });
 
 describe("block label renames", () => {

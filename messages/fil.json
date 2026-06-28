@@ -1698,6 +1698,132 @@
             "rounded": "Bilugan"
           }
         },
+        "puckConfig": {
+          "categories": {
+            "presets": "Mga preset na bloke",
+            "manual": "Mga manuwal na bloke"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "Tungkol sa Akin",
+            "servicesPreset": "Mga Serbisyo",
+            "ctaPreset": "Call to action",
+            "contactPreset": "Makipag-ugnayan",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Mga Itinatampok na Gawa",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Mga Highlight",
+            "video": "Video",
+            "contactDetails": "Mga Detalye ng Pakikipag-ugnayan",
+            "heading": "Pamagat",
+            "text": "Teksto",
+            "image": "Larawan",
+            "button": "Pindutan",
+            "spacer": "Spacer",
+            "divider": "Divider",
+            "columns": "Mga Kolum",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Estilo",
+            "pageStyle": "Estilo ng pahina",
+            "bgAnimation": "Animasyon ng background",
+            "bgAnimationShort": "BG animation",
+            "bgSpeed": "Bilis ng animasyon",
+            "bgSpeedShort": "Bilis ng BG",
+            "overlayOpacity": "Opacity ng overlay (0-100)",
+            "minHeight": "Pinakamaliit na taas",
+            "alignX": "Pahalang na pagkakahanay",
+            "alignY": "Patayong pagkakahanay",
+            "backgroundImages": "Mga larawan sa background",
+            "headingText": "Teksto ng pamagat",
+            "headingLevel": "Antas",
+            "textContent": "Teksto",
+            "videoUrl": "URL ng YouTube o Vimeo",
+            "videoDescription": "Paglalarawan (opsyonal)",
+            "videoFooter": "Footer (opsyonal)",
+            "imageField": "Larawan",
+            "imageUrl": "URL ng larawan (fallback)",
+            "imageAlt": "Alt na teksto",
+            "imageFit": "Fit",
+            "buttonLabel": "Label ng pindutan",
+            "buttonSize": "Sukat",
+            "buttonAction": "Aksyon",
+            "buttonAlign": "Pagkakahanay",
+            "spacerHeight": "Taas",
+            "dividerThickness": "Kapal (px)",
+            "columnsCount": "Mga kolum",
+            "rowsCount": "Mga hilera"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slide"
+            },
+            "bgSpeed": {
+              "slow": "Mabagal (7s)",
+              "medium": "Katamtaman (5s)",
+              "fast": "Mabilis (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Mabagal",
+              "medium": "Katamtaman",
+              "fast": "Mabilis"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Maikli (40vh)",
+              "medium": "Katamtaman (60vh)",
+              "tall": "Mataas (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Maikli",
+              "medium": "Katamtaman",
+              "tall": "Mataas"
+            },
+            "alignX": {
+              "left": "Kaliwa",
+              "center": "Gitna",
+              "right": "Kanan"
+            },
+            "alignY": {
+              "top": "Itaas",
+              "center": "Gitna",
+              "bottom": "Ibaba"
+            },
+            "headingLevel": {
+              "h1": "Display",
+              "h2": "Titulo",
+              "h3": "Heading",
+              "h4": "Subheading",
+              "h5": "Caption",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Maliit",
+              "md": "Katamtaman",
+              "lg": "Malaki"
+            },
+            "buttonAction": {
+              "openContact": "Buksan ang form ng pakikipag-ugnayan",
+              "goToGallery": "Pumunta sa pahina ng Gallery"
+            },
+            "buttonAlign": {
+              "left": "Kaliwa",
+              "center": "Gitna",
+              "right": "Kanan"
+            }
+          }
+        },
         "tour": {
           "next": "Susunod",
           "back": "Bumalik",

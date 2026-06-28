@@ -1698,6 +1698,132 @@
             "rounded": "Membulat"
           }
         },
+        "puckConfig": {
+          "categories": {
+            "presets": "Blok prasetel",
+            "manual": "Blok manual"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "Tentang",
+            "servicesPreset": "Layanan",
+            "ctaPreset": "Ajakan bertindak",
+            "contactPreset": "Hubungi",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Karya Unggulan",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Sorotan",
+            "video": "Video",
+            "contactDetails": "Detail Kontak",
+            "heading": "Judul",
+            "text": "Teks",
+            "image": "Gambar",
+            "button": "Tombol",
+            "spacer": "Spasi",
+            "divider": "Pemisah",
+            "columns": "Kolom",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Gaya",
+            "pageStyle": "Gaya halaman",
+            "bgAnimation": "Animasi latar belakang",
+            "bgAnimationShort": "Animasi BG",
+            "bgSpeed": "Kecepatan animasi",
+            "bgSpeedShort": "Kecepatan BG",
+            "overlayOpacity": "Opasitas overlay (0-100)",
+            "minHeight": "Tinggi minimum",
+            "alignX": "Rata horizontal",
+            "alignY": "Rata vertikal",
+            "backgroundImages": "Gambar latar belakang",
+            "headingText": "Teks judul",
+            "headingLevel": "Tingkat",
+            "textContent": "Teks",
+            "videoUrl": "URL YouTube atau Vimeo",
+            "videoDescription": "Deskripsi (opsional)",
+            "videoFooter": "Footer (opsional)",
+            "imageField": "Gambar",
+            "imageUrl": "URL gambar (cadangan)",
+            "imageAlt": "Teks alt",
+            "imageFit": "Kesesuaian",
+            "buttonLabel": "Label tombol",
+            "buttonSize": "Ukuran",
+            "buttonAction": "Tindakan",
+            "buttonAlign": "Perataan",
+            "spacerHeight": "Tinggi",
+            "dividerThickness": "Ketebalan (px)",
+            "columnsCount": "Kolom",
+            "rowsCount": "Baris"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Geser"
+            },
+            "bgSpeed": {
+              "slow": "Lambat (7d)",
+              "medium": "Sedang (5d)",
+              "fast": "Cepat (3d)"
+            },
+            "bgSpeedShort": {
+              "slow": "Lambat",
+              "medium": "Sedang",
+              "fast": "Cepat"
+            },
+            "minHeight": {
+              "auto": "Otomatis",
+              "short": "Pendek (40vh)",
+              "medium": "Sedang (60vh)",
+              "tall": "Tinggi (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Otomatis",
+              "short": "Pendek",
+              "medium": "Sedang",
+              "tall": "Tinggi"
+            },
+            "alignX": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            },
+            "alignY": {
+              "top": "Atas",
+              "center": "Tengah",
+              "bottom": "Bawah"
+            },
+            "headingLevel": {
+              "h1": "Tampilan",
+              "h2": "Judul Utama",
+              "h3": "Heading",
+              "h4": "Subjudul",
+              "h5": "Keterangan",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Kecil",
+              "md": "Sedang",
+              "lg": "Besar"
+            },
+            "buttonAction": {
+              "openContact": "Buka formulir kontak",
+              "goToGallery": "Ke halaman Gallery"
+            },
+            "buttonAlign": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            }
+          }
+        },
         "tour": {
           "next": "Berikutnya",
           "back": "Kembali",
