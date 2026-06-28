@@ -1304,6 +1304,31 @@ describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
   });
 });
 
+describe("A5: ContainerBlock custom min-height", () => {
+  it("public page: minHeight=custom + minHeightValue=250px renders min-height:250px (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} minHeight="custom" minHeightValue="250px" puck={{ isEditing: false }} />
+    );
+    expect(html).toContain("min-height:250px");
+  });
+
+  it("public page: minHeight=custom without minHeightValue has no min-height constraint (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} minHeight="custom" puck={{ isEditing: false }} />
+    );
+    expect(html).not.toContain("min-height");
+  });
+});
+
+describe("A5: ColumnsBlock min-height prop", () => {
+  it("renders min-height when minHeight prop is set (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} minHeight="200px" content={stubSlot} />
+    );
+    expect(html).toContain("min-height:200px");
+  });
+});
+
 describe("B2a: ColumnsBlock render — fallback padding (parity)", () => {
   it("renders top/bottom 1rem, left/right 1.5rem when _style has no padding", () => {
     const html = renderToStaticMarkup(

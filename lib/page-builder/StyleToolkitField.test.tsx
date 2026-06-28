@@ -751,6 +751,26 @@ describe("LayoutTabBody — Min height buttons show effective default 'auto' whe
   });
 });
 
+describe("A5: LayoutTabBody — Container min-height Custom option shows DimensionInput", () => {
+  it("selecting Custom reveals a Custom value DimensionInput (A5)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{ minHeight: "custom" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Custom" })).toHaveAttribute("aria-pressed", "true");
+    // DimensionInput should be visible when "custom" is active.
+    expect(screen.getByText("Custom value")).toBeTruthy();
+  });
+});
+
 describe("DesignTab Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
   it("shows None as aria-pressed for Button block when brand radius is 'sharp' and block radius unset", () => {
     // Radius moved from LayoutTabBody to DesignTab Button section in Pass 2.

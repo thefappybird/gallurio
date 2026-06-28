@@ -162,6 +162,7 @@ const MIN_HEIGHT_OPTIONS = [
   { value: "short",  label: "Short" },
   { value: "medium", label: "Medium" },
   { value: "tall",   label: "Tall" },
+  { value: "custom", label: "Custom" },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -1489,6 +1490,13 @@ export function LayoutTabBody({
                     );
                   })}
                 </div>
+                {(p.minHeight as string | undefined) === "custom" && (
+                  <DimensionInput
+                    label="Custom value"
+                    value={p.minHeightValue as string | undefined}
+                    onChange={(v) => setProp("minHeightValue", v)}
+                  />
+                )}
               </div>
             )}
             {isGridChild ? (
@@ -1619,7 +1627,22 @@ export function LayoutTabBody({
                 );
               })}
             </div>
+            {(p.minHeight as string | undefined) === "custom" && (
+              <DimensionInput
+                label="Custom value"
+                value={p.minHeightValue as string | undefined}
+                onChange={(v) => setProp("minHeightValue", v)}
+              />
+            )}
           </div>
+        )}
+        {/* Min height — for Columns (CSS length string, no enum) */}
+        {isColumns && p !== undefined && setProp && (
+          <DimensionInput
+            label="Min height"
+            value={p.minHeight as string | undefined}
+            onChange={(v) => setProp("minHeight", v)}
+          />
         )}
         {isGridChild ? (
           <>

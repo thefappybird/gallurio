@@ -499,6 +499,9 @@ export type ColumnsBlockProps = {
    *  rows so child `rowSpan` values are meaningful. Unset (or 1) keeps the
    *  current auto-row behaviour so existing layouts are unaffected. */
   rows?: number;
+  /** CSS length minimum height for the grid outer wrapper, e.g. "200px" or "30%".
+   *  Unset = no min-height constraint (content-sized). */
+  minHeight?: string;
   content: Slot;
 };
 
@@ -524,6 +527,7 @@ export function ColumnsBlock({
   _style,
   columns,
   rows,
+  minHeight,
   content: Content,
   puck,
 }: {
@@ -531,6 +535,7 @@ export function ColumnsBlock({
   _style?: BlockStyle;
   columns: number;
   rows?: number;
+  minHeight?: string;
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
@@ -615,6 +620,7 @@ export function ColumnsBlock({
         paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        minHeight: minHeight ?? undefined,
         ...outerStyle,
         containerType: "inline-size",
         containerName: instanceContainer,
@@ -669,7 +675,7 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
 // min-height, and content alignment, with a slot that nests any other blocks.
 // ---------------------------------------------------------------------------
 
-export type ContainerHeight = "auto" | "short" | "medium" | "tall";
+export type ContainerHeight = "auto" | "short" | "medium" | "tall" | "custom";
 export type ContainerAlignX = "left" | "center" | "right";
 export type ContainerAlignY = "top" | "center" | "bottom";
 
@@ -682,6 +688,8 @@ export type ContainerBlockProps = {
   /** Dark scrim over the background, 0-100. Only meaningful with >=1 image. */
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  /** CSS length value when minHeight === "custom", e.g. "200px" or "30%". */
+  minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
   content: Slot;
@@ -706,7 +714,7 @@ export const containerDefaultProps: ContainerBlockProps = {
   content: [],
 };
 
-const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
+const CONTAINER_MIN_HEIGHT: Record<Exclude<ContainerHeight, "custom">, string | undefined> = {
   auto: undefined,
   short: "40vh",
   medium: "60vh",
@@ -719,11 +727,13 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
 // MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
 // (positioned off that model) reliably tracks an empty container the same way it
 // does any other block. Never used on the public page (gated on puck.isEditing).
+// "custom" falls back to 128 (auto) since the px value is unknown at schema time.
 export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   auto: 128,
   short: 320,
   medium: 480,
   tall: 640,
+  custom: 128,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
@@ -740,6 +750,7 @@ export function ContainerBlock({
   bgSpeed,
   overlayOpacity,
   minHeight,
+  minHeightValue,
   alignX,
   alignY,
   content: Content,
@@ -751,6 +762,7 @@ export function ContainerBlock({
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
   content: SlotComponent;
@@ -804,8 +816,12 @@ export function ContainerBlock({
         flexGrow: 1,
         justifyContent: effectiveJustify,
         minHeight: puck?.isEditing
-          ? `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
-          : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
+          ? minHeight === "custom"
+            ? (minHeightValue ?? "128px")
+            : `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
+          : minHeight === "custom"
+            ? minHeightValue
+            : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
         paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,
