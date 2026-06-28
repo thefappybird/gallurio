@@ -538,6 +538,11 @@ html[data-radius="rounded"] {
 .leaflet-container {
   background-color: var(--muted);
   font-family: inherit;
+  /* Leaflet panes use z-index 400–1000, above our z-50 dialogs. Establish a
+     stacking context so the whole map is contained below an overlaid dialog
+     (Drafts/Template/Publish/Photos) instead of punching through it. */
+  position: relative;
+  isolation: isolate;
 }
 .leaflet-bar a,
 .leaflet-bar a:hover {
