@@ -932,6 +932,14 @@ describe("ColumnsBlock", () => {
     breakpoints.forEach((bp) => expect(bp).toBeGreaterThan(327));
   });
 
+  it("editor-mode with rows=3: inline gridTemplateRows injected so rows are WYSIWYG in canvas (A2)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} rows={3} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).toContain("grid-template-rows");
+    expect(html).toContain("repeat(3,minmax(0,auto))");
+  });
+
   it("editor-mode (puck.isEditing=true): 2-col block gets inline grid-template-columns for direct column preview", () => {
     // When isEditing=true, the block injects a direct gridTemplateColumns so the user
     // sees the actual column count in the narrow editor canvas (~428px), bypassing the
