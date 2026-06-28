@@ -1469,6 +1469,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Tab text color",
+          "inactiveTabStyleLabel": "Style",
+          "inactiveTabSubtle": "Subtle",
+          "inactiveTabCompact": "Compact",
           "activeTabColorLabel": "Active tab text color",
           "activeTabStyleLabel": "Style",
           "activeTabStyleScale": "Scale",

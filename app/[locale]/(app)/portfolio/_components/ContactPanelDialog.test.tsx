@@ -66,4 +66,16 @@ describe("ContactPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
+
+  // C3: Subtle toggle (effective default ON) shows in inactive tabs section
+  it("Subtle toggle appears lighter-active when inactiveTabSubtle is unset (effective default ON)", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Inactive tabs" }));
+
+    const subtleBtn = screen.getByRole("button", { name: /subtle/i });
+    // aria-pressed should reflect the effective default (ON)
+    expect(subtleBtn).toHaveAttribute("aria-pressed", "true");
+  });
 });

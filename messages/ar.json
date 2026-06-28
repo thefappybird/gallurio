@@ -1469,6 +1469,9 @@
             "lg": "ك"
           },
           "tabColorLabel": "لون نص علامة التبويب",
+          "inactiveTabStyleLabel": "النمط",
+          "inactiveTabSubtle": "خفيف",
+          "inactiveTabCompact": "مضغوط",
           "activeTabColorLabel": "لون نص علامة التبويب النشطة",
           "activeTabStyleLabel": "النمط",
           "activeTabStyleScale": "تكبير",

@@ -347,9 +347,18 @@ export function ContactForm({
               : "0.9375rem";
             const inactiveColor = resolveTabColor(contactConfig?.tabColor, "");
             const activeExtraStyle = getActiveTabExtraStyle(contactConfig);
+            // inactiveTabSubtle: effective default ON (undefined = true) → dim at 0.55
+            const isSubtle = contactConfig?.inactiveTabSubtle !== false;
+            // inactiveTabCompact: effective default OFF (undefined = false) → smaller font
+            const isCompact = contactConfig?.inactiveTabCompact === true;
+            const compactFontSize = isCompact ? "0.75rem" : tabFontSize;
             const tabStyle: CSSProperties = isActive
               ? { fontSize: tabFontSize, ...activeExtraStyle }
-              : { fontSize: tabFontSize, ...(inactiveColor ? { color: inactiveColor } : {}) };
+              : {
+                  fontSize: compactFontSize,
+                  ...(inactiveColor ? { color: inactiveColor } : {}),
+                  ...(isSubtle ? { opacity: 0.55 } : {}),
+                };
             return (
               <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
                 {label}

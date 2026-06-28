@@ -469,6 +469,18 @@ describe("getActiveTabExtraStyle", () => {
   });
 });
 
+// C3: inactiveTabSubtle effective default = ON
+describe("ContactForm — inactive tab Subtle + Compact toggles (C3)", () => {
+  it("inactive tabs are dimmed by default when inactiveTabSubtle is unset (effective default ON)", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    const eventTab = screen.getByRole("tab", { name: "Event details" });
+    // Effective default ON → opacity should be < 1 (dimmed)
+    const opacity = parseFloat(eventTab.style.opacity ?? "");
+    expect(opacity).toBeGreaterThan(0);
+    expect(opacity).toBeLessThan(1);
+  });
+});
+
 describe("ContactForm — responsive container", () => {
   it("sets container-type: inline-size on the form root for local container queries", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);

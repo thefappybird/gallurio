@@ -1469,6 +1469,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Kulay ng teksto ng tab",
+          "inactiveTabStyleLabel": "Estilo",
+          "inactiveTabSubtle": "Mahinhin",
+          "inactiveTabCompact": "Compact",
           "activeTabColorLabel": "Kulay ng teksto ng aktibong tab",
           "activeTabStyleLabel": "Estilo",
           "activeTabStyleScale": "Palakihin",

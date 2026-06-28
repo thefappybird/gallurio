@@ -1469,6 +1469,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Warna teks tab",
+          "inactiveTabStyleLabel": "Gaya",
+          "inactiveTabSubtle": "Halus",
+          "inactiveTabCompact": "Padat",
           "activeTabColorLabel": "Warna teks tab aktif",
           "activeTabStyleLabel": "Gaya",
           "activeTabStyleScale": "Perbesar",

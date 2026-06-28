@@ -133,6 +133,10 @@ export type PortfolioContactConfig = {
   activeTabUnderline?: boolean;
   /** Border color for active-tab underline mode. Token or hex. */
   tabUnderlineColor?: string;
+  /** Reduce inactive-tab opacity (~0.55). Effective default = ON (undefined = true). */
+  inactiveTabSubtle?: boolean;
+  /** Smaller font size on inactive tabs. Effective default = OFF (undefined = false). */
+  inactiveTabCompact?: boolean;
 };
 
 // ---------------------------------------------------------------------------

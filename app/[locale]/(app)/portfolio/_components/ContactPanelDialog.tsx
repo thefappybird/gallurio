@@ -158,10 +158,14 @@ function RadiusRow({
 
 function ToggleButton({
   active,
+  isEffective,
   onClick,
   children,
 }: {
   active: boolean;
+  /** True when the field is unset but the effective default makes it appear active.
+   * Renders lighter than an explicitly-set active state ("following theme"). */
+  isEffective?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -172,7 +176,8 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        active && "bg-foreground text-background hover:bg-foreground",
+        active && !isEffective && "bg-foreground text-background hover:bg-foreground",
+        isEffective && "border-foreground opacity-70",
       )}
     >
       {children}
@@ -257,6 +262,16 @@ export function ContactPanelDialog({
 
   function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight" | "activeTabUnderline">(key: K) {
     set(key, !contact[key]);
+  }
+
+  /** Subtle: effective default ON. Cycles: undefined/true → false → undefined. */
+  function toggleSubtle() {
+    set("inactiveTabSubtle", contact.inactiveTabSubtle !== false ? false : undefined);
+  }
+
+  /** Compact: effective default OFF. Normal bool toggle. */
+  function toggleCompact() {
+    set("inactiveTabCompact", !contact.inactiveTabCompact);
   }
 
   function toggleTabRadius(radius: BrandKitRadius | "") {
@@ -468,6 +483,25 @@ export function ContactPanelDialog({
                   value={contact.tabColor}
                   onChange={(c) => set("tabColor", c)}
                 />
+                {/* Subtle (effective default ON) + Compact (effective default OFF) */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("inactiveTabStyleLabel")}</span>
+                  <div className="flex">
+                    <ToggleButton
+                      active={contact.inactiveTabSubtle !== false}
+                      isEffective={contact.inactiveTabSubtle === undefined}
+                      onClick={toggleSubtle}
+                    >
+                      {t("inactiveTabSubtle")}
+                    </ToggleButton>
+                    <ToggleButton
+                      active={!!contact.inactiveTabCompact}
+                      onClick={toggleCompact}
+                    >
+                      {t("inactiveTabCompact")}
+                    </ToggleButton>
+                  </div>
+                </div>
               </EditorDrawerSection>
 
               {/* Active tab sub-section */}
