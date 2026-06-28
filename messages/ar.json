@@ -1400,7 +1400,18 @@
           "cancel": "إلغاء",
           "liveAt": "مباشر على {url}",
           "copyLink": "نسخ الرابط",
-          "copied": "تم النسخ"
+          "copied": "تم النسخ",
+          "slugLabel": "رابط معرض الأعمال",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "حفظ الرابط",
+          "slugSaving": "جارٍ الحفظ...",
+          "slugSaved": "تم الحفظ",
+          "slugError": "تعذّر تحديث الرابط، يرجى المحاولة مرة أخرى",
+          "slugUrlTaken": "هذا الرابط مستخدَم بالفعل",
+          "slugChecking": "جارٍ التحقق...",
+          "slugAvailable": "متاح",
+          "slugTaken": "مستخدَم بالفعل",
+          "slugInvalid": "تنسيق غير صالح"
         },
         "themeDialog": {
           "title": "السمة والعلامة التجارية"

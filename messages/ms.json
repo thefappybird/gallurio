@@ -1400,7 +1400,18 @@
           "cancel": "Batal",
           "liveAt": "Aktif di {url}",
           "copyLink": "Salin pautan",
-          "copied": "Disalin"
+          "copied": "Disalin",
+          "slugLabel": "URL portfolio",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Simpan URL",
+          "slugSaving": "Menyimpan...",
+          "slugSaved": "Disimpan",
+          "slugError": "Tidak dapat mengemas kini URL, sila cuba lagi",
+          "slugUrlTaken": "URL itu telah diambil",
+          "slugChecking": "Menyemak...",
+          "slugAvailable": "Tersedia",
+          "slugTaken": "Telah diambil",
+          "slugInvalid": "Format tidak sah"
         },
         "themeDialog": {
           "title": "Tema & jenama"

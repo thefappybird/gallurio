@@ -1400,7 +1400,18 @@
           "cancel": "Kanselahin",
           "liveAt": "Live sa {url}",
           "copyLink": "Kopyahin ang link",
-          "copied": "Nakopya"
+          "copied": "Nakopya",
+          "slugLabel": "URL ng portfolio",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "I-save ang URL",
+          "slugSaving": "Sine-save...",
+          "slugSaved": "Na-save",
+          "slugError": "Hindi na-update ang URL, pakisubukan muli",
+          "slugUrlTaken": "Nakuha na ang URL na iyon",
+          "slugChecking": "Sinusuri...",
+          "slugAvailable": "Available",
+          "slugTaken": "Nakuha na",
+          "slugInvalid": "Hindi wastong format"
         },
         "themeDialog": {
           "title": "Tema at brand"
