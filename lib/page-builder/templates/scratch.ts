@@ -1,4 +1,4 @@
-import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, DEFAULT_HEADER_CONFIG } from "@/lib/page-builder/types";
 import type { PortfolioTemplate } from "./types";
 import { zone } from "./_blocks";
 
@@ -18,6 +18,8 @@ export const scratchTemplate: PortfolioTemplate = {
     buttonStyle: "solid",
     buttonColor: "foreground",
   },
+  defaultHeader: { ...DEFAULT_HEADER_CONFIG },
+  defaultCollectionsPopup: {},
   seedData: () => ({
     home: zone([]),
     gallery: zone([]),

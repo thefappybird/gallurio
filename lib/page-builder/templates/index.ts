@@ -1,8 +1,7 @@
 import type { PortfolioTemplate, PortfolioTemplateId, TemplateBusinessType } from "./types";
-import { weddingPhotographerTemplate } from "./wedding-photographer";
-import { eventPhotographerTemplate } from "./event-photographer";
-import { plannerTemplate } from "./planner";
-import { venueStylistTemplate } from "./venue-stylist";
+import { boldTemplate } from "./bold";
+import { luxuryTemplate } from "./luxury";
+import { editorialTemplate } from "./editorial";
 import { minimalTemplate } from "./minimal";
 import { scratchTemplate } from "./scratch";
 
@@ -16,10 +15,9 @@ export type {
 
 // Order matters — this is the display order on the wizard's template grid.
 export const PORTFOLIO_TEMPLATES: PortfolioTemplate[] = [
-  weddingPhotographerTemplate,
-  eventPhotographerTemplate,
-  plannerTemplate,
-  venueStylistTemplate,
+  boldTemplate,
+  luxuryTemplate,
+  editorialTemplate,
   minimalTemplate,
   scratchTemplate,
 ];
@@ -35,12 +33,12 @@ export function getTemplate(id: string): PortfolioTemplate | null {
 // Closest template for a workspace's businessType — drives the wizard's default
 // selection. Falls back to "minimal" for unmapped types.
 const BUSINESS_TYPE_DEFAULT: Record<TemplateBusinessType, PortfolioTemplateId> = {
-  photographer: "wedding-photographer",
-  venue: "venue-stylist",
-  stylist: "venue-stylist",
-  planner: "planner",
-  catering: "planner",
-  entertainer: "event-photographer",
+  photographer: "editorial",
+  venue: "luxury",
+  stylist: "luxury",
+  planner: "editorial",
+  catering: "editorial",
+  entertainer: "bold",
   other: "minimal",
 };
 
