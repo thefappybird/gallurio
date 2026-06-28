@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
+import { createRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { DraftNameEditor } from "./DraftNameEditor";
+import { DraftNameEditor, type DraftNameEditorHandle } from "./DraftNameEditor";
 
 describe("DraftNameEditor", () => {
   it("shows the name and a pencil button in read mode", () => {
@@ -32,6 +33,25 @@ describe("DraftNameEditor", () => {
   it("renders an inline error", () => {
     render(<DraftNameEditor name="New Draft" onCommit={vi.fn()} error="A draft with this name already exists" />);
     expect(screen.getByRole("alert").textContent).toMatch(/already exists/i);
+  });
+
+  it("commit() handle flushes an in-progress edit and returns the new name", () => {
+    const onCommit = vi.fn();
+    const ref = createRef<DraftNameEditorHandle>();
+    render(<DraftNameEditor ref={ref} name="New Draft" onCommit={onCommit} error={null} />);
+    // Start editing, type a new name
+    fireEvent.click(screen.getByRole("button", { name: /rename draft/i }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Pending Name" } });
+    // Commit programmatically (simulates Save button calling ref.current.commit())
+    const committed = ref.current?.commit();
+    expect(committed).toBe("Pending Name");
+    expect(onCommit).toHaveBeenCalledWith("Pending Name");
+  });
+
+  it("commit() handle returns null when not in editing mode", () => {
+    const ref = createRef<DraftNameEditorHandle>();
+    render(<DraftNameEditor ref={ref} name="New Draft" onCommit={vi.fn()} error={null} />);
+    expect(ref.current?.commit()).toBeNull();
   });
 
   it("truncates a long title to a fixed width and renders the error in smaller text", () => {
