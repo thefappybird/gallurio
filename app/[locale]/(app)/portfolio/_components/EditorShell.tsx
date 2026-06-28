@@ -12,7 +12,7 @@ import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLi
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
-import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
+import { createEditorConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
@@ -379,6 +379,7 @@ export function EditorShell({
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
+  const editorConfig = useMemo(() => createEditorConfig(t), [t]);
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -751,7 +752,7 @@ export function EditorShell({
       const snapshotStr = JSON.stringify({ name: nameToSave, ...buildDraftSnapshot() });
       setSavedSnapshot(snapshotStr);
       persistLocalDraft();
-      toast.success("Draft saved.");
+      toast.success(t("savedToast"));
       return true;
     } finally {
       setSavingChanges(false);
@@ -1495,7 +1496,7 @@ export function EditorShell({
             key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
             // tsc's stack; editorPuckConfig is typed at the component level already.
-            config={editorPuckConfig as unknown as Config}
+            config={editorConfig as unknown as Config}
             data={puckSeed}
             onChange={handleChange}
             onPublish={() => void handlePublish()}
