@@ -24,13 +24,13 @@ const intlMiddleware = createIntlMiddleware(routing);
 const UNAUTHENTICATED_PATHS = [
   // Marketing / public
   "/",
-  // Locale-prefixed roots ("/ar", "/fil", ...). The root is routed through
-  // authkit (so the landing page can read the session and redirect signed-in
-  // visitors), so authkit must see these as public — otherwise it would force
-  // anonymous visitors on "/ar" to sign in. The default locale has no prefix.
-  ...routing.locales
-    .filter((l) => l !== routing.defaultLocale)
-    .map((l) => `/${l}`),
+  // Locale-prefixed roots ("/en", "/ar", "/fil", ...). The root is routed
+  // through authkit (so the landing page can read the session and redirect
+  // signed-in visitors), so authkit must see these as public — otherwise it
+  // would force anonymous visitors on a locale root to sign in. Every locale is
+  // listed, including the default: stripLocale() treats "/en" as a root too, and
+  // next-intl normalizes the redundant default-locale prefix to "/".
+  ...routing.locales.map((l) => `/${l}`),
   "/pricing",
   "/about",
   // Auth UI (our first-party forms)

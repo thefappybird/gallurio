@@ -31,7 +31,7 @@ describe("proxy", () => {
 
   it("routes the marketing root (any locale) through AuthKit so the landing page can read the session", async () => {
     const { proxy } = await import("./proxy");
-    for (const url of ["http://localhost/", "http://localhost/ar"]) {
+    for (const url of ["http://localhost/", "http://localhost/en", "http://localhost/ar"]) {
       authMiddlewareMock.mockClear();
       intlMiddlewareMock.mockClear();
       await proxy(new NextRequest(url));
