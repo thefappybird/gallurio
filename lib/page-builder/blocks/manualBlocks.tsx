@@ -573,7 +573,7 @@ export function ColumnsBlock({
   //   - inner grid's CSS class          → .pf-cols-${instanceId}
   //   - optional rows class             → .pf-cols-rows-${instanceId}
   // Falls back to "inst" when rendered outside Puck (unit tests).
-  const instanceId = id ? id.replace(/[^a-zA-Z0-9_-]/g, "") : "inst";
+  const instanceId = (id ? id.replace(/[^a-zA-Z0-9_-]/g, "") : "") || "inst";
   const instanceClass = `pf-cols-${instanceId}`;
   const instanceContainer = `pfcols-${instanceId}`;
   const instanceRowsClass = `pf-cols-rows-${instanceId}`;
@@ -627,11 +627,12 @@ export function ColumnsBlock({
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
         minHeight: minHeight ?? undefined,
+        ...outerStyle,
         // A7: full-bleed breaks out of any max-width parent container.
+        // Placed after outerStyle so full-bleed width/marginLeft always wins.
         ...(overallWidth === "full"
           ? { width: "100vw", marginLeft: "calc(50% - 50vw)" }
           : {}),
-        ...outerStyle,
         containerType: "inline-size",
         containerName: instanceContainer,
       }}
