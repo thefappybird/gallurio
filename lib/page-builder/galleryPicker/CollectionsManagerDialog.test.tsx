@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
 import { CollectionsManagerDialog } from "./CollectionsManagerDialog";
 import { __clearPickerDataCache } from "./usePickerData";
 
@@ -21,7 +22,7 @@ beforeEach(() => {
 
 describe("CollectionsManagerDialog", () => {
   it("renders the manager with the add-new-collection button when open", async () => {
-    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
     expect(await screen.findByText("Photos & collections")).toBeTruthy();
     expect(screen.getByRole("button", { name: /add new collection/i })).toBeTruthy();
     // Explains where collections are used.
@@ -29,12 +30,12 @@ describe("CollectionsManagerDialog", () => {
   });
 
   it("renders nothing when closed", () => {
-    render(<CollectionsManagerDialog open={false} onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open={false} onOpenChange={vi.fn()} />);
     expect(screen.queryByText("Photos & collections")).toBeNull();
   });
 
   it("does not show the create form until 'Add new collection' is clicked", async () => {
-    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
     await screen.findByText("Photos & collections");
     // The nested create dialog (title "New collection") is hidden initially.
     expect(screen.queryByText("New collection")).toBeNull();
@@ -45,7 +46,7 @@ describe("CollectionsManagerDialog", () => {
 
   it("opens a destructive confirm when a collection's delete button is pressed", async () => {
     mockPickerResponse([{ id: "c1", name: "Weddings", coverUrl: null, itemCount: 4 }]);
-    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
 
     const del = await screen.findByRole("button", { name: /delete collection: weddings/i });
     fireEvent.click(del);
@@ -56,7 +57,7 @@ describe("CollectionsManagerDialog", () => {
 
   it("DELETEs the collection and refreshes on confirm", async () => {
     mockPickerResponse([{ id: "c1", name: "Weddings", coverUrl: null, itemCount: 4 }]);
-    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole("button", { name: /delete collection: weddings/i }));
     // The DELETE call resolves ok; subsequent picker refetch returns empty.
@@ -96,7 +97,7 @@ describe("CollectionsManagerDialog edit", () => {
       return Promise.resolve({ ok: true, json: async () => ({}) } as unknown as Response);
     });
 
-    render(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
+    renderWithProviders(<CollectionsManagerDialog open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /edit weddings/i }));
     expect(await screen.findByLabelText(/collection name/i)).toBeTruthy();
   });

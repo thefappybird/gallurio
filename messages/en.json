@@ -1651,6 +1651,25 @@
           "duplicate": "Duplicate",
           "delete": "Delete"
         },
+        "photosDialog": {
+          "title": "Photos & collections",
+          "intro": "Group your photos into collections. Use them in Gallery blocks, or pick any single photo as a Hero / CTA background. Add photos here once — pick them anywhere.",
+          "empty": "No collections yet. Create your first one to get started.",
+          "loading": "Loading…",
+          "error": "Could not load your collections.",
+          "retry": "Retry",
+          "addNew": "Add new collection",
+          "photos": "photos",
+          "done": "Done",
+          "deleteTitle": "Delete this collection?",
+          "deleteBody": "The photos in this collection will be permanently deleted from your library and cannot be recovered. Any gallery blocks using this collection will show nothing until you point them at another one.",
+          "deleting": "Deleting…",
+          "deleteConfirm": "Delete permanently",
+          "cancel": "Cancel",
+          "deleteError": "Could not delete the collection. Please try again.",
+          "deleteCollection": "Delete collection",
+          "editAria": "Edit {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Featured popup",
           "popup": "Popup",

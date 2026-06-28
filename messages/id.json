@@ -1651,6 +1651,25 @@
           "duplicate": "Duplikat",
           "delete": "Hapus"
         },
+        "photosDialog": {
+          "title": "Foto & Koleksi",
+          "intro": "Kelompokkan foto Anda ke dalam koleksi. Gunakan di blok Gallery, atau pilih satu foto sebagai latar Hero atau CTA. Upload sekali di sini — pilih di mana saja.",
+          "empty": "Belum ada koleksi. Buat yang pertama untuk memulai.",
+          "loading": "Memuat…",
+          "error": "Tidak dapat memuat koleksi Anda.",
+          "retry": "Coba lagi",
+          "addNew": "Tambah koleksi baru",
+          "photos": "foto",
+          "done": "Selesai",
+          "deleteTitle": "Hapus koleksi ini?",
+          "deleteBody": "Foto dalam koleksi ini akan dihapus secara permanen dari perpustakaan Anda dan tidak dapat dipulihkan. Blok gallery apa pun yang menggunakan koleksi ini tidak akan menampilkan apa pun sampai Anda mengarahkannya ke koleksi lain.",
+          "deleting": "Menghapus…",
+          "deleteConfirm": "Hapus secara permanen",
+          "cancel": "Batal",
+          "deleteError": "Tidak dapat menghapus koleksi. Silakan coba lagi.",
+          "deleteCollection": "Hapus koleksi",
+          "editAria": "Edit {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Popup unggulan",
           "popup": "Popup",

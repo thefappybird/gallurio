@@ -1651,6 +1651,25 @@
           "duplicate": "I-duplicate",
           "delete": "Burahin"
         },
+        "photosDialog": {
+          "title": "Mga Larawan at Koleksyon",
+          "intro": "Grupuhin ang iyong mga larawan sa mga koleksyon. Gamitin ang mga ito sa mga Gallery block, o pumili ng isang larawan bilang background ng Hero o CTA. Mag-upload dito ng isang beses — pumili kahit saan.",
+          "empty": "Wala pang koleksyon. Gumawa ng una para makapagsimula.",
+          "loading": "Naglo-load…",
+          "error": "Hindi ma-load ang iyong mga koleksyon.",
+          "retry": "Subukan ulit",
+          "addNew": "Magdagdag ng bagong koleksyon",
+          "photos": "mga larawan",
+          "done": "Tapos",
+          "deleteTitle": "Burahin ang koleksyon na ito?",
+          "deleteBody": "Ang mga larawang ito ay permanenteng mabubura mula sa iyong library at hindi na mababawi. Ang anumang gallery block na gumagamit ng koleksyon na ito ay walang ipapakita hanggang hindi mo ito ituro sa isa pa.",
+          "deleting": "Nagbuburad…",
+          "deleteConfirm": "Burahin nang permanente",
+          "cancel": "Kanselahin",
+          "deleteError": "Hindi ma-bura ang koleksyon. Pakisubukan ulit.",
+          "deleteCollection": "Burahin ang koleksyon",
+          "editAria": "I-edit ang {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Featured popup",
           "popup": "Popup",

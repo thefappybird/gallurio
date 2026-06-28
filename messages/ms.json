@@ -1651,6 +1651,25 @@
           "duplicate": "Gandakan",
           "delete": "Padam"
         },
+        "photosDialog": {
+          "title": "Foto & Koleksi",
+          "intro": "Susun foto anda ke dalam koleksi. Gunakan dalam blok Gallery, atau pilih mana-mana foto tunggal sebagai latar belakang Hero atau CTA. Muat naik di sini sekali — pilih di mana-mana.",
+          "empty": "Belum ada koleksi. Cipta yang pertama untuk bermula.",
+          "loading": "Memuatkan…",
+          "error": "Tidak dapat memuatkan koleksi anda.",
+          "retry": "Cuba semula",
+          "addNew": "Tambah koleksi baharu",
+          "photos": "foto",
+          "done": "Selesai",
+          "deleteTitle": "Padam koleksi ini?",
+          "deleteBody": "Foto dalam koleksi ini akan dipadam secara kekal daripada perpustakaan anda dan tidak boleh dipulihkan. Mana-mana blok gallery yang menggunakan koleksi ini tidak akan menunjukkan apa-apa sehingga anda menunjukkannya ke koleksi lain.",
+          "deleting": "Memadam…",
+          "deleteConfirm": "Padam secara kekal",
+          "cancel": "Batal",
+          "deleteError": "Tidak dapat memadam koleksi. Sila cuba semula.",
+          "deleteCollection": "Padam koleksi",
+          "editAria": "Edit {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Tetingkap timbul pilihan",
           "popup": "Tetingkap timbul",
