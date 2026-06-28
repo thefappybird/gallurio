@@ -449,6 +449,7 @@ export function IconRow<T extends string>({
   options,
   onChange,
   effectiveValue,
+  onReset,
 }: {
   label: string;
   value: T | undefined;
@@ -456,6 +457,8 @@ export function IconRow<T extends string>({
   onChange: (v: T | undefined) => void;
   /** Show this option as active when value is unset (theme-coupled). Display-only. */
   effectiveValue?: T;
+  /** When provided, a Reset button appears beside the toggles to clear the value. */
+  onReset?: () => void;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
@@ -470,6 +473,7 @@ export function IconRow<T extends string>({
             onClick={() => onChange(value === v ? undefined : v)}
           />
         ))}
+        {onReset && <ResetButton onClick={onReset} label={label} />}
       </div>
     </div>
   );

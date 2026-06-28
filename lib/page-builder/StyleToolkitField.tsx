@@ -1508,6 +1508,7 @@ export function LayoutTabBody({
                   options={ALIGN_OPTIONS}
                   effectiveValue="stretch"
                   onChange={(v) => set({ alignItems: v })}
+                  onReset={() => set({ alignItems: undefined })}
                 />
               </>
             ) : (
@@ -1517,6 +1518,7 @@ export function LayoutTabBody({
                 options={ALIGN_OPTIONS}
                 effectiveValue="stretch"
                 onChange={(v) => set({ alignItems: v })}
+                onReset={() => set({ alignItems: undefined })}
               />
             )}
           </EditorDrawerSection>
@@ -1653,6 +1655,7 @@ export function LayoutTabBody({
               options={ALIGN_OPTIONS}
               effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
+              onReset={() => set({ alignItems: undefined })}
             />
             <IconRow
               label="Justify"
@@ -1660,6 +1663,7 @@ export function LayoutTabBody({
               options={JUSTIFY_OPTIONS}
               effectiveValue="start"
               onChange={(v) => set({ justifyContent: v })}
+              onReset={() => set({ justifyContent: undefined })}
             />
           </>
         ) : (
@@ -1670,6 +1674,7 @@ export function LayoutTabBody({
               options={ALIGN_OPTIONS}
               effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
+              onReset={() => set({ alignItems: undefined })}
             />
             {showJustify && (
               <IconRow
@@ -1678,6 +1683,7 @@ export function LayoutTabBody({
                 options={JUSTIFY_OPTIONS}
                 effectiveValue="start"
                 onChange={(v) => set({ justifyContent: v })}
+                onReset={() => set({ justifyContent: undefined })}
               />
             )}
           </>

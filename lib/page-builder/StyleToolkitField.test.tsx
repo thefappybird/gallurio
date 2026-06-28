@@ -771,6 +771,24 @@ describe("A5: LayoutTabBody — Container min-height Custom option shows Dimensi
   });
 });
 
+describe("A6: LayoutTabBody — Align/Justify IconRow shows Reset button when value set", () => {
+  it("Align Reset button appears when alignItems is explicitly set (A6)", () => {
+    render(
+      <LayoutTabBody
+        s={{ alignItems: "center" }}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+  });
+});
+
 describe("DesignTab Button — RadiusButtons shows brand theme radius when block radius is unset", () => {
   it("shows None as aria-pressed for Button block when brand radius is 'sharp' and block radius unset", () => {
     // Radius moved from LayoutTabBody to DesignTab Button section in Pass 2.

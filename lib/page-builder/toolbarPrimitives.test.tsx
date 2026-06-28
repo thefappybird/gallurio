@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorSwatchRow, DimensionInput, FloatingLabelInput } from "./toolbarPrimitives";
+import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow } from "./toolbarPrimitives";
+import { AlignHorizontalJustifyStart } from "lucide-react";
 
 // Mock brandColors so tests don't need the full provider
 vi.mock("./brandColors", () => ({
@@ -12,6 +13,25 @@ vi.mock("./brandColors", () => ({
     foreground: "#111111",
   }),
 }));
+
+const STUB_OPTIONS = [
+  { value: "start" as const, label: "Start", Icon: AlignHorizontalJustifyStart },
+];
+
+describe("IconRow — onReset prop (A6)", () => {
+  it("shows a Reset button when onReset is provided and value is set (A6)", () => {
+    render(
+      <IconRow
+        label="Align"
+        value="start"
+        options={STUB_OPTIONS}
+        onChange={vi.fn()}
+        onReset={vi.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+  });
+});
 
 describe("ColorSwatchRow — extraSwatches", () => {
   it("renders an extra swatch after the token swatches", () => {
