@@ -161,8 +161,12 @@ Two message-batches folded together; fanned out to disjoint Sonnet executors, co
 - 2026-06-29 (SEO wave): landed in c6d0cc4 402f585 c1e10f8 e9fc5ce 2661d60 f38122c. `pnpm typecheck` clean; `eslint` 0 errors;
   all-5-locale parity (12 SEO keys); targeted vitest green (settings action 66, settings form 9, jsonLd 9, sitemap/robots 9,
   gallery CLS 47, page metadata 35). NOTE: SETTINGS + GALLERY agents self-committed (`git commit -am`-style) and swept some
-  tracked files across commits — history slightly mixed but the tree is coherent and HEAD builds. Security pass over the
-  OG-upload + settings/slug actions: in progress.
+  tracked files across commits — history slightly mixed but the tree is coherent and HEAD builds.
+- **Security pass (security-auditor, 2026-06-29):** 1 HIGH fixed — stored-XSS in `safeJsonLd` (only escaped exact `</script>`;
+  whitespace/solidus end-tag variants leaked owner-name into a live `<script>`) → `/<\/script/gi` + 3 regression tests (71ccdf3).
+  Settings/slug actions, OG upload, sitemap, metadata audited CLEAN (owner-only, workspaceId-scoped, Zod-validated, ownership-verified).
+  Open follow-ups (low): derive `ogImageUrl` server-side from the verified assetId (vs storing client URL); add `verifyImageOwnership`
+  for `siteIconAssetId` (pre-existing gap); add sparse index `{ "publicPage.publishedAt": 1 }` before tenant count grows.
 - **Deferred / future:** public-page language + RTL chrome (C2/C3, per owner); P1/P2 SEO fields (twitter handle, business
   category, serviceArea, priceRange, GSC token, keywords, per-page title overrides) — not built; add sparse index on
   `publicPage.publishedAt` before tenant count grows (backs the sitemap query).
