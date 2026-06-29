@@ -212,6 +212,15 @@ const workspaceSchema = new Schema(
         url: { type: String, default: "" },
         assetId: { type: String, default: "" },
       },
+      // SEO sub-object for owner-configurable social/crawl controls.
+      // All fields default to empty/false so existing docs without `seo`
+      // read fine (Mongoose applies the defaults on access).
+      seo: {
+        ogImageUrl: { type: String, default: "" },
+        ogImageAssetId: { type: String, default: "" },
+        galleryDescription: { type: String, default: "" },
+        noindex: { type: Boolean, default: false },
+      },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
 

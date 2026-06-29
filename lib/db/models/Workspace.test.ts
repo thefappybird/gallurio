@@ -44,3 +44,27 @@ describe("Workspace.publicPage.siteIcon defaults", () => {
     expect(ws.publicPage?.siteIcon?.assetId).toBe("");
   });
 });
+
+describe("Workspace.publicPage.seo defaults", () => {
+  it("new workspace has seo.noindex defaulting to false", async () => {
+    const ws = await Workspace.create({
+      slug: "seo-studio",
+      name: "SEO Studio",
+      ownerUserId: "user_seo_1",
+    });
+
+    expect(ws.publicPage?.seo?.noindex).toBe(false);
+  });
+
+  it("new workspace has seo string fields defaulting to empty string", async () => {
+    const ws = await Workspace.create({
+      slug: "seo-studio-2",
+      name: "SEO Studio 2",
+      ownerUserId: "user_seo_2",
+    });
+
+    expect(ws.publicPage?.seo?.ogImageUrl).toBe("");
+    expect(ws.publicPage?.seo?.ogImageAssetId).toBe("");
+    expect(ws.publicPage?.seo?.galleryDescription).toBe("");
+  });
+});

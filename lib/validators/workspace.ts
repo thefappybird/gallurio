@@ -138,6 +138,19 @@ export const publicPageSettingsSchema = z.object({
     .optional()
     .default(""),
   siteIconAssetId: z.string().trim().optional().default(""),
+  seo: z
+    .object({
+      ogImageUrl: z.string().trim().url().or(z.literal("")).optional().default(""),
+      ogImageAssetId: z.string().trim().optional().default(""),
+      galleryDescription: z
+        .string()
+        .max(160, "Keep it under 160 characters")
+        .trim()
+        .optional()
+        .default(""),
+      noindex: z.boolean().optional().default(false),
+    })
+    .optional(),
 });
 export type PublicPageSettingsInput = z.infer<typeof publicPageSettingsSchema>;
 // Raw (pre-default) input type — use as the function parameter type so all
