@@ -18,6 +18,12 @@ vi.mock("@/lib/actions/slug", () => ({
     mockCheckSlugAvailability(...args),
 }));
 
+// Allow individual tests to override portfolioUrlParts behaviour.
+const mockUrlParts = vi.fn();
+vi.mock("@/lib/portfolio/publicUrl", () => ({
+  portfolioUrlParts: (...args: unknown[]) => mockUrlParts(...args),
+}));
+
 // ---- Lazy import (after mocks) ----------------------------------------------
 
 import { PublishDialog } from "./PublishDialog";
@@ -52,6 +58,33 @@ describe("PublishDialog slug editing (Fix #5)", () => {
     vi.clearAllMocks();
     mockCheckSlugAvailability.mockResolvedValue({ available: true });
     mockUpdateSlug.mockResolvedValue({ ok: true });
+    // Default: path mode (dev environment).
+    mockUrlParts.mockReturnValue({
+      mode: "path",
+      prefix: "http://localhost:3000/w/",
+      slug: "test-studio",
+      suffix: "",
+      full: "http://localhost:3000/w/test-studio",
+    });
+  });
+
+  it("shows path prefix before the slug input in dev/path mode", () => {
+    renderDialog();
+    expect(screen.getByText("http://localhost:3000/w/")).toBeInTheDocument();
+    expect(screen.queryByText(/\.gallurio\.com/)).not.toBeInTheDocument();
+  });
+
+  it("shows domain suffix after the slug input in subdomain/production mode", () => {
+    mockUrlParts.mockReturnValue({
+      mode: "subdomain",
+      prefix: "",
+      slug: "test-studio",
+      suffix: ".gallurio.com",
+      full: "https://test-studio.gallurio.com",
+    });
+    renderDialog();
+    expect(screen.getByText(".gallurio.com")).toBeInTheDocument();
+    expect(screen.queryByText(/localhost.*\/w\//)).not.toBeInTheDocument();
   });
 
   it("renders a slug input pre-filled with currentSlug", async () => {

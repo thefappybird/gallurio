@@ -73,6 +73,7 @@ import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
 import { SuppressedActionBar } from "./SuppressedActionBar";
 import { BlockActionsToolbar } from "./BlockActionsToolbar";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -362,7 +363,6 @@ export function EditorShell({
   initialFormLocale,
   initialHeaderConfig,
   initialCollectionsPopup,
-  publicOrigin,
   previewBasePath,
   templates,
   currentTemplateId,
@@ -1477,7 +1477,7 @@ export function EditorShell({
 
   return (
     <GalleryPickerCacheProvider>
-      <MobileBanner publicUrl={`${publicOrigin}/w/${currentSlug}`} />
+      <MobileBanner publicUrl={portfolioPublicUrl(currentSlug)} />
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
@@ -1670,7 +1670,7 @@ export function EditorShell({
         open={publishOpen}
         onOpenChange={setPublishOpen}
         onConfirm={doPublish}
-        publicUrl={`${publicOrigin}/w/${currentSlug}`}
+        publicUrl={portfolioPublicUrl(currentSlug)}
         currentSlug={currentSlug}
         onSlugSaved={setCurrentSlug}
         onUpdateSlug={updatePortfolioSlugAction}

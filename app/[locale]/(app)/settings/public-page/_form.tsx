@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { uploadAsset } from "@/lib/storage/uploadAsset.client";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 const SITE_ICON_TYPES = ["image/png", "image/jpeg", "image/webp", "image/avif"] as const;
 const SITE_ICON_MAX_BYTES = 1 * 1024 * 1024;
@@ -63,10 +64,10 @@ export function PublicPageSettingsForm({
 
   const siteIconUrl = watch("siteIconUrl");
 
-  const publicUrl = `gallurio.com/w/${slug}`;
+  const publicUrl = portfolioPublicUrl(slug);
 
   function handleCopy() {
-    navigator.clipboard.writeText(`https://${publicUrl}`);
+    navigator.clipboard.writeText(publicUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

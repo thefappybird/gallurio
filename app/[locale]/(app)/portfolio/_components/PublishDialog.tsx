@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
+import { portfolioUrlParts } from "@/lib/portfolio/publicUrl";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +57,7 @@ export function PublishDialog({
   }, [open, currentSlug]);
 
   const { status: slugStatus } = useSlugAvailability(slugInput, currentSlug);
+  const urlParts = portfolioUrlParts(currentSlug);
 
   const slugChanged = slugInput !== currentSlug;
   const slugSaveEnabled =
@@ -109,6 +111,11 @@ export function PublishDialog({
           <Label htmlFor="publish-dialog-slug">{t("slugLabel")}</Label>
           <div className="flex items-center gap-2">
             <div className="flex min-w-0 flex-1 items-center border border-border bg-background">
+              {urlParts.prefix && (
+                <span className="shrink-0 truncate ps-2 text-sm text-muted-foreground">
+                  {urlParts.prefix}
+                </span>
+              )}
               <Input
                 id="publish-dialog-slug"
                 className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
@@ -120,9 +127,11 @@ export function PublishDialog({
                 }}
                 aria-describedby="publish-dialog-slug-status"
               />
-              <span className="shrink-0 pe-2 text-sm text-muted-foreground">
-                {t("slugSuffix")}
-              </span>
+              {urlParts.suffix && (
+                <span className="shrink-0 pe-2 text-sm text-muted-foreground">
+                  {urlParts.suffix}
+                </span>
+              )}
             </div>
             <Button
               type="button"
