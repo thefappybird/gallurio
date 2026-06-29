@@ -81,5 +81,8 @@ export function buildGalleryJsonLd(input: JsonLdInput): [Record<string, unknown>
   return [imageGallery, breadcrumb];
 }
 export function safeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/<\/script>/gi, "<\\/script>");
+  // Escape every </script token regardless of what follows (>, />, space+>, etc.)
+  // because HTML5 ends a <script> element on </script followed by any of:
+  // >, whitespace, or / — not just the exact string </script>.
+  return JSON.stringify(data).replace(/<\/script/gi, "<\\/script");
 }

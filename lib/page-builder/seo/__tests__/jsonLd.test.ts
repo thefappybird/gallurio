@@ -55,4 +55,22 @@ describe("safeJsonLd", () => {
     expect(result).not.toContain("</script>");
     expect(result).toContain("<\\/script>");
   });
+
+  it("escapes </script > (whitespace variant) which HTML5 also treats as a script end tag", () => {
+    // HTML5 ends a <script> element on </script followed by whitespace, /, or >.
+    // A workspace owner could inject this to break out of the JSON-LD block.
+    const result = safeJsonLd({ name: "evil</script ><script>alert(1)</script>" });
+    expect(result).not.toContain("</script");
+  });
+
+  it("escapes </script/> (self-closing variant)", () => {
+    const result = safeJsonLd({ name: "evil</script/><script>alert(1)</script>" });
+    expect(result).not.toContain("</script");
+  });
+
+  it("escapes case-insensitive variants like </SCRIPT>", () => {
+    const result = safeJsonLd({ name: "evil</SCRIPT><script>alert(1)</script>" });
+    expect(result).not.toContain("</script");
+    expect(result).not.toContain("</SCRIPT");
+  });
 });
