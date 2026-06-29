@@ -142,13 +142,27 @@ Two message-batches folded together; fanned out to disjoint Sonnet executors, co
 - [x] **item5** Float featured-popup defaults: background→`--pf-color-bg` (fixed bogus `--pf-color-surface`), title
       font-size→16, close-button corner→`rounded`. (5d97f46)
 - [x] **item3** Re-port updated `sarah-bell-photo` drafts → 4 templates, tenant-neutral (empty images, no asset ids). (cdb012a)
-- [x] **G8 (#6)** SEO audit deliverable `docs/portfolio/seo-audit.md` + prioritized proposed fields (no impl — awaiting approval).
-- [x] **G9** Locales: 11 `publishDialog` slug keys ×5 (en in 53bc5ea; fil/ms/id/ar in 9be2232). Playwright pass **waived by user** (self-verifying).
+- [x] **G8 (#6)** SEO IMPLEMENTED (option-1: structural fixes + P0 fields + rich educational settings). Data layer
+      `publicPage.seo`{ogImageUrl,ogImageAssetId,galleryDescription,noindex} + `GalleryImage` dims (c6d0cc4); env-aware
+      public URL `portfolioPublicUrl` dev `/w/slug` | prod `slug.{NEXT_PUBLIC_PORTFOLIO_BASE_DOMAIN}` (402f585); gallery CLS
+      dims+aspect-ratio (c1e10f8); rich educational settings UI + OG upload + noindex toggle + 5 locales (e9fc5ce); metadataBase
+      + OG/Twitter/canonical/noindex + favicon-fix in generateMetadata (e9fc5ce); JSON-LD LocalBusiness/WebSite/ImageGallery/
+      BreadcrumbList + `safeJsonLd` escaping (2661d60); `app/sitemap.ts` + `app/robots.ts` + `listPublishedWorkspaceSlugs` (f38122c).
+- [x] **C2/C3 DEFERRED per owner (2026-06-29):** public page stays hardcoded `<html lang="en">`, fully isolated from CRM
+      language; RTL chrome flip + per-tenant public language are a FUTURE spec. Do NOT add public-page i18n/lang/dir.
+      See memory `project_public_page_language_isolation`.
+- [x] **G9** Locales: publishDialog slug keys ×5 + 12 SEO settings keys ×5 (parity verified). Playwright pass **waived by user** (self-verifying).
 
 ### Done log (follow-up)
 - 2026-06-29: 8 parallel agents (theme-modal, EditorShell, contact, columns, properties, popup, templates, SEO).
   All `pnpm typecheck` clean; `eslint` 0 errors / 95 warnings (baseline; 2 new harmless unused-disable directives).
   Per-track targeted vitest green (brand-kit 118, contact 60, popup 57, columns 166, properties 111, templates 79, EditorShell suite).
   Browser/Playwright verification waived by user — user self-verifies #8 close-guard, popup close-button corner, and the visual diffs.
-- **Open for approval:** SEO P0 fields (`seo.ogImageUrl`+`ogImageAssetId`, `seo.galleryDescription`, `seo.noindex`) + zero-UI
-  structural fixes (`metadataBase`, `sitemap.ts`, `robots.ts`, LocalBusiness JSON-LD, `<html lang/dir>` per-tenant, gallery image dims).
+- 2026-06-29 (SEO wave): landed in c6d0cc4 402f585 c1e10f8 e9fc5ce 2661d60 f38122c. `pnpm typecheck` clean; `eslint` 0 errors;
+  all-5-locale parity (12 SEO keys); targeted vitest green (settings action 66, settings form 9, jsonLd 9, sitemap/robots 9,
+  gallery CLS 47, page metadata 35). NOTE: SETTINGS + GALLERY agents self-committed (`git commit -am`-style) and swept some
+  tracked files across commits — history slightly mixed but the tree is coherent and HEAD builds. Security pass over the
+  OG-upload + settings/slug actions: in progress.
+- **Deferred / future:** public-page language + RTL chrome (C2/C3, per owner); P1/P2 SEO fields (twitter handle, business
+  category, serviceArea, priceRange, GSC token, keywords, per-page title overrides) — not built; add sparse index on
+  `publicPage.publishedAt` before tenant count grows (backs the sitemap query).

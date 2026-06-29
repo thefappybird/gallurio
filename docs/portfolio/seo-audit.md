@@ -58,6 +58,11 @@ Fix: the public root layout does not know the workspace locale. The slug layout 
 File: `app/(public)/layout.tsx:21` — no `dir` attribute  
 Arabic (`ar`) is a supported locale and RTL by design. The app shell sets `dir={isRtl(locale) ? "rtl" : "ltr"}` on its `<html>` (`app/[locale]/layout.tsx:44`) but the public root layout never sets `dir`. Arabic portfolio pages will render entirely LTR, breaking visual layout and crawler language signal.
 
+> **C2 + C3 DEFERRED (2026-06-29, owner decision) — NOT implemented.** The public page is intentionally isolated from CRM
+> language and stays hardcoded `<html lang="en">`; per-tenant public-page language + RTL chrome flip are a future spec. The
+> owner builds their own DnD content in whatever language/direction they choose. Do NOT implement the `<html lang/dir>`
+> restructuring. See memory `project_public_page_language_isolation`. (I4 localized gallery title is likewise left English.)
+
 **C4 — No `og:image` — zero social share previews**  
 Files: `app/(public)/w/[orgSlug]/page.tsx:38-43`, `app/(public)/w/[orgSlug]/gallery/page.tsx:29-34`  
 Both `generateMetadata` functions return an `openGraph` object with `title` and `description` only. `og:image` is absent. When the portfolio URL is shared on Facebook, LinkedIn, WhatsApp, or iMessage, the platform renders a plain text card with no photo — the single most damaging omission for a photography advertising channel.
