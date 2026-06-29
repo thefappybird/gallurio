@@ -195,7 +195,18 @@ export function GalleryMasonryBlock({
                   alt={img.alt ?? ""}
                   loading="lazy"
                   decoding="async"
-                  style={{ width: "100%", height: "auto", display: "block" }}
+                  width={img.width}
+                  height={img.height}
+                  style={{
+                    width: "100%",
+                    display: "block",
+                    // When both dimensions are known, reserve vertical space via aspect-ratio
+                    // so the browser doesn't shift content as the image loads (CLS fix).
+                    // When absent (legacy images), fall back to height:auto as before.
+                    ...(img.width != null && img.height != null
+                      ? { aspectRatio: `${img.width} / ${img.height}` }
+                      : { height: "auto" }),
+                  }}
                 />
               </figure>
             );

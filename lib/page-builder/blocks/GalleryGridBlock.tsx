@@ -32,7 +32,15 @@ import type { ContainerHeight } from "./manualBlocks";
 // Props
 // ---------------------------------------------------------------------------
 
-export type GalleryImage = { id: string; publicId: string; alt?: string };
+export type GalleryImage = {
+  id: string;
+  publicId: string;
+  alt?: string;
+  /** Natural pixel width — persisted from upload; enables browser space reservation to prevent CLS. */
+  width?: number;
+  /** Natural pixel height — persisted from upload; enables browser space reservation to prevent CLS. */
+  height?: number;
+};
 
 export type GalleryGridProps = {
   _style?: BlockStyle;
@@ -245,6 +253,8 @@ export function GalleryGridBlock({
                   src={src}
                   alt={img.alt ?? ""}
                   loading="lazy"
+                  width={img.width}
+                  height={img.height}
                   style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
                 />
               </figure>

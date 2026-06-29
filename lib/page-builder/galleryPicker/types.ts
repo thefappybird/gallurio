@@ -12,6 +12,10 @@ export type PickerItem = {
   publicId: string;
   thumbUrl: string;
   caption: string | null;
+  /** Natural pixel width — populated from the upload result; absent for server-fetched items. */
+  width?: number;
+  /** Natural pixel height — populated from the upload result; absent for server-fetched items. */
+  height?: number;
 };
 
 export type PickerData = {

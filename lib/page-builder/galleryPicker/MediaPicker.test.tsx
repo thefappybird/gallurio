@@ -307,6 +307,44 @@ describe("MediaPicker", () => {
     });
   });
 
+  it("multi mode: 'select all on page' forwards width/height from items that carry dims", async () => {
+    const richItems = [
+      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", width: 800, height: 600 },
+      { id: "b", publicId: "pid-b", thumbUrl: "https://x/b.jpg", caption: "B" },
+    ];
+    mockFetch.mockImplementation((u: string) => {
+      if (u === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections, items: richItems }) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: richItems, nextCursor: null }) } as Response);
+    });
+    const onChange = vi.fn();
+    render(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /select all on page/i }));
+    expect(onChange).toHaveBeenCalledWith([
+      { id: "a", publicId: "pid-a", width: 800, height: 600 },
+      { id: "b", publicId: "pid-b" },
+    ]);
+  });
+
+  it("multi mode: selecting an item that carries width/height includes dims in the selection", async () => {
+    const richItems = [
+      { id: "a", publicId: "pid-a", thumbUrl: "https://x/a.jpg", caption: "A", width: 1200, height: 800 },
+    ];
+    mockFetch.mockImplementation((u: string) => {
+      if (u === "/api/portfolio/gallery") {
+        return Promise.resolve({ ok: true, json: async () => ({ collections, items: richItems }) } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items: richItems, nextCursor: null }) } as Response);
+    });
+    const onChange = vi.fn();
+    render(<MediaPicker mode="multi" value={[]} onChange={onChange} open onOpenChange={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^A/ }));
+    expect(onChange).toHaveBeenCalledWith([{ id: "a", publicId: "pid-a", width: 1200, height: 800 }]);
+  });
+
   it("switching collections ignores a stale slow response and shows the new collection", async () => {
     const twoCollections = [
       { id: "slow", name: "SlowCol", coverUrl: "https://x/s.jpg", itemCount: 1 },

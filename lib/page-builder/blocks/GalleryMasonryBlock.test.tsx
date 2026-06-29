@@ -77,3 +77,28 @@ describe("GalleryMasonryBlock — banner/container props", () => {
     expect(bgImg?.getAttribute("src")).toContain("bg-pid1");
   });
 });
+
+describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
+  it("emits width + height attrs and aspect-ratio style when image has known dimensions", () => {
+    const withDims: GalleryImage[] = [{ id: "d1", publicId: "pid-d1", width: 1200, height: 800 }];
+    const { container } = render(GalleryMasonryBlock({ ...base, images: withDims }));
+    const img = container.querySelector("figure img") as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.getAttribute("width")).toBe("1200");
+    expect(img.getAttribute("height")).toBe("800");
+    expect(img.style.aspectRatio).toBe("1200 / 800");
+    // height:auto must not be set when aspect-ratio handles it
+    expect(img.style.height).toBe("");
+  });
+
+  it("omits width/height attrs and aspect-ratio for legacy images without dimensions", () => {
+    const noDims: GalleryImage[] = [{ id: "d2", publicId: "pid-d2" }];
+    const { container } = render(GalleryMasonryBlock({ ...base, images: noDims }));
+    const img = container.querySelector("figure img") as HTMLImageElement;
+    expect(img).toBeTruthy();
+    expect(img.getAttribute("width")).toBeNull();
+    expect(img.getAttribute("height")).toBeNull();
+    expect(img.style.aspectRatio).toBe("");
+    expect(img.style.height).toBe("auto");
+  });
+});
