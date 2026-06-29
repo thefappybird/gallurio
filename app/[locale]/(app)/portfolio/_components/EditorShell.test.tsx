@@ -116,6 +116,7 @@ vi.mock("../_actions", () => ({
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
+  updatePortfolioSlugAction: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
@@ -124,7 +125,7 @@ const deleteDraftAction = vi.fn().mockResolvedValue({ ok: true });
 const getDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "Test Draft", templateId: "minimal", updatedAt: new Date().toISOString(), data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: null, contact: null, header: null, collectionsPopup: null, formLocale: "" } });
 const listDraftsAction = vi.fn().mockResolvedValue([]);
 const publishDraftAction = vi.fn().mockResolvedValue({ ok: true });
-const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" } } });
+const seedTemplateAction = vi.fn().mockResolvedValue({ ok: true, seed: { templateId: "minimal", data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } }, brandKit: DEFAULT_BRAND_KIT, contact: { title: "" }, header: {}, collectionsPopup: {} } });
 vi.mock("../_draftActions", () => ({
   createDraftAction: (...a: unknown[]) => createDraftAction(...a),
   updateDraftAction: (...a: unknown[]) => updateDraftAction(...a),
@@ -136,6 +137,12 @@ vi.mock("../_draftActions", () => ({
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+
+// useSlugAvailability (inside PublishDialog) calls checkSlugAvailabilityAction
+// which transitively imports authkit-nextjs. Mock the action to prevent that.
+vi.mock("@/lib/actions/slug", () => ({
+  checkSlugAvailabilityAction: vi.fn().mockResolvedValue({ available: true }),
+}));
 
 import { EditorShell, previewZoneFor } from "./EditorShell";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
@@ -274,13 +281,13 @@ describe("EditorShell", () => {
     expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
   });
 
-  it("removes viewport buttons from edit mode but keeps sidebar toggles", async () => {
+  it("keeps the sidebar toggles in the edit-mode header", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toggle properties panel" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Mobile" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Tablet" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Desktop" })).not.toBeInTheDocument();
+    // The edit-canvas breakpoint + zoom controls now live in this same header
+    // cluster (CanvasViewportControls); their rendering + behaviour are
+    // unit-tested in CanvasViewportControls.test.tsx.
   });
 
   it("stops keydown propagation past the editor root when the target is an input", async () => {
@@ -594,6 +601,28 @@ describe("EditorShell", () => {
     ).toBeTruthy();
   });
 
+  it("shows the Current badge in template picker immediately after applying a template (canvas still matches seed)", async () => {
+    // Start clean (isDirty=false) so guardThenRun runs applyTemplate without a guard prompt.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Open template picker via Drafts → Add new draft (handleAddNewDraft is unguarded).
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    await screen.findByText("Choose a template");
+
+    // Apply Minimal (clean draft → no guard fires).
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Picker closes after apply. Re-open it without triggering a guard.
+    await waitFor(() => expect(screen.queryByText("Choose a template")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+
+    // The Current badge must be visible for Minimal since no edits have been made.
+    expect(await screen.findByText(/current/i)).toBeInTheDocument();
+  });
+
   it("opens the template picker directly from Add new draft, then prompts once when a template is applied", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     // Make the draft dirty via a rename to a unique, valid name.
@@ -851,6 +880,33 @@ describe("EditorShell", () => {
     expect(publishDraftAction).not.toHaveBeenCalled();
   });
 
+  it("savedSnapshot matches the payload sent to the server after a successful save", async () => {
+    // Verifies FIX 2: savedSnapshot is built from `payload` (captured before the
+    // server round-trip), NOT from a second buildDraftSnapshot() call after the await.
+    // The observable contract: after save, isDirty=false (Save changes is disabled),
+    // and updateDraftAction was called with exactly the data that savedSnapshot tracks.
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Make the draft dirty with a Puck change.
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+
+    // Save changes button must now be enabled (dirty).
+    const saveBtn = screen.getByRole("button", { name: "Save changes" });
+    await waitFor(() => expect(saveBtn).not.toBeDisabled());
+
+    // Click Save.
+    fireEvent.click(saveBtn);
+
+    // After a successful save, savedSnapshot must equal what was sent to the server:
+    // isDirty should become false → Save changes button disabled.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled());
+
+    // updateDraftAction must have been called with the draft name matching what's tracked.
+    expect(updateDraftAction).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Test Draft" })
+    );
+  });
+
   it("open-in-new-tab button opens /portfolio-preview and does not call createPreviewSnapshotAction", async () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
@@ -1033,5 +1089,36 @@ describe("EditorShell", () => {
     (mockPuckApi as any).selectedItem = origSelected;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (mockPuckApi.appState as any).ui = origUi;
+  });
+
+  it("editor is not dirty immediately after applying a template (Fix #4)", async () => {
+    // Start with a clean draft so the guard fires immediately without the
+    // unsaved-changes modal (baseProps has activeDraftId="d1" + matching snapshot).
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // Open template picker via Drafts → Add new draft (clean draft → no guard).
+    fireEvent.click(screen.getByRole("button", { name: "Drafts" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add new draft" }));
+    await screen.findByText("Choose a template");
+
+    // Apply Minimal — no unsaved-changes guard fires.
+    fireEvent.click(screen.getByRole("button", { name: /Minimal/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Use this template" }));
+
+    // Template picker closes; wait for Puck to remount and all state to settle.
+    await waitFor(() =>
+      expect(screen.queryByText("Choose a template")).not.toBeInTheDocument(),
+    );
+    await screen.findByTestId("puck", {}, { timeout: 3000 });
+
+    // isDirty drives the beforeunload guard: if isDirty=true the handler calls
+    // e.preventDefault(). After applyTemplate with the fix, isDirty=false so
+    // preventDefault must NOT be called.
+    await waitFor(() => {
+      const event = new Event("beforeunload", { cancelable: true });
+      const spy = vi.spyOn(event, "preventDefault");
+      window.dispatchEvent(event);
+      expect(spy).not.toHaveBeenCalled();
+    });
   });
 });

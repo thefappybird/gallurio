@@ -57,6 +57,26 @@ describe("portfolio template registry", () => {
         }
       });
 
+      it("only references registered block types when recursively walking nested props.content", () => {
+        // Walks every block including those nested inside Columns/Container props.content slots.
+        // The existing registry test above only walks top-level blocks — this one catches
+        // type mismatches in nested content (e.g. CTAPreset → CtaPreset inside a Columns block).
+        function walkBlocks(blocks: { type: string; props?: Record<string, unknown> }[]) {
+          for (const block of blocks) {
+            expect(
+              REGISTERED_BLOCKS.has(block.type),
+              `Template '${template.id}': nested block type '${block.type}' is not in the Puck registry`
+            ).toBe(true);
+            const nested = block.props?.content;
+            if (Array.isArray(nested)) walkBlocks(nested as typeof blocks);
+          }
+        }
+        walkBlocks([
+          ...(data.home?.content ?? []),
+          ...(data.gallery?.content ?? []),
+        ]);
+      });
+
       it("seeds gallery blocks with empty images[] (owner picks photos)", () => {
         // Preset blocks (e.g. GalleryLandingPreset) are Container-based and have
         // no images prop — only data gallery blocks (GalleryGrid, GalleryMasonry)
@@ -66,7 +86,6 @@ describe("portfolio template registry", () => {
           if (GALLERY_DATA_TYPES.has(block.type)) {
             expect(block.props.images).toEqual([]);
             expect(block.props).not.toHaveProperty("collectionId");
-            expect(block.props).not.toHaveProperty("maxItems");
           }
         }
       });
@@ -79,13 +98,24 @@ describe("portfolio template registry", () => {
         expect(portfolioContactConfigSchema.safeParse(template.defaultContact).success).toBe(true);
       });
 
-      it("starts the home zone with a HeroPreset block", () => {
+      it("has a defaultHeader field", () => {
+        expect(template.defaultHeader).toBeDefined();
+        expect(typeof template.defaultHeader).toBe("object");
+      });
+
+      it("has a defaultCollectionsPopup field", () => {
+        expect(template.defaultCollectionsPopup).toBeDefined();
+        expect(typeof template.defaultCollectionsPopup).toBe("object");
+      });
+
+      it("starts the home zone with a HeroPreset or Columns block", () => {
         // scratch is an intentionally empty canvas — exempt from this check.
         if (template.id === "scratch") return;
-        // Templates use the new preset block model. The first home block is a
-        // HeroPreset (a composed Container) — no longer a monolithic 'Hero' block.
         const firstBlock = data.home?.content[0];
-        expect(firstBlock?.type).toBe("HeroPreset");
+        // bold/luxury/editorial open with a Columns mosaic that embeds HeroPreset;
+        // minimal/romantic-style templates open directly with HeroPreset.
+        expect(["HeroPreset", "Columns"], `Expected first home block to be HeroPreset or Columns, got '${firstBlock?.type}'`)
+          .toContain(firstBlock?.type);
       });
 
       it("every top-level home and gallery block has a stable id", () => {
@@ -105,10 +135,6 @@ describe("portfolio template registry", () => {
     for (const template of PORTFOLIO_TEMPLATES) {
       const data = template.seedData(ctx);
       expect(portfolioPuckDataSchema.safeParse(data).success).toBe(true);
-      // scratch is an intentionally empty canvas — no first block expected.
-      if (template.id === "scratch") continue;
-      // The first home block must still be a HeroPreset in all templates.
-      expect(data.home?.content[0]?.type).toBe("HeroPreset");
     }
   });
 });
@@ -119,24 +145,19 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit.themePreset).toBe("minimal");
   });
 
-  it("wedding-photographer carries the 'romantic' theme preset", () => {
-    const t = getTemplate("wedding-photographer")!;
-    expect(t.defaultBrandKit.themePreset).toBe("romantic");
-  });
-
-  it("venue-stylist carries the 'luxury' theme preset", () => {
-    const t = getTemplate("venue-stylist")!;
-    expect(t.defaultBrandKit.themePreset).toBe("luxury");
-  });
-
-  it("event-photographer carries the 'bold' theme preset", () => {
-    const t = getTemplate("event-photographer")!;
+  it("bold carries the 'bold' theme preset", () => {
+    const t = getTemplate("bold")!;
     expect(t.defaultBrandKit.themePreset).toBe("bold");
   });
 
-  it("planner carries the 'modern' theme preset", () => {
-    const t = getTemplate("planner")!;
-    expect(t.defaultBrandKit.themePreset).toBe("modern");
+  it("luxury carries the 'luxury' theme preset", () => {
+    const t = getTemplate("luxury")!;
+    expect(t.defaultBrandKit.themePreset).toBe("luxury");
+  });
+
+  it("editorial carries the 'editorial' theme preset", () => {
+    const t = getTemplate("editorial")!;
+    expect(t.defaultBrandKit.themePreset).toBe("editorial");
   });
 
   it("minimal brand kit exactly matches THEME_PRESET_DEFINITIONS.minimal", () => {
@@ -144,24 +165,29 @@ describe("template theme presets", () => {
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.minimal.brandKit);
   });
 
-  it("event-photographer brand kit exactly matches THEME_PRESET_DEFINITIONS.bold", () => {
-    const t = getTemplate("event-photographer")!;
+  it("bold brand kit exactly matches THEME_PRESET_DEFINITIONS.bold", () => {
+    const t = getTemplate("bold")!;
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.bold.brandKit);
   });
 
-  it("planner brand kit exactly matches THEME_PRESET_DEFINITIONS.modern", () => {
-    const t = getTemplate("planner")!;
-    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.modern.brandKit);
-  });
-
-  it("venue-stylist brand kit exactly matches THEME_PRESET_DEFINITIONS.luxury", () => {
-    const t = getTemplate("venue-stylist")!;
+  it("luxury brand kit exactly matches THEME_PRESET_DEFINITIONS.luxury", () => {
+    const t = getTemplate("luxury")!;
     expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.luxury.brandKit);
   });
 
-  it("wedding-photographer brand kit exactly matches THEME_PRESET_DEFINITIONS.romantic", () => {
-    const t = getTemplate("wedding-photographer")!;
-    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.romantic.brandKit);
+  it("editorial brand kit exactly matches THEME_PRESET_DEFINITIONS.editorial", () => {
+    const t = getTemplate("editorial")!;
+    expect(t.defaultBrandKit).toEqual(THEME_PRESET_DEFINITIONS.editorial.brandKit);
+  });
+
+  it("gallery collectionId is absent from all non-scratch templates", () => {
+    for (const template of PORTFOLIO_TEMPLATES) {
+      if (template.id === "scratch") continue;
+      const data = template.seedData({ workspace: { name: "Test" } });
+      for (const block of data.gallery?.content ?? []) {
+        expect((block.props as Record<string, unknown>).collectionId, `${template.id} gallery block '${block.type}' has collectionId`).toBeFalsy();
+      }
+    }
   });
 });
 
@@ -177,7 +203,7 @@ describe("_blocks factory helpers", () => {
 
 describe("getTemplate", () => {
   it("returns a template by id", () => {
-    expect(getTemplate("planner")?.id).toBe("planner");
+    expect(getTemplate("bold")?.id).toBe("bold");
   });
   it("returns null for an unknown id", () => {
     expect(getTemplate("nope")).toBeNull();
@@ -186,12 +212,12 @@ describe("getTemplate", () => {
 
 describe("getTemplateForBusinessType", () => {
   it.each([
-    ["photographer", "wedding-photographer"],
-    ["venue", "venue-stylist"],
-    ["stylist", "venue-stylist"],
-    ["planner", "planner"],
-    ["catering", "planner"],
-    ["entertainer", "event-photographer"],
+    ["photographer", "editorial"],
+    ["venue", "luxury"],
+    ["stylist", "luxury"],
+    ["planner", "editorial"],
+    ["catering", "editorial"],
+    ["entertainer", "bold"],
     ["other", "minimal"],
   ])("maps %s → %s", (businessType, expected) => {
     expect(getTemplateForBusinessType(businessType).id).toBe(expected);

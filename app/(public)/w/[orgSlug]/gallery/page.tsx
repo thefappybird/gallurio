@@ -8,6 +8,9 @@ import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
+import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
 type PageProps = {
   params: Promise<{ orgSlug: string }>;
@@ -19,22 +22,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!workspace) return {};
 
   const { publicPage, name } = workspace;
-  const title = `${name} — Gallery`;
-  const description = publicPage?.seoDescription || undefined;
-  const iconUrl = workspace.publicPage?.siteIcon?.url || workspace.publicPage?.header?.logoUrl;
+  const seo = (publicPage?.seo as PublicPageSeo | undefined) ?? {};
 
-  return {
+  const title = `${name} — Gallery`;
+  const seoDescription = publicPage?.seoDescription || undefined;
+  const description =
+    seo.galleryDescription ||
+    seoDescription ||
+    `${name} — Photography Portfolio`;
+  const iconUrl = publicPage?.siteIcon?.url || undefined;
+  const ogImageUrl = seo.ogImageUrl || undefined;
+  const galleryUrl = `${portfolioPublicUrl(workspace.slug)}/gallery`;
+
+  const result: Metadata = {
     title,
     description,
+    alternates: { canonical: galleryUrl },
     openGraph: {
       title,
-      description: description ?? "",
+      description,
+      url: galleryUrl,
+      type: "website",
+      siteName: name,
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
-    alternates: {
-      canonical: `/w/${workspace.slug}/gallery`,
+    twitter: {
+      card: ogImageUrl ? "summary_large_image" : "summary",
+      images: ogImageUrl ? [ogImageUrl] : undefined,
     },
     icons: iconUrl ? { icon: iconUrl } : undefined,
   };
+  if (seo.noindex) result.robots = { index: false, follow: false };
+  return result;
 }
 
 export default async function PortfolioGalleryPage({ params }: PageProps) {
@@ -54,12 +73,23 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
+  // Build gallery JSON-LD — injected in both branches.
+  const [galleryLd, breadcrumbLd] = buildGalleryJsonLd({
+    name: workspace.name,
+    slug: workspace.slug,
+    businessType: workspace.businessType || undefined,
+  });
+
   if (!galleryData) {
     return (
-      <ComingSoonFallback
-        workspace={workspace}
-        labels={{ comingSoon: t("comingSoon"), poweredBy: t("poweredBy") }}
-      />
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
+        <ComingSoonFallback
+          workspace={workspace}
+          labels={{ comingSoon: t("comingSoon"), poweredBy: t("poweredBy") }}
+        />
+      </>
     );
   }
 
@@ -83,9 +113,11 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
   };
 
   return runWithRenderWorkspace(renderWorkspace, () => (
-    // metadata threads workspace context to every block via props.puck.metadata —
-    // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    </>
   ));
 }

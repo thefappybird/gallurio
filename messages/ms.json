@@ -848,7 +848,28 @@
           "dimensions": "Imej mesti 512 × 512 px atau lebih kecil.",
           "image": "Tidak dapat membaca imej. Sila cuba fail lain.",
           "upload": "Muat naik gagal. Sila cuba lagi."
-        }
+        },
+        "seoTitleHint": "Tajuk yang boleh diklik di Google + tab pelayar. Sasaran: ~60 aksara. Nama studio + apa yang anda tangkap.",
+        "seoDescriptionHint": "Petikan kelabu di bawah tajuk anda dalam hasil carian. Sasaran: ~155 aksara. Promosikan halaman utama anda.",
+        "galleryDescriptionLabel": "Penerangan halaman Gallery",
+        "galleryDescriptionPlaceholder": "Pameran karya terbaik perkahwinan dan potret kami…",
+        "galleryDescriptionHint": "Penerangan berasingan untuk halaman Gallery anda supaya tidak menduplikasi halaman utama. Sasaran: ~155 aksara.",
+        "ogImageSection": "Imej kongsi",
+        "ogImageHint": "Foto yang ditunjukkan apabila pautan anda dikongsi di Facebook, Instagram, WhatsApp, atau iMessage. Gunakan gambar terbaik anda. Saiz 1200 × 630 px disyorkan.",
+        "ogImageLabel": "Muat naik imej kongsi",
+        "ogImageUploading": "Sedang memuat naik…",
+        "ogImageRequirements": "JPEG, PNG, WebP atau AVIF · maks 10 MB · 1200 × 630 px disyorkan",
+        "ogImageRemove": "Buang",
+        "ogImageReplace": "Ganti",
+        "ogImageErrors": {
+          "type": "Hanya fail JPEG, PNG, WebP atau AVIF yang diterima.",
+          "size": "Fail mesti 10 MB atau lebih kecil.",
+          "dimensions": "Imej mesti sekurang-kurangnya 600 px pada sisi yang lebih pendek.",
+          "upload": "Muat naik gagal. Sila cuba lagi."
+        },
+        "noindexSection": "Keterlihatan carian",
+        "noindexLabel": "Sembunyikan dari enjin carian",
+        "noindexHint": "Jauhkan portfolio ini daripada hasil carian Google. Sesuai untuk draf atau pelancaran lembut. Pautan terus anda masih berfungsi."
       }
     },
     "teams": {
@@ -1400,7 +1421,18 @@
           "cancel": "Batal",
           "liveAt": "Aktif di {url}",
           "copyLink": "Salin pautan",
-          "copied": "Disalin"
+          "copied": "Disalin",
+          "slugLabel": "URL portfolio",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Simpan URL",
+          "slugSaving": "Menyimpan...",
+          "slugSaved": "Disimpan",
+          "slugError": "Tidak dapat mengemas kini URL, sila cuba lagi",
+          "slugUrlTaken": "URL itu telah diambil",
+          "slugChecking": "Menyemak...",
+          "slugAvailable": "Tersedia",
+          "slugTaken": "Telah diambil",
+          "slugInvalid": "Format tidak sah"
         },
         "themeDialog": {
           "title": "Tema & jenama"
@@ -1469,6 +1501,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Warna teks tab",
+          "inactiveTabStyleLabel": "Gaya",
+          "inactiveTabSubtle": "Halus",
+          "inactiveTabCompact": "Padat",
           "activeTabColorLabel": "Warna teks tab aktif",
           "activeTabStyleLabel": "Gaya",
           "activeTabStyleScale": "Besarkan",
@@ -1584,6 +1619,10 @@
           "toggleBlocks": "Togol panel blok",
           "toggleProperties": "Togol panel sifat",
           "previewDevice": "Peranti pratonton",
+          "canvasWidth": "Lebar kanvas",
+          "zoomIn": "Zum masuk",
+          "zoomOut": "Zum keluar",
+          "zoomReset": "Set semula zum kepada 100%",
           "undoTitle": "Buat asal (Ctrl+Z)",
           "redoTitle": "Buat semula (Ctrl+Shift+Z)"
         },
@@ -1648,6 +1687,25 @@
           "duplicate": "Gandakan",
           "delete": "Padam"
         },
+        "photosDialog": {
+          "title": "Foto & Koleksi",
+          "intro": "Susun foto anda ke dalam koleksi. Gunakan dalam blok Gallery, atau pilih mana-mana foto tunggal sebagai latar belakang Hero atau CTA. Muat naik di sini sekali — pilih di mana-mana.",
+          "empty": "Belum ada koleksi. Cipta yang pertama untuk bermula.",
+          "loading": "Memuatkan…",
+          "error": "Tidak dapat memuatkan koleksi anda.",
+          "retry": "Cuba semula",
+          "addNew": "Tambah koleksi baharu",
+          "photos": "foto",
+          "done": "Selesai",
+          "deleteTitle": "Padam koleksi ini?",
+          "deleteBody": "Foto dalam koleksi ini akan dipadam secara kekal daripada perpustakaan anda dan tidak boleh dipulihkan. Mana-mana blok gallery yang menggunakan koleksi ini tidak akan menunjukkan apa-apa sehingga anda menunjukkannya ke koleksi lain.",
+          "deleting": "Memadam…",
+          "deleteConfirm": "Padam secara kekal",
+          "cancel": "Batal",
+          "deleteError": "Tidak dapat memadam koleksi. Sila cuba semula.",
+          "deleteCollection": "Padam koleksi",
+          "editAria": "Edit {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Tetingkap timbul pilihan",
           "popup": "Tetingkap timbul",
@@ -1674,6 +1732,132 @@
             "sharp": "Tajam",
             "subtle": "Halus",
             "rounded": "Membulat"
+          }
+        },
+        "puckConfig": {
+          "categories": {
+            "presets": "Blok pratetap",
+            "manual": "Blok manual"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "Tentang",
+            "servicesPreset": "Perkhidmatan",
+            "ctaPreset": "Ajakan bertindak",
+            "contactPreset": "Hubungi",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Kerja Pilihan",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Sorotan",
+            "video": "Video",
+            "contactDetails": "Butiran Hubungan",
+            "heading": "Tajuk",
+            "text": "Teks",
+            "image": "Imej",
+            "button": "Butang",
+            "spacer": "Ruang",
+            "divider": "Pembahagi",
+            "columns": "Lajur",
+            "container": "Bekas"
+          },
+          "fields": {
+            "style": "Gaya",
+            "pageStyle": "Gaya halaman",
+            "bgAnimation": "Animasi latar belakang",
+            "bgAnimationShort": "Animasi BG",
+            "bgSpeed": "Kelajuan animasi",
+            "bgSpeedShort": "Kelajuan BG",
+            "overlayOpacity": "Kelegapan overlay (0-100)",
+            "minHeight": "Ketinggian minimum",
+            "alignX": "Penjajaran mendatar",
+            "alignY": "Penjajaran menegak",
+            "backgroundImages": "Imej latar belakang",
+            "headingText": "Teks tajuk",
+            "headingLevel": "Aras",
+            "textContent": "Teks",
+            "videoUrl": "URL YouTube atau Vimeo",
+            "videoDescription": "Penerangan (pilihan)",
+            "videoFooter": "Footer (pilihan)",
+            "imageField": "Imej",
+            "imageUrl": "URL imej (sandaran)",
+            "imageAlt": "Teks alt",
+            "imageFit": "Padanan",
+            "buttonLabel": "Label butang",
+            "buttonSize": "Saiz",
+            "buttonAction": "Tindakan",
+            "buttonAlign": "Penjajaran",
+            "spacerHeight": "Ketinggian",
+            "dividerThickness": "Ketebalan (px)",
+            "columnsCount": "Lajur",
+            "rowsCount": "Baris"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slaid"
+            },
+            "bgSpeed": {
+              "slow": "Perlahan (7s)",
+              "medium": "Sederhana (5s)",
+              "fast": "Laju (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Perlahan",
+              "medium": "Sederhana",
+              "fast": "Laju"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Pendek (40vh)",
+              "medium": "Sederhana (60vh)",
+              "tall": "Tinggi (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Pendek",
+              "medium": "Sederhana",
+              "tall": "Tinggi"
+            },
+            "alignX": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            },
+            "alignY": {
+              "top": "Atas",
+              "center": "Tengah",
+              "bottom": "Bawah"
+            },
+            "headingLevel": {
+              "h1": "Paparan",
+              "h2": "Tajuk Utama",
+              "h3": "Tajuk",
+              "h4": "Subtajuk",
+              "h5": "Kapsyen",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Tutup",
+              "contain": "Muatkan"
+            },
+            "buttonSize": {
+              "sm": "Kecil",
+              "md": "Sederhana",
+              "lg": "Besar"
+            },
+            "buttonAction": {
+              "openContact": "Buka borang hubungan",
+              "goToGallery": "Pergi ke halaman Gallery"
+            },
+            "buttonAlign": {
+              "left": "Kiri",
+              "center": "Tengah",
+              "right": "Kanan"
+            }
           }
         },
         "tour": {

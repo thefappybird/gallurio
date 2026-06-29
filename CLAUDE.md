@@ -16,6 +16,13 @@ Next.js 16 App Router + Turbopack · React 19.2 · Tailwind v4 · Mongoose 8 + M
 - Never mention AI tools in code, commits, PRs, comments, or output.
 - Don't speculate on ambiguous requirements — batch the genuinely-undecidable questions into ONE AskUserQuestion before acting; run the unambiguous parts meanwhile.
 
+### Coding principles (Karpathy)
+Bias to caution over speed; use judgment on trivial tasks.
+- **Think before coding** — state assumptions explicitly; if multiple interpretations exist, surface them, don't pick silently; if a simpler approach exists, say so. Unclear → stop and ask.
+- **Simplicity first** — minimum code that solves the stated problem, nothing speculative: no unrequested features/abstractions/config, no error handling for impossible cases. If 200 lines could be 50, rewrite it.
+- **Surgical changes** — touch only what the request needs; match existing style; don't refactor or reformat working adjacent code. Remove only the orphans YOUR change creates; flag pre-existing dead code, don't delete it.
+- **Goal-driven execution** — turn the task into a verifiable goal and loop until it passes ("add validation" → write tests for invalid inputs, then make them pass). State a brief plan with a per-step verify check for multi-step work.
+
 ## RTK
 Use RTK for verbose shell output when a summary suffices: `rtk read|grep|find|ls`, `rtk git <sub>`, `rtk vitest`, `rtk lint`, `rtk tsc`, `rtk next build`. On Windows call RTK directly (don't rely on auto-rewrite). Fall back to native commands when exact raw output, full diffs/logs, patch compatibility, or piping matter. Full reference: `@C:\Users\alexb\.codex\RTK.md`.
 

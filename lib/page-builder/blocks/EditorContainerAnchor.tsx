@@ -15,6 +15,13 @@ import { CONTAINER_EDITOR_HEIGHT_PX, type ContainerHeight } from "./manualBlocks
  *
  * Only mounted when puck.isEditing === true (guarded in editorConfig ContainerAnchor
  * render). usePuckStore therefore always runs within a live Puck provider context.
+ *
+ * A3 note: This component uses NO ResizeObserver and no DOM-size measurements.
+ * Height is computed purely from Puck store data (props.minHeight + content length).
+ * There is no feedback loop here that could contribute to the Columns oscillation
+ * crash described in items 3/4/6. The root cause of that crash — shared
+ * containerName "pf-cols" causing cross-instance @container rule contamination —
+ * was fixed in ColumnsBlock (A1). This component needs no change.
  */
 export function EditorContainerAnchor({ id }: { id: string }) {
   const parentId = id.replace(/--anchor$/, "");

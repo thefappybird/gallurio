@@ -163,8 +163,9 @@ export function PortfolioHeader({
         ? (RADIUS_MAP[config.activeLinkRadius] ?? "var(--pf-radius)")
         : "var(--pf-radius)";
     }
-    if (config?.activeLinkUnderline) {
-      style.borderBottom = `3px solid ${resolveColor(config.underlineColor, "var(--pf-color-accent)")}`;
+    // Effective default: undefined = ON (underline visible); only false explicitly disables it.
+    if (config?.activeLinkUnderline !== false) {
+      style.borderBottom = `3px solid ${resolveColor(config?.underlineColor, "var(--pf-color-accent)")}`;
     }
     return style;
   }

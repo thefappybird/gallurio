@@ -84,15 +84,15 @@ describe("ThemePanelDialog add-new guard", () => {
     expect(screen.getByRole("textbox", { name: "Theme name" })).toBeInTheDocument();
   });
 
-  it("'Discard' in the add-new guard drops the draft and closes the modal", () => {
+  it("'Discard' in the add-new guard drops the draft and seeds a fresh editable tile", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: /accent/i }));
     fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
     fireEvent.click(screen.getByRole("button", { name: "Add new theme" }));
     fireEvent.click(screen.getByRole("button", { name: "Discard" }));
     expect(screen.queryByText("Save before starting new?")).not.toBeInTheDocument();
-    // current theme tile should be gone (no name input)
-    expect(screen.queryByRole("textbox", { name: "Theme name" })).not.toBeInTheDocument();
+    // a fresh editable tile is now visible — the name input is present for the new theme
+    expect(screen.getByRole("textbox", { name: "Theme name" })).toBeInTheDocument();
   });
 
   it("Save in the add-new guard with a duplicate name keeps the modal open with an error", async () => {
@@ -110,6 +110,23 @@ describe("ThemePanelDialog add-new guard", () => {
     );
     // modal is still open
     expect(screen.getByText("Save before starting new?")).toBeInTheDocument();
+  });
+});
+
+describe("ThemePanelDialog edit-mode close guard", () => {
+  it("guards close when in edit mode with unsaved changes (editGuardOpen wiring)", () => {
+    const savedThemes = [{ id: "t1", name: "Studio", brandKit: DEFAULT_BRAND_KIT }];
+    const props = setup({ savedThemes });
+    // Enter edit mode on the saved theme
+    fireEvent.click(screen.getByRole("button", { name: "Edit theme: Studio" }));
+    // Make a change to create a diff
+    fireEvent.click(screen.getByRole("button", { name: /accent/i }));
+    fireEvent.change(screen.getByLabelText("Accent hex"), { target: { value: "abcabc" } });
+    // Attempt to close the dialog
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    // UnsavedEditDialog should fire via requestExit → editGuardOpen
+    expect(screen.getByText("You have unsaved changes")).toBeInTheDocument();
+    expect(props.onCancel).not.toHaveBeenCalled();
   });
 });
 

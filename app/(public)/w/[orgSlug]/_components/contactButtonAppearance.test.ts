@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildButtonStyle, buildButtonVisualStyle, resolveContactColor, resolveSubmitAppearance, type ButtonAppearance } from "./contactButtonAppearance";
+import { buildButtonStyle, buildButtonVisualStyle, resolveContactColor, resolveSubmitAppearance, resolveAddSessionAppearance, type ButtonAppearance } from "./contactButtonAppearance";
 
 const APP: ButtonAppearance = {
   color: "#123456",
@@ -24,6 +24,18 @@ describe("resolveSubmitAppearance errorColor", () => {
   it("defaults errorColor to CRM destructive hex when errorMessageColor is unset", () => {
     const result = resolveSubmitAppearance({});
     expect(result.errorColor).toBe("#e7000b");
+  });
+});
+
+// C4: add-session button must use dashed border when width is explicitly set
+describe("resolveAddSessionAppearance — dashed border style (C4)", () => {
+  it("border is dashed (not solid) when addSessionButtonBorderWidth is set", () => {
+    const { border } = resolveAddSessionAppearance({
+      addSessionButtonBorderWidth: 2,
+      addSessionButtonBorderColor: "accent",
+    });
+    expect(border).toContain("dashed");
+    expect(border).not.toContain("solid");
   });
 });
 

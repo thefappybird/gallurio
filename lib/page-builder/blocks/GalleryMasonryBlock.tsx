@@ -19,7 +19,7 @@ import {
   type GalleryGap,
 } from "@/lib/page-builder/styleToolkit";
 import type { GalleryImage } from "./GalleryGridBlock";
-import { GALLERY_MIN_HEIGHT, resolveBannerLayers } from "./GalleryGridBlock";
+import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
 import { padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
 import type { ContainerHeight } from "./manualBlocks";
@@ -33,6 +33,8 @@ export type GalleryMasonryProps = {
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  /** CSS length value when minHeight === "custom", e.g. "400px" or "50vh". */
+  minHeightValue?: string;
 };
 
 export const galleryMasonryDefaultProps: GalleryMasonryProps = {
@@ -101,6 +103,7 @@ export function GalleryMasonryBlock({
   bgSpeed,
   overlayOpacity,
   minHeight,
+  minHeightValue,
   puck,
 }: GalleryMasonryProps & { puck?: BlockPuck }) {
   const columns = _style?.galleryColumns ?? 3;
@@ -125,7 +128,7 @@ export function GalleryMasonryBlock({
           position: "relative",
           overflow: "hidden",
           backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
-          minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+          minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
           padding: padVar("4rem 1.5rem"),
           display: "flex",
           alignItems: "center",
@@ -162,7 +165,7 @@ export function GalleryMasonryBlock({
         position: "relative",
         overflow: "hidden",
         backgroundColor: hasBg ? "var(--pf-color-fg)" : "var(--pf-color-bg)",
-        minHeight: GALLERY_MIN_HEIGHT[minHeight ?? "auto"],
+        minHeight: resolveGalleryMinHeight(minHeight, minHeightValue),
         padding: padVar("4rem 1.5rem"),
         fontFamily: "var(--pf-font-body)",
         ...sectionStyle,
@@ -192,7 +195,18 @@ export function GalleryMasonryBlock({
                   alt={img.alt ?? ""}
                   loading="lazy"
                   decoding="async"
-                  style={{ width: "100%", height: "auto", display: "block" }}
+                  width={img.width}
+                  height={img.height}
+                  style={{
+                    width: "100%",
+                    display: "block",
+                    // When both dimensions are known, reserve vertical space via aspect-ratio
+                    // so the browser doesn't shift content as the image loads (CLS fix).
+                    // When absent (legacy images), fall back to height:auto as before.
+                    ...(img.width != null && img.height != null
+                      ? { aspectRatio: `${img.width} / ${img.height}` }
+                      : { height: "auto" }),
+                  }}
                 />
               </figure>
             );

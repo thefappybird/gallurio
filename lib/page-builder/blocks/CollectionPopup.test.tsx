@@ -431,6 +431,16 @@ describe("CollectionPopup", () => {
   // popupConfig: radius, backgroundColor, borderColor
   // ---------------------------------------------------------------------------
 
+  it("uses var(--pf-color-bg) as shell background when backgroundColor is unset", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps()} />);
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]") as HTMLElement;
+    expect(popup).not.toBeNull();
+    expect(popup.style.backgroundColor).toContain("pf-color-bg");
+  });
+
   it("applies borderRadius from popupConfig radius (rounded)", async () => {
     vi.stubGlobal("fetch", makeFetch(null));
     render(

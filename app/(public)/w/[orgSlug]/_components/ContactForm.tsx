@@ -18,6 +18,7 @@ import {
   CRM_ERROR_COLOR,
   type ButtonAppearance,
 } from "./contactButtonAppearance";
+import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
@@ -133,7 +134,11 @@ const TAB_RADIUS_MAP: Record<string, string> = {
 function resolveTabColor(token: string | undefined, fallback: string): string {
   if (!token) return fallback;
   if (token.startsWith("#")) return token;
-  return `var(--pf-color-${token}, ${fallback})`;
+  // Route through the canonical helper so "background" → "--pf-color-bg", not "--pf-color-background".
+  const cssVar = colorTokenToVar(token);
+  if (!cssVar || !cssVar.startsWith("var(")) return fallback;
+  // Insert fallback before closing paren: "var(--pf-color-bg)" → "var(--pf-color-bg, fallback)"
+  return `${cssVar.slice(0, -1)}, ${fallback})`;
 }
 
 function buildTabColorWithOpacity(color: string, opacity: number): string {
@@ -159,8 +164,9 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
       ? (TAB_RADIUS_MAP[config.activeTabRadius] ?? "var(--pf-radius)")
       : "var(--pf-radius)";
   }
-  if (config?.activeTabUnderline) {
-    style.borderBottom = `3px solid ${resolveTabColor(config.tabUnderlineColor, "var(--pf-color-accent)")}`;
+  // Effective default ON: underline shows unless explicitly disabled (=== false).
+  if (config?.activeTabUnderline !== false) {
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
   }
   return style;
 }
@@ -340,11 +346,21 @@ export function ContactForm({
             const tabFontSize = contactConfig?.tabFontSize
               ? (TAB_FONT_SIZE_MAP[contactConfig.tabFontSize] ?? "0.9375rem")
               : "0.9375rem";
-            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "");
+            // Effective default: foreground color (not empty string — prevents bare inherit in canvas context).
+            const inactiveColor = resolveTabColor(contactConfig?.tabColor, "var(--pf-color-fg)");
             const activeExtraStyle = getActiveTabExtraStyle(contactConfig);
+            // inactiveTabSubtle: effective default ON (undefined = true) → dim at 0.55
+            const isSubtle = contactConfig?.inactiveTabSubtle !== false;
+            // inactiveTabCompact: effective default OFF (undefined = false) → smaller font
+            const isCompact = contactConfig?.inactiveTabCompact === true;
+            const compactFontSize = isCompact ? "0.75rem" : tabFontSize;
             const tabStyle: CSSProperties = isActive
-              ? { fontSize: tabFontSize, ...activeExtraStyle }
-              : { fontSize: tabFontSize, ...(inactiveColor ? { color: inactiveColor } : {}) };
+              ? { fontSize: tabFontSize, opacity: 1, ...activeExtraStyle }
+              : {
+                  fontSize: compactFontSize,
+                  ...(inactiveColor ? { color: inactiveColor } : {}),
+                  ...(isSubtle ? { opacity: 0.55 } : {}),
+                };
             return (
               <TabsTab key={tabValue} value={tabValue} style={tabStyle}>
                 {label}

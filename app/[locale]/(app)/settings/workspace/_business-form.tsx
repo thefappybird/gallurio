@@ -96,31 +96,34 @@ export function WorkspaceBusinessForm({
         <p className="text-sm text-muted-foreground">{t("businessSectionHint")}</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="name">{tOnb("businessName")}</Label>
-          <Input id="name" {...register("name")} />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+        <div className="flex flex-col sm:flex-row gap-1.5 w-full">
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="name">{tOnb("businessName")}</Label>
+            <Input id="name" {...register("name")} />
+            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5 w-full">
+            <Label htmlFor="slug">
+              {tOnb("workspaceUrl")}{" "}
+              <span className="font-normal text-muted-foreground">{tOnb("workspaceUrlNote")}</span>
+            </Label>
+            <div className="flex items-stretch">
+              <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                gallurio.com/w/
+              </span>
+              <Input
+                id="slug"
+                aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
+                {...register("slug")}
+              />
+            </div>
+            <SlugStatusIndicator status={slugStatus} t={tOnb} />
+            {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
+          </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="slug">
-            {tOnb("workspaceUrl")}{" "}
-            <span className="font-normal text-muted-foreground">{tOnb("workspaceUrlNote")}</span>
-          </Label>
-          <div className="flex items-stretch">
-            <span className="flex items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-              gallurio.com/w/
-            </span>
-            <Input
-              id="slug"
-              aria-invalid={slugStatus === "taken" || slugStatus === "invalid" || !!errors.slug}
-              {...register("slug")}
-            />
-          </div>
-          <SlugStatusIndicator status={slugStatus} t={tOnb} />
-          {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
-        </div>
+
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">

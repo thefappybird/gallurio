@@ -281,3 +281,57 @@ describe("publicPageSettingsSchema", () => {
     }
   });
 });
+
+describe("publicPageSettingsSchema — seo sub-object", () => {
+  it("accepts an empty object (seo omitted) — seo is undefined, parse still succeeds", () => {
+    const result = publicPageSettingsSchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const seo = (result.data as { seo?: { noindex?: boolean } }).seo;
+      expect(seo).toBeUndefined();
+    }
+  });
+
+  it("when seo is provided as an empty object, noindex defaults to false", () => {
+    const result = publicPageSettingsSchema.safeParse({ seo: {} });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      const seo = (result.data as { seo?: { noindex?: boolean } }).seo;
+      expect(seo?.noindex).toBe(false);
+    }
+  });
+
+  it("rejects seo.galleryDescription over 160 characters", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { galleryDescription: "a".repeat(161) },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a non-URL non-empty seo.ogImageUrl", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { ogImageUrl: "not-a-url" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid https URL for seo.ogImageUrl", () => {
+    const result = publicPageSettingsSchema.safeParse({
+      seo: { ogImageUrl: "https://imagedelivery.net/abc/def/public" },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { seo: { ogImageUrl: string } }).seo.ogImageUrl).toBe(
+        "https://imagedelivery.net/abc/def/public"
+      );
+    }
+  });
+
+  it("accepts seo.noindex true and preserves it through parse", () => {
+    const result = publicPageSettingsSchema.safeParse({ seo: { noindex: true } });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as { seo: { noindex: boolean } }).seo.noindex).toBe(true);
+    }
+  });
+});

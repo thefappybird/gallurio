@@ -1,3 +1,8 @@
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+
+export const metadata: Metadata = { robots: { index: false } };
+
 /**
  * Shown when:
  * - The workspace slug does not exist, or
@@ -5,7 +10,6 @@
  *
  * No app chrome — this page is outside the authenticated shell.
  */
-import { getTranslations } from "next-intl/server";
 
 // Locale is hardcoded to "en" because this page has no workspace context — there
 // is no workspace doc to call localeForCountry() on when a slug is not found.

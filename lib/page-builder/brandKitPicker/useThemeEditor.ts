@@ -193,9 +193,12 @@ export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUp
 
   // ── Add-new guard ─────────────────────────────────────────────────────────
 
-  /** Starts a completely blank new theme (no guard). Clears all draft/edit state. */
-  const startNewTheme = useCallback(() => {
-    setCurrentTheme(null);
+  /**
+   * Starts a new editable "current" tile seeded from `seed`. Clears all draft/edit
+   * state and sets selection to "current" so the editable tile renders immediately.
+   */
+  const startNewTheme = useCallback((seed: PortfolioBrandKit) => {
+    setCurrentTheme(seed);
     setCurrentThemeNameState("");
     setCurrentThemeNameError(null);
     setEditing(null);
@@ -204,7 +207,7 @@ export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUp
     setAddNewGuardOpen(false);
     setAddNewGuardNameState("");
     setAddNewGuardNameError(null);
-    // Canvas stays as-is; user starts editing from the current canvas state
+    setSelection({ kind: "current" });
   }, []);
 
   /**
@@ -224,8 +227,8 @@ export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUp
       setAddNewGuardOpen(true);
       return;
     }
-    startNewTheme();
-  }, [currentTheme, editing, currentThemeName, startNewTheme]);
+    startNewTheme(value);
+  }, [currentTheme, editing, currentThemeName, startNewTheme, value]);
 
   const setAddNewGuardName = useCallback((name: string) => {
     setAddNewGuardNameState(name);
@@ -261,20 +264,20 @@ export function useThemeEditor({ value, onChange, savedThemes, onSaveTheme, onUp
           return;
         }
       }
-      startNewTheme();
+      startNewTheme(value);
     } finally {
       setAddNewGuardSaving(false);
     }
-  }, [editing, addNewGuardName, savedThemes, onUpdateTheme, onSaveTheme, currentTheme, startNewTheme]);
+  }, [editing, addNewGuardName, savedThemes, onUpdateTheme, onSaveTheme, currentTheme, startNewTheme, value]);
 
   /**
    * "Discard" in the add-new guard:
    * drop/revert the current draft or edit, then start new theme.
    */
   const discardAndAddNew = useCallback(() => {
-    if (editing) onChange(editing.baseWorkingKit);
-    else onChange(lastTileKit.current);
-    startNewTheme();
+    const revertKit = editing ? editing.baseWorkingKit : lastTileKit.current;
+    onChange(revertKit);
+    startNewTheme(revertKit);
   }, [editing, onChange, startNewTheme]);
 
   /**

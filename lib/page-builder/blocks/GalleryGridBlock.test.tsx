@@ -108,4 +108,20 @@ describe("GalleryGridBlock — banner/container props", () => {
     const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
     expect(section.style.minHeight).toBe("");
   });
+
+  it("minHeight=custom + minHeightValue renders min-height equal to the provided value", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), minHeight: "custom", minHeightValue: "400px" })
+    );
+    const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
+    expect(section.style.minHeight).toBe("400px");
+  });
+
+  it("minHeight=custom without minHeightValue renders no min-height constraint", () => {
+    const { container } = render(
+      GalleryGridBlock({ ...base, images: imgs(1), minHeight: "custom" })
+    );
+    const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
+    expect(section.style.minHeight).toBe("");
+  });
 });

@@ -37,7 +37,8 @@ export function CollectionPopupChrome({
   const title = config.titleText?.trim() ? config.titleText : collectionName;
 
   const closeSize = config.closeButtonSize ?? 36;
-  const closeRadius = config.closeButtonRadius ? radiusToCss(config.closeButtonRadius) : "50%";
+  // unset/cleared → rounded (16px); explicit value wins via RADIUS_PX lookup
+  const closeRadius = radiusToCss(config.closeButtonRadius || "rounded") ?? "16px";
   const closeBorderW = config.closeButtonBorderWidth ?? 1;
   const closeBorderColor = config.closeButtonBorderColorToken
     ? colorTokenToVar(config.closeButtonBorderColorToken)
@@ -47,7 +48,7 @@ export function CollectionPopupChrome({
     : "var(--pf-color-surface, #fff)";
 
   const commonShell: React.CSSProperties = {
-    backgroundColor: bg ?? "var(--pf-color-surface, #fff)",
+    backgroundColor: bg ?? "var(--pf-color-bg)",
     borderWidth: borderWidth > 0 ? `${borderWidth}px` : "1px",
     borderStyle: "solid",
     borderColor:
@@ -112,7 +113,7 @@ export function CollectionPopupChrome({
           position: "sticky",
           top: 0,
           zIndex: 5,
-          backgroundColor: bg ?? "var(--pf-color-surface, #fff)",
+          backgroundColor: bg ?? "var(--pf-color-bg)",
           padding: "16px 56px 12px 16px",
           borderBottom: "1px solid var(--pf-color-border, rgba(0,0,0,0.1))",
         }}

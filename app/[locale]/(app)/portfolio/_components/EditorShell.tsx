@@ -9,10 +9,11 @@ import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
+import { CanvasViewportControls } from "./CanvasViewportControls";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
-import { editorPuckConfig } from "@/lib/page-builder/editorConfig";
+import { createEditorConfig } from "@/lib/page-builder/editorConfig";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolveEffectiveFonts } from "@/lib/page-builder/fonts";
 import { BrandColorsContext } from "@/lib/page-builder/brandColors";
@@ -29,6 +30,7 @@ import { DEFAULT_DRAFT_NAME } from "@/lib/page-builder/drafts";
 import { fillBlockDefaults, type PuckDataLike } from "@/lib/page-builder/fillBlockDefaults";
 import {
   dismissPortfolioGuideAction,
+  updatePortfolioSlugAction,
 } from "../_actions";
 import {
   createDraftAction,
@@ -65,13 +67,14 @@ import {
 import { RootCanvasStyle } from "@/lib/page-builder/RootCanvasStyle";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { DraftNameEditor } from "./DraftNameEditor";
+import { DraftNameEditor, type DraftNameEditorHandle } from "./DraftNameEditor";
 import { DraftsDialog } from "./DraftsDialog";
 import { PortfolioEntryDialog } from "./PortfolioEntryDialog";
 import { UnsavedChangesDialog } from "./UnsavedChangesDialog";
 import { resolveDiscardTarget } from "./draftDiscard";
 import { SuppressedActionBar } from "./SuppressedActionBar";
 import { BlockActionsToolbar } from "./BlockActionsToolbar";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 
 // Puck-editable zones (each round-trips its own Puck data). "contact" is a tab
 // too, but it's the fixed prebuilt form — previewed, never Puck-edited.
@@ -273,6 +276,8 @@ function EditCanvasControls() {
       >
         <PanelRight className="size-4" aria-hidden />
       </Button>
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <CanvasViewportControls />
     </div>
   );
 }
@@ -361,7 +366,6 @@ export function EditorShell({
   initialFormLocale,
   initialHeaderConfig,
   initialCollectionsPopup,
-  publicOrigin,
   previewBasePath,
   templates,
   currentTemplateId,
@@ -379,6 +383,7 @@ export function EditorShell({
   const tPublicForm = useTranslations("publicPage.inquiryForm");
   const tLocationPicker = useTranslations("app.bookings.locationPicker");
   const errMsg = useActionError();
+  const editorConfig = useMemo(() => createEditorConfig(t), [t]);
 
   const [activeZone, setActiveZone] = useState<Zone>("home");
   const [previewMode, setPreviewMode] = useState(false);
@@ -391,10 +396,12 @@ export function EditorShell({
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
-  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>({
-    home: initialData.home ?? EMPTY_ZONE,
-    gallery: initialData.gallery ?? EMPTY_ZONE,
-  });
+  const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>(() => ({
+    home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
+    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
+  }));
+  // currentSlug tracks the live slug after in-dialog edits (optimistic update).
+  const [currentSlug, setCurrentSlug] = useState(slug);
   const [publishOpen, setPublishOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -405,6 +412,9 @@ export function EditorShell({
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templateId, setTemplateId] = useState(currentTemplateId);
+  // JSON snapshot of the zone data at the time the last template was applied.
+  // Compared against renderDraftData to detect canvas divergence for the "Current" badge.
+  const [templateSeedSnapshot, setTemplateSeedSnapshot] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
   // The guide auto-opens on first run (until the owner persisted a dismissal),
@@ -510,13 +520,15 @@ export function EditorShell({
   // Source of truth for each zone's latest data, updated by Puck's onChange.
   // A ref (not state) so editing doesn't re-feed Puck mid-session.
   const zoneDataRef = useRef<Record<Zone, PuckData>>({
-    home: initialData.home ?? EMPTY_ZONE,
-    gallery: initialData.gallery ?? EMPTY_ZONE,
+    home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
+    gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
   });
   // Puck emits onChange once on mount (and again on the zone-switch remount).
   // Skip that first emission so merely loading a zone doesn't autosave/bump the
   // version — only genuine edits should.
   const ignoreNextChange = useRef(true);
+  // Ref to the DraftNameEditor so handleSaveChanges can flush an in-progress rename.
+  const nameEditorRef = useRef<DraftNameEditorHandle>(null);
   // Snapshots taken when a side panel opens, so closing it without saving reverts
   // the live preview to the last-saved value (no "looks saved but isn't" trap).
   const themeSnapshot = useRef<PortfolioBrandKit | null>(null);
@@ -554,6 +566,12 @@ export function EditorShell({
       formLocale,
     };
   }
+
+  // True when the canvas exactly matches the seed that was applied via applyTemplate.
+  // Drives the "Current" badge in TemplatePickerDialog (B2).
+  const isCanvasMatchingSeed =
+    templateSeedSnapshot !== null &&
+    JSON.stringify(renderDraftData) === templateSeedSnapshot;
 
   // Derived: isDirty is computed from savedSnapshot state + current render state so it
   // stays in sync without any effects. renderDraftData drives re-renders on Puck edits.
@@ -606,13 +624,12 @@ export function EditorShell({
       const draft = JSON.parse(raw) as Partial<PortfolioBrowserDraft>;
       if (draft.version !== LOCAL_DRAFT_VERSION || !draft.data) return;
       queueMicrotask(() => {
-        const home = draft.data?.home ?? zoneDataRef.current.home;
-        const gallery = draft.data?.gallery ?? zoneDataRef.current.gallery;
+        // prepareForEditor both zones so zoneDataRef, renderDraftData, and the
+        // Puck seed are all in the same shape — mismatched shapes cause isDirty=true.
+        const home = prepareForEditor(draft.data?.home ?? zoneDataRef.current.home) as unknown as PuckData;
+        const gallery = prepareForEditor(draft.data?.gallery ?? zoneDataRef.current.gallery) as unknown as PuckData;
         zoneDataRef.current = { home, gallery };
-        setRenderDraftData({
-          home: prepareForEditor(home) as unknown as PuckData,
-          gallery: prepareForEditor(gallery) as unknown as PuckData,
-        });
+        setRenderDraftData({ home, gallery });
         if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
@@ -621,7 +638,7 @@ export function EditorShell({
         if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
         if (draft.draftName) setDraftName(draft.draftName);
         ignoreNextChange.current = true;
-        setPuckSeed(prepareForEditor(zoneDataRef.current.home));
+        setPuckSeed(home as unknown as Data);
         setSeedNonce((n) => n + 1);
       });
     } catch {
@@ -680,15 +697,18 @@ export function EditorShell({
   // ---- Save changes ----
   async function handleSaveChanges(): Promise<boolean> {
     if (guideMode) return false;
+    // Flush any in-progress rename so the name used for validation/save is current.
+    const flushed = nameEditorRef.current?.commit();
+    const nameToSave = flushed ?? draftName;
     const shouldToastValidationError = templatesOpen;
-    const validationError = validateDraftName(draftName);
+    const validationError = validateDraftName(nameToSave);
     if (validationError) {
       setNameError(validationError);
       if (shouldToastValidationError) toast.error(validationError);
       return false;
     }
     setSavingChanges(true);
-    const payload = { name: draftName, ...buildDraftSnapshot() };
+    const payload = { name: nameToSave, ...buildDraftSnapshot() };
     try {
       let res: Awaited<ReturnType<typeof createDraftAction | typeof updateDraftAction>>;
       if (activeDraftId) {
@@ -735,10 +755,10 @@ export function EditorShell({
         const without = prev.filter((d) => d.id !== saved.id);
         return [saved, ...without];
       });
-      const snapshotStr = JSON.stringify({ name: draftName, ...buildDraftSnapshot() });
+      const snapshotStr = JSON.stringify(payload);
       setSavedSnapshot(snapshotStr);
       persistLocalDraft();
-      toast.success("Draft saved.");
+      toast.success(t("savedToast"));
       return true;
     } finally {
       setSavingChanges(false);
@@ -765,8 +785,11 @@ export function EditorShell({
       return;
     }
     const d = res.draft;
-    const homeData = (d.data.home as PuckData) ?? EMPTY_ZONE;
-    const galleryData = (d.data.gallery as PuckData) ?? EMPTY_ZONE;
+    // prepareForEditor must be applied here so zoneDataRef, renderDraftData, and
+    // savedSnapshot all carry the same shape — without it the gallery zone stays
+    // raw while the snapshot holds the prepared version → isDirty=true on load.
+    const homeData = prepareForEditor((d.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    const galleryData = prepareForEditor((d.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
     // Resolve each field to the value that will be committed to state, so the
     // saved snapshot always matches post-apply render state.
     const resolvedBrandKit = (d.brandKit as PortfolioBrandKit) ?? DEFAULT_BRAND_KIT;
@@ -787,7 +810,8 @@ export function EditorShell({
     setDraftName(d.name);
     setNameError(null);
     ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(homeData));
+    // homeData is already prepareForEditor'd — pass directly to Puck.
+    setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setActiveZone("home");
     setSavedSnapshot(JSON.stringify({
@@ -1060,23 +1084,40 @@ export function EditorShell({
       return;
     }
     const { seed } = res;
-    zoneDataRef.current = {
-      home: seed.data.home as PuckData,
-      gallery: seed.data.gallery as PuckData,
-    };
+    // Prepare both zones so zoneDataRef, renderDraftData, and templateSeedSnapshot
+    // are all in the same shape — consistent with the applyDraft path (B3).
+    const homeData = prepareForEditor((seed.data.home as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    const galleryData = prepareForEditor((seed.data.gallery as PuckData) ?? EMPTY_ZONE) as unknown as PuckData;
+    zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
     setBrandKit(seed.brandKit as PortfolioBrandKit);
     setContact(seed.contact as PortfolioContactConfig);
-    setHeaderConfig(DEFAULT_HEADER_CONFIG);
-    setCollectionsPopup({});
+    setHeaderConfig((seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG);
+    setCollectionsPopup((seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {});
     setTemplateId(seed.templateId);
+    // Snapshot the seed data so the template picker can show the "Current" badge
+    // only while the canvas matches this exact seed (B2).
+    setTemplateSeedSnapshot(JSON.stringify(zoneDataRef.current));
     setActiveDraftId(null);
     setIsNewUnsavedDraft(true);
     setDraftName(DEFAULT_DRAFT_NAME);
     setNameError(null);
-    setSavedSnapshot(null);
+    // Re-baseline savedSnapshot to the just-applied state so isDirty is false
+    // immediately after applyTemplate. Mirrors applyDraft's pattern exactly —
+    // field order must match the isDirty serialisation (~line 574).
+    setSavedSnapshot(JSON.stringify({
+      name: DEFAULT_DRAFT_NAME,
+      templateId: seed.templateId,
+      data: zoneDataRef.current,
+      brandKit: seed.brandKit as PortfolioBrandKit,
+      contact: seed.contact as PortfolioContactConfig,
+      header: (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG,
+      collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
+      formLocale,
+    }));
     ignoreNextChange.current = true;
-    setPuckSeed(prepareForEditor(zoneDataRef.current[activeZone]));
+    // Already prepared — pass directly to Puck without double-prepareForEditor.
+    setPuckSeed(homeData as unknown as Data);
     setSeedNonce((n) => n + 1);
     setSwitching(false);
     setTemplatesOpen(false);
@@ -1403,6 +1444,7 @@ export function EditorShell({
           className="order-first basis-full lg:order-7 lg:basis-auto"
         >
           <DraftNameEditor
+            ref={nameEditorRef}
             name={draftName}
             error={pendingAction !== null ? null : nameError}
             onCommit={(n) => { setDraftName(n); setNameError(null); }}
@@ -1438,7 +1480,7 @@ export function EditorShell({
 
   return (
     <GalleryPickerCacheProvider>
-      <MobileBanner publicUrl={`${publicOrigin}/w/${slug}`} />
+      <MobileBanner publicUrl={portfolioPublicUrl(currentSlug)} />
 
       <BrandColorsContext.Provider value={brandColors}>
       <div
@@ -1472,7 +1514,7 @@ export function EditorShell({
             key={`${activeZone}-${seedNonce}`}
             // Cast to the base Config so Puck's deep generic inference doesn't blow
             // tsc's stack; editorPuckConfig is typed at the component level already.
-            config={editorPuckConfig as unknown as Config}
+            config={editorConfig as unknown as Config}
             data={puckSeed}
             onChange={handleChange}
             onPublish={() => void handlePublish()}
@@ -1631,7 +1673,10 @@ export function EditorShell({
         open={publishOpen}
         onOpenChange={setPublishOpen}
         onConfirm={doPublish}
-        publicUrl={`${publicOrigin}/w/${slug}`}
+        publicUrl={portfolioPublicUrl(currentSlug)}
+        currentSlug={currentSlug}
+        onSlugSaved={setCurrentSlug}
+        onUpdateSlug={updatePortfolioSlugAction}
       />
       <ThemePanelDialog
         open={themeOpen}
@@ -1651,6 +1696,7 @@ export function EditorShell({
         }}
         templates={templates}
         currentTemplateId={templateId}
+        isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
         onConfirm={(id) => guardThenRun(() => void applyTemplate(id), true)}
@@ -1661,6 +1707,7 @@ export function EditorShell({
         onOpenChange={() => {/* non-dismissible in welcome mode */}}
         templates={templates}
         currentTemplateId={templateId}
+        isCanvasMatchingSeed={isCanvasMatchingSeed}
         switching={switching}
         error={switchError}
         onConfirm={(id) => { void applyTemplate(id); setWelcomeTemplatesOpen(false); }}

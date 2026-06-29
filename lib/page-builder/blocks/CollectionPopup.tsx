@@ -52,8 +52,8 @@ const TOKEN_TO_CSS_VAR: Record<string, string> = {
   primary: "var(--pf-color-primary)",
   secondary: "var(--pf-color-secondary)",
   accent: "var(--pf-color-accent)",
-  background: "var(--pf-color-background)",
-  foreground: "var(--pf-color-foreground)",
+  background: "var(--pf-color-bg)",
+  foreground: "var(--pf-color-fg)",
 };
 
 function resolveColorValue(token: string | undefined): string | undefined {
@@ -357,7 +357,7 @@ export function CollectionPopup({
     minWidth: "90vw",
     maxWidth: "900px",
     width: "90vw",
-    backgroundColor: bg ?? "var(--pf-color-surface, #fff)",
+    backgroundColor: bg ?? "var(--pf-color-bg)",
     borderWidth: borderWidth > 0 ? `${borderWidth}px` : "1px",
     borderStyle: "solid",
     borderColor:

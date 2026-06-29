@@ -180,12 +180,12 @@ export function CollectionsPopupPanelDialog({
         <EditorDrawerGroup plain>
           {/* ── Popup ────────────────────────────── */}
           <EditorDrawerSection title={t("collectionsDialog.popup")}>
-            {/* backgroundColor: fallback = var(--pf-color-surface, #fff)
-                surface is not a brand palette token — effectiveValue left unset */}
+            {/* backgroundColor: unset → var(--pf-color-bg); effective = "background" token */}
             <LabeledSwatchRow
               label={t("collectionsDialog.background")}
               value={config.backgroundColor}
               onChange={(c) => set("backgroundColor", c)}
+              effectiveValue="background"
             />
 
             <BorderRow
@@ -302,7 +302,7 @@ export function CollectionsPopupPanelDialog({
               </select>
             </div>
 
-            {/* titleFontSize: fallback = 1.125rem (18px) — no standard token; effectiveValue unset */}
+            {/* titleFontSize: effective default = 16 (browser default; no brand font-size token) */}
             <NumberInputRow
               label={t("collectionsDialog.fontSize")}
               value={config.titleFontSize}
@@ -310,6 +310,7 @@ export function CollectionsPopupPanelDialog({
               max={120}
               suffix="px"
               onChange={(v) => set("titleFontSize", v)}
+              effectiveValue={16}
             />
 
             {/* titleColorToken: fallback = var(--pf-color-foreground, #111) → "foreground" */}
@@ -334,11 +335,12 @@ export function CollectionsPopupPanelDialog({
               effectiveValue={36}
             />
 
-            {/* closeButtonRadius: fallback = "50%" when unset — not a BrandKitRadius; effectiveValue unset */}
+            {/* closeButtonRadius: unset/cleared → rounded (16px); effectiveValue = "rounded" */}
             <RadiusRow
               label={t("collectionsDialog.corners")}
               active={config.closeButtonRadius}
               onToggle={(r) => set("closeButtonRadius", r)}
+              effectiveValue="rounded"
             />
 
             <BorderRow

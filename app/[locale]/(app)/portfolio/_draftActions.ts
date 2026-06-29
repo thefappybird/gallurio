@@ -218,6 +218,8 @@ export type SeedTemplateResult =
         data: { home: PuckData; gallery: PuckData };
         brandKit: unknown;
         contact: unknown;
+        header: unknown;
+        collectionsPopup: unknown;
       };
     }
   | { error: string };
@@ -250,6 +252,8 @@ export async function seedTemplateAction(templateId: unknown): Promise<SeedTempl
       },
       brandKit: template.defaultBrandKit,
       contact: template.defaultContact,
+      header: template.defaultHeader,
+      collectionsPopup: template.defaultCollectionsPopup,
     },
   };
 }

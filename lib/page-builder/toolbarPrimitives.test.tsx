@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorSwatchRow, DimensionInput, FloatingLabelInput } from "./toolbarPrimitives";
+import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow } from "./toolbarPrimitives";
+import { AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, Maximize2 } from "lucide-react";
 
 // Mock brandColors so tests don't need the full provider
 vi.mock("./brandColors", () => ({
@@ -12,6 +13,51 @@ vi.mock("./brandColors", () => ({
     foreground: "#111111",
   }),
 }));
+
+const STUB_OPTIONS = [
+  { value: "start" as const, label: "Start", Icon: AlignHorizontalJustifyStart },
+];
+
+const ALIGN_OPTIONS = [
+  { value: "start" as const,   label: "Left",           Icon: AlignHorizontalJustifyStart },
+  { value: "center" as const,  label: "Center",         Icon: AlignHorizontalJustifyCenter },
+  { value: "end" as const,     label: "Right",          Icon: AlignHorizontalJustifyEnd },
+  { value: "stretch" as const, label: "Stretch to fill", Icon: Maximize2 },
+];
+
+describe("IconRow — onReset prop (A6)", () => {
+  it("shows a Reset button when onReset is provided and value is set (A6)", () => {
+    render(
+      <IconRow
+        label="Align"
+        value="start"
+        options={STUB_OPTIONS}
+        onChange={vi.fn()}
+        onReset={vi.fn()}
+      />
+    );
+    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+  });
+
+  it("renders all options in the DOM when given a 4-item ALIGN_OPTIONS list (overflow fix: no option clipped)", () => {
+    render(
+      <IconRow
+        label="Align"
+        value={undefined}
+        options={ALIGN_OPTIONS}
+        onChange={vi.fn()}
+        onReset={vi.fn()}
+      />
+    );
+    // All 4 icon buttons and the reset must be in the DOM — previously they could
+    // overflow the narrow properties panel and be unreachable without flex-wrap.
+    expect(screen.getByRole("button", { name: "Left" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Center" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Right" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stretch to fill" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reset Align" })).toBeInTheDocument();
+  });
+});
 
 describe("ColorSwatchRow — extraSwatches", () => {
   it("renders an extra swatch after the token swatches", () => {

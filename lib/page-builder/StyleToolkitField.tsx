@@ -162,6 +162,7 @@ const MIN_HEIGHT_OPTIONS = [
   { value: "short",  label: "Short" },
   { value: "medium", label: "Medium" },
   { value: "tall",   label: "Tall" },
+  { value: "custom", label: "Custom" },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -1466,7 +1467,7 @@ export function LayoutTabBody({
             {p !== undefined && setProp !== undefined && (
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
                     const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
                     // Effective default: when minHeight is unset, "auto" is the fallback.
@@ -1489,6 +1490,13 @@ export function LayoutTabBody({
                     );
                   })}
                 </div>
+                {(p.minHeight as string | undefined) === "custom" && (
+                  <DimensionInput
+                    label="Custom value"
+                    value={p.minHeightValue as string | undefined}
+                    onChange={(v) => setProp("minHeightValue", v)}
+                  />
+                )}
               </div>
             )}
             {isGridChild ? (
@@ -1500,6 +1508,7 @@ export function LayoutTabBody({
                   options={ALIGN_OPTIONS}
                   effectiveValue="stretch"
                   onChange={(v) => set({ alignItems: v })}
+                  onReset={() => set({ alignItems: undefined })}
                 />
               </>
             ) : (
@@ -1509,6 +1518,7 @@ export function LayoutTabBody({
                 options={ALIGN_OPTIONS}
                 effectiveValue="stretch"
                 onChange={(v) => set({ alignItems: v })}
+                onReset={() => set({ alignItems: undefined })}
               />
             )}
           </EditorDrawerSection>
@@ -1592,11 +1602,37 @@ export function LayoutTabBody({
           effectiveValue={16}
           onChange={(v) => set({ gap: v })}
         />
+        {/* Overall Width — Columns only: Page fit (default) or Full (100vw full-bleed). */}
+        {isColumns && p !== undefined && setProp && (
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Overall width</span>
+            <div className="flex items-center gap-1.5">
+              {(["page-fit", "full"] as const).map((v) => {
+                const label = v === "page-fit" ? "Page fit" : "Full";
+                const isActive = (p.overallWidth as string | undefined) === v || (p.overallWidth === undefined && v === "page-fit");
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setProp("overallWidth", v)}
+                    className={cn(
+                      "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background px-2 text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      isActive && "bg-foreground text-background hover:bg-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Min height — only for flex containers, controlled via block prop */}
         {isFlexContainer && p !== undefined && setProp && (
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Min height</span>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               {MIN_HEIGHT_OPTIONS.map(({ value, label }) => {
                 const isExplicit = p.minHeight !== undefined && (p.minHeight as string) === value;
                 // Effective default: when minHeight is unset, "auto" is the fallback.
@@ -1619,7 +1655,22 @@ export function LayoutTabBody({
                 );
               })}
             </div>
+            {(p.minHeight as string | undefined) === "custom" && (
+              <DimensionInput
+                label="Custom value"
+                value={p.minHeightValue as string | undefined}
+                onChange={(v) => setProp("minHeightValue", v)}
+              />
+            )}
           </div>
+        )}
+        {/* Min height — for Columns (CSS length string, no enum) */}
+        {isColumns && p !== undefined && setProp && (
+          <DimensionInput
+            label="Min height"
+            value={p.minHeight as string | undefined}
+            onChange={(v) => setProp("minHeight", v)}
+          />
         )}
         {isGridChild ? (
           <>
@@ -1630,6 +1681,7 @@ export function LayoutTabBody({
               options={ALIGN_OPTIONS}
               effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
+              onReset={() => set({ alignItems: undefined })}
             />
             <IconRow
               label="Justify"
@@ -1637,6 +1689,7 @@ export function LayoutTabBody({
               options={JUSTIFY_OPTIONS}
               effectiveValue="start"
               onChange={(v) => set({ justifyContent: v })}
+              onReset={() => set({ justifyContent: undefined })}
             />
           </>
         ) : (
@@ -1647,6 +1700,7 @@ export function LayoutTabBody({
               options={ALIGN_OPTIONS}
               effectiveValue="stretch"
               onChange={(v) => set({ alignItems: v })}
+              onReset={() => set({ alignItems: undefined })}
             />
             {showJustify && (
               <IconRow
@@ -1655,6 +1709,7 @@ export function LayoutTabBody({
                 options={JUSTIFY_OPTIONS}
                 effectiveValue="start"
                 onChange={(v) => set({ justifyContent: v })}
+                onReset={() => set({ justifyContent: undefined })}
               />
             )}
           </>

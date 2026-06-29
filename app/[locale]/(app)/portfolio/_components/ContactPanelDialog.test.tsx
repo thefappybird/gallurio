@@ -66,4 +66,69 @@ describe("ContactPanelDialog", () => {
     expect(screen.queryByRole("button", { name: "Done" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
   });
+
+  // C4: add-session border row shows effective default width = 1 (dashed default border exists)
+  it("add-session border width input shows effective default of 1 (a dashed default exists)", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    fireEvent.click(screen.getByRole("button", { name: "New dates button" }));
+
+    // The spinbutton in the border-width row for add-session should have placeholder="1"
+    // (effective default: 1px dashed border always rendered when width is unset)
+    const spinbuttons = screen.getAllByRole("spinbutton");
+    // The last spinbutton in this section is the border width
+    const borderWidth = spinbuttons[spinbuttons.length - 1];
+    expect(borderWidth).toHaveAttribute("placeholder", "1");
+  });
+
+  // Item 4a: inactive tab color shows "foreground" as effective default when unset
+  it("Tab text color swatch shows Foreground as effective default when tabColor is unset", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Inactive tabs" }));
+
+    // foreground token swatch is labeled "Text" (COLOR_LABEL.foreground = "Text").
+    // When tabColor is unset, effectiveValue="foreground" makes it appear aria-pressed.
+    const textSwatches = screen.getAllByRole("button", { name: "Text" });
+    expect(textSwatches.some((el) => el.getAttribute("aria-pressed") === "true")).toBe(true);
+  });
+
+  // Item 4b: add-session button style selector shows "outline" as effective default when unset
+  it("New dates button style selector shows Outline as effective default when addSessionButtonStyle is unset", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Button" }));
+    fireEvent.click(screen.getByRole("button", { name: "New dates button" }));
+
+    // "Outline" should be aria-pressed when addSessionButtonStyle is unset
+    // (effective default = outline, matches resolveAddSessionAppearance default)
+    const outlineBtn = screen.getByRole("button", { name: "Outline" });
+    expect(outlineBtn).toHaveAttribute("aria-pressed", "true");
+  });
+
+  // Item 4c: active tab underline toggle shows effective default ON when unset
+  it("Underline toggle appears lighter-active when activeTabUnderline is unset (effective default ON)", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active tab" }));
+
+    const underlineBtn = screen.getByRole("button", { name: /underline/i });
+    // Effective default ON → aria-pressed should be true even when unset
+    expect(underlineBtn).toHaveAttribute("aria-pressed", "true");
+  });
+
+  // C3: Subtle toggle (effective default ON) shows in inactive tabs section
+  it("Subtle toggle appears lighter-active when inactiveTabSubtle is unset (effective default ON)", () => {
+    renderWithProviders(<ContactPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+    fireEvent.click(screen.getByRole("button", { name: "Inactive tabs" }));
+
+    const subtleBtn = screen.getByRole("button", { name: /subtle/i });
+    // aria-pressed should reflect the effective default (ON)
+    expect(subtleBtn).toHaveAttribute("aria-pressed", "true");
+  });
 });

@@ -848,7 +848,28 @@
           "dimensions": "Ang larawan ay dapat 512 × 512 px o mas maliit.",
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
-        }
+        },
+        "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
+        "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
+        "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
+        "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
+        "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",
+        "ogImageSection": "Larawan sa pagbabahagi",
+        "ogImageHint": "Ang larawang ipinapakita kapag ibinabahagi ang iyong link sa Facebook, Instagram, WhatsApp, o iMessage. Gamitin ang iyong pinakamagandang larawan. Inirerekomenda ang 1200 × 630 px.",
+        "ogImageLabel": "Mag-upload ng larawan sa pagbabahagi",
+        "ogImageUploading": "Ina-upload…",
+        "ogImageRequirements": "JPEG, PNG, WebP o AVIF · max 10 MB · inirerekomenda ang 1200 × 630 px",
+        "ogImageRemove": "Alisin",
+        "ogImageReplace": "Palitan",
+        "ogImageErrors": {
+          "type": "Tinatanggap lamang ang JPEG, PNG, WebP o AVIF na mga file.",
+          "size": "Ang file ay dapat 10 MB o mas maliit.",
+          "dimensions": "Ang larawan ay dapat hindi bababa sa 600 px sa mas maiikling gilid.",
+          "upload": "Nabigo ang pag-upload. Subukan muli."
+        },
+        "noindexSection": "Kakikitaan sa paghahanap",
+        "noindexLabel": "Itago mula sa mga search engine",
+        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana."
       }
     },
     "teams": {
@@ -1400,7 +1421,18 @@
           "cancel": "Kanselahin",
           "liveAt": "Live sa {url}",
           "copyLink": "Kopyahin ang link",
-          "copied": "Nakopya"
+          "copied": "Nakopya",
+          "slugLabel": "URL ng portfolio",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "I-save ang URL",
+          "slugSaving": "Sine-save...",
+          "slugSaved": "Na-save",
+          "slugError": "Hindi na-update ang URL, pakisubukan muli",
+          "slugUrlTaken": "Nakuha na ang URL na iyon",
+          "slugChecking": "Sinusuri...",
+          "slugAvailable": "Available",
+          "slugTaken": "Nakuha na",
+          "slugInvalid": "Hindi wastong format"
         },
         "themeDialog": {
           "title": "Tema at brand"
@@ -1469,6 +1501,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Kulay ng teksto ng tab",
+          "inactiveTabStyleLabel": "Estilo",
+          "inactiveTabSubtle": "Mahinhin",
+          "inactiveTabCompact": "Compact",
           "activeTabColorLabel": "Kulay ng teksto ng aktibong tab",
           "activeTabStyleLabel": "Estilo",
           "activeTabStyleScale": "Palakihin",
@@ -1584,6 +1619,10 @@
           "toggleBlocks": "I-toggle ang panel ng mga block",
           "toggleProperties": "I-toggle ang panel ng mga properties",
           "previewDevice": "Device para sa preview",
+          "canvasWidth": "Lapad ng canvas",
+          "zoomIn": "I-zoom in",
+          "zoomOut": "I-zoom out",
+          "zoomReset": "I-reset ang zoom sa 100%",
           "undoTitle": "I-undo (Ctrl+Z)",
           "redoTitle": "I-redo (Ctrl+Shift+Z)"
         },
@@ -1648,6 +1687,25 @@
           "duplicate": "I-duplicate",
           "delete": "Burahin"
         },
+        "photosDialog": {
+          "title": "Mga Larawan at Koleksyon",
+          "intro": "Grupuhin ang iyong mga larawan sa mga koleksyon. Gamitin ang mga ito sa mga Gallery block, o pumili ng isang larawan bilang background ng Hero o CTA. Mag-upload dito ng isang beses — pumili kahit saan.",
+          "empty": "Wala pang koleksyon. Gumawa ng una para makapagsimula.",
+          "loading": "Naglo-load…",
+          "error": "Hindi ma-load ang iyong mga koleksyon.",
+          "retry": "Subukan ulit",
+          "addNew": "Magdagdag ng bagong koleksyon",
+          "photos": "mga larawan",
+          "done": "Tapos",
+          "deleteTitle": "Burahin ang koleksyon na ito?",
+          "deleteBody": "Ang mga larawang ito ay permanenteng mabubura mula sa iyong library at hindi na mababawi. Ang anumang gallery block na gumagamit ng koleksyon na ito ay walang ipapakita hanggang hindi mo ito ituro sa isa pa.",
+          "deleting": "Nagbuburad…",
+          "deleteConfirm": "Burahin nang permanente",
+          "cancel": "Kanselahin",
+          "deleteError": "Hindi ma-bura ang koleksyon. Pakisubukan ulit.",
+          "deleteCollection": "Burahin ang koleksyon",
+          "editAria": "I-edit ang {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Featured popup",
           "popup": "Popup",
@@ -1674,6 +1732,132 @@
             "sharp": "Matalim",
             "subtle": "Banayad",
             "rounded": "Bilugan"
+          }
+        },
+        "puckConfig": {
+          "categories": {
+            "presets": "Mga preset na bloke",
+            "manual": "Mga manuwal na bloke"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "Tungkol sa Akin",
+            "servicesPreset": "Mga Serbisyo",
+            "ctaPreset": "Call to action",
+            "contactPreset": "Makipag-ugnayan",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Mga Itinatampok na Gawa",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Mga Highlight",
+            "video": "Video",
+            "contactDetails": "Mga Detalye ng Pakikipag-ugnayan",
+            "heading": "Pamagat",
+            "text": "Teksto",
+            "image": "Larawan",
+            "button": "Pindutan",
+            "spacer": "Spacer",
+            "divider": "Divider",
+            "columns": "Mga Kolum",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Estilo",
+            "pageStyle": "Estilo ng pahina",
+            "bgAnimation": "Animasyon ng background",
+            "bgAnimationShort": "BG animation",
+            "bgSpeed": "Bilis ng animasyon",
+            "bgSpeedShort": "Bilis ng BG",
+            "overlayOpacity": "Opacity ng overlay (0-100)",
+            "minHeight": "Pinakamaliit na taas",
+            "alignX": "Pahalang na pagkakahanay",
+            "alignY": "Patayong pagkakahanay",
+            "backgroundImages": "Mga larawan sa background",
+            "headingText": "Teksto ng pamagat",
+            "headingLevel": "Antas",
+            "textContent": "Teksto",
+            "videoUrl": "URL ng YouTube o Vimeo",
+            "videoDescription": "Paglalarawan (opsyonal)",
+            "videoFooter": "Footer (opsyonal)",
+            "imageField": "Larawan",
+            "imageUrl": "URL ng larawan (fallback)",
+            "imageAlt": "Alt na teksto",
+            "imageFit": "Fit",
+            "buttonLabel": "Label ng pindutan",
+            "buttonSize": "Sukat",
+            "buttonAction": "Aksyon",
+            "buttonAlign": "Pagkakahanay",
+            "spacerHeight": "Taas",
+            "dividerThickness": "Kapal (px)",
+            "columnsCount": "Mga kolum",
+            "rowsCount": "Mga hilera"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slide"
+            },
+            "bgSpeed": {
+              "slow": "Mabagal (7s)",
+              "medium": "Katamtaman (5s)",
+              "fast": "Mabilis (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Mabagal",
+              "medium": "Katamtaman",
+              "fast": "Mabilis"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Maikli (40vh)",
+              "medium": "Katamtaman (60vh)",
+              "tall": "Mataas (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Maikli",
+              "medium": "Katamtaman",
+              "tall": "Mataas"
+            },
+            "alignX": {
+              "left": "Kaliwa",
+              "center": "Gitna",
+              "right": "Kanan"
+            },
+            "alignY": {
+              "top": "Itaas",
+              "center": "Gitna",
+              "bottom": "Ibaba"
+            },
+            "headingLevel": {
+              "h1": "Display",
+              "h2": "Titulo",
+              "h3": "Heading",
+              "h4": "Subheading",
+              "h5": "Caption",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Maliit",
+              "md": "Katamtaman",
+              "lg": "Malaki"
+            },
+            "buttonAction": {
+              "openContact": "Buksan ang form ng pakikipag-ugnayan",
+              "goToGallery": "Pumunta sa pahina ng Gallery"
+            },
+            "buttonAlign": {
+              "left": "Kaliwa",
+              "center": "Gitna",
+              "right": "Kanan"
+            }
           }
         },
         "tour": {

@@ -19,6 +19,7 @@ export function TemplatePickerDialog({
   onOpenChange,
   templates,
   currentTemplateId,
+  isCanvasMatchingSeed = false,
   switching,
   error,
   onConfirm,
@@ -29,6 +30,12 @@ export function TemplatePickerDialog({
   onOpenChange: (open: boolean) => void;
   templates: EditorTemplateSummary[];
   currentTemplateId: string;
+  /**
+   * True only when the active canvas data exactly matches the seed that was applied
+   * for currentTemplateId. False hides the "Current" badge (canvas has been edited
+   * since the template was applied, so calling it "current" would be misleading).
+   */
+  isCanvasMatchingSeed?: boolean;
   switching: boolean;
   error: string | null;
   onConfirm: (templateId: string) => void;
@@ -75,7 +82,7 @@ export function TemplatePickerDialog({
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {templates.map((tpl) => {
-              const isCurrent = !welcome && tpl.id === currentTemplateId;
+              const isCurrent = !welcome && tpl.id === currentTemplateId && isCanvasMatchingSeed;
               const bk = tpl.defaultBrandKit;
               return (
                 <li key={tpl.id}>

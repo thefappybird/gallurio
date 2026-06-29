@@ -61,7 +61,14 @@ const ALL_PHOTOS_ID = "all";
 const PAGE_SIZE = 16;
 const SAFETY_CAP = 60;
 
-export type MediaPickerSelection = { id: string; publicId: string };
+export type MediaPickerSelection = {
+  id: string;
+  publicId: string;
+  /** Natural pixel width — present when the image was uploaded in this session. */
+  width?: number;
+  /** Natural pixel height — present when the image was uploaded in this session. */
+  height?: number;
+};
 export type MediaPickerCollectionSelection = {
   id: string;
   name: string;
@@ -234,7 +241,16 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       return;
     }
     if (max != null && selection.length >= max) return;
-    onChange([...selection, { id: item.id, publicId: item.publicId }]);
+    onChange([
+      ...selection,
+      {
+        id: item.id,
+        publicId: item.publicId,
+        ...(item.width != null && item.height != null
+          ? { width: item.width, height: item.height }
+          : {}),
+      },
+    ]);
   }
 
   function selectAllOnPage() {
@@ -243,7 +259,14 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     const next = [...selection];
     for (const it of feed.items) {
       if (next.length >= cap) break;
-      if (!next.some((s) => s.id === it.id)) next.push({ id: it.id, publicId: it.publicId });
+      if (!next.some((s) => s.id === it.id))
+        next.push({
+          id: it.id,
+          publicId: it.publicId,
+          ...(it.width != null && it.height != null
+            ? { width: it.width, height: it.height }
+            : {}),
+        });
     }
     onChange(next);
   }
@@ -371,6 +394,12 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
           publicId: r.value.assetId,
           thumbUrl: created.thumbUrl,
           caption: created.caption,
+          // uploadImage already measured naturalWidth/Height before the upload;
+          // propagate them so a freshly-uploaded image carries dims into any
+          // subsequent selection, enabling the block to reserve space (CLS fix).
+          ...(r.value.width != null && r.value.height != null
+            ? { width: r.value.width, height: r.value.height }
+            : {}),
         };
         remember([item]);
         if (token === fetchToken.current) {

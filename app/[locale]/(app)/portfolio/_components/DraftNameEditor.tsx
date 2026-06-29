@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function DraftNameEditor({
-  name,
-  onCommit,
-  error,
-}: {
-  name: string;
-  onCommit: (next: string) => void;
-  error: string | null;
-}) {
+export type DraftNameEditorHandle = {
+  /** Commit any in-progress edit and return the committed name, or null if nothing was pending. */
+  commit(): string | null;
+};
+
+export const DraftNameEditor = forwardRef<
+  DraftNameEditorHandle,
+  { name: string; onCommit: (next: string) => void; error: string | null }
+>(function DraftNameEditor({ name, onCommit, error }, ref) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(name);
 
@@ -26,10 +26,25 @@ export function DraftNameEditor({
     onCommit(next);
     setEditing(false);
   }
+
   function cancel() {
     setValue(name);
     setEditing(false);
   }
+
+  useImperativeHandle(ref, () => ({
+    commit() {
+      if (!editing) return null;
+      const next = value.trim();
+      if (!next) {
+        cancel();
+        return null;
+      }
+      onCommit(next);
+      setEditing(false);
+      return next;
+    },
+  }));
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -91,4 +106,4 @@ export function DraftNameEditor({
       )}
     </div>
   );
-}
+});

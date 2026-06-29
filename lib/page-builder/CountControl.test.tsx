@@ -42,4 +42,12 @@ describe("CountControl — quick-pick buttons", () => {
     fireEvent.click(screen.getByRole("button", { name: "2" }));
     expect(onChange).toHaveBeenCalledWith(2);
   });
+
+  it("clamped number input: blur with a value above max calls onChange with max (A4)", () => {
+    const onChange = vi.fn();
+    render(<CountControl value={2} onChange={onChange} min={1} max={6} />);
+    const input = screen.getByRole("spinbutton", { name: "Custom count" });
+    fireEvent.blur(input, { target: { value: "9" } });
+    expect(onChange).toHaveBeenCalledWith(6);
+  });
 });

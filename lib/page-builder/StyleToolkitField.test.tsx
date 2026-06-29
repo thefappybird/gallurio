@@ -749,6 +749,84 @@ describe("LayoutTabBody — Min height buttons show effective default 'auto' whe
     fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
     expect(screen.getByRole("button", { name: "Auto" })).toHaveAttribute("aria-pressed", "true");
   });
+
+  it("renders all 5 min-height options including Custom (overflow fix: all options must be in the DOM)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    // All 5 options must be reachable — previously "Custom" was clipped by panel overflow.
+    expect(screen.getByRole("button", { name: "Auto" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Short" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Medium" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Tall" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Custom" })).toBeInTheDocument();
+  });
+});
+
+describe("A5: LayoutTabBody — Container min-height Custom option shows DimensionInput", () => {
+  it("selecting Custom reveals a Custom value DimensionInput (A5)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{ minHeight: "custom" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Custom" })).toHaveAttribute("aria-pressed", "true");
+    // DimensionInput should be visible when "custom" is active.
+    expect(screen.getByText("Custom value")).toBeTruthy();
+  });
+});
+
+describe("A7: LayoutTabBody — Columns Overall Width control", () => {
+  it("shows Page fit and Full buttons for Columns block in Layout tab (A7)", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={() => {}}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Columns"
+        p={{ overallWidth: "page-fit" }}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Page fit" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Full" })).toBeTruthy();
+  });
+});
+
+describe("A6: LayoutTabBody — Align/Justify IconRow shows Reset button when value set", () => {
+  it("Align Reset button appears when alignItems is explicitly set (A6)", () => {
+    render(
+      <LayoutTabBody
+        s={{ alignItems: "center" }}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={true}
+        blockType="Container"
+        p={{}}
+        setProp={() => {}}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByRole("button", { name: "Reset Align" })).toBeTruthy();
+  });
 });
 
 describe("DesignTab Button — RadiusButtons shows brand theme radius when block radius is unset", () => {

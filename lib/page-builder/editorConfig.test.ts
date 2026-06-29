@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { editorPuckConfig } from "./editorConfig";
+import { editorPuckConfig, createEditorConfig } from "./editorConfig";
 import { puckConfig } from "./config";
 import { SECTION_PRESETS } from "./blocks/sectionPresets";
 import { galleryGridDefaultProps } from "./blocks/GalleryGridBlock";
@@ -72,6 +72,17 @@ describe("editorPuckConfig parity with production puckConfig", () => {
       expect(editorFields).toEqual(prodFields);
     });
   }
+
+  it("enables contentEditable inline editing on the visible text fields", () => {
+    const fieldOf = (type: string, key: string) =>
+      (editorPuckConfig.components as Record<string, { fields?: Record<string, { contentEditable?: boolean }> }>)
+        [type]?.fields?.[key];
+    expect(fieldOf("Heading", "text")?.contentEditable).toBe(true);
+    expect(fieldOf("Text", "text")?.contentEditable).toBe(true);
+    expect(fieldOf("Button", "label")?.contentEditable).toBe(true);
+    expect(fieldOf("Video", "description")?.contentEditable).toBe(true);
+    expect(fieldOf("Video", "footer")?.contentEditable).toBe(true);
+  });
 
   it("removes gallery copy inputs from GalleryGrid field keys", () => {
     const editorFields = Object.keys(editorPuckConfig.components.GalleryGrid.fields ?? {});
@@ -163,6 +174,17 @@ describe("preset section blocks are inline so grid placement applies", () => {
       expect(cfg?.inline).toBe(true);
     });
   }
+});
+
+describe("createEditorConfig factory", () => {
+  it("uses translated block labels when called with a custom translator", () => {
+    const mockT = (key: string) => `[${key}]`;
+    const cfg = createEditorConfig(mockT);
+    const components = cfg.components as Record<string, { label?: string }>;
+    expect(components.GalleryGrid?.label).toBe("[puckConfig.blocks.galleryGrid]");
+    expect(components.HeroPreset?.label).toBe("[puckConfig.blocks.heroPreset]");
+    expect(components.Container?.label).toBe("[puckConfig.blocks.container]");
+  });
 });
 
 describe("block label renames", () => {

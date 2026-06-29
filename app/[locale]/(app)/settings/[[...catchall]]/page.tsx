@@ -106,6 +106,14 @@ export default async function SettingsCatchallPage({
       workspace.publicPage?.inquiryRecipientEmail || authUser?.email || "",
     siteIconUrl: workspace.publicPage?.siteIcon?.url ?? "",
     siteIconAssetId: workspace.publicPage?.siteIcon?.assetId ?? "",
+    // Seed seo sub-fields so the form shows existing DB values on load.
+    // Both ends are tested: action tests verify persistence; form tests verify rendering.
+    seo: {
+      ogImageUrl: workspace.publicPage?.seo?.ogImageUrl ?? "",
+      ogImageAssetId: workspace.publicPage?.seo?.ogImageAssetId ?? "",
+      galleryDescription: workspace.publicPage?.seo?.galleryDescription ?? "",
+      noindex: workspace.publicPage?.seo?.noindex ?? false,
+    },
   };
 
   const t = await getTranslations("app.settings.tabs");

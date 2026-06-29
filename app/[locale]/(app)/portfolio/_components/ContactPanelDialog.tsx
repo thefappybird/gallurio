@@ -83,6 +83,7 @@ function BorderRow({
   color,
   onWidthChange,
   onColorChange,
+  effectiveWidth = 0,
 }: {
   widthLabel: string;
   colorLabel: string;
@@ -90,6 +91,8 @@ function BorderRow({
   color: string | undefined;
   onWidthChange: (v: number | undefined) => void;
   onColorChange: (v: string | undefined) => void;
+  /** Effective default width to display when unset. Default = 0. */
+  effectiveWidth?: number;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -99,7 +102,7 @@ function BorderRow({
         min={0}
         max={12}
         onChange={onWidthChange}
-        effectiveValue={0}
+        effectiveValue={effectiveWidth}
       />
       {!!width && (
         // borderColor fallback varies; leave effectiveValue unset
@@ -158,10 +161,14 @@ function RadiusRow({
 
 function ToggleButton({
   active,
+  isEffective,
   onClick,
   children,
 }: {
   active: boolean;
+  /** True when the field is unset but the effective default makes it appear active.
+   * Renders lighter than an explicitly-set active state ("following theme"). */
+  isEffective?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -172,7 +179,8 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        active && "bg-foreground text-background hover:bg-foreground",
+        active && !isEffective && "bg-foreground text-background hover:bg-foreground",
+        isEffective && "border-foreground opacity-70",
       )}
     >
       {children}
@@ -255,8 +263,23 @@ export function ContactPanelDialog({
     set(key, contact[key] === radius ? undefined : radius);
   }
 
-  function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight" | "activeTabUnderline">(key: K) {
+  function toggleTabBool<K extends "activeTabScale" | "activeTabHighlight">(key: K) {
     set(key, !contact[key]);
+  }
+
+  /** Underline: effective default ON. Cycles: undefined/true → false → undefined. */
+  function toggleTabUnderline() {
+    set("activeTabUnderline", contact.activeTabUnderline !== false ? false : undefined);
+  }
+
+  /** Subtle: effective default ON. Cycles: undefined/true → false → undefined. */
+  function toggleSubtle() {
+    set("inactiveTabSubtle", contact.inactiveTabSubtle !== false ? false : undefined);
+  }
+
+  /** Compact: effective default OFF. Normal bool toggle. */
+  function toggleCompact() {
+    set("inactiveTabCompact", !contact.inactiveTabCompact);
   }
 
   function toggleTabRadius(radius: BrandKitRadius | "") {
@@ -428,6 +451,7 @@ export function ContactPanelDialog({
                 effectiveBrandRadius={effectiveBrandRadius}
                 defaultStyle="outline"
                 defaultButtonColorToken="foreground"
+                borderEffectiveWidth={1}
                 t={t}
               />
             </EditorDrawerSection>
@@ -462,12 +486,32 @@ export function ContactPanelDialog({
 
               {/* Inactive tabs sub-section */}
               <EditorDrawerSection title={t("inactiveTabsSection")}>
-                {/* inactive tab color: resolveTabColor falls back to "" (no color applied) — no effective token */}
+                {/* inactive tab color: resolveTabColor fallback = var(--pf-color-fg) → effective default "foreground" */}
                 <LabeledSwatchRow
                   label={t("tabColorLabel")}
                   value={contact.tabColor}
                   onChange={(c) => set("tabColor", c)}
+                  effectiveValue="foreground"
                 />
+                {/* Subtle (effective default ON) + Compact (effective default OFF) */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("inactiveTabStyleLabel")}</span>
+                  <div className="flex">
+                    <ToggleButton
+                      active={contact.inactiveTabSubtle !== false}
+                      isEffective={contact.inactiveTabSubtle === undefined}
+                      onClick={toggleSubtle}
+                    >
+                      {t("inactiveTabSubtle")}
+                    </ToggleButton>
+                    <ToggleButton
+                      active={!!contact.inactiveTabCompact}
+                      onClick={toggleCompact}
+                    >
+                      {t("inactiveTabCompact")}
+                    </ToggleButton>
+                  </div>
+                </div>
               </EditorDrawerSection>
 
               {/* Active tab sub-section */}
@@ -490,7 +534,11 @@ export function ContactPanelDialog({
                     <ToggleButton active={!!contact.activeTabHighlight} onClick={() => toggleTabBool("activeTabHighlight")}>
                       {t("activeTabStyleHighlight")}
                     </ToggleButton>
-                    <ToggleButton active={!!contact.activeTabUnderline} onClick={() => toggleTabBool("activeTabUnderline")}>
+                    <ToggleButton
+                      active={contact.activeTabUnderline !== false}
+                      isEffective={contact.activeTabUnderline === undefined}
+                      onClick={toggleTabUnderline}
+                    >
                       {t("activeTabStyleUnderline")}
                     </ToggleButton>
                   </div>
@@ -525,7 +573,7 @@ export function ContactPanelDialog({
                 )}
 
                 {/* Conditional: underline color — resolveTabColor falls back to var(--pf-color-accent) → "accent" */}
-                {contact.activeTabUnderline && (
+                {contact.activeTabUnderline !== false && (
                   <LabeledSwatchRow
                     label={t("tabUnderlineColorLabel")}
                     value={contact.tabUnderlineColor}
@@ -583,6 +631,7 @@ function ButtonControlsSection({
   effectiveBrandRadius,
   defaultStyle,
   defaultButtonColorToken,
+  borderEffectiveWidth = 0,
   t,
 }: {
   title: string;
@@ -603,6 +652,8 @@ function ButtonControlsSection({
   defaultStyle: "solid" | "outline";
   /** Default button color token when buttonColorValue is unset and style is outline/soft. */
   defaultButtonColorToken: StyleColorToken;
+  /** Effective border width to show when unset (0 = no border; 1 for add-session dashed default). */
+  borderEffectiveWidth?: number;
   t: ReturnType<typeof useTranslations>;
 }) {
   const activeStyle = styleValue ?? defaultStyle;
@@ -621,17 +672,21 @@ function ButtonControlsSection({
         <span className="text-xs text-muted-foreground">{t("buttonStyleLabel")}</span>
         <div className="flex">
           {BRAND_KIT_BUTTON_STYLES.map((style) => {
-            const active = styleValue === style;
+            const isActive = styleValue === style;
+            // When no explicit style is set, show the defaultStyle as a lighter
+            // "following theme" indicator (mechanism-1 display-only effective default).
+            const isEffective = !styleValue && style === defaultStyle;
             return (
               <button
                 key={style}
                 type="button"
                 aria-label={t(`buttonStyles.${style}`)}
-                aria-pressed={active}
+                aria-pressed={isActive || isEffective}
                 onClick={() => onStyleToggle(style)}
                 className={cn(
                   "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  active && "bg-foreground text-background hover:bg-foreground",
+                  isActive && "bg-foreground text-background hover:bg-foreground",
+                  isEffective && "border-foreground opacity-70",
                 )}
               >
                 {t(`buttonStyles.${style}`)}
@@ -672,6 +727,7 @@ function ButtonControlsSection({
         color={borderColorValue}
         onWidthChange={onBorderWidthChange}
         onColorChange={onBorderColorChange}
+        effectiveWidth={borderEffectiveWidth}
       />
     </EditorDrawerSection>
   );

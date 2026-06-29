@@ -32,6 +32,18 @@ describe("HeadingBlock", () => {
     expect(screen.getByText("My Heading")).toBeTruthy();
   });
 
+  it("renders a React element text prop directly (Puck inline-edit injection)", () => {
+    // Puck's contentEditable transform replaces the string prop with an editable
+    // element; the block must render it as-is rather than coercing via asText().
+    render(
+      <HeadingBlock
+        text={(<span data-testid="inline-edit">Edit me</span>) as unknown as string}
+        level="h2"
+      />,
+    );
+    expect(screen.getByTestId("inline-edit")).toBeTruthy();
+  });
+
   it("renders as h1 when level='h1'", () => {
     render(<HeadingBlock text="H1 Title" level="h1" />);
     expect(document.querySelector("h1")).not.toBeNull();
@@ -170,6 +182,11 @@ describe("TextBlock", () => {
   it("accepts plain string input", () => {
     render(<TextBlock text={"Old plain string"} />);
     expect(screen.getByText("Old plain string")).toBeTruthy();
+  });
+
+  it("renders a React element text prop directly (Puck inline-edit injection)", () => {
+    render(<TextBlock text={(<span data-testid="inline-edit">Edit me</span>) as unknown as string} />);
+    expect(screen.getByTestId("inline-edit")).toBeTruthy();
   });
 
   it("renders empty text without crashing", () => {
@@ -838,29 +855,33 @@ describe("ColumnsBlock", () => {
     expect(screen.getByTestId("slot")).toBeTruthy();
   });
 
-  it("applies the responsive 2-column class for columns=2", () => {
+  it("slot receives the per-instance grid class (A1: class is pf-cols-inst when no Puck id in tests)", () => {
     render(<ColumnsBlock columns={2} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols");
-    expect(slot.className).toContain("pf-cols-2");
+    // After per-instance scoping: class is pf-cols-<instanceId>; tests fall back to "inst".
+    expect(slot.className).toContain("pf-cols-inst");
+    // Column count is now in the CSS rules, not in the class name.
+    expect(slot.className).not.toContain("pf-cols-2");
   });
 
-  it("applies the responsive 3-column class for columns=3", () => {
+  it("instance class is same for all column counts — count is in @container CSS rule (A1)", () => {
     render(<ColumnsBlock columns={3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-3");
+    expect(slot.className).toContain("pf-cols-inst");
+    expect(slot.className).not.toContain("pf-cols-3");
   });
 
-  it("columns=7 clamps to 6 and renders pf-cols-6", () => {
-    render(<ColumnsBlock columns={7} content={stubSlot} />);
-    const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-6");
+  it("columns=7 clamps to 6: CSS @container rule uses repeat(6,...) (A1)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={7} content={stubSlot} />);
+    expect(html).toContain("repeat(6,minmax(0,1fr))");
   });
 
-  it("rows=3 adds a rows class to the slot element", () => {
+  it("rows=3 adds the per-instance rows class to the slot element (A1)", () => {
     render(<ColumnsBlock columns={2} rows={3} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-rows-3");
+    // Per-instance rows class: pf-cols-rows-inst when no Puck id in tests.
+    expect(slot.className).toContain("pf-cols-rows-inst");
+    expect(slot.className).not.toContain("pf-cols-rows-3");
   });
 
   it("rows=1 does NOT add a rows class (auto-row behaviour preserved)", () => {
@@ -869,16 +890,25 @@ describe("ColumnsBlock", () => {
     expect(slot.className).not.toContain("pf-cols-rows-");
   });
 
-  it("columns=1 applies pf-cols-1 class", () => {
+  it("columns=1 renders with the per-instance grid class (A1)", () => {
     render(<ColumnsBlock columns={1 as number} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-1");
+    expect(slot.className).toContain("pf-cols-inst");
   });
 
-  it("columns=4 applies pf-cols-4 class", () => {
+  it("columns=4 renders with the per-instance grid class (A1)", () => {
     render(<ColumnsBlock columns={4} content={stubSlot} />);
     const slot = screen.getByTestId("slot");
-    expect(slot.className).toContain("pf-cols-4");
+    expect(slot.className).toContain("pf-cols-inst");
+  });
+
+  it("each Columns instance uses a unique containerName derived from its Puck id (A1)", () => {
+    const html1 = renderToStaticMarkup(<ColumnsBlock id="Columns-aaa" columns={2} content={stubSlot} />);
+    const html2 = renderToStaticMarkup(<ColumnsBlock id="Columns-bbb" columns={2} content={stubSlot} />);
+    expect(html1).toContain("pfcols-Columns-aaa");
+    expect(html2).toContain("pfcols-Columns-bbb");
+    expect(html1).not.toContain("pfcols-Columns-bbb");
+    expect(html2).not.toContain("pfcols-Columns-aaa");
   });
 
   it("columns=6 generates repeat(6,...) in the desktop CSS rule", () => {
@@ -917,6 +947,14 @@ describe("ColumnsBlock", () => {
     expect(breakpoints.length).toBeGreaterThan(0);
     // All public breakpoints must be above the phone container width (~327px).
     breakpoints.forEach((bp) => expect(bp).toBeGreaterThan(327));
+  });
+
+  it("editor-mode with rows=3: inline gridTemplateRows injected so rows are WYSIWYG in canvas (A2)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} rows={3} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).toContain("grid-template-rows");
+    expect(html).toContain("repeat(3,minmax(0,auto))");
   });
 
   it("editor-mode (puck.isEditing=true): 2-col block gets inline grid-template-columns for direct column preview", () => {
@@ -1280,6 +1318,79 @@ describe("B2a: ContainerBlock render — fallback padding (parity)", () => {
       <ContainerBlock content={stubSlot} _style={{ paddingTop: "3rem" }} />,
     );
     expect(html).toContain("padding-top:3rem");
+  });
+});
+
+describe("A5: ContainerBlock custom min-height", () => {
+  it("public page: minHeight=custom + minHeightValue=250px renders min-height:250px (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} minHeight="custom" minHeightValue="250px" puck={{ isEditing: false }} />
+    );
+    expect(html).toContain("min-height:250px");
+  });
+
+  it("public page: minHeight=custom without minHeightValue has no min-height constraint (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ContainerBlock content={stubSlot} minHeight="custom" puck={{ isEditing: false }} />
+    );
+    expect(html).not.toContain("min-height");
+  });
+});
+
+describe("A7: ColumnsBlock overallWidth prop", () => {
+  it("overallWidth=full applies full-bleed CSS on the outer wrapper (A7)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} />
+    );
+    expect(html).toContain("width:100vw");
+  });
+});
+
+describe("A5: ColumnsBlock min-height prop", () => {
+  it("renders min-height when minHeight prop is set (A5)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} minHeight="200px" content={stubSlot} />
+    );
+    expect(html).toContain("min-height:200px");
+  });
+});
+
+describe("#2: ColumnsBlock grid — align-items stretch for public-page parity", () => {
+  it("base grid CSS rule contains align-items:stretch so public-page sibling cells fill the row track (Bug #2)", () => {
+    const html = renderToStaticMarkup(<ColumnsBlock columns={5} content={stubSlot} />);
+    expect(html).toContain("align-items:stretch");
+  });
+
+  it("@container rows rule and editor inline gridTemplateRows use identical track sizing (Bug #2 parity)", () => {
+    const publicHtml = renderToStaticMarkup(
+      <ColumnsBlock columns={5} rows={2} content={stubSlot} puck={{ isEditing: false }} />
+    );
+    const editorHtml = renderToStaticMarkup(
+      <ColumnsBlock columns={5} rows={2} content={stubSlot} puck={{ isEditing: true }} />
+    );
+    const containerMatch = publicHtml.match(/grid-template-rows:repeat\(\d+,([^}]+?)\)/);
+    const inlineMatch = editorHtml.match(/grid-template-rows:repeat\(\d+,([^"]+?)\)/);
+    expect(containerMatch).not.toBeNull();
+    expect(inlineMatch).not.toBeNull();
+    expect(containerMatch![1]).toBe(inlineMatch![1]);
+  });
+});
+
+describe("#9: ColumnsBlock overallWidth full — editor canvas constraint", () => {
+  it("overallWidth=full in editor context: outer wrapper uses width:100% not 100vw (Bug #9)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} puck={{ isEditing: true }} />
+    );
+    expect(html).not.toContain("width:100vw");
+    expect(html).toContain("width:100%");
+  });
+
+  it("overallWidth=full on the public page: outer wrapper uses width:100vw (true full-bleed preserved)", () => {
+    const html = renderToStaticMarkup(
+      <ColumnsBlock columns={2} overallWidth="full" content={stubSlot} puck={{ isEditing: false }} />
+    );
+    expect(html).toContain("width:100vw");
+    expect(html).not.toContain("width:100%");
   });
 });
 

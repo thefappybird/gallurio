@@ -8,6 +8,9 @@ import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
+import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
+import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,23 +30,34 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!workspace) return {};
 
   const { publicPage, name } = workspace;
+  const seo = (publicPage?.seo as PublicPageSeo | undefined) ?? {};
 
   const title = publicPage?.seoTitle || name;
   const description = publicPage?.seoDescription || undefined;
-  const iconUrl = workspace.publicPage?.siteIcon?.url || workspace.publicPage?.header?.logoUrl;
+  const ogImageUrl = seo.ogImageUrl || undefined;
+  const iconUrl = publicPage?.siteIcon?.url || undefined;
+  const canonical = portfolioPublicUrl(orgSlug);
 
-  return {
+  const result: Metadata = {
     title,
     description,
+    alternates: { canonical },
     openGraph: {
       title,
       description: description ?? "",
+      type: "website",
+      url: canonical,
+      siteName: name,
+      images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
-    alternates: {
-      canonical: `/w/${workspace.slug}`,
+    twitter: {
+      card: ogImageUrl ? "summary_large_image" : "summary",
+      images: ogImageUrl ? [ogImageUrl] : undefined,
     },
     icons: iconUrl ? { icon: iconUrl } : undefined,
   };
+  if (seo.noindex) result.robots = { index: false, follow: false };
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,14 +88,41 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
 
+  // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
+  const socials = workspace.contact?.socials;
+  const sameAs: string[] = [];
+  if (socials?.instagram) sameAs.push(`https://www.instagram.com/${socials.instagram}`);
+  if (socials?.facebook) sameAs.push(`https://www.facebook.com/${socials.facebook}`);
+  if (socials?.tiktok) sameAs.push(`https://www.tiktok.com/@${socials.tiktok}`);
+  if (socials?.website) sameAs.push(socials.website);
+
+  const [businessLd, websiteLd] = buildHomeJsonLd({
+    name: workspace.name,
+    slug: workspace.slug,
+    businessType: workspace.businessType || undefined,
+    description: workspace.publicPage?.seoDescription || undefined,
+    image:
+      (workspace.publicPage?.seo as { ogImageUrl?: string } | undefined)?.ogImageUrl ||
+      workspace.publicPage?.siteIcon?.url ||
+      undefined,
+    email: workspace.contact?.email || undefined,
+    phone: workspace.contact?.phone || undefined,
+    address: workspace.contact?.address || undefined,
+    sameAs,
+  });
+
   // ComingSoonFallback does not need workspace block context — only <Render>
   // (and the blocks it invokes) reads the AsyncLocalStorage store.
   if (!homeData) {
     return (
-      <ComingSoonFallback
-        workspace={workspace}
-        labels={{ comingSoon: t("comingSoon"), poweredBy: t("poweredBy") }}
-      />
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+        <ComingSoonFallback
+          workspace={workspace}
+          labels={{ comingSoon: t("comingSoon"), poweredBy: t("poweredBy") }}
+        />
+      </>
     );
   }
 
@@ -111,9 +152,13 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // an isolated, request-scoped store. Concurrent requests cannot clobber
   // each other's workspace context (unlike a module-level singleton).
   return runWithRenderWorkspace(renderWorkspace, () => (
-    // metadata threads workspace context to every block via props.puck.metadata —
-    // the RSC-safe path (AsyncLocalStorage doesn't survive into async block render).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <Render data={homeData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+      {/* metadata threads workspace context to every block via props.puck.metadata —
+          the RSC-safe path (AsyncLocalStorage doesn't survive into async block render). */}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <Render data={homeData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+    </>
   ));
 }

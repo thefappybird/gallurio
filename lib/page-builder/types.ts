@@ -133,6 +133,10 @@ export type PortfolioContactConfig = {
   activeTabUnderline?: boolean;
   /** Border color for active-tab underline mode. Token or hex. */
   tabUnderlineColor?: string;
+  /** Reduce inactive-tab opacity (~0.55). Effective default = ON (undefined = true). */
+  inactiveTabSubtle?: boolean;
+  /** Smaller font size on inactive tabs. Effective default = OFF (undefined = false). */
+  inactiveTabCompact?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -299,4 +303,38 @@ export type PortfolioPuckData = {
 export type PortfolioBlockProps<TName extends string> = {
   /** Discriminates the block in generic handlers. */
   _blockType: TName;
+};
+
+// ---------------------------------------------------------------------------
+// GalleryImage — canonical shared type for images stored in gallery block
+// props. Defined here so upload, render, and metadata agents can share one
+// authoritative shape. The block-level definition in GalleryGridBlock.tsx is
+// the current source of truth for the editor; wave-2 render agents should
+// migrate that import here.
+// ---------------------------------------------------------------------------
+
+export type GalleryImage = {
+  id: string;
+  publicId: string;
+  alt?: string;
+  /** Natural pixel width — persisted from Cloudflare upload response; enables aspect-ratio CLS fix. */
+  width?: number;
+  /** Natural pixel height — persisted from Cloudflare upload response; enables aspect-ratio CLS fix. */
+  height?: number;
+};
+
+// ---------------------------------------------------------------------------
+// PublicPageSeo — shape of Workspace.publicPage.seo.
+// Consumers should import this type instead of re-defining the shape inline.
+// ---------------------------------------------------------------------------
+
+export type PublicPageSeo = {
+  /** Cloudflare Images delivery URL used for og:image / twitter:image social cards. */
+  ogImageUrl?: string;
+  /** CF Images asset ID paired with ogImageUrl; used to delete the old asset on replace. */
+  ogImageAssetId?: string;
+  /** Gallery page <meta description> — separate from the home-page seoDescription. */
+  galleryDescription?: string;
+  /** When true, all public pages emit <meta name="robots" content="noindex">. */
+  noindex?: boolean;
 };

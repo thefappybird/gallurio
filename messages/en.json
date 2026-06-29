@@ -848,7 +848,28 @@
           "dimensions": "Image must be 512 × 512 px or smaller.",
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
-        }
+        },
+        "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
+        "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "galleryDescriptionLabel": "Gallery page description",
+        "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
+        "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
+        "ogImageSection": "Share image",
+        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot. 1200 × 630 px recommended.",
+        "ogImageLabel": "Upload share image",
+        "ogImageUploading": "Uploading…",
+        "ogImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+        "ogImageRemove": "Remove",
+        "ogImageReplace": "Replace",
+        "ogImageErrors": {
+          "type": "Only JPEG, PNG, WebP or AVIF files are accepted.",
+          "size": "File must be 10 MB or smaller.",
+          "dimensions": "Image must be at least 600 px on the shorter side.",
+          "upload": "Upload failed. Please try again."
+        },
+        "noindexSection": "Search visibility",
+        "noindexLabel": "Hide from search engines",
+        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works."
       }
     },
     "teams": {
@@ -1400,7 +1421,18 @@
           "cancel": "Cancel",
           "liveAt": "Live at {url}",
           "copyLink": "Copy link",
-          "copied": "Copied"
+          "copied": "Copied",
+          "slugLabel": "Portfolio URL",
+          "slugSuffix": ".gallurio.com",
+          "slugSave": "Save URL",
+          "slugSaving": "Saving...",
+          "slugSaved": "Saved",
+          "slugError": "Could not update URL, please try again",
+          "slugUrlTaken": "That URL is already taken",
+          "slugChecking": "Checking...",
+          "slugAvailable": "Available",
+          "slugTaken": "Already taken",
+          "slugInvalid": "Invalid format"
         },
         "themeDialog": {
           "title": "Theme & brand"
@@ -1469,6 +1501,9 @@
             "lg": "L"
           },
           "tabColorLabel": "Tab text color",
+          "inactiveTabStyleLabel": "Style",
+          "inactiveTabSubtle": "Subtle",
+          "inactiveTabCompact": "Compact",
           "activeTabColorLabel": "Active tab text color",
           "activeTabStyleLabel": "Style",
           "activeTabStyleScale": "Scale",
@@ -1584,6 +1619,10 @@
           "toggleBlocks": "Toggle blocks panel",
           "toggleProperties": "Toggle properties panel",
           "previewDevice": "Preview device",
+          "canvasWidth": "Canvas width",
+          "zoomIn": "Zoom in",
+          "zoomOut": "Zoom out",
+          "zoomReset": "Reset zoom to 100%",
           "undoTitle": "Undo (Ctrl+Z)",
           "redoTitle": "Redo (Ctrl+Shift+Z)"
         },
@@ -1648,6 +1687,25 @@
           "duplicate": "Duplicate",
           "delete": "Delete"
         },
+        "photosDialog": {
+          "title": "Photos & collections",
+          "intro": "Group your photos into collections. Use them in Gallery blocks, or pick any single photo as a Hero / CTA background. Add photos here once — pick them anywhere.",
+          "empty": "No collections yet. Create your first one to get started.",
+          "loading": "Loading…",
+          "error": "Could not load your collections.",
+          "retry": "Retry",
+          "addNew": "Add new collection",
+          "photos": "photos",
+          "done": "Done",
+          "deleteTitle": "Delete this collection?",
+          "deleteBody": "The photos in this collection will be permanently deleted from your library and cannot be recovered. Any gallery blocks using this collection will show nothing until you point them at another one.",
+          "deleting": "Deleting…",
+          "deleteConfirm": "Delete permanently",
+          "cancel": "Cancel",
+          "deleteError": "Could not delete the collection. Please try again.",
+          "deleteCollection": "Delete collection",
+          "editAria": "Edit {name}"
+        },
         "collectionsDialog": {
           "featuredPopup": "Featured popup",
           "popup": "Popup",
@@ -1674,6 +1732,132 @@
             "sharp": "Sharp",
             "subtle": "Subtle",
             "rounded": "Rounded"
+          }
+        },
+        "puckConfig": {
+          "categories": {
+            "presets": "Preset blocks",
+            "manual": "Manual blocks"
+          },
+          "blocks": {
+            "heroPreset": "Hero",
+            "aboutPreset": "About",
+            "servicesPreset": "Services",
+            "ctaPreset": "Call to action",
+            "contactPreset": "Contact",
+            "galleryGridPreset": "Gallery Grid",
+            "galleryMasonryPreset": "Gallery Masonry",
+            "featuredWorkPreset": "Featured Work",
+            "galleryLandingPreset": "Gallery landing",
+            "galleryGrid": "Photo Grid",
+            "galleryMasonry": "Masonry",
+            "featuredWork": "Highlights",
+            "video": "Video",
+            "contactDetails": "Contact Details",
+            "heading": "Heading",
+            "text": "Text",
+            "image": "Image",
+            "button": "Button",
+            "spacer": "Spacer",
+            "divider": "Divider",
+            "columns": "Columns",
+            "container": "Container"
+          },
+          "fields": {
+            "style": "Style",
+            "pageStyle": "Page style",
+            "bgAnimation": "Background animation",
+            "bgAnimationShort": "BG animation",
+            "bgSpeed": "Animation speed",
+            "bgSpeedShort": "BG speed",
+            "overlayOpacity": "Overlay opacity (0-100)",
+            "minHeight": "Min height",
+            "alignX": "Horizontal align",
+            "alignY": "Vertical align",
+            "backgroundImages": "Background images",
+            "headingText": "Heading text",
+            "headingLevel": "Level",
+            "textContent": "Text",
+            "videoUrl": "YouTube or Vimeo URL",
+            "videoDescription": "Description (optional)",
+            "videoFooter": "Footer (optional)",
+            "imageField": "Image",
+            "imageUrl": "Image URL (fallback)",
+            "imageAlt": "Alt text",
+            "imageFit": "Fit",
+            "buttonLabel": "Button label",
+            "buttonSize": "Size",
+            "buttonAction": "Action",
+            "buttonAlign": "Alignment",
+            "spacerHeight": "Height",
+            "dividerThickness": "Thickness (px)",
+            "columnsCount": "Columns",
+            "rowsCount": "Rows"
+          },
+          "options": {
+            "bgAnimation": {
+              "crossfade": "Crossfade",
+              "kenburns": "Ken Burns",
+              "slide": "Slide"
+            },
+            "bgSpeed": {
+              "slow": "Slow (7s)",
+              "medium": "Medium (5s)",
+              "fast": "Fast (3s)"
+            },
+            "bgSpeedShort": {
+              "slow": "Slow",
+              "medium": "Medium",
+              "fast": "Fast"
+            },
+            "minHeight": {
+              "auto": "Auto",
+              "short": "Short (40vh)",
+              "medium": "Medium (60vh)",
+              "tall": "Tall (80vh)"
+            },
+            "minHeightShort": {
+              "auto": "Auto",
+              "short": "Short",
+              "medium": "Medium",
+              "tall": "Tall"
+            },
+            "alignX": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            },
+            "alignY": {
+              "top": "Top",
+              "center": "Center",
+              "bottom": "Bottom"
+            },
+            "headingLevel": {
+              "h1": "Display",
+              "h2": "Title",
+              "h3": "Heading",
+              "h4": "Subheading",
+              "h5": "Caption",
+              "h6": "Label"
+            },
+            "imageFit": {
+              "cover": "Cover",
+              "contain": "Contain"
+            },
+            "buttonSize": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            },
+            "buttonAction": {
+              "openContact": "Open contact form",
+              "goToGallery": "Go to Gallery page"
+            },
+            "buttonAlign": {
+              "left": "Left",
+              "center": "Center",
+              "right": "Right"
+            }
           }
         },
         "tour": {

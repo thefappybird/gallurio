@@ -99,10 +99,14 @@ function BorderRow({
 
 function ToggleButton({
   active,
+  isEffective,
   onClick,
   children,
 }: {
   active: boolean;
+  /** True when the field is unset but the effective default makes it appear active.
+   * Renders lighter than an explicitly-set active state ("following theme"). */
+  isEffective?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -113,7 +117,8 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        active && "bg-foreground text-background hover:bg-foreground",
+        active && !isEffective && "bg-foreground text-background hover:bg-foreground",
+        isEffective && "border-foreground opacity-70",
       )}
     >
       {children}
@@ -199,8 +204,14 @@ export function HeaderPanelDialog({
     onHeaderChange({ ...header, [key]: value });
   }
 
-  function toggleBool<K extends "activeLinkScale" | "activeLinkHighlight" | "activeLinkUnderline">(key: K) {
+  function toggleBool<K extends "activeLinkScale" | "activeLinkHighlight">(key: K) {
     set(key, !header[key]);
+  }
+
+  /** Underline has an effective default of ON (undefined = on). Toggle cycles:
+   *  undefined/true (effective/explicit on) → false (off) → undefined (reset to default). */
+  function toggleUnderline() {
+    set("activeLinkUnderline", header.activeLinkUnderline !== false ? false : undefined);
   }
 
   async function uploadLogo(file: File) {
@@ -514,7 +525,11 @@ export function HeaderPanelDialog({
                   <ToggleButton active={!!header.activeLinkHighlight} onClick={() => toggleBool("activeLinkHighlight")}>
                     {t("activeStyleHighlight")}
                   </ToggleButton>
-                  <ToggleButton active={!!header.activeLinkUnderline} onClick={() => toggleBool("activeLinkUnderline")}>
+                  <ToggleButton
+                    active={header.activeLinkUnderline !== false}
+                    isEffective={header.activeLinkUnderline === undefined}
+                    onClick={toggleUnderline}
+                  >
                     {t("activeStyleUnderline")}
                   </ToggleButton>
                 </div>
@@ -552,8 +567,8 @@ export function HeaderPanelDialog({
                 />
               )}
 
-              {/* Conditional: underline color */}
-              {header.activeLinkUnderline && (
+              {/* Conditional: underline color — visible when underline is on (undefined = default ON) */}
+              {header.activeLinkUnderline !== false && (
                 // underlineColor: PortfolioHeader fallback = var(--pf-color-accent) → "accent"
                 <LabeledSwatchRow
                   label={t("underlineColorLabel")}

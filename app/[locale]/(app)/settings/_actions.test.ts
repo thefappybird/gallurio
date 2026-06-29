@@ -39,6 +39,7 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/storage/cloudflareImages", () => ({
   deleteImage: vi.fn().mockResolvedValue(undefined),
+  verifyImageOwnership: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("@/lib/db/mongoose", () => ({
@@ -309,6 +310,142 @@ describe("updateWorkspaceBusinessAction", () => {
 });
 
 // ---- updatePublicPageSettingsAction -----------------------------------------
+
+describe("updatePublicPageSettingsAction — seo fields", () => {
+  it("persists seo.galleryDescription to the workspace doc", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "A curated gallery of wedding photography." },
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.seo?.galleryDescription).toBe(
+      "A curated gallery of wedding photography.",
+    );
+  });
+
+  it("persists seo.noindex toggle", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { noindex: true },
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.seo?.noindex).toBe(true);
+  });
+
+  it("rejects seo.ogImageAssetId when ownership fails", async () => {
+    await seedWorkspaceA();
+
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(false);
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://cdn.example.com/og.jpg",
+        ogImageAssetId: "og_notmine",
+      },
+    });
+
+    expect(result.error).toBe("invalid_og_image");
+  });
+
+  it("galleryDescription > 160 chars is rejected", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "x".repeat(161) },
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("owner-only — non-owner cannot update seo fields", async () => {
+    await seedWorkspaceA();
+
+    await User.create({
+      workosUserId: "user_seo_staff",
+      email: "seostaff@test.com",
+      name: "SEO Staff",
+      onboardingStep: "done",
+      onboardingCompletedAt: new Date(),
+      memberships: [{ workspaceId: WS_A_ID, role: "staff" }],
+    });
+
+    mockGetAuthUser.mockResolvedValue({
+      workosUserId: "user_seo_staff",
+      email: "seostaff@test.com",
+      name: "SEO Staff",
+      avatarUrl: null,
+    });
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "Hacked description" },
+    });
+
+    expect(result.error).toBe("owner_only");
+  });
+
+  it("tenant isolation — workspace B seo is NOT touched", async () => {
+    await seedWorkspaceA();
+    await seedWorkspaceB();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "WS_A gallery" },
+    });
+
+    expect(result.ok).toBe(true);
+
+    const wsB = await Workspace.findById(WS_B_ID).lean();
+    expect(wsB?.publicPage?.seo?.galleryDescription ?? "").toBe("");
+  });
+
+  it("persists seo.ogImageUrl and ogImageAssetId when ownership verified", async () => {
+    await seedWorkspaceA();
+
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://cdn.example.com/og.jpg",
+        ogImageAssetId: "og_abc",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.seo?.ogImageUrl).toBe("https://cdn.example.com/og.jpg");
+    expect(ws?.publicPage?.seo?.ogImageAssetId).toBe("og_abc");
+  });
+
+  it("deletes old OG image when replacing with new one", async () => {
+    await seedWorkspaceA();
+
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      { $set: { "publicPage.seo.ogImageAssetId": "old_og_id" } },
+    );
+
+    vi.mocked(verifyImageOwnership).mockResolvedValueOnce(true);
+    vi.mocked(deleteImage).mockResolvedValue(undefined);
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://cdn.example.com/new-og.jpg",
+        ogImageAssetId: "new_og_id",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(deleteImage)).toHaveBeenCalledWith("old_og_id");
+  });
+});
 
 describe("updatePublicPageSettingsAction", () => {
   it("updates SEO and inquiry fields", async () => {
@@ -949,7 +1086,7 @@ describe("sendSetPasswordEmailAction", () => {
 
 // ---- updateAvatarAction -----------------------------------------------------
 
-const { deleteImage } = await import("@/lib/storage/cloudflareImages");
+const { deleteImage, verifyImageOwnership } = await import("@/lib/storage/cloudflareImages");
 
 describe("updateAvatarAction", () => {
   const NEW_URL = "https://res.cloudinary.com/demo/image/upload/sample.jpg";
@@ -1047,5 +1184,79 @@ describe("updateAvatarAction", () => {
     });
 
     expect(result).toEqual({ error: "not_authenticated" });
+  });
+});
+
+// ---- updatePublicPageSettingsAction — seo extended --------------------------
+
+const { verifyImageOwnership: verifyOwnership } = await import(
+  "@/lib/storage/cloudflareImages"
+);
+
+describe("updatePublicPageSettingsAction — seo extended", () => {
+  it("rejects galleryDescription longer than 160 chars", async () => {
+    await seedWorkspaceA();
+
+    const result = await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "x".repeat(161) },
+    });
+
+    expect(result.error).toBeTruthy();
+  });
+
+  it("rejects OG image when verifyImageOwnership returns false", async () => {
+    await seedWorkspaceA();
+    vi.mocked(verifyOwnership).mockResolvedValueOnce(false);
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://imagedelivery.net/h/og123/public",
+        ogImageAssetId: "og123",
+      },
+    });
+
+    expect(result.error).toBeTruthy();
+
+    const ws = await Workspace.findById(WS_A_ID).lean();
+    expect(ws?.publicPage?.seo?.ogImageAssetId ?? "").toBe("");
+  });
+
+  it("deletes old OG image when a new one replaces it", async () => {
+    const OLD_OG = "og_old_456";
+    await seedWorkspaceA();
+    await Workspace.updateOne(
+      { _id: WS_A_ID },
+      {
+        $set: {
+          "publicPage.seo.ogImageUrl": "https://old.example.com/og.jpg",
+          "publicPage.seo.ogImageAssetId": OLD_OG,
+        },
+      },
+    );
+
+    vi.mocked(verifyOwnership).mockResolvedValueOnce(true);
+    const { deleteImage: del } = await import("@/lib/storage/cloudflareImages");
+
+    const result = await updatePublicPageSettingsAction({
+      seo: {
+        ogImageUrl: "https://imagedelivery.net/h/og_new/public",
+        ogImageAssetId: "og_new",
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(del).toHaveBeenCalledWith(OLD_OG);
+  });
+
+  it("tenant isolation — workspace B seo is not affected", async () => {
+    await seedWorkspaceA();
+    await seedWorkspaceB();
+
+    await updatePublicPageSettingsAction({
+      seo: { galleryDescription: "Only for workspace A." },
+    });
+
+    const wsB = await Workspace.findById(WS_B_ID).lean();
+    expect(wsB?.publicPage?.seo?.galleryDescription ?? "").toBe("");
   });
 });

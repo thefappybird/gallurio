@@ -12,6 +12,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
+import { isValidElement, type ReactNode } from "react";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import {
@@ -69,6 +70,13 @@ function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {
   return puck?.metadata?.workspace?.slug;
 }
 
+// Puck's contentEditable transform swaps a text-prop string for an editable React
+// element on the canvas. Render that element directly; otherwise coerce via asText
+// (which also tolerates legacy `{ text }` objects from old drafts).
+function inlineText(value: unknown): ReactNode {
+  return isValidElement(value) ? value : asText(value);
+}
+
 // ---------------------------------------------------------------------------
 // Heading
 // ---------------------------------------------------------------------------
@@ -92,7 +100,7 @@ const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
 };
 
 export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & { puck?: BlockPuck }) {
-  const textContent = asText(text);
+  const textContent = inlineText(text);
   const Tag = level;
   const hl = _style?.highlight;
   return (
@@ -161,7 +169,7 @@ export const textDefaultProps: TextBlockProps = {
 };
 
 export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: BlockPuck }) {
-  const textContent = asText(text);
+  const textContent = inlineText(text);
   const hl = _style?.highlight;
   return (
     <div
@@ -489,6 +497,9 @@ export const dividerBlockConfig: ComponentConfig<DividerBlockProps> = {
 // ---------------------------------------------------------------------------
 
 export type ColumnsBlockProps = {
+  /** Puck-injected unique block id — scopes per-instance CSS so multiple
+   *  Columns blocks never share @container rules (prevents cross-contamination). */
+  id?: string;
   _style?: BlockStyle;
   /** Column count 1–6. Accepts legacy 2|3 values — back-compat guaranteed. */
   columns: number;
@@ -496,6 +507,12 @@ export type ColumnsBlockProps = {
    *  rows so child `rowSpan` values are meaningful. Unset (or 1) keeps the
    *  current auto-row behaviour so existing layouts are unaffected. */
   rows?: number;
+  /** CSS length minimum height for the grid outer wrapper, e.g. "200px" or "30%".
+   *  Unset = no min-height constraint (content-sized). */
+  minHeight?: string;
+  /** Layout: "page-fit" (default) keeps max-width:80rem;margin:0 auto.
+   *  "full" breaks out of any max-width parent via width:100vw + negative margin. */
+  overallWidth?: "page-fit" | "full";
   content: Slot;
 };
 
@@ -510,6 +527,7 @@ export const COLUMNS_EFFECTIVE_PAD = {
 export const columnsDefaultProps: ColumnsBlockProps = {
   columns: 2,
   rows: undefined,
+  overallWidth: "page-fit",
   content: [],
   _style: {
     gap: 16,
@@ -517,15 +535,21 @@ export const columnsDefaultProps: ColumnsBlockProps = {
 };
 
 export function ColumnsBlock({
+  id,
   _style,
   columns,
   rows,
+  minHeight,
+  overallWidth,
   content: Content,
   puck,
 }: {
+  id?: string;
   _style?: BlockStyle;
   columns: number;
   rows?: number;
+  minHeight?: string;
+  overallWidth?: "page-fit" | "full";
   content: SlotComponent;
   puck?: BlockPuck;
 }) {
@@ -541,6 +565,27 @@ export function ColumnsBlock({
   // Whether we are inside the Puck editor canvas. Puck injects `isEditing: true`
   // into the puck prop during editing; it is false (or absent) during public render.
   const isEditing = puck?.isEditing === true;
+
+  // Per-instance CSS scoping (A1 — items 3/4/6): each Columns block gets its own
+  // containerName and CSS class so multiple instances on the same page are fully
+  // isolated. The old shared containerName "pf-cols" caused ALL @container rules
+  // to fire for ALL Columns elements simultaneously: a colSpan resize in one block
+  // could retrigger every other block's container query, creating an oscillation
+  // that culminated in a crash (4-col + col3 GalleryLanding spanning 2 tracks).
+  // Unique names per-instance eliminate this cross-contamination entirely.
+  //
+  // Puck injects a unique `id` (e.g. "Columns-1a2b") into every block's top-level
+  // props. We sanitize it to a valid CSS ident fragment (letters/digits/hyphens only)
+  // and use it to namespace:
+  //   - outer element's containerName  → pfcols-${instanceId}
+  //   - inner grid's CSS class          → .pf-cols-${instanceId}
+  //   - optional rows class             → .pf-cols-rows-${instanceId}
+  // Falls back to "inst" when rendered outside Puck (unit tests).
+  const instanceId = (id ? id.replace(/[^a-zA-Z0-9_-]/g, "") : "") || "inst";
+  const instanceClass = `pf-cols-${instanceId}`;
+  const instanceContainer = `pfcols-${instanceId}`;
+  const instanceRowsClass = `pf-cols-rows-${instanceId}`;
+
   // Build per-instance scoped CSS rules for this column/row count.
   // Container queries (keyed off the block's own width via `container-type:inline-size`
   // on the outer div) are used instead of viewport min-width media queries. This is
@@ -553,21 +598,26 @@ export function ColumnsBlock({
   //
   // The editor canvas is only ~428px wide (both panels open at 1280px viewport), so the
   // 480px breakpoint never fires there — which would make the editor always look 1-column.
-  // Instead, when isEditing is true we inject a direct inline gridTemplateColumns so the
-  // editor always shows the actual configured column count (bypassing the media queries).
+  // Instead, when isEditing is true we inject direct inline gridTemplate* overrides so
+  // the editor always shows the actual configured column and row counts without relying
+  // on container-query breakpoints that could oscillate.
   const colsRule = cols === 1
     ? "" // 1-col: stays 1fr at all sizes (no extra rule needed)
-    : `@container pf-cols (min-width:480px){.pf-cols-${cols}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
+    : `@container ${instanceContainer} (min-width:480px){.${instanceClass}{grid-template-columns:repeat(${tabletCols},minmax(0,1fr));}}` +
       (cols > 2
-        ? `@container pf-cols (min-width:720px){.pf-cols-${cols}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
+        ? `@container ${instanceContainer} (min-width:720px){.${instanceClass}{grid-template-columns:repeat(${cols},minmax(0,1fr));}}`
         : "");
   const rowsRule = hasRows
-    ? `@container pf-cols (min-width:480px){.pf-cols-rows-${rowCount}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
+    ? `@container ${instanceContainer} (min-width:480px){.${instanceRowsClass}{grid-template-rows:repeat(${rowCount},minmax(0,auto));}}`
     : "";
-  // Editor-only: show the real column count regardless of canvas width.
-  // This is an inline override so it outranks the container-query class rules.
+  // Editor-only (A1/A3): inline override outranks @container class rules so the
+  // canvas grid is driven purely by these values, not by breakpoint oscillation.
   const editorGridCols = isEditing && cols > 1
     ? `repeat(${cols},minmax(0,1fr))`
+    : undefined;
+  // Editor-only (A2): show the configured row count WYSIWYG in the narrow canvas.
+  const editorGridRows = isEditing && hasRows
+    ? `repeat(${rowCount},minmax(0,auto))`
     : undefined;
   // Gap is configurable via the Layout tab (_style.gap, px). Falls back to 1rem.
   const gapValue =
@@ -584,28 +634,42 @@ export function ColumnsBlock({
         paddingRight: _style?.paddingRight ?? COLUMNS_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? COLUMNS_EFFECTIVE_PAD.bottom,
         paddingLeft: _style?.paddingLeft ?? COLUMNS_EFFECTIVE_PAD.left,
+        minHeight: minHeight ?? undefined,
         ...outerStyle,
+        // A7: full-bleed breaks out of any max-width parent container.
+        // Placed after outerStyle so full-bleed width/marginLeft always wins.
+        // Bug #9: cap to canvas width in editor so 100vw (= full viewport with
+        // both Puck panels) does not overflow the narrow canvas (~428px). On the
+        // public page the true 100vw full-bleed is kept intact.
+        ...(overallWidth === "full"
+          ? isEditing
+            ? { width: "100%", marginLeft: 0 }
+            : { width: "100vw", marginLeft: "calc(50% - 50vw)" }
+          : {}),
         containerType: "inline-size",
-        containerName: "pf-cols",
+        containerName: instanceContainer,
       }}
       {...resolveBlockAttrs(_style)}
     >
-      {/* Responsive: 1 column on narrow containers, tablet min(2,cols), desktop=cols.
-          Container queries (not viewport min-width) are used so colSpan/rowSpan
-          work correctly when the editor canvas is narrower than the viewport.
-          Inline styles can't hold @container rules, so scoped classes + a <style>
-          drive the breakpoints. */}
+      {/* Per-instance scoped @container rules: each Columns block gets its own
+          unique containerName and CSS class so multiple blocks on the same page
+          are fully isolated. Container queries (not viewport media queries) are
+          used so colSpan/rowSpan work correctly in the narrow editor canvas. */}
       <style>{`
-        .pf-cols{display:grid;gap:${gapValue};max-width:80rem;margin:0 auto;grid-template-columns:1fr;}
+        .${instanceClass}{display:grid;align-items:stretch;gap:${gapValue};${overallWidth === "full" ? "" : "max-width:80rem;margin:0 auto;"}grid-template-columns:1fr;}
         ${colsRule}
         ${rowsRule}
       `}</style>
       {Content({
-        className: `pf-cols pf-cols-${cols}${hasRows ? ` pf-cols-rows-${rowCount}` : ""}`,
-        // In the editor, bypass the container-query breakpoints so the chosen
-        // column count is visible in the narrow (~428px) canvas. On the public
-        // page this stays empty and the @container rules drive the layout.
-        style: editorGridCols ? { gridTemplateColumns: editorGridCols } : {},
+        className: `${instanceClass}${hasRows ? ` ${instanceRowsClass}` : ""}`,
+        // Editor: inline styles bypass container-query breakpoints so columns and
+        // rows are WYSIWYG in the narrow (~428px) canvas. Inline > @container in
+        // CSS specificity so these always take priority. Public: empty objects —
+        // @container rules drive the responsive layout.
+        style: {
+          ...(editorGridCols ? { gridTemplateColumns: editorGridCols } : {}),
+          ...(editorGridRows ? { gridTemplateRows: editorGridRows } : {}),
+        },
       })}
     </div>
   );
@@ -635,7 +699,7 @@ export const columnsBlockConfig: ComponentConfig<ColumnsBlockProps> = {
 // min-height, and content alignment, with a slot that nests any other blocks.
 // ---------------------------------------------------------------------------
 
-export type ContainerHeight = "auto" | "short" | "medium" | "tall";
+export type ContainerHeight = "auto" | "short" | "medium" | "tall" | "custom";
 export type ContainerAlignX = "left" | "center" | "right";
 export type ContainerAlignY = "top" | "center" | "bottom";
 
@@ -648,6 +712,8 @@ export type ContainerBlockProps = {
   /** Dark scrim over the background, 0-100. Only meaningful with >=1 image. */
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  /** CSS length value when minHeight === "custom", e.g. "200px" or "30%". */
+  minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
   content: Slot;
@@ -672,7 +738,7 @@ export const containerDefaultProps: ContainerBlockProps = {
   content: [],
 };
 
-const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
+const CONTAINER_MIN_HEIGHT: Record<Exclude<ContainerHeight, "custom">, string | undefined> = {
   auto: undefined,
   short: "40vh",
   medium: "60vh",
@@ -685,11 +751,13 @@ const CONTAINER_MIN_HEIGHT: Record<ContainerHeight, string | undefined> = {
 // MODEL the same size as the VISIBLE area, so its selection / action-bar overlay
 // (positioned off that model) reliably tracks an empty container the same way it
 // does any other block. Never used on the public page (gated on puck.isEditing).
+// "custom" falls back to 128 (auto) since the px value is unknown at schema time.
 export const CONTAINER_EDITOR_HEIGHT_PX: Record<ContainerHeight, number> = {
   auto: 128,
   short: 320,
   medium: 480,
   tall: 640,
+  custom: 128,
 };
 const ALIGN_Y_MAP: Record<ContainerAlignY, string> = { top: "flex-start", center: "center", bottom: "flex-end" };
 const ALIGN_X_ITEMS: Record<ContainerAlignX, string> = { left: "flex-start", center: "center", right: "flex-end" };
@@ -706,6 +774,7 @@ export function ContainerBlock({
   bgSpeed,
   overlayOpacity,
   minHeight,
+  minHeightValue,
   alignX,
   alignY,
   content: Content,
@@ -717,6 +786,7 @@ export function ContainerBlock({
   bgSpeed?: "slow" | "medium" | "fast";
   overlayOpacity?: number;
   minHeight?: ContainerHeight;
+  minHeightValue?: string;
   alignX?: ContainerAlignX;
   alignY?: ContainerAlignY;
   content: SlotComponent;
@@ -770,8 +840,12 @@ export function ContainerBlock({
         flexGrow: 1,
         justifyContent: effectiveJustify,
         minHeight: puck?.isEditing
-          ? `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
-          : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
+          ? minHeight === "custom"
+            ? (minHeightValue ?? "128px")
+            : `${CONTAINER_EDITOR_HEIGHT_PX[minHeight ?? "auto"]}px`
+          : minHeight === "custom"
+            ? minHeightValue
+            : CONTAINER_MIN_HEIGHT[minHeight ?? "auto"],
         paddingTop: _style?.paddingTop ?? CONTAINER_EFFECTIVE_PAD.top,
         paddingRight: _style?.paddingRight ?? CONTAINER_EFFECTIVE_PAD.right,
         paddingBottom: _style?.paddingBottom ?? CONTAINER_EFFECTIVE_PAD.bottom,

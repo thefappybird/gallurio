@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePuckStore } from "./puckHooks";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_CONTAINER_NAME, PF_RESPONSIVE_CSS } from "./responsive";
+import { CANVAS_DEVICE_WIDTHS, useCanvasViewport } from "./canvasViewportStore";
 
 const CANVAS_STYLE_ID = "pf-root-canvas-style";
 
@@ -110,12 +111,40 @@ const CANVAS_ROOT_DROPZONE_CSS =
  * (always present, so the canvas reflows with the viewport toggle) with the
  * dynamic per-page root style layered on top.
  */
-export function buildCanvasCss(style?: RootPageStyle | null): string {
+/**
+ * Materialize the brand background on the canvas surface so it matches
+ * preview/publish. PreviewBrandShell sets `backgroundColor: var(--pf-color-bg)`
+ * explicitly; the canvas has no such wrapper, so we inject it here.
+ * Placed BEFORE rootRule so an explicit bgColorToken in the page style still wins
+ * (same selector, last rule wins in CSS cascade).
+ */
+const CANVAS_EFFECTIVE_BG_CSS =
+  `${CANVAS_SURFACE_SELECTOR} { background-color: var(--pf-color-bg); }`;
+
+// Device-width clamp + zoom for the edit canvas. Since `[data-puck-preview]` is
+// the `pfpage` container, clamping its width makes the same container-query rules
+// that drive the public page reflow blocks LIVE at the selected breakpoint. Zoom
+// is a CSS scale on the same surface (transform-origin top-center keeps it
+// centered as it shrinks). The clamp is only emitted for non-desktop widths
+// (deviceWidth !== null) so desktop stays full-width.
+export function buildCanvasViewportCss(deviceWidth: number | null, zoom: number): string {
+  const rules: string[] = [];
+  if (deviceWidth !== null) rules.push(`width: ${deviceWidth}px; margin-inline: auto;`);
+  if (zoom !== 1) rules.push(`transform: scale(${zoom}); transform-origin: top center;`);
+  return rules.length ? `${CANVAS_SURFACE_SELECTOR} { ${rules.join(" ")} }` : "";
+}
+
+export function buildCanvasCss(
+  style?: RootPageStyle | null,
+  viewport?: { deviceWidth: number | null; zoom: number },
+): string {
   const decls = rootCanvasCssText(style);
   const rootRule = decls
     ? `[data-puck-preview], .Puck-root, .PuckLayout-content { ${decls} }`
     : "";
-  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${rootRule}`;
+  // Emitted last so it layers over the base width rules in the cascade.
+  const viewportRule = viewport ? buildCanvasViewportCss(viewport.deviceWidth, viewport.zoom) : "";
+  return `${PF_CANVAS_CONTAINER_CSS}\n${CANVAS_COLOR_ISOLATION_CSS}\n${CANVAS_GROWTH_CSS}\n${CANVAS_PUCK_PREVIEW_HEIGHT_CSS}\n${CANVAS_PUCK_LAYOUT_GROWTH_CSS}\n${CANVAS_PUCK_CANVAS_ROOT_CSS}\n${CANVAS_ROOT_DROPZONE_CSS}\n${PF_RESPONSIVE_CSS}\n${CANVAS_EFFECTIVE_BG_CSS}\n${rootRule}\n${viewportRule}`;
 }
 
 /**
@@ -129,6 +158,8 @@ export function RootCanvasStyle() {
     (s) =>
       (s.appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)?._rootStyle,
   );
+  const { device, zoom } = useCanvasViewport();
+  const deviceWidth = CANVAS_DEVICE_WIDTHS[device];
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -138,11 +169,11 @@ export function RootCanvasStyle() {
       tag.id = CANVAS_STYLE_ID;
       document.head.appendChild(tag);
     }
-    tag.textContent = buildCanvasCss(rootStyle);
+    tag.textContent = buildCanvasCss(rootStyle, { deviceWidth, zoom });
     return () => {
       if (tag) tag.textContent = "";
     };
-  }, [rootStyle]);
+  }, [rootStyle, deviceWidth, zoom]);
 
   return null;
 }

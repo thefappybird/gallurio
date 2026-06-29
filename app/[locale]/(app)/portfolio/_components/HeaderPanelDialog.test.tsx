@@ -206,4 +206,27 @@ describe("HeaderPanelDialog", () => {
     expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
     expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
   });
+
+  // C2: underline toggle — effective default ON (undefined → shows as lighter-active)
+  it("underline toggle appears lighter-active when unset (effective default = ON)", () => {
+    const onHeaderChange = vi.fn();
+    renderWithProviders(
+      <HeaderPanelDialog
+        {...baseProps}
+        header={{} satisfies PortfolioHeaderConfig}
+        onHeaderChange={onHeaderChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+
+    const underlineBtn = screen.getByRole("button", { name: /underline/i });
+    // aria-pressed=true when effective default is active
+    expect(underlineBtn).toHaveAttribute("aria-pressed", "true");
+    // Clicking sets it to false (explicit off)
+    fireEvent.click(underlineBtn);
+    expect(onHeaderChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ activeLinkUnderline: false }),
+    );
+  });
 });
