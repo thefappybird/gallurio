@@ -59,6 +59,7 @@ export const featuredWorkDefaultProps: FeaturedWorkProps = {
   backgroundImages: [],
   bgAnimation: "crossfade",
   bgSpeed: "medium",
+  minHeight: "medium",
 };
 
 // ---------------------------------------------------------------------------
