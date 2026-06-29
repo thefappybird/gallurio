@@ -161,6 +161,30 @@ describe("PublicPageSettingsForm — site icon section", () => {
     expect(screen.getByText("galleryDescriptionLabel")).toBeInTheDocument();
   });
 
+  it("uses responsive grid layouts for visibility, SEO, and media sections", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    expect(screen.getByTestId("public-page-visibility-layout")).toHaveClass(
+      "grid",
+      "lg:grid-cols-[minmax(0,1fr)_auto]",
+    );
+    expect(screen.getByTestId("public-page-seo-layout")).toHaveClass(
+      "grid",
+      "xl:grid-cols-2",
+    );
+    expect(screen.getByTestId("public-page-media-layout")).toHaveClass(
+      "grid",
+      "xl:grid-cols-2",
+    );
+  });
+
   it("renders noindex checkbox", () => {
     render(
       <PublicPageSettingsForm

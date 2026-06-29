@@ -198,63 +198,70 @@ export function PublicPageSettingsForm({
           <p className="text-sm text-muted-foreground">{t("visibilityHint")}</p>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <span
-              className={[
-                "inline-flex items-center border px-2 py-0.5 text-xs font-medium",
-                isPublished
-                  ? "border-brand/40 bg-brand/10 text-brand"
-                  : "border-border bg-muted text-muted-foreground",
-              ].join(" ")}
-            >
-              {isPublished
-                ? t("publishedAt", {
-                    date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
-                      optimisticPublishedAt!
-                    ),
-                  })
-                : t("unpublished")}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label>{t("publicUrl")}</Label>
-            <div className="flex items-stretch">
-              <span className="flex min-h-[2.25rem] items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
-                {publicUrl}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-[2.25rem] shrink-0 border-s-0"
-                onClick={handleCopy}
+        <div
+          data-testid="public-page-visibility-layout"
+          className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]"
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <span
+                className={[
+                  "inline-flex items-center border px-2 py-0.5 text-xs font-medium",
+                  isPublished
+                    ? "border-brand/40 bg-brand/10 text-brand"
+                    : "border-border bg-muted text-muted-foreground",
+                ].join(" ")}
               >
-                {copied ? t("copied") : t("copy")}
-              </Button>
+                {isPublished
+                  ? t("publishedAt", {
+                      date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+                        optimisticPublishedAt!
+                      ),
+                    })
+                  : t("unpublished")}
+              </span>
+            </div>
+
+            <div className="flex gap-1.5">
+              <div className="flex flex-col gap-1.5">
+                <Label>{t("publicUrl")}</Label>
+                <div className="flex items-stretch">
+                  <span className="flex min-h-[2.25rem] items-center border border-e-0 border-input bg-muted px-3 text-sm text-muted-foreground select-none">
+                    <span className="truncate">{publicUrl}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="min-h-[2.25rem] shrink-0 border-s-0"
+                    onClick={handleCopy}
+                  >
+                    {copied ? t("copied") : t("copy")}
+                  </Button>
+                </div>
+              </div>
+              <div className="lg:flex lg:items-end">
+                <Button
+                  type="button"
+                  variant={isPublished ? "outline" : "default"}
+                  disabled={isPending}
+                  onClick={handleTogglePublish}
+                  className="min-h-[2.25rem] w-full lg:w-auto"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      {t("saving")}
+                    </>
+                  ) : isPublished ? (
+                    t("unpublish")
+                  ) : (
+                    t("publish")
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
-          <div>
-            <Button
-              type="button"
-              variant={isPublished ? "outline" : "default"}
-              disabled={isPending}
-              onClick={handleTogglePublish}
-              className="min-h-[2.75rem]"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("saving")}
-                </>
-              ) : isPublished ? (
-                t("unpublish")
-              ) : (
-                t("publish")
-              )}
-            </Button>
-          </div>
         </div>
       </section>
 
@@ -267,7 +274,10 @@ export function PublicPageSettingsForm({
             <p className="text-sm text-muted-foreground">{t("seoSectionHint")}</p>
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div
+            data-testid="public-page-seo-layout"
+            className="grid grid-cols-1 gap-5 xl:grid-cols-2"
+          >
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="seoTitle">{t("seoTitle")}</Label>
               <Input
@@ -280,7 +290,7 @@ export function PublicPageSettingsForm({
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 xl:col-span-2">
               <Label htmlFor="seoDescription">{t("seoDescription")}</Label>
               <textarea
                 id="seoDescription"
@@ -298,7 +308,7 @@ export function PublicPageSettingsForm({
               </p>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 xl:col-span-2">
               <Label htmlFor="galleryDescription">{t("galleryDescriptionLabel")}</Label>
               <textarea
                 id="galleryDescription"
@@ -318,193 +328,199 @@ export function PublicPageSettingsForm({
         </section>
 
         {/* Share image (OG) section */}
-        <section className="flex flex-col gap-4 border-t border-border pt-8">
-          <div>
-            <h2 className="text-lg font-semibold">{t("ogImageSection")}</h2>
-            <p className="text-sm text-muted-foreground">{t("ogImageHint")}</p>
-          </div>
+        <div
+          data-testid="public-page-media-layout"
+          className="grid grid-cols-1 gap-8 xl:grid-cols-2"
+        >
+          {/* Share image (OG) section */}
+          <section className="flex flex-col gap-4 border-t border-border pt-8 xl:pt-8">
+            <div>
+              <h2 className="text-lg font-semibold">{t("ogImageSection")}</h2>
+              <p className="text-sm text-muted-foreground">{t("ogImageHint")}</p>
+            </div>
 
-          <div className="flex flex-col gap-3">
-            {ogImageUrl ? (
-              <div className="flex flex-col gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={ogImageUrl}
-                  alt={t("ogImageLabel")}
-                  className="border border-border object-cover bg-muted w-full"
-                  style={{ maxWidth: 480, aspectRatio: "1200 / 630" }}
-                />
-                <div className="flex gap-2">
+            <div className="flex flex-col gap-3">
+              {ogImageUrl ? (
+                <div className="flex flex-col gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={ogImageUrl}
+                    alt={t("ogImageLabel")}
+                    className="w-full border border-border bg-muted object-cover"
+                    style={{ maxWidth: 480, aspectRatio: "1200 / 630" }}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={ogUploading}
+                      onClick={() => ogFileInputRef.current?.click()}
+                    >
+                      {t("ogImageReplace")}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={ogUploading}
+                      onClick={handleRemoveOg}
+                      className="flex items-center gap-1.5"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      {t("ogImageRemove")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <label
+                  htmlFor="ogImageFile"
+                  className={[
+                    "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
+                    ogUploading
+                      ? "pointer-events-none opacity-60"
+                      : "border-input hover:border-brand hover:bg-brand/5",
+                  ].join(" ")}
+                >
+                  {ogUploading ? (
+                    <>
+                      <Loader2
+                        className="h-6 w-6 animate-spin text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {t("ogImageUploading")}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                      <span className="text-sm font-medium">{t("ogImageLabel")}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("ogImageRequirements")}
+                      </span>
+                    </>
+                  )}
+                </label>
+              )}
+
+              <input
+                ref={ogFileInputRef}
+                id="ogImageFile"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                className="sr-only"
+                aria-label={t("ogImageLabel")}
+                disabled={ogUploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleOgFile(file);
+                }}
+              />
+
+              {ogError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {ogError}
+                </p>
+              )}
+            </div>
+
+            <input type="hidden" {...register("seo.ogImageUrl")} />
+            <input type="hidden" {...register("seo.ogImageAssetId")} />
+          </section>
+
+          {/* Site icon section */}
+          <section className="flex flex-col gap-4 border-t border-border pt-8 xl:pt-8">
+            <div>
+              <h2 className="text-lg font-semibold">{t("siteIconSection")}</h2>
+              <p className="text-sm text-muted-foreground">{t("siteIconHint")}</p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {siteIconUrl ? (
+                <div className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={siteIconUrl}
+                    alt={t("siteIconLabel")}
+                    className="h-16 w-16 border border-border bg-muted object-contain"
+                  />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={ogUploading}
-                    onClick={() => ogFileInputRef.current?.click()}
-                  >
-                    {t("ogImageReplace")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={ogUploading}
-                    onClick={handleRemoveOg}
+                    disabled={iconUploading}
+                    onClick={handleRemoveIcon}
                     className="flex items-center gap-1.5"
                   >
                     <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    {t("ogImageRemove")}
+                    {t("siteIconRemove")}
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <label
-                htmlFor="ogImageFile"
-                className={[
-                  "flex cursor-pointer flex-col items-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
-                  ogUploading
-                    ? "pointer-events-none opacity-60"
-                    : "border-input hover:border-brand hover:bg-brand/5",
-                ].join(" ")}
-              >
-                {ogUploading ? (
-                  <>
-                    <Loader2
-                      className="h-6 w-6 animate-spin text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {t("ogImageUploading")}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
-                    <span className="text-sm font-medium">{t("ogImageLabel")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t("ogImageRequirements")}
-                    </span>
-                  </>
-                )}
-              </label>
-            )}
-
-            <input
-              ref={ogFileInputRef}
-              id="ogImageFile"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif"
-              className="sr-only"
-              aria-label={t("ogImageLabel")}
-              disabled={ogUploading}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleOgFile(file);
-              }}
-            />
-
-            {ogError && (
-              <p className="text-sm text-destructive" role="alert">
-                {ogError}
-              </p>
-            )}
-          </div>
-
-          <input type="hidden" {...register("seo.ogImageUrl")} />
-          <input type="hidden" {...register("seo.ogImageAssetId")} />
-        </section>
-
-        {/* Site icon section */}
-        <section className="flex flex-col gap-4 border-t border-border pt-8">
-          <div>
-            <h2 className="text-lg font-semibold">{t("siteIconSection")}</h2>
-            <p className="text-sm text-muted-foreground">{t("siteIconHint")}</p>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {siteIconUrl ? (
-              <div className="flex items-center gap-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={siteIconUrl}
-                  alt={t("siteIconLabel")}
-                  className="h-16 w-16 border border-border object-contain bg-muted"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={iconUploading}
-                  onClick={handleRemoveIcon}
-                  className="flex items-center gap-1.5"
+              ) : (
+                <label
+                  htmlFor="siteIconFile"
+                  className={[
+                    "flex min-h-56 cursor-pointer flex-col items-center justify-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
+                    iconDragActive
+                      ? "border-brand bg-brand/5"
+                      : "border-input hover:border-brand hover:bg-brand/5",
+                    iconUploading ? "pointer-events-none opacity-60" : "",
+                  ].join(" ")}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIconDragActive(true);
+                  }}
+                  onDragLeave={() => setIconDragActive(false)}
+                  onDrop={handleIconDrop}
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" />
-                  {t("siteIconRemove")}
-                </Button>
-              </div>
-            ) : (
-              <label
-                htmlFor="siteIconFile"
-                className={[
-                  "flex cursor-pointer flex-col items-center gap-2 border border-dashed px-6 py-8 text-center transition-colors",
-                  iconDragActive
-                    ? "border-brand bg-brand/5"
-                    : "border-input hover:border-brand hover:bg-brand/5",
-                  iconUploading ? "pointer-events-none opacity-60" : "",
-                ].join(" ")}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIconDragActive(true);
-                }}
-                onDragLeave={() => setIconDragActive(false)}
-                onDrop={handleIconDrop}
-              >
-                {iconUploading ? (
-                  <>
-                    <Loader2
-                      className="h-6 w-6 animate-spin text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <span className="text-sm text-muted-foreground">
-                      {t("siteIconUploading")}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Upload
-                      className="h-6 w-6 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <span className="text-sm font-medium">{t("siteIconLabel")}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {t("siteIconRequirements")}
-                    </span>
-                  </>
-                )}
-              </label>
-            )}
+                  {iconUploading ? (
+                    <>
+                      <Loader2
+                        className="h-6 w-6 animate-spin text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {t("siteIconUploading")}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload
+                        className="h-6 w-6 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm font-medium">{t("siteIconLabel")}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {t("siteIconRequirements")}
+                      </span>
+                    </>
+                  )}
+                </label>
+              )}
 
-            <input
-              ref={iconFileInputRef}
-              id="siteIconFile"
-              type="file"
-              accept={SITE_ICON_TYPES.join(",")}
-              className="sr-only"
-              aria-label={t("siteIconLabel")}
-              disabled={iconUploading}
-              onChange={handleIconInputChange}
-            />
+              <input
+                ref={iconFileInputRef}
+                id="siteIconFile"
+                type="file"
+                accept={SITE_ICON_TYPES.join(",")}
+                className="sr-only"
+                aria-label={t("siteIconLabel")}
+                disabled={iconUploading}
+                onChange={handleIconInputChange}
+              />
 
-            {iconError && (
-              <p className="text-sm text-destructive" role="alert">
-                {iconError}
-              </p>
-            )}
-          </div>
+              {iconError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {iconError}
+                </p>
+              )}
+            </div>
 
-          <input type="hidden" {...register("siteIconUrl")} />
-          <input type="hidden" {...register("siteIconAssetId")} />
-        </section>
+            <input type="hidden" {...register("siteIconUrl")} />
+            <input type="hidden" {...register("siteIconAssetId")} />
+          </section>
+        </div>
 
         {/* Search visibility (noindex) section */}
         <section className="flex flex-col gap-4 border-t border-border pt-8">
@@ -533,19 +549,21 @@ export function PublicPageSettingsForm({
             <p className="text-sm text-muted-foreground">{t("inquirySectionHint")}</p>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="inquiryRecipientEmail">{t("inquiryRecipientEmail")}</Label>
-            <Input
-              id="inquiryRecipientEmail"
-              type="email"
-              placeholder={t("inquiryRecipientEmailPlaceholder")}
-              {...register("inquiryRecipientEmail")}
-            />
-            {errors.inquiryRecipientEmail && (
-              <p className="text-sm text-destructive">
-                {errors.inquiryRecipientEmail.message}
-              </p>
-            )}
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <div className="flex flex-col gap-1.5 xl:max-w-xl">
+              <Label htmlFor="inquiryRecipientEmail">{t("inquiryRecipientEmail")}</Label>
+              <Input
+                id="inquiryRecipientEmail"
+                type="email"
+                placeholder={t("inquiryRecipientEmailPlaceholder")}
+                {...register("inquiryRecipientEmail")}
+              />
+              {errors.inquiryRecipientEmail && (
+                <p className="text-sm text-destructive">
+                  {errors.inquiryRecipientEmail.message}
+                </p>
+              )}
+            </div>
           </div>
         </section>
 
