@@ -195,7 +195,9 @@ export function CollectionPicker({ value, onChange }: Props) {
     <div className="flex flex-col gap-4">
       {/* Collection grid */}
       {collections.length === 0 && !form.open ? (
-        <p className="text-sm text-muted-foreground">{L.empty}</p>
+        <div className="flex min-h-[180px] flex-col items-center justify-center">
+          <p className="text-sm text-muted-foreground">{L.empty}</p>
+        </div>
       ) : (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" role="listbox" aria-label="Collections">
           {collections.map((col) => {
