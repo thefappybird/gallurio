@@ -176,10 +176,8 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
         </Card>
 
         <Card className="rounded-[var(--radius)]">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex justify-between">
             <CardTitle className="text-sm font-medium">{t("portfolio.publishStatus")}</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 text-sm">
             <span
               className={`inline-flex w-fit items-center rounded-[var(--radius)] px-2 py-0.5 text-[11px] font-medium ${
                 publishedAt ? "bg-[var(--event-completed)] text-white" : "bg-muted text-muted-foreground"
@@ -187,6 +185,8 @@ export async function PortfolioDashboard({ workspace, locale, range }: Props) {
             >
               {publishedAt ? t("portfolio.published") : t("portfolio.notPublished")}
             </span>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
             {publishedAt && (
               <span className="text-xs text-muted-foreground">
                 {t("portfolio.lastPublished", {
