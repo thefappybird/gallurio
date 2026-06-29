@@ -141,6 +141,17 @@ describe("bookingCreateSchema", () => {
     expect(bad.success).toBe(false);
   });
 
+  it("rejects a deposit when total is still zero", () => {
+    const bad = bookingCreateSchema.safeParse({
+      ...validCreate,
+      amount: { total: 0, deposit: 1000, currency: "PHP" },
+    });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues[0]?.path).toEqual(["amount", "deposit"]);
+    }
+  });
+
   it("rejects a session where endAt is before startAt", () => {
     const bad = bookingCreateSchema.safeParse({
       ...validCreate,
@@ -276,6 +287,14 @@ describe("bookingPatchSchema", () => {
       expect(bookingPatchSchema.safeParse({ [key]: samples[key] }).success).toBe(true);
     }
   });
+
+  it("rejects amount.deposit without amount.total in patch payloads", () => {
+    const bad = bookingPatchSchema.safeParse({ "amount.deposit": 1000 });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues[0]?.path).toEqual(["amount.deposit"]);
+    }
+  });
 });
 
 describe("bookingImportRowSchema", () => {
@@ -308,6 +327,21 @@ describe("bookingImportRowSchema", () => {
       amountDeposit: 200,
     });
     expect(bad.success).toBe(false);
+  });
+
+  it("rejects amountDeposit when amountTotal is missing or zero", () => {
+    const bad = bookingImportRowSchema.safeParse({
+      title: "Wedding",
+      clientName: "Emma",
+      clientEmail: "emma@example.com",
+      startAt: "2026-08-15T10:00:00Z",
+      amountTotal: 0,
+      amountDeposit: 200,
+    });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues[0]?.path).toEqual(["amountDeposit"]);
+    }
   });
 
   it("lowercases client email on parse", () => {

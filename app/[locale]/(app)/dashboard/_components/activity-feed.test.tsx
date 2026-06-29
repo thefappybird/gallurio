@@ -1,23 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { Types } from "mongoose";
 import { screen } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import arMessages from "@/messages/ar.json";
 import { ActivityFeed } from "./activity-feed";
-import type { ActivityLogDoc } from "@/lib/db/models";
+import type { SerializedActivity } from "../_data/dashboard-metrics";
 
-function makeActivity(overrides: Partial<ActivityLogDoc> = {}): ActivityLogDoc {
+let activitySeed = 0;
+
+function makeActivity(overrides: Partial<SerializedActivity> = {}): SerializedActivity {
+  activitySeed += 1;
   return {
-    _id: new Types.ObjectId(),
-    workspaceId: new Types.ObjectId(),
+    _id: `activity-${activitySeed}`,
+    workspaceId: "workspace-1",
     actorUserId: "user_1",
     entity: "booking",
     entityId: null,
     action: "created",
-    diff: null,
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
     ...overrides,
-  } as ActivityLogDoc;
+  };
 }
 
 describe("ActivityFeed", () => {
@@ -64,7 +65,7 @@ describe("ActivityFeed", () => {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     renderWithProviders(
       <ActivityFeed
-        activity={[makeActivity({ createdAt: oneHourAgo })]}
+        activity={[makeActivity({ createdAt: oneHourAgo.toISOString() })]}
         locale="en"
         title="Recent activity"
         empty="Nothing here yet."

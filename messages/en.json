@@ -629,7 +629,8 @@
           "total": "Total",
           "deposit": "Deposit",
           "currency": "Currency",
-          "hint": "Pricing in the workspace's default currency. You can change the currency per booking."
+          "hint": "Pricing in the workspace's default currency. You can change the currency per booking.",
+          "depositRequiresTotal": "Cannot add a deposit without setting a price."
         },
         "review": {
           "intro": "Quick check — confirm everything looks right before you save."
@@ -2030,6 +2031,7 @@
       "bell": "Notifications",
       "popoverTitle": "Recent Notifications",
       "markAllRead": "Mark all read",
+      "newNotification": "You have a new notification",
       "seeAll": "See all notifications",
       "empty": "You're all caught up",
       "pageTitle": "Notifications",

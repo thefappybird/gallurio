@@ -629,7 +629,8 @@
           "total": "Total",
           "deposit": "Deposit",
           "currency": "Mata uang",
-          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per pemesanan."
+          "hint": "Harga dalam mata uang default ruang kerja. Anda dapat mengubah mata uang per pemesanan.",
+          "depositRequiresTotal": "Anda tidak dapat menambahkan deposit tanpa menetapkan harga terlebih dahulu."
         },
         "review": {
           "intro": "Periksa cepat — pastikan semuanya sudah benar sebelum Anda menyimpan."
@@ -2030,6 +2031,7 @@
       "bell": "Notifikasi",
       "popoverTitle": "Notifikasi Terbaru",
       "markAllRead": "Tandai semua sudah dibaca",
+      "newNotification": "Anda memiliki notifikasi baru",
       "seeAll": "Lihat semua notifikasi",
       "empty": "Tidak ada notifikasi baru",
       "pageTitle": "Notifikasi",

@@ -5,6 +5,10 @@ import { renderWithProviders } from "@/test-utils/render";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // signOutAction is a server action; stub it to avoid server-only imports.
 vi.mock("@/lib/auth/signOut", () => ({
   signOutAction: vi.fn(),
@@ -92,9 +96,9 @@ describe("AppSidebar nav items", () => {
       expect(screen.queryByRole("link", { name: /^dashboard$/i })).not.toBeInTheDocument();
     });
 
-    it("does not render the teams nav link", () => {
+    it("renders the teams nav link", () => {
       renderSidebar("staff");
-      expect(screen.queryByRole("link", { name: /^teams$/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /^teams$/i })).toBeInTheDocument();
     });
 
     it("does not render inquiries or portfolio nav links", () => {
@@ -159,6 +163,11 @@ describe("AppSidebar bell button", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUnreadCount.value = 0;
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("bell icon receives animate-bell-nudge class when unreadCount increases", async () => {
@@ -184,6 +193,35 @@ describe("AppSidebar bell button", () => {
     const bellBtn = screen.getByRole("button", { name: /notification/i });
     const bellSvg = bellBtn.querySelector("svg");
     expect(bellSvg?.getAttribute("class") ?? "").toContain("animate-bell-nudge");
+  });
+
+  it("shows and auto-dismisses the new notification popup when unreadCount increases", async () => {
+    mockUnreadCount.value = 0;
+    const { rerender } = renderSidebar("owner");
+
+    mockUnreadCount.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+
+    expect(screen.getByText(/you have a new notification/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.queryByText(/you have a new notification/i)).toBeNull();
   });
 });
 

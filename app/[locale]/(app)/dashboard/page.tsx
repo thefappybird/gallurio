@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { connectDB } from "@/lib/db/mongoose";
-import type { BookingDoc, ActivityLogDoc } from "@/lib/db/models";
+import type { BookingDoc } from "@/lib/db/models";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { getUserTimeFormat } from "@/lib/utils/get-user-time-format";
@@ -257,7 +257,7 @@ async function BookingsTab({
       </div>
 
       <ActivityFeed
-        activity={activity as ActivityLogDoc[]}
+        activity={activity}
         locale={locale}
         title={t("sections.activity")}
         empty={t("empty")}

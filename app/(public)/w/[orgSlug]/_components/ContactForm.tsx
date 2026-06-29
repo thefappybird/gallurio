@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { useForm, useFieldArray, Controller, type FieldErrors } from "react-hook-form";
+import { useForm, useFieldArray, useWatch, Controller, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   inquirySubmissionSchema,
@@ -12,6 +12,7 @@ import { EVENT_TYPES, type EventType } from "@/lib/validators/booking";
 import { Tabs, TabsList, TabsTab, TabsPanel } from "@/components/ui/tabs";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { LocationPicker } from "@/components/ui/location-picker";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import {
   buildButtonStyle,
   buildButtonVisualStyle,
@@ -226,6 +227,7 @@ export function ContactForm({
   const labelStyle = createLabelStyle();
 
   const { fields, append, remove } = useFieldArray({ control, name: "sessions" });
+  const watchedSessions = useWatch({ control, name: "sessions" });
   const minDate = todayIso();
   const [activeTab, setActiveTab] = useState<"client" | "event" | "location">("client");
 
@@ -429,22 +431,28 @@ export function ContactForm({
             <p style={{ fontSize: "0.75rem", opacity: 0.7, margin: "0 0 0.75rem" }}>{labels.shiftHint}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {fields.map((field, index) => (
-                <div
+                <CollapsibleDrawer
                   key={field.id}
-                  style={{
-                    border: "1px solid color-mix(in srgb, var(--pf-color-fg) 18%, transparent)",
-                    borderRadius: "var(--pf-radius)",
-                    padding: "0.75rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+                  title={
                     <span style={{ fontSize: "0.8125rem", fontWeight: 600, minWidth: 0, flex: 1 }}>
                       {labels.sessionLabel.replace("{n}", String(index + 1))}
                     </span>
-                    {fields.length > 1 && (
+                  }
+                  subtitle={
+                    fields[index]
+                      ? (
+                        <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>
+                          {(watchedSessions?.[index]?.startDate || labels.startDate) as string}
+                        </span>
+                      )
+                      : null
+                  }
+                  defaultOpen={index === fields.length - 1}
+                  className="border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)]"
+                  bodyClassName="max-h-80 overflow-y-auto"
+                >
+                  {fields.length > 1 && (
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <button
                         type="button"
                         className="pf-cf-btn"
@@ -463,8 +471,8 @@ export function ContactForm({
                       >
                         {labels.removeSession}
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div>
                     <label htmlFor={`cf-start-${index}`} style={labelStyle}>{labels.startDate}</label>
@@ -496,7 +504,7 @@ export function ContactForm({
                       {errors.sessions?.[index]?.endTime && <p style={errorStyle} role="alert">{errors.sessions[index]?.endTime?.message}</p>}
                     </div>
                   </div>
-                </div>
+                </CollapsibleDrawer>
               ))}
             </div>
 

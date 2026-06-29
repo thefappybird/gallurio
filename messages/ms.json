@@ -629,7 +629,8 @@
           "total": "Jumlah",
           "deposit": "Deposit",
           "currency": "Mata wang",
-          "hint": "Harga dalam mata wang lalai ruang kerja. Anda boleh menukar mata wang bagi setiap tempahan."
+          "hint": "Harga dalam mata wang lalai ruang kerja. Anda boleh menukar mata wang bagi setiap tempahan.",
+          "depositRequiresTotal": "Anda tidak boleh menambah deposit tanpa menetapkan harga terlebih dahulu."
         },
         "review": {
           "intro": "Semak cepat — sahkan semua nampak betul sebelum anda simpan."
@@ -2030,6 +2031,7 @@
       "bell": "Pemberitahuan",
       "popoverTitle": "Pemberitahuan Terkini",
       "markAllRead": "Tandakan semua dibaca",
+      "newNotification": "Anda mempunyai pemberitahuan baharu",
       "seeAll": "Lihat semua pemberitahuan",
       "empty": "Tiada pemberitahuan baru",
       "pageTitle": "Pemberitahuan",

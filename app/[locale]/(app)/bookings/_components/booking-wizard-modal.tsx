@@ -296,6 +296,8 @@ export function BookingWizardModal({
     trigger,
     watch,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors, isDirty },
   } = form;
 
@@ -461,6 +463,14 @@ export function BookingWizardModal({
       const { total, deposit } = watch("amount");
       if (typeof total !== "number" || total < 0) return false;
       if (typeof deposit !== "number" || deposit < 0) return false;
+      if (deposit > 0 && total <= 0) {
+        setError("amount.deposit", {
+          type: "manual",
+          message: t("pricing.depositRequiresTotal"),
+        });
+        return false;
+      }
+      clearErrors("amount.deposit");
       if (deposit > total) return false;
       // Location is required — must have a committed (non-empty) address.
       const location = watch("location");
