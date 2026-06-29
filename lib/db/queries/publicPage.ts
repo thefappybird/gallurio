@@ -58,3 +58,42 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
 
   return workspace ?? null;
 });
+
+export type PublishedWorkspaceSlug = {
+  slug: string;
+  lastPublishedAt: Date | null;
+};
+
+/**
+ * Returns slug + lastPublishedAt for every workspace whose portfolio has been
+ * published at least once. Used by app/sitemap.ts to build the global sitemap.
+ *
+ * No tenant scoping: this is a public list of published pages, intentionally
+ * cross-workspace.
+ *
+ * Index note: the query filters on `publicPage.publishedAt` which is currently
+ * backed only by the `slug` unique index (collection scan for this predicate).
+ * For MVP tenant counts this is acceptable. If tenant count grows, add a sparse
+ * index on `{ "publicPage.publishedAt": 1 }` and split output into sitemap
+ * index files via Next.js `generateSitemaps` + `id` param.
+ *
+ * ponytail: if tenant count exceeds ~50k this must paginate via sitemap index
+ * files (Next.js `generateSitemaps` + `id` param on the default export).
+ */
+export async function listPublishedWorkspaceSlugs(): Promise<PublishedWorkspaceSlug[]> {
+  await connectDB();
+
+  type SlugProjection = {
+    slug: string;
+    publicPage: { lastPublishedAt?: Date | null };
+  };
+
+  const docs = await Workspace.find({ "publicPage.publishedAt": { $ne: null } })
+    .select({ slug: 1, "publicPage.lastPublishedAt": 1, _id: 0 })
+    .lean<SlugProjection[]>();
+
+  return docs.map((d) => ({
+    slug: d.slug,
+    lastPublishedAt: d.publicPage?.lastPublishedAt ?? null,
+  }));
+}

@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { portfolioFontVariables } from "@/lib/fonts/portfolio";
 import "../globals.css";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+};
 
 /**
  * Root layout for the public, non-localized routes (the portfolio at

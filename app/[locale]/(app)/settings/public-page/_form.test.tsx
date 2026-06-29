@@ -7,7 +7,7 @@
  */
 import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 
 // ── External mocks required by the transitive import tree ───────────────────
 
@@ -53,6 +53,7 @@ vi.mock("@/lib/email/sendPasswordResetEmail", () => ({
 
 vi.mock("@/lib/storage/cloudflareImages", () => ({
   deleteImage: vi.fn(),
+  verifyImageOwnership: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("@/lib/i18n/routing", () => ({
@@ -75,6 +76,12 @@ vi.mock("@/lib/storage/uploadAsset.client", () => ({
   uploadAsset: vi.fn(),
 }));
 
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: vi.fn(),
+}));
+
+import { uploadImage } from "@/lib/storage/uploadImage.client";
+
 vi.mock("@/lib/utils/handleActionResult", () => ({
   toastActionResult: vi.fn(() => true),
 }));
@@ -94,6 +101,12 @@ const baseDefaults: PublicPageSettingsInput = {
   inquiryRecipientEmail: "",
   siteIconUrl: "",
   siteIconAssetId: "",
+  seo: {
+    ogImageUrl: "",
+    ogImageAssetId: "",
+    galleryDescription: "",
+    noindex: false,
+  },
 };
 
 describe("PublicPageSettingsForm — site icon section", () => {
@@ -134,5 +147,105 @@ describe("PublicPageSettingsForm — site icon section", () => {
       />
     );
     expect(screen.getByText("siteIconRemove")).toBeInTheDocument();
+  });
+
+  it("renders galleryDescription field", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByText("galleryDescriptionLabel")).toBeInTheDocument();
+  });
+
+  it("renders noindex checkbox", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByRole("checkbox", { name: /noindex/i })).toBeInTheDocument();
+  });
+
+  it("renders OG image upload area when ogImageUrl is empty", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+    expect(screen.getByText("ogImageLabel")).toBeInTheDocument();
+  });
+
+  it("renders OG image preview when ogImageUrl is set", () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{
+          ...baseDefaults,
+          seo: { ...baseDefaults.seo!, ogImageUrl: "https://cdn.example.com/og.jpg" },
+        }}
+        locale="en"
+      />
+    );
+    const img = screen.getByRole("img", { name: "ogImageLabel" });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute("src", expect.stringContaining("https://cdn.example.com/og.jpg"));
+  });
+
+  it("shows OG image preview after successful file upload", async () => {
+    vi.mocked(uploadImage).mockResolvedValueOnce({
+      url: "https://cdn.cf.net/og-new.jpg",
+      assetId: "asset-new-123",
+    } as Awaited<ReturnType<typeof uploadImage>>);
+
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={baseDefaults}
+        locale="en"
+      />
+    );
+
+    const fileInput = document.querySelector("#ogImageFile") as HTMLInputElement;
+    const file = new File(["data"], "og.jpg", { type: "image/jpeg" });
+
+    await act(async () => {
+      fireEvent.change(fileInput, { target: { files: [file] } });
+    });
+
+    expect(screen.getByRole("img", { name: "ogImageLabel" })).toHaveAttribute(
+      "src",
+      "https://cdn.cf.net/og-new.jpg",
+    );
+  });
+
+  it("clicking OG Remove button returns to upload area", async () => {
+    render(
+      <PublicPageSettingsForm
+        slug="luna-studio"
+        publishedAt={null}
+        defaults={{
+          ...baseDefaults,
+          seo: { ...baseDefaults.seo!, ogImageUrl: "https://cdn.example.com/og.jpg" },
+        }}
+        locale="en"
+      />
+    );
+    // Preview is shown; Remove button should be present
+    const removeBtn = screen.getByText("ogImageRemove");
+    await act(async () => { fireEvent.click(removeBtn); });
+    // After remove, upload area should appear
+    expect(screen.getByText("ogImageLabel")).toBeInTheDocument();
   });
 });

@@ -14,7 +14,7 @@ import {
   type PublicPageSettingsRawInput,
 } from "@/lib/validators/workspace";
 import { sendPasswordResetEmail } from "@/lib/email/sendPasswordResetEmail";
-import { deleteImage } from "@/lib/storage/cloudflareImages";
+import { deleteImage, verifyImageOwnership } from "@/lib/storage/cloudflareImages";
 import { ownerContext, type ActionResult } from "@/lib/auth/ownerContext";
 import { requireOrg } from "@/lib/auth/requireOrg";
 import { getAuthUser } from "@/lib/auth/session";
@@ -84,6 +84,36 @@ export async function updatePublicPageSettingsAction(
   if (!parsed.success)
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
 
+  const workspaceId = String(ctx.workspace._id);
+
+  // Verify OG image ownership before persisting — prevents a workspace from
+  // referencing an image uploaded by a different workspace.
+  const newOgAssetId = parsed.data.seo?.ogImageAssetId;
+  if (newOgAssetId) {
+    const owned = await verifyImageOwnership(newOgAssetId, workspaceId);
+    if (!owned) return { error: "invalid_og_image" };
+  }
+
+  // Fetch the current OG assetId so we can delete it when the owner replaces
+  // or removes the image. Only needed when the seo sub-object is being updated.
+  let oldOgAssetId: string | undefined;
+  if (parsed.data.seo !== undefined) {
+    const current = await Workspace.findOne(
+      { _id: ctx.workspace._id },
+      { "publicPage.seo.ogImageAssetId": 1 },
+    ).lean();
+    oldOgAssetId = current?.publicPage?.seo?.ogImageAssetId || undefined;
+  }
+
+  const seoFields: Record<string, unknown> = {};
+  if (parsed.data.seo !== undefined) {
+    seoFields["publicPage.seo.galleryDescription"] =
+      parsed.data.seo.galleryDescription ?? "";
+    seoFields["publicPage.seo.ogImageUrl"] = parsed.data.seo.ogImageUrl ?? "";
+    seoFields["publicPage.seo.ogImageAssetId"] = newOgAssetId ?? "";
+    seoFields["publicPage.seo.noindex"] = parsed.data.seo.noindex ?? false;
+  }
+
   await Workspace.updateOne(
     { _id: ctx.workspace._id },
     {
@@ -94,9 +124,19 @@ export async function updatePublicPageSettingsAction(
           parsed.data.inquiryRecipientEmail ?? "",
         "publicPage.siteIcon.url": parsed.data.siteIconUrl ?? "",
         "publicPage.siteIcon.assetId": parsed.data.siteIconAssetId ?? "",
+        ...seoFields,
       },
     },
   );
+
+  // Delete the old OG image from Cloudflare if the owner replaced or cleared it.
+  if (oldOgAssetId && oldOgAssetId !== newOgAssetId) {
+    try {
+      await deleteImage(oldOgAssetId);
+    } catch (err) {
+      console.warn("[settings] failed to delete old OG image asset", err);
+    }
+  }
 
   revalidatePath("/settings/public-page", "page");
   return { ok: true };

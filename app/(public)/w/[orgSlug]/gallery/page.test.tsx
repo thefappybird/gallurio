@@ -39,6 +39,15 @@ vi.mock("@/lib/db/queries/publicPage", () => ({
   findPublishedWorkspaceBySlug: vi.fn(),
 }));
 
+vi.mock("@/lib/portfolio/publicUrl", () => ({
+  portfolioPublicUrl: (slug: string) => `http://localhost:3000/w/${slug}`,
+}));
+
+vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
+  buildGalleryJsonLd: vi.fn(() => [{}, {}]),
+  safeJsonLd: vi.fn(() => "{}"),
+}));
+
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 
 const mockFind = vi.mocked(findPublishedWorkspaceBySlug);
@@ -96,7 +105,7 @@ describe("gallery generateMetadata", () => {
     expect(result.title).toBe("Luna Studio — Gallery");
   });
 
-  it("uses seoDescription when set, else leaves description undefined", async () => {
+  it("uses seoDescription when set, else falls back to the name + Photography Portfolio", async () => {
     mockFind.mockResolvedValueOnce(
       makePublishedWorkspace({
         publicPage: {
@@ -119,13 +128,13 @@ describe("gallery generateMetadata", () => {
     const fallback = await generateMetadata({
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
-    expect(fallback.description).toBeUndefined();
+    expect(fallback.description).toBe("Luna Studio — Photography Portfolio");
   });
 
   it("sets the canonical alternates URL to /w/<slug>/gallery", async () => {
     mockFind.mockResolvedValueOnce(makePublishedWorkspace({ slug: "luna-studio" }));
     const meta = await generateMetadata({ params: Promise.resolve({ orgSlug: "luna-studio" }) });
-    expect((meta.alternates as { canonical?: string })?.canonical).toBe("/w/luna-studio/gallery");
+    expect((meta.alternates as { canonical?: string })?.canonical).toBe("http://localhost:3000/w/luna-studio/gallery");
   });
 
   it("sets icons.icon from siteIcon.url when present", async () => {
@@ -152,7 +161,7 @@ describe("gallery generateMetadata", () => {
     expect(result.icons).toEqual({ icon: "https://cdn.example.com/icon.png" });
   });
 
-  it("falls back to header.logoUrl when siteIcon.url is empty", async () => {
+  it("does not fall back to header.logoUrl when siteIcon.url is empty (icons omitted)", async () => {
     const workspace = makePublishedWorkspace({
       publicPage: {
         templateId: "minimal",
@@ -174,7 +183,7 @@ describe("gallery generateMetadata", () => {
       params: Promise.resolve({ orgSlug: "luna-studio" }),
     });
 
-    expect(result.icons).toEqual({ icon: "https://cdn.example.com/logo.png" });
+    expect(result.icons).toBeUndefined();
   });
 
   it("omits icons when both siteIcon.url and header.logoUrl are empty", async () => {

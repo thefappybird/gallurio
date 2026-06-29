@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "Ang CRM para sa mga event business.",
@@ -848,7 +848,28 @@
           "dimensions": "Ang larawan ay dapat 512 × 512 px o mas maliit.",
           "image": "Hindi mabasa ang larawan. Subukan ang ibang file.",
           "upload": "Nabigo ang pag-upload. Subukan muli."
-        }
+        },
+        "seoTitleHint": "Headline na maki-click sa Google + tab ng browser. Target: ~60 karakter. Pangalan ng studio + kung ano ang iyong kinukuhanan.",
+        "seoDescriptionHint": "Kulay-abong buod sa ilalim ng iyong titulo sa paghahanap. Target: ~155 karakter. I-pitch ang iyong home page.",
+        "galleryDescriptionLabel": "Paglalarawan ng Gallery page",
+        "galleryDescriptionPlaceholder": "Isang showcase ng aming pinakamahusay na wedding at portrait work…",
+        "galleryDescriptionHint": "Hiwalay na paglalarawan para sa iyong Gallery page upang hindi ito magkatulad ng iyong home page. Target: ~155 karakter.",
+        "ogImageSection": "Larawan sa pagbabahagi",
+        "ogImageHint": "Ang larawang ipinapakita kapag ibinabahagi ang iyong link sa Facebook, Instagram, WhatsApp, o iMessage. Gamitin ang iyong pinakamagandang larawan. Inirerekomenda ang 1200 × 630 px.",
+        "ogImageLabel": "Mag-upload ng larawan sa pagbabahagi",
+        "ogImageUploading": "Ina-upload…",
+        "ogImageRequirements": "JPEG, PNG, WebP o AVIF · max 10 MB · inirerekomenda ang 1200 × 630 px",
+        "ogImageRemove": "Alisin",
+        "ogImageReplace": "Palitan",
+        "ogImageErrors": {
+          "type": "Tinatanggap lamang ang JPEG, PNG, WebP o AVIF na mga file.",
+          "size": "Ang file ay dapat 10 MB o mas maliit.",
+          "dimensions": "Ang larawan ay dapat hindi bababa sa 600 px sa mas maiikling gilid.",
+          "upload": "Nabigo ang pag-upload. Subukan muli."
+        },
+        "noindexSection": "Kakikitaan sa paghahanap",
+        "noindexLabel": "Itago mula sa mga search engine",
+        "noindexHint": "Panatilihing wala sa mga resulta ng paghahanap ng Google ang portfolio na ito. Maganda para sa mga draft o soft launch. Ang iyong direktang link ay patuloy na gagana."
       }
     },
     "teams": {

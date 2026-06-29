@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "CRM untuk bisnis acara.",
@@ -848,7 +848,28 @@
           "dimensions": "Gambar harus 512 × 512 px atau lebih kecil.",
           "image": "Tidak dapat membaca gambar. Coba file lain.",
           "upload": "Pengunggahan gagal. Coba lagi."
-        }
+        },
+        "seoTitleHint": "Judul yang bisa diklik di Google + tab browser. Target: ~60 karakter. Nama studio + apa yang Anda foto.",
+        "seoDescriptionHint": "Cuplikan abu-abu di bawah judul Anda dalam hasil pencarian. Target: ~155 karakter. Promosikan halaman beranda Anda.",
+        "galleryDescriptionLabel": "Deskripsi halaman Gallery",
+        "galleryDescriptionPlaceholder": "Pameran karya terbaik pernikahan dan potret kami…",
+        "galleryDescriptionHint": "Deskripsi terpisah untuk halaman Gallery agar tidak menduplikasi halaman beranda. Target: ~155 karakter.",
+        "ogImageSection": "Gambar bagikan",
+        "ogImageHint": "Foto yang ditampilkan saat tautan Anda dibagikan di Facebook, Instagram, WhatsApp, atau iMessage. Gunakan foto terbaik Anda. Ukuran 1200 × 630 px direkomendasikan.",
+        "ogImageLabel": "Unggah gambar bagikan",
+        "ogImageUploading": "Mengunggah…",
+        "ogImageRequirements": "JPEG, PNG, WebP atau AVIF · maks 10 MB · 1200 × 630 px direkomendasikan",
+        "ogImageRemove": "Hapus",
+        "ogImageReplace": "Ganti",
+        "ogImageErrors": {
+          "type": "Hanya file JPEG, PNG, WebP atau AVIF yang diterima.",
+          "size": "File harus berukuran 10 MB atau lebih kecil.",
+          "dimensions": "Gambar harus minimal 600 px pada sisi yang lebih pendek.",
+          "upload": "Pengunggahan gagal. Coba lagi."
+        },
+        "noindexSection": "Visibilitas pencarian",
+        "noindexLabel": "Sembunyikan dari mesin pencari",
+        "noindexHint": "Jauhkan portofolio ini dari hasil pencarian Google. Cocok untuk draf atau peluncuran lunak. Tautan langsung Anda tetap berfungsi."
       }
     },
     "teams": {

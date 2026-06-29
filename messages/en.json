@@ -1,4 +1,4 @@
-{
+﻿{
   "marketing": {
     "version": "Gallurio · v0.1.0",
     "headline": "The CRM for event businesses.",
@@ -848,7 +848,28 @@
           "dimensions": "Image must be 512 × 512 px or smaller.",
           "image": "Could not read the image. Please try another file.",
           "upload": "Upload failed. Please try again."
-        }
+        },
+        "seoTitleHint": "Clickable headline in Google + browser tab. Aim for ~60 characters. Studio name + what you shoot.",
+        "seoDescriptionHint": "The grey snippet under your title in search results. Aim for ~155 characters. Pitch your home page.",
+        "galleryDescriptionLabel": "Gallery page description",
+        "galleryDescriptionPlaceholder": "A showcase of our finest wedding and portrait work…",
+        "galleryDescriptionHint": "Separate description for your Gallery page so it does not duplicate your home page. Aim for ~155 characters.",
+        "ogImageSection": "Share image",
+        "ogImageHint": "The photo shown when your link is shared on Facebook, Instagram, WhatsApp, or iMessage. Use your best shot. 1200 × 630 px recommended.",
+        "ogImageLabel": "Upload share image",
+        "ogImageUploading": "Uploading…",
+        "ogImageRequirements": "JPEG, PNG, WebP or AVIF · max 10 MB · 1200 × 630 px recommended",
+        "ogImageRemove": "Remove",
+        "ogImageReplace": "Replace",
+        "ogImageErrors": {
+          "type": "Only JPEG, PNG, WebP or AVIF files are accepted.",
+          "size": "File must be 10 MB or smaller.",
+          "dimensions": "Image must be at least 600 px on the shorter side.",
+          "upload": "Upload failed. Please try again."
+        },
+        "noindexSection": "Search visibility",
+        "noindexLabel": "Hide from search engines",
+        "noindexHint": "Keep this portfolio out of Google search results. Useful for drafts or soft launches. Your direct link still works."
       }
     },
     "teams": {
