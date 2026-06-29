@@ -1539,6 +1539,7 @@
           },
           "sectionBanner": "اللافتة",
           "sectionLinks": "الروابط",
+          "sectionInactiveLinks": "الروابط غير النشطة",
           "sectionActiveStyle": "نمط الرابط النشط",
           "sectionContactButton": "زر التواصل",
           "bgColorLabel": "لون الخلفية",

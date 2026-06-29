@@ -131,4 +131,20 @@ describe("ContactPanelDialog", () => {
     // aria-pressed should reflect the effective default (ON)
     expect(subtleBtn).toHaveAttribute("aria-pressed", "true");
   });
+
+  // Task 12: active tab size toggle must use charcoal (bg-foreground) not brand/teal
+  it("active tab size toggle renders with bg-foreground (charcoal) class", () => {
+    renderWithProviders(
+      <ContactPanelDialog
+        {...baseProps}
+        contact={{ tabFontSize: "lg" } satisfies PortfolioContactConfig}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
+
+    const lgBtn = screen.getByRole("button", { name: "L" });
+    expect(lgBtn).toHaveClass("bg-foreground");
+    expect(lgBtn).toHaveClass("text-background");
+  });
 });

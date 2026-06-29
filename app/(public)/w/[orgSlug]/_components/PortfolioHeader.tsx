@@ -134,7 +134,7 @@ export function PortfolioHeader({
 
   const fontSize = config?.fontSize ? (FONT_SIZE_MAP[config.fontSize] ?? "0.9375rem") : "0.9375rem";
   const linkColor = resolveColor(config?.linkColor, "var(--pf-color-fg)");
-  const brandTextColor = resolveColor(config?.brandTextColor, linkColor);
+  const brandTextColor = resolveColor(config?.brandTextColor, "var(--pf-color-fg)");
   const activeLinkColor = resolveColor(config?.activeLinkColor, "var(--pf-color-fg)");
   const shadow = config?.shadowSize ? (SHADOW_MAP[config.shadowSize] ?? "none") : "none";
 

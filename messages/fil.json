@@ -1539,6 +1539,7 @@
           },
           "sectionBanner": "Banner",
           "sectionLinks": "Mga link",
+          "sectionInactiveLinks": "Mga hindi aktibong link",
           "sectionActiveStyle": "Estilo ng aktibong link",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Kulay ng background",

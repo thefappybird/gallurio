@@ -1539,6 +1539,7 @@
           },
           "sectionBanner": "Banner",
           "sectionLinks": "Links",
+          "sectionInactiveLinks": "Inactive links",
           "sectionActiveStyle": "Active link style",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Background color",

@@ -1539,6 +1539,7 @@
           },
           "sectionBanner": "Sepanduk",
           "sectionLinks": "Pautan",
+          "sectionInactiveLinks": "Pautan tidak aktif",
           "sectionActiveStyle": "Gaya pautan aktif",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Warna latar belakang",

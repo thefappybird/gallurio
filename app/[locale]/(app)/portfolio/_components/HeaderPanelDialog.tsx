@@ -488,15 +488,7 @@ export function HeaderPanelDialog({
                 </div>
               </div>
 
-              {/* linkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
-              <LabeledSwatchRow
-                label={t("linkColorLabel")}
-                value={header.linkColor}
-                onChange={(c) => set("linkColor", c)}
-                effectiveValue="foreground"
-              />
-
-              {/* brandTextColor: PortfolioHeader fallback = linkColor → linkColor defaults to var(--pf-color-fg) → "foreground" */}
+              {/* brandTextColor: governs header/brand name text — independent of link color */}
               <LabeledSwatchRow
                 label={t("brandTextColorLabel")}
                 value={header.brandTextColor}
@@ -504,13 +496,16 @@ export function HeaderPanelDialog({
                 effectiveValue="foreground"
               />
 
-              {/* activeLinkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
-              <LabeledSwatchRow
-                label={t("activeLinkColorLabel")}
-                value={header.activeLinkColor}
-                onChange={(c) => set("activeLinkColor", c)}
-                effectiveValue="foreground"
-              />
+              {/* Inactive links sub-section */}
+              <EditorDrawerSection title={t("sectionInactiveLinks")}>
+                {/* linkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
+                <LabeledSwatchRow
+                  label={t("linkColorLabel")}
+                  value={header.linkColor}
+                  onChange={(c) => set("linkColor", c)}
+                  effectiveValue="foreground"
+                />
+              </EditorDrawerSection>
             </EditorDrawerSection>
 
             {/* ── Active link style ──────────────────── */}
@@ -534,6 +529,14 @@ export function HeaderPanelDialog({
                   </ToggleButton>
                 </div>
               </div>
+
+              {/* activeLinkColor: moved from Links section; fallback = var(--pf-color-fg) → "foreground" */}
+              <LabeledSwatchRow
+                label={t("activeLinkColorLabel")}
+                value={header.activeLinkColor}
+                onChange={(c) => set("activeLinkColor", c)}
+                effectiveValue="foreground"
+              />
 
               {/* Conditional: highlight bg color */}
               {header.activeLinkHighlight && (

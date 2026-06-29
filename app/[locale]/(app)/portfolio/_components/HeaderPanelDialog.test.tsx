@@ -229,4 +229,47 @@ describe("HeaderPanelDialog", () => {
       expect.objectContaining({ activeLinkUnderline: false }),
     );
   });
+
+  // Task 10: activeLinkColor must live in the Active link style drawer, not the Links section
+  it("activeLinkColor control is inside the Active link style drawer (not the Links section)", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+
+    // Before opening Active link style, the label must not be visible
+    expect(screen.queryByText("Active link text color")).not.toBeInTheDocument();
+
+    // After opening, label becomes visible
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+    expect(screen.getByText("Active link text color")).toBeInTheDocument();
+  });
+
+  // Task 11: linkColor must live in the Inactive links sub-drawer inside Links
+  it("linkColor control is inside the Inactive links sub-section", () => {
+    renderWithProviders(<HeaderPanelDialog {...baseProps} />);
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+
+    // Before opening Inactive links, "Link text color" must not be visible
+    expect(screen.queryByText("Link text color")).not.toBeInTheDocument();
+
+    // After opening Inactive links sub-section, label becomes visible
+    fireEvent.click(screen.getByRole("button", { name: "Inactive links" }));
+    expect(screen.getByText("Link text color")).toBeInTheDocument();
+  });
+
+  // Task 12: active toggle in the Active link style section must use charcoal (bg-foreground)
+  it("active scale toggle in Active link style renders with bg-foreground (charcoal) class", () => {
+    renderWithProviders(
+      <HeaderPanelDialog
+        {...baseProps}
+        header={{ activeLinkScale: true } satisfies PortfolioHeaderConfig}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
+
+    const scaleBtn = screen.getByRole("button", { name: "Scale" });
+    expect(scaleBtn).toHaveClass("bg-foreground");
+    expect(scaleBtn).toHaveClass("text-background");
+  });
 });
