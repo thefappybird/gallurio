@@ -1619,6 +1619,10 @@
           "toggleBlocks": "إظهار/إخفاء لوحة الأقسام",
           "toggleProperties": "إظهار/إخفاء لوحة الخصائص",
           "previewDevice": "معاينة الجهاز",
+          "canvasWidth": "عرض اللوحة",
+          "zoomIn": "تكبير",
+          "zoomOut": "تصغير",
+          "zoomReset": "إعادة التكبير إلى 100%",
           "undoTitle": "تراجع (Ctrl+Z)",
           "redoTitle": "إعادة (Ctrl+Shift+Z)"
         },

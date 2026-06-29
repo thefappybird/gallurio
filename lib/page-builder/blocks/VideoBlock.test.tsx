@@ -216,6 +216,17 @@ describe("VideoBlock — text fields", () => {
     expect(screen.getByText("Legacy footer string")).toBeTruthy();
   });
 
+  it("renders a React element description directly (Puck inline-edit injection)", () => {
+    render(
+      <VideoBlock
+        videoUrl=""
+        description={(<span data-testid="inline-desc">Edit me</span>) as unknown as string}
+        footer=""
+      />
+    );
+    expect(screen.getByTestId("inline-desc")).toBeTruthy();
+  });
+
   it("always uses 'Embedded video' as iframe title", () => {
     render(
       <VideoBlock

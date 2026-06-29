@@ -73,6 +73,17 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     });
   }
 
+  it("enables contentEditable inline editing on the visible text fields", () => {
+    const fieldOf = (type: string, key: string) =>
+      (editorPuckConfig.components as Record<string, { fields?: Record<string, { contentEditable?: boolean }> }>)
+        [type]?.fields?.[key];
+    expect(fieldOf("Heading", "text")?.contentEditable).toBe(true);
+    expect(fieldOf("Text", "text")?.contentEditable).toBe(true);
+    expect(fieldOf("Button", "label")?.contentEditable).toBe(true);
+    expect(fieldOf("Video", "description")?.contentEditable).toBe(true);
+    expect(fieldOf("Video", "footer")?.contentEditable).toBe(true);
+  });
+
   it("removes gallery copy inputs from GalleryGrid field keys", () => {
     const editorFields = Object.keys(editorPuckConfig.components.GalleryGrid.fields ?? {});
     const prodFields = Object.keys(puckConfig.components.GalleryGrid.fields ?? {});

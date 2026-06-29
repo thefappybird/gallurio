@@ -1,5 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { rootCanvasCssText, buildCanvasCss } from "./RootCanvasStyle";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, act, cleanup } from "@testing-library/react";
+import { rootCanvasCssText, buildCanvasCss, RootCanvasStyle } from "./RootCanvasStyle";
+import { setCanvasDevice } from "./canvasViewportStore";
+
+// RootCanvasStyle reads Puck state via usePuckStore; stub it out (no Puck context
+// in this unit test) so the component renders and we can assert its injected CSS.
+vi.mock("./puckHooks", () => ({
+  usePuckStore: () => undefined,
+}));
+
+afterEach(cleanup);
 
 describe("rootCanvasCssText", () => {
   it("produces a CSS text block for the canvas surface", () => {
@@ -83,6 +93,20 @@ describe("buildCanvasCss", () => {
     // nests the surface several levels deep, not two.)
     expect(css).toContain(":has(> [data-puck-preview])");
     expect(css).toMatch(/:has\(> \[data-puck-preview\]\)\s*{[^}]*position: relative/);
+  });
+
+  it("clamps the canvas surface width to the selected device width (non-desktop)", () => {
+    const css = buildCanvasCss(undefined, { deviceWidth: 390, zoom: 1 });
+    expect(css).toMatch(/\[data-puck-preview\]\s*{[^}]*width: 390px/);
+    expect(css).toContain("margin-inline: auto");
+  });
+
+  it("re-injects the canvas <style> with the device-width clamp when the viewport store changes", () => {
+    render(<RootCanvasStyle />);
+    act(() => setCanvasDevice("mobile"));
+    const tag = document.getElementById("pf-root-canvas-style");
+    expect(tag?.textContent).toContain("width: 390px");
+    act(() => setCanvasDevice("desktop")); // reset shared store
   });
 
   // C6: canvas must materialize the brand background so Luxury theme shows correctly

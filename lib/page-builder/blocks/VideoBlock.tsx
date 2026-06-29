@@ -8,6 +8,7 @@
  * block's empty state. All branding via `--pf-*` CSS variables.
  */
 
+import { isValidElement } from "react";
 import type { ComponentConfig } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/blockContext";
 import {
@@ -71,8 +72,13 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // ---------------------------------------------------------------------------
 
 export function VideoBlock({ _style, description, videoUrl, footer, puck }: VideoBlockProps & { puck?: BlockPuck }) {
-  const descriptionText = asText(description);
-  const footerText = asText(footer);
+  // Puck's contentEditable transform swaps the string prop for an editable element
+  // on the canvas (even when empty). Render the element directly and always show its
+  // region in edit mode; in public render the plain string is hidden when empty.
+  const descriptionNode = isValidElement(description) ? description : asText(description);
+  const footerNode = isValidElement(footer) ? footer : asText(footer);
+  const hasDescription = isValidElement(description) || Boolean(asText(description));
+  const hasFooter = isValidElement(footer) || Boolean(asText(footer));
   const embed = parseVideoEmbed(videoUrl);
 
   return (
@@ -90,7 +96,7 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
       {...resolveBlockAttrs(_style)}
     >
       <div style={{ maxWidth: "56rem", margin: "0 auto" }}>
-        {descriptionText && (
+        {hasDescription && (
           <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
             <p
               style={{
@@ -103,7 +109,7 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
                 whiteSpace: "pre-line",
               }}
             >
-              {descriptionText}
+              {descriptionNode}
             </p>
           </div>
         )}
@@ -145,7 +151,7 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
           </div>
         )}
 
-        {footerText && (
+        {hasFooter && (
           <p
             style={{
               textAlign: "center",
@@ -158,7 +164,7 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
               whiteSpace: "pre-line",
             }}
           >
-            {footerText}
+            {footerNode}
           </p>
         )}
       </div>

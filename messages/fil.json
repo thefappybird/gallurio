@@ -1619,6 +1619,10 @@
           "toggleBlocks": "I-toggle ang panel ng mga block",
           "toggleProperties": "I-toggle ang panel ng mga properties",
           "previewDevice": "Device para sa preview",
+          "canvasWidth": "Lapad ng canvas",
+          "zoomIn": "I-zoom in",
+          "zoomOut": "I-zoom out",
+          "zoomReset": "I-reset ang zoom sa 100%",
           "undoTitle": "I-undo (Ctrl+Z)",
           "redoTitle": "I-redo (Ctrl+Shift+Z)"
         },

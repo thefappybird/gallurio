@@ -281,13 +281,13 @@ describe("EditorShell", () => {
     expect(screen.getByText("Studio Aurora")).toBeInTheDocument();
   });
 
-  it("removes viewport buttons from edit mode but keeps sidebar toggles", async () => {
+  it("keeps the sidebar toggles in the edit-mode header", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     expect(screen.getByRole("button", { name: "Toggle blocks panel" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toggle properties panel" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Mobile" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Tablet" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Desktop" })).not.toBeInTheDocument();
+    // The edit-canvas breakpoint + zoom controls now live in this same header
+    // cluster (CanvasViewportControls); their rendering + behaviour are
+    // unit-tested in CanvasViewportControls.test.tsx.
   });
 
   it("stops keydown propagation past the editor root when the target is an input", async () => {

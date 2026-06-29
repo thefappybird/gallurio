@@ -32,6 +32,18 @@ describe("HeadingBlock", () => {
     expect(screen.getByText("My Heading")).toBeTruthy();
   });
 
+  it("renders a React element text prop directly (Puck inline-edit injection)", () => {
+    // Puck's contentEditable transform replaces the string prop with an editable
+    // element; the block must render it as-is rather than coercing via asText().
+    render(
+      <HeadingBlock
+        text={(<span data-testid="inline-edit">Edit me</span>) as unknown as string}
+        level="h2"
+      />,
+    );
+    expect(screen.getByTestId("inline-edit")).toBeTruthy();
+  });
+
   it("renders as h1 when level='h1'", () => {
     render(<HeadingBlock text="H1 Title" level="h1" />);
     expect(document.querySelector("h1")).not.toBeNull();
@@ -170,6 +182,11 @@ describe("TextBlock", () => {
   it("accepts plain string input", () => {
     render(<TextBlock text={"Old plain string"} />);
     expect(screen.getByText("Old plain string")).toBeTruthy();
+  });
+
+  it("renders a React element text prop directly (Puck inline-edit injection)", () => {
+    render(<TextBlock text={(<span data-testid="inline-edit">Edit me</span>) as unknown as string} />);
+    expect(screen.getByTestId("inline-edit")).toBeTruthy();
   });
 
   it("renders empty text without crashing", () => {

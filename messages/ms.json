@@ -1619,6 +1619,10 @@
           "toggleBlocks": "Togol panel blok",
           "toggleProperties": "Togol panel sifat",
           "previewDevice": "Peranti pratonton",
+          "canvasWidth": "Lebar kanvas",
+          "zoomIn": "Zum masuk",
+          "zoomOut": "Zum keluar",
+          "zoomReset": "Set semula zum kepada 100%",
           "undoTitle": "Buat asal (Ctrl+Z)",
           "redoTitle": "Buat semula (Ctrl+Shift+Z)"
         },

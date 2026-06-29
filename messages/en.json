@@ -1619,6 +1619,10 @@
           "toggleBlocks": "Toggle blocks panel",
           "toggleProperties": "Toggle properties panel",
           "previewDevice": "Preview device",
+          "canvasWidth": "Canvas width",
+          "zoomIn": "Zoom in",
+          "zoomOut": "Zoom out",
+          "zoomReset": "Reset zoom to 100%",
           "undoTitle": "Undo (Ctrl+Z)",
           "redoTitle": "Redo (Ctrl+Shift+Z)"
         },

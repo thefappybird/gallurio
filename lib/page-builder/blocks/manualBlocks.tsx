@@ -12,6 +12,7 @@
  * All branding via `--pf-*` CSS variables. No `rounded-*` Tailwind classes.
  */
 
+import { isValidElement, type ReactNode } from "react";
 import type { ComponentConfig, Field, Slot, SlotComponent } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/serverContext";
 import {
@@ -69,6 +70,13 @@ function gallerySlugFrom(puck?: BlockPuck | null): string | undefined {
   return puck?.metadata?.workspace?.slug;
 }
 
+// Puck's contentEditable transform swaps a text-prop string for an editable React
+// element on the canvas. Render that element directly; otherwise coerce via asText
+// (which also tolerates legacy `{ text }` objects from old drafts).
+function inlineText(value: unknown): ReactNode {
+  return isValidElement(value) ? value : asText(value);
+}
+
 // ---------------------------------------------------------------------------
 // Heading
 // ---------------------------------------------------------------------------
@@ -92,7 +100,7 @@ const HEADING_SIZE: Record<HeadingBlockProps["level"], string> = {
 };
 
 export function HeadingBlock({ _style, text, level, puck }: HeadingBlockProps & { puck?: BlockPuck }) {
-  const textContent = asText(text);
+  const textContent = inlineText(text);
   const Tag = level;
   const hl = _style?.highlight;
   return (
@@ -161,7 +169,7 @@ export const textDefaultProps: TextBlockProps = {
 };
 
 export function TextBlock({ _style, text, puck }: TextBlockProps & { puck?: BlockPuck }) {
-  const textContent = asText(text);
+  const textContent = inlineText(text);
   const hl = _style?.highlight;
   return (
     <div

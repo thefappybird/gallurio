@@ -9,6 +9,7 @@ import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
+import { CanvasViewportControls } from "./CanvasViewportControls";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -275,6 +276,8 @@ function EditCanvasControls() {
       >
         <PanelRight className="size-4" aria-hidden />
       </Button>
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <CanvasViewportControls />
     </div>
   );
 }

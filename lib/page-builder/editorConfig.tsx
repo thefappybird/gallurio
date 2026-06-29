@@ -194,9 +194,12 @@ function Preview({
 
 // Plain text/textarea field. (Text styling is section-wide via the `_style`
 // toolkit — there is no per-text toolbar.) Kept as a helper so block configs
-// read uniformly; `multiline` picks textarea.
+// read uniformly; `multiline` picks textarea. `contentEditable` enables Puck's
+// on-canvas inline editing alongside the Content-tab input (the field stays
+// hidden from the sidebar via `visible:false`/resolveFields — inline editing is
+// independent of sidebar visibility).
 function richTextField(label: string, multiline = false): Field<string> {
-  return { type: multiline ? "textarea" : "text", label } as Field<string>;
+  return { type: multiline ? "textarea" : "text", label, contentEditable: true } as Field<string>;
 }
 
 /** Single-image Puck custom field backed by the unified MediaPicker. */
@@ -833,7 +836,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: { ...buttonDefaultProps, size: "md" },
     fields: {
       _style: styleField,
-      label: { type: "text", label: t("puckConfig.fields.buttonLabel") },
+      label: { type: "text", label: t("puckConfig.fields.buttonLabel"), contentEditable: true },
       size: {
         type: "select",
         label: t("puckConfig.fields.buttonSize"),

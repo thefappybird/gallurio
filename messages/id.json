@@ -1619,6 +1619,10 @@
           "toggleBlocks": "Alihkan panel blok",
           "toggleProperties": "Alihkan panel properti",
           "previewDevice": "Pratinjau perangkat",
+          "canvasWidth": "Lebar kanvas",
+          "zoomIn": "Perbesar",
+          "zoomOut": "Perkecil",
+          "zoomReset": "Atur ulang zoom ke 100%",
           "undoTitle": "Urungkan (Ctrl+Z)",
           "redoTitle": "Ulangi (Ctrl+Shift+Z)"
         },
