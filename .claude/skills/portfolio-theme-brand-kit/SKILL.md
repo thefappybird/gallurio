@@ -31,6 +31,9 @@ description: How Gallurio portfolio theming / brand kits work — the 5 brand co
 - These are applied **inline on the public-page wrapper** in
   `app/(public)/w/[orgSlug]/layout.tsx` (a `<div style={{ ...cssVars, color: "var(--pf-color-fg)",
   fontFamily: "var(--pf-font-body)" }} class={`pf-theme-${preset} pf-button-${style}`}>`).
+  The same wrapper also carries `dir={effectiveDir}` (RTL scoped here, NOT on `<html>`) —
+  `effectiveDir = resolveEffectiveDir(formDir, locale)`, owner-controlled. See
+  `portfolio-editor-architecture` and the public-page language-isolation memory.
 - **Blocks consume tokens via these vars** (e.g. `var(--pf-color-accent)`, `var(--pf-color-bg)`),
   usually with a hex fallback in inline styles. When adding a themed block, read the `--pf-*`
   vars — don't hardcode brand colors.
@@ -56,4 +59,6 @@ To make a new brand value show up as an effective default in a control, extend T
   `cssVars` together, and ensure blocks reference the new `--pf-*` var.
 - If the option should pre-fill its editor control as a theme default, also extend
   `BrandColorsContext` + its effective hook (see `portfolio-effective-defaults`).
-- Keep public-page changes locale-correct (public chrome uses workspace-country locale).
+- Keep public-page changes locale-correct: public chrome locale is owner-controlled via
+  `publicPage.formLocale` (`resolvePublicChromeLocale`), falling back to workspace country —
+  NOT the visitor's or CRM UI locale. Arabic is enabled and flips the wrapper to RTL.

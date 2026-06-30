@@ -32,6 +32,12 @@ The tour is gotcha-dense. The files:
    of pixel-perfect rect accuracy. Historically gated steps blocked everything except the
    cutout hole; when the anchor rect was even slightly off, the blocker covered the real
    control and ate the click so the gate could never satisfy. Keep gated = no blockers.
+   **Exception — confined drag:** a `passthrough` step WITH a `secondaryAnchorId` (only
+   drag-block today) DOES render perimeter blockers, tiled around the *union* of the two
+   cutouts. This keeps the surrounding chrome unclickable while both holes (grab source +
+   drop target) and the gap between them stay live for the panel→canvas drag. The blockers
+   never cover either hole, so the drop still satisfies the gate. `passthrough` with NO
+   secondary cutout = full free passthrough (drag anywhere).
 3. **`useElementRect` rect retention.** A rAF loop re-measures each frame so the cutout
    tracks the live position. It **retains the last valid rect** on a transient `(0,0)`
    reading (mid-layout) instead of nulling (which would jump the tooltip to viewport
@@ -41,9 +47,13 @@ The tour is gotcha-dense. The files:
    portal, not in the overlay container — see `portfolio-testing`.
 
 ## Steps & gating (`spotlightSteps.ts`, `SPOTLIGHT_STEPS`)
-- 19 steps; the UI shows "N of 19" and that number == array index + 1.
-- A step: `{ id, anchorId?, title, body, placement?, gated?, passthrough? }`. Chrome is
-  English-only — copy is hardcoded here, NOT in locale files.
+- 20 steps; the UI shows "N of 20" and that number == array index + 1. (The `translate`
+  step, anchored to `language-control`, sits just before the `theme` step.)
+- A step: `{ id, slug?, anchorId?, secondaryAnchorId?, title, body, placement?, gated?, passthrough? }`.
+  Copy IS localized: every real step has a `slug`, and the card renders
+  `tg("steps.<slug>.title|body")` from `app.pageBuilder.editor.tour.steps.*` in all 5 locales
+  (the literal `title`/`body` are only fallbacks for slug-less test fixtures). Add a new
+  step's copy to all 5 message files.
 - **Gate ids** (`EditorShell.tsx` `gateSatisfied`, ~1061): `drag-block` (content count >
   baseline; needs `passthrough` so the drag can cross panel→canvas), `header-tab`
   (`headerOpen`, set by `openHeader()` when the Navigation tab is clicked), `contact-tab`
@@ -56,7 +66,9 @@ The tour is gotcha-dense. The files:
 dynamically by `RightPanelTourMarker`, which climbs to the Puck column with
 `gridRowStart==="right"`) · `section-tabs` (wraps the five page tabs) · `header-tab`
 (Navigation button) · `contact-tab` · `style-tab-content/-design/-layout`
-(`StyleToolkitField.tsx`) · `photos` · `theme` · `preview-toggle` · `save-changes` · `publish`.
+(`StyleToolkitField.tsx`) · `photos` · `language-control` (globe language/RTL control in the
+edit header, on `PortfolioLanguageControl`'s trigger) · `theme` · `preview-toggle` ·
+`save-changes` · `publish`.
 
 ## When editing
 - Adding a step: add to `SPOTLIGHT_STEPS` with a real `anchorId` (or none for a centered
