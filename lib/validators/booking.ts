@@ -25,6 +25,8 @@ const isoDate = z.preprocess(
   z.date({ invalid_type_error: "Invalid date" })
 );
 const nonNegMoney = z.number().nonnegative("Must be 0 or more");
+export const DEPOSIT_REQUIRES_TOTAL_MESSAGE = "Cannot add a deposit without setting a price";
+const DEPOSIT_EXCEEDS_TOTAL_MESSAGE = "Deposit cannot exceed total";
 
 const clientExistingBlock = z.object({
   mode: z.literal("existing"),
@@ -101,7 +103,11 @@ export const bookingCreateSchema = z.object({
       currency: z.enum(SUPPORTED_CURRENCIES),
     })
     .refine((a) => a.deposit <= a.total, {
-      message: "Deposit cannot exceed total",
+      message: DEPOSIT_EXCEEDS_TOTAL_MESSAGE,
+      path: ["deposit"],
+    })
+    .refine((a) => a.deposit === 0 || a.total > 0, {
+      message: DEPOSIT_REQUIRES_TOTAL_MESSAGE,
       path: ["deposit"],
     }),
   notes: z.string().max(2000).trim().default(""),
@@ -149,6 +155,27 @@ export const bookingPatchSchema = z
     teamId: objectIdString.optional(),
   })
   .strict()
+  .refine(
+    (v) =>
+      v["amount.deposit"] == null ||
+      v["amount.deposit"] === 0 ||
+      v["amount.total"] == null ||
+      v["amount.total"] > 0,
+    {
+      message: DEPOSIT_REQUIRES_TOTAL_MESSAGE,
+      path: ["amount.deposit"],
+    }
+  )
+  .refine(
+    (v) =>
+      v["amount.deposit"] == null ||
+      v["amount.total"] == null ||
+      v["amount.deposit"] <= v["amount.total"],
+    {
+      message: DEPOSIT_EXCEEDS_TOTAL_MESSAGE,
+      path: ["amount.deposit"],
+    }
+  )
   .refine((v) => Object.keys(v).length > 0, {
     message: "At least one field must be provided",
   });
@@ -186,8 +213,12 @@ export const bookingImportRowSchema = z
     notes: z.string().max(2000).trim().optional(),
   })
   .refine(
+    (v) => v.amountDeposit == null || v.amountDeposit === 0 || (v.amountTotal ?? 0) > 0,
+    { message: DEPOSIT_REQUIRES_TOTAL_MESSAGE, path: ["amountDeposit"] }
+  )
+  .refine(
     (v) => v.amountDeposit == null || v.amountTotal == null || v.amountDeposit <= v.amountTotal,
-    { message: "Deposit cannot exceed total", path: ["amountDeposit"] }
+    { message: DEPOSIT_EXCEEDS_TOTAL_MESSAGE, path: ["amountDeposit"] }
   )
   .refine(
     (v) => !v.endAt || v.endAt.getTime() >= v.startAt.getTime(),

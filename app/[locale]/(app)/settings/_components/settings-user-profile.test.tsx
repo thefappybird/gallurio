@@ -96,6 +96,12 @@ describe("SettingsUserProfile", () => {
       expect(screen.getByTestId("body-account")).toBeInTheDocument();
     });
 
+    it("uses the brand active treatment for the current page", () => {
+      renderSettings("owner", "account");
+      expect(screen.getByRole("link", { name: /account/i }).className).toContain("bg-brand/12");
+      expect(screen.getByRole("link", { name: /account/i }).className).toContain("text-brand");
+    });
+
     it("renders org-switcher bar", () => {
       renderSettings("owner");
       expect(screen.getByTestId("org-switcher")).toBeInTheDocument();

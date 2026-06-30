@@ -629,7 +629,8 @@
           "total": "Kabuuan",
           "deposit": "Deposito",
           "currency": "Currency",
-          "hint": "Presyo sa default na currency ng workspace. Maaari mong baguhin ang currency bawat booking."
+          "hint": "Presyo sa default na currency ng workspace. Maaari mong baguhin ang currency bawat booking.",
+          "depositRequiresTotal": "Hindi ka maaaring maglagay ng deposito nang hindi muna nagtatakda ng presyo."
         },
         "review": {
           "intro": "Mabilis na pagsusuri — kumpirmahin na tama ang lahat bago ka mag-save."
@@ -2032,6 +2033,7 @@
       "bell": "Mga Abiso",
       "popoverTitle": "Mga Kamakailan",
       "markAllRead": "Markahan lahat na nabasa",
+      "newNotification": "May bago kang abiso",
       "seeAll": "Tingnan lahat ng abiso",
       "empty": "Wala kang mga bagong abiso",
       "pageTitle": "Mga Abiso",

@@ -5,6 +5,15 @@ import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { dayBoundInTz } from "@/lib/utils/timezone";
 
 type WorkspaceId = Types.ObjectId;
+export type SerializedActivity = {
+  _id: string;
+  workspaceId: string;
+  actorUserId: string;
+  entity: "booking" | "client" | "inquiry" | "gallery" | "transaction" | "workspace";
+  entityId: string | null;
+  action: "created" | "updated" | "deleted" | "status_changed" | "client_changed";
+  createdAt: string;
+};
 
 function startOfDay(d: Date) {
   const x = new Date(d);
@@ -266,10 +275,32 @@ export async function getRecentInquiries(workspaceId: WorkspaceId, limit = 5) {
 }
 
 export async function getActivityFeed(workspaceId: WorkspaceId, limit = 10) {
-  return ActivityLog.find({ workspaceId })
+  const activity = await ActivityLog.find({ workspaceId })
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
+
+  return activity.map(serializeActivityLog);
+}
+
+export function serializeActivityLog(activity: {
+  _id: Types.ObjectId;
+  workspaceId: Types.ObjectId;
+  actorUserId: string;
+  entity: SerializedActivity["entity"];
+  entityId?: Types.ObjectId | null;
+  action: SerializedActivity["action"];
+  createdAt: Date;
+}): SerializedActivity {
+  return {
+    _id: String(activity._id),
+    workspaceId: String(activity.workspaceId),
+    actorUserId: activity.actorUserId,
+    entity: activity.entity,
+    entityId: activity.entityId ? String(activity.entityId) : null,
+    action: activity.action,
+    createdAt: activity.createdAt.toISOString(),
+  };
 }
 
 export type RevenuePoint = { date: string; amount: number };

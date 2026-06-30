@@ -1488,6 +1488,42 @@ describe("BookingWizardModal — Task 14: location required on Event & Pricing s
   });
 });
 
+describe("BookingWizardModal — deposit requires total", () => {
+  it("shows an inline deposit error before advancing", async () => {
+    mockFetchWithConflict();
+
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <BookingWizardModal
+          mode="create"
+          defaultDate={TARGET_DATE}
+          defaultCurrency="PHP"
+          locale="en"
+          teamId="507f1f77bcf86cd799439011"
+        />
+      </NextIntlClientProvider>
+    );
+
+    await advanceToEventStep();
+
+    fireEvent.change(screen.getByPlaceholderText(/carter wedding/i), {
+      target: { value: "Test Booking" },
+    });
+    fireEvent.change(screen.getByLabelText(/^deposit$/i), {
+      target: { value: "1000" },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /next/i }));
+    });
+
+    expect(
+      screen.getByText(/cannot add a deposit without setting a price/i)
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/carter wedding/i)).toBeInTheDocument();
+  });
+});
+
 // ── Client reassignment — multi-session edit ─────────────────────────────────
 //
 // Multi-session edits remove the Client step entirely and show the client as a

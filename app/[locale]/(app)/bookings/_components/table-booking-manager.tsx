@@ -108,7 +108,7 @@ export function TableBookingManager({
 
   const handleClose = useCallback(() => {
     setAddOpen(false);
-    clearParams(["add", "date", "time"]);
+    clearParams(["add", "date", "time", "edit", "detail"]);
   }, [clearParams]);
 
   return (

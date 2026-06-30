@@ -88,7 +88,7 @@ export function SettingsUserProfile({
                   "hover:bg-accent hover:text-accent-foreground",
                   "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none",
                   isActive
-                    ? "bg-accent font-medium text-accent-foreground"
+                    ? "bg-brand/12 font-medium text-brand"
                     : "text-muted-foreground",
                 )}
               >

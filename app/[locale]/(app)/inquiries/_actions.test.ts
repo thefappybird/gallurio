@@ -220,7 +220,7 @@ describe("approveInquiryBookingAction", () => {
 
   it("is idempotent — re-approving does not double-count", async () => {
     const { booking, inquiry, client } = await seedDraft(workspaceId);
-    await approveInquiryBookingAction(String(inquiry._id), { deposit: 10000 });
+    await approveInquiryBookingAction(String(inquiry._id), { total: 50000, deposit: 10000 });
 
     const second = await approveInquiryBookingAction(String(inquiry._id));
     expect(second).toMatchObject({ ok: true, idempotent: true, bookingId: String(booking._id) });
@@ -267,6 +267,12 @@ describe("approveInquiryBookingAction", () => {
     const { inquiry } = await seedDraft(workspaceId);
     const res = await approveInquiryBookingAction(String(inquiry._id), { total: 100, deposit: 200 });
     expect("error" in res).toBe(true);
+  });
+
+  it("rejects a deposit-only edit when the booking has no total set (deposit requires total invariant)", async () => {
+    const { inquiry } = await seedDraft(workspaceId); // booking seeded with total: 0
+    const res = await approveInquiryBookingAction(String(inquiry._id), { deposit: 1000 });
+    expect(res).toEqual({ error: "Cannot add a deposit without setting a price" });
   });
 
   it("returns { error: 'conflict' } and does NOT convert when the inquiry session conflicts with a real booking", async () => {
@@ -378,6 +384,19 @@ describe("saveDraftBookingFieldsAction", () => {
     mockCtx.role = "staff";
     const res = await saveDraftBookingFieldsAction(String(inquiry._id), { total: 1 });
     expect(res).toEqual({ error: "owner_only" });
+  });
+
+  it("rejects a deposit-only patch when the booking total is zero (deposit requires total invariant)", async () => {
+    const { inquiry } = await seedDraft(workspaceId); // booking seeded with total: 0
+    const res = await saveDraftBookingFieldsAction(String(inquiry._id), { deposit: 1000 });
+    expect(res).toEqual({ error: "Cannot add a deposit without setting a price" });
+  });
+
+  it("accepts a deposit-only patch when the existing booking already has a non-zero total", async () => {
+    const { inquiry, booking } = await seedDraft(workspaceId);
+    await Booking.updateOne({ _id: booking._id }, { $set: { "amount.total": 5000 } });
+    const res = await saveDraftBookingFieldsAction(String(inquiry._id), { deposit: 1000 });
+    expect(res).toEqual({ ok: true });
   });
 });
 

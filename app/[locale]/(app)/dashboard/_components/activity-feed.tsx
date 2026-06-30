@@ -3,12 +3,12 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InfoHint } from "@/components/ui/info-hint";
-import type { ActivityLogDoc } from "@/lib/db/models";
+import type { SerializedActivity } from "../_data/dashboard-metrics";
 import { PagedList } from "./paged-list";
 import { formatRelativeTime } from "@/lib/i18n/relativeTime";
 
 type Props = {
-  activity: ActivityLogDoc[];
+  activity: SerializedActivity[];
   locale: string;
   title: string;
   empty: string;
@@ -30,14 +30,14 @@ export function ActivityFeed({ activity, locale, title, empty }: Props) {
           <PagedList
             items={activity.map((a) => (
               <li
-                key={String(a._id)}
+                key={a._id}
                 className="flex items-center justify-between gap-3 py-2 text-xs"
               >
                 <span className="capitalize text-foreground">
                   {t(`activityEntity.${a.entity}`)} {t(`activityAction.${a.action}`)}
                 </span>
                 <span className="shrink-0 text-muted-foreground">
-                  {formatRelativeTime(new Date(a.createdAt as unknown as Date), locale)}
+                  {formatRelativeTime(a.createdAt, locale)}
                 </span>
               </li>
             ))}

@@ -158,7 +158,9 @@ describe("BookingDraftCard", () => {
     const expected = formatSessionTimeRange(session, "12h", "UTC");
     // Must contain am/pm marker — proving the canonical formatter ran, not raw "14:00–17:30"
     expect(expected).toMatch(/pm/i);
-    expect(screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+    ).toBeInTheDocument();
     _timeMode = "24h";
   });
 });

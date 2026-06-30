@@ -53,6 +53,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import dynamic from "next/dynamic";
 import { LocationPicker, LocationDisplay } from "@/components/ui/location-picker";
 import { AlertTriangleIcon } from "lucide-react";
@@ -92,6 +93,17 @@ const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
   ssr: false,
   loading: () => <div className="h-40 w-full animate-pulse bg-muted" aria-hidden />,
 });
+
+function formatSessionStamp(value: string | Date, locale: string) {
+  return new Date(value).toLocaleString(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 type SessionDoc = { startAt: string; endAt: string };
 
@@ -2147,7 +2159,7 @@ function BookingTabs({
         ) : null}
 
         {/* Sessions list — only this region scrolls (mirrors the wizard). */}
-        <div className="flex max-h-100 flex-col gap-2 overflow-y-auto pe-1">
+        <div className="flex flex-col gap-2">
           {visibleSessions.map((s, idx) => {
             const originalIdx = (booking?.sessions ?? []).findIndex(
               (orig) =>
@@ -2453,6 +2465,7 @@ function SessionCard({
   const endTime = hhmm(session.endAt);
 
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [draftStartDate, setDraftStartDate] = useState(startDate);
   const [draftStartTime, setDraftStartTime] = useState(startTime);
   const [draftEndTime, setDraftEndTime] = useState(endTime);
@@ -2478,6 +2491,7 @@ function SessionCard({
 
   function startEdit() {
     if (disabled) return;
+    setExpanded(true);
     const initialDate = isoDate(session.startAt);
     setDraftStartDate(initialDate);
     setDraftStartTime(hhmm(session.startAt));
@@ -2542,15 +2556,8 @@ function SessionCard({
   const conflictDate = editing ? draftStartDate : isoDate(displayStart);
 
   return (
-    <div
-      className={cn(
-        "border bg-card text-card-foreground p-3",
-        hasPendingEdit ? "border-brand" : "border-border",
-        isPast && !editing && "opacity-60"
-      )}
-    >
-      {/* Card header: label + edit/delete controls */}
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <CollapsibleDrawer
+      title={
         <div className="flex items-center gap-2">
           <span
             className={cn(
@@ -2571,8 +2578,17 @@ function SessionCard({
             </span>
           ) : null}
         </div>
-        {!readOnly ? (
-          <div className="flex items-center gap-1">
+      }
+      subtitle={
+        displayStart ? (
+          <span className="text-xs text-muted-foreground">
+            {formatSessionStamp(displayStart, locale)}
+          </span>
+        ) : null
+      }
+      actions={
+        !readOnly ? (
+          <>
             {editing ? (
               <>
                 <Button
@@ -2643,10 +2659,17 @@ function SessionCard({
             >
               <Trash2Icon className="size-4" />
             </Button>
-          </div>
-        ) : null}
-      </div>
-
+          </>
+        ) : null
+      }
+      open={expanded}
+      onOpenChange={setExpanded}
+      className={cn(
+        hasPendingEdit ? "border-brand" : "border-border",
+        isPast && !editing && "opacity-60"
+      )}
+      bodyClassName="max-h-80 overflow-y-auto"
+    >
       {!editing ? (
         <>
           <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
@@ -2661,14 +2684,7 @@ function SessionCard({
                 )}
               >
                 {displayStart
-                  ? new Date(displayStart).toLocaleString(locale, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
+                  ? formatSessionStamp(displayStart, locale)
                   : "—"}
               </span>
             </div>
@@ -2683,14 +2699,7 @@ function SessionCard({
                 )}
               >
                 {displayEnd
-                  ? new Date(displayEnd).toLocaleString(locale, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
+                  ? formatSessionStamp(displayEnd, locale)
                   : "—"}
               </span>
             </div>
@@ -2768,7 +2777,7 @@ function SessionCard({
           />
         </div>
       )}
-    </div>
+    </CollapsibleDrawer>
   );
 }
 
@@ -2807,8 +2816,8 @@ function LockedDraftCard({
   const tFields = useTranslations("app.bookings.detail.fields");
   const sessionDate = isoDate(draft.startAt);
   return (
-    <div className="border border-brand bg-card text-card-foreground p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <CollapsibleDrawer
+      title={
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {label}
@@ -2817,8 +2826,17 @@ function LockedDraftCard({
             {unsavedLabel}
           </span>
         </div>
-        {!readOnly ? (
-          <div className="flex items-center gap-1">
+      }
+      subtitle={
+        draft.startAt ? (
+          <span className="text-xs text-muted-foreground">
+            {formatSessionStamp(draft.startAt, locale)}
+          </span>
+        ) : null
+      }
+      actions={
+        !readOnly ? (
+          <>
             <Button
               type="button"
               size="icon-sm"
@@ -2840,10 +2858,13 @@ function LockedDraftCard({
             >
               <XIcon className="size-4" />
             </Button>
-          </div>
-        ) : null}
-      </div>
-
+          </>
+        ) : null
+      }
+      defaultOpen
+      className="border-brand"
+      bodyClassName="max-h-80 overflow-y-auto"
+    >
       <div className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
         <div className="flex flex-col gap-0.5">
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -2851,14 +2872,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.startAt
-              ? new Date(draft.startAt).toLocaleString(locale, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
+              ? formatSessionStamp(draft.startAt, locale)
               : "—"}
           </span>
         </div>
@@ -2868,14 +2882,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.endAt
-              ? new Date(draft.endAt).toLocaleString(locale, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
+              ? formatSessionStamp(draft.endAt, locale)
               : "—"}
           </span>
         </div>
@@ -2886,7 +2893,7 @@ function LockedDraftCard({
         conflicts={conflicts}
         loading={loadingConflict}
       />
-    </div>
+    </CollapsibleDrawer>
   );
 }
 
@@ -2937,6 +2944,7 @@ function DraftSessionCard({
   const [draftStartTime, setDraftStartTime] = useState(hhmm(draft.startAt));
   const [draftEndTime, setDraftEndTime] = useState(hhmm(draft.endAt));
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(true);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   // Emit the initial date so conflicts are fetched right when the card mounts.
@@ -2984,9 +2992,8 @@ function DraftSessionCard({
   }
 
   return (
-    <div className="border border-dashed border-brand bg-muted/30 p-3">
-      {/* Card header: label + check/discard controls */}
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <CollapsibleDrawer
+      title={
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {label}
@@ -2995,8 +3002,17 @@ function DraftSessionCard({
             draft
           </span>
         </div>
-        {!readOnly ? (
-          <div className="flex items-center gap-1">
+      }
+      subtitle={
+        draft.startAt ? (
+          <span className="text-xs text-muted-foreground">
+            {formatSessionStamp(draft.startAt, locale)}
+          </span>
+        ) : null
+      }
+      actions={
+        !readOnly ? (
+          <>
             <Button
               type="button"
               size="icon-sm"
@@ -3021,11 +3037,14 @@ function DraftSessionCard({
             >
               <XIcon className="size-4" />
             </Button>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Inline edit — always open for draft rows */}
+          </>
+        ) : null
+      }
+      open={expanded}
+      onOpenChange={setExpanded}
+      className="border-dashed border-brand bg-muted/30"
+      bodyClassName="max-h-80 overflow-y-auto"
+    >
       <div className="flex flex-col gap-3">
         {error ? (
           <span className="text-xs text-destructive">{error}</span>
@@ -3100,7 +3119,7 @@ function DraftSessionCard({
           loading={isCheckingConflicts}
         />
       </div>
-    </div>
+    </CollapsibleDrawer>
   );
 }
 

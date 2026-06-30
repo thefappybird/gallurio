@@ -90,15 +90,32 @@ export function AppSidebar({
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNudge, setBellNudge] = useState(false);
+  const [showBellToast, setShowBellToast] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
   const { unreadCount } = useNotifications();
   const prevUnreadRef = useRef(unreadCount);
+  const bellToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current) {
       setBellNudge(true);
+      setShowBellToast(true);
+      if (bellToastTimerRef.current) {
+        clearTimeout(bellToastTimerRef.current);
+      }
+      bellToastTimerRef.current = setTimeout(() => {
+        setShowBellToast(false);
+        bellToastTimerRef.current = null;
+      }, 2000);
     }
     prevUnreadRef.current = unreadCount;
   }, [unreadCount]);
+  useEffect(() => {
+    return () => {
+      if (bellToastTimerRef.current) {
+        clearTimeout(bellToastTimerRef.current);
+      }
+    };
+  }, []);
   const closeOnNav = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -172,6 +189,15 @@ export function AppSidebar({
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
+                    {showBellToast ? (
+                      <span
+                        role="status"
+                        aria-live="polite"
+                        className="pointer-events-none absolute top-1/2 start-full z-10 ms-2 hidden -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground md:inline-flex"
+                      >
+                        {tNotif("newNotification")}
+                      </span>
+                    ) : null}
                   </span>
                   <span>{tNotif("bell")}</span>
                 </SidebarMenuButton>

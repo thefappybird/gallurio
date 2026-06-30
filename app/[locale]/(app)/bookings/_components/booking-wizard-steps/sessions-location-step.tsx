@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useFieldArray,
   type Control,
@@ -18,6 +18,7 @@ import { isToday, applyTodaySnap } from "../_helpers/today-snap";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import type { ShiftHit, WizardValues } from "./types";
 
 type Props = {
@@ -72,6 +73,7 @@ function SessionCard({
   conflicts,
   loading,
   onRemove,
+  defaultOpen,
 }: {
   index: number;
   total: number;
@@ -82,10 +84,12 @@ function SessionCard({
   conflicts: ShiftHit[];
   loading: boolean;
   onRemove: () => void;
+  defaultOpen: boolean;
 }) {
   const t = useTranslations("app.bookings.wizard.event");
   const tSessions = useTranslations("app.bookings.sessions");
   const timeMode = useTimeFormat();
+  const [expanded, setExpanded] = useState(defaultOpen);
 
   const startDate = watch(`sessions.${index}.startDate`);
   const allowPastDate = watch(`sessions.${index}.allowPastDate`);
@@ -154,19 +158,23 @@ function SessionCard({
   }, [startDate, setValue, index]);
 
   const sessionErrors = errors.sessions?.[index];
+  // The drawer is forced open (below) while this session has validation errors
+  // so they can't be collapsed out of sight; user-controlled otherwise.
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 border p-3",
-        conflicts.length > 0 ? "border-destructive bg-destructive/5" : "border-border"
-      )}
-    >
-      <div className="flex items-center justify-between">
+    <CollapsibleDrawer
+      title={
         <span className="text-sm font-semibold">
           {tSessions("label", { n: index + 1 })}
         </span>
-        {total > 1 ? (
+      }
+      subtitle={
+        startDate ? (
+          <span className="text-xs text-muted-foreground">{formatConflictDate(startDate)}</span>
+        ) : null
+      }
+      actions={
+        total > 1 ? (
           <Button
             type="button"
             variant="ghost"
@@ -176,10 +184,13 @@ function SessionCard({
           >
             <Trash2Icon className="size-4" />
           </Button>
-        ) : null}
-      </div>
-
-      {/* Row 1: Start date alone */}
+        ) : null
+      }
+      open={expanded || !!sessionErrors}
+      onOpenChange={setExpanded}
+      className={cn(conflicts.length > 0 ? "border-destructive bg-destructive/5" : "border-border")}
+      bodyClassName="flex max-h-80 flex-col gap-3 overflow-y-auto"
+    >
       <div className="flex flex-col gap-1">
         <Label htmlFor={`wiz-startDate-${index}`}>
           {t("startAt")}
@@ -197,7 +208,6 @@ function SessionCard({
         ) : null}
       </div>
 
-      {/* Row 2: Start time + End time, 50/50 */}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor={`wiz-startTime-${index}`}>{t("startTime")}</Label>
@@ -243,7 +253,6 @@ function SessionCard({
         </div>
       </div>
 
-      {/* Conflict check loading indicator */}
       {loading ? (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground" aria-live="polite">
           <Loader2Icon className="size-3.5 animate-spin" />
@@ -251,7 +260,6 @@ function SessionCard({
         </div>
       ) : null}
 
-      {/* Conflicts for this session — only shown when not loading */}
       {!loading && conflicts.length > 0 ? (
         <div className="flex items-start gap-2 border border-destructive bg-destructive/10 px-3 py-2 text-xs">
           <AlertTriangleIcon className="size-3.5 shrink-0 text-destructive" />
@@ -273,7 +281,6 @@ function SessionCard({
         </div>
       ) : null}
 
-      {/* Allow-past-date toggle */}
       <label
         className={`flex items-center gap-2 text-xs text-muted-foreground ${isPastDate ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
       >
@@ -285,7 +292,7 @@ function SessionCard({
         />
         {t("allowPastDate")}
       </label>
-    </div>
+    </CollapsibleDrawer>
   );
 }
 
@@ -326,7 +333,7 @@ export function SessionsLocationStep({
       ) : null}
 
       {/* Sessions list — only this region scrolls */}
-      <div className="flex max-h-100 flex-col gap-3 overflow-y-auto pe-1">
+      <div className="flex flex-col gap-3">
         {fields.map((field, i) => {
           const sessionDate = watch(`sessions.${i}.startDate`);
           return (
@@ -341,6 +348,7 @@ export function SessionsLocationStep({
               conflicts={conflictsBySession[i] ?? []}
               loading={!!(sessionDate && loadingDates.has(sessionDate))}
               onRemove={() => remove(i)}
+              defaultOpen={i === fields.length - 1}
             />
           );
         })}

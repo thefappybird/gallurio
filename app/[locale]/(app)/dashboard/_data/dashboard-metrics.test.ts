@@ -19,6 +19,7 @@ import {
   getKpiSnapshotWithDeltas,
   getBookingsCountByTeam,
   getTransactionsByTeam,
+  serializeActivityLog,
 } from "./dashboard-metrics";
 
 const workspaceId = new Types.ObjectId();
@@ -254,6 +255,30 @@ describe("getUpcomingWeek", () => {
 
     const upcoming = await getUpcomingWeek(workspaceId);
     expect(upcoming).toHaveLength(1);
+  });
+});
+
+describe("serializeActivityLog", () => {
+  it("returns plain JSON-safe activity values", () => {
+    const activity = serializeActivityLog({
+      _id: new Types.ObjectId("507f1f77bcf86cd799439011"),
+      workspaceId: new Types.ObjectId("507f1f77bcf86cd799439012"),
+      actorUserId: "user_1",
+      entity: "booking",
+      entityId: new Types.ObjectId("507f1f77bcf86cd799439013"),
+      action: "created",
+      createdAt: new Date("2026-08-15T10:00:00.000Z"),
+    });
+
+    expect(activity).toEqual({
+      _id: "507f1f77bcf86cd799439011",
+      workspaceId: "507f1f77bcf86cd799439012",
+      actorUserId: "user_1",
+      entity: "booking",
+      entityId: "507f1f77bcf86cd799439013",
+      action: "created",
+      createdAt: "2026-08-15T10:00:00.000Z",
+    });
   });
 });
 

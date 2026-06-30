@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import {
   Select,
   SelectContent,
@@ -306,22 +307,49 @@ export function BookingDraftCard({
             {!editingSessions ? (
               <ul className="flex flex-col gap-1">
                 {draftSessions.map((s, i) => (
-                  <li key={i} className="text-sm tabular-nums">
-                    {fmtSessionDate(s.startDate)}
-                    <span className="text-muted-foreground">{" · "}{formatSessionTimeRange({ startDate: s.startDate, startTime: s.startTime, endTime: s.endTime }, timeMode, "UTC")}</span>
+                  <li key={i}>
+                    <CollapsibleDrawer
+                      title={<span className="text-sm font-medium">{ts("sessionLabel", { n: i + 1 })}</span>}
+                      subtitle={
+                        <span className="text-xs text-muted-foreground">
+                          {fmtSessionDate(s.startDate)}
+                        </span>
+                      }
+                      defaultOpen={i === 0}
+                      bodyClassName="max-h-48 overflow-y-auto"
+                    >
+                      <div className="text-sm tabular-nums text-muted-foreground">
+                        {formatSessionTimeRange(
+                          { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
+                          timeMode,
+                          "UTC"
+                        )}
+                      </div>
+                    </CollapsibleDrawer>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="flex flex-col gap-3">
                 {draftSessions.map((s, i) => (
-                  <div key={i} className="flex flex-col gap-1.5 border border-border p-3">
-                    <span className="text-xs text-muted-foreground">
-                      {ts("sessionLabel", { n: i + 1 })}
-                      {sessionConflicts[i] && (
-                        <span className="ms-2 font-medium text-destructive">· {ts("conflictInline")}</span>
-                      )}
-                    </span>
+                  <CollapsibleDrawer
+                    key={i}
+                    title={<span className="text-sm font-medium">{ts("sessionLabel", { n: i + 1 })}</span>}
+                    subtitle={
+                      <span className="text-xs text-muted-foreground">
+                        {sessionConflicts[i]
+                          ? ts("conflictInline")
+                          : formatSessionTimeRange(
+                              { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
+                              timeMode,
+                              "UTC"
+                            )}
+                      </span>
+                    }
+                    defaultOpen={i === 0}
+                    className={sessionConflicts[i] ? "border-destructive" : undefined}
+                    bodyClassName="max-h-64 overflow-y-auto"
+                  >
                     <div className="grid grid-cols-3 gap-2">
                       <div className="col-span-3 flex flex-col gap-0.5 sm:col-span-1">
                         <label className="text-xs text-muted-foreground">{ts("dateLabel")}</label>
@@ -351,7 +379,7 @@ export function BookingDraftCard({
                         />
                       </div>
                     </div>
-                  </div>
+                  </CollapsibleDrawer>
                 ))}
 
                 {hasSessionConflict && (
