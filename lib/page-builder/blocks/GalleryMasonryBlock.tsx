@@ -9,7 +9,10 @@
 
 import type { ComponentConfig, Field, Fields } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
-import { getGalleryChromeLabelsFrom, type BlockPuck } from "@/lib/page-builder/blockContext";
+import {
+  getGalleryChromeLabelsFrom,
+  type BlockPuck,
+} from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
@@ -22,6 +25,7 @@ import type { GalleryImage } from "./GalleryGridBlock";
 import { resolveGalleryMinHeight, resolveBannerLayers } from "./GalleryGridBlock";
 import { padVar, masonryColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import type { ContainerHeight } from "./manualBlocks";
 
 export type GalleryMasonryProps = {
@@ -189,25 +193,27 @@ export function GalleryMasonryBlock({
                 key={img.id}
                 style={{ margin: 0, marginBottom: gapValue, padding: 0, breakInside: "avoid" }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt={img.alt ?? ""}
-                  loading="lazy"
-                  decoding="async"
-                  width={img.width}
-                  height={img.height}
-                  style={{
-                    width: "100%",
-                    display: "block",
-                    // When both dimensions are known, reserve vertical space via aspect-ratio
-                    // so the browser doesn't shift content as the image loads (CLS fix).
-                    // When absent (legacy images), fall back to height:auto as before.
-                    ...(img.width != null && img.height != null
-                      ? { aspectRatio: `${img.width} / ${img.height}` }
-                      : { height: "auto" }),
-                  }}
-                />
+                <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={img.alt ?? ""}
+                    loading="lazy"
+                    decoding="async"
+                    width={img.width}
+                    height={img.height}
+                    style={{
+                      width: "100%",
+                      display: "block",
+                      // When both dimensions are known, reserve vertical space via aspect-ratio
+                      // so the browser doesn't shift content as the image loads (CLS fix).
+                      // When absent (legacy images), fall back to height:auto as before.
+                      ...(img.width != null && img.height != null
+                        ? { aspectRatio: `${img.width} / ${img.height}` }
+                        : { height: "auto" }),
+                    }}
+                  />
+                </GalleryLightboxTrigger>
               </figure>
             );
           })}

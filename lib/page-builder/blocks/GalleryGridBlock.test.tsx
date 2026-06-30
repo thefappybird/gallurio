@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryGridBlock, galleryGridDefaultProps } from "./GalleryGridBlock";
 import type { GalleryGridProps, GalleryImage } from "./GalleryGridBlock";
 import { puckConfig } from "@/lib/page-builder/config";
@@ -123,5 +123,18 @@ describe("GalleryGridBlock — banner/container props", () => {
     );
     const section = container.querySelector("[data-block='gallery-grid']") as HTMLElement;
     expect(section.style.minHeight).toBe("");
+  });
+});
+
+describe("GalleryGridBlock — lightbox", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", () => {
+    render(GalleryGridBlock({ ...base, images: imgs(2) }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 });
