@@ -80,14 +80,19 @@ const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
 // content — so a page background set on the surface stops at the viewport height
 // and taller content spills outside the colored frame.
 //
-// We target that wrapper by its STABLE structural relationship — it is the direct
-// parent of `[data-puck-preview]` — via `:has(> [data-puck-preview])`. (An earlier
-// fixed-depth selector `[data-tour-id="canvas"] > * > *` missed it: Puck nests the
-// surface ~5 levels deep, not 2.) Overriding to `position: relative` + `height: auto`
-// makes the surface content-driven so the page background wraps the tallest content;
-// `min-height: 100dvh` keeps the blank canvas filling the viewport.
+// We target that wrapper by its STABLE structural relationship to `[data-puck-preview]`
+// via `:has()`. (An earlier fixed-depth selector `[data-tour-id="canvas"] > * > *`
+// missed it: Puck nests the surface ~5 levels deep, not 2.) Two alternatives are
+// listed because the spotlight tour's `preview:` Puck override (EditorShell.tsx)
+// wraps the surface in a `[data-tour-id="canvas-viewport"]` marker div for anchor
+// measurement, making `[data-puck-preview]` a grandchild instead of a direct child:
+//   - `:has(> [data-puck-preview])` — no tour wrapper present (e.g. iframe mode).
+//   - `:has(> [data-tour-id="canvas-viewport"] > [data-puck-preview])` — current case.
+// Overriding to `position: relative` + `height: auto` makes the surface content-driven
+// so the page background wraps the tallest content; `min-height: 100dvh` keeps the
+// blank canvas filling the viewport.
 const CANVAS_PUCK_CANVAS_ROOT_CSS =
-  `:has(> [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
+  `:has(> [data-puck-preview]), :has(> [data-tour-id="canvas-viewport"] > [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
 
 // The root page drop zone carries data-puck-dropzone="root:default-zone" (Puck's
 // hardcoded rootAreaId "root" + rootZone "default-zone"). All nested Container /

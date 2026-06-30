@@ -31,11 +31,15 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
   // Blocks panel — gated: user must drag a block to the canvas to advance.
   // passthrough lets pointer events reach the real editor so the drag works.
   // secondaryAnchorId highlights the canvas as the drop target alongside the panel.
+  // "canvas-viewport" (not "canvas") — the latter is Puck's `puck` override slot,
+  // which wraps the ENTIRE editor UI (header/drawer/editor/fields), not just the
+  // canvas. "canvas-viewport" is Puck's `preview` slot, scoped to the grid's
+  // actual editor column.
   {
     id: "drag-block",
     slug: "dragBlock",
     anchorId: "blocks-panel",
-    secondaryAnchorId: "canvas",
+    secondaryAnchorId: "canvas-viewport",
     title: "Drag a block onto your page",
     body: "The panel on the left lists every available block. Drag any block from here onto the canvas to add it to your page.",
     placement: "right",
@@ -166,13 +170,13 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // Photos
+  // Preview + device toggle
   {
-    id: "photos",
-    slug: "photos",
-    anchorId: "photos",
-    title: "Upload and organize photos",
-    body: "Open Photos to create collections and upload images. Gallery blocks pull from a collection.",
+    id: "preview-device",
+    slug: "preview",
+    anchorId: "preview-toggle",
+    title: "Preview your site at any screen size",
+    body: "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop.",
     placement: "bottom",
   },
 
@@ -188,6 +192,16 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
+  // Photos
+  {
+    id: "photos",
+    slug: "photos",
+    anchorId: "photos",
+    title: "Upload and organize photos",
+    body: "Open Photos to create collections and upload images. Gallery blocks pull from a collection.",
+    placement: "bottom",
+  },
+
   // Theme
   {
     id: "theme",
@@ -198,13 +212,13 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
-  // Preview + device toggle
+  // Save + Drafts
   {
-    id: "preview-device",
-    slug: "preview",
-    anchorId: "preview-toggle",
-    title: "Preview your site at any screen size",
-    body: "Switch to preview mode and use the device toggle to check your layout on mobile, tablet, and desktop.",
+    id: "save-drafts",
+    slug: "draftsStep",
+    anchorId: "save-changes",
+    title: "Save drafts and switch versions",
+    body: "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button.",
     placement: "bottom",
   },
 
@@ -215,16 +229,6 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     anchorId: "publish",
     title: "Publish to go live",
     body: "When you're happy with your changes, click Publish to push them to your public page.",
-    placement: "bottom",
-  },
-
-  // Save + Drafts
-  {
-    id: "save-drafts",
-    slug: "draftsStep",
-    anchorId: "save-changes",
-    title: "Save drafts and switch versions",
-    body: "Save changes at any time. Use Drafts to manage multiple versions. Reopen this tour via the Guide button.",
     placement: "bottom",
   },
 ];

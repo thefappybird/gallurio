@@ -90,9 +90,16 @@ describe("buildCanvasCss", () => {
     // target that wrapper by its STABLE relationship — it is the direct parent of
     // [data-puck-preview] — and override to position:relative + height:auto so the
     // surface grows with content. (A fixed-depth `> * > *` selector missed it: Puck
-    // nests the surface several levels deep, not two.)
+    // nests the surface several levels deep, not two.) Two selector alternatives are
+    // joined by a comma: the spotlight tour's `preview:` Puck override wraps the
+    // surface in a `[data-tour-id="canvas-viewport"]` marker div (for anchor
+    // measurement), making [data-puck-preview] a grandchild in that case instead of
+    // a direct child.
     expect(css).toContain(":has(> [data-puck-preview])");
-    expect(css).toMatch(/:has\(> \[data-puck-preview\]\)\s*{[^}]*position: relative/);
+    expect(css).toContain(':has(> [data-tour-id="canvas-viewport"] > [data-puck-preview])');
+    expect(css).toMatch(
+      /:has\(> \[data-puck-preview\]\), :has\(> \[data-tour-id="canvas-viewport"\] > \[data-puck-preview\]\)\s*{[^}]*position: relative/
+    );
   });
 
   it("clamps the canvas surface width to the selected device width (non-desktop)", () => {

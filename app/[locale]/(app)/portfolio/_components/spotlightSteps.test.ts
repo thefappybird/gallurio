@@ -26,6 +26,14 @@ describe("SPOTLIGHT_STEPS", () => {
     expect(step?.anchorId).toBe("blocks-panel");
   });
 
+  it("step 2 (drag-block) secondary anchor is the precise canvas viewport, not the full Puck wrapper", () => {
+    const step = SPOTLIGHT_STEPS.find((s) => s.id === "drag-block");
+    // "canvas-viewport" is Puck's `preview` slot (scoped to the grid's editor
+    // column); "canvas" is Puck's `puck` slot (wraps the entire editor UI —
+    // header/drawer/editor/fields — which would cutout almost the whole page).
+    expect(step?.secondaryAnchorId).toBe("canvas-viewport");
+  });
+
   it("step 7 (section-tabs) is non-gated and has the updated copy (1e fix)", () => {
     const step = SPOTLIGHT_STEPS.find((s) => s.id === "section-tabs");
     expect(step).toBeDefined();
