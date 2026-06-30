@@ -1945,6 +1945,10 @@
               "title": "Muat naik dan susun foto",
               "body": "Buka Foto untuk membuat koleksi dan memuat naik imej. Blok Galeri mengambil daripada koleksi."
             },
+            "translate": {
+              "title": "Terjemah halaman awam anda",
+              "body": "Tukar bahasa navigasi, borang hubungan, dan popup koleksi anda serentak. Bahasa kanan-ke-kiri membalikkan susun atur secara automatik."
+            },
             "theme": {
               "title": "Pilih warna dan fon anda",
               "body": "Tema mengawal lima warna jenama dan tipografi anda. Setiap pilihan gaya blok menggunakan palet ini."

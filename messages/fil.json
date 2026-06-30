@@ -1945,6 +1945,10 @@
               "title": "Mag-upload at mag-organisa ng mga larawan",
               "body": "Buksan ang Photos para gumawa ng mga koleksyon at mag-upload ng mga larawan. Kumukuha ang mga Gallery block mula sa isang koleksyon."
             },
+            "translate": {
+              "title": "Isalin ang iyong mga pampublikong pahina",
+              "body": "Baguhin ang wika ng iyong navigation, contact form, at mga collection popup nang sabay-sabay. Awtomatikong binabaligtad ng mga wikang right-to-left ang layout."
+            },
             "theme": {
               "title": "Pumili ng iyong mga kulay at font",
               "body": "Kinokontrol ng tema ang iyong limang brand color at typography. Ginagamit ng mga opsyon sa estilo ng bawat block ang palette na ito."

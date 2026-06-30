@@ -1933,6 +1933,10 @@
               "title": "Upload and organize photos",
               "body": "Open Photos to create collections and upload images. Gallery blocks pull from a collection."
             },
+            "translate": {
+              "title": "Translate your public pages",
+              "body": "Switch the language of your navigation, contact form, and collection popups all at once. Right-to-left languages flip the layout automatically."
+            },
             "theme": {
               "title": "Pick your colors and fonts",
               "body": "Theme controls your five brand colors and typography. Every block's style options use this palette."

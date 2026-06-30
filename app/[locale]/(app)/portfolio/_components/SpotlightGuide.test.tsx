@@ -422,6 +422,40 @@ describe("SpotlightGuide", () => {
     removeB();
   });
 
+  it("confines interaction to the cutouts on a passthrough step with a secondary anchor (perimeter blockers around both holes)", () => {
+    const removeA = injectAnchor("a", { top: 100, left: 0, width: 80, height: 400, bottom: 500, right: 80 });
+    const removeB = injectAnchor("b", { top: 100, left: 120, width: 400, height: 400, bottom: 500, right: 520 });
+
+    const confinedStep: SpotlightStep = {
+      id: "confined",
+      anchorId: "a",
+      secondaryAnchorId: "b",
+      title: "Confined drag",
+      body: "Drag from the panel to the canvas.",
+      gated: true,
+      passthrough: true,
+    };
+
+    renderWithProviders(
+      <SpotlightGuide
+        open={true}
+        steps={[confinedStep]}
+        stepIndex={0}
+        onStepChange={vi.fn()}
+        gateSatisfied={false}
+        onSkip={vi.fn()}
+        onFinish={vi.fn()}
+      />
+    );
+
+    // Perimeter blockers make the surrounding chrome unclickable while the two
+    // highlighted regions (and the gap between them) stay interactive for the drag.
+    expect(document.querySelectorAll("rect.pointer-events-auto").length).toBeGreaterThan(0);
+
+    removeA();
+    removeB();
+  });
+
   // ── Step-change loading gate ──────────────────────────────────────────────────
   // Replaces the cross-fade: when the step changes to one that highlights an
   // anchor that isn't measured yet, the card holds in place showing a loading

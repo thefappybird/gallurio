@@ -1945,6 +1945,10 @@
               "title": "Unggah dan atur foto",
               "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
             },
+            "translate": {
+              "title": "Terjemahkan halaman publik Anda",
+              "body": "Ubah bahasa navigasi, formulir kontak, dan popup koleksi sekaligus. Bahasa kanan-ke-kiri membalik tata letak secara otomatis."
+            },
             "theme": {
               "title": "Pilih warna dan font Anda",
               "body": "Tema mengontrol lima warna merek dan tipografi Anda. Setiap opsi gaya blok menggunakan palet ini."
