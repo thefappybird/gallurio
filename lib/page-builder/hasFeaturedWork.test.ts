@@ -17,6 +17,30 @@ describe("hasFeaturedWorkInZones", () => {
     };
     expect(hasFeaturedWorkInZones(zones)).toBe(true);
   });
+
+  it("returns true when a FeaturedWork block is nested inside a container slot (preset case)", () => {
+    // The "Featured Work" preset inserts a Container whose `content` slot holds
+    // the FeaturedWork child — a top-level-only scan would miss it.
+    const zones = {
+      home: {
+        content: [
+          {
+            type: "Container",
+            props: {
+              content: [
+                { type: "Heading", props: {} },
+                { type: "FeaturedWork", props: {} },
+              ],
+            },
+            readOnly: false,
+          },
+        ],
+        root: {},
+      },
+      gallery: { content: [], root: {} },
+    };
+    expect(hasFeaturedWorkInZones(zones)).toBe(true);
+  });
 });
 
 it("resolveCollectionsPopupAction returns 'warn' when no FeaturedWork is present", () => {

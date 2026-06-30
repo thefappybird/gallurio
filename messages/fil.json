@@ -1460,16 +1460,6 @@
           },
           "save": "I-save",
           "saving": "Nagse-save…",
-          "languageLabel": "Wika ng pampublikong pahina",
-          "languageHelp": "Wika ng form ng pagtatanong, navigation, at footer sa iyong pampublikong pahina.",
-          "languages": {
-            "auto": "Awtomatiko (batay sa bansa mo)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "bgColorLabel": "Kulay ng background",
           "textColorLabel": "Kulay ng teksto",
           "cornerRadiusLabel": "Bilog ng sulok",

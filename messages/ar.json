@@ -1480,16 +1480,6 @@
           "popupStyleLabel": "نمط النافذة المنبثقة",
           "save": "حفظ",
           "saving": "جارٍ الحفظ…",
-          "languageLabel": "لغة الصفحة العامة",
-          "languageHelp": "لغة نموذج الاستفسار والتنقّل والتذييل في صفحتك العامة.",
-          "languages": {
-            "auto": "تلقائي (حسب بلدك)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "errorColorLabel": "لون رسالة الخطأ",
           "sectionTabs": "علامات التبويب",
           "inactiveTabsSection": "علامات التبويب غير النشطة",

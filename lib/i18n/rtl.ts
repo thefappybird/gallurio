@@ -16,12 +16,14 @@ export function useIsRtl(): boolean {
 
 /**
  * Resolves the effective text direction for a public page.
- * Explicit `formDir` (stored per-draft) takes precedence; otherwise derived from locale.
+ * An explicit `formDir` override only applies to RTL-capable locales — a stale
+ * "rtl" left over from a previous Arabic selection must never flip an LTR page.
+ * For non-RTL locales the direction is always "ltr".
  */
 export function resolveEffectiveDir(
   formDir: "ltr" | "rtl" | "" | undefined,
   locale: string
 ): "ltr" | "rtl" {
-  if (formDir === "ltr" || formDir === "rtl") return formDir;
-  return isRtl(locale) ? "rtl" : "ltr";
+  if (!isRtl(locale)) return "ltr";
+  return formDir === "ltr" ? "ltr" : "rtl";
 }

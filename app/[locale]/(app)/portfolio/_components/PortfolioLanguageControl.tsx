@@ -8,7 +8,8 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 
 const LOCALES = [
@@ -51,15 +52,16 @@ export function PortfolioLanguageControl({
           <Languages className="size-4" aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {LOCALES.map(({ value: v, label }) => (
-            <DropdownMenuItem
-              key={v}
-              aria-selected={value === v}
-              onClick={() => onChange(v)}
-            >
-              {label}
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuRadioGroup
+            value={value}
+            onValueChange={(v) => onChange(v as FormLocale)}
+          >
+            {LOCALES.map(({ value: v, label }) => (
+              <DropdownMenuRadioItem key={v} value={v}>
+                {label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 

@@ -1,14 +1,31 @@
 import type { PuckData } from "./types";
 
+type BlockLike = { type?: string; props?: { content?: unknown } };
+
 /**
- * Returns true if any zone in `zones` contains at least one "FeaturedWork" block.
- * Used by the editor to warn when the Collections Popup config has no visible block.
+ * Recursively scans a block list for a FeaturedWork block. Presets and any block
+ * dropped into a Container/Columns nest children in their `content` slot, so a
+ * top-level-only scan would miss the most common insertion path.
+ */
+function containsFeaturedWork(items: readonly unknown[]): boolean {
+  return items.some((item) => {
+    const block = item as BlockLike;
+    if (block.type === "FeaturedWork") return true;
+    const nested = block.props?.content;
+    return Array.isArray(nested) && containsFeaturedWork(nested);
+  });
+}
+
+/**
+ * Returns true if any zone in `zones` contains at least one "FeaturedWork" block
+ * (at any nesting depth). Used by the editor to warn when the Collections Popup
+ * config has no visible block.
  */
 export function hasFeaturedWorkInZones(
   zones: Record<string, PuckData | null | undefined>
 ): boolean {
   return Object.values(zones).some((zone) =>
-    (zone?.content ?? []).some((item) => item.type === "FeaturedWork")
+    containsFeaturedWork(zone?.content ?? [])
   );
 }
 

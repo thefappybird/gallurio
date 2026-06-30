@@ -1460,16 +1460,6 @@
           },
           "save": "Simpan",
           "saving": "Menyimpan…",
-          "languageLabel": "Bahasa halaman publik",
-          "languageHelp": "Bahasa formulir pertanyaan, navigasi, dan footer di halaman publik Anda.",
-          "languages": {
-            "auto": "Otomatis (berdasarkan negara Anda)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
           "cornerRadiusLabel": "Sudut melengkung",

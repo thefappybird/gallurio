@@ -1480,16 +1480,6 @@
           "popupStyleLabel": "Popup style",
           "save": "Save",
           "saving": "Saving…",
-          "languageLabel": "Public page language",
-          "languageHelp": "Language of the inquiry form, navigation, and footer on your public page.",
-          "languages": {
-            "auto": "Auto (based on your country)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "errorColorLabel": "Error message color",
           "sectionTabs": "Tabs",
           "inactiveTabsSection": "Inactive tabs",

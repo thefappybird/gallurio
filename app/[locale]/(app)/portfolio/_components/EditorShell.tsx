@@ -55,7 +55,7 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
-import { useIsRtl } from "@/lib/i18n/rtl";
+import { useIsRtl, resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
@@ -310,7 +310,7 @@ function EditCanvasControls({
       <PortfolioLanguageControl
         value={formLocale as Parameters<typeof PortfolioLanguageControl>[0]["value"]}
         onChange={onFormLocaleChange}
-        dir={formDir || "ltr"}
+        dir={resolveEffectiveDir(formDir, formLocale)}
         onDirChange={onFormDirChange}
       />
     </div>
