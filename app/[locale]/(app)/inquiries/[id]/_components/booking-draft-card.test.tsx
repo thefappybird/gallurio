@@ -159,8 +159,8 @@ describe("BookingDraftCard", () => {
     // Must contain am/pm marker — proving the canonical formatter ran, not raw "14:00–17:30"
     expect(expected).toMatch(/pm/i);
     expect(
-      screen.getAllByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))).length
-    ).toBeGreaterThan(0);
+      screen.getByText(new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")))
+    ).toBeInTheDocument();
     _timeMode = "24h";
   });
 });

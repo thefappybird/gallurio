@@ -288,11 +288,17 @@ describe("bookingPatchSchema", () => {
     }
   });
 
-  it("rejects amount.deposit without amount.total in patch payloads", () => {
-    const bad = bookingPatchSchema.safeParse({ "amount.deposit": 1000 });
+  it("accepts a deposit-only patch (total absent — editing existing booking that already has a total)", () => {
+    const ok = bookingPatchSchema.safeParse({ "amount.deposit": 1000 });
+    expect(ok.success).toBe(true);
+  });
+
+  it("rejects a deposit patch when total is explicitly set to 0 in the same patch", () => {
+    const bad = bookingPatchSchema.safeParse({ "amount.deposit": 1000, "amount.total": 0 });
     expect(bad.success).toBe(false);
     if (!bad.success) {
       expect(bad.error.issues[0]?.path).toEqual(["amount.deposit"]);
+      expect(bad.error.issues[0]?.message).toBe("Cannot add a deposit without setting a price");
     }
   });
 });

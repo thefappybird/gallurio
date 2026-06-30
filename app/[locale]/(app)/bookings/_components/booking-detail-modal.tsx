@@ -94,6 +94,17 @@ const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
   loading: () => <div className="h-40 w-full animate-pulse bg-muted" aria-hidden />,
 });
 
+function formatSessionStamp(value: string | Date, locale: string) {
+  return new Date(value).toLocaleString(locale, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 type SessionDoc = { startAt: string; endAt: string };
 
 type BookingDoc = {
@@ -2571,14 +2582,7 @@ function SessionCard({
       subtitle={
         displayStart ? (
           <span className="text-xs text-muted-foreground">
-            {new Date(displayStart).toLocaleString(locale, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatSessionStamp(displayStart, locale)}
           </span>
         ) : null
       }
@@ -2680,14 +2684,7 @@ function SessionCard({
                 )}
               >
                 {displayStart
-                  ? new Date(displayStart).toLocaleString(locale, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
+                  ? formatSessionStamp(displayStart, locale)
                   : "—"}
               </span>
             </div>
@@ -2702,14 +2699,7 @@ function SessionCard({
                 )}
               >
                 {displayEnd
-                  ? new Date(displayEnd).toLocaleString(locale, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
+                  ? formatSessionStamp(displayEnd, locale)
                   : "—"}
               </span>
             </div>
@@ -2840,14 +2830,7 @@ function LockedDraftCard({
       subtitle={
         draft.startAt ? (
           <span className="text-xs text-muted-foreground">
-            {new Date(draft.startAt).toLocaleString(locale, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatSessionStamp(draft.startAt, locale)}
           </span>
         ) : null
       }
@@ -2889,14 +2872,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.startAt
-              ? new Date(draft.startAt).toLocaleString(locale, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
+              ? formatSessionStamp(draft.startAt, locale)
               : "—"}
           </span>
         </div>
@@ -2906,14 +2882,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.endAt
-              ? new Date(draft.endAt).toLocaleString(locale, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
+              ? formatSessionStamp(draft.endAt, locale)
               : "—"}
           </span>
         </div>
@@ -3037,14 +3006,7 @@ function DraftSessionCard({
       subtitle={
         draft.startAt ? (
           <span className="text-xs text-muted-foreground">
-            {new Date(draft.startAt).toLocaleString(locale, {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            })}
+            {formatSessionStamp(draft.startAt, locale)}
           </span>
         ) : null
       }

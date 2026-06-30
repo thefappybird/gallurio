@@ -439,17 +439,15 @@ export function ContactForm({
                     </span>
                   }
                   subtitle={
-                    fields[index]
+                    watchedSessions?.[index]?.startDate
                       ? (
-                        <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>
-                          {(watchedSessions?.[index]?.startDate || labels.startDate) as string}
-                        </span>
+                        <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>{watchedSessions[index].startDate as string}</span>
                       )
                       : null
                   }
                   defaultOpen={index === fields.length - 1}
-                  className="border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)]"
-                  bodyClassName="max-h-80 overflow-y-auto"
+                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)]"
+                  bodyClassName="flex max-h-80 flex-col gap-2 overflow-y-auto"
                 >
                   {fields.length > 1 && (
                     <div style={{ display: "flex", justifyContent: "flex-end" }}>

@@ -25,7 +25,7 @@ const isoDate = z.preprocess(
   z.date({ invalid_type_error: "Invalid date" })
 );
 const nonNegMoney = z.number().nonnegative("Must be 0 or more");
-const DEPOSIT_REQUIRES_TOTAL_MESSAGE = "Cannot add a deposit without setting a price";
+export const DEPOSIT_REQUIRES_TOTAL_MESSAGE = "Cannot add a deposit without setting a price";
 const DEPOSIT_EXCEEDS_TOTAL_MESSAGE = "Deposit cannot exceed total";
 
 const clientExistingBlock = z.object({
@@ -159,7 +159,8 @@ export const bookingPatchSchema = z
     (v) =>
       v["amount.deposit"] == null ||
       v["amount.deposit"] === 0 ||
-      (v["amount.total"] != null && v["amount.total"] > 0),
+      v["amount.total"] == null ||
+      v["amount.total"] > 0,
     {
       message: DEPOSIT_REQUIRES_TOTAL_MESSAGE,
       path: ["amount.deposit"],

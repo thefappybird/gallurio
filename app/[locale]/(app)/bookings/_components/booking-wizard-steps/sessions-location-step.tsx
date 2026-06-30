@@ -96,16 +96,25 @@ function SessionCard({
 
   const isPastDate = !!startDate && startDate < todayIso();
   const startMin = allowPastDate ? undefined : todayIso();
+  // When the start date is today and past dates aren't allowed, block past
+  // times of day in the start-time input. Matches the drag-and-drop
+  // past-time confirm flow so both entry points enforce the same rule.
   const startTimeMin =
     !allowPastDate && startDate === todayIso() ? nowHHMM() : undefined;
+
+  // Track the previous startDate so we can detect transitions to today.
   const prevStartRef = useRef(startDate);
 
+  // When user picks a past date, auto-enable allowPastDate.
   useEffect(() => {
     if (isPastDate && !allowPastDate) {
       setValue(`sessions.${index}.allowPastDate`, true, { shouldDirty: false });
     }
   }, [isPastDate, allowPastDate, setValue, index]);
 
+  // When start date transitions to today, snap start+end times to the next
+  // 30-min slot after now. If the snap would push end past midnight, clamp
+  // endTime to "23:59" instead of advancing the date (sessions are single-day).
   useEffect(() => {
     const prevStart = prevStartRef.current;
     prevStartRef.current = startDate;
@@ -125,6 +134,7 @@ function SessionCard({
     });
 
     if (snapped.startDate !== startDate) {
+      // Snap crossed midnight — advance start date to tomorrow.
       setValue(`sessions.${index}.startDate`, snapped.startDate, {
         shouldDirty: true,
         shouldValidate: true,
@@ -136,6 +146,7 @@ function SessionCard({
       shouldValidate: true,
     });
 
+    // Clamp end time: sessions are strictly single-day, never cross midnight.
     const clampedEndTime =
       snapped.endDate !== snapped.startDate ? "23:59" : snapped.endTime;
     setValue(`sessions.${index}.endTime`, clampedEndTime, {
@@ -147,6 +158,8 @@ function SessionCard({
   }, [startDate, setValue, index]);
 
   const sessionErrors = errors.sessions?.[index];
+  // The drawer is forced open (below) while this session has validation errors
+  // so they can't be collapsed out of sight; user-controlled otherwise.
 
   return (
     <CollapsibleDrawer

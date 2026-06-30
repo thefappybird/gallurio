@@ -9,6 +9,7 @@ import { Inquiry, Booking, ActivityLog, Team, Client } from "@/lib/db/models";
 import { recordBookingForClient } from "@/lib/db/clientTransactions";
 import { isBookedInquiryStatus } from "@/lib/inquiries/status";
 import { inquirySessionsEditSchema, inquirySessionsToBookingSessions, type InquirySessionsEditInput } from "@/lib/validators/inquiry";
+import { DEPOSIT_REQUIRES_TOTAL_MESSAGE } from "@/lib/validators/booking";
 import { FALLBACK_TZ } from "@/lib/utils/timezone";
 import { getShiftsOnDate } from "@/lib/bookings/shift-conflicts";
 import { overlappingShifts, toMinutes } from "@/app/[locale]/(app)/bookings/_components/_helpers/calendar-helpers";
@@ -115,6 +116,12 @@ export async function approveInquiryBookingAction(
     currency: booking.amount?.currency ?? ctx.workspace.currency ?? "PHP",
   };
   const newNotes = edits.data.notes ?? booking.notes ?? "";
+
+  // A deposit is meaningless without a price — reject the merged amount, not
+  // just the edits, so a deposit-only edit over a zero-total draft is caught.
+  if (newAmount.deposit > 0 && newAmount.total <= 0) {
+    return { error: DEPOSIT_REQUIRES_TOTAL_MESSAGE };
+  }
 
   // Did THIS call perform the promotion? A concurrent approval can win the
   // `status: "draft"` race (matchedCount === 0); only the winner fires the
@@ -299,6 +306,21 @@ export async function saveDraftBookingFieldsAction(
 
   const inquiry = await Inquiry.findOne({ _id: inquiryId, workspaceId }).lean();
   if (!inquiry?.draftBookingId) return { error: "missing_draft" };
+
+  // When an amount field is edited, validate the MERGED amount (edit over the
+  // draft's current value) so a deposit-only patch over a zero-total draft is
+  // rejected — the patch alone can't see the existing total.
+  if (edits.data.total !== undefined || edits.data.deposit !== undefined) {
+    const draft = await Booking.findOne(
+      { _id: inquiry.draftBookingId, workspaceId },
+      { amount: 1 }
+    ).lean();
+    const effTotal = edits.data.total ?? draft?.amount?.total ?? 0;
+    const effDeposit = edits.data.deposit ?? draft?.amount?.deposit ?? 0;
+    if (effDeposit > 0 && effTotal <= 0) {
+      return { error: DEPOSIT_REQUIRES_TOTAL_MESSAGE };
+    }
+  }
 
   const set: Record<string, unknown> = {};
   if (edits.data.total !== undefined) set["amount.total"] = edits.data.total;

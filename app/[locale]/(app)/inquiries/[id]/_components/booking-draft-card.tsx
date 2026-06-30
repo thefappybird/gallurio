@@ -312,26 +312,18 @@ export function BookingDraftCard({
                       title={<span className="text-sm font-medium">{ts("sessionLabel", { n: i + 1 })}</span>}
                       subtitle={
                         <span className="text-xs text-muted-foreground">
-                          {fmtSessionDate(s.startDate)}{" · "}
-                          {formatSessionTimeRange(
-                            { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
-                            timeMode,
-                            "UTC"
-                          )}
+                          {fmtSessionDate(s.startDate)}
                         </span>
                       }
                       defaultOpen={i === 0}
                       bodyClassName="max-h-48 overflow-y-auto"
                     >
-                      <div className="text-sm tabular-nums">
-                        <div>{fmtSessionDate(s.startDate)}</div>
-                        <div className="text-muted-foreground">
-                          {formatSessionTimeRange(
-                            { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
-                            timeMode,
-                            "UTC"
-                          )}
-                        </div>
+                      <div className="text-sm tabular-nums text-muted-foreground">
+                        {formatSessionTimeRange(
+                          { startDate: s.startDate, startTime: s.startTime, endTime: s.endTime },
+                          timeMode,
+                          "UTC"
+                        )}
                       </div>
                     </CollapsibleDrawer>
                   </li>
