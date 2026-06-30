@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerItem } from "./types";
@@ -23,13 +23,13 @@ const L = {
   namePlaceholder: "e.g. Weddings 2024",
   dropZone: "Drag photos here or click to select",
   dropZoneActive: "Drop to upload",
-  hint: "JPEG, PNG, WebP or AVIF · max 10 MB · min 600 px",
+  hint: "JPEG, PNG, WebP or AVIF · max 15 MB · min 600 px",
   uploading: "Uploading…",
   create: "Create collection",
   creating: "Creating…",
   cancel: "Cancel",
   errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 10 MB.",
+  errSize: "Each photo must be under 15 MB.",
   errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
   errCreate: "Could not create the collection. Please try again.",
@@ -92,7 +92,7 @@ export function CreateCollectionDialog({
     let typeErr = false;
     let sizeErr = false;
     Array.from(files).forEach((f) => {
-      const check = validatePhotoFile(f);
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
       if (!check.ok) {
         if (check.reason === "type_not_accepted") typeErr = true;
         else sizeErr = true;
@@ -106,7 +106,9 @@ export function CreateCollectionDialog({
     setUploading(true);
     setError(topError);
     Promise.allSettled(
-      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
+      valid.map((file) =>
+        uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
+      )
     ).then((results) => {
       const ok: LocalImage[] = [];
       let dimErr = false;

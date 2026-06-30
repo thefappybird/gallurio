@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { ImagePlusIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import type { PickerCollection } from "./types";
@@ -28,7 +28,7 @@ const L = {
   create: "Create collection",
   creating: "Creating…",
   errorPhotoType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errorPhotoSize: "Each photo must be under 10 MB.",
+  errorPhotoSize: "Each photo must be under 15 MB.",
   errorPhotoDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errorUpload: "Some photos failed to upload.",
   errorCreate: "Could not create the collection. Please try again.",
@@ -72,7 +72,7 @@ export function CollectionPicker({ value, onChange }: Props) {
     let sizeErr = false;
 
     Array.from(files).forEach((f) => {
-      const check = validatePhotoFile(f);
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
       if (!check.ok) {
         if (check.reason === "type_not_accepted") typeErr = true;
         else sizeErr = true;
@@ -91,7 +91,9 @@ export function CollectionPicker({ value, onChange }: Props) {
     setForm((f) => f.open ? { ...f, uploading: true, error: topError } : f);
 
     Promise.allSettled(
-      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
+      valid.map((file) =>
+        uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
+      )
     ).then((results) => {
       const ok: LocalImage[] = [];
       let dimErr = false;

@@ -35,9 +35,9 @@ function getFileDimensions(file: File): Promise<{ width: number; height: number 
 
 export async function uploadImage(
   file: File,
-  opts: { subfolder?: string } = {}
+  opts: { subfolder?: string; maxBytes?: number } = {}
 ): Promise<UploadedImage> {
-  const fileCheck = validatePhotoFile(file);
+  const fileCheck = validatePhotoFile(file, opts.maxBytes);
   if (!fileCheck.ok) throw new Error(fileCheck.reason);
 
   // Capture dimensions from the file before upload — CF does not return them.

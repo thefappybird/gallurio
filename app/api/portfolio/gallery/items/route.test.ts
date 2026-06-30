@@ -45,7 +45,7 @@ vi.mock("@/lib/auth/apiOrgContext", () => ({
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { GalleryCollection, GalleryItem, Workspace } from "@/lib/db/models";
 import { POST } from "./route";
-import { PHOTO_SPEC } from "@/lib/page-builder/photoSpec";
+import { PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 
 let workspaceId: Types.ObjectId;
 
@@ -149,18 +149,25 @@ describe("POST /api/portfolio/gallery/items", () => {
     expect((res.body as { error: string }).error).toBe("format_not_accepted");
   });
 
-  it("rejects a file 1 byte over the 10 MB cap with file_too_large", async () => {
+  it("rejects a file 1 byte over the 15 MB portfolio cap with file_too_large", async () => {
     const res = (await POST(
-      makeReq(validPayload({ sizeBytes: PHOTO_SPEC.maxBytes + 1 }))
+      makeReq(validPayload({ sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES + 1 }))
     )) as unknown as MockResp;
     expect(res.status).toBe(400);
     expect((res.body as { error: string }).error).toBe("file_too_large");
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
-  it("accepts a file exactly at the 10 MB cap", async () => {
+  it("accepts a file exactly at the 15 MB portfolio cap", async () => {
     const res = (await POST(
-      makeReq(validPayload({ sizeBytes: PHOTO_SPEC.maxBytes }))
+      makeReq(validPayload({ sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+  });
+
+  it("accepts a 12 MB file — above the shared 10 MB avatar default but within the 15 MB portfolio cap", async () => {
+    const res = (await POST(
+      makeReq(validPayload({ sizeBytes: 12 * 1024 * 1024 }))
     )) as unknown as MockResp;
     expect(res.status).toBe(201);
   });

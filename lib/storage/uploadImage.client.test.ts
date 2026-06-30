@@ -99,6 +99,15 @@ describe("uploadImage", () => {
     await expect(uploadImage(makeFile())).rejects.toThrow("upload_failed");
   });
 
+  it("rejects a 12 MB file with the default (avatar) limit even when subfolder is 'avatars'", async () => {
+    const file = makeFile("image/png", 12 * 1024 * 1024);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(uploadImage(file, { subfolder: "avatars" })).rejects.toThrow("file_too_large");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("defaults subfolder to 'gallery' when omitted", async () => {
     const fetchMock = vi
       .fn()
@@ -109,5 +118,31 @@ describe("uploadImage", () => {
     await uploadImage(makeFile());
     const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
     expect(body.subfolder).toBe("gallery");
+  });
+
+  it("accepts a 12 MB file (over the default 10 MB limit) when a 15 MB maxBytes override is passed (portfolio gallery)", async () => {
+    const file = makeFile("image/png", 12 * 1024 * 1024);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => directUploadBody })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await uploadImage(file, {
+      subfolder: "portfolio",
+      maxBytes: 15 * 1024 * 1024,
+    });
+    expect(result.assetId).toBe("img_new");
+  });
+
+  it("rejects a 16 MB file even with a 15 MB maxBytes override", async () => {
+    const file = makeFile("image/png", 16 * 1024 * 1024);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      uploadImage(file, { subfolder: "portfolio", maxBytes: 15 * 1024 * 1024 })
+    ).rejects.toThrow("file_too_large");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

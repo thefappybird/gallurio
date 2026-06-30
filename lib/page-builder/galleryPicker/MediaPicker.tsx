@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
@@ -52,7 +52,7 @@ const L = {
   uploading: "Uploading…",
   dropActive: "Drop to upload",
   errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 10 MB.",
+  errSize: "Each photo must be under 15 MB.",
   errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
 };
@@ -351,7 +351,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     let typeErr = false;
     let sizeErr = false;
     Array.from(files).forEach((f) => {
-      const check = validatePhotoFile(f);
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
       if (!check.ok) {
         if (check.reason === "type_not_accepted") typeErr = true;
         else sizeErr = true;
@@ -368,7 +368,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     setUploading(true);
     setUploadError(null);
     const results = await Promise.allSettled(
-      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
+      valid.map((file) =>
+        uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
+      )
     );
 
     let dimErr = false;

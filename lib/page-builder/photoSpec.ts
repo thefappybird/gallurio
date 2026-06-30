@@ -15,6 +15,12 @@ export const PHOTO_SPEC = {
   minShortSide: 600,
 } as const;
 
+/**
+ * Portfolio gallery uploads get a higher limit (15 MB) than the shared
+ * default (10 MB, used by user/team avatar uploads via the same helpers).
+ */
+export const PORTFOLIO_PHOTO_MAX_BYTES = 15 * 1024 * 1024;
+
 /** Convenience alias — the MIME list as plain strings for <input accept>. */
 export const ACCEPTED_MIME = PHOTO_SPEC.acceptedTypes as readonly string[];
 
@@ -30,10 +36,13 @@ export type PhotoRejectionReason =
   | "format_not_accepted";
 
 /** Pre-upload: validates file type and size. */
-export function validatePhotoFile(file: File): PhotoValidationResult {
+export function validatePhotoFile(
+  file: File,
+  maxBytes: number = PHOTO_SPEC.maxBytes
+): PhotoValidationResult {
   const accepted = (PHOTO_SPEC.acceptedTypes as readonly string[]).includes(file.type);
   if (!accepted) return { ok: false, reason: "type_not_accepted" };
-  if (file.size > PHOTO_SPEC.maxBytes) return { ok: false, reason: "file_too_large" };
+  if (file.size > maxBytes) return { ok: false, reason: "file_too_large" };
   return { ok: true };
 }
 
@@ -61,12 +70,15 @@ export function validatePhotoDimensions(
  *
  * All fields are optional; missing values skip that check.
  */
-export function validatePhotoMeta(meta: {
-  format?: string | null;
-  sizeBytes?: number | null;
-  width?: number | null;
-  height?: number | null;
-}): PhotoValidationResult {
+export function validatePhotoMeta(
+  meta: {
+    format?: string | null;
+    sizeBytes?: number | null;
+    width?: number | null;
+    height?: number | null;
+  },
+  maxBytes: number = PHOTO_SPEC.maxBytes
+): PhotoValidationResult {
   if (
     meta.format != null &&
     !(PHOTO_SPEC.acceptedFormats as readonly string[]).includes(meta.format.toLowerCase())
@@ -74,7 +86,7 @@ export function validatePhotoMeta(meta: {
     return { ok: false, reason: "format_not_accepted" };
   }
 
-  if (meta.sizeBytes != null && meta.sizeBytes > PHOTO_SPEC.maxBytes) {
+  if (meta.sizeBytes != null && meta.sizeBytes > maxBytes) {
     return { ok: false, reason: "file_too_large" };
   }
 
