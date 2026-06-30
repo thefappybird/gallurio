@@ -298,6 +298,18 @@ describe("HeaderFormPreview", () => {
     expect(homeSpan.style.borderBottom).toContain("#ff0000");
   });
 
+  it("applies underline borderBottom by default when activeLinkUnderline is unset (effective default ON)", () => {
+    render(
+      <HeaderFormPreview
+        header={{ ...mockHeader, underlineColor: "#ff0000" }}
+        brandKit={mockBrandKit}
+        workspaceName="Studio"
+      />,
+    );
+    const homeSpan = screen.getByText("Home");
+    expect(homeSpan.style.borderBottom).toContain("#ff0000");
+  });
+
   it("does not apply underline borderBottom when activeLinkUnderline is false", () => {
     render(
       <HeaderFormPreview

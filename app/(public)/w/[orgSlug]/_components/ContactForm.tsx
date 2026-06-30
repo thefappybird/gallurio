@@ -446,7 +446,10 @@ export function ContactForm({
                       : null
                   }
                   defaultOpen={index === fields.length - 1}
-                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)]"
+                  // CollapsibleDrawer's base classes (bg-card text-card-foreground) are CRM
+                  // app-shell tokens — override with transparent/inherit so the session card
+                  // picks up the portfolio's --pf-* brand colors from its ancestor instead.
+                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)] bg-transparent text-inherit"
                   bodyClassName="flex max-h-80 flex-col gap-2 overflow-y-auto"
                 >
                   {fields.length > 1 && (

@@ -143,6 +143,18 @@ describe("ContactForm", () => {
     expect(honeypot.tabIndex).toBe(-1);
   });
 
+  it("session cards inherit portfolio theme instead of the CRM card tokens", () => {
+    // CollapsibleDrawer (shared with the CRM booking wizard) defaults to bg-card
+    // text-card-foreground — CRM app-shell tokens. The public contact form must
+    // override these so the session card picks up --pf-* brand colors instead.
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    goToEventDetails();
+    const sessionCard = screen.getByText("Day 1").closest("section");
+    expect(sessionCard).toBeTruthy();
+    expect(sessionCard?.className).not.toContain("bg-card");
+    expect(sessionCard?.className).not.toContain("text-card-foreground");
+  });
+
   it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     goToEventDetails();

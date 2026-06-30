@@ -200,6 +200,8 @@ describe("HeaderPanelDialog", () => {
     expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
     expect(spinbuttons[0]?.parentElement).not.toHaveTextContent("px");
 
+    // Active link style is now a sub-section nested inside Links (B3 reorg).
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
     fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
     spinbuttons = screen.getAllByRole("spinbutton");
     expect(spinbuttons[0]?.parentElement).toHaveTextContent("%");
@@ -222,6 +224,8 @@ describe("HeaderPanelDialog", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    // Active link style is now a sub-section nested inside Links (B3 reorg).
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
     fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
 
     const underlineBtn = screen.getByRole("button", { name: /underline/i });
@@ -234,10 +238,13 @@ describe("HeaderPanelDialog", () => {
     );
   });
 
-  // Task 10: activeLinkColor must live in the Active link style drawer, not the Links section
-  it("activeLinkColor control is inside the Active link style drawer (not the Links section)", () => {
+  // B3: activeLinkColor lives in the "Active link style" sub-section, nested inside the
+  // Links drawer alongside "Inactive links" — mirrors the Inactive links sub-section
+  // structure rather than sitting as its own top-level drawer.
+  it("activeLinkColor control is inside the Active link style sub-section under Links", () => {
     renderWithProviders(<HeaderPanelDialog {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
     // Before opening Active link style, the label must not be visible
     expect(screen.queryByText("Active link text color")).not.toBeInTheDocument();
@@ -302,6 +309,8 @@ describe("HeaderPanelDialog", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
+    // Active link style is now a sub-section nested inside Links (B3 reorg).
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
     fireEvent.click(screen.getByRole("button", { name: "Active link style" }));
 
     const scaleBtn = screen.getByRole("button", { name: "Scale" });

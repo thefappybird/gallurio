@@ -1371,6 +1371,21 @@ export function EditorShell({
           <BlockActionsToolbar />
         </div>
       ),
+      // Tour anchor for the precise canvas VIEWPORT only (Puck's `preview` slot,
+      // scoped to the grid's "editor" column) — unlike `data-tour-id="canvas"`
+      // above (Puck's `puck` slot, which wraps the entire UI: header/drawer/
+      // editor/fields), this wrapper is tightly bounded to just the drop-target
+      // surface. Used by the "drag-block" spotlight step's secondary cutout so
+      // it doesn't highlight the whole editor.
+      // `h-full w-full` (not `display: contents`) is required: the wrapper must
+      // have a real, measurable box for the tour's getBoundingClientRect to read,
+      // and Puck's preview surface expects a definite-height ancestor for its own
+      // `height: 100%` to resolve against.
+      preview: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="canvas-viewport" className="h-full w-full">
+          {children}
+        </div>
+      ),
       // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
       drawer: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
@@ -1870,7 +1885,7 @@ export function EditorShell({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setFeaturedWorkWarningOpen(false)}>
-              {t("cancel")}
+              {t("featuredPopupWarningCancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
