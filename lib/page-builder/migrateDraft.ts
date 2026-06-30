@@ -32,6 +32,7 @@ export async function ensureLegacyDraftMigrated(workspaceId: Types.ObjectId): Pr
       header: pp?.header ?? null,
       collectionsPopup: pp?.collectionsPopup ?? null,
       formLocale: pp?.formLocale ?? "",
+      formDir: pp?.formDir ?? "",
     });
   } catch (err) {
     // Benign race: a concurrent first-load already created the migrated draft.

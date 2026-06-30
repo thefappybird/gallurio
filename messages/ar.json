@@ -1625,13 +1625,20 @@
           "zoomOut": "تصغير",
           "zoomReset": "إعادة التكبير إلى 100%",
           "undoTitle": "تراجع (Ctrl+Z)",
-          "redoTitle": "إعادة (Ctrl+Shift+Z)"
+          "redoTitle": "إعادة (Ctrl+Shift+Z)",
+          "language": "لغة الصفحة",
+          "directionLabel": "الاتجاه",
+          "directionLtr": "من اليسار إلى اليمين",
+          "directionRtl": "من اليمين إلى اليسار"
         },
         "drafts": "المسودات",
         "saveChanges": "حفظ التغييرات",
         "loadingDraft": "تحميل المسودة",
         "loadingDraftEllipsis": "تحميل المسودة…",
         "featuredPopup": "النافذة المنبثقة المميَّزة",
+        "featuredPopupWarningTitle": "لم يُعثر على بلوك العمل المميَّز",
+        "featuredPopupWarningBody": "تُطبَّق هذه الأنماط فقط عند استخدام بلوك العمل المميَّز.",
+        "featuredPopupWarningProceed": "فتح على أي حال",
         "draftNameLabel": "اسم المسودة",
         "draftsDialog": {
           "title": "مسوداتك",
@@ -2333,6 +2340,14 @@
       "requiredHint": "مطلوب",
       "eventTitle": "عنوان المناسبة",
       "continue": "متابعة"
+    },
+    "collectionPopup": {
+      "close": "إغلاق",
+      "loading": "جارٍ التحميل...",
+      "failed": "فشل تحميل الصور.",
+      "retry": "إعادة المحاولة",
+      "empty": "لا توجد صور في هذه المجموعة بعد.",
+      "fullSizeAlt": "صورة بالحجم الكامل"
     }
   },
   "notFound": {

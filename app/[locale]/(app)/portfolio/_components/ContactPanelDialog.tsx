@@ -20,19 +20,12 @@ import {
   type PortfolioContactConfig,
 } from "@/lib/page-builder/types";
 
-const FORM_LOCALES = ["", "en", "fil", "ms", "id"] as const;
-
-const selectClass =
-  "min-h-9 w-full border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-
 type Tab = "setup" | "design";
 
 type Props = {
   open: boolean;
   contact: PortfolioContactConfig;
   onContactChange: (next: PortfolioContactConfig) => void;
-  formLocale: string;
-  onFormLocaleChange: (next: string) => void;
   /** Accepted for API compat but no longer consumed — shared ColorSwatchRow uses BrandColorsContext. */
   brandKit?: PortfolioBrandKit;
   /** Called after a successful DB save — parent updates snapshot. */
@@ -231,8 +224,6 @@ export function ContactPanelDialog({
   open,
   contact,
   onContactChange,
-  formLocale,
-  onFormLocaleChange,
 }: Props) {
   const t = useTranslations("app.pageBuilder.editor.contactDialog");
   const [tab, setTab] = useState<Tab>("setup");
@@ -322,23 +313,6 @@ export function ContactPanelDialog({
         {tab === "setup" && (
           <>
             <p className="text-sm text-muted-foreground">{t("formFixedNote")}</p>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-language">{t("languageLabel")}</Label>
-              <p className="text-xs text-muted-foreground">{t("languageHelp")}</p>
-              <select
-                id="contact-language"
-                className={selectClass}
-                value={formLocale}
-                onChange={(e) => onFormLocaleChange(e.target.value)}
-              >
-                {FORM_LOCALES.map((loc) => (
-                  <option key={loc || "auto"} value={loc}>
-                    {t(`languages.${loc || "auto"}`)}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="contact-title">{t("titleLabel")}</Label>

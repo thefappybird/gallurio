@@ -17,8 +17,6 @@ const baseProps = {
   open: true,
   contact: {} satisfies PortfolioContactConfig,
   onContactChange: vi.fn(),
-  formLocale: "",
-  onFormLocaleChange: vi.fn(),
   brandKit: DEFAULT_BRAND_KIT,
   onSaved: vi.fn(),
   onCancel: vi.fn(),

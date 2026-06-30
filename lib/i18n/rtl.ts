@@ -13,3 +13,15 @@ export function isRtl(locale: string): boolean {
 export function useIsRtl(): boolean {
   return isRtl(useLocale());
 }
+
+/**
+ * Resolves the effective text direction for a public page.
+ * Explicit `formDir` (stored per-draft) takes precedence; otherwise derived from locale.
+ */
+export function resolveEffectiveDir(
+  formDir: "ltr" | "rtl" | "" | undefined,
+  locale: string
+): "ltr" | "rtl" {
+  if (formDir === "ltr" || formDir === "rtl") return formDir;
+  return isRtl(locale) ? "rtl" : "ltr";
+}

@@ -68,6 +68,31 @@ export type GalleryChromeLabels = {
   carouselNext?: string;
 };
 
+/** Localized strings consumed by the collection popup (resolved at the page boundary). */
+export type CollectionPopupLabels = {
+  close?: string;
+  loading?: string;
+  failed?: string;
+  retry?: string;
+  empty?: string;
+  fullSizeAlt?: string;
+};
+
+/**
+ * Applies English fallbacks for every collection popup label.
+ * Pure function — no ALS, no server-only imports.
+ */
+export function applyCollectionPopupDefaults(l: CollectionPopupLabels = {}): Required<CollectionPopupLabels> {
+  return {
+    close: l.close ?? "Close",
+    loading: l.loading ?? "Loading...",
+    failed: l.failed ?? "Failed to load photos.",
+    retry: l.retry ?? "Retry",
+    empty: l.empty ?? "No photos in this collection yet.",
+    fullSizeAlt: l.fullSizeAlt ?? "Full size photo",
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Puck metadata bridge (universal)
 // ---------------------------------------------------------------------------
@@ -76,7 +101,10 @@ export type GalleryChromeLabels = {
  * Shape of the `metadata` object passed to `<Render metadata={...}>` (and
  * `<Puck>`), which Puck forwards to every block as `props.puck.metadata`.
  */
-export type PortfolioRenderMetadata = { workspace?: RenderWorkspace };
+export type PortfolioRenderMetadata = {
+  workspace?: RenderWorkspace;
+  collectionPopupLabels?: CollectionPopupLabels;
+};
 
 /** The `puck` prop Puck injects into every rendered component. */
 export type BlockPuck = {

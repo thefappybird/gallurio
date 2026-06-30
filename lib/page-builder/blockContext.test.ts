@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyGalleryChromeDefaults, getGalleryChromeLabelsFrom } from "./blockContext";
+import { applyGalleryChromeDefaults, getGalleryChromeLabelsFrom, applyCollectionPopupDefaults } from "./blockContext";
 
 // ---------------------------------------------------------------------------
 // Expected English defaults (must stay byte-identical to blockContext.ts)
@@ -99,5 +99,16 @@ describe("getGalleryChromeLabelsFrom", () => {
     };
     const puck = { metadata: { workspace: { _id: "ws-3", name: "X", chrome: { gallery: chrome } } } };
     expect(getGalleryChromeLabelsFrom(puck)).toEqual(chrome);
+  });
+});
+
+it("applyCollectionPopupDefaults returns all 6 English defaults when called empty", () => {
+  expect(applyCollectionPopupDefaults({})).toEqual({
+    close: "Close",
+    loading: "Loading...",
+    failed: "Failed to load photos.",
+    retry: "Retry",
+    empty: "No photos in this collection yet.",
+    fullSizeAlt: "Full size photo",
   });
 });

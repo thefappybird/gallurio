@@ -1625,13 +1625,20 @@
           "zoomOut": "I-zoom out",
           "zoomReset": "I-reset ang zoom sa 100%",
           "undoTitle": "I-undo (Ctrl+Z)",
-          "redoTitle": "I-redo (Ctrl+Shift+Z)"
+          "redoTitle": "I-redo (Ctrl+Shift+Z)",
+          "language": "Wika ng pahina",
+          "directionLabel": "Direksyon",
+          "directionLtr": "Kaliwa patungong kanan",
+          "directionRtl": "Kanan patungong kaliwa"
         },
         "drafts": "Mga Draft",
         "saveChanges": "I-save ang mga pagbabago",
         "loadingDraft": "Nilo-load ang draft",
         "loadingDraftEllipsis": "Nilo-load ang draft…",
         "featuredPopup": "Featured popup",
+        "featuredPopupWarningTitle": "Hindi nahanap ang Featured Work block",
+        "featuredPopupWarningBody": "Ang mga estilo na ito ay naaangkop lamang kapag gumagamit ng Featured Work block.",
+        "featuredPopupWarningProceed": "Buksan pa rin",
         "draftNameLabel": "Pangalan ng draft",
         "draftsDialog": {
           "title": "Ang iyong mga draft",
@@ -2333,6 +2340,14 @@
       "requiredHint": "Kinakailangan",
       "eventTitle": "Pamagat ng event",
       "continue": "Magpatuloy"
+    },
+    "collectionPopup": {
+      "close": "Isara",
+      "loading": "Nilo-load...",
+      "failed": "Nabigong mag-load ng mga larawan.",
+      "retry": "Subukang muli",
+      "empty": "Wala pang mga larawan sa koleksyong ito.",
+      "fullSizeAlt": "Larawan sa buong sukat"
     }
   },
   "notFound": {

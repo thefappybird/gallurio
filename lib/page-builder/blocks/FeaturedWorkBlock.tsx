@@ -23,6 +23,7 @@ import {
   getGalleryChromeLabelsFrom,
   type BlockPuck,
 } from "@/lib/page-builder/blockContext";
+import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { FeaturedCollectionsClient } from "./FeaturedCollectionsClient";
 import { padVar } from "@/lib/page-builder/responsive";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -128,6 +129,7 @@ export function FeaturedWorkBlock({
   const popupConfig = ws?.publicPage?.collectionsPopup ?? {};
 
   const labels = getGalleryChromeLabelsFrom(puck);
+  const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
   const list = Array.isArray(collections) ? collections : [];
 
   const tiles = list.map((c) => ({
@@ -181,6 +183,7 @@ export function FeaturedWorkBlock({
             mode={mode}
             slug={slug}
             popupConfig={popupConfig}
+            popupLabels={popupLabels}
           />
         )}
       </div>

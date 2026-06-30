@@ -28,6 +28,7 @@ export type FullDraft = DraftSummary & {
   header: unknown;
   collectionsPopup: unknown;
   formLocale: string;
+  formDir: string;
 };
 
 export type DraftMutationResult = { ok: true; draft: DraftSummary } | { error: string };
@@ -90,6 +91,7 @@ export async function createDraftAction(input: unknown): Promise<DraftMutationRe
               header: parsed.data.header,
               collectionsPopup: parsed.data.collectionsPopup,
               formLocale: parsed.data.formLocale || "",
+              formDir: parsed.data.formDir || "",
             },
           ],
           { session }
@@ -140,6 +142,7 @@ export async function updateDraftAction(input: unknown): Promise<DraftMutationRe
           header: parsed.data.header,
           collectionsPopup: parsed.data.collectionsPopup,
           formLocale: parsed.data.formLocale || "",
+          formDir: parsed.data.formDir || "",
         },
       },
       { new: true }
@@ -206,6 +209,7 @@ export async function getDraftAction(id: unknown): Promise<DraftLoadResult> {
       header: doc.header ?? null,
       collectionsPopup: doc.collectionsPopup ?? null,
       formLocale: doc.formLocale ?? "",
+      formDir: doc.formDir ?? "",
     },
   };
 }
@@ -288,6 +292,7 @@ export async function publishDraftAction(id: unknown): Promise<DraftActionResult
   if (doc.header) set["publicPage.header"] = doc.header;
   if (doc.collectionsPopup) set["publicPage.collectionsPopup"] = doc.collectionsPopup;
   set["publicPage.formLocale"] = doc.formLocale ?? "";
+  set["publicPage.formDir"] = doc.formDir ?? "";
   set["publicPage.templateId"] =
     doc.templateId &&
     PORTFOLIO_TEMPLATE_IDS.includes(doc.templateId as (typeof PORTFOLIO_TEMPLATE_IDS)[number])

@@ -262,6 +262,8 @@ describe("EditorShell", () => {
   it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    // No Featured Work block in baseProps → the open is gated by a warning (Task 7).
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
     expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
@@ -422,6 +424,8 @@ describe("EditorShell", () => {
   it("shows the collections popup preview on the canvas when the Featured Popup tab is opened", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    // No Featured Work block in baseProps → the open is gated by a warning (Task 7).
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
     // Wait for the async openCollectionsPopup state update to settle.
     // The style panel (right rail) must be present.
     expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();

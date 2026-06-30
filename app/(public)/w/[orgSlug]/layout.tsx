@@ -4,6 +4,7 @@ import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
+import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
@@ -54,9 +55,13 @@ export default async function PublicPortfolioLayout({
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
   const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
+  const storedDir = workspace.publicPage?.formDir as "ltr" | "rtl" | "" | undefined;
+  const effectiveDir = resolveEffectiveDir(storedDir, locale);
+
   return (
     <div
       lang={locale}
+      dir={effectiveDir}
       style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
