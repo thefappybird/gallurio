@@ -249,6 +249,23 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
+  it("debounces the local draft write on a Puck change and flushes it on zone switch (Fix #1)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // A Puck change updates in-memory state synchronously, but the localStorage
+    // write is debounced — writing per keystroke is what caused the typing lag.
+    // "Changed" is the headline carried by the simulated change; it must NOT
+    // land in the persisted buffer immediately.
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(window.localStorage.getItem(DRAFT_KEY) ?? "").not.toContain("Changed");
+
+    // Switching zones is a commit point: the pending write is flushed.
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await waitFor(() =>
+      expect(window.localStorage.getItem(DRAFT_KEY) ?? "").toContain("Changed")
+    );
+  });
+
   it("places Navigation and Contact Form beside the page tabs", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const controls = screen.getByRole("group", { name: "Portfolio sections" });

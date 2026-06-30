@@ -5,6 +5,7 @@ import "./editor.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Puck, type Config, type Data } from "@measured/puck";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -645,6 +646,14 @@ export function EditorShell({
     }
   }, [brandKit, collectionsPopup, contact, draftKey, formDir, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
 
+  // Typing emits a Puck onChange per keystroke; persisting to localStorage on
+  // every one makes text blocks laggy. Debounce the local write (trailing) and
+  // flush it at every commit point (zone switch, save, blur, unload, unmount).
+  const { debounced: debouncedPersistLocalDraft, flush: flushLocalDraft } = useDebounce<void>(
+    () => persistLocalDraft(),
+    350,
+  );
+
   // Compute on mount whether a recoverable localStorage buffer exists.
   const [hasRecoverableBuffer] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -695,22 +704,29 @@ export function EditorShell({
     persistLocalDraft();
   }, [activeDraftId, collectionsPopup, contact, draftName, formDir, formLocale, guideMode, headerConfig, persistLocalDraft]);
 
-  // beforeunload guard while dirty.
+  // beforeunload guard while dirty. Flush any pending debounced write so a
+  // reload/close never loses the last keystrokes.
   useEffect(() => {
     if (!isDirty) return;
     function handleBeforeUnload(e: BeforeUnloadEvent) {
+      flushLocalDraft();
       e.preventDefault();
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
+  }, [isDirty, flushLocalDraft]);
+
+  // Flush a pending debounced write on unmount.
+  useEffect(() => () => flushLocalDraft(), [flushLocalDraft]);
 
   // Puck/contact/navigation drafts are browser-local until Save changes.
+  // Flushing commits any pending debounced keystroke write before the caller
+  // (zone switch, preview, save) reads the buffer.
   const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
     void zone;
-    persistLocalDraft();
+    flushLocalDraft();
     return true;
-  }, [persistLocalDraft]);
+  }, [flushLocalDraft]);
 
   const handleChange = useCallback(
     (data: Data) => {
@@ -721,10 +737,10 @@ export function EditorShell({
         ignoreNextChange.current = false;
         return; // mount/remount echo - capture data, but don't autosave.
       }
-      persistLocalDraft();
+      debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, persistLocalDraft]
+    [activeZone, debouncedPersistLocalDraft]
   );
 
   // ---- Draft name validation ----
