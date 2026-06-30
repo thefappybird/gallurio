@@ -84,3 +84,15 @@ a guide follow-up (5b). Source request: `PORTFOLIO-ENHANCEMENTS.md`.
 - Pre-existing repo state: one pre-existing `EditorShell` test failure (`BlockActionsToolbar`) is
   unrelated to this work; `lib/page-builder/RootCanvasStyle.*` carry unrelated pre-existing edits
   excluded from every commit here.
+
+## Post-review fixes
+A full code-review pass surfaced two functional fixes and three polish items, all addressed:
+- **Featured Work detection (item 7)** was top-level-only, so the warning fired even when the
+  block was present inside a preset/container. `hasFeaturedWorkInZones` now recurses into nested
+  `content` slots.
+- **Stale RTL override (item 5)**: `resolveEffectiveDir` now ignores an `ltr`/`rtl` override on
+  non-RTL locales, so a leftover `formDir: "rtl"` can never flip a non-Arabic public page.
+- `PortfolioLanguageControl` switched to a `menuitemradio` radio group (valid ARIA + a visible
+  check for the current locale); the toolbar direction toggle reflects the effective direction.
+- Pruned the orphaned `contactDialog` language keys left behind by removing the contact-panel
+  language selector.
