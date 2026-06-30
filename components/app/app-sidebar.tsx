@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationPopover } from "@/components/notifications/NotificationPopover";
 import { useNotifications } from "@/lib/hooks/useNotifications";
+import { useNotificationBurstToast } from "@/lib/hooks/useNotificationBurstToast";
 import NextImage from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
@@ -90,32 +91,18 @@ export function AppSidebar({
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNudge, setBellNudge] = useState(false);
-  const [showBellToast, setShowBellToast] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
-  const { unreadCount } = useNotifications();
-  const prevUnreadRef = useRef(unreadCount);
-  const bellToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { unreadCount, liveArrivalTick } = useNotifications();
+  const prevTickRef = useRef(liveArrivalTick);
+  // Bell nudge must fire ONLY for live socket arrivals, never for the initial
+  // unread-count fetch or other non-live unreadCount changes.
   useEffect(() => {
-    if (unreadCount > prevUnreadRef.current) {
-      setBellNudge(true);
-      setShowBellToast(true);
-      if (bellToastTimerRef.current) {
-        clearTimeout(bellToastTimerRef.current);
-      }
-      bellToastTimerRef.current = setTimeout(() => {
-        setShowBellToast(false);
-        bellToastTimerRef.current = null;
-      }, 2000);
-    }
-    prevUnreadRef.current = unreadCount;
-  }, [unreadCount]);
-  useEffect(() => {
-    return () => {
-      if (bellToastTimerRef.current) {
-        clearTimeout(bellToastTimerRef.current);
-      }
-    };
-  }, []);
+    if (liveArrivalTick === prevTickRef.current) return;
+    prevTickRef.current = liveArrivalTick;
+    setBellNudge(true);
+  }, [liveArrivalTick]);
+  // Toast text bundles arrivals into one message across a 5s window.
+  const { showToast: showBellToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
   const closeOnNav = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -195,7 +182,7 @@ export function AppSidebar({
                         aria-live="polite"
                         className="pointer-events-none absolute top-1/2 start-full z-10 ms-2 hidden -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground md:inline-flex"
                       >
-                        {tNotif("newNotification")}
+                        {tNotif("newNotifications", { count: bundledCount })}
                       </span>
                     ) : null}
                   </span>

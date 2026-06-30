@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, screen } from '@testing-library/react'
 import { renderWithProviders } from '@/test-utils/render'
 import arMessages from '@/messages/ar.json'
 import { NotificationsListPage } from './NotificationsListPage'
@@ -15,6 +15,11 @@ vi.mock('@/app/[locale]/(app)/notifications/_actions', () => ({
 
 vi.mock('@/app/[locale]/(app)/notifications/_load-more-action', () => ({
   loadMoreNotificationsAction: vi.fn().mockResolvedValue({ items: [], nextCursor: null }),
+}))
+
+const mockLiveArrivalTick = { value: 0 }
+vi.mock('@/lib/hooks/useNotifications', () => ({
+  useNotifications: () => ({ liveArrivalTick: mockLiveArrivalTick.value }),
 }))
 
 const MESSAGES = {
@@ -69,6 +74,31 @@ describe('NotificationsListPage', () => {
     expect(screen.queryByText('Stored body')).toBeNull()
   })
 
+  it('renders unread title and body in white text, and read items in default text colors', () => {
+    renderWithProviders(
+      <NotificationsListPage
+        initialItems={[
+          makeItem({ _id: 'unread1', title: 'Unread title', body: 'Unread body' }),
+          makeItem({
+            _id: 'read1',
+            title: 'Read title',
+            body: 'Read body',
+            read: true,
+            readAt: new Date().toISOString(),
+          }),
+        ]}
+        initialNextCursor={null}
+        locale="en"
+        messages={MESSAGES}
+      />,
+    )
+
+    expect(screen.getByText('Unread title').className).toContain('text-white')
+    expect(screen.getByText('Unread body').className).toContain('text-white')
+    expect(screen.getByText('Read title').className).not.toContain('text-white')
+    expect(screen.getByText('Read body').className).not.toContain('text-white')
+  })
+
   it('renders translated Arabic body when locale is ar and params present', () => {
     renderWithProviders(
       <NotificationsListPage
@@ -83,5 +113,53 @@ describe('NotificationsListPage', () => {
     // ar body template: "لديك استفسار جديد من {clientName}."
     expect(screen.getByText(/أحمد/)).toBeTruthy()
     expect(screen.queryByText('Stored body')).toBeNull()
+  })
+})
+
+describe('NotificationsListPage live arrival toast', () => {
+  beforeEach(() => {
+    mockLiveArrivalTick.value = 0
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('shows a bundled toast beside the page title after a live arrival burst, then auto-hides it', () => {
+    const { rerender } = renderWithProviders(
+      <NotificationsListPage
+        initialItems={[]}
+        initialNextCursor={null}
+        locale="en"
+        messages={MESSAGES}
+      />,
+    )
+
+    mockLiveArrivalTick.value = 1
+    act(() => {
+      rerender(
+        <NotificationsListPage
+          initialItems={[]}
+          initialNextCursor={null}
+          locale="en"
+          messages={MESSAGES}
+        />,
+      )
+    })
+
+    expect(screen.queryByText(/new notification/i)).toBeNull()
+
+    act(() => {
+      vi.advanceTimersByTime(5000)
+    })
+
+    expect(screen.getByText(/you have a new notification/i)).toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(3000)
+    })
+
+    expect(screen.queryByText(/new notification/i)).toBeNull()
   })
 })

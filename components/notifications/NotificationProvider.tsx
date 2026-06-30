@@ -28,6 +28,13 @@ interface NotificationContextValue {
   unreadCount: number
   markRead: (id: string) => void
   markAllRead: () => void
+  /**
+   * Increments once per live `notification:new` socket arrival (non-silent,
+   * unread only) — never on the initial unread-count fetch. Consumers watch
+   * this to distinguish "a notification just arrived in real time" from the
+   * unrelated unreadCount changes caused by mount-time hydration or markRead.
+   */
+  liveArrivalTick: number
 }
 
 export const NotificationContext = createContext<NotificationContextValue | null>(null)
@@ -45,6 +52,7 @@ export function NotificationProvider({
 }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<SerializedNotification[]>(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
+  const [liveArrivalTick, setLiveArrivalTick] = useState(0)
   const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
@@ -82,6 +90,7 @@ export function NotificationProvider({
       // the unread badge or trigger the bell animation.
       if (!notification.silent && !notification.read) {
         setUnreadCount((n) => n + 1)
+        setLiveArrivalTick((t) => t + 1)
       }
     })
 
@@ -126,7 +135,9 @@ export function NotificationProvider({
   }
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markRead, markAllRead }}>
+    <NotificationContext.Provider
+      value={{ notifications, unreadCount, markRead, markAllRead, liveArrivalTick }}
+    >
       {children}
     </NotificationContext.Provider>
   )
