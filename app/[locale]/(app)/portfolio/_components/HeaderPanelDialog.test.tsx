@@ -4,6 +4,7 @@ import { renderWithProviders } from "@/test-utils/render";
 import { HeaderPanelDialog } from "./HeaderPanelDialog";
 import { DEFAULT_BRAND_KIT, type PortfolioHeaderConfig } from "@/lib/page-builder/types";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 
 const updateHeaderConfigAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
@@ -13,6 +14,9 @@ vi.mock("../_actions", () => ({
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/storage/uploadImage.client", () => ({
   uploadImage: vi.fn(),
+}));
+vi.mock("@/lib/storage/uploadAsset.client", () => ({
+  uploadAsset: vi.fn(),
 }));
 
 const baseProps = {
@@ -50,14 +54,14 @@ beforeEach(() => {
 });
 
 describe("HeaderPanelDialog", () => {
-  it("uses CF Images direct upload for logo uploads", async () => {
-    vi.mocked(uploadImage).mockResolvedValueOnce({
-      url: "https://imagedelivery.net/test-hash/logo-asset-id/public",
-      assetId: "logo-asset-id",
-      width: 200,
-      height: 80,
-      format: "png",
-      sizeBytes: 4096,
+  it("uses CF Images direct upload for logo uploads via uploadAsset", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      asset: {
+        assetId: "logo-asset-id",
+        url: "https://imagedelivery.net/test-hash/logo-asset-id/public",
+        width: 200,
+        height: 80,
+      },
     });
 
     const onHeaderChange = vi.fn();
@@ -69,19 +73,18 @@ describe("HeaderPanelDialog", () => {
     const file = new File(["logo"], "logo.png", { type: "image/png" });
     fireEvent.change(input, { target: { files: [file] } });
 
-    await waitFor(() =>
-      expect(uploadImage).toHaveBeenCalledWith(file, {
-        subfolder: "portfolio_header",
+    await waitFor(() => expect(uploadAsset).toHaveBeenCalled());
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(onHeaderChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        logoUrl: "https://imagedelivery.net/test-hash/logo-asset-id/public",
+        logoPublicId: "logo-asset-id",
       }),
     );
-    expect(onHeaderChange).toHaveBeenCalledWith({
-      logoUrl: "https://imagedelivery.net/test-hash/logo-asset-id/public",
-      logoPublicId: "logo-asset-id",
-    });
   });
 
   it("shows a specific error for invalid logo file size", async () => {
-    vi.stubGlobal("fetch", vi.fn());
+    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "file_too_large" });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
 
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
@@ -117,7 +120,7 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("shows inline role=alert error for oversized file (dimension violation)", async () => {
-    installImageMock(600, 300); // exceeds 512x256
+    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "dimensions_too_large" });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
     const file = new File(["img"], "big.png", { type: "image/png" });
@@ -128,6 +131,7 @@ describe("HeaderPanelDialog", () => {
   });
 
   it("rejects SVG with an inline role=alert type error", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({ error: "type_not_accepted" });
     const { container } = renderWithProviders(<HeaderPanelDialog {...baseProps} />);
     const input = container.querySelector("input[type='file']") as HTMLInputElement;
     const svgFile = new File(["<svg/>"], "logo.svg", { type: "image/svg+xml" });
@@ -255,6 +259,38 @@ describe("HeaderPanelDialog", () => {
     // After opening Inactive links sub-section, label becomes visible
     fireEvent.click(screen.getByRole("button", { name: "Inactive links" }));
     expect(screen.getByText("Link text color")).toBeInTheDocument();
+  });
+
+  // Bug #8 regression: uploadImage enforces validatePhotoDimensions(minShortSide=600),
+  // which rejects ALL valid logos (≤512×256px) before any network request. The fix
+  // switches to uploadAsset which accepts caller-supplied max-dimension constraints.
+  it("calls uploadAsset (not uploadImage) for a valid small logo — bug #8 regression", async () => {
+    vi.mocked(uploadAsset).mockResolvedValueOnce({
+      asset: {
+        assetId: "logo-asset-id",
+        url: "https://imagedelivery.net/hash/logo-asset-id/public",
+        width: 128,
+        height: 64,
+      },
+    });
+
+    const onHeaderChange = vi.fn();
+    const { container } = renderWithProviders(
+      <HeaderPanelDialog {...baseProps} onHeaderChange={onHeaderChange} />,
+    );
+
+    const input = container.querySelector("input[type='file']") as HTMLInputElement;
+    const file = new File(["logo"], "logo.png", { type: "image/png" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => expect(uploadAsset).toHaveBeenCalled());
+    expect(uploadImage).not.toHaveBeenCalled();
+    expect(onHeaderChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        logoUrl: "https://imagedelivery.net/hash/logo-asset-id/public",
+        logoPublicId: "logo-asset-id",
+      }),
+    );
   });
 
   // Task 12: active toggle in the Active link style section must use charcoal (bg-foreground)

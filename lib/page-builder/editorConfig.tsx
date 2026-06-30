@@ -265,9 +265,18 @@ function resolveContainerData(data: unknown) {
   const isAnchor = (item: _SlotItem) => item.type === "ContainerAnchor";
   const realChildren = content.filter((item) => !isAnchor(item));
 
-  // Idempotency: if an anchor already leads the slot, nothing to do.
+  // Idempotency: if a correctly-formed anchor already leads the slot, nothing to do.
+  // The id check is required: drafts saved before the --anchor convention was
+  // introduced may carry an anchor whose id matches the container id (no suffix).
+  // Passing those through unchanged causes a selection-bounce useEffect loop
+  // (parentId === id → selectedItem never escapes the guard → infinite setState).
   const first = content[0];
-  if (first !== undefined && isAnchor(first) && content.length === realChildren.length + 1) {
+  if (
+    first !== undefined &&
+    isAnchor(first) &&
+    content.length === realChildren.length + 1 &&
+    (first.props as { id?: string }).id === `${d.props.id}--anchor`
+  ) {
     return data;
   }
 

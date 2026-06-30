@@ -64,6 +64,10 @@ export function EditorContainerAnchor({ id }: { id: string }) {
     const selectedId = selectedItem.props?.id as string | undefined;
     // Only bounce when THIS anchor is selected; any other selection → no-op.
     if (selectedId !== id) return;
+    // Guard: if the anchor id has no --anchor suffix (malformed draft), then
+    // parentId === id. Dispatching would select the parent (same id) → the
+    // guard never fires again → infinite setState loop (React error #185).
+    if (parentId === id) return;
 
     const parentSelector = getSelectorForId(parentId);
     if (!parentSelector) return;
