@@ -8,6 +8,7 @@ import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
+import { SyncDocumentLang } from "./_components/SyncDocumentLang";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
@@ -65,6 +66,7 @@ export default async function PublicPortfolioLayout({
       style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
+      <SyncDocumentLang locale={locale} />
       <PortfolioHeader
         slug={workspace.slug}
         labels={{

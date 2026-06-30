@@ -37,6 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const ogImageUrl = seo.ogImageUrl || undefined;
   const iconUrl = publicPage?.siteIcon?.url || undefined;
   const canonical = portfolioPublicUrl(orgSlug);
+  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -48,6 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "website",
       url: canonical,
       siteName: name,
+      locale,
       images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
     twitter: {
