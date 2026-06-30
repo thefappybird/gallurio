@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
+import QRCode from "qrcode";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,23 @@ export function PublishDialog({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [slugSaveError, setSlugSaveError] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  // Generate the QR code client-side whenever the public URL changes while open.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    QRCode.toDataURL(publicUrl, { width: 160, margin: 1 })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, publicUrl]);
 
   // Reset slug input and save state when the dialog opens or currentSlug changes.
   useEffect(() => {
@@ -96,6 +114,14 @@ export function PublishDialog({
     } catch {
       /* clipboard unavailable — non-fatal */
     }
+  }
+
+  function downloadQr() {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `${currentSlug || "portfolio"}-qr.png`;
+    a.click();
   }
 
   return (
@@ -185,6 +211,32 @@ export function PublishDialog({
               <CopyIcon className="size-4" />
             )}
             <span className="ms-1">{copied ? t("copied") : t("copyLink")}</span>
+          </Button>
+        </div>
+
+        {/* QR code + download */}
+        <div className="flex items-center gap-3 border border-border bg-muted/30 p-2">
+          {qrDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- client-generated data URL, not an optimizable asset
+            <img
+              src={qrDataUrl}
+              alt={t("qrCodeAlt")}
+              width={96}
+              height={96}
+              className="size-24 shrink-0"
+            />
+          ) : (
+            <div className="size-24 shrink-0 animate-pulse bg-muted" />
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!qrDataUrl}
+            onClick={downloadQr}
+          >
+            <DownloadIcon className="size-4" />
+            <span className="ms-1">{t("downloadQr")}</span>
           </Button>
         </div>
 

@@ -24,6 +24,13 @@ vi.mock("@/lib/portfolio/publicUrl", () => ({
   portfolioUrlParts: (...args: unknown[]) => mockUrlParts(...args),
 }));
 
+// QR generation is delegated to the `qrcode` lib — mock it so tests assert
+// the payload passed in without rendering a real canvas/data URL.
+const mockToDataURL = vi.fn();
+vi.mock("qrcode", () => ({
+  default: { toDataURL: (...args: unknown[]) => mockToDataURL(...args) },
+}));
+
 // ---- Lazy import (after mocks) ----------------------------------------------
 
 import { PublishDialog } from "./PublishDialog";
@@ -58,6 +65,7 @@ describe("PublishDialog slug editing (Fix #5)", () => {
     vi.clearAllMocks();
     mockCheckSlugAvailability.mockResolvedValue({ available: true });
     mockUpdateSlug.mockResolvedValue({ ok: true });
+    mockToDataURL.mockResolvedValue("data:image/png;base64,mockqr");
     // Default: path mode (dev environment).
     mockUrlParts.mockReturnValue({
       mode: "path",
@@ -156,5 +164,37 @@ describe("PublishDialog slug editing (Fix #5)", () => {
     await waitFor(() => {
       expect(screen.getByText(/already taken/i)).toBeInTheDocument();
     });
+  });
+
+  it("generates the QR code from exactly the public URL", async () => {
+    renderDialog({ publicUrl: "https://gallurio.com/w/test-studio" });
+
+    await waitFor(() => {
+      expect(mockToDataURL).toHaveBeenCalledWith(
+        "https://gallurio.com/w/test-studio",
+        expect.any(Object),
+      );
+    });
+  });
+
+  it("renders the generated QR code image once ready", async () => {
+    renderDialog();
+
+    const img = await screen.findByRole("img", { name: /qr code/i });
+    expect((img as HTMLImageElement).src).toBe("data:image/png;base64,mockqr");
+  });
+
+  it("Download QR button triggers a download of the generated PNG", async () => {
+    renderDialog();
+    await screen.findByRole("img", { name: /qr code/i });
+
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    fireEvent.click(screen.getByRole("button", { name: /download qr/i }));
+
+    expect(clickSpy).toHaveBeenCalledOnce();
+    clickSpy.mockRestore();
   });
 });
