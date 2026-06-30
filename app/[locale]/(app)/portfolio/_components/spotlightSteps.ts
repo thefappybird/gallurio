@@ -176,6 +176,18 @@ export const SPOTLIGHT_STEPS: SpotlightStep[] = [
     placement: "bottom",
   },
 
+  // Language + RTL control — page-wide translation of the public chrome.
+  // Always present in the edit header (beside the viewport controls), so it
+  // needs no gating or panel restore.
+  {
+    id: "translate",
+    slug: "translate",
+    anchorId: "language-control",
+    title: "Translate your public pages",
+    body: "Switch the language of your navigation, contact form, and collection popups all at once. Right-to-left languages flip the layout automatically.",
+    placement: "bottom",
+  },
+
   // Theme
   {
     id: "theme",

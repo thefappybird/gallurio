@@ -36,3 +36,14 @@ describe("updateDraftSchema", () => {
     expect(r.success).toBe(true);
   });
 });
+
+it("preserves formDir: 'rtl' through the draft schema", () => {
+  const r = createDraftSchema.safeParse({ name: "My Draft", ...snapshot, formDir: "rtl" });
+  expect(r.success).toBe(true);
+  if (r.success) expect(r.data.formDir).toBe("rtl");
+});
+
+it("rejects invalid formDir value", () => {
+  const r = createDraftSchema.safeParse({ name: "My Draft", ...snapshot, formDir: "auto" });
+  expect(r.success).toBe(false);
+});

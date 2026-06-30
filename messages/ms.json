@@ -1460,16 +1460,6 @@
           },
           "save": "Simpan",
           "saving": "Menyimpan…",
-          "languageLabel": "Bahasa halaman awam",
-          "languageHelp": "Bahasa borang pertanyaan, navigasi, dan pengaki di halaman awam anda.",
-          "languages": {
-            "auto": "Auto (berdasarkan negara anda)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
           "cornerRadiusLabel": "Bucu sudut",
@@ -1539,6 +1529,7 @@
           },
           "sectionBanner": "Sepanduk",
           "sectionLinks": "Pautan",
+          "sectionInactiveLinks": "Pautan tidak aktif",
           "sectionActiveStyle": "Gaya pautan aktif",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Warna latar belakang",
@@ -1624,13 +1615,20 @@
           "zoomOut": "Zum keluar",
           "zoomReset": "Set semula zum kepada 100%",
           "undoTitle": "Buat asal (Ctrl+Z)",
-          "redoTitle": "Buat semula (Ctrl+Shift+Z)"
+          "redoTitle": "Buat semula (Ctrl+Shift+Z)",
+          "language": "Bahasa halaman",
+          "directionLabel": "Arah",
+          "directionLtr": "Kiri ke kanan",
+          "directionRtl": "Kanan ke kiri"
         },
         "drafts": "Draf",
         "saveChanges": "Simpan perubahan",
         "loadingDraft": "Memuatkan draf",
         "loadingDraftEllipsis": "Memuatkan draf…",
         "featuredPopup": "Tetingkap timbul pilihan",
+        "featuredPopupWarningTitle": "Blok Kerja Pilihan tidak dijumpai",
+        "featuredPopupWarningBody": "Gaya ini hanya digunakan jika anda menggunakan blok Kerja Pilihan.",
+        "featuredPopupWarningProceed": "Buka juga",
         "draftNameLabel": "Nama draf",
         "draftsDialog": {
           "title": "Draf anda",
@@ -1936,6 +1934,10 @@
             "photos": {
               "title": "Muat naik dan susun foto",
               "body": "Buka Foto untuk membuat koleksi dan memuat naik imej. Blok Galeri mengambil daripada koleksi."
+            },
+            "translate": {
+              "title": "Terjemah halaman awam anda",
+              "body": "Tukar bahasa navigasi, borang hubungan, dan popup koleksi anda serentak. Bahasa kanan-ke-kiri membalikkan susun atur secara automatik."
             },
             "theme": {
               "title": "Pilih warna dan fon anda",
@@ -2332,6 +2334,14 @@
       "requiredHint": "Diperlukan",
       "eventTitle": "Tajuk acara",
       "continue": "Teruskan"
+    },
+    "collectionPopup": {
+      "close": "Tutup",
+      "loading": "Memuatkan...",
+      "failed": "Gagal memuatkan foto.",
+      "retry": "Cuba lagi",
+      "empty": "Tiada foto dalam koleksi ini lagi.",
+      "fullSizeAlt": "Foto saiz penuh"
     }
   },
   "notFound": {

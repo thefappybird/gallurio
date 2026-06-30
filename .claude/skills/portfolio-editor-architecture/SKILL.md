@@ -19,7 +19,9 @@ load the focused sub-skill for your actual task.
   (`app/[locale]/(app)/portfolio/_components/EditorShell.tsx`): hosts Puck, the left
   blocks panel, the right properties panel (`StyleToolkitField`), the top tab strip
   (`navCluster`: Home / Gallery / Collections Popup / Navigation / Contact Form / Preview),
-  drafts, theme, photos, publish/save.
+  drafts, theme, photos, publish/save. The edit header also hosts the canvas viewport/zoom
+  controls and a **page-wide language/RTL control** (`PortfolioLanguageControl`, globe icon)
+  that sets `publicPage.formLocale` + `formDir` for the whole public site at once.
 - **Zones & sub-panels:** `EDITOR_SECTIONS = ["home","gallery","collectionsPopup","header","contact"]`.
   Home/Gallery are Puck zones; header/contact/collectionsPopup are side panels opened via
   `openHeader()` / `openContact()` / `openCollectionsPopup()`.
@@ -47,6 +49,9 @@ load the focused sub-skill for your actual task.
 ## Cross-cutting rules
 - Multi-tenant: every read/write scopes by `workspaceId`; never trust client `workspaceId`.
 - Public portfolios may override brand styling ONLY inside the public page wrapper.
+- Public-page language/direction is owner-controlled (`formLocale`/`formDir`), isolated from
+  the CRM UI locale; RTL (Arabic) flips the public wrapper div, not `<html>`. The collections
+  popup localizes via Puck `metadata.collectionPopupLabels`.
 - The contact form is fixed; inquiry submit creates `Inquiry` + `Client` + inquiry `Booking`
   in one transaction.
 - Reuse before rebuild — check `REUSABLE_CODE.md`.

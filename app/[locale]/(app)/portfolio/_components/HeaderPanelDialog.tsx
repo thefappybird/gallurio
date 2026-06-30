@@ -7,7 +7,7 @@ import { Upload } from "lucide-react";
 import { EditorDrawerSection, EditorDrawerGroup } from "@/lib/page-builder/EditorDrawerSection";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { uploadImage } from "@/lib/storage/uploadImage.client";
+import { uploadAsset } from "@/lib/storage/uploadAsset.client";
 import { cn } from "@/lib/utils";
 import { NumberInputRow, ColorSwatchRow } from "@/lib/page-builder/toolbarPrimitives";
 import { useBrandRadius } from "@/lib/page-builder/brandColors";
@@ -168,21 +168,6 @@ function RadiusRow({
   );
 }
 
-function getImageSize(file: File): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("invalid_image"));
-    };
-    img.src = url;
-  });
-}
 
 
 export function HeaderPanelDialog({
@@ -218,27 +203,32 @@ export function HeaderPanelDialog({
     setLogoUploading(true);
     setLogoError(null);
     try {
-      if (!(LOGO_TYPES as readonly string[]).includes(file.type)) {
-        setLogoError(t("logoErrors.type"));
+      const result = await uploadAsset(
+        file,
+        {
+          acceptedTypes: LOGO_TYPES as readonly string[],
+          maxBytes: LOGO_MAX_BYTES,
+          maxWidth: LOGO_MAX_WIDTH,
+          maxHeight: LOGO_MAX_HEIGHT,
+        },
+        { subfolder: "portfolio_header" },
+      );
+      if ("error" in result) {
+        switch (result.error) {
+          case "type_not_accepted": setLogoError(t("logoErrors.type")); break;
+          case "file_too_large": setLogoError(t("logoErrors.size")); break;
+          case "dimensions_too_large": setLogoError(t("logoErrors.dimensions")); break;
+          case "invalid_image": toast.error(t("logoErrors.image")); break;
+        }
         return;
       }
-      if (file.size > LOGO_MAX_BYTES) {
-        setLogoError(t("logoErrors.size"));
-        return;
-      }
-      const { width, height } = await getImageSize(file);
-      if (width > LOGO_MAX_WIDTH || height > LOGO_MAX_HEIGHT) {
-        setLogoError(t("logoErrors.dimensions"));
-        return;
-      }
-      const uploaded = await uploadImage(file, { subfolder: "portfolio_header" });
       onHeaderChange({
         ...header,
-        logoUrl: uploaded.url,
-        logoPublicId: uploaded.assetId,
+        logoUrl: result.asset.url,
+        logoPublicId: result.asset.assetId,
       });
-    } catch (error) {
-      toast.error(error instanceof Error && error.message === "invalid_image" ? t("logoErrors.image") : t("logoErrors.upload"));
+    } catch {
+      toast.error(t("logoErrors.upload"));
     } finally {
       setLogoUploading(false);
     }
@@ -488,15 +478,7 @@ export function HeaderPanelDialog({
                 </div>
               </div>
 
-              {/* linkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
-              <LabeledSwatchRow
-                label={t("linkColorLabel")}
-                value={header.linkColor}
-                onChange={(c) => set("linkColor", c)}
-                effectiveValue="foreground"
-              />
-
-              {/* brandTextColor: PortfolioHeader fallback = linkColor → linkColor defaults to var(--pf-color-fg) → "foreground" */}
+              {/* brandTextColor: governs header/brand name text — independent of link color */}
               <LabeledSwatchRow
                 label={t("brandTextColorLabel")}
                 value={header.brandTextColor}
@@ -504,13 +486,16 @@ export function HeaderPanelDialog({
                 effectiveValue="foreground"
               />
 
-              {/* activeLinkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
-              <LabeledSwatchRow
-                label={t("activeLinkColorLabel")}
-                value={header.activeLinkColor}
-                onChange={(c) => set("activeLinkColor", c)}
-                effectiveValue="foreground"
-              />
+              {/* Inactive links sub-section */}
+              <EditorDrawerSection title={t("sectionInactiveLinks")}>
+                {/* linkColor: PortfolioHeader fallback = var(--pf-color-fg) → "foreground" */}
+                <LabeledSwatchRow
+                  label={t("linkColorLabel")}
+                  value={header.linkColor}
+                  onChange={(c) => set("linkColor", c)}
+                  effectiveValue="foreground"
+                />
+              </EditorDrawerSection>
             </EditorDrawerSection>
 
             {/* ── Active link style ──────────────────── */}
@@ -534,6 +519,14 @@ export function HeaderPanelDialog({
                   </ToggleButton>
                 </div>
               </div>
+
+              {/* activeLinkColor: moved from Links section; fallback = var(--pf-color-fg) → "foreground" */}
+              <LabeledSwatchRow
+                label={t("activeLinkColorLabel")}
+                value={header.activeLinkColor}
+                onChange={(c) => set("activeLinkColor", c)}
+                effectiveValue="foreground"
+              />
 
               {/* Conditional: highlight bg color */}
               {header.activeLinkHighlight && (

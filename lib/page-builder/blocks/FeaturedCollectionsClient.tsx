@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CollectionPopup } from "./CollectionPopup";
 import type { PortfolioCollectionsPopupConfig } from "@/lib/page-builder/types";
+import type { CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 import { gridColsVar } from "@/lib/page-builder/responsive";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,8 @@ export type FeaturedCollectionsClientProps = {
   mode: "owner" | "public";
   slug?: string;
   popupConfig: PortfolioCollectionsPopupConfig;
+  /** Localized popup labels threaded from puck metadata. */
+  popupLabels?: CollectionPopupLabels;
 };
 
 // ---------------------------------------------------------------------------
@@ -55,6 +58,7 @@ export function FeaturedCollectionsClient({
   mode,
   slug,
   popupConfig,
+  popupLabels,
 }: FeaturedCollectionsClientProps) {
   const [active, setActive] = useState<FeaturedTile | null>(null);
 
@@ -179,6 +183,7 @@ export function FeaturedCollectionsClient({
           slug={slug}
           popupConfig={popupConfig}
           onClose={() => setActive(null)}
+          labels={popupLabels}
         />
       )}
     </>

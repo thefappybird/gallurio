@@ -1480,16 +1480,6 @@
           "popupStyleLabel": "نمط النافذة المنبثقة",
           "save": "حفظ",
           "saving": "جارٍ الحفظ…",
-          "languageLabel": "لغة الصفحة العامة",
-          "languageHelp": "لغة نموذج الاستفسار والتنقّل والتذييل في صفحتك العامة.",
-          "languages": {
-            "auto": "تلقائي (حسب بلدك)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "errorColorLabel": "لون رسالة الخطأ",
           "sectionTabs": "علامات التبويب",
           "inactiveTabsSection": "علامات التبويب غير النشطة",
@@ -1539,6 +1529,7 @@
           },
           "sectionBanner": "اللافتة",
           "sectionLinks": "الروابط",
+          "sectionInactiveLinks": "الروابط غير النشطة",
           "sectionActiveStyle": "نمط الرابط النشط",
           "sectionContactButton": "زر التواصل",
           "bgColorLabel": "لون الخلفية",
@@ -1624,13 +1615,20 @@
           "zoomOut": "تصغير",
           "zoomReset": "إعادة التكبير إلى 100%",
           "undoTitle": "تراجع (Ctrl+Z)",
-          "redoTitle": "إعادة (Ctrl+Shift+Z)"
+          "redoTitle": "إعادة (Ctrl+Shift+Z)",
+          "language": "لغة الصفحة",
+          "directionLabel": "الاتجاه",
+          "directionLtr": "من اليسار إلى اليمين",
+          "directionRtl": "من اليمين إلى اليسار"
         },
         "drafts": "المسودات",
         "saveChanges": "حفظ التغييرات",
         "loadingDraft": "تحميل المسودة",
         "loadingDraftEllipsis": "تحميل المسودة…",
         "featuredPopup": "النافذة المنبثقة المميَّزة",
+        "featuredPopupWarningTitle": "لم يُعثر على بلوك العمل المميَّز",
+        "featuredPopupWarningBody": "تُطبَّق هذه الأنماط فقط عند استخدام بلوك العمل المميَّز.",
+        "featuredPopupWarningProceed": "فتح على أي حال",
         "draftNameLabel": "اسم المسودة",
         "draftsDialog": {
           "title": "مسوداتك",
@@ -1936,6 +1934,10 @@
             "photos": {
               "title": "رفع الصور وتنظيمها",
               "body": "افتح الصور لإنشاء مجموعات ورفع الصور. تسحب أقسام المعرض من مجموعة."
+            },
+            "translate": {
+              "title": "ترجم صفحاتك العامة",
+              "body": "غيّر لغة التنقل ونموذج التواصل ونوافذ المجموعات المنبثقة دفعة واحدة. تعكس اللغات من اليمين إلى اليسار التخطيط تلقائيًا."
             },
             "theme": {
               "title": "اختر ألوانك وخطوطك",
@@ -2332,6 +2334,14 @@
       "requiredHint": "مطلوب",
       "eventTitle": "عنوان المناسبة",
       "continue": "متابعة"
+    },
+    "collectionPopup": {
+      "close": "إغلاق",
+      "loading": "جارٍ التحميل...",
+      "failed": "فشل تحميل الصور.",
+      "retry": "إعادة المحاولة",
+      "empty": "لا توجد صور في هذه المجموعة بعد.",
+      "fullSizeAlt": "صورة بالحجم الكامل"
     }
   },
   "notFound": {

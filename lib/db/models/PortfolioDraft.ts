@@ -18,6 +18,7 @@ const portfolioDraftSchema = new Schema(
     header: { type: Schema.Types.Mixed, default: null },
     collectionsPopup: { type: Schema.Types.Mixed, default: null },
     formLocale: { type: String, default: "" },
+    formDir: { type: String, default: "" },
   },
   { timestamps: true }
 );

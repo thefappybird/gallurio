@@ -13,10 +13,9 @@
  * Editor chrome → English-only (RELEASE-CHECKLIST §4f).
  */
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { getBlockTab, setBlockTab, type BlockTab } from "./blockTabStore";
 import { BlockIdContext } from "./drawerOpenStore";
-import { EmojiButton } from "./EmojiTextInput";
 import type { LucideIcon } from "lucide-react";
 import {
   Bold,
@@ -387,26 +386,17 @@ export function ContentInputs({
   props: Record<string, unknown>;
   setProp: (key: string, val: unknown) => void;
 }) {
-  // Refs for emoji insert-at-caret (declared unconditionally per Rules of Hooks)
-  const headingRef = useRef<HTMLInputElement>(null);
-  const textRef = useRef<HTMLTextAreaElement>(null);
-  const buttonLabelRef = useRef<HTMLInputElement>(null);
-
   if (type === "Heading") {
     return (
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Text</span>
-          <div className="flex items-center gap-1">
-            <input
-              ref={headingRef}
-              type="text"
-              value={(props.text as string) ?? ""}
-              onChange={(e) => setProp("text", e.target.value)}
-              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-            <EmojiButton inputRef={headingRef} onChange={(v) => setProp("text", v)} />
-          </div>
+          <input
+            type="text"
+            value={(props.text as string) ?? ""}
+            onChange={(e) => setProp("text", e.target.value)}
+            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
         </label>
         <HeadingLevelButtons
           value={props.level as string}
@@ -419,16 +409,12 @@ export function ContentInputs({
     return (
       <label className="flex flex-col gap-1 text-sm">
         <span>Text</span>
-        <div className="flex items-start gap-1">
-          <textarea
-            ref={textRef}
-            rows={4}
-            value={(props.text as string) ?? ""}
-            onChange={(e) => setProp("text", e.target.value)}
-            className="flex-1 border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          />
-          <EmojiButton inputRef={textRef} onChange={(v) => setProp("text", v)} />
-        </div>
+        <textarea
+          rows={4}
+          value={(props.text as string) ?? ""}
+          onChange={(e) => setProp("text", e.target.value)}
+          className="border border-border bg-background px-2 py-1.5 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
       </label>
     );
   }
@@ -437,16 +423,12 @@ export function ContentInputs({
       <div className="flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span>Button text</span>
-          <div className="flex items-center gap-1">
-            <input
-              ref={buttonLabelRef}
-              type="text"
-              value={(props.label as string) ?? ""}
-              onChange={(e) => setProp("label", e.target.value)}
-              className="h-9 flex-1 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-            <EmojiButton inputRef={buttonLabelRef} onChange={(v) => setProp("label", v)} />
-          </div>
+          <input
+            type="text"
+            value={(props.label as string) ?? ""}
+            onChange={(e) => setProp("label", e.target.value)}
+            className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
         </label>
         <div className="flex items-center justify-between gap-2">
           <span className="shrink-0 text-xs text-muted-foreground">Action</span>

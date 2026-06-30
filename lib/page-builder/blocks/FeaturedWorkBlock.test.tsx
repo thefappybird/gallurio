@@ -228,6 +228,12 @@ describe("FeaturedWorkBlock — client safety", () => {
   });
 });
 
+describe("FeaturedWorkBlock — defaultProps", () => {
+  it("featuredWorkDefaultProps has minHeight === 'medium'", () => {
+    expect(featuredWorkDefaultProps.minHeight).toBe("medium");
+  });
+});
+
 describe("FeaturedWorkBlock — banner/container props", () => {
   it("renders a background image when backgroundImages has one entry", () => {
     const bgImages: GalleryImage[] = [{ id: "bg1", publicId: "bg-pid1" }];

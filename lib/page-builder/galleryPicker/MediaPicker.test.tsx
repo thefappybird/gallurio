@@ -4,6 +4,11 @@ import { MediaPicker } from "./MediaPicker";
 import type { MediaPickerCollectionSelection } from "./MediaPicker";
 import { __clearPickerDataCache } from "./usePickerData";
 
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: vi.fn(),
+}));
+import { uploadImage } from "@/lib/storage/uploadImage.client";
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
@@ -30,6 +35,7 @@ beforeEach(() => {
   __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation((u: string) => routeFetch(u));
+  vi.mocked(uploadImage).mockReset();
 });
 
 describe("MediaPicker", () => {
@@ -387,5 +393,84 @@ describe("MediaPicker", () => {
 
     await waitFor(() => expect(screen.queryByRole("button", { name: /SlowPhoto/ })).toBeNull());
     expect(screen.getByRole("button", { name: /FastPhoto/ })).toBeTruthy();
+  });
+
+  describe("upload auto-select", () => {
+    /** Fetch router that also handles gallery-item creation POST. */
+    function routeWithCreate(url: string, init?: RequestInit) {
+      if (url === "/api/portfolio/gallery/items" && (init as RequestInit)?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ id: "new-id", thumbUrl: "https://x/new-thumb.jpg", caption: null }),
+        } as Response);
+      }
+      return routeFetch(url);
+    }
+
+    it("(a) single mode: uploading auto-selects the photo and closes the picker", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      const onChange = vi.fn();
+      const onOpenChange = vi.fn();
+      render(
+        <MediaPicker mode="single" value="" onChange={onChange} open onOpenChange={onOpenChange} />
+      );
+
+      // Navigate into a collection so the photo grid + upload zone are visible.
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      // Trigger file upload via the hidden file input inside UploadZone.
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // After the upload pipeline completes: onChange(publicId) + onOpenChange(false).
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith("new-asset-id"));
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+
+    it("multi mode: uploading appends the photo to the current selection, picker stays open", async () => {
+      vi.mocked(uploadImage).mockResolvedValue({
+        assetId: "new-asset-id",
+        url: "https://x/new.jpg",
+        width: 800,
+        height: 600,
+        format: "jpeg",
+        sizeBytes: 10000,
+      });
+      mockFetch.mockImplementation((u: string, init?: RequestInit) => routeWithCreate(u, init));
+
+      const onChange = vi.fn();
+      const onOpenChange = vi.fn();
+      const existing = [{ id: "a", publicId: "pid-a" }];
+      render(
+        <MediaPicker mode="multi" value={existing} onChange={onChange} open onOpenChange={onOpenChange} />
+      );
+
+      fireEvent.click(await screen.findByRole("button", { name: /weddings/i }));
+      await screen.findByRole("listbox", { name: /photos/i });
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [file] } });
+
+      // onChange called with existing + new item; picker stays open.
+      await waitFor(() =>
+        expect(onChange).toHaveBeenCalledWith([
+          { id: "a", publicId: "pid-a" },
+          { id: "new-id", publicId: "new-asset-id", width: 800, height: 600 },
+        ])
+      );
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
+    });
   });
 });

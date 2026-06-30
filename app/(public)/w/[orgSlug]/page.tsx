@@ -87,6 +87,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
   // at the page boundary so blocks stay synchronous and unit-testable.
   const locale = resolvePublicChromeLocale(workspace);
   const t = await getTranslations({ locale, namespace: "publicPage.chrome" });
+  const tPopup = await getTranslations({ locale, namespace: "publicPage.collectionPopup" });
 
   // Build JSON-LD once — injected in both the ComingSoon branch and the main render.
   const socials = workspace.contact?.socials;
@@ -148,6 +149,18 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     },
   };
 
+  const renderMetadata = {
+    workspace: renderWorkspace,
+    collectionPopupLabels: {
+      close: tPopup("close"),
+      loading: tPopup("loading"),
+      failed: tPopup("failed"),
+      retry: tPopup("retry"),
+      empty: tPopup("empty"),
+      fullSizeAlt: tPopup("fullSizeAlt"),
+    },
+  };
+
   // runWithRenderWorkspace gives every server block rendered inside this tree
   // an isolated, request-scoped store. Concurrent requests cannot clobber
   // each other's workspace context (unlike a module-level singleton).
@@ -158,7 +171,7 @@ export default async function PortfolioHomePage({ params }: PageProps) {
       {/* metadata threads workspace context to every block via props.puck.metadata —
           the RSC-safe path (AsyncLocalStorage doesn't survive into async block render). */}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Render data={homeData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
+      <Render data={homeData as any} config={puckConfig as any} metadata={renderMetadata} />
     </>
   ));
 }

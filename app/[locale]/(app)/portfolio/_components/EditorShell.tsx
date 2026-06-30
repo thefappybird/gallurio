@@ -5,11 +5,14 @@ import "./editor.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Puck, type Config, type Data } from "@measured/puck";
 import { usePuckStore } from "@/lib/page-builder/puckHooks";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { isEditableTarget } from "@/lib/page-builder/editableTarget";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2, Smartphone, Tablet, Monitor, PanelLeft, PanelRight, ExternalLinkIcon, Undo2, Redo2 } from "lucide-react";
 import { CanvasViewportControls } from "./CanvasViewportControls";
+import { PortfolioLanguageControl } from "./PortfolioLanguageControl";
+import { computeCollectionsPopupAction, applyCollectionsPopupBranch } from "@/lib/page-builder/hasFeaturedWork";
 // Client-safe editor config (lightweight previews, identical fields). The real
 // server blocks render only on the public page via <Render>; importing them here
 // would pull Mongo + AsyncLocalStorage into the client bundle (build break).
@@ -52,7 +55,7 @@ import { CollectionsPopupPanelDialog } from "./CollectionsPopupPanelDialog";
 import { CollectionsPopupPreview } from "./CollectionsPopupPreview";
 import { MobileBanner } from "./MobileBanner";
 import { TemplatePickerDialog } from "./TemplatePickerDialog";
-import { useIsRtl } from "@/lib/i18n/rtl";
+import { useIsRtl, resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { useActionError } from "@/lib/i18n/actionError";
 import { SpotlightGuide } from "./SpotlightGuide";
 import { SPOTLIGHT_STEPS, guidePanelActions, applyGuidePanelActions, shouldResetGuideCanvasOnStep } from "./spotlightSteps";
@@ -66,6 +69,16 @@ import {
 } from "@/app/(public)/w/[orgSlug]/_components/contactButtonAppearance";
 import { RootCanvasStyle } from "@/lib/page-builder/RootCanvasStyle";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { DraftNameEditor, type DraftNameEditorHandle } from "./DraftNameEditor";
 import { DraftsDialog } from "./DraftsDialog";
@@ -117,6 +130,8 @@ type Props = {
   initialCollectionsPopup: PortfolioCollectionsPopupConfig;
   /** Per-page public chrome language ("" = auto from workspace country). */
   initialFormLocale: string;
+  /** Explicit text direction for the public page ("" = derived from locale). */
+  initialFormDir?: string;
   publicOrigin: string;
   /** Locale-aware path to the chrome-less preview route (iframe src base). */
   previewBasePath: string;
@@ -154,6 +169,8 @@ type Props = {
 
 const EMPTY_ZONE: PuckData = { content: [], root: {} };
 const EDITOR_SECTIONS: readonly EditorSection[] = ["home", "gallery", "collectionsPopup", "header", "contact"] as const;
+// formDir was added as an optional field; absence defaults to LTR at hydration,
+// so v2 buffers stay forward-compatible and must not be invalidated by a bump.
 const LOCAL_DRAFT_VERSION = 2;
 
 type PortfolioBrowserDraft = {
@@ -162,6 +179,7 @@ type PortfolioBrowserDraft = {
   brandKit: PortfolioBrandKit;
   contact: PortfolioContactConfig;
   formLocale: string;
+  formDir: string;
   headerConfig: PortfolioHeaderConfig;
   collectionsPopup: PortfolioCollectionsPopupConfig;
   draftId: string | null;
@@ -218,7 +236,17 @@ const DEVICES: readonly { key: PreviewDevice; width: number; Icon: typeof Monito
  * the `overrides.header` slot) plus the device viewport toggle that clamps the
  * edit canvas. Lives inside Puck so `usePuck` has context.
  */
-function EditCanvasControls() {
+function EditCanvasControls({
+  formLocale,
+  formDir,
+  onFormLocaleChange,
+  onFormDirChange,
+}: {
+  formLocale: string;
+  formDir: "ltr" | "rtl" | "";
+  onFormLocaleChange: (v: string) => void;
+  onFormDirChange: (v: "ltr" | "rtl") => void;
+}) {
   const t = useTranslations("app.pageBuilder.editor");
   const leftSideBarVisible = usePuckStore((s) => s.appState.ui.leftSideBarVisible);
   const rightSideBarVisible = usePuckStore((s) => s.appState.ui.rightSideBarVisible);
@@ -278,6 +306,13 @@ function EditCanvasControls() {
       </Button>
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
       <CanvasViewportControls />
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <PortfolioLanguageControl
+        value={formLocale as Parameters<typeof PortfolioLanguageControl>[0]["value"]}
+        onChange={onFormLocaleChange}
+        dir={resolveEffectiveDir(formDir, formLocale)}
+        onDirChange={onFormDirChange}
+      />
     </div>
   );
 }
@@ -364,6 +399,7 @@ export function EditorShell({
   initialBrandKit,
   initialContact,
   initialFormLocale,
+  initialFormDir,
   initialHeaderConfig,
   initialCollectionsPopup,
   previewBasePath,
@@ -396,6 +432,9 @@ export function EditorShell({
   const [savedThemes, setSavedThemes] = useState<PortfolioSavedTheme[]>(initialSavedThemes);
   const [contact, setContact] = useState(initialContact);
   const [formLocale, setFormLocale] = useState(initialFormLocale);
+  const [formDir, setFormDir] = useState<"ltr" | "rtl" | "">(
+    (initialFormDir as "ltr" | "rtl" | "" | undefined) ?? ""
+  );
   const [renderDraftData, setRenderDraftData] = useState<Record<Zone, PuckData>>(() => ({
     home: prepareForEditor(initialData.home ?? EMPTY_ZONE) as unknown as PuckData,
     gallery: prepareForEditor(initialData.gallery ?? EMPTY_ZONE) as unknown as PuckData,
@@ -409,6 +448,8 @@ export function EditorShell({
   const [headerOpen, setHeaderOpen] = useState(false);
   const [collectionsPopup, setCollectionsPopup] = useState<PortfolioCollectionsPopupConfig>(initialCollectionsPopup ?? {});
   const [collectionsPopupOpen, setCollectionsPopupOpen] = useState(false);
+  const [featuredWorkWarningOpen, setFeaturedWorkWarningOpen] = useState(false);
+  const pendingOpenCollectionsPopup = useRef<(() => void) | null>(null);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [templateId, setTemplateId] = useState(currentTemplateId);
@@ -510,6 +551,7 @@ export function EditorShell({
       header: initialHeaderConfig ?? DEFAULT_HEADER_CONFIG,
       collectionsPopup: initialCollectionsPopup ?? {},
       formLocale: initialFormLocale,
+      formDir: initialFormDir ?? "",
     });
   });
 
@@ -564,6 +606,7 @@ export function EditorShell({
       header: headerConfig,
       collectionsPopup,
       formLocale,
+      formDir,
     };
   }
 
@@ -577,7 +620,7 @@ export function EditorShell({
   // stays in sync without any effects. renderDraftData drives re-renders on Puck edits.
   const isDirty =
     savedSnapshot === null ||
-    JSON.stringify({ name: draftName, templateId, data: renderDraftData, brandKit, contact, header: headerConfig, collectionsPopup, formLocale }) !==
+    JSON.stringify({ name: draftName, templateId, data: renderDraftData, brandKit, contact, header: headerConfig, collectionsPopup, formLocale, formDir }) !==
       savedSnapshot;
 
   const persistLocalDraft = useCallback(() => {
@@ -589,6 +632,7 @@ export function EditorShell({
       brandKit,
       contact,
       formLocale,
+      formDir,
       headerConfig,
       collectionsPopup,
       draftId: activeDraftId,
@@ -600,7 +644,15 @@ export function EditorShell({
     } catch {
       return false;
     }
-  }, [brandKit, collectionsPopup, contact, draftKey, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
+  }, [brandKit, collectionsPopup, contact, draftKey, formDir, formLocale, guideMode, headerConfig, activeDraftId, draftName]);
+
+  // Typing emits a Puck onChange per keystroke; persisting to localStorage on
+  // every one makes text blocks laggy. Debounce the local write (trailing) and
+  // flush it at every commit point (zone switch, save, blur, unload, unmount).
+  const { debounced: debouncedPersistLocalDraft, flush: flushLocalDraft } = useDebounce<void>(
+    () => persistLocalDraft(),
+    350,
+  );
 
   // Compute on mount whether a recoverable localStorage buffer exists.
   const [hasRecoverableBuffer] = useState<boolean>(() => {
@@ -633,6 +685,7 @@ export function EditorShell({
         if (draft.brandKit) setBrandKit(draft.brandKit);
         if (draft.contact) setContact(draft.contact);
         if (typeof draft.formLocale === "string") setFormLocale(draft.formLocale);
+        if (typeof draft.formDir === "string") setFormDir(draft.formDir as "ltr" | "rtl" | "");
         if (draft.headerConfig) setHeaderConfig(draft.headerConfig);
         if (draft.collectionsPopup) setCollectionsPopup(draft.collectionsPopup);
         if (draft.draftId !== undefined) setActiveDraftId(draft.draftId);
@@ -649,24 +702,31 @@ export function EditorShell({
   useEffect(() => {
     if (guideMode) return;
     persistLocalDraft();
-  }, [activeDraftId, collectionsPopup, contact, draftName, formLocale, guideMode, headerConfig, persistLocalDraft]);
+  }, [activeDraftId, collectionsPopup, contact, draftName, formDir, formLocale, guideMode, headerConfig, persistLocalDraft]);
 
-  // beforeunload guard while dirty.
+  // beforeunload guard while dirty. Flush any pending debounced write so a
+  // reload/close never loses the last keystrokes.
   useEffect(() => {
     if (!isDirty) return;
     function handleBeforeUnload(e: BeforeUnloadEvent) {
+      flushLocalDraft();
       e.preventDefault();
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty]);
+  }, [isDirty, flushLocalDraft]);
+
+  // Flush a pending debounced write on unmount.
+  useEffect(() => () => flushLocalDraft(), [flushLocalDraft]);
 
   // Puck/contact/navigation drafts are browser-local until Save changes.
+  // Flushing commits any pending debounced keystroke write before the caller
+  // (zone switch, preview, save) reads the buffer.
   const flushPendingSave = useCallback(async (zone: Zone): Promise<boolean> => {
     void zone;
-    persistLocalDraft();
+    flushLocalDraft();
     return true;
-  }, [persistLocalDraft]);
+  }, [flushLocalDraft]);
 
   const handleChange = useCallback(
     (data: Data) => {
@@ -677,10 +737,10 @@ export function EditorShell({
         ignoreNextChange.current = false;
         return; // mount/remount echo - capture data, but don't autosave.
       }
-      persistLocalDraft();
+      debouncedPersistLocalDraft();
       // isDirty is derived at render time from savedSnapshot state — no manual update needed.
     },
-    [activeZone, persistLocalDraft]
+    [activeZone, debouncedPersistLocalDraft]
   );
 
   // ---- Draft name validation ----
@@ -797,6 +857,7 @@ export function EditorShell({
     const resolvedHeader = (d.header as PortfolioHeaderConfig) ?? headerConfig;
     const resolvedCollectionsPopup = (d.collectionsPopup as PortfolioCollectionsPopupConfig) ?? collectionsPopup;
     const resolvedFormLocale = typeof d.formLocale === "string" ? d.formLocale : formLocale;
+    const resolvedFormDir = typeof d.formDir === "string" ? (d.formDir as "ltr" | "rtl" | "") : formDir;
     const resolvedTemplateId = d.templateId || templateId;
     zoneDataRef.current = { home: homeData, gallery: galleryData };
     setRenderDraftData(zoneDataRef.current);
@@ -805,6 +866,7 @@ export function EditorShell({
     setHeaderConfig(resolvedHeader);
     setCollectionsPopup(resolvedCollectionsPopup);
     setFormLocale(resolvedFormLocale);
+    setFormDir(resolvedFormDir);
     setTemplateId(resolvedTemplateId);
     setActiveDraftId(d.id);
     setDraftName(d.name);
@@ -823,6 +885,7 @@ export function EditorShell({
       header: resolvedHeader,
       collectionsPopup: resolvedCollectionsPopup,
       formLocale: resolvedFormLocale,
+      formDir: resolvedFormDir,
     }));
     persistLocalDraft();
     setDraftsOpen(false);
@@ -1060,7 +1123,13 @@ export function EditorShell({
     if (!previewMode) await flushPendingSave(activeZone);
     collectionsPopupSnapshot.current = collectionsPopup;
     collectionsPopupHasSaved.current = false;
-    setCollectionsPopupOpen(true);
+    applyCollectionsPopupBranch(computeCollectionsPopupAction(zoneDataRef.current), {
+      open: () => setCollectionsPopupOpen(true),
+      warn: () => {
+        pendingOpenCollectionsPopup.current = () => setCollectionsPopupOpen(true);
+        setFeaturedWorkWarningOpen(true);
+      },
+    });
   }
   function closeCollectionsPopup(saved: boolean) {
     if (!saved && collectionsPopupSnapshot.current) setCollectionsPopup(collectionsPopupSnapshot.current);
@@ -1114,6 +1183,7 @@ export function EditorShell({
       header: (seed.header as PortfolioHeaderConfig) ?? DEFAULT_HEADER_CONFIG,
       collectionsPopup: (seed.collectionsPopup as PortfolioCollectionsPopupConfig) ?? {},
       formLocale,
+      formDir,
     }));
     ignoreNextChange.current = true;
     // Already prepared — pass directly to Puck without double-prepareForEditor.
@@ -1552,7 +1622,12 @@ export function EditorShell({
                     }}
                   />
                   {topBar(
-                    <EditCanvasControls />,
+                    <EditCanvasControls
+                      formLocale={formLocale}
+                      formDir={formDir}
+                      onFormLocaleChange={setFormLocale}
+                      onFormDirChange={setFormDir}
+                    />,
                     <Button
                       type="button"
                       size="sm"
@@ -1604,8 +1679,6 @@ export function EditorShell({
                     open={contactOpen}
                     contact={contact}
                     onContactChange={setContact}
-                    formLocale={formLocale}
-                    onFormLocaleChange={setFormLocale}
                     brandKit={brandKit}
                     onSaved={saveContactSnapshot}
                     onCancel={() => closeContact(false)}
@@ -1782,6 +1855,35 @@ export function EditorShell({
         onDiscard={() => void handleDiscardChanges()}
         onCancel={() => setPendingAction(null)}
       />
+
+      {/* Task 7 — warn when no FeaturedWork block exists */}
+      <AlertDialog
+        open={featuredWorkWarningOpen}
+        onOpenChange={(open) => {
+          if (!open) setFeaturedWorkWarningOpen(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("featuredPopupWarningTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("featuredPopupWarningBody")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setFeaturedWorkWarningOpen(false)}>
+              {t("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setFeaturedWorkWarningOpen(false);
+                pendingOpenCollectionsPopup.current?.();
+                pendingOpenCollectionsPopup.current = null;
+              }}
+            >
+              {t("featuredPopupWarningProceed")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </GalleryPickerCacheProvider>
   );

@@ -43,16 +43,8 @@ describe("portfolio-maker locale parity", () => {
   }
 
   for (const [locale, catalog] of Object.entries(LOCALES)) {
-    it(`${locale}: advertises en, fil, ms, id, and ar public-page language options`, () => {
+    it(`${locale}: advertises en, fil, ms, id, and ar app-interface language options`, () => {
       expect(Object.keys(catalog.app.settings.customize.languages)).toEqual([
-        "en",
-        "fil",
-        "ms",
-        "id",
-        "ar",
-      ]);
-      expect(Object.keys(catalog.app.pageBuilder.editor.contactDialog.languages)).toEqual([
-        "auto",
         "en",
         "fil",
         "ms",

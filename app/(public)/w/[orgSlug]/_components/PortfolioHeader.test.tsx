@@ -228,4 +228,20 @@ describe("PortfolioHeader", () => {
     expect(homeLink.style.borderBottomColor).not.toBe("transparent");
     expect(homeLink.getAttribute("style")).toContain("--pf-color-accent");
   });
+
+  // Regression: brandTextColor must not bleed linkColor — unset brandTextColor should
+  // always resolve to var(--pf-color-fg), regardless of what linkColor is set to.
+  it("unset brandTextColor falls back to fg token, not linkColor (bleed regression)", () => {
+    render(
+      <PortfolioHeader
+        slug="luna-studio"
+        labels={labels}
+        config={{ linkColor: "accent" }}
+      />,
+    );
+    // Brand heading must use fg (not accent), even though linkColor is accent
+    expect(screen.getByRole("link", { name: "Luna Studio" }).style.color).toBe("var(--pf-color-fg)");
+    // Gallery is inactive so it uses linkColor, not activeLinkColor
+    expect(screen.getByRole("link", { name: "Gallery" }).style.color).toBe("var(--pf-color-accent)");
+  });
 });

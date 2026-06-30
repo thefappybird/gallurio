@@ -4,6 +4,11 @@ import { renderWithProviders } from "@/test-utils/render";
 import { EditCollectionDialog } from "./EditCollectionDialog";
 import { __clearPickerDataCache } from "./usePickerData";
 
+vi.mock("@/lib/storage/uploadImage.client", () => ({
+  uploadImage: vi.fn(),
+}));
+import { uploadImage } from "@/lib/storage/uploadImage.client";
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
@@ -28,6 +33,7 @@ beforeEach(() => {
   __clearPickerDataCache();
   mockFetch.mockReset();
   mockFetch.mockImplementation(defaultRoute);
+  vi.mocked(uploadImage).mockReset();
 });
 
 function open() {
@@ -82,5 +88,51 @@ describe("EditCollectionDialog", () => {
     await waitFor(() =>
       expect(mockFetch.mock.calls.some(([u, i]) => String(u) === "/api/portfolio/gallery/collections/col1" && (i as RequestInit)?.method === "PATCH" && String((i as RequestInit)?.body).includes("coverItemId"))).toBe(true)
     );
+  });
+
+  // (b) Photos-manager upload does NOT auto-select — it appends to the list and
+  // calls onChanged for cache refresh, with no selection side-effect.
+  it("(b) upload appends the photo to the list and calls onChanged without auto-selecting", async () => {
+    vi.mocked(uploadImage).mockResolvedValue({
+      assetId: "up-asset",
+      url: "https://x/up.jpg",
+      width: 900,
+      height: 600,
+      format: "jpeg",
+      sizeBytes: 20000,
+    });
+    // Route the gallery-items POST to return a new item.
+    mockFetch.mockImplementation((u: string, init?: RequestInit) => {
+      if (u === "/api/portfolio/gallery/items" && (init as RequestInit)?.method === "POST") {
+        return Promise.resolve({ ok: true, json: async () => ({ id: "up-id", thumbUrl: "https://x/up-thumb.jpg", caption: null }) } as Response);
+      }
+      return defaultRoute(u, init);
+    });
+
+    const onChanged = vi.fn();
+    renderWithProviders(
+      <EditCollectionDialog open onOpenChange={vi.fn()} collection={collection} onChanged={onChanged} />
+    );
+
+    // Wait for the dialog to load existing items.
+    await screen.findByRole("checkbox", { name: /select A/i });
+
+    // Trigger upload via the hidden file input.
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["data"], "new.jpg", { type: "image/jpeg" });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    // The upload pipeline completes: the new item appears in the list.
+    await waitFor(() => expect(mockFetch.mock.calls.some(([u, i]) =>
+      String(u) === "/api/portfolio/gallery/items" && (i as RequestInit)?.method === "POST"
+    )).toBe(true));
+    // onChanged is called for cache refresh — that's the only side-effect.
+    await waitFor(() => expect(onChanged).toHaveBeenCalled());
+    // No "selection" callback is called — EditCollectionDialog has no such API.
+    // Verify the uploaded photo checkbox is NOT pre-checked (no auto-select).
+    const allCheckboxes = screen.getAllByRole("checkbox");
+    for (const cb of allCheckboxes) {
+      expect(cb).not.toBeChecked();
+    }
   });
 });

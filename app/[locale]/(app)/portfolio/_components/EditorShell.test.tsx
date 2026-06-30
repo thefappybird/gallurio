@@ -249,6 +249,23 @@ describe("EditorShell", () => {
     expect(await screen.findByText("Studio Aurora · Gallery")).toBeInTheDocument();
   });
 
+  it("debounces the local draft write on a Puck change and flushes it on zone switch (Fix #1)", async () => {
+    await renderAndDismissEntry(<EditorShell {...baseProps} />);
+
+    // A Puck change updates in-memory state synchronously, but the localStorage
+    // write is debounced — writing per keystroke is what caused the typing lag.
+    // "Changed" is the headline carried by the simulated change; it must NOT
+    // land in the persisted buffer immediately.
+    fireEvent.click(screen.getByRole("button", { name: "Simulate Puck change" }));
+    expect(window.localStorage.getItem(DRAFT_KEY) ?? "").not.toContain("Changed");
+
+    // Switching zones is a commit point: the pending write is flushed.
+    fireEvent.click(screen.getByRole("button", { name: "Gallery" }));
+    await waitFor(() =>
+      expect(window.localStorage.getItem(DRAFT_KEY) ?? "").toContain("Changed")
+    );
+  });
+
   it("places Navigation and Contact Form beside the page tabs", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     const controls = screen.getByRole("group", { name: "Portfolio sections" });
@@ -262,6 +279,8 @@ describe("EditorShell", () => {
   it("opens the Featured Popup panel when the Featured Popup tab is clicked", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    // No Featured Work block in baseProps → the open is gated by a warning (Task 7).
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
     expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();
     expect(screen.queryByTestId("puck")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Featured Popup" }).getAttribute("aria-pressed")).toBe("true");
@@ -422,6 +441,8 @@ describe("EditorShell", () => {
   it("shows the collections popup preview on the canvas when the Featured Popup tab is opened", async () => {
     await renderAndDismissEntry(<EditorShell {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Featured Popup" }));
+    // No Featured Work block in baseProps → the open is gated by a warning (Task 7).
+    fireEvent.click(await screen.findByRole("button", { name: "Open anyway" }));
     // Wait for the async openCollectionsPopup state update to settle.
     // The style panel (right rail) must be present.
     expect(await screen.findByLabelText("Featured popup style")).toBeInTheDocument();

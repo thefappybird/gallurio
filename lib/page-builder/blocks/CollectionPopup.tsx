@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "./CollectionPopupChrome";
+import { applyCollectionPopupDefaults, type CollectionPopupLabels } from "@/lib/page-builder/blockContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,6 +20,8 @@ export type CollectionPopupProps = {
   popupConfig: PortfolioCollectionsPopupConfig;
   open: boolean;
   onClose: () => void;
+  /** Localized strings; falls back to English literals when absent (editor canvas). */
+  labels?: CollectionPopupLabels;
 };
 
 type PopupImage = { id: string; publicId: string; alt: string };
@@ -181,9 +184,13 @@ function FloatingCloseButton({
 function Lightbox({
   image,
   onClose,
+  closeLabel = "Close",
+  fullSizeAlt = "Full size photo",
 }: {
   image: PopupImage;
   onClose: () => void;
+  closeLabel?: string;
+  fullSizeAlt?: string;
 }) {
   const src = imageDeliveryUrl(image.publicId, { width: 2000, fit: "scale-down" });
 
@@ -199,7 +206,7 @@ function Lightbox({
           }}
         />
         <DialogPrimitive.Popup
-          aria-label={image.alt || "Full size photo"}
+          aria-label={image.alt || fullSizeAlt}
           style={{
             position: "fixed",
             inset: 0,
@@ -210,7 +217,7 @@ function Lightbox({
           }}
         >
           <style>{FOCUS_VISIBLE_STYLES}</style>
-          <FloatingCloseButton onClick={onClose} label="Close" dataAttr="data-lightbox-close" />
+          <FloatingCloseButton onClick={onClose} label={closeLabel} dataAttr="data-lightbox-close" />
           {src ? (
             <img
               src={src}
@@ -250,7 +257,9 @@ export function CollectionPopup({
   popupConfig,
   open,
   onClose,
+  labels: labelsProp,
 }: CollectionPopupProps) {
+  const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
   const [lightboxImage, setLightboxImage] = useState<PopupImage | null>(null);
 
@@ -328,11 +337,11 @@ export function CollectionPopup({
             };
           });
         } else {
-          setState({ status: "error", message: "Failed to load photos." });
+          setState({ status: "error", message: L.failed });
         }
       }
     },
-    [mode, collectionId, slug]
+    [mode, collectionId, slug, L.failed]
   );
 
   // Fetch on open. Closed state is rendered as idle, so no reset is needed here.
@@ -433,7 +442,7 @@ export function CollectionPopup({
                       animation: "spin 1s linear infinite",
                     }}
                   />
-                  <span>Loading...</span>
+                  <span>{L.loading}</span>
                 </div>
               ) : state.status === "error" ? (
                 <div
@@ -447,7 +456,7 @@ export function CollectionPopup({
                     color: "var(--pf-color-foreground, #111)",
                   }}
                 >
-                  <p style={{ margin: 0 }}>Failed to load photos.</p>
+                  <p style={{ margin: 0 }}>{L.failed}</p>
                   <button
                     type="button"
                     onClick={() => fetchPage(null)}
@@ -465,7 +474,7 @@ export function CollectionPopup({
                     }}
                   >
                     <RefreshCwIcon aria-hidden style={{ width: "14px", height: "14px" }} />
-                    Retry
+                    {L.retry}
                   </button>
                 </div>
               ) : state.status === "empty" ? (
@@ -479,7 +488,7 @@ export function CollectionPopup({
                     fontSize: "0.875rem",
                   }}
                 >
-                  No photos in this collection yet.
+                  {L.empty}
                 </div>
               ) : (
                 /* populated or loadingMore */
@@ -658,7 +667,12 @@ export function CollectionPopup({
 
       {/* Nested lightbox rendered outside the popup dialog but controlled by popup state */}
       {open && lightboxImage && (
-        <Lightbox image={lightboxImage} onClose={() => setLightboxImage(null)} />
+        <Lightbox
+          image={lightboxImage}
+          onClose={() => setLightboxImage(null)}
+          closeLabel={L.close}
+          fullSizeAlt={L.fullSizeAlt}
+        />
       )}
     </>
   );

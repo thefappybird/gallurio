@@ -87,6 +87,7 @@ export default async function PageBuilderEntry({
   const initialHeaderConfig = toPlain<PortfolioHeaderConfig>(pp?.header ?? null, DEFAULT_HEADER_CONFIG);
   const initialCollectionsPopup = toPlain<PortfolioCollectionsPopupConfig>(pp?.collectionsPopup ?? null, {});
   const initialFormLocale = toPlain<string>(pp?.formLocale, "");
+  const initialFormDir = toPlain<string>(pp?.formDir, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
 
@@ -124,6 +125,7 @@ export default async function PageBuilderEntry({
         initialBrandKit={initialBrandKit}
         initialContact={initialContact}
         initialFormLocale={initialFormLocale}
+        initialFormDir={initialFormDir}
         initialHeaderConfig={initialHeaderConfig}
         initialCollectionsPopup={initialCollectionsPopup}
         publicOrigin={publicOrigin}

@@ -1480,16 +1480,6 @@
           "popupStyleLabel": "Popup style",
           "save": "Save",
           "saving": "Saving…",
-          "languageLabel": "Public page language",
-          "languageHelp": "Language of the inquiry form, navigation, and footer on your public page.",
-          "languages": {
-            "auto": "Auto (based on your country)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "errorColorLabel": "Error message color",
           "sectionTabs": "Tabs",
           "inactiveTabsSection": "Inactive tabs",
@@ -1539,6 +1529,7 @@
           },
           "sectionBanner": "Banner",
           "sectionLinks": "Links",
+          "sectionInactiveLinks": "Inactive links",
           "sectionActiveStyle": "Active link style",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Background color",
@@ -1624,13 +1615,20 @@
           "zoomOut": "Zoom out",
           "zoomReset": "Reset zoom to 100%",
           "undoTitle": "Undo (Ctrl+Z)",
-          "redoTitle": "Redo (Ctrl+Shift+Z)"
+          "redoTitle": "Redo (Ctrl+Shift+Z)",
+          "language": "Page language",
+          "directionLabel": "Direction",
+          "directionLtr": "Left to right",
+          "directionRtl": "Right to left"
         },
         "drafts": "Drafts",
         "saveChanges": "Save changes",
         "loadingDraft": "Loading draft",
         "loadingDraftEllipsis": "Loading draft…",
         "featuredPopup": "Featured Popup",
+        "featuredPopupWarningTitle": "Featured Work block not found",
+        "featuredPopupWarningBody": "These styles only apply if you're using the Featured Work block.",
+        "featuredPopupWarningProceed": "Open anyway",
         "draftNameLabel": "Draft name",
         "draftsDialog": {
           "title": "Your drafts",
@@ -1924,6 +1922,10 @@
             "photos": {
               "title": "Upload and organize photos",
               "body": "Open Photos to create collections and upload images. Gallery blocks pull from a collection."
+            },
+            "translate": {
+              "title": "Translate your public pages",
+              "body": "Switch the language of your navigation, contact form, and collection popups all at once. Right-to-left languages flip the layout automatically."
             },
             "theme": {
               "title": "Pick your colors and fonts",
@@ -2332,6 +2334,14 @@
       "requiredHint": "Required",
       "eventTitle": "Event title",
       "continue": "Continue"
+    },
+    "collectionPopup": {
+      "close": "Close",
+      "loading": "Loading...",
+      "failed": "Failed to load photos.",
+      "retry": "Retry",
+      "empty": "No photos in this collection yet.",
+      "fullSizeAlt": "Full size photo"
     }
   },
   "notFound": {

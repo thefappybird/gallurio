@@ -1460,16 +1460,6 @@
           },
           "save": "Simpan",
           "saving": "Menyimpan…",
-          "languageLabel": "Bahasa halaman publik",
-          "languageHelp": "Bahasa formulir pertanyaan, navigasi, dan footer di halaman publik Anda.",
-          "languages": {
-            "auto": "Otomatis (berdasarkan negara Anda)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "bgColorLabel": "Warna latar belakang",
           "textColorLabel": "Warna teks",
           "cornerRadiusLabel": "Sudut melengkung",
@@ -1539,6 +1529,7 @@
           },
           "sectionBanner": "Spanduk",
           "sectionLinks": "Tautan",
+          "sectionInactiveLinks": "Tautan tidak aktif",
           "sectionActiveStyle": "Gaya tautan aktif",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Warna latar belakang",
@@ -1624,13 +1615,20 @@
           "zoomOut": "Perkecil",
           "zoomReset": "Atur ulang zoom ke 100%",
           "undoTitle": "Urungkan (Ctrl+Z)",
-          "redoTitle": "Ulangi (Ctrl+Shift+Z)"
+          "redoTitle": "Ulangi (Ctrl+Shift+Z)",
+          "language": "Bahasa halaman",
+          "directionLabel": "Arah",
+          "directionLtr": "Kiri ke kanan",
+          "directionRtl": "Kanan ke kiri"
         },
         "drafts": "Draf",
         "saveChanges": "Simpan perubahan",
         "loadingDraft": "Memuat draf",
         "loadingDraftEllipsis": "Memuat draf…",
         "featuredPopup": "Popup unggulan",
+        "featuredPopupWarningTitle": "Blok Featured Work tidak ditemukan",
+        "featuredPopupWarningBody": "Gaya ini hanya berlaku jika Anda menggunakan blok Featured Work.",
+        "featuredPopupWarningProceed": "Buka saja",
         "draftNameLabel": "Nama draf",
         "draftsDialog": {
           "title": "Draf Anda",
@@ -1936,6 +1934,10 @@
             "photos": {
               "title": "Unggah dan atur foto",
               "body": "Buka Foto untuk membuat koleksi dan mengunggah gambar. Blok galeri mengambil dari koleksi."
+            },
+            "translate": {
+              "title": "Terjemahkan halaman publik Anda",
+              "body": "Ubah bahasa navigasi, formulir kontak, dan popup koleksi sekaligus. Bahasa kanan-ke-kiri membalik tata letak secara otomatis."
             },
             "theme": {
               "title": "Pilih warna dan font Anda",
@@ -2332,6 +2334,14 @@
       "requiredHint": "Wajib",
       "eventTitle": "Judul acara",
       "continue": "Lanjutkan"
+    },
+    "collectionPopup": {
+      "close": "Tutup",
+      "loading": "Memuat...",
+      "failed": "Gagal memuat foto.",
+      "retry": "Coba lagi",
+      "empty": "Belum ada foto di koleksi ini.",
+      "fullSizeAlt": "Foto ukuran penuh"
     }
   },
   "notFound": {

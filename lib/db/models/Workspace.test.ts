@@ -68,3 +68,12 @@ describe("Workspace.publicPage.seo defaults", () => {
     expect(ws.publicPage?.seo?.galleryDescription).toBe("");
   });
 });
+
+it("new workspace has formDir defaulting to empty string", async () => {
+  const ws = await Workspace.create({
+    slug: "dir-test-studio",
+    name: "Dir Test Studio",
+    ownerUserId: "user_dir_1",
+  });
+  expect(ws.publicPage?.formDir).toBe("");
+});

@@ -135,6 +135,40 @@ describe("editorPuckConfig parity with production puckConfig", () => {
   });
 });
 
+describe("Container resolveData — anchor id idempotency", () => {
+  // Regression for Bug #2: a draft-restored Container whose ContainerAnchor
+  // carries the wrong id (missing --anchor suffix) must have the anchor
+  // replaced — not passed through — so the selection-bounce useEffect never
+  // sees parentId === id and loops.
+  it("replaces a draft anchor with the wrong id (no --anchor suffix) instead of leaving it as-is", () => {
+    type ResolveDataFn = (data: unknown) => unknown;
+    const container = (editorPuckConfig.components as Record<string, { resolveData?: ResolveDataFn }>).Container;
+    expect(container?.resolveData, "Container.resolveData must exist").toBeDefined();
+    const resolveData = container.resolveData!;
+
+    const containerId = "myblock";
+    const wrongAnchorId = containerId; // missing --anchor — the bug scenario
+
+    const data = {
+      props: {
+        id: containerId,
+        content: [
+          { type: "ContainerAnchor", props: { id: wrongAnchorId, height: 0 } },
+          { type: "Heading", props: { id: "h1", text: "Hello" } },
+        ],
+      },
+    };
+
+    const result = resolveData(data) as {
+      props: { content: Array<{ type: string; props: { id?: string } }> };
+    };
+    const anchor = result.props.content[0];
+    expect(anchor.type).toBe("ContainerAnchor");
+    // The anchor id MUST be "myblock--anchor", not "myblock".
+    expect(anchor.props.id).toBe(`${containerId}--anchor`);
+  });
+});
+
 describe("GalleryLandingPreset carousel hint", () => {
   it("GalleryLandingPreset carries a backgroundImages carousel hint accessible via component metadata", () => {
     const cfg = editorPuckConfig.components.GalleryLandingPreset as Record<string, unknown>;

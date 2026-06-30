@@ -23,6 +23,7 @@ export const draftSnapshotSchema = z.object({
   header: portfolioHeaderConfigSchema,
   collectionsPopup: portfolioCollectionsPopupConfigSchema,
   formLocale: z.string().max(8).optional().or(z.literal("")),
+  formDir: z.enum(["ltr", "rtl"]).optional().or(z.literal("")),
 });
 
 export const createDraftSchema = draftSnapshotSchema.extend({

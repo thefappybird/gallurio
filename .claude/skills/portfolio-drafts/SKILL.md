@@ -8,11 +8,16 @@ description: How Gallurio's portfolio draft / versioning system works — the Dr
 ## Two layers of state
 1. **Local browser draft (autosave to localStorage).** `EditorShell.tsx` serializes a
    `PortfolioBrowserDraft` (`LOCAL_DRAFT_VERSION = 2`) under key
-   `gallurio:portfolio-draft:{slug}` via `persistLocalDraft()` on every edit (zone data,
-   `brandKit`, `contact`, `formLocale`, `headerConfig`, `collectionsPopup`, `draftId`,
+   `gallurio:portfolio-draft:{slug}` via `persistLocalDraft()` (zone data, `brandKit`,
+   `contact`, `formLocale`, `formDir`, `headerConfig`, `collectionsPopup`, `draftId`,
    `draftName`). On mount it hydrates from there, validating the version first.
-   `flushPendingSave(zone)` syncs localStorage before any zone-switch / preview / discard.
-   **There is NO server autosave** — server persistence happens only on explicit actions.
+   **The local write is DEBOUNCED** (~350ms trailing) on Puck `onChange` — `handleChange`
+   calls `debouncedPersistLocalDraft()`, not a synchronous write per keystroke (that caused
+   typing lag). The debounce is **flushed** at every commit point: `flushPendingSave(zone)`
+   (zone-switch / preview / save), `beforeunload`, and unmount — so the buffer is never stale
+   and no keystrokes are lost. Config changes (locale/dir/header/contact/name) still persist
+   synchronously via a state-effect. **There is NO server autosave** — server persistence
+   happens only on explicit actions.
 2. **Server drafts (named snapshots).** `PortfolioDraft` Mongo docs (indexed by
    `workspaceId`, unique name per workspace). `DraftSummary` = `{ id, name, templateId,
    updatedAt }`; `FullDraft` includes the nested config. Loaded into `EditorShell` as
@@ -39,9 +44,11 @@ confirm), and add-new (`onAddNew`). The `isNewUnsavedDraft` flag drives the dash
 row for a freshly-created-from-template draft with no DB record yet.
 
 ## When editing this area
-- Any new persisted field must be added to BOTH `PortfolioBrowserDraft` (and bump
-  `LOCAL_DRAFT_VERSION` if the shape changes) AND the server draft model + publish copy, or
-  state will silently drop on reload or publish.
+- Any new persisted field must be added to BOTH `PortfolioBrowserDraft` AND the server draft
+  model + publish copy, or state will silently drop on reload or publish. Only bump
+  `LOCAL_DRAFT_VERSION` for an INCOMPATIBLE shape change — an additive OPTIONAL field (e.g.
+  `formDir`, which hydrates to LTR when absent) must NOT bump it, since a bump silently
+  invalidates every user's existing local buffer on deploy.
 - Multi-tenant: draft reads/writes scope by `workspaceId`; never trust a client-supplied id
   without the workspace filter.
 - Verify save→reload→publish→discard in a real browser (see `portfolio-testing`).

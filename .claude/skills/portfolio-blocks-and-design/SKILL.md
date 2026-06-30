@@ -49,6 +49,17 @@ plumbing (`display`, `position`, `overflow`, internal `max-width`, aspect ratios
 - `colSpan`/`rowSpan` (a grid child of Columns) → `grid-column/grid-row: span N`
   (`styleToolkit.ts`). They need a real multi-track grid to be visible.
 
+## Container anchor invariant (crash trap)
+A `Container` gets an injected `ContainerAnchor` child (id `${containerId}--anchor`) via
+`resolveContainerData` in `editorConfig.tsx`. **The anchor id MUST carry the `--anchor`
+suffix.** `EditorContainerAnchor` derives `parentId = id.replace(/--anchor$/,"")` and bounces
+Puck selection from itself to the parent; if `parentId === id` (no suffix), the bounce
+re-selects the same anchor every render → React error #185 (infinite setState). Drafts saved
+before this convention carried a suffix-less anchor, so `resolveContainerData`'s idempotency
+check must verify the id, not just "an anchor leads the slot + child count matches" — else the
+malformed anchor passes through and crashes on click. (Guarded both in `resolveContainerData`
+and with a `parentId === id` bail in `EditorContainerAnchor`.)
+
 ## Design rules (enforced)
 - Semantic tokens only — never raw color utilities. Blocks consume `--pf-color-*` /
   `--pf-font-*` (see `portfolio-theme-brand-kit`).

@@ -374,6 +374,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     let dimErr = false;
     let generalErr = false;
     const targetCollection = nav.id === ALL_PHOTOS_ID ? undefined : nav.id;
+    const createdItems: PickerItem[] = [];
 
     for (const r of results) {
       if (r.status === "rejected") {
@@ -405,6 +406,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
         if (token === fetchToken.current) {
           setFeed((f) => ({ ...f, items: [item, ...f.items] }));
         }
+        createdItems.push(item);
       } catch {
         generalErr = true;
       }
@@ -421,6 +423,33 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
       cache?.bust(ALL_PHOTOS_ID);
     }
     retry(); // refresh collection covers/counts
+
+    // Auto-select successfully uploaded item(s).
+    // • single: pick the first and close — "no extra click" UX.
+    // • multi: append all to the current selection (cap respected).
+    // The standalone Photos manager uses EditCollectionDialog directly and never
+    // reaches this path, so no explicit mode exclusion is needed here.
+    if (createdItems.length > 0) {
+      if (mode === "single") {
+        pickSingle(createdItems[0]);
+      } else if (mode === "multi") {
+        const cap = max ?? SAFETY_CAP;
+        const slots = Math.max(0, cap - selection.length);
+        const toAdd = createdItems.slice(0, slots);
+        if (toAdd.length > 0) {
+          onChange([
+            ...selection,
+            ...toAdd.map((it) => ({
+              id: it.id,
+              publicId: it.publicId,
+              ...(it.width != null && it.height != null
+                ? { width: it.width, height: it.height }
+                : {}),
+            })),
+          ]);
+        }
+      }
+    }
   }
 
   // -------------------------------------------------------------------------

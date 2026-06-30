@@ -37,10 +37,12 @@ export type SpotlightStep = {
   /** When true the highlighted element is interactive; parent tracks satisfaction. */
   gated?: boolean;
   /**
-   * When true, the dim/cutout is rendered for visual context but ALL overlay
-   * layers are pointer-events:none so the user can freely drag from one region
-   * to another (e.g. drag from the blocks panel to the canvas). Only use on
-   * drag-interaction steps where the drop target would otherwise be blocked.
+   * Drag-interaction step where the drop target would otherwise be blocked.
+   * WITHOUT a `secondaryAnchorId`, ALL overlay layers are pointer-events:none so
+   * the user can drag freely across the whole viewport. WITH a `secondaryAnchorId`
+   * (e.g. drag from the blocks panel to the canvas), interaction is CONFINED:
+   * blockers tile the perimeter of the two cutouts' union so the surrounding
+   * chrome is unclickable, while both highlighted regions stay live for the drag.
    */
   passthrough?: boolean;
 };
@@ -154,10 +156,11 @@ export function calcTooltipPosition(
  * When `gated` is true, pointer-events are disabled on the cutout region so
  * clicks pass through to the element below; the scrim still blocks elsewhere.
  *
- * When `passthrough` is true, ALL overlay layers are pointer-events:none so
- * the user can freely drag from any region (e.g. blocks panel) to any other
- * region (e.g. canvas) without being blocked by the dim. The dim is still
- * rendered for visual context.
+ * When `passthrough` is true the drag is unblocked: with no secondary cutout
+ * ALL overlay layers are pointer-events:none (drag anywhere); with a secondary
+ * cutout the drag is CONFINED — perimeter blockers around the two cutouts' union
+ * keep the surrounding chrome unclickable while both holes stay live. The dim is
+ * still rendered for visual context either way.
  *
  * When `secondaryRect` is provided, a second transparent hole is punched in
  * the mask alongside the primary cutout (tooltip positioning is unaffected —
@@ -298,6 +301,34 @@ function DimWithCutout({
         /* No cutout: block entire viewport */
         <rect className="pointer-events-auto" x="0" y="0" width="100%" height="100%" fill="transparent" />
       ))}
+
+      {/* Confined-drag step (passthrough WITH a secondary cutout, e.g. drag a
+          block from the panel to the canvas): block interaction everywhere
+          EXCEPT the two highlighted regions, so the surrounding chrome (toolbar,
+          tabs, properties panel) is unclickable while the drag still works. The
+          blockers tile the perimeter of the two cutouts' UNION — they never
+          cover either hole, so the grab source and drop target stay live.
+          ponytail: the gap between the two holes (inside the union) is left
+          interactive too; it's empty editor gutter, and blocking it precisely
+          would risk eating the drag for the sake of a non-clickable strip. */}
+      {passthrough && hasCutout && hasSecondaryCutout && (() => {
+        const ux = Math.min(cutoutX, secCutoutX);
+        const uy = Math.min(cutoutY, secCutoutY);
+        const uRight = Math.max(cutoutX + cutoutW, secCutoutX + secCutoutW);
+        const uBottom = Math.max(cutoutY + cutoutH, secCutoutY + secCutoutH);
+        return (
+          <>
+            {/* Above the union */}
+            <rect className="pointer-events-auto" x="0" y="0" width="100%" height={Math.max(0, uy)} fill="transparent" />
+            {/* Left of the union */}
+            <rect className="pointer-events-auto" x="0" y={uy} width={Math.max(0, ux)} height={Math.max(0, uBottom - uy)} fill="transparent" />
+            {/* Right of the union */}
+            <rect className="pointer-events-auto" x={uRight} y={uy} width="100%" height={Math.max(0, uBottom - uy)} fill="transparent" />
+            {/* Below the union */}
+            <rect className="pointer-events-auto" x="0" y={uBottom} width="100%" height="100%" fill="transparent" />
+          </>
+        );
+      })()}
     </svg>
   );
 }

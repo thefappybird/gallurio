@@ -79,6 +79,15 @@ describe("CollectionPicker", () => {
     await waitFor(() => expect(screen.getByText(/create new collection/i)).toBeTruthy());
   });
 
+  it("(c) empty state renders inside a min-height centered container", async () => {
+    render(<CollectionPicker value="" onChange={vi.fn()} />);
+    const emptyMsg = await screen.findByText(/no collections yet/i);
+    const wrapper = emptyMsg.closest("div");
+    expect(wrapper?.className).toMatch(/min-h/);
+    expect(wrapper?.className).toMatch(/items-center/);
+    expect(wrapper?.className).toMatch(/justify-center/);
+  });
+
   it("opens the create form when 'Create new collection' is clicked", async () => {
     render(<CollectionPicker value="" onChange={vi.fn()} />);
     await waitFor(() => screen.getByText(/create new collection/i));

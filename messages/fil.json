@@ -1460,16 +1460,6 @@
           },
           "save": "I-save",
           "saving": "Nagse-save…",
-          "languageLabel": "Wika ng pampublikong pahina",
-          "languageHelp": "Wika ng form ng pagtatanong, navigation, at footer sa iyong pampublikong pahina.",
-          "languages": {
-            "auto": "Awtomatiko (batay sa bansa mo)",
-            "en": "English",
-            "fil": "Filipino",
-            "ms": "Bahasa Melayu",
-            "id": "Bahasa Indonesia",
-            "ar": "العربية"
-          },
           "bgColorLabel": "Kulay ng background",
           "textColorLabel": "Kulay ng teksto",
           "cornerRadiusLabel": "Bilog ng sulok",
@@ -1539,6 +1529,7 @@
           },
           "sectionBanner": "Banner",
           "sectionLinks": "Mga link",
+          "sectionInactiveLinks": "Mga hindi aktibong link",
           "sectionActiveStyle": "Estilo ng aktibong link",
           "sectionContactButton": "Contact button",
           "bgColorLabel": "Kulay ng background",
@@ -1624,13 +1615,20 @@
           "zoomOut": "I-zoom out",
           "zoomReset": "I-reset ang zoom sa 100%",
           "undoTitle": "I-undo (Ctrl+Z)",
-          "redoTitle": "I-redo (Ctrl+Shift+Z)"
+          "redoTitle": "I-redo (Ctrl+Shift+Z)",
+          "language": "Wika ng pahina",
+          "directionLabel": "Direksyon",
+          "directionLtr": "Kaliwa patungong kanan",
+          "directionRtl": "Kanan patungong kaliwa"
         },
         "drafts": "Mga Draft",
         "saveChanges": "I-save ang mga pagbabago",
         "loadingDraft": "Nilo-load ang draft",
         "loadingDraftEllipsis": "Nilo-load ang draft…",
         "featuredPopup": "Featured popup",
+        "featuredPopupWarningTitle": "Hindi nahanap ang Featured Work block",
+        "featuredPopupWarningBody": "Ang mga estilo na ito ay naaangkop lamang kapag gumagamit ng Featured Work block.",
+        "featuredPopupWarningProceed": "Buksan pa rin",
         "draftNameLabel": "Pangalan ng draft",
         "draftsDialog": {
           "title": "Ang iyong mga draft",
@@ -1936,6 +1934,10 @@
             "photos": {
               "title": "Mag-upload at mag-organisa ng mga larawan",
               "body": "Buksan ang Photos para gumawa ng mga koleksyon at mag-upload ng mga larawan. Kumukuha ang mga Gallery block mula sa isang koleksyon."
+            },
+            "translate": {
+              "title": "Isalin ang iyong mga pampublikong pahina",
+              "body": "Baguhin ang wika ng iyong navigation, contact form, at mga collection popup nang sabay-sabay. Awtomatikong binabaligtad ng mga wikang right-to-left ang layout."
             },
             "theme": {
               "title": "Pumili ng iyong mga kulay at font",
@@ -2332,6 +2334,14 @@
       "requiredHint": "Kinakailangan",
       "eventTitle": "Pamagat ng event",
       "continue": "Magpatuloy"
+    },
+    "collectionPopup": {
+      "close": "Isara",
+      "loading": "Nilo-load...",
+      "failed": "Nabigong mag-load ng mga larawan.",
+      "retry": "Subukang muli",
+      "empty": "Wala pang mga larawan sa koleksyong ito.",
+      "fullSizeAlt": "Larawan sa buong sukat"
     }
   },
   "notFound": {

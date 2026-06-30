@@ -412,13 +412,6 @@ describe("DesignTab — Button block shows consolidated button controls", () => 
   });
 });
 
-describe("ContentInputs — emoji button integration", () => {
-  it("Heading block shows Insert emoji button beside the text input", () => {
-    render(<ContentInputs type="Heading" props={{ text: "Hello", level: "h2" }} setProp={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "Insert emoji" })).toBeTruthy();
-  });
-});
-
 describe("StyleToolkitField — gallery container blocks (GalleryGrid/GalleryMasonry/FeaturedWork)", () => {
   it("GalleryGrid shows Frame drawer on Design tab (container-like)", () => {
     render(<StyleToolkitField value={undefined} onChange={vi.fn()} blockType="GalleryGrid" />);
