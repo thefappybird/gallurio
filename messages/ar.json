@@ -412,6 +412,7 @@
           "total": "الإجمالي",
           "deposit": "العربون",
           "depositExceedsTotal": "لا يمكن أن يتجاوز العربون الإجمالي.",
+          "depositRequiresTotal": "لا يمكنك إضافة عربون قبل تحديد السعر.",
           "currency": "العملة",
           "outstanding": "الرصيد المستحق",
           "notes": "ملاحظات",
@@ -1433,7 +1434,9 @@
           "slugChecking": "جارٍ التحقق...",
           "slugAvailable": "متاح",
           "slugTaken": "مستخدَم بالفعل",
-          "slugInvalid": "تنسيق غير صالح"
+          "slugInvalid": "تنسيق غير صالح",
+          "qrCodeAlt": "رمز استجابة سريعة يؤدي إلى معرض أعمالك",
+          "downloadQr": "تنزيل رمز QR"
         },
         "themeDialog": {
           "title": "السمة والعلامة التجارية"
@@ -1630,6 +1633,7 @@
         "featuredPopupWarningTitle": "لم يُعثر على بلوك العمل المميَّز",
         "featuredPopupWarningBody": "تُطبَّق هذه الأنماط فقط عند استخدام بلوك العمل المميَّز.",
         "featuredPopupWarningProceed": "فتح على أي حال",
+        "featuredPopupWarningCancel": "إلغاء",
         "draftNameLabel": "اسم المسودة",
         "draftsDialog": {
           "title": "مسوداتك",
@@ -1748,6 +1752,7 @@
             "galleryMasonryPreset": "معرض متداخل",
             "featuredWorkPreset": "أعمال مميَّزة",
             "galleryLandingPreset": "صفحة المعرض",
+            "videoPreset": "فيديو",
             "galleryGrid": "شبكة الصور",
             "galleryMasonry": "تخطيط متداخل",
             "featuredWork": "أبرز الأعمال",
@@ -2034,6 +2039,7 @@
       "popoverTitle": "أحدث الإشعارات",
       "markAllRead": "تعليم الكل كمقروء",
       "newNotification": "لديك إشعار جديد",
+      "newNotifications": "{count, plural, one {لديك إشعار جديد} other {لديك # إشعارات جديدة}}",
       "seeAll": "عرض كل الإشعارات",
       "empty": "أنت على اطّلاع بكل شيء",
       "pageTitle": "الإشعارات",

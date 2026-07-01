@@ -412,6 +412,7 @@
           "total": "Jumlah",
           "deposit": "Deposit",
           "depositExceedsTotal": "Deposit tidak boleh melebihi jumlah.",
+          "depositRequiresTotal": "Anda tidak boleh menambah deposit tanpa menetapkan harga terlebih dahulu.",
           "currency": "Mata wang",
           "outstanding": "Baki tertunggak",
           "notes": "Nota",
@@ -1433,7 +1434,9 @@
           "slugChecking": "Menyemak...",
           "slugAvailable": "Tersedia",
           "slugTaken": "Telah diambil",
-          "slugInvalid": "Format tidak sah"
+          "slugInvalid": "Format tidak sah",
+          "qrCodeAlt": "Kod QR yang membawa ke portfolio anda",
+          "downloadQr": "Muat turun kod QR"
         },
         "themeDialog": {
           "title": "Tema & jenama"
@@ -1630,6 +1633,7 @@
         "featuredPopupWarningTitle": "Blok Kerja Pilihan tidak dijumpai",
         "featuredPopupWarningBody": "Gaya ini hanya digunakan jika anda menggunakan blok Kerja Pilihan.",
         "featuredPopupWarningProceed": "Buka juga",
+        "featuredPopupWarningCancel": "Batal",
         "draftNameLabel": "Nama draf",
         "draftsDialog": {
           "title": "Draf anda",
@@ -1748,6 +1752,7 @@
             "galleryMasonryPreset": "Gallery Masonry",
             "featuredWorkPreset": "Kerja Pilihan",
             "galleryLandingPreset": "Gallery landing",
+            "videoPreset": "Video",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Sorotan",
@@ -2034,6 +2039,7 @@
       "popoverTitle": "Pemberitahuan Terkini",
       "markAllRead": "Tandakan semua dibaca",
       "newNotification": "Anda mempunyai pemberitahuan baharu",
+      "newNotifications": "{count, plural, one {Anda mempunyai pemberitahuan baharu} other {Anda mempunyai # pemberitahuan baharu}}",
       "seeAll": "Lihat semua pemberitahuan",
       "empty": "Tiada pemberitahuan baru",
       "pageTitle": "Pemberitahuan",
