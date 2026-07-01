@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "../booking-calendar";
 import type { Session } from "@/lib/bookings/session-edits";
 import type { ShiftHit } from "../booking-wizard-steps/types";
+import { dayBoundInTz } from "@/lib/utils/timezone";
 export type { ShiftHit } from "../booking-wizard-steps/types";
 
 /**
@@ -105,6 +106,49 @@ export function dateToTzWallClock(
   const hour = rawHour === "24" ? "00" : rawHour;
   const time = `${hour}:${get("minute")}`;
   return { date, time };
+}
+
+/**
+ * Construct a "grid display" Date whose native LOCAL getters (getFullYear,
+ * getMonth, getDate, getHours, getMinutes) reproduce the wall-clock instant
+ * `d` represents in `timeZone` — regardless of the runtime's actual local
+ * timezone.
+ *
+ * react-big-calendar's dateFnsLocalizer positions events on the month/week/day
+ * grid by reading a Date's native LOCAL getters. Fed a real UTC `Date`
+ * directly, a viewer whose browser/runtime timezone differs from the
+ * workspace's configured timezone sees candles placed in the wrong day/hour
+ * cell — even though the formatted time label (rendered separately via
+ * `workspaceTz`) is correct. Feeding `startAccessor`/`endAccessor` through
+ * this function instead places the candle in the grid cell matching the
+ * workspace wall clock for every viewer, regardless of their own timezone.
+ *
+ * Pair with `fromCalendarGridDate` to invert — e.g. converting a drag/resize
+ * drop position (computed by react-big-calendar in this same "grid display"
+ * domain) back to a real UTC instant.
+ */
+export function toCalendarGridDate(d: Date, timeZone: string): Date {
+  const { date, time } = dateToTzWallClock(d, timeZone);
+  const [y, m, day] = date.split("-").map(Number);
+  const [h, min] = time.split(":").map(Number);
+  return new Date(y, m - 1, day, h, min, 0, 0);
+}
+
+/**
+ * Inverse of `toCalendarGridDate`. Given a "grid display" Date (whose native
+ * LOCAL getters encode a workspace-timezone wall clock — either produced by
+ * `toCalendarGridDate` or by react-big-calendar's drag/resize grid math
+ * operating on such display dates) reconstruct the true UTC instant.
+ */
+export function fromCalendarGridDate(displayDate: Date, timeZone: string): Date {
+  return dayBoundInTz(
+    isoDate(displayDate),
+    timeZone,
+    displayDate.getHours(),
+    displayDate.getMinutes(),
+    0,
+    0
+  );
 }
 
 /**

@@ -8,6 +8,8 @@ import {
   dateToTzWallClock,
   reconstructSessions,
   detectConflictIds,
+  toCalendarGridDate,
+  fromCalendarGridDate,
 } from "./calendar-helpers";
 import type { CalendarEvent } from "../booking-calendar";
 
@@ -287,6 +289,71 @@ describe("dateToTzWallClock", () => {
     const midnight = new Date("2026-08-16T00:00:00Z");
     const { time } = dateToTzWallClock(midnight, "UTC");
     expect(time).toBe("00:00");
+  });
+});
+
+// ── toCalendarGridDate / fromCalendarGridDate ──────────────────────────────────
+
+describe("toCalendarGridDate", () => {
+  it("encodes the Manila wall clock into the Date's native local getters", () => {
+    // 2026-08-15T02:30:00Z = 10:30 Manila (UTC+8).
+    const d = new Date("2026-08-15T02:30:00Z");
+    const display = toCalendarGridDate(d, "Asia/Manila");
+    expect(display.getFullYear()).toBe(2026);
+    expect(display.getMonth()).toBe(7); // August, 0-indexed
+    expect(display.getDate()).toBe(15);
+    expect(display.getHours()).toBe(10);
+    expect(display.getMinutes()).toBe(30);
+  });
+
+  it("crosses the calendar day boundary for east-of-UTC zones", () => {
+    // 2026-08-15T16:01:00Z = 2026-08-16 00:01 Manila.
+    const d = new Date("2026-08-15T16:01:00Z");
+    const display = toCalendarGridDate(d, "Asia/Manila");
+    expect(display.getDate()).toBe(16);
+    expect(display.getHours()).toBe(0);
+    expect(display.getMinutes()).toBe(1);
+  });
+
+  it("crosses the calendar day boundary for west-of-UTC zones (LA, UTC-7 in August)", () => {
+    // 2026-08-15T06:00:00Z = 2026-08-14 23:00 in LA (PDT = UTC-7).
+    const d = new Date("2026-08-15T06:00:00Z");
+    const display = toCalendarGridDate(d, "America/Los_Angeles");
+    expect(display.getDate()).toBe(14);
+    expect(display.getHours()).toBe(23);
+    expect(display.getMinutes()).toBe(0);
+  });
+});
+
+describe("fromCalendarGridDate", () => {
+  it("round-trips with toCalendarGridDate back to the original UTC instant", () => {
+    const original = new Date("2026-08-15T02:30:00Z");
+    const display = toCalendarGridDate(original, "Asia/Manila");
+    const reconstructed = fromCalendarGridDate(display, "Asia/Manila");
+    expect(reconstructed.getTime()).toBe(original.getTime());
+  });
+
+  it("round-trips across the day boundary for east-of-UTC zones", () => {
+    const original = new Date("2026-08-15T16:01:00Z");
+    const display = toCalendarGridDate(original, "Asia/Manila");
+    const reconstructed = fromCalendarGridDate(display, "Asia/Manila");
+    expect(reconstructed.getTime()).toBe(original.getTime());
+  });
+
+  it("round-trips for west-of-UTC zones (LA)", () => {
+    const original = new Date("2026-08-15T06:00:00Z");
+    const display = toCalendarGridDate(original, "America/Los_Angeles");
+    const reconstructed = fromCalendarGridDate(display, "America/Los_Angeles");
+    expect(reconstructed.getTime()).toBe(original.getTime());
+  });
+
+  it("interprets a synthetic grid-drop Date (constructed independently, not via toCalendarGridDate) as a tz wall clock", () => {
+    // Simulates react-big-calendar reporting a drop on the grid cell labeled
+    // "14:00, Aug 16" — i.e. a plain Date built from those wall-clock numbers.
+    const dropped = new Date(2026, 7, 16, 14, 0, 0, 0);
+    const utc = fromCalendarGridDate(dropped, "Asia/Manila");
+    // 14:00 Manila (UTC+8) = 06:00 UTC same day.
+    expect(utc.toISOString()).toBe("2026-08-16T06:00:00.000Z");
   });
 });
 
