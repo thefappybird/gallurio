@@ -71,7 +71,7 @@ function NotificationRow({
         <span
           className={[
             'truncate text-sm',
-            !notification.read ? 'font-semibold text-white' : 'font-normal text-foreground',
+            !notification.read ? 'font-semibold text-accent-foreground' : 'font-normal text-foreground',
           ].join(' ')}
         >
           {title}
@@ -79,7 +79,7 @@ function NotificationRow({
         <span
           className={[
             'line-clamp-2 text-xs',
-            !notification.read ? 'text-white' : 'text-muted-foreground',
+            !notification.read ? 'text-accent-foreground' : 'text-muted-foreground',
           ].join(' ')}
         >
           {body}

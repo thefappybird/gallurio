@@ -93,10 +93,13 @@ describe('NotificationsListPage', () => {
       />,
     )
 
-    expect(screen.getByText('Unread title').className).toContain('text-white')
-    expect(screen.getByText('Unread body').className).toContain('text-white')
-    expect(screen.getByText('Read title').className).not.toContain('text-white')
-    expect(screen.getByText('Read body').className).not.toContain('text-white')
+    // Unread rows use accent-foreground (not a hardcoded white), since the
+    // unread background (bg-accent) is light in light mode and dark in dark
+    // mode — a literal text-white would be invisible in light mode.
+    expect(screen.getByText('Unread title').className).toContain('text-accent-foreground')
+    expect(screen.getByText('Unread body').className).toContain('text-accent-foreground')
+    expect(screen.getByText('Read title').className).not.toContain('text-accent-foreground')
+    expect(screen.getByText('Read body').className).not.toContain('text-accent-foreground')
   })
 
   it('renders translated Arabic body when locale is ar and params present', () => {

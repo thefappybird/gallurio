@@ -140,7 +140,7 @@ export function NotificationsListPage({
                     <p
                       className={[
                         "text-sm leading-snug",
-                        !item.read ? "font-semibold text-white" : "font-medium",
+                        !item.read ? "font-semibold text-accent-foreground" : "font-medium",
                       ].join(" ")}
                     >
                       {displayTitle}
@@ -148,7 +148,7 @@ export function NotificationsListPage({
                     <p
                       className={[
                         "mt-0.5 line-clamp-2 text-xs",
-                        !item.read ? "text-white" : "text-muted-foreground",
+                        !item.read ? "text-accent-foreground" : "text-muted-foreground",
                       ].join(" ")}
                     >
                       {displayBody.length > 80 ? `${displayBody.slice(0, 80)}…` : displayBody}
