@@ -127,60 +127,64 @@ describe("FloatingLabelInput", () => {
 });
 
 describe("FontFamilyRow", () => {
-  it("selecting a curated font key from the dropdown calls onChange with that key", () => {
+  it("picking a curated font from the datalist calls onChange with its key", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "cormorant" } });
+    const input = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(input, { target: { value: "Cormorant Garamond" } });
+    fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith("cormorant");
   });
 
-  it("selecting a Google Fonts shortlist entry from the dropdown calls onChange with a google: selection", () => {
+  it("picking a Google Fonts shortlist entry from the datalist calls onChange with a google: selection", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "google:Poppins" } });
+    const input = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(input, { target: { value: "Poppins" } });
+    fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith("google:Poppins");
   });
 
-  it("typing into the free-text field does NOT call onChange per keystroke", () => {
+  it("typing into the field does NOT call onChange per keystroke", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    const input = screen.getByPlaceholderText("Type or choose a font…");
     fireEvent.change(input, { target: { value: "B" } });
     fireEvent.change(input, { target: { value: "Be" } });
     fireEvent.change(input, { target: { value: "Bebas Neue" } });
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("blurring the free-text field commits the typed name as a google: selection", () => {
+  it("blurring the field commits a non-curated typed name as a google: selection", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    const input = screen.getByPlaceholderText("Type or choose a font…");
     fireEvent.change(input, { target: { value: "Bebas Neue" } });
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.blur(input);
     expect(onChange).toHaveBeenCalledWith("google:Bebas Neue");
   });
 
-  it("pressing Enter in the free-text field commits the typed name as a google: selection", () => {
+  it("pressing Enter in the field commits a non-curated typed name as a google: selection", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    const input = screen.getByPlaceholderText("Type or choose a font…");
     fireEvent.change(input, { target: { value: "Bebas Neue" } });
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onChange).toHaveBeenCalledWith("google:Bebas Neue");
   });
 
-  it("shows a custom google: value's family name in the free-text field", () => {
+  it("shows a custom google: value's family name in the field", () => {
     render(<FontFamilyRow value="google:Bebas Neue" onChange={vi.fn()} />);
-    expect(screen.getByPlaceholderText("Or type any Google Fonts name…")).toHaveValue("Bebas Neue");
+    expect(screen.getByPlaceholderText("Type or choose a font…")).toHaveValue("Bebas Neue");
   });
 
-  it("shows the effective value as selected (opacity-60) when value is unset", () => {
+  it("shows a curated effective value's label in the field, dimmed (opacity-60), when value is unset", () => {
     render(<FontFamilyRow value={undefined} effectiveValue="playfair" onChange={vi.fn()} />);
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(select.value).toBe("playfair");
-    expect(select.className).toContain("opacity-60");
+    const input = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(input.value).toBe("Playfair Display");
+    expect(input.className).toContain("opacity-60");
   });
 
   it("clicking the reset button calls onChange with undefined", () => {
@@ -188,6 +192,16 @@ describe("FontFamilyRow", () => {
     render(<FontFamilyRow value="cormorant" onChange={onChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Reset Font" }));
     expect(onChange).toHaveBeenCalledWith(undefined);
+  });
+
+  it("renders a single text input backed by a font datalist — no separate <select>", () => {
+    render(<FontFamilyRow value={undefined} onChange={vi.fn()} />);
+    expect(document.querySelector("select")).toBeNull();
+    const input = screen.getByLabelText(/Font — type or choose a font/i);
+    expect(input.tagName).toBe("INPUT");
+    const listId = input.getAttribute("list");
+    expect(listId).toBeTruthy();
+    expect(document.querySelector(`datalist#${listId}`)).toBeTruthy();
   });
 });
 

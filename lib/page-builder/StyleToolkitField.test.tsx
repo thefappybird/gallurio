@@ -698,10 +698,10 @@ describe("DesignTab — font family dropdown pre-selects effective brand font wh
         <DesignTab s={{}} set={vi.fn()} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    // The font select should show "playfair" as the selected value (effective heading font).
+    // The font field should show "Playfair Display" as its value (effective heading font).
     // Typography drawer is auto-open (first drawer).
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("playfair");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Playfair Display");
   });
 
   it("explicit fontFamily on the block wins over the effective brand font", () => {
@@ -710,8 +710,8 @@ describe("DesignTab — font family dropdown pre-selects effective brand font wh
         <DesignTab s={{ fontFamily: "cormorant" }} set={vi.fn()} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("cormorant");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Cormorant Garamond");
   });
 });
 
@@ -1093,8 +1093,9 @@ describe("Font select — Google Fonts", () => {
   it("selecting a Google Fonts shortlist entry calls the setter with a google: selection", () => {
     const set = vi.fn();
     render(<DesignTab s={{}} set={set} blockType="Heading" />);
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    fireEvent.change(fontSelect, { target: { value: "google:Poppins" } });
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(fontInput, { target: { value: "Poppins" } });
+    fireEvent.blur(fontInput);
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
     expect(lastCall.fontFamily).toBe("google:Poppins");
   });
@@ -1108,9 +1109,10 @@ describe("Font select — edit writes real selected font key", () => {
         <DesignTab s={{}} set={set} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    // Typography drawer is auto-open; font select shows effective heading font (playfair)
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    fireEvent.change(fontSelect, { target: { value: "cormorant" } });
+    // Typography drawer is auto-open; font field shows effective heading font (Playfair Display)
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(fontInput, { target: { value: "Cormorant Garamond" } });
+    fireEvent.blur(fontInput);
     // setter is called with the real selected key, not the effective default
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
@@ -1125,8 +1127,8 @@ describe("Font select — edit writes real selected font key", () => {
       </BrandColorsContext.Provider>
     );
     // Typography drawer is auto-open; explicit cormorant is set
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("cormorant");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Cormorant Garamond");
     // Click the Reset Font button
     fireEvent.click(screen.getByRole("button", { name: /Reset Font/i }));
     // setter is called with fontFamily: undefined — effective heading font re-shows

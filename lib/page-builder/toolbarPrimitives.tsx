@@ -238,6 +238,26 @@ export function ColorSwatchRow({
  * option (lighter/opacity — "following theme"). Display-only, same convention
  * as the other toolkit rows.
  */
+/** Curated font label -> key, for resolving a typed/picked datalist suggestion back to its curated key. */
+const CURATED_LABEL_TO_KEY = new Map(
+  PORTFOLIO_FONT_KEYS.map((key) => [PORTFOLIO_FONTS[key].label.toLowerCase(), key])
+);
+
+/** Displayed text for a font selection: curated label, Google Fonts family name, or "". */
+function fontDisplayText(selection: PortfolioFontSelection | undefined): string {
+  if (!selection) return "";
+  if (selection in PORTFOLIO_FONTS) return PORTFOLIO_FONTS[selection as keyof typeof PORTFOLIO_FONTS].label;
+  return googleFontFamilyName(selection) ?? "";
+}
+
+/** Resolves typed/picked text back to a PortfolioFontSelection — a curated label match wins, else free-text Google Fonts. */
+function resolveFontText(text: string): PortfolioFontSelection | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") return undefined;
+  const curated = CURATED_LABEL_TO_KEY.get(trimmed.toLowerCase());
+  return curated ?? toGoogleFontSelection(trimmed);
+}
+
 export function FontFamilyRow({
   label = "Font",
   value,
@@ -250,20 +270,24 @@ export function FontFamilyRow({
   onChange: (next: PortfolioFontSelection | undefined) => void;
 }) {
   const isEffective = value === undefined && effectiveValue !== undefined;
-  const selectValue = value ?? effectiveValue ?? "";
-  const googleName = googleFontFamilyName(value ?? "") ?? "";
+  const displayText = fontDisplayText(value ?? effectiveValue);
+  const listId = useId();
 
-  // Local draft of the typed text — the free-text field only commits to the
-  // real onChange on blur/Enter (not per keystroke), so it can't stay a plain
-  // controlled input off `googleName`. Re-syncs from the prop when it changes
-  // externally (curated-font pick, Reset button) via the render-time
-  // "adjust state" pattern — never mid-typing, since `googleName` itself
-  // doesn't change until a commit happens.
-  const [draftText, setDraftText] = useState(googleName);
-  const [prevGoogleName, setPrevGoogleName] = useState(googleName);
-  if (googleName !== prevGoogleName) {
-    setPrevGoogleName(googleName);
-    setDraftText(googleName);
+  // Local draft of the typed text — the field only commits to the real
+  // onChange on blur/Enter (not per keystroke), so it can't stay a plain
+  // controlled input off `displayText`. Re-syncs from the prop when it changes
+  // externally (datalist pick, Reset button) via the render-time "adjust
+  // state" pattern — never mid-typing, since `displayText` itself doesn't
+  // change until a commit happens.
+  const [draftText, setDraftText] = useState(displayText);
+  const [prevDisplayText, setPrevDisplayText] = useState(displayText);
+  if (displayText !== prevDisplayText) {
+    setPrevDisplayText(displayText);
+    setDraftText(displayText);
+  }
+
+  function commit(text: string) {
+    onChange(resolveFontText(text));
   }
 
   return (
@@ -273,50 +297,33 @@ export function FontFamilyRow({
           {label}
         </span>
         <div className="flex items-center gap-1">
-          <select
-            value={selectValue}
-            onChange={(e) => onChange(e.target.value ? (e.target.value as PortfolioFontSelection) : undefined)}
+          <input
+            type="text"
+            list={listId}
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit(e.currentTarget.value);
+            }}
+            placeholder="Type or choose a font…"
+            aria-label={`${label} — type or choose a font`}
             className={cn(
-              "h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              "h-7 w-40 border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               isEffective && "opacity-60"
             )}
-          >
-            <option value="">Theme font</option>
-            <optgroup label="Curated">
-              {PORTFOLIO_FONT_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {PORTFOLIO_FONTS[key].label}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Google Fonts">
-              {GOOGLE_FONT_SHORTLIST.map((entry) => (
-                <option key={entry.name} value={toGoogleFontSelection(entry.name)}>
-                  {entry.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          />
+          <datalist id={listId}>
+            {PORTFOLIO_FONT_KEYS.map((key) => (
+              <option key={key} value={PORTFOLIO_FONTS[key].label} />
+            ))}
+            {GOOGLE_FONT_SHORTLIST.map((entry) => (
+              <option key={entry.name} value={entry.name} />
+            ))}
+          </datalist>
           <ResetButton onClick={() => onChange(undefined)} label={label} />
         </div>
       </div>
-      <input
-        type="text"
-        value={draftText}
-        onChange={(e) => setDraftText(e.target.value)}
-        onBlur={(e) => {
-          const trimmed = e.target.value.trim();
-          onChange(trimmed === "" ? undefined : toGoogleFontSelection(trimmed));
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          const trimmed = e.currentTarget.value.trim();
-          onChange(trimmed === "" ? undefined : toGoogleFontSelection(trimmed));
-        }}
-        placeholder="Or type any Google Fonts name…"
-        aria-label={`${label} — custom Google Font name`}
-        className="h-7 border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-      />
     </div>
   );
 }
