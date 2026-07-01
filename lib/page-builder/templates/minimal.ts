@@ -15,8 +15,7 @@ export const minimalTemplate: PortfolioTemplate = {
   previewImage: "/template-previews/minimal.svg",
   defaultBrandKit: { ...THEME_PRESET_DEFINITIONS.minimal.brandKit },
   defaultContact: {
-    title: "Get in touch",
-    description: "Send a message and we'll get back to you soon.",
+    // title/description left unset so the locale-translated default applies.
     buttonStyle: "solid",
     buttonColor: "foreground",
     tabFontSize: "sm",

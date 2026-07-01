@@ -13,8 +13,9 @@ export const scratchTemplate: PortfolioTemplate = {
   previewImage: "/template-previews/scratch.svg",
   defaultBrandKit: { ...DEFAULT_BRAND_KIT },
   defaultContact: {
-    title: "Get in touch",
-    description: "Send a message and we'll get back to you soon.",
+    // No literal title/description here — the contact modal falls back to the
+    // locale-translated default (publicPage.inquiryForm.title/description) when
+    // unset. Baking English text in would override that for every locale.
     buttonStyle: "solid",
     buttonColor: "foreground",
   },

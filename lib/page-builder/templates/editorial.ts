@@ -15,8 +15,7 @@ export const editorialTemplate: PortfolioTemplate = {
   previewImage: "/template-previews/editorial.svg",
   defaultBrandKit: { ...THEME_PRESET_DEFINITIONS.editorial.brandKit },
   defaultContact: {
-    title: "Get in touch",
-    description: "Send a message and we'll get back to you soon.",
+    // title/description left unset so the locale-translated default applies.
     buttonStyle: "solid",
     buttonColor: "accent",
     buttonTextColor: "background",

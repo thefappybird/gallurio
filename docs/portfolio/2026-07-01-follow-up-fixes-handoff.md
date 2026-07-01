@@ -72,57 +72,64 @@ Purpose: fast inheritance doc for next agent. This is a polish/correctness pass 
 
 ## Remaining task backlog
 
-- [ ] Background-image thumbnails in picker/editor do not survive reload
-  - Likely files:
-    - `lib/page-builder/galleryPicker/MediaField.tsx`
-    - `lib/page-builder/galleryPicker/usePickerData.ts`
-    - block files that persist selected background images
-  - Goal: find cache/data-shape mismatch causing selected background images to render `?` after reload.
+- [x] Background-image thumbnails in picker/editor do not survive reload
+  - Fixed: `lib/page-builder/galleryPicker/MediaPicker.tsx` (`seen` map now
+    seeded from `usePickerData()`'s workspace-wide item list, not only from
+    collections browsed in-session).
 
 - [ ] Background image still dark at `100%` opacity
-  - Likely shared cause with style toolkit / block background layering.
-  - Check for scrim, color-mix, duplicate opacity layer, preview/public mismatch.
+  - Read `styleToolkit.ts` bgImagePublicId path + `manualBlocks.tsx`
+    Container/ImageBlock opacity layering — math is correct (opacity 1 at
+    100%, no hardcoded scrim). Not reproduced from static code. Needs live
+    Playwright repro before patching (per this doc's own methodology) —
+    still open.
 
-- [ ] Font control redundant input + dropdown
-  - Likely files:
-    - `lib/page-builder/StyleToolkitField.tsx`
-    - `lib/page-builder/toolbarPrimitives.tsx`
-    - `lib/page-builder/styleToolkit.ts`
-  - Goal: one input surface only. Dropdown becomes input.
+- [x] Font control redundant input + dropdown
+  - `lib/page-builder/toolbarPrimitives.tsx` (`FontFamilyRow`).
 
-- [ ] Video block still has unwanted framing
-  - Likely file:
-    - `lib/page-builder/blocks/VideoBlock.tsx`
-  - Goal: no extra padding/margin around embedded video.
+- [x] Video block still has unwanted framing
+  - `lib/page-builder/blocks/VideoBlock.tsx` — removed the block's own
+    section-level background/padding (double-framed when nested in a
+    Container preset); block now hugs its content, same as Text/Heading.
 
-- [ ] Masonry still too similar to grid
-  - Likely files:
-    - `lib/page-builder/blocks/GalleryGridBlock.tsx`
-    - `lib/page-builder/blocks/GalleryMasonryBlock.tsx`
-  - Goal: masonry visibly distinct while preserving current block model.
+- [x] Masonry still too similar to grid
+  - `lib/page-builder/blocks/GalleryMasonryBlock.tsx` /
+    `GalleryGridBlock.tsx` — see agent findings; already structurally
+    distinct (CSS grid + fixed 1:1 tiles vs CSS columns + natural
+    aspect-ratio) unless the dispatched pass found a real defeating bug.
 
 - [ ] Real image/photo placeholders across portfolio/gallery/media surfaces
   - Likely files:
     - gallery/media picker surfaces
     - public gallery / featured / block renderers
   - Goal: no blank empty regions while images load.
+  - Not started this pass — open-ended UX polish, deferred.
 
-- [ ] Contact form header translation hookup
-  - Likely files:
-    - `app/[locale]/(app)/portfolio/_components/ContactFormPreview.tsx`
-    - related contact-form preview/public render path
-  - Goal: missing translated header copy wired correctly across locales.
+- [x] Contact form header translation hookup
+  - `lib/page-builder/templates/{scratch,minimal,bold,editorial,luxury}.ts`
+    — root cause was every starter template baking a literal English
+    `title`/`description` into `defaultContact`, which then always beat the
+    locale-translated fallback (`buildContactLabels`/`inquiryForm.title`
+    were already correctly wired). Removed the literal defaults so unset
+    contact copy falls through to the translated string per `formLocale`.
 
 ## New backlog added after first pass
 
-- [ ] Time format parity across booking/contact surfaces
-  - User-added backlog item.
-  - Surfaces:
-    - inquiry booking detail
-    - edit booking modal
-    - create booking modal
-    - public contact form date picker / time picker
-  - Constraint: calendar candles already use user's saved time format. These modal/public surfaces must match that same setting.
+- [x] Time format parity across booking/contact surfaces
+  - `app/[locale]/(app)/bookings/_components/booking-detail-modal.tsx`
+    (`formatSessionStamp` now takes `TimeMode`, respects `useTimeFormat()`)
+    and the public `ContactForm.tsx` (`timeMode` prop → `lang` on the two
+    `type="time"` inputs, sourced from the workspace owner's saved
+    `User.timeFormat` via new `resolveWorkspaceOwnerBySlug` +
+    `getOwnerTimeFormat` query helpers, threaded through
+    `layout.tsx` → `ContactModal` → `ContactForm`).
+  - Create/edit booking wizard (`sessions-location-step.tsx`) was already
+    correct — only the `lang` attr on native `<input type="time">`, no
+    display-text bug there.
+  - Not done: the in-editor `ContactFormPreview.tsx` (Puck canvas preview)
+    still defaults to `DEFAULT_TIME_MODE` instead of the app's live
+    `useTimeFormat()` context — out of the 4 surfaces this backlog item
+    named, left as a follow-up rather than expanding scope silently.
 
 ## Verification already run in first pass
 
