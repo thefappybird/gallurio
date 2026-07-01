@@ -24,6 +24,11 @@ vi.mock("@/lib/hooks/useNotifications", () => ({
   }),
 }));
 
+const mockIsRtl = { value: false };
+vi.mock("@/lib/i18n/rtl", () => ({
+  useIsRtl: () => mockIsRtl.value,
+}));
+
 vi.mock("@/components/app/theme-toggle", () => ({
   ThemeToggle: () => <div data-testid="theme-toggle" />,
 }));
@@ -168,6 +173,7 @@ describe("AppSidebar bell button", () => {
     vi.clearAllMocks();
     mockUnreadCount.value = 0;
     mockLiveArrivalTick.value = 0;
+    mockIsRtl.value = false;
     vi.useFakeTimers();
   });
 
@@ -304,6 +310,74 @@ describe("AppSidebar bell button", () => {
     });
 
     expect(screen.queryByText(/you have a new notification/i)).toBeNull();
+  });
+
+  it("renders popup beside bell on LTR after burst window closes", () => {
+    mockLiveArrivalTick.value = 0;
+    const { rerender } = renderSidebar("owner");
+
+    mockLiveArrivalTick.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    const popup = screen.getByText(/you have a new notification/i).closest("span");
+    if (!popup) throw new Error("Bell popup missing");
+    expect(popup.className).toContain("start-full");
+    expect(popup.className).toContain("ms-2");
+    expect(popup.className).not.toContain("hidden");
+  });
+
+  it("mirrors popup beside bell for RTL", () => {
+    mockIsRtl.value = true;
+    mockLiveArrivalTick.value = 0;
+    const { rerender } = renderSidebar("owner");
+
+    mockLiveArrivalTick.value = 1;
+    act(() => {
+      rerender(
+        <Wrapper>
+          <AppSidebar
+            role="owner"
+            workspaceName="Test Workspace"
+            workspaceLogoUrl={null}
+            userName="Test User"
+            userEmail="test@example.com"
+            userAvatarUrl={null}
+          />
+        </Wrapper>
+      );
+    });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    const popup = screen.getByText(/you have a new notification/i).closest("span");
+    if (!popup) throw new Error("Bell popup missing");
+    expect(popup.className).toContain("end-full");
+    expect(popup.className).toContain("me-2");
+  });
+
+  it("keeps unread badge text white", () => {
+    mockUnreadCount.value = 7;
+    renderSidebar("owner");
+
+    const badge = screen.getByText("7");
+    expect(badge.className).toContain("text-white");
   });
 });
 

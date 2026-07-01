@@ -659,6 +659,25 @@ html[data-radius="rounded"] {
   button:disabled { cursor: not-allowed; }
 }
 
+/* Lean inline scrollbar for compact overflow surfaces. */
+.scrollbar-inline-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.scrollbar-inline-subtle::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
 /* ---------------------------------------------------------------------------
  * Portfolio block motion — entrance animations (scroll-triggered: a block gets
  * `.pf-in-view` from the MotionObserver when it enters the viewport) + hover

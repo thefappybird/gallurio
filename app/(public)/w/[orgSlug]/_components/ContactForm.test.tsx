@@ -397,7 +397,7 @@ describe("getActiveTabExtraStyle", () => {
     expect(style.transform).toBeUndefined();
     expect(style.backgroundColor).toBeUndefined();
     // Underline effective default = ON: null config means activeTabUnderline is unset, not false
-    expect(style.borderBottom).toBe("3px solid var(--pf-color-accent)");
+    expect(style.borderBottom).toBe("3px solid var(--pf-color-fg)");
   });
 
   it("includes transform when activeTabScale is true", () => {
@@ -507,7 +507,7 @@ describe("getActiveTabExtraStyle — underline effective default ON (item 4c)", 
   it("includes borderBottom when activeTabUnderline is undefined (effective default ON)", () => {
     const style = getActiveTabExtraStyle({});
     expect(style.borderBottom).toBeDefined();
-    expect(style.borderBottom).toContain("var(--pf-color-accent");
+    expect(style.borderBottom).toContain("var(--pf-color-fg");
   });
 });
 

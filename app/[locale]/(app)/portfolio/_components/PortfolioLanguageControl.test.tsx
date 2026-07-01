@@ -36,12 +36,12 @@ describe("PortfolioLanguageControl", () => {
     expect(onChange).toHaveBeenCalledWith("fil");
   });
 
-  it("shows RTL/LTR toggle when value is 'ar'", () => {
+  it("does not show RTL/LTR toggle when value is 'ar'", () => {
     render(
       <PortfolioLanguageControl value="ar" onChange={vi.fn()} dir="rtl" onDirChange={vi.fn()} />,
       { wrapper }
     );
-    expect(screen.getByRole("button", { name: /Right to left/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Left to right/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Right to left/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Left to right/i })).toBeNull();
   });
 });

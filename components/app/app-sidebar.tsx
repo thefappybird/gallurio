@@ -83,9 +83,10 @@ export function AppSidebar({
   userAvatarUrl,
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const isRtl = useIsRtl();
   // RTL locales anchor the sidebar to the inline-start edge (the right side).
   // The Sidebar primitive already positions side="right" correctly.
-  const side = useIsRtl() ? "right" : "left";
+  const side = isRtl ? "right" : "left";
   const t = useTranslations("app.sidebar");
   const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -110,6 +111,7 @@ export function AppSidebar({
   };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
+  const bellToastSideClass = isRtl ? "end-full me-2" : "start-full ms-2";
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
   const accountInitials = getInitials(userName, userEmail);
@@ -171,23 +173,26 @@ export function AppSidebar({
                     {unreadCount > 0 && (
                       <span
                         aria-hidden="true"
-                        className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-destructive-foreground"
+                        className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-white"
                       >
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
-                    {showBellToast ? (
-                      <span
-                        role="status"
-                        aria-live="polite"
-                        className="pointer-events-none absolute top-1/2 start-full z-10 ms-2 hidden -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground md:inline-flex"
-                      >
-                        {tNotif("newNotifications", { count: bundledCount })}
-                      </span>
-                    ) : null}
                   </span>
                   <span>{tNotif("bell")}</span>
                 </SidebarMenuButton>
+                {showBellToast ? (
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className={cn(
+                      "pointer-events-none absolute top-1/2 z-20 inline-flex -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground",
+                      bellToastSideClass
+                    )}
+                  >
+                    {tNotif("newNotifications", { count: bundledCount })}
+                  </span>
+                ) : null}
               </SidebarMenuItem>
               {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);

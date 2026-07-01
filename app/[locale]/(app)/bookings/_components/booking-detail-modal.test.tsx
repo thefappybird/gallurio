@@ -86,6 +86,7 @@ vi.mock("sonner", () => ({
 // (the picker has its own test).
 vi.mock("@/components/ui/location-picker", () => ({
   LocationPicker: () => null,
+  LocationDisplay: () => null,
 }));
 
 // ── Fixture data ─────────────────────────────────────────────────────────────
@@ -178,6 +179,15 @@ function renderModal() {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <BookingDetailModal bookingId={BOOKING_ID} locale="en" />
+    </NextIntlClientProvider>
+  );
+}
+
+function renderReadOnlyModal(booking = MOCK_BOOKING) {
+  vi.stubGlobal("fetch", makeFetch({ booking }));
+  return render(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
     </NextIntlClientProvider>
   );
 }
@@ -907,6 +917,21 @@ describe("Pill tabs — four tabs render and switch panels", () => {
       // Currency field label renders in the eventPricing tab panel
       expect(screen.getByText("Currency")).toBeInTheDocument();
     });
+  });
+});
+
+describe("Read-only notes", () => {
+  it("shows notes content but no edit control in read-only mode", async () => {
+    renderReadOnlyModal({ ...MOCK_BOOKING, notes: "Inquiry note stays visible" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /notes/i }));
+
+    expect(screen.getByText("Inquiry note stays visible")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /edit notes/i })).not.toBeInTheDocument();
   });
 });
 

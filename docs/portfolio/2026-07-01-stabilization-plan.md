@@ -30,6 +30,15 @@ reports. The execution phases below correct for this:
 
 This is captured as a standing feedback memory after this plan is approved.
 
+## Backlog addendum
+
+- Time format parity: inquiry modal, edit booking modal, create booking modal,
+  and public contact-form date/time pickers still ignore user's saved time
+  format setting. Calendar candles already respect the setting, so these
+  surfaces need one shared follow-up pass. Acceptance: all booking/contact
+  date-time inputs and read views match the same user-selected time format the
+  calendar uses.
+
 ## Phase ordering & shared-file conflicts
 
 Grouped by file ownership so phases can run in parallel where safe, and

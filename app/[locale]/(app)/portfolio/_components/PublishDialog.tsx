@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, DownloadIcon, RotateCcwIcon, SaveIcon } from "lucide-react";
 import QRCode from "qrcode";
 import {
   Dialog,
@@ -15,9 +15,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CollapsibleDrawer } from "@/components/ui/collapsible-drawer";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
-import { portfolioUrlParts } from "@/lib/portfolio/publicUrl";
+import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,12 +48,14 @@ export function PublishDialog({
   >("idle");
   const [slugSaveError, setSlugSaveError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [debouncedSlugInput, setDebouncedSlugInput] = useState(currentSlug);
+  const livePublicUrl = portfolioPublicUrl(slugInput || currentSlug);
 
   // Generate the QR code client-side whenever the public URL changes while open.
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    QRCode.toDataURL(publicUrl, { width: 160, margin: 1 })
+    QRCode.toDataURL(livePublicUrl, { width: 160, margin: 1 })
       .then((dataUrl) => {
         if (!cancelled) setQrDataUrl(dataUrl);
       })
@@ -62,24 +65,30 @@ export function PublishDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, publicUrl]);
+  }, [livePublicUrl, open]);
 
   // Reset slug input and save state when the dialog opens or currentSlug changes.
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: resets local slug state when the dialog opens, syncing the current slug prop into editable state
       setSlugInput(currentSlug);
+      setDebouncedSlugInput(currentSlug);
       setSlugSaveState("idle");
       setSlugSaveError(null);
     }
   }, [open, currentSlug]);
 
-  const { status: slugStatus } = useSlugAvailability(slugInput, currentSlug);
-  const urlParts = portfolioUrlParts(currentSlug);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSlugInput(slugInput), 250);
+    return () => clearTimeout(timer);
+  }, [slugInput]);
 
-  const slugChanged = slugInput !== currentSlug;
+  const { status: slugStatus } = useSlugAvailability(debouncedSlugInput, currentSlug);
+
+  const rawSlugChanged = slugInput !== currentSlug;
+  const slugChanged = debouncedSlugInput !== currentSlug;
   const slugSaveEnabled =
-    slugChanged && slugStatus === "available" && slugSaveState !== "saving";
+    rawSlugChanged && slugChanged && slugStatus === "available" && slugSaveState !== "saving";
 
   async function saveSlug() {
     setSlugSaveState("saving");
@@ -97,6 +106,13 @@ export function PublishDialog({
     }
   }
 
+  function resetSlug() {
+    setSlugInput(currentSlug);
+    setDebouncedSlugInput(currentSlug);
+    setSlugSaveState("idle");
+    setSlugSaveError(null);
+  }
+
   async function confirm() {
     setPublishing(true);
     try {
@@ -108,7 +124,7 @@ export function PublishDialog({
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await navigator.clipboard.writeText(livePublicUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -126,53 +142,66 @@ export function PublishDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{t("body")}</DialogDescription>
         </DialogHeader>
 
-        {/* Slug editor */}
-        <div className="space-y-1.5">
+        {/* URL editor */}
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="publish-dialog-slug">{t("slugLabel")}</Label>
-          <div className="flex items-center gap-2">
-            <div className="flex min-w-0 flex-1 items-center border border-border bg-background">
-              {urlParts.prefix && (
-                <span className="shrink-0 truncate ps-2 text-sm text-muted-foreground">
-                  {urlParts.prefix}
-                </span>
-              )}
-              <Input
-                id="publish-dialog-slug"
-                className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
-                value={slugInput}
-                onChange={(e) => {
-                  setSlugInput(e.target.value.toLowerCase().trim());
-                  setSlugSaveState("idle");
-                  setSlugSaveError(null);
-                }}
-                aria-describedby="publish-dialog-slug-status"
-              />
-              {urlParts.suffix && (
-                <span className="shrink-0 pe-2 text-sm text-muted-foreground">
-                  {urlParts.suffix}
-                </span>
-              )}
-            </div>
+          <div className="flex min-w-0 max-w-full items-center overflow-hidden border border-border bg-background">
+            <Input
+              id="publish-dialog-slug"
+              className="basis-0 min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0"
+              value={slugInput}
+              onChange={(e) => {
+                setSlugInput(e.target.value.toLowerCase().trim());
+                setSlugSaveState("idle");
+                setSlugSaveError(null);
+              }}
+              aria-describedby="publish-dialog-slug-status publish-dialog-full-url"
+            />
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              disabled={!slugSaveEnabled}
-              loading={slugSaveState === "saving"}
-              onClick={() => void saveSlug()}
+              variant="ghost"
+              className="shrink-0"
+              onClick={copyLink}
+              aria-label={t("copyLink")}
             >
-              {slugSaveState === "saved"
-                ? t("slugSaved")
-                : slugSaveState === "saving"
-                  ? t("slugSaving")
-                  : t("slugSave")}
+              {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
             </Button>
+            {rawSlugChanged ? (
+              <>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0"
+                  disabled={slugSaveState === "saving"}
+                  onClick={resetSlug}
+                  aria-label={t("cancel")}
+                  title={t("cancel")}
+                >
+                  <RotateCcwIcon className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="shrink-0"
+                  disabled={!slugSaveEnabled}
+                  loading={slugSaveState === "saving"}
+                  onClick={() => void saveSlug()}
+                  aria-label={t("slugSave")}
+                  title={t("slugSave")}
+                >
+                  <SaveIcon className="size-4" />
+                </Button>
+              </>
+            ) : null}
           </div>
           <div id="publish-dialog-slug-status">
             {slugSaveError ? (
@@ -185,60 +214,46 @@ export function PublishDialog({
               </p>
             ) : (
               <SlugStatusIndicator
-                status={slugChanged ? slugStatus : "idle"}
+                status={rawSlugChanged ? slugStatus : "idle"}
                 t={t}
               />
             )}
           </div>
+          <p
+            id="publish-dialog-full-url"
+            className="scrollbar-inline-subtle max-w-full overflow-x-auto whitespace-nowrap text-sm text-muted-foreground"
+          >
+            {livePublicUrl}
+          </p>
         </div>
 
-        {/* Public URL display + copy */}
-        <div className="flex min-w-0 items-center gap-2 border border-border bg-muted/30 p-2 text-sm">
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">
-            {publicUrl}
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="shrink-0"
-            onClick={copyLink}
-            aria-label={t("copyLink")}
-          >
-            {copied ? (
-              <CheckIcon className="size-4" />
+        <CollapsibleDrawer title="QR" defaultOpen={false}>
+          <div className="flex flex-col items-center justify-center gap-3 p-2">
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- client-generated data URL, not an optimizable asset
+              <img
+                src={qrDataUrl}
+                alt={t("qrCodeAlt")}
+                width={96}
+                height={96}
+                className="size-24 shrink-0"
+              />
             ) : (
-              <CopyIcon className="size-4" />
+              <div className="size-24 shrink-0 animate-pulse bg-muted" />
             )}
-            <span className="ms-1">{copied ? t("copied") : t("copyLink")}</span>
-          </Button>
-        </div>
-
-        {/* QR code + download */}
-        <div className="flex items-center gap-3 border border-border bg-muted/30 p-2">
-          {qrDataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- client-generated data URL, not an optimizable asset
-            <img
-              src={qrDataUrl}
-              alt={t("qrCodeAlt")}
-              width={96}
-              height={96}
-              className="size-24 shrink-0"
-            />
-          ) : (
-            <div className="size-24 shrink-0 animate-pulse bg-muted" />
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={!qrDataUrl}
-            onClick={downloadQr}
-          >
-            <DownloadIcon className="size-4" />
-            <span className="ms-1">{t("downloadQr")}</span>
-          </Button>
-        </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              disabled={!qrDataUrl}
+              onClick={downloadQr}
+            >
+              <DownloadIcon className="size-4" />
+              <span className="ms-1">{t("downloadQr")}</span>
+            </Button>
+          </div>
+        </CollapsibleDrawer>
 
         <DialogFooter>
           <Button

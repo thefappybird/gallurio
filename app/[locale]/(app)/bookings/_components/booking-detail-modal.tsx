@@ -2322,6 +2322,7 @@ function BookingTabs({
           onCommit={(v) => onCommit("notes", v)}
           onDiscardPending={() => onDiscard("notes")}
           disabled={disabled}
+          readOnly={readOnly}
           editKey="notes"
           registerHandle={registerFieldHandle}
           onEditingChange={onFieldEditingChange}

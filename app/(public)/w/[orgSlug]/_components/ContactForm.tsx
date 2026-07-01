@@ -158,7 +158,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   if (config?.activeTabHighlight) {
     const highlightColor = resolveTabColor(
       config.tabHighlightColor,
-      "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+      "var(--pf-color-fg)",
     );
     style.backgroundColor = buildTabColorWithOpacity(highlightColor, config.tabHighlightOpacity ?? 100);
     style.borderRadius = config.activeTabRadius
@@ -167,7 +167,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   }
   // Effective default ON: underline shows unless explicitly disabled (=== false).
   if (config?.activeTabUnderline !== false) {
-    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-fg)")}`;
   }
   return style;
 }

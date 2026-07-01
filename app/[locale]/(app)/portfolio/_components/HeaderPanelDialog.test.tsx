@@ -214,7 +214,7 @@ describe("HeaderPanelDialog", () => {
   });
 
   // C2: underline toggle — effective default ON (undefined → shows as lighter-active)
-  it("underline toggle appears lighter-active when unset (effective default = ON)", () => {
+  it("underline toggle uses same selected fill when unset effective default is on", () => {
     const onHeaderChange = vi.fn();
     renderWithProviders(
       <HeaderPanelDialog
@@ -231,6 +231,9 @@ describe("HeaderPanelDialog", () => {
     const underlineBtn = screen.getByRole("button", { name: /underline/i });
     // aria-pressed=true when effective default is active
     expect(underlineBtn).toHaveAttribute("aria-pressed", "true");
+    expect(underlineBtn).toHaveClass("bg-foreground");
+    expect(underlineBtn).toHaveClass("text-background");
+    expect(underlineBtn).not.toHaveClass("opacity-70");
     // Clicking sets it to false (explicit off)
     fireEvent.click(underlineBtn);
     expect(onHeaderChange).toHaveBeenLastCalledWith(

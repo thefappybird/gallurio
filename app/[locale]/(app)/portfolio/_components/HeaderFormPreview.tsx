@@ -120,7 +120,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
       style.fontWeight = 700;
     }
     if (header.activeLinkHighlight) {
-      const highlightColor = resolveColor(header.highlightColor, brandKit, brandKit.accentColor);
+      const highlightColor = resolveColor(header.highlightColor, brandKit, brandKit.foregroundColor);
       style.backgroundColor = withOpacity(highlightColor, header.highlightOpacity ?? 100);
       style.borderRadius = header.activeLinkRadius
         ? (RADIUS_MAP[header.activeLinkRadius] ?? brandRadius)
@@ -131,7 +131,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
     // which never sets this to an explicit `true` — a strict-truthy check here would
     // never render the underline.
     if (header.activeLinkUnderline !== false) {
-      style.borderBottom = `3px solid ${resolveColor(header.underlineColor, brandKit, brandKit.accentColor)}`;
+      style.borderBottom = `3px solid ${resolveColor(header.underlineColor, brandKit, brandKit.foregroundColor)}`;
     }
     return style;
   }

@@ -1,16 +1,9 @@
 "use client";
-/**
- * Tests for PublishDialog slug editing (Fix #5).
- *
- * `onUpdateSlug` is injected as a prop — no server-action import needed.
- * `checkSlugAvailabilityAction` (inside useSlugAvailability) is mocked.
- */
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
-
-// ---- External mocks ---------------------------------------------------------
 
 const mockCheckSlugAvailability = vi.fn();
 vi.mock("@/lib/actions/slug", () => ({
@@ -18,24 +11,12 @@ vi.mock("@/lib/actions/slug", () => ({
     mockCheckSlugAvailability(...args),
 }));
 
-// Allow individual tests to override portfolioUrlParts behaviour.
-const mockUrlParts = vi.fn();
-vi.mock("@/lib/portfolio/publicUrl", () => ({
-  portfolioUrlParts: (...args: unknown[]) => mockUrlParts(...args),
-}));
-
-// QR generation is delegated to the `qrcode` lib — mock it so tests assert
-// the payload passed in without rendering a real canvas/data URL.
 const mockToDataURL = vi.fn();
 vi.mock("qrcode", () => ({
   default: { toDataURL: (...args: unknown[]) => mockToDataURL(...args) },
 }));
 
-// ---- Lazy import (after mocks) ----------------------------------------------
-
 import { PublishDialog } from "./PublishDialog";
-
-// ---- Helpers ----------------------------------------------------------------
 
 const mockUpdateSlug = vi.fn();
 
@@ -58,76 +39,60 @@ function renderDialog(
   );
 }
 
-// ---- Tests ------------------------------------------------------------------
-
-describe("PublishDialog slug editing (Fix #5)", () => {
+describe("PublishDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockCheckSlugAvailability.mockResolvedValue({ available: true });
     mockUpdateSlug.mockResolvedValue({ ok: true });
     mockToDataURL.mockResolvedValue("data:image/png;base64,mockqr");
-    // Default: path mode (dev environment).
-    mockUrlParts.mockReturnValue({
-      mode: "path",
-      prefix: "http://localhost:3000/w/",
-      slug: "test-studio",
-      suffix: "",
-      full: "http://localhost:3000/w/test-studio",
-    });
   });
 
-  it("shows path prefix before the slug input in dev/path mode", () => {
-    renderDialog();
-    expect(screen.getByText("http://localhost:3000/w/")).toBeInTheDocument();
-    expect(screen.queryByText(/\.gallurio\.com/)).not.toBeInTheDocument();
-  });
-
-  it("shows domain suffix after the slug input in subdomain/production mode", () => {
-    mockUrlParts.mockReturnValue({
-      mode: "subdomain",
-      prefix: "",
-      slug: "test-studio",
-      suffix: ".gallurio.com",
-      full: "https://test-studio.gallurio.com",
-    });
-    renderDialog();
-    expect(screen.getByText(".gallurio.com")).toBeInTheDocument();
-    expect(screen.queryByText(/localhost.*\/w\//)).not.toBeInTheDocument();
-  });
-
-  it("renders a slug input pre-filled with currentSlug", async () => {
+  it("renders only the slug in the input and full URL below it", () => {
     renderDialog();
     const input = screen.getByRole("textbox", { name: /portfolio url/i });
-    expect(input).toBeInTheDocument();
     expect((input as HTMLInputElement).value).toBe("test-studio");
+    expect(document.getElementById("publish-dialog-full-url")?.textContent).toContain("/w/test-studio");
   });
 
-  it("Save URL button is disabled when slug is unchanged", async () => {
-    renderDialog();
-    const saveBtn = screen.getByRole("button", { name: /save url/i });
-    expect(saveBtn).toBeDisabled();
-  });
-
-  it("Save URL button enables when slug changes and availability is confirmed", async () => {
+  it("updates the full URL live as the user types", () => {
     renderDialog();
     const input = screen.getByRole("textbox", { name: /portfolio url/i });
+    fireEvent.change(input, { target: { value: "new-studio" } });
+    expect(document.getElementById("publish-dialog-full-url")?.textContent).toContain("/w/new-studio");
+  });
 
+  it("keeps long public URLs horizontally scrollable instead of overflowing the modal", () => {
+    renderDialog({
+      currentSlug: "sarah-bell-photographytestingtest",
+    });
+
+    expect(document.getElementById("publish-dialog-full-url")).toHaveClass(
+      "scrollbar-inline-subtle",
+      "overflow-x-auto",
+      "whitespace-nowrap",
+    );
+  });
+
+  it("shows no save icon when slug is unchanged", () => {
+    renderDialog();
+    expect(screen.queryByRole("button", { name: /^save url$/i })).toBeNull();
+  });
+
+  it("enables save when slug changes and availability confirms", async () => {
+    renderDialog();
+    const input = screen.getByRole("textbox", { name: /portfolio url/i });
     fireEvent.change(input, { target: { value: "new-studio" } });
 
-    await waitFor(
-      () => {
-        expect(mockCheckSlugAvailability).toHaveBeenCalledWith("new-studio");
-      },
-      { timeout: 1000 },
-    );
+    await waitFor(() => {
+      expect(mockCheckSlugAvailability).toHaveBeenCalledWith("new-studio");
+    });
 
     await waitFor(() => {
-      const saveBtn = screen.getByRole("button", { name: /save url/i });
-      expect(saveBtn).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: /^save url$/i })).not.toBeDisabled();
     });
   });
 
-  it("calls onUpdateSlug and onSlugSaved on successful save", async () => {
+  it("saves slug and reports it", async () => {
     const onSlugSaved = vi.fn();
     renderDialog({ onSlugSaved });
 
@@ -135,11 +100,10 @@ describe("PublishDialog slug editing (Fix #5)", () => {
     fireEvent.change(input, { target: { value: "new-studio" } });
 
     await waitFor(() => {
-      const saveBtn = screen.getByRole("button", { name: /save url/i });
-      expect(saveBtn).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: /^save url$/i })).not.toBeDisabled();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /save url/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save url$/i }));
 
     await waitFor(() => {
       expect(mockUpdateSlug).toHaveBeenCalledWith("new-studio");
@@ -147,45 +111,47 @@ describe("PublishDialog slug editing (Fix #5)", () => {
     });
   });
 
-  it("shows url_taken error when onUpdateSlug rejects slug", async () => {
+  it("shows taken error when save rejects slug", async () => {
     mockUpdateSlug.mockResolvedValue({ error: "url_taken" });
-
     renderDialog();
+
     const input = screen.getByRole("textbox", { name: /portfolio url/i });
     fireEvent.change(input, { target: { value: "taken-slug" } });
 
     await waitFor(() => {
-      const saveBtn = screen.getByRole("button", { name: /save url/i });
-      expect(saveBtn).not.toBeDisabled();
+      expect(screen.getByRole("button", { name: /^save url$/i })).not.toBeDisabled();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /save url/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^save url$/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/already taken/i)).toBeInTheDocument();
     });
   });
 
-  it("generates the QR code from exactly the public URL", async () => {
-    renderDialog({ publicUrl: "https://gallurio.com/w/test-studio" });
+  it("generates QR from the live URL", async () => {
+    renderDialog();
+    const input = screen.getByRole("textbox", { name: /portfolio url/i });
+    fireEvent.change(input, { target: { value: "new-studio" } });
 
     await waitFor(() => {
       expect(mockToDataURL).toHaveBeenCalledWith(
-        "https://gallurio.com/w/test-studio",
+        expect.stringContaining("/w/new-studio"),
         expect.any(Object),
       );
     });
   });
 
-  it("renders the generated QR code image once ready", async () => {
+  it("renders QR inside drawer when expanded", async () => {
     renderDialog();
-
+    fireEvent.click(screen.getByRole("button", { name: /^qr$/i }));
     const img = await screen.findByRole("img", { name: /qr code/i });
     expect((img as HTMLImageElement).src).toBe("data:image/png;base64,mockqr");
   });
 
-  it("Download QR button triggers a download of the generated PNG", async () => {
+  it("download QR triggers anchor click", async () => {
     renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: /^qr$/i }));
     await screen.findByRole("img", { name: /qr code/i });
 
     const clickSpy = vi
@@ -193,8 +159,20 @@ describe("PublishDialog slug editing (Fix #5)", () => {
       .mockImplementation(() => {});
 
     fireEvent.click(screen.getByRole("button", { name: /download qr/i }));
-
     expect(clickSpy).toHaveBeenCalledOnce();
     clickSpy.mockRestore();
+  });
+
+  it("shows reset and save controls only after the slug changes", async () => {
+    renderDialog();
+    const input = screen.getByRole("textbox", { name: /portfolio url/i });
+
+    expect(screen.queryByRole("button", { name: /^save url$/i })).toBeNull();
+    expect(screen.getAllByRole("button", { name: /^cancel$/i })).toHaveLength(1);
+
+    fireEvent.change(input, { target: { value: "new-studio" } });
+
+    await screen.findByRole("button", { name: /^save url$/i });
+    expect(screen.getAllByRole("button", { name: /^cancel$/i })).toHaveLength(2);
   });
 });

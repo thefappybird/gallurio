@@ -2,8 +2,7 @@
 
 import { Languages } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button, buttonVariants } from "@/components/ui/button";
-// ponytail: buttonVariants used for trigger; Button used for dir toggle
+import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -36,65 +35,32 @@ export function PortfolioLanguageControl({
   onDirChange,
 }: PortfolioLanguageControlProps) {
   const t = useTranslations("app.pageBuilder.editor");
-
-  const isAr = value === "ar";
+  void dir;
+  void onDirChange;
 
   return (
-    <div className="flex items-center gap-1">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          aria-label={t("controls.language")}
-          title={t("controls.language")}
-          data-testid="language-control"
-          data-tour-id="language-control"
-          className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={t("controls.language")}
+        title={t("controls.language")}
+        data-testid="language-control"
+        data-tour-id="language-control"
+        className={buttonVariants({ variant: "outline", size: "icon-sm" })}
+      >
+        <Languages className="size-4" aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuRadioGroup
+          value={value}
+          onValueChange={(v) => onChange(v as FormLocale)}
         >
-          <Languages className="size-4" aria-hidden />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuRadioGroup
-            value={value}
-            onValueChange={(v) => onChange(v as FormLocale)}
-          >
-            {LOCALES.map(({ value: v, label }) => (
-              <DropdownMenuRadioItem key={v} value={v}>
-                {label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {isAr && (
-        <div
-          role="group"
-          aria-label={t("controls.directionLabel")}
-          className="flex items-center gap-0.5"
-        >
-          <Button
-            type="button"
-            size="icon-sm"
-            variant={dir === "ltr" ? "default" : "outline"}
-            aria-pressed={dir === "ltr"}
-            onClick={() => onDirChange("ltr")}
-            title={t("controls.directionLtr")}
-            aria-label={t("controls.directionLtr")}
-          >
-            LTR
-          </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant={dir === "rtl" ? "default" : "outline"}
-            aria-pressed={dir === "rtl"}
-            onClick={() => onDirChange("rtl")}
-            title={t("controls.directionRtl")}
-            aria-label={t("controls.directionRtl")}
-          >
-            RTL
-          </Button>
-        </div>
-      )}
-    </div>
+          {LOCALES.map(({ value: v, label }) => (
+            <DropdownMenuRadioItem key={v} value={v}>
+              {label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
