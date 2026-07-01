@@ -15,6 +15,14 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { STYLE_COLOR_TOKENS, type StyleColorToken } from "./styleToolkit";
 import { useBrandColors } from "./brandColors";
+import {
+  PORTFOLIO_FONT_KEYS,
+  PORTFOLIO_FONTS,
+  GOOGLE_FONT_SHORTLIST,
+  googleFontFamilyName,
+  toGoogleFontSelection,
+  type PortfolioFontSelection,
+} from "./fonts";
 
 export const COLOR_LABEL: Record<StyleColorToken, string> = {
   primary: "Primary",
@@ -215,6 +223,85 @@ export function ColorSwatchRow({
           />
         )}
       </label>
+    </div>
+  );
+}
+
+/**
+ * The block-level font-family control: a curated-key + Google Fonts dropdown,
+ * plus a free-text field for any other Google Fonts family name — both write
+ * to the same `PortfolioFontSelection` value (see lib/page-builder/fonts.ts).
+ * Shared by the 3 font pickers in StyleToolkitField (fontFamily, labelFontFamily,
+ * valueFontFamily) so they can't drift.
+ *
+ * `effectiveValue` — when provided and value is unset, shown as the selected
+ * option (lighter/opacity — "following theme"). Display-only, same convention
+ * as the other toolkit rows.
+ */
+export function FontFamilyRow({
+  label = "Font",
+  value,
+  effectiveValue,
+  onChange,
+}: {
+  label?: string;
+  value: PortfolioFontSelection | undefined;
+  effectiveValue?: PortfolioFontSelection;
+  onChange: (next: PortfolioFontSelection | undefined) => void;
+}) {
+  const isEffective = value === undefined && effectiveValue !== undefined;
+  const selectValue = value ?? effectiveValue ?? "";
+  const googleName = googleFontFamilyName(value ?? "") ?? "";
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>
+          {label}
+        </span>
+        <div className="flex items-center gap-1">
+          <select
+            value={selectValue}
+            onChange={(e) => onChange(e.target.value ? (e.target.value as PortfolioFontSelection) : undefined)}
+            className={cn(
+              "h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective && "opacity-60"
+            )}
+          >
+            <option value="">Theme font</option>
+            <optgroup label="Curated">
+              {PORTFOLIO_FONT_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {PORTFOLIO_FONTS[key].label}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Google Fonts">
+              {GOOGLE_FONT_SHORTLIST.map((entry) => (
+                <option key={entry.name} value={toGoogleFontSelection(entry.name)}>
+                  {entry.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+          <ResetButton onClick={() => onChange(undefined)} label={label} />
+        </div>
+      </div>
+      <input
+        type="text"
+        value={googleName}
+        onChange={(e) => {
+          const typed = e.target.value;
+          onChange(typed === "" ? undefined : toGoogleFontSelection(typed));
+        }}
+        onBlur={(e) => {
+          const trimmed = e.target.value.trim();
+          onChange(trimmed === "" ? undefined : toGoogleFontSelection(trimmed));
+        }}
+        placeholder="Or type any Google Fonts name…"
+        aria-label={`${label} — custom Google Font name`}
+        className="h-7 border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      />
     </div>
   );
 }

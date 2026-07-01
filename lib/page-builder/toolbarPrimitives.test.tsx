@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow } from "./toolbarPrimitives";
+import { ColorSwatchRow, DimensionInput, FloatingLabelInput, IconRow, FontFamilyRow } from "./toolbarPrimitives";
 import { AlignHorizontalJustifyStart, AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, Maximize2 } from "lucide-react";
 
 // Mock brandColors so tests don't need the full provider
@@ -123,6 +123,50 @@ describe("FloatingLabelInput", () => {
     const input = screen.getByRole("textbox");
     expect(input.className).toContain("placeholder:text-transparent");
     expect(input.className).toContain("focus:placeholder:text-muted-foreground");
+  });
+});
+
+describe("FontFamilyRow", () => {
+  it("selecting a curated font key from the dropdown calls onChange with that key", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value={undefined} onChange={onChange} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "cormorant" } });
+    expect(onChange).toHaveBeenCalledWith("cormorant");
+  });
+
+  it("selecting a Google Fonts shortlist entry from the dropdown calls onChange with a google: selection", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value={undefined} onChange={onChange} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "google:Poppins" } });
+    expect(onChange).toHaveBeenCalledWith("google:Poppins");
+  });
+
+  it("typing a custom family name in the free-text field calls onChange with a google: selection", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value={undefined} onChange={onChange} />);
+    fireEvent.change(screen.getByPlaceholderText("Or type any Google Fonts name…"), {
+      target: { value: "Bebas Neue" },
+    });
+    expect(onChange).toHaveBeenCalledWith("google:Bebas Neue");
+  });
+
+  it("shows a custom google: value's family name in the free-text field", () => {
+    render(<FontFamilyRow value="google:Bebas Neue" onChange={vi.fn()} />);
+    expect(screen.getByPlaceholderText("Or type any Google Fonts name…")).toHaveValue("Bebas Neue");
+  });
+
+  it("shows the effective value as selected (opacity-60) when value is unset", () => {
+    render(<FontFamilyRow value={undefined} effectiveValue="playfair" onChange={vi.fn()} />);
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(select.value).toBe("playfair");
+    expect(select.className).toContain("opacity-60");
+  });
+
+  it("clicking the reset button calls onChange with undefined", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value="cormorant" onChange={onChange} />);
+    fireEvent.click(screen.getByRole("button", { name: "Reset Font" }));
+    expect(onChange).toHaveBeenCalledWith(undefined);
   });
 });
 

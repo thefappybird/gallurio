@@ -42,6 +42,15 @@ describe("BrandKitPicker", () => {
     );
   });
 
+  it("selecting a Google Font shortlist entry for heading emits a google: selection", () => {
+    const { onChange } = setup();
+    const headingGroup = screen.getByRole("group", { name: /heading font/i });
+    fireEvent.click(within(headingGroup).getByRole("button", { name: "Poppins" }));
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ headingFont: "google:Poppins" })
+    );
+  });
+
   it("selecting a body font emits bodyFont without touching headingFont", () => {
     const { onChange } = setup();
     const bodyGroup = screen.getByRole("group", { name: /body font/i });

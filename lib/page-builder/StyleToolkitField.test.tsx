@@ -1089,6 +1089,17 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
   });
 });
 
+describe("Font select — Google Fonts", () => {
+  it("selecting a Google Fonts shortlist entry calls the setter with a google: selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="Heading" />);
+    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
+    fireEvent.change(fontSelect, { target: { value: "google:Poppins" } });
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBe("google:Poppins");
+  });
+});
+
 describe("Font select — edit writes real selected font key", () => {
   it("selecting a font from the dropdown calls the setter with the real fontFamily key", () => {
     const set = vi.fn();

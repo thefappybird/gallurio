@@ -7,6 +7,8 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
+import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
 import type { PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
@@ -118,6 +120,9 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
+      {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
+          kit's own heading/body Google Font is loaded by the layout. */}
+      <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
     </>

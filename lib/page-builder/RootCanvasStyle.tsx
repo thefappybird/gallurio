@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { usePuckStore } from "./puckHooks";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_CONTAINER_NAME, PF_RESPONSIVE_CSS } from "./responsive";
 import { CANVAS_DEVICE_WIDTHS, useCanvasViewport } from "./canvasViewportStore";
+import { collectGoogleFontFamilies } from "./fonts";
+import { useEffectiveBrandFont } from "./brandColors";
+import { GoogleFontLoader } from "./GoogleFontLoader";
 
 const CANVAS_STYLE_ID = "pf-root-canvas-style";
 
@@ -163,8 +166,19 @@ export function RootCanvasStyle() {
     (s) =>
       (s.appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)?._rootStyle,
   );
+  // Whole Puck data tree — walked below for any per-block Google Font
+  // selections so the canvas loads exactly the fonts the page actually uses,
+  // matching the public page (see GoogleFontLoader.tsx / fonts.ts).
+  const puckData = usePuckStore((s) => s.appState?.data);
+  const headingFont = useEffectiveBrandFont("heading");
+  const bodyFont = useEffectiveBrandFont("body");
   const { device, zoom } = useCanvasViewport();
   const deviceWidth = CANVAS_DEVICE_WIDTHS[device];
+
+  const googleFamilies = useMemo(
+    () => collectGoogleFontFamilies({ puckData, headingFont, bodyFont }),
+    [puckData, headingFont, bodyFont]
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -180,5 +194,5 @@ export function RootCanvasStyle() {
     };
   }, [rootStyle, deviceWidth, zoom]);
 
-  return null;
+  return <GoogleFontLoader families={googleFamilies} />;
 }

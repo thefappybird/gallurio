@@ -8,7 +8,7 @@
  * - All block components (Phases 3–4)
  */
 
-import type { PortfolioFontKey } from "./fonts";
+import type { PortfolioFontKey, PortfolioFontSelection } from "./fonts";
 
 // ---------------------------------------------------------------------------
 // Theme preset
@@ -220,10 +220,10 @@ export type PortfolioBrandKit = {
    * when `headingFont`/`bodyFont` are absent. New saves always set both fonts.
    */
   fontPair: BrandKitFontPair;
-  /** Curated family key (lib/page-builder/fonts.ts) for headings. */
-  headingFont?: PortfolioFontKey;
-  /** Curated family key (lib/page-builder/fonts.ts) for body text. */
-  bodyFont?: PortfolioFontKey;
+  /** Curated family key OR a `google:<Family Name>` selection (lib/page-builder/fonts.ts) for headings. */
+  headingFont?: PortfolioFontSelection;
+  /** Curated family key OR a `google:<Family Name>` selection (lib/page-builder/fonts.ts) for body text. */
+  bodyFont?: PortfolioFontSelection;
   /** 6-digit hex, e.g. "#111111" */
   primaryColor: string;
   /** 6-digit hex */

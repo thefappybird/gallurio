@@ -3,9 +3,17 @@ import {
   legacyFontPairToFonts,
   fontFamilyValue,
   isPortfolioFontKey,
+  resolveEffectiveFonts,
+  isGoogleFontSelection,
+  googleFontFamilyName,
+  toGoogleFontSelection,
+  googleFontsCssUrl,
+  googleFontSlug,
+  collectGoogleFontFamilies,
   PORTFOLIO_FONTS,
   DEFAULT_HEADING_FONT,
   DEFAULT_BODY_FONT,
+  GOOGLE_FONT_SHORTLIST,
 } from "./fonts";
 
 // ---------------------------------------------------------------------------
@@ -118,6 +126,38 @@ describe("fontFamilyValue — known keys", () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// collectGoogleFontFamilies
+// ---------------------------------------------------------------------------
+
+describe("collectGoogleFontFamilies", () => {
+  it("finds a single google: family nested inside an object", () => {
+    expect(collectGoogleFontFamilies({ fontFamily: "google:Poppins" })).toEqual(["Poppins"]);
+  });
+
+  it("de-duplicates repeated google: families across a nested tree", () => {
+    const data = {
+      content: [
+        { type: "Heading", props: { _style: { fontFamily: "google:Poppins" } } },
+        { type: "Text", props: { _style: { fontFamily: "google:Poppins" } } },
+      ],
+    };
+    expect(collectGoogleFontFamilies(data)).toEqual(["Poppins"]);
+  });
+
+  it("ignores curated font keys and non-font strings", () => {
+    expect(
+      collectGoogleFontFamilies({ fontFamily: "merriweather", label: "hello" })
+    ).toEqual([]);
+  });
+});
+
+describe("fontFamilyValue — google font selections", () => {
+  it("google:Poppins → quoted family name with a sans-serif fallback", () => {
+    expect(fontFamilyValue("google:Poppins")).toBe('"Poppins", sans-serif');
+  });
+});
+
 describe("fontFamilyValue — unknown / falsy keys", () => {
   it("unknown string → undefined", () => {
     expect(fontFamilyValue("comic-sans" as never)).toBeUndefined();
@@ -187,5 +227,98 @@ describe("isPortfolioFontKey", () => {
 
   it("is case-sensitive — 'Merriweather' is not valid", () => {
     expect(isPortfolioFontKey("Merriweather")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isGoogleFontSelection
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// GOOGLE_FONT_SHORTLIST
+// ---------------------------------------------------------------------------
+
+describe("GOOGLE_FONT_SHORTLIST", () => {
+  it("contains at least 15 curated entries, each with a name and category", () => {
+    expect(GOOGLE_FONT_SHORTLIST.length).toBeGreaterThanOrEqual(15);
+    for (const entry of GOOGLE_FONT_SHORTLIST) {
+      expect(typeof entry.name).toBe("string");
+      expect(["serif", "sans"]).toContain(entry.category);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveEffectiveFonts — Google Font pass-through
+// ---------------------------------------------------------------------------
+
+describe("resolveEffectiveFonts — google font selection", () => {
+  it("passes through a google: headingFont instead of falling back to legacy", () => {
+    const result = resolveEffectiveFonts({ headingFont: "google:Poppins", bodyFont: "inter" });
+    expect(result.headingFont).toBe("google:Poppins");
+  });
+});
+
+describe("isGoogleFontSelection", () => {
+  it("returns true for a 'google:<Family Name>' selection", () => {
+    expect(isGoogleFontSelection("google:Poppins")).toBe(true);
+  });
+
+  it("returns false for a curated font key", () => {
+    expect(isGoogleFontSelection("merriweather")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// googleFontFamilyName
+// ---------------------------------------------------------------------------
+
+describe("googleFontFamilyName", () => {
+  it("extracts the family name from a google: selection", () => {
+    expect(googleFontFamilyName("google:Poppins")).toBe("Poppins");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// toGoogleFontSelection
+// ---------------------------------------------------------------------------
+
+describe("toGoogleFontSelection", () => {
+  it("wraps a family name into the tagged selection format", () => {
+    expect(toGoogleFontSelection("Poppins")).toBe("google:Poppins");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// googleFontsCssUrl
+// ---------------------------------------------------------------------------
+
+describe("googleFontsCssUrl", () => {
+  it("builds the CSS2 stylesheet URL for a single-word family", () => {
+    expect(googleFontsCssUrl("Poppins")).toBe(
+      "https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap"
+    );
+  });
+
+  it("joins multi-word family names with '+'", () => {
+    expect(googleFontsCssUrl("Playfair Display")).toBe(
+      "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap"
+    );
+  });
+
+  it("trims surrounding whitespace before encoding", () => {
+    expect(googleFontsCssUrl("  Open Sans  ")).toBe(
+      "https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap"
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// googleFontSlug
+// ---------------------------------------------------------------------------
+
+describe("googleFontSlug", () => {
+  it("lowercases and hyphenates a multi-word family name", () => {
+    expect(googleFontSlug("Playfair Display")).toBe("playfair-display");
   });
 });

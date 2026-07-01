@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
+import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
@@ -67,6 +69,11 @@ export default async function PublicPortfolioLayout({
       className={`${className} min-h-svh`}
     >
       <SyncDocumentLang locale={locale} />
+      {/* Brand kit heading/body may be a Google Font (see fonts.ts) — next/font/google
+          can't be used since the choice is per-workspace runtime data, not known at
+          build time. Loads via a dynamically-injected CSS2 <link>; per-block Google
+          Font overrides are loaded by the page (page.tsx / gallery/page.tsx). */}
+      <GoogleFontLoader families={collectGoogleFontFamilies(brandKit)} />
       <PortfolioHeader
         slug={workspace.slug}
         labels={{

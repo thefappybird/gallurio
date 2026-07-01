@@ -55,6 +55,7 @@ import {
   IconRow,
   ResetButton,
   FloatingLabelInput,
+  FontFamilyRow,
 } from "./toolbarPrimitives";
 import { cn } from "@/lib/utils";
 import { EditorDrawerSection, EditorDrawerGroup } from "./EditorDrawerSection";
@@ -71,7 +72,6 @@ import {
   type HighlightSize,
   effectiveButtonTextToken,
 } from "./styleToolkit";
-import { PORTFOLIO_FONT_KEYS, PORTFOLIO_FONTS, type PortfolioFontKey } from "./fonts";
 import { CountControl } from "./CountControl";
 import { useEffectiveBrandRadius, useEffectiveBrandFont } from "./brandColors";
 import { CONTAINER_EFFECTIVE_PAD, COLUMNS_EFFECTIVE_PAD } from "./blocks/manualBlocks";
@@ -921,20 +921,7 @@ export function DesignTab({
                   </div>
                   <ColorSwatchRow value={s.labelColorToken} effectiveValue="foreground" onChange={(t) => set({ labelColorToken: t })} />
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="shrink-0 text-xs text-muted-foreground">Font</span>
-                  <div className="flex items-center gap-1">
-                    <select
-                      value={s.labelFontFamily ?? effectiveFontFamily ?? ""}
-                      onChange={(e) => set({ labelFontFamily: e.target.value ? (e.target.value as PortfolioFontKey) : undefined })}
-                      className={cn("h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", s.labelFontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60")}
-                    >
-                      <option value="">Theme font</option>
-                      {PORTFOLIO_FONT_KEYS.map((key) => <option key={key} value={key}>{PORTFOLIO_FONTS[key].label}</option>)}
-                    </select>
-                    <ResetButton onClick={() => set({ labelFontFamily: undefined })} label="Font" />
-                  </div>
-                </div>
+                <FontFamilyRow value={s.labelFontFamily} effectiveValue={effectiveFontFamily} onChange={(v) => set({ labelFontFamily: v })} />
                 <NumberInputRow label="Font size" value={s.labelFontSize} min={STYLE_LIMITS.fontSize.min} max={STYLE_LIMITS.fontSize.max} effectiveValue={11} onChange={(v) => set({ labelFontSize: v })} />
               </>
             )}
@@ -955,20 +942,7 @@ export function DesignTab({
                   </div>
                   <ColorSwatchRow value={s.valueColorToken} effectiveValue="accent" onChange={(t) => set({ valueColorToken: t })} />
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="shrink-0 text-xs text-muted-foreground">Font</span>
-                  <div className="flex items-center gap-1">
-                    <select
-                      value={s.valueFontFamily ?? effectiveFontFamily ?? ""}
-                      onChange={(e) => set({ valueFontFamily: e.target.value ? (e.target.value as PortfolioFontKey) : undefined })}
-                      className={cn("h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring", s.valueFontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60")}
-                    >
-                      <option value="">Theme font</option>
-                      {PORTFOLIO_FONT_KEYS.map((key) => <option key={key} value={key}>{PORTFOLIO_FONTS[key].label}</option>)}
-                    </select>
-                    <ResetButton onClick={() => set({ valueFontFamily: undefined })} label="Font" />
-                  </div>
-                </div>
+                <FontFamilyRow value={s.valueFontFamily} effectiveValue={effectiveFontFamily} onChange={(v) => set({ valueFontFamily: v })} />
                 <NumberInputRow label="Font size" value={s.valueFontSize} min={STYLE_LIMITS.fontSize.min} max={STYLE_LIMITS.fontSize.max} effectiveValue={15} onChange={(v) => set({ valueFontSize: v })} />
               </>
             )}
@@ -1031,35 +1005,16 @@ export function DesignTab({
               />
             </div>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <span className="shrink-0 text-xs text-muted-foreground">Font</span>
-            <div className="flex items-center gap-1">
-              {/* When fontFamily is unset, show the effective brand font as selected
-                  (lighter opacity = "following theme"). Editing writes the real _style. */}
-              <select
-                value={s.fontFamily ?? effectiveFontFamily ?? ""}
-                onChange={(e) =>
-                  set({
-                    fontFamily: e.target.value
-                      ? (e.target.value as PortfolioFontKey)
-                      : undefined,
-                  })
-                }
-                className={cn(
-                  "h-7 cursor-pointer border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                  s.fontFamily === undefined && effectiveFontFamily !== undefined && "opacity-60"
-                )}
-              >
-                <option value="">Theme font</option>
-                {PORTFOLIO_FONT_KEYS.map((key) => (
-                  <option key={key} value={key}>
-                    {PORTFOLIO_FONTS[key].label}
-                  </option>
-                ))}
-              </select>
-              <ResetButton onClick={() => set({ fontFamily: undefined })} label="Font" />
-            </div>
-          </div>
+          {/* When fontFamily is unset, show the effective brand font as selected
+              (lighter opacity = "following theme"). Editing writes the real _style.
+              Curated self-hosted keys, a Google Fonts shortlist, and free-text entry
+              of any other Google Fonts family name all resolve through the same
+              PortfolioFontSelection value (see lib/page-builder/fonts.ts). */}
+          <FontFamilyRow
+            value={s.fontFamily}
+            effectiveValue={effectiveFontFamily}
+            onChange={(v) => set({ fontFamily: v })}
+          />
           {blockType !== "Heading" && (
             <NumberInputRow
               label="Font size"

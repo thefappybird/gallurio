@@ -8,8 +8,11 @@ import {
 import {
   PORTFOLIO_FONTS,
   PORTFOLIO_FONT_KEYS,
+  GOOGLE_FONT_SHORTLIST,
   legacyFontPairToFonts,
-  type PortfolioFontKey,
+  googleFontFamilyName,
+  toGoogleFontSelection,
+  type PortfolioFontSelection,
 } from "@/lib/page-builder/fonts";
 import type { PortfolioSavedTheme } from "@/lib/page-builder/types";
 import { ColorPicker } from "@/components/ui/color-picker";
@@ -69,16 +72,20 @@ type Props = {
   onAddNew?: () => void;
 };
 
-/** A single font-family selector — heading or body. */
+/** A single font-family selector — heading or body. Offers the curated
+ *  self-hosted families, a Google Fonts shortlist, and free-text entry of any
+ *  other Google Fonts family name. Both resolve through the same
+ *  PortfolioFontSelection value (see lib/page-builder/fonts.ts). */
 function FontSelector({
   label,
   value: selectedKey,
   onChange,
 }: {
   label: string;
-  value: PortfolioFontKey;
-  onChange: (key: PortfolioFontKey) => void;
+  value: PortfolioFontSelection;
+  onChange: (key: PortfolioFontSelection) => void;
 }) {
+  const customName = googleFontFamilyName(selectedKey) ?? "";
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="text-xs font-medium text-muted-foreground">{label}</legend>
@@ -113,7 +120,49 @@ function FontSelector({
             </button>
           );
         })}
+        {GOOGLE_FONT_SHORTLIST.map((entry) => {
+          const selection = toGoogleFontSelection(entry.name);
+          const active = selectedKey === selection;
+          const previewFamily = `"${entry.name}", ${entry.category === "serif" ? "serif" : "sans-serif"}`;
+          return (
+            <button
+              key={entry.name}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(selection)}
+              className={cn(
+                "flex min-h-11 items-center justify-between gap-3 border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                active ? "border-foreground bg-accent/20" : "border-border hover:bg-accent/40 focus-visible:bg-accent/40"
+              )}
+            >
+              <span className="text-sm" style={{ fontFamily: previewFamily }}>
+                {entry.name}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="text-base text-muted-foreground" style={{ fontFamily: previewFamily }} aria-hidden>
+                  Aa
+                </span>
+                {active && <CheckIcon className="size-3.5 shrink-0 text-foreground" aria-hidden />}
+              </span>
+            </button>
+          );
+        })}
       </div>
+      <input
+        type="text"
+        value={customName}
+        onChange={(e) => {
+          const typed = e.target.value;
+          if (typed) onChange(toGoogleFontSelection(typed));
+        }}
+        onBlur={(e) => {
+          const trimmed = e.target.value.trim();
+          if (trimmed) onChange(toGoogleFontSelection(trimmed));
+        }}
+        placeholder="Or type any Google Fonts name…"
+        aria-label={`${label} — custom Google Font name`}
+        className="h-9 border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+      />
     </fieldset>
   );
 }
@@ -150,14 +199,14 @@ export function BrandKitPicker({
 
   // Derive current heading/body from explicit keys or legacy pair fallback.
   const resolvedFonts = legacyFontPairToFonts(workingValue.fontPair);
-  const headingFont: PortfolioFontKey = workingValue.headingFont ?? resolvedFonts.headingFont;
-  const bodyFont: PortfolioFontKey = workingValue.bodyFont ?? resolvedFonts.bodyFont;
+  const headingFont: PortfolioFontSelection = workingValue.headingFont ?? resolvedFonts.headingFont;
+  const bodyFont: PortfolioFontSelection = workingValue.bodyFont ?? resolvedFonts.bodyFont;
 
   function set<K extends keyof PortfolioBrandKit>(key: K, v: PortfolioBrandKit[K]) {
     ctrl.changeControl({ ...workingValue, [key]: v });
   }
 
-  function setFont(slot: "headingFont" | "bodyFont", key: PortfolioFontKey) {
+  function setFont(slot: "headingFont" | "bodyFont", key: PortfolioFontSelection) {
     ctrl.changeControl({ ...workingValue, [slot]: key });
   }
 

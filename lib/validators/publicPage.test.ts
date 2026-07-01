@@ -576,4 +576,36 @@ describe("brandKitSchema — optional independent font keys", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a brandKit WITH headingFont set to a Google Font selection", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "google:Poppins",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a multi-word Google Font family name for bodyFont", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      bodyFont: "google:Playfair Display",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty Google Font family name", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "google:",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a Google Font selection with unsafe characters", () => {
+    const result = brandKitSchema.safeParse({
+      ...DEFAULT_BRAND_KIT,
+      headingFont: "google:<script>",
+    });
+    expect(result.success).toBe(false);
+  });
 });
