@@ -18,7 +18,6 @@ import {
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
-import { padVar } from "@/lib/page-builder/responsive";
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
@@ -87,10 +86,8 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
       data-block="video"
       data-empty={embed ? undefined : "true"}
       style={{
-        backgroundColor: "var(--pf-color-bg)",
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
-        padding: padVar("1.5rem 1.5rem"),
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}

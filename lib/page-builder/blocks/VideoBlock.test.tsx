@@ -268,12 +268,11 @@ describe("VideoBlock — data-empty attribute", () => {
 });
 
 describe("VideoBlock — default spacing", () => {
-  it("uses 1.5rem vertical/horizontal padding by default (hugs its content)", () => {
-    // happy-dom's CSSStyleDeclaration drops the var(--pf-pad, ...) responsive
-    // wrapper (two-argument var() fallback), so check the server-rendered markup
-    // for the literal default value instead — same pattern as the heading clamp test.
+  it("imposes no section-level padding or background of its own — no framing box", () => {
+    // A Container preset (or standalone wrap) supplies spacing; the block itself
+    // must not also pad/background its section, or nesting the two double-frames.
     const html = renderToStaticMarkup(<VideoBlock videoUrl="" description="" footer="" />);
-    expect(html).toContain("var(--pf-pad, 1.5rem 1.5rem)");
-    expect(html).not.toContain("4rem 1.5rem");
+    expect(html).not.toContain("padding");
+    expect(html).not.toContain("var(--pf-color-bg)");
   });
 });
