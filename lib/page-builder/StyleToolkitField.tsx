@@ -405,6 +405,19 @@ export function ContentInputs({
       </div>
     );
   }
+  if (type === "Image") {
+    return (
+      <label className="flex flex-col gap-1 text-sm">
+        <span>Alt text</span>
+        <input
+          type="text"
+          value={(props.alt as string) ?? ""}
+          onChange={(e) => setProp("alt", e.target.value)}
+          className="h-9 border border-border bg-background px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+      </label>
+    );
+  }
   if (type === "Text") {
     return (
       <label className="flex flex-col gap-1 text-sm">
@@ -859,8 +872,9 @@ export function DesignTab({
   const isContactDetails = blockType === "ContactDetails";
   const showFrame = !NO_FRAME_BLOCKS.has(blockType);
   const effectiveRadius = useEffectiveBrandRadius();
-  // Image-only gallery blocks have no on-page text — hide typography controls.
-  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType);
+  // Image-only gallery blocks (and the Image block itself) have no on-page text —
+  // hide typography controls.
+  const showTypography = !GALLERY_NO_TEXT_BLOCKS.has(blockType) && blockType !== "Image";
   // Heading blocks follow the brand heading font; all others follow the body font.
   // ponytail: "body" covers Text, Button, Container, and all other block types since
   // only Heading maps to --pf-font-heading; everything else inherits body via CSS.
@@ -1515,6 +1529,40 @@ export function LayoutTabBody({
     );
   }
 
+  // Image (F1): resizable, container-like leaf — width/height + colSpan/rowSpan
+  // (when a Columns child) + the bgImageOpacity control (F4), gated on a picked
+  // background image so it never shows next to an empty placeholder.
+  if (blockType === "Image") {
+    return (
+      <EditorDrawerGroup>
+        <EditorDrawerSection title="Layout">
+          <IconRow
+            label="Block position"
+            value={s.selfAlign}
+            options={BLOCK_POSITION_OPTIONS}
+            onChange={(v) => set({ selfAlign: v })}
+          />
+          <DimensionInput label="Width" value={s.width} onChange={(v) => set({ width: v })} />
+          <DimensionInput label="Height" value={s.height} onChange={(v) => set({ height: v })} />
+          {Boolean(s.bgImagePublicId) && (
+            <NumberInputRow
+              label="Background image opacity"
+              value={s.bgImageOpacity}
+              min={0}
+              max={100}
+              suffix="%"
+              effectiveValue={100}
+              onChange={(v) => set({ bgImageOpacity: v })}
+            />
+          )}
+          {isGridChild && (
+            <ColSpanRowSpanControls s={s} set={set} parentColumnsCount={parentColumnsCount} parentRowsCount={parentRowsCount} />
+          )}
+        </EditorDrawerSection>
+      </EditorDrawerGroup>
+    );
+  }
+
   // For text-only and button leaf blocks: position/size + spacing controls.
   if (TEXT_ONLY_BLOCKS.has(blockType)) {
     const isButton = blockType === "Button";
@@ -1646,6 +1694,19 @@ export function LayoutTabBody({
             )}
           </div>
         )}
+        {/* Background image opacity (F4) — only once a background image is actually
+            set (backgroundImages array, the Container/preset banner mechanism). */}
+        {isFlexContainer && Array.isArray(p?.backgroundImages) && (p.backgroundImages as unknown[]).length > 0 && (
+          <NumberInputRow
+            label="Background image opacity"
+            value={s.bgImageOpacity}
+            min={0}
+            max={100}
+            suffix="%"
+            effectiveValue={100}
+            onChange={(v) => set({ bgImageOpacity: v })}
+          />
+        )}
         {/* Min height — for Columns (CSS length string, no enum) */}
         {isColumns && p !== undefined && setProp && (
           <DimensionInput
@@ -1704,45 +1765,6 @@ export function LayoutTabBody({
 // ---------------------------------------------------------------------------
 // Simplified panels — blocks that bypass the tab system
 // ---------------------------------------------------------------------------
-
-function ImagePanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
-  return (
-    <div className="flex flex-col gap-3 p-3">
-      <SingleImageControl
-        value={(p?.imagePublicId as string) ?? ""}
-        onChange={(v) => setProp("imagePublicId", v)}
-      />
-      <div className="flex items-center justify-between gap-2">
-        <span className="shrink-0 text-xs text-muted-foreground">Alt text</span>
-        <input
-          type="text"
-          value={(p?.alt as string) ?? ""}
-          onChange={(e) => setProp("alt", e.target.value)}
-          className="h-7 flex-1 border border-border bg-background px-2 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-muted-foreground">Fit</span>
-        <div className="flex items-center gap-1.5">
-          {(["cover", "contain"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={(p?.fit as string) === v}
-              onClick={() => setProp("fit", v)}
-              className={cn(
-                "inline-flex h-7 cursor-pointer items-center px-3 text-xs border border-border bg-background text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                (p?.fit as string) === v && "bg-foreground text-background hover:bg-foreground"
-              )}
-            >
-              {v === "cover" ? "Cover" : "Contain"}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function VideoPanel({ p, setProp }: { p: Record<string, unknown> | undefined; setProp: (k: string, v: unknown) => void }) {
   return (
@@ -1872,9 +1894,10 @@ function BlockAwarePanel({
 
   const p = selectedItem?.props as Record<string, unknown> | undefined;
 
-  // Simplified blocks bypass the tab system entirely.
+  // Simplified blocks bypass the tab system entirely. Image (F1) no longer
+  // bypasses — it uses the full Content/Design/Layout tabs (Banner for the
+  // background image, Frame, Layout resize/colSpan/rowSpan controls).
   if (type === "Divider") return <DividerPanel p={p} setProp={setProp} />;
-  if (type === "Image") return <ImagePanel p={p} setProp={setProp} />;
   if (type === "Video") return <VideoPanel p={p} setProp={setProp} />;
 
   return (
@@ -1888,7 +1911,7 @@ function BlockAwarePanel({
             type={type}
             p={p}
             setProp={setProp}
-            showBanner={isContainer || isGalleryContainer || type === "ContactDetails"}
+            showBanner={isContainer || isGalleryContainer || type === "ContactDetails" || type === "Image"}
             isContainer={isContainer || isGalleryContainer}
           />
         )}

@@ -90,7 +90,7 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
         backgroundColor: "var(--pf-color-bg)",
         color: "var(--pf-color-fg)",
         fontFamily: "var(--pf-font-body)",
-        padding: padVar("4rem 1.5rem"),
+        padding: padVar("1.5rem 1.5rem"),
         ...resolveBlockStyle(_style),
       }}
       {...resolveBlockAttrs(_style)}

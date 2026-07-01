@@ -39,6 +39,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     GalleryMasonryPreset: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
     FeaturedWorkPreset: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
     GalleryLandingPreset: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
+    VideoPreset: SECTION_PRESETS.VideoPreset.defaultProps,
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
     FeaturedWork: featuredWorkDefaultProps,
@@ -133,6 +134,10 @@ describe("editorPuckConfig parity with production puckConfig", () => {
   it("registers GalleryLandingPreset in editorPuckConfig", () => {
     expect(editorPuckConfig.components).toHaveProperty("GalleryLandingPreset");
   });
+
+  it("registers VideoPreset (F3 composite block) in editorPuckConfig", () => {
+    expect(editorPuckConfig.components).toHaveProperty("VideoPreset");
+  });
 });
 
 describe("Container resolveData — anchor id idempotency", () => {
@@ -200,6 +205,7 @@ describe("preset section blocks are inline so grid placement applies", () => {
     "GalleryMasonryPreset",
     "FeaturedWorkPreset",
     "GalleryLandingPreset",
+    "VideoPreset",
   ] as const;
 
   for (const key of PRESET_KEYS) {

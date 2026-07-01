@@ -10,6 +10,25 @@ function radiusToCss(r?: string): string | undefined {
   return RADIUS_PX[r];
 }
 
+/**
+ * Resolve the popup shell's background CSS value. Exported as a pure function
+ * (rather than inlined) so it's unit-testable without DOM/CSSOM style
+ * introspection — happy-dom's CSSStyleDeclaration silently drops the
+ * two-argument var(--x, fallback) syntax used here.
+ *
+ * Root cause of the "transparent modal" bug: CollectionPopupChrome portals
+ * outside the public-page wrapper that carries the --pf-* CSS custom
+ * properties (base-ui's Portal renders to document.body), so a bare
+ * var(--pf-color-X) with no literal fallback resolves to nothing — an invalid
+ * declared value — and the shell renders fully transparent. The literal
+ * fallback (2nd var() arg) makes it resilient regardless of portal scope.
+ * Default token is "primary" (not "background") per product requirement.
+ */
+export function resolvePopupBackground(token: PortfolioCollectionsPopupConfig["backgroundColor"]): string {
+  const resolved = token ? colorTokenToVar(token) : undefined;
+  return resolved ?? "var(--pf-color-primary, #111111)";
+}
+
 export function CollectionPopupChrome({
   collectionName,
   config,
@@ -29,7 +48,7 @@ export function CollectionPopupChrome({
   /** When provided, spread as a data-attribute (e.g. "data-popup-close") on the close button. */
   closeDataAttr?: string;
 }) {
-  const bg = config.backgroundColor ? colorTokenToVar(config.backgroundColor) : undefined;
+  const bg = resolvePopupBackground(config.backgroundColor);
   const borderWidth = config.borderWidth ?? 0;
   const borderColor = config.borderColor ? colorTokenToVar(config.borderColor) : undefined;
   const shellRadius = radiusToCss(config.radius || undefined);
@@ -48,7 +67,7 @@ export function CollectionPopupChrome({
     : "var(--pf-color-surface, #fff)";
 
   const commonShell: React.CSSProperties = {
-    backgroundColor: bg ?? "var(--pf-color-bg)",
+    backgroundColor: bg,
     borderWidth: borderWidth > 0 ? `${borderWidth}px` : "1px",
     borderStyle: "solid",
     borderColor:
@@ -113,7 +132,7 @@ export function CollectionPopupChrome({
           position: "sticky",
           top: 0,
           zIndex: 5,
-          backgroundColor: bg ?? "var(--pf-color-bg)",
+          backgroundColor: bg,
           padding: "16px 56px 12px 16px",
           borderBottom: "1px solid var(--pf-color-border, rgba(0,0,0,0.1))",
         }}

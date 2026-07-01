@@ -96,6 +96,10 @@ export type BlockStyle = {
   // Background
   bgColorToken?: StyleColorToken | string;
   bgImagePublicId?: string;
+  // Opacity (0-100) of the background-image layer only — content/text stays full
+  // opacity. Applied by the consuming block (Container/Image) via a dedicated
+  // layered div, not resolveBlockStyle (see manualBlocks.tsx). Unset = 100.
+  bgImageOpacity?: number;
   // Typography (applied SECTION-WIDE — to the whole block via resolveBlockStyle)
   fontPair?: BrandKitFontPair; // legacy; kept for back-compat reads
   fontFamily?: PortfolioFontKey;

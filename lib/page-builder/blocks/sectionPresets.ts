@@ -181,6 +181,26 @@ export const GALLERY_LANDING_PRESET: ContainerBlockProps = {
   ]),
 };
 
+/**
+ * Video preset — header + description + video. Built on Container like every
+ * other preset (NOT a bespoke wrapper) so its Content/Design/Layout tabs expose
+ * the full Container style surface (background/background-image incl. opacity,
+ * padding, min-height, border, shadow, radius, colSpan/rowSpan, overlay) —
+ * matching every other preset's style surface exactly.
+ */
+export const VIDEO_PRESET: ContainerBlockProps = {
+  backgroundImages: [],
+  overlayOpacity: 0,
+  minHeight: "auto",
+  alignX: "center",
+  alignY: "top",
+  content: slot([
+    child("Heading", { level: "h2", text: "Watch our story" }),
+    child("Text", { text: "A short film capturing the moments that matter most." }),
+    child("Video", { videoUrl: "", description: "", footer: "" }),
+  ]),
+};
+
 export const SECTION_PRESETS = {
   HeroPreset:           { label: "Hero",            defaultProps: HERO_PRESET },
   AboutPreset:          { label: "About",           defaultProps: ABOUT_PRESET },
@@ -191,6 +211,7 @@ export const SECTION_PRESETS = {
   GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
   FeaturedWorkPreset:   { label: "Featured Work",   defaultProps: FEATURED_WORK_PRESET },
   GalleryLandingPreset: { label: "Gallery landing", defaultProps: GALLERY_LANDING_PRESET },
+  VideoPreset:          { label: "Video",            defaultProps: VIDEO_PRESET },
 } as const;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

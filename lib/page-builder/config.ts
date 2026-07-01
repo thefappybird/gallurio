@@ -70,6 +70,7 @@ type Components = {
   GalleryMasonryPreset: ContainerBlockProps;
   FeaturedWorkPreset: ContainerBlockProps;
   GalleryLandingPreset: ContainerBlockProps;
+  VideoPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
@@ -109,6 +110,7 @@ export const puckConfig: Config<Components> = {
     GalleryMasonryPreset: presetConfig(SECTION_PRESETS.GalleryMasonryPreset.label, SECTION_PRESETS.GalleryMasonryPreset.defaultProps),
     FeaturedWorkPreset: presetConfig(SECTION_PRESETS.FeaturedWorkPreset.label, SECTION_PRESETS.FeaturedWorkPreset.defaultProps),
     GalleryLandingPreset: presetConfig(SECTION_PRESETS.GalleryLandingPreset.label, SECTION_PRESETS.GalleryLandingPreset.defaultProps),
+    VideoPreset: presetConfig(SECTION_PRESETS.VideoPreset.label, SECTION_PRESETS.VideoPreset.defaultProps),
     GalleryGrid: galleryGridBlockConfig,
     GalleryMasonry: galleryMasonryBlockConfig,
     FeaturedWork: featuredWorkBlockConfig,

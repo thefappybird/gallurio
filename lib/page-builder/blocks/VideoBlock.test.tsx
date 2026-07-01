@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { parseVideoEmbed, VideoBlock } from "./VideoBlock";
 
 // ---------------------------------------------------------------------------
@@ -263,5 +264,16 @@ describe("VideoBlock — data-empty attribute", () => {
     );
     const section = container.querySelector("[data-block='video']");
     expect(section?.getAttribute("data-empty")).toBeNull();
+  });
+});
+
+describe("VideoBlock — default spacing", () => {
+  it("uses 1.5rem vertical/horizontal padding by default (hugs its content)", () => {
+    // happy-dom's CSSStyleDeclaration drops the var(--pf-pad, ...) responsive
+    // wrapper (two-argument var() fallback), so check the server-rendered markup
+    // for the literal default value instead — same pattern as the heading clamp test.
+    const html = renderToStaticMarkup(<VideoBlock videoUrl="" description="" footer="" />);
+    expect(html).toContain("var(--pf-pad, 1.5rem 1.5rem)");
+    expect(html).not.toContain("4rem 1.5rem");
   });
 });

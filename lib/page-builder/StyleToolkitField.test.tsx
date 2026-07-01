@@ -460,6 +460,77 @@ describe("GalleryLayoutControls — writes _style.galleryColumns on click", () =
   });
 });
 
+describe("StyleToolkitField — Image block (F1 redesign)", () => {
+  it("ContentInputs for Image shows an Alt text input wired to setProp", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={setProp} />);
+    const input = screen.getByLabelText("Alt text") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "A nice photo" } });
+    expect(setProp).toHaveBeenCalledWith("alt", "A nice photo");
+  });
+
+  it("LayoutTabBody for Image shows Width and Height resize controls", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Image" />);
+    expect(screen.getByText("Width")).toBeTruthy();
+    expect(screen.getByText("Height")).toBeTruthy();
+  });
+
+  it("LayoutTabBody for Image shows Column span / Row span when it is a Columns grid child", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={true} showJustify={false} blockType="Image" />);
+    expect(screen.getByText("Column span")).toBeTruthy();
+    expect(screen.getByText("Row span")).toBeTruthy();
+  });
+
+  it("LayoutTabBody for Image does NOT show Background image opacity when no image is set", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Image" />);
+    expect(screen.queryByText("Background image opacity")).toBeNull();
+  });
+
+  it("LayoutTabBody for Image shows Background image opacity once a background image is set", () => {
+    render(
+      <LayoutTabBody
+        s={{ bgImagePublicId: "ws/photo.jpg" }}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Image"
+      />
+    );
+    expect(screen.getByText("Background image opacity")).toBeTruthy();
+  });
+
+  it("DesignTab for Image hides the Typography section (no on-page text)", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Image" />);
+    expect(screen.queryByText("Typography")).toBeNull();
+  });
+});
+
+describe("StyleToolkitField — Container background image opacity (F4)", () => {
+  it("does NOT show Background image opacity when Container has no backgroundImages", () => {
+    render(
+      <LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Container" p={{ backgroundImages: [] }} setProp={vi.fn()} />
+    );
+    expect(screen.queryByText("Background image opacity")).toBeNull();
+  });
+
+  it("shows Background image opacity once Container has a backgroundImages entry", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ backgroundImages: [{ id: "a", publicId: "ws/a" }] }}
+        setProp={vi.fn()}
+      />
+    );
+    // "Spacing" is the first drawer (auto-open); "Layout" must be expanded explicitly.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByText("Background image opacity")).toBeTruthy();
+  });
+});
+
 describe("BRAND_RADIUS_TO_PRESET mapping", () => {
   it("maps sharp to 0 (None preset)", () => {
     expect(BRAND_RADIUS_TO_PRESET.sharp).toBe(0);

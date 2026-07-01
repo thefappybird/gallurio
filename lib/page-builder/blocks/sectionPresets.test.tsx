@@ -10,6 +10,7 @@ import {
   HERO_PRESET,
   SECTION_PRESETS,
   SERVICES_PRESET,
+  VIDEO_PRESET,
 } from "./sectionPresets";
 
 
@@ -71,5 +72,12 @@ describe("GalleryLandingPreset in puckConfig", () => {
     );
     expect(screen.getByText("Our gallery")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /get in touch/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("VideoPreset (F3 composite block)", () => {
+  it("composes Container -> Heading -> Text -> Video, same shape as other presets", () => {
+    const children = VIDEO_PRESET.content as Array<{ type: string }>;
+    expect(children.map((child) => child.type)).toEqual(["Heading", "Text", "Video"]);
   });
 });
