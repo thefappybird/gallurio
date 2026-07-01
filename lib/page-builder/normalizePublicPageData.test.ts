@@ -90,6 +90,27 @@ describe("normalizePublicPageData", () => {
     warn.mockRestore();
   });
 
+  it("passes a legacy-shape Image block's props through untouched (imagePublicId/imageUrl survive, no bgImagePublicId required)", () => {
+    // Image blocks saved before the background-image redesign (ee5084d) carry
+    // imagePublicId/imageUrl at the top level with no _style.bgImagePublicId.
+    // normalizePublicPageData must not drop/rewrite these — ImageBlock's own
+    // render-time fallback is what resolves them into the visible picture.
+    const imageKnown = new Set(["Image"]);
+    const out = normalizePublicPageData(
+      {
+        root: {},
+        content: [{ type: "Image", props: { imagePublicId: "ws/legacy.jpg", imageUrl: "", alt: "Legacy photo", fit: "cover" } }],
+      },
+      imageKnown
+    );
+    expect(out!.content[0].props).toEqual({
+      imagePublicId: "ws/legacy.jpg",
+      imageUrl: "",
+      alt: "Legacy photo",
+      fit: "cover",
+    });
+  });
+
   it("stays silent for healthy data", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     normalizePublicPageData(

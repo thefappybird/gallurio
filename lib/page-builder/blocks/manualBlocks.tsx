@@ -218,11 +218,43 @@ export type ImageBlockProps = {
   alt: string;
 };
 
+// Back-compat only: the pre-redesign Image block (before commit ee5084d)
+// stored the picture as these top-level props instead of `_style.bgImagePublicId`.
+// Not part of the current schema/fields — read defensively in render so
+// already-saved data (DB `publicPage.data`, a `PortfolioDraft`, or a stale
+// browser localStorage draft) keeps showing its image after the redesign.
+type LegacyImageBlockProps = {
+  imagePublicId?: string;
+  imageUrl?: string;
+};
+
 export const imageDefaultProps: ImageBlockProps = { alt: "" };
 
-export function ImageBlock({ _style, alt, puck }: ImageBlockProps & { puck?: BlockPuck }) {
-  const opacity = Math.min(100, Math.max(0, _style?.bgImageOpacity ?? 100)) / 100;
-  const resolved = resolveBlockStyle(_style) as Record<string, string | number | undefined>;
+export function ImageBlock({
+  _style,
+  alt,
+  puck,
+  imagePublicId,
+  imageUrl,
+}: ImageBlockProps & LegacyImageBlockProps & { puck?: BlockPuck }) {
+  // Migrate a legacy Cloudflare asset id into the shape resolveBlockStyle
+  // understands, so it resolves through the exact same bgImageUrl() path a
+  // freshly-migrated `_style.bgImagePublicId` would. Only applies when the
+  // new field wasn't already set (never overwrite a real pick).
+  const legacyAssetId = !_style?.bgImagePublicId && imagePublicId ? imagePublicId : undefined;
+  const effectiveStyle = legacyAssetId ? { ..._style, bgImagePublicId: legacyAssetId } : _style;
+
+  const opacity = Math.min(100, Math.max(0, effectiveStyle?.bgImageOpacity ?? 100)) / 100;
+  const resolved = resolveBlockStyle(effectiveStyle) as Record<string, string | number | undefined>;
+  // Legacy raw-URL fallback (no Cloudflare asset id) — resolveBlockStyle's
+  // bgImagePublicId always resolves through the CF delivery URL builder, so a
+  // bare external URL can't go through it. Apply it directly, same as the
+  // pre-redesign `<img src>` fallback (`imagePublicId ? cfImageUrl(...) : imageUrl`).
+  if (!resolved.backgroundImage && !legacyAssetId && imageUrl) {
+    resolved.backgroundImage = `url(${imageUrl})`;
+    resolved.backgroundSize = "cover";
+    resolved.backgroundPosition = "center";
+  }
   // backgroundImage/backgroundSize/backgroundPosition come from resolveBlockStyle's
   // existing bgImagePublicId handling (styleToolkit.ts) but land on a dedicated
   // layer div (below), not the root, so bgImageOpacity can fade just the image —
@@ -245,11 +277,11 @@ export function ImageBlock({ _style, alt, puck }: ImageBlockProps & { puck?: Blo
         position: "relative",
         overflow: "hidden",
         width: "100%",
-        aspectRatio: _style?.height ? undefined : "3 / 2",
+        aspectRatio: effectiveStyle?.height ? undefined : "3 / 2",
         ...rootStyle,
       }}
       {...a11yProps}
-      {...resolveBlockAttrs(_style)}
+      {...resolveBlockAttrs(effectiveStyle)}
     >
       {hasImage ? (
         <div

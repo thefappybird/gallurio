@@ -297,6 +297,51 @@ describe("ImageBlock — with a background image (_style.bgImagePublicId)", () =
   });
 });
 
+describe("ImageBlock — legacy prop back-compat (pre-ee5084d shape)", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders the image from a legacy top-level imagePublicId with no _style.bgImagePublicId", () => {
+    const { container } = render(<ImageBlock alt="A photo" imagePublicId="ws/legacy-asset.jpg" />);
+    expect(screen.queryByText(/Pick an image/i)).toBeNull();
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
+  });
+
+  it("renders the image from a legacy raw imageUrl when there is no imagePublicId", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" imageUrl="https://example.com/legacy.jpg" />
+    );
+    expect(screen.queryByText(/Pick an image/i)).toBeNull();
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.backgroundImage).toContain("https://example.com/legacy.jpg");
+  });
+
+  it("prefers legacy imagePublicId over legacy imageUrl when both are present", () => {
+    const { container } = render(
+      <ImageBlock alt="" imagePublicId="ws/legacy-asset.jpg" imageUrl="https://example.com/legacy.jpg" />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
+    expect(layer.style.backgroundImage).not.toContain("example.com");
+  });
+
+  it("never lets a legacy prop override an already-migrated _style.bgImagePublicId", () => {
+    const { container } = render(
+      <ImageBlock alt="" _style={{ bgImagePublicId: "ws/current.jpg" }} imagePublicId="ws/legacy-asset.jpg" />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("current.jpg");
+    expect(layer.style.backgroundImage).not.toContain("legacy-asset.jpg");
+  });
+});
+
 describe("ImageBlock — resize + grid placement", () => {
   it("applies an explicit width/height from _style", () => {
     const { container } = render(<ImageBlock alt="" _style={{ width: "320px", height: "240px" }} />);
