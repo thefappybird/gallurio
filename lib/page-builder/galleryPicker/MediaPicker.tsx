@@ -468,14 +468,22 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const collectionOrderOf = (id: string) =>
     collectionSelection.findIndex((s) => s.id === id) + 1;
 
+  // Workspace-wide overview map — recomputes whenever `state` settles, so a
+  // fresh-load selection resolves immediately without waiting for the (ref-only,
+  // non-rerendering) `remember()` effect below to be observed by a later render.
+  const byPickerId = useMemo(
+    () => (state.status === "ok" ? new Map(state.data.items.map((it) => [it.id, it])) : null),
+    [state]
+  );
+
   const selectionItems = useMemo(
     () =>
-      // eslint-disable-next-line react-hooks/refs -- intentional: the seen-map is a write-only accumulator of resolved thumbnails; recomputation is driven by `selection`, and a missing entry renders a placeholder
+      // eslint-disable-next-line react-hooks/refs -- intentional: `seen` is a write-only fallback accumulator (covers items paginated in from a collection but past the workspace-overview cap); recomputation is driven by `selection`/`byPickerId`, and a missing entry renders a placeholder
       selection.map((s) => ({
         ...s,
-        item: seen.current.get(s.id) ?? null,
+        item: byPickerId?.get(s.id) ?? seen.current.get(s.id) ?? null,
       })),
-    [selection]
+    [selection, byPickerId]
   );
 
   return (

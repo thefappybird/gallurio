@@ -86,6 +86,24 @@ describe("MediaPicker", () => {
     expect(mockFetch.mock.calls.some(([u]) => String(u).includes("newest="))).toBe(true);
   });
 
+  it("multi mode: reorder chip resolves thumbnail from workspace-wide picker data without opening a collection", async () => {
+    render(
+      <MediaPicker
+        mode="multi"
+        value={[{ id: "a", publicId: "pid-a" }]}
+        onChange={vi.fn()}
+        open
+        onOpenChange={vi.fn()}
+      />
+    );
+    // No collection was opened — the chip must resolve from usePickerData's workspace-wide items.
+    const strip = await screen.findByRole("list", { name: /selected photos/i });
+    // alt="" gives the <img> a "presentation" role, not "img" — query the DOM node directly.
+    const img = strip.querySelector("img");
+    expect(img?.getAttribute("src")).toBe("https://x/a.jpg");
+    expect(within(strip).queryByText("?")).toBeNull();
+  });
+
   it("hides 'select all in collection' on the All photos feed", async () => {
     render(<MediaPicker mode="multi" value={[]} onChange={vi.fn()} open onOpenChange={vi.fn()} />);
     fireEvent.click(await screen.findByRole("button", { name: /all photos/i }));
