@@ -141,12 +141,33 @@ describe("FontFamilyRow", () => {
     expect(onChange).toHaveBeenCalledWith("google:Poppins");
   });
 
-  it("typing a custom family name in the free-text field calls onChange with a google: selection", () => {
+  it("typing into the free-text field does NOT call onChange per keystroke", () => {
     const onChange = vi.fn();
     render(<FontFamilyRow value={undefined} onChange={onChange} />);
-    fireEvent.change(screen.getByPlaceholderText("Or type any Google Fonts name…"), {
-      target: { value: "Bebas Neue" },
-    });
+    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    fireEvent.change(input, { target: { value: "B" } });
+    fireEvent.change(input, { target: { value: "Be" } });
+    fireEvent.change(input, { target: { value: "Bebas Neue" } });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("blurring the free-text field commits the typed name as a google: selection", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value={undefined} onChange={onChange} />);
+    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    fireEvent.change(input, { target: { value: "Bebas Neue" } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith("google:Bebas Neue");
+  });
+
+  it("pressing Enter in the free-text field commits the typed name as a google: selection", () => {
+    const onChange = vi.fn();
+    render(<FontFamilyRow value={undefined} onChange={onChange} />);
+    const input = screen.getByPlaceholderText("Or type any Google Fonts name…");
+    fireEvent.change(input, { target: { value: "Bebas Neue" } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter" });
     expect(onChange).toHaveBeenCalledWith("google:Bebas Neue");
   });
 

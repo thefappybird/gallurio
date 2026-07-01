@@ -253,6 +253,19 @@ export function FontFamilyRow({
   const selectValue = value ?? effectiveValue ?? "";
   const googleName = googleFontFamilyName(value ?? "") ?? "";
 
+  // Local draft of the typed text — the free-text field only commits to the
+  // real onChange on blur/Enter (not per keystroke), so it can't stay a plain
+  // controlled input off `googleName`. Re-syncs from the prop when it changes
+  // externally (curated-font pick, Reset button) via the render-time
+  // "adjust state" pattern — never mid-typing, since `googleName` itself
+  // doesn't change until a commit happens.
+  const [draftText, setDraftText] = useState(googleName);
+  const [prevGoogleName, setPrevGoogleName] = useState(googleName);
+  if (googleName !== prevGoogleName) {
+    setPrevGoogleName(googleName);
+    setDraftText(googleName);
+  }
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
@@ -289,13 +302,15 @@ export function FontFamilyRow({
       </div>
       <input
         type="text"
-        value={googleName}
-        onChange={(e) => {
-          const typed = e.target.value;
-          onChange(typed === "" ? undefined : toGoogleFontSelection(typed));
-        }}
+        value={draftText}
+        onChange={(e) => setDraftText(e.target.value)}
         onBlur={(e) => {
           const trimmed = e.target.value.trim();
+          onChange(trimmed === "" ? undefined : toGoogleFontSelection(trimmed));
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter") return;
+          const trimmed = e.currentTarget.value.trim();
           onChange(trimmed === "" ? undefined : toGoogleFontSelection(trimmed));
         }}
         placeholder="Or type any Google Fonts name…"

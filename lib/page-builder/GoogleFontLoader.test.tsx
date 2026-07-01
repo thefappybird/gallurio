@@ -18,4 +18,15 @@ describe("GoogleFontLoader", () => {
     expect(link).toBeTruthy();
     expect(link?.rel).toBe("stylesheet");
   });
+
+  it("removes a previously-injected link when its family is no longer requested", () => {
+    const { rerender } = render(<GoogleFontLoader families={["Foo"]} />);
+    expect(document.getElementById("pf-google-font-foo")).toBeTruthy();
+
+    rerender(<GoogleFontLoader families={["Bar"]} />);
+
+    expect(document.getElementById("pf-google-font-foo")).toBeNull();
+    expect(document.getElementById("pf-google-font-bar")).toBeTruthy();
+    expect(document.querySelectorAll("link[data-google-font]").length).toBe(1);
+  });
 });
