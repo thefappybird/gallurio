@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
-import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import {
+  findPublishedWorkspaceBySlug,
+  resolveWorkspaceOwnerBySlug,
+  getOwnerTimeFormat,
+} from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
@@ -55,6 +59,8 @@ export default async function PublicPortfolioLayout({
   });
 
   const contactLabels = buildContactLabels(tContact, tLocationPicker);
+  const ownerUserId = await resolveWorkspaceOwnerBySlug(orgSlug);
+  const timeMode = ownerUserId ? await getOwnerTimeFormat(ownerUserId) : undefined;
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
   const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
@@ -96,6 +102,7 @@ export default async function PublicPortfolioLayout({
         contact={contactConfig}
         labels={contactLabels}
         brandVars={cssVars}
+        timeMode={timeMode}
       />
     </div>
   );

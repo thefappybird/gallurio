@@ -125,4 +125,11 @@ describe("ContactModal", () => {
     fireEvent.click(backdrop);
     await waitFor(() => expect(screen.queryByText("Get in touch")).toBeNull());
   });
+
+  it("forwards timeMode to the contact form's time inputs", async () => {
+    render(<ContactModal workspaceSlug="luna" labels={labels} timeMode="12h" />);
+    open();
+    fireEvent.click(await screen.findByRole("tab", { name: "Event details" }));
+    expect(screen.getByLabelText("Start time")).toHaveAttribute("lang", "en-US");
+  });
 });

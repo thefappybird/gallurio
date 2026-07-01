@@ -25,7 +25,18 @@ import {
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
+import type { TimeMode } from "@/lib/utils/time-format";
 import { BookingDetailModal } from "./booking-detail-modal";
+
+// ── Time-format context stub ─────────────────────────────────────────────────
+// Lets individual tests flip the saved time-format preference (mirrors the
+// pattern used in booking-draft-card.test.tsx).
+let _timeMode: TimeMode = "24h";
+vi.mock("@/lib/time-format/context", () => ({
+  useTimeFormat: vi.fn(() => _timeMode),
+  useTimeFormatContext: vi.fn(() => ({ timeMode: _timeMode, setTimeMode: vi.fn() })),
+  TimeFormatProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // ── Navigation stubs ─────────────────────────────────────────────────────────
 vi.mock("next/navigation", () => ({
@@ -199,6 +210,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  _timeMode = "24h";
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1860,5 +1872,25 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       }
     );
     expect(patchCalls).toHaveLength(0);
+  });
+});
+
+describe("BookingDetailModal — time-format preference", () => {
+  it("renders session timestamps in 12h AM/PM when the saved preference is 12h", async () => {
+    _timeMode = "12h";
+    renderModal();
+    await waitForLoad();
+
+    const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
+    expect(within(sessionPanel).getAllByText(/\b(AM|PM)\b/).length).toBeGreaterThan(0);
+  });
+
+  it("renders session timestamps in 24h (no AM/PM) when the saved preference is 24h", async () => {
+    _timeMode = "24h";
+    renderModal();
+    await waitForLoad();
+
+    const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
+    expect(within(sessionPanel).queryByText(/\b(AM|PM)\b/)).not.toBeInTheDocument();
   });
 });

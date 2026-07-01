@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
+import type { TimeMode } from "@/lib/utils/time-format";
 import { useGlobalContactTrigger } from "@/lib/hooks/useGlobalContactTrigger";
 import { ContactForm, type InquiryFormLabels } from "./ContactForm";
 import { resolveAddSessionAppearance, resolveSubmitAppearance, resolveContactColor } from "./contactButtonAppearance";
@@ -48,6 +49,7 @@ export function ContactModal({
   contact,
   labels,
   brandVars,
+  timeMode,
 }: {
   workspaceSlug: string;
   contact?: PortfolioContactConfig | null;
@@ -56,6 +58,8 @@ export function ContactModal({
    *  renders through a Portal at document.body, escaping the page wrapper that
    *  sets these — so we re-apply them here or the popup has no background. */
   brandVars?: Record<string, string>;
+  /** Workspace owner's saved time-format preference (see ContactForm). */
+  timeMode?: TimeMode;
 }) {
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -174,6 +178,7 @@ export function ContactModal({
                 submitAppearance={submitAppearance}
                 addSessionAppearance={addSessionAppearance}
                 contactConfig={contact}
+                timeMode={timeMode}
                 onSuccess={() => setSubmitted(true)}
               />
             )}

@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { connectDB } from "@/lib/db/mongoose";
 import { Workspace } from "@/lib/db/models/Workspace";
+import { User } from "@/lib/db/models/User";
+import { DEFAULT_TIME_MODE, type TimeMode } from "@/lib/utils/time-format";
 
 /**
  * Resolves a public portfolio page by workspace slug.
@@ -57,6 +59,38 @@ export const findPublishedWorkspaceBySlug = cache(async (slug: string) => {
     .lean();
 
   return workspace ?? null;
+});
+
+/**
+ * Slim slug -> ownerUserId resolver, kept separate from
+ * `findPublishedWorkspaceBySlug` (which deliberately strips ownerUserId from
+ * its projection before that doc reaches render/prop-serialization paths).
+ */
+export const resolveWorkspaceOwnerBySlug = cache(async (slug: string): Promise<string | null> => {
+  const normalized = slug.trim().toLowerCase();
+  if (!normalized) return null;
+  await connectDB();
+  const ws = await Workspace.findOne({
+    slug: normalized,
+    "publicPage.publishedAt": { $ne: null },
+  })
+    .select({ ownerUserId: 1 })
+    .lean<{ ownerUserId?: string }>();
+  return ws?.ownerUserId ?? null;
+});
+
+/**
+ * Resolves the workspace owner's saved time-format preference, so public
+ * date/time inputs (e.g. the contact form) match the hour cycle the owner
+ * already sees on their own calendar candles. Falls back to the app default
+ * when the owner record is missing.
+ */
+export const getOwnerTimeFormat = cache(async (ownerUserId: string): Promise<TimeMode> => {
+  await connectDB();
+  const owner = await User.findOne({ workosUserId: ownerUserId })
+    .select("timeFormat")
+    .lean<{ timeFormat?: TimeMode }>();
+  return owner?.timeFormat ?? DEFAULT_TIME_MODE;
 });
 
 export type PublishedWorkspaceSlug = {

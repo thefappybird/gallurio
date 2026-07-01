@@ -20,6 +20,7 @@ import {
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
+import { DEFAULT_TIME_MODE, TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
@@ -182,6 +183,7 @@ export function ContactForm({
   compactLocationPicker = false,
   scrollable = false,
   contactConfig,
+  timeMode = DEFAULT_TIME_MODE,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
@@ -192,6 +194,9 @@ export function ContactForm({
   compactLocationPicker?: boolean;
   scrollable?: boolean;
   contactConfig?: PortfolioContactConfig | null;
+  /** Workspace owner's saved time-format preference — keeps the time picker's
+   *  hour cycle consistent with the calendar candles the owner sees in-app. */
+  timeMode?: TimeMode;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -491,13 +496,14 @@ export function ContactForm({
                   <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
-                      <input id={`cf-stime-${index}`} type="time" style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
+                      <input id={`cf-stime-${index}`} type="time" lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
                     </div>
                     <div>
                       <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
                       <input
                         id={`cf-etime-${index}`}
                         type="time"
+                        lang={TIME_INPUT_LANG[timeMode]}
                         style={fieldStyle}
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
                         {...register(`sessions.${index}.endTime` as const)}

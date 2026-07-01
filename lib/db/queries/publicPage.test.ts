@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
 import { startInMemoryMongo, stopInMemoryMongo, clearCollections } from "@/test-utils/mongo";
 import { Workspace } from "@/lib/db/models/Workspace";
-import { findPublishedWorkspaceBySlug, resolveWorkspaceIdBySlug } from "./publicPage";
+import { User } from "@/lib/db/models/User";
+import {
+  findPublishedWorkspaceBySlug,
+  resolveWorkspaceIdBySlug,
+  getOwnerTimeFormat,
+  resolveWorkspaceOwnerBySlug,
+} from "./publicPage";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -232,5 +238,23 @@ describe("resolveWorkspaceIdBySlug", () => {
       })
     );
     expect(await resolveWorkspaceIdBySlug("draft-ws")).toBeNull();
+  });
+});
+
+describe("getOwnerTimeFormat", () => {
+  it("returns the owner's saved timeFormat", async () => {
+    await User.create({ workosUserId: "user_12h", email: "owner@example.com", timeFormat: "12h" });
+
+    const result = await getOwnerTimeFormat("user_12h");
+    expect(result).toBe("12h");
+  });
+});
+
+describe("resolveWorkspaceOwnerBySlug", () => {
+  it("returns the ownerUserId for a published workspace slug, without exposing it via findPublishedWorkspaceBySlug", async () => {
+    await Workspace.create(makeWorkspaceBase({ slug: "owner-lookup-ws", ownerUserId: "user_owner_lookup" }));
+
+    const ownerId = await resolveWorkspaceOwnerBySlug("owner-lookup-ws");
+    expect(ownerId).toBe("user_owner_lookup");
   });
 });

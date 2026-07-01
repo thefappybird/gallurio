@@ -535,3 +535,17 @@ describe("ContactForm — inactive tab foreground color effective default (item 
     expect(eventTab.style.color).toContain("--pf-color-fg");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Time-format parity — the public form's time inputs match the workspace
+// owner's saved hour-cycle preference (see calendar candles in the app).
+// ---------------------------------------------------------------------------
+
+describe("ContactForm — time-format parity", () => {
+  it("sets lang=en-US on the time inputs when timeMode is 12h", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} timeMode="12h" />);
+    goToEventDetails();
+    expect(screen.getByLabelText("Start time")).toHaveAttribute("lang", "en-US");
+    expect(screen.getByLabelText("End time")).toHaveAttribute("lang", "en-US");
+  });
+});

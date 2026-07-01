@@ -77,7 +77,7 @@ import {
 } from "@/lib/validators/booking";
 import { SUPPORTED_CURRENCIES } from "@/lib/validators/workspace";
 import { formatMoney } from "@/lib/utils/format-currency";
-import { TIME_INPUT_LANG } from "@/lib/utils/time-format";
+import { TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import { useTimeFormat } from "@/lib/time-format/context";
 import {
   countDays,
@@ -94,7 +94,7 @@ const LocationMap = dynamic(() => import("@/components/ui/location-map"), {
   loading: () => <div className="h-40 w-full animate-pulse bg-muted" aria-hidden />,
 });
 
-function formatSessionStamp(value: string | Date, locale: string) {
+function formatSessionStamp(value: string | Date, locale: string, mode: TimeMode) {
   return new Date(value).toLocaleString(locale, {
     weekday: "short",
     month: "short",
@@ -102,6 +102,7 @@ function formatSessionStamp(value: string | Date, locale: string) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: mode === "12h",
   });
 }
 
@@ -2586,7 +2587,7 @@ function SessionCard({
       subtitle={
         displayStart ? (
           <span className="text-xs text-muted-foreground">
-            {formatSessionStamp(displayStart, locale)}
+            {formatSessionStamp(displayStart, locale, timeMode)}
           </span>
         ) : null
       }
@@ -2688,7 +2689,7 @@ function SessionCard({
                 )}
               >
                 {displayStart
-                  ? formatSessionStamp(displayStart, locale)
+                  ? formatSessionStamp(displayStart, locale, timeMode)
                   : "—"}
               </span>
             </div>
@@ -2703,7 +2704,7 @@ function SessionCard({
                 )}
               >
                 {displayEnd
-                  ? formatSessionStamp(displayEnd, locale)
+                  ? formatSessionStamp(displayEnd, locale, timeMode)
                   : "—"}
               </span>
             </div>
@@ -2818,6 +2819,7 @@ function LockedDraftCard({
   onRemove: () => void;
 }) {
   const tFields = useTranslations("app.bookings.detail.fields");
+  const timeMode = useTimeFormat();
   const sessionDate = isoDate(draft.startAt);
   return (
     <CollapsibleDrawer
@@ -2834,7 +2836,7 @@ function LockedDraftCard({
       subtitle={
         draft.startAt ? (
           <span className="text-xs text-muted-foreground">
-            {formatSessionStamp(draft.startAt, locale)}
+            {formatSessionStamp(draft.startAt, locale, timeMode)}
           </span>
         ) : null
       }
@@ -2876,7 +2878,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.startAt
-              ? formatSessionStamp(draft.startAt, locale)
+              ? formatSessionStamp(draft.startAt, locale, timeMode)
               : "—"}
           </span>
         </div>
@@ -2886,7 +2888,7 @@ function LockedDraftCard({
           </span>
           <span className="text-sm text-foreground">
             {draft.endAt
-              ? formatSessionStamp(draft.endAt, locale)
+              ? formatSessionStamp(draft.endAt, locale, timeMode)
               : "—"}
           </span>
         </div>
@@ -3010,7 +3012,7 @@ function DraftSessionCard({
       subtitle={
         draft.startAt ? (
           <span className="text-xs text-muted-foreground">
-            {formatSessionStamp(draft.startAt, locale)}
+            {formatSessionStamp(draft.startAt, locale, timeMode)}
           </span>
         ) : null
       }
