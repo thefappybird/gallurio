@@ -2053,6 +2053,9 @@ function BookingTabs({
             readOnly={!!readOnly}
             validate={(v) => {
               const n = Number(v);
+              if (Number.isFinite(n) && n > 0 && total <= 0) {
+                return tFields("depositRequiresTotal");
+              }
               if (Number.isFinite(n) && n > total) {
                 return tFields("depositExceedsTotal");
               }

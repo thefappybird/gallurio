@@ -1739,6 +1739,54 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     expect(screen.getByRole("spinbutton")).toBeInTheDocument();
   });
 
+  it("EF-5: submitting with an open Deposit editor while Total is 0 is blocked with 'Cannot add a deposit without setting a price'", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const { toast } = await import("sonner");
+    renderModal();
+    await waitForLoad();
+
+    // Draft Total down to 0 via ✓ (creates a pending edit so "Save changes"
+    // renders — hasPending is only true once at least one field is
+    // confirmed, an open-but-uncommitted editor alone doesn't trigger it,
+    // same reason EF-1/EF-4 draft Total first).
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Open Deposit editor with a value while (pending) Total is 0.
+    await openDepositEditorWithoutConfirm("500");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /submit all changes/i }));
+
+    // No PATCH should fire
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(0);
+    });
+
+    expect(toast.error).toHaveBeenCalled();
+    // The Deposit editor should still be open (spinbutton still visible)
+    expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+  });
+
   it("clicking Save with an open (uncommitted) existing-session inline editor shows the warning dialog", async () => {
     // This test verifies that an open inline editor on an EXISTING session
     // (✓/✗ buttons visible, edit not yet confirmed) also counts as undrafted,
