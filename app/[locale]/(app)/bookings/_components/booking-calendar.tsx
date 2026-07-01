@@ -752,7 +752,10 @@ function CalendarToolbar({
  * Only applied in month view — week/day views have time-slot rows and can
  * display overlapping events without a cell-height cap.
  */
-export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[] {
+export function groupEventsForMonth(
+  events: CalendarEvent[],
+  workspaceTimezone?: string
+): AnyCalendarEvent[] {
   // Local helpers — not exported so they stay scoped to this function.
   function startOfMonthDay(d: Date): Date {
     const out = new Date(d);
@@ -762,6 +765,14 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   function dayKey(d: Date): string {
     return format(d, "yyyy-MM-dd");
   }
+  // Same "grid display" Date used by gridStartAccessor/gridEndAccessor: its
+  // native LOCAL getters encode the event's workspace wall clock rather than
+  // the viewer's browser-local timezone, so day-bucketing agrees with the
+  // day/week grid regardless of the viewer's own timezone.
+  function gridDate(ev: CalendarEvent, which: "start" | "end"): Date {
+    const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+    return toCalendarGridDate(which === "start" ? ev.start : ev.end, tz);
+  }
 
   // Pass 1 — identify days that have an inbound overnight/multi-day bleed-over.
   // For every event that crosses a day boundary, every calendar day strictly
@@ -769,8 +780,8 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   // receives a bleed-in marker.
   const bleedInDays = new Set<string>();
   for (const ev of events) {
-    const startDay = startOfMonthDay(ev.start);
-    const endDay = startOfMonthDay(ev.end);
+    const startDay = startOfMonthDay(gridDate(ev, "start"));
+    const endDay = startOfMonthDay(gridDate(ev, "end"));
     if (endDay > startDay) {
       // Walk each day strictly after startDay through endDay.
       const cursor = new Date(startDay);
@@ -785,7 +796,7 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   // Pass 2 — bucket events by their start-day (same as before).
   const byDay = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
-    const key = dayKey(ev.start);
+    const key = dayKey(gridDate(ev, "start"));
     const bucket = byDay.get(key);
     if (bucket) {
       bucket.push(ev);
@@ -950,9 +961,9 @@ export function BookingCalendar({
   // - month: cap each day at 1 pill + overflow placeholder.
   // - week/day: pass events directly (overnight sessions are represented as-is).
   const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
-    if (view === Views.MONTH) return groupEventsForMonth(events);
+    if (view === Views.MONTH) return groupEventsForMonth(events, workspaceTimezone);
     return events;
-  }, [view, events]);
+  }, [view, events, workspaceTimezone]);
 
   // Build the components object here so we can bind onSelectEvent and the
   // external-drag callbacks to MonthBookingEvent without stale closures.

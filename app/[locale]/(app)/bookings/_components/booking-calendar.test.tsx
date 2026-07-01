@@ -288,9 +288,12 @@ describe("groupEventsForMonth (simple per-day overflow grouping)", () => {
   });
 
   it("returns first event + overflow pill for a day with multiple events", () => {
-    const ev1 = makeEvent({ id: "a", start: new Date("2026-08-15T09:00:00"), end: new Date("2026-08-15T11:00:00") });
-    const ev2 = makeEvent({ id: "b", start: new Date("2026-08-15T13:00:00"), end: new Date("2026-08-15T15:00:00") });
-    const ev3 = makeEvent({ id: "c", start: new Date("2026-08-15T17:00:00"), end: new Date("2026-08-15T19:00:00") });
+    // UTC-anchored + explicit workspaceTz so the grouping is deterministic
+    // regardless of the test runner's local timezone (see the "grid
+    // positioning" describe block below for the same pattern).
+    const ev1 = makeEvent({ id: "a", start: new Date("2026-08-15T01:00:00Z"), end: new Date("2026-08-15T03:00:00Z"), workspaceTz: "Asia/Manila" });
+    const ev2 = makeEvent({ id: "b", start: new Date("2026-08-15T05:00:00Z"), end: new Date("2026-08-15T07:00:00Z"), workspaceTz: "Asia/Manila" });
+    const ev3 = makeEvent({ id: "c", start: new Date("2026-08-15T09:00:00Z"), end: new Date("2026-08-15T11:00:00Z"), workspaceTz: "Asia/Manila" });
     const result = groupEventsForMonth([ev1, ev2, ev3]);
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({ id: "a" });
@@ -301,12 +304,53 @@ describe("groupEventsForMonth (simple per-day overflow grouping)", () => {
   });
 
   it("groups by start-day so two days each get their own entry", () => {
-    const evA = makeEvent({ id: "a", start: new Date("2026-08-15T09:00:00"), end: new Date("2026-08-15T11:00:00") });
-    const evB = makeEvent({ id: "b", start: new Date("2026-08-16T09:00:00"), end: new Date("2026-08-16T11:00:00") });
+    const evA = makeEvent({ id: "a", start: new Date("2026-08-15T01:00:00Z"), end: new Date("2026-08-15T03:00:00Z"), workspaceTz: "Asia/Manila" });
+    const evB = makeEvent({ id: "b", start: new Date("2026-08-16T01:00:00Z"), end: new Date("2026-08-16T03:00:00Z"), workspaceTz: "Asia/Manila" });
     const result = groupEventsForMonth([evA, evB]);
     expect(result).toHaveLength(2);
     expect(result[0]).toBe(evA);
     expect(result[1]).toBe(evB);
+  });
+
+  it("buckets an event into its workspace-tz calendar day, not the viewer's browser-local day", () => {
+    // 2026-08-15T17:00:00Z is 2026-08-16 01:00 in Asia/Manila (UTC+8) — a
+    // different calendar day than the raw UTC/native-local date would report.
+    const ev1 = makeEvent({
+      id: "a",
+      start: new Date("2026-08-15T17:00:00Z"),
+      end: new Date("2026-08-15T18:00:00Z"),
+      workspaceTz: "Asia/Manila",
+    });
+    // 2026-08-16T10:00:00Z is 2026-08-16 18:00 in Asia/Manila — the SAME
+    // Manila calendar day as ev1, even though the raw UTC date differs.
+    const ev2 = makeEvent({
+      id: "b",
+      start: new Date("2026-08-16T10:00:00Z"),
+      end: new Date("2026-08-16T11:00:00Z"),
+      workspaceTz: "Asia/Manila",
+    });
+    const result = groupEventsForMonth([ev1, ev2]);
+    // Both events land on Manila's Aug 16 — must collapse into one day bucket
+    // (first event + overflow), not split across two calendar days.
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ id: "a" });
+    const overflow = result[1] as OverflowEvent;
+    expect(overflow.type).toBe("overflow");
+    expect(overflow.overflowCount).toBe(1);
+    expect(overflow.overflowEvents.map((e) => e.id)).toEqual(["b"]);
+  });
+
+  it("falls back to the workspaceTimezone parameter when an event has no own workspaceTz", () => {
+    // Same cross-boundary instants as above, but relying on the function-level
+    // workspaceTimezone parameter instead of a per-event workspaceTz.
+    const ev1 = makeEvent({ id: "a", start: new Date("2026-08-15T17:00:00Z"), end: new Date("2026-08-15T18:00:00Z") });
+    const ev2 = makeEvent({ id: "b", start: new Date("2026-08-16T10:00:00Z"), end: new Date("2026-08-16T11:00:00Z") });
+    const result = groupEventsForMonth([ev1, ev2], "Asia/Manila");
+    expect(result).toHaveLength(2);
+    expect(result[0]).toMatchObject({ id: "a" });
+    const overflow = result[1] as OverflowEvent;
+    expect(overflow.overflowCount).toBe(1);
+    expect(overflow.overflowEvents.map((e) => e.id)).toEqual(["b"]);
   });
 });
 
