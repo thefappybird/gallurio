@@ -94,9 +94,18 @@ Purpose: fast inheritance doc for next agent. This is a polish/correctness pass 
 
 - [x] Masonry still too similar to grid
   - `lib/page-builder/blocks/GalleryMasonryBlock.tsx` /
-    `GalleryGridBlock.tsx` — see agent findings; already structurally
-    distinct (CSS grid + fixed 1:1 tiles vs CSS columns + natural
-    aspect-ratio) unless the dispatched pass found a real defeating bug.
+    `GalleryGridBlock.tsx` — confirmed no defeating bug: Grid uses CSS
+    Grid + fixed `aspectRatio:"1/1"` tiles with `imageDeliveryUrl(...,
+    { fit: "cover" })` (square crop by design); Masonry uses CSS
+    `columnCount` + natural per-image `aspectRatio` with `imageDeliveryUrl(...,
+    { fit: "scale-down" })`, which only shrinks-to-fit and never crops,
+    so natural aspect ratio genuinely reaches the tile. Column/gap
+    defaults are the same shape but not identical (masonry's default gap
+    is larger: 12/24px vs grid's 8/16px). No code change made — this is
+    a real structural difference already in place; "still too similar"
+    is most likely near-square source photos reading as grid-like at
+    typical column counts. Needs a live screenshot with mixed-aspect
+    source photos to confirm before any further change here.
 
 - [ ] Real image/photo placeholders across portfolio/gallery/media surfaces
   - Likely files:
