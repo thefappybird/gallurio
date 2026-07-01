@@ -210,7 +210,11 @@ export default async function BookingsPage({
   const events: CalendarEvent[] =
     view !== "calendar"
       ? []
-      : buildBookingCalendarEvents(bookings, { today, emailByClientId });
+      : buildBookingCalendarEvents(bookings, {
+          today,
+          emailByClientId,
+          tz: filters.workspaceTimezone,
+        });
 
   const rows: BookingRow[] = bookings.map((b) => {
     const bSessions = b.sessions as { startAt: Date; endAt: Date }[];
