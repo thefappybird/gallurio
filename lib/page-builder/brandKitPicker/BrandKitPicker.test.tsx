@@ -51,6 +51,20 @@ describe("BrandKitPicker", () => {
     );
   });
 
+  it("typing a custom Google Font name does not call onChange per keystroke, only on blur", () => {
+    const { onChange } = setup();
+    const input = screen.getByRole("textbox", { name: /heading font.*custom google font name/i });
+    fireEvent.change(input, { target: { value: "B" } });
+    fireEvent.change(input, { target: { value: "Be" } });
+    fireEvent.change(input, { target: { value: "Bebas Neue" } });
+    expect(onChange).not.toHaveBeenCalled();
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ headingFont: "google:Bebas Neue" })
+    );
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
   it("selecting a body font emits bodyFont without touching headingFont", () => {
     const { onChange } = setup();
     const bodyGroup = screen.getByRole("group", { name: /body font/i });

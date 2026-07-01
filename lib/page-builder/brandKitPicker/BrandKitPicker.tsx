@@ -85,7 +85,19 @@ function FontSelector({
   value: PortfolioFontSelection;
   onChange: (key: PortfolioFontSelection) => void;
 }) {
-  const customName = googleFontFamilyName(selectedKey) ?? "";
+  const committedCustomName = googleFontFamilyName(selectedKey) ?? "";
+  // Local draft state so the input reflects every keystroke, but onChange only
+  // commits on blur — committing per keystroke would fire a Google Fonts
+  // request and inject a <link> for every partial, incomplete family name.
+  // Adjust state during render (not an effect) when the committed value
+  // changes for a reason other than this input's own blur-commit (e.g. a
+  // curated font button was clicked instead).
+  const [customName, setCustomName] = useState(committedCustomName);
+  const [lastCommittedName, setLastCommittedName] = useState(committedCustomName);
+  if (committedCustomName !== lastCommittedName) {
+    setLastCommittedName(committedCustomName);
+    setCustomName(committedCustomName);
+  }
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="text-xs font-medium text-muted-foreground">{label}</legend>
@@ -151,10 +163,7 @@ function FontSelector({
       <input
         type="text"
         value={customName}
-        onChange={(e) => {
-          const typed = e.target.value;
-          if (typed) onChange(toGoogleFontSelection(typed));
-        }}
+        onChange={(e) => setCustomName(e.target.value)}
         onBlur={(e) => {
           const trimmed = e.target.value.trim();
           if (trimmed) onChange(toGoogleFontSelection(trimmed));
