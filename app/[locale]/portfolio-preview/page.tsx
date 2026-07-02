@@ -121,6 +121,7 @@ export default async function PortfolioPreviewPage({
     const renderWorkspace = {
       ...buildRenderWorkspace(workspace),
       locale: chromeLocale,
+      brandVars: cssVars,
       chrome: {
         startingFrom: t("startingFrom", { price: "{price}" }),
         socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),

@@ -23,6 +23,10 @@ export type CollectionPopupProps = {
   onClose: () => void;
   /** Localized strings; falls back to English literals when absent (editor canvas). */
   labels?: CollectionPopupLabels;
+  /** Brand-kit CSS vars (--pf-color-*, --pf-font-*, --pf-radius). The popup
+   *  renders through a Portal at document.body, escaping the page wrapper that
+   *  sets these — so we re-apply them here or the popup has no background. */
+  brandVars?: Record<string, string>;
 };
 
 type PopupImage = LightboxImage;
@@ -131,6 +135,7 @@ export function CollectionPopup({
   open,
   onClose,
   labels: labelsProp,
+  brandVars,
 }: CollectionPopupProps) {
   const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
@@ -230,6 +235,8 @@ export function CollectionPopup({
   // ---------------------------------------------------------------------------
 
   const shellStyle: React.CSSProperties = {
+    // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
+    ...(brandVars as React.CSSProperties),
     position: "fixed",
     top: "50%",
     left: "50%",

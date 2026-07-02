@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
@@ -10,7 +11,7 @@ import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageD
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
-import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
@@ -97,9 +98,12 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     );
   }
 
+  const { cssVars: brandVars } = resolveBrandKit(workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT);
+
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    brandVars,
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),
       socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),

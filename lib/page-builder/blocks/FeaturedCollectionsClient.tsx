@@ -25,6 +25,8 @@ export type FeaturedCollectionsClientProps = {
   popupConfig: PortfolioCollectionsPopupConfig;
   /** Localized popup labels threaded from puck metadata. */
   popupLabels?: CollectionPopupLabels;
+  /** Brand-kit CSS vars, re-applied on the popup's portaled root (see CollectionPopup). */
+  brandVars?: Record<string, string>;
 };
 
 // ---------------------------------------------------------------------------
@@ -59,6 +61,7 @@ export function FeaturedCollectionsClient({
   slug,
   popupConfig,
   popupLabels,
+  brandVars,
 }: FeaturedCollectionsClientProps) {
   const [active, setActive] = useState<FeaturedTile | null>(null);
 
@@ -184,6 +187,7 @@ export function FeaturedCollectionsClient({
           popupConfig={popupConfig}
           onClose={() => setActive(null)}
           labels={popupLabels}
+          brandVars={brandVars}
         />
       )}
     </>

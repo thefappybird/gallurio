@@ -10,7 +10,8 @@ import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageD
 import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
 import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
-import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
@@ -131,10 +132,13 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     );
   }
 
+  const { cssVars: brandVars } = resolveBrandKit(workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT);
+
   // buildRenderWorkspace copies workspace-level fields (contact, etc.).
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    brandVars,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.
     chrome: {

@@ -1633,6 +1633,7 @@ export function EditorShell({
                 slug,
                 editorPreview: true,
                 publicPage: { collectionsPopup },
+                brandVars: cssVars,
               },
             }}
             viewports={[

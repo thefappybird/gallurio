@@ -26,6 +26,14 @@ export type RenderWorkspace = {
   } | null;
   /** True when rendered inside the editor canvas / chrome-less preview (owner context). */
   editorPreview?: boolean;
+  /**
+   * Brand-kit CSS custom properties (--pf-color-*, --pf-font-*, --pf-radius).
+   * Blocks that portal content to `document.body` (base-ui Dialog/Popover)
+   * escape the page wrapper that normally declares these — re-apply this map
+   * as an inline style on the portaled root or `var(--pf-color-x)` resolves
+   * to nothing. See CollectionPopup's use of this field.
+   */
+  brandVars?: Record<string, string>;
   /** Workspace contact details used by ContactCardBlock */
   contact?: {
     email?: string | null;
