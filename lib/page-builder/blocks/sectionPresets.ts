@@ -197,7 +197,7 @@ export const VIDEO_PRESET: ContainerBlockProps = {
   content: slot([
     child("Heading", { level: "h2", text: "Watch our story" }),
     child("Text", { text: "A short film capturing the moments that matter most." }),
-    child("Video", { videoUrl: "", description: "", footer: "" }),
+    child("Video", { videoUrl: "" }),
   ]),
 };
 
@@ -211,7 +211,7 @@ export const SECTION_PRESETS = {
   GalleryMasonryPreset: { label: "Gallery Masonry", defaultProps: GALLERY_MASONRY_PRESET },
   FeaturedWorkPreset:   { label: "Featured Work",   defaultProps: FEATURED_WORK_PRESET },
   GalleryLandingPreset: { label: "Gallery landing", defaultProps: GALLERY_LANDING_PRESET },
-  VideoPreset:          { label: "Video",            defaultProps: VIDEO_PRESET },
+  VideoPreset:          { label: "Video Highlight",  defaultProps: VIDEO_PRESET },
 } as const;
 
 export type SectionPresetKey = keyof typeof SECTION_PRESETS;

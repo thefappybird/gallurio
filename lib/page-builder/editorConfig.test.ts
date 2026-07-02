@@ -81,8 +81,13 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(fieldOf("Heading", "text")?.contentEditable).toBe(true);
     expect(fieldOf("Text", "text")?.contentEditable).toBe(true);
     expect(fieldOf("Button", "label")?.contentEditable).toBe(true);
-    expect(fieldOf("Video", "description")?.contentEditable).toBe(true);
-    expect(fieldOf("Video", "footer")?.contentEditable).toBe(true);
+  });
+
+  it("keeps Video as a video-only manual block", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.Video.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.Video.fields ?? {});
+    expect(editorFields).toEqual(["_style", "videoUrl"]);
+    expect(prodFields).toEqual(["_style", "videoUrl"]);
   });
 
   it("removes gallery copy inputs from GalleryGrid field keys", () => {

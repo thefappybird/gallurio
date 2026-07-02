@@ -8,28 +8,22 @@
  * block's empty state. All branding via `--pf-*` CSS variables.
  */
 
-import { isValidElement } from "react";
 import type { ComponentConfig } from "@measured/puck";
 import type { BlockPuck } from "@/lib/page-builder/blockContext";
 import {
   resolveBlockStyle,
   resolveBlockAttrs,
-  asText,
   productionStyleField,
   type BlockStyle,
 } from "@/lib/page-builder/styleToolkit";
 
 export type VideoBlockProps = {
   _style?: BlockStyle;
-  description: string;
   videoUrl: string;
-  footer: string;
 };
 
 export const videoDefaultProps: VideoBlockProps = {
-  description: "",
   videoUrl: "",
-  footer: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -70,14 +64,7 @@ export function parseVideoEmbed(rawUrl: string | undefined | null): VideoEmbed |
 // Component
 // ---------------------------------------------------------------------------
 
-export function VideoBlock({ _style, description, videoUrl, footer, puck }: VideoBlockProps & { puck?: BlockPuck }) {
-  // Puck's contentEditable transform swaps the string prop for an editable element
-  // on the canvas (even when empty). Render the element directly and always show its
-  // region in edit mode; in public render the plain string is hidden when empty.
-  const descriptionNode = isValidElement(description) ? description : asText(description);
-  const footerNode = isValidElement(footer) ? footer : asText(footer);
-  const hasDescription = isValidElement(description) || Boolean(asText(description));
-  const hasFooter = isValidElement(footer) || Boolean(asText(footer));
+export function VideoBlock({ _style, videoUrl, puck }: VideoBlockProps & { puck?: BlockPuck }) {
   const embed = parseVideoEmbed(videoUrl);
 
   return (
@@ -92,79 +79,42 @@ export function VideoBlock({ _style, description, videoUrl, footer, puck }: Vide
       }}
       {...resolveBlockAttrs(_style)}
     >
-      <div style={{ maxWidth: "56rem", margin: "0 auto" }}>
-        {hasDescription && (
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            <p
-              style={{
-                fontSize: "1rem",
-                lineHeight: 1.6,
-                margin: "0 auto",
-                maxWidth: "40rem",
-                color: "var(--pf-color-fg)",
-                opacity: 0.75,
-                whiteSpace: "pre-line",
-              }}
-            >
-              {descriptionNode}
-            </p>
-          </div>
-        )}
-
-        {embed ? (
-          <div
-            style={{
-              position: "relative",
-              width: "100%",
-              aspectRatio: "16 / 9",
-              overflow: "hidden",
-              borderRadius: "var(--pf-radius)",
-              backgroundColor: "var(--pf-color-fg)",
-            }}
-          >
-            <iframe
-              src={embed.src}
-              title="Embedded video"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
-            />
-          </div>
-        ) : (
-          <div
-            style={{
-              width: "100%",
-              aspectRatio: "16 / 9",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid color-mix(in srgb, var(--pf-color-fg) 15%, transparent)",
-            }}
-          >
-            <p style={{ margin: 0, opacity: 0.45, fontSize: "0.9375rem" }}>
-              Paste a YouTube or Vimeo link to embed a video.
-            </p>
-          </div>
-        )}
-
-        {hasFooter && (
-          <p
-            style={{
-              textAlign: "center",
-              fontSize: "0.9375rem",
-              lineHeight: 1.6,
-              margin: "1.5rem auto 0",
-              maxWidth: "40rem",
-              color: "var(--pf-color-fg)",
-              opacity: 0.75,
-              whiteSpace: "pre-line",
-            }}
-          >
-            {footerNode}
+      {embed ? (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            aspectRatio: "16 / 9",
+            overflow: "hidden",
+            borderRadius: "var(--pf-radius)",
+            backgroundColor: "var(--pf-color-fg)",
+          }}
+        >
+          <iframe
+            src={embed.src}
+            title="Embedded video"
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+          />
+        </div>
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            aspectRatio: "16 / 9",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: "1px solid color-mix(in srgb, var(--pf-color-fg) 15%, transparent)",
+          }}
+        >
+          <p style={{ margin: 0, opacity: 0.45, fontSize: "0.9375rem" }}>
+            Paste a YouTube or Vimeo link to embed a video.
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -179,9 +129,7 @@ export const videoBlockConfig: ComponentConfig<VideoBlockProps> = {
   defaultProps: videoDefaultProps,
   fields: {
     _style: productionStyleField,
-    description: { type: "textarea", label: "Description" },
     videoUrl: { type: "text", label: "YouTube or Vimeo URL" },
-    footer: { type: "textarea", label: "Footer" },
   },
   render: VideoBlock,
 };

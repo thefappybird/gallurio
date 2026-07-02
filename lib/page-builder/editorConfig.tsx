@@ -308,7 +308,7 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.galleryMasonryPreset": "Gallery Masonry",
   "puckConfig.blocks.featuredWorkPreset": "Featured Work",
   "puckConfig.blocks.galleryLandingPreset": "Gallery landing",
-  "puckConfig.blocks.videoPreset": "Video",
+  "puckConfig.blocks.videoPreset": "Video Highlight",
   "puckConfig.blocks.galleryGrid": "Photo Grid",
   "puckConfig.blocks.galleryMasonry": "Masonry",
   "puckConfig.blocks.featuredWork": "Highlights",
@@ -337,8 +337,6 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.fields.headingLevel": "Level",
   "puckConfig.fields.textContent": "Text",
   "puckConfig.fields.videoUrl": "YouTube or Vimeo URL",
-  "puckConfig.fields.videoDescription": "Description (optional)",
-  "puckConfig.fields.videoFooter": "Footer (optional)",
   "puckConfig.fields.imageAlt": "Alt text",
   "puckConfig.fields.buttonLabel": "Button label",
   "puckConfig.fields.buttonSize": "Size",
@@ -661,13 +659,11 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: videoDefaultProps,
     fields: {
       _style: styleField,
-      description: { ...richTextField(t("puckConfig.fields.videoDescription"), true), visible: false } as unknown as Field<string>,
       videoUrl: { type: "text", label: t("puckConfig.fields.videoUrl"), visible: false } as unknown as Field<string>,
-      footer: { ...richTextField(t("puckConfig.fields.videoFooter"), true), visible: false } as unknown as Field<string>,
     },
     resolveFields: (_data, { fields }) => {
-      // videoUrl, description, and footer are managed by the Content tab in StyleToolkitField
-      const { videoUrl: _v, description: _d, footer: _f, ...rest } = fields as Record<string, unknown>;
+      // videoUrl is managed by the Content tab in StyleToolkitField.
+      const { videoUrl: _v, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: VideoBlock,
