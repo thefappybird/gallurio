@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
@@ -42,6 +43,11 @@ export function StepShell({
 
   return (
     <div className="flex flex-1 flex-col gap-8">
+      <Link href="/" className="flex items-center gap-2 self-start">
+        <Image src="/brand/gallurio-sq.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+        <span className="font-heading text-base font-semibold tracking-tight">Gallurio</span>
+      </Link>
+
       <ProgressBar activeIndex={activeIndex} furthestIndex={furthestIndex} />
 
       <div className="grid flex-1 grid-cols-1 gap-8 lg:grid-cols-[1fr_minmax(360px,440px)]">
@@ -111,9 +117,9 @@ function ProgressBar({
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(
-                  "flex h-4 w-4 items-center justify-center border text-[10px]",
+                  "flex h-5 w-5 items-center justify-center rounded-full border text-[10px]",
                   visited && "border-primary bg-primary text-primary-foreground",
-                  active && !visited && "border-primary",
+                  active && !visited && "border-primary text-primary",
                   locked && "border-border text-muted-foreground"
                 )}
               >

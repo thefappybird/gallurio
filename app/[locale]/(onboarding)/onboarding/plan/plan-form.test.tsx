@@ -66,7 +66,6 @@ describe("PlanStepForm — renders", () => {
     renderForm();
     // Plan card headings are <h3> — use role heading to avoid SVG text duplication
     expect(screen.getByRole("heading", { name: "Free" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Starter" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Pro" })).toBeInTheDocument();
   });
 
@@ -81,7 +80,7 @@ describe("PlanStepForm — renders", () => {
   });
 
   it("shows a paid CTA when a paid plan is selected", async () => {
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /subscribe/i })).toBeInTheDocument();
     });
@@ -94,15 +93,15 @@ describe("PlanStepForm — renders", () => {
 });
 
 describe("PlanStepForm — plan card selection", () => {
-  it("switching to Starter changes the CTA to paid text", async () => {
+  it("switching to Pro changes the CTA to paid text", async () => {
     renderForm({ currentPlan: "free" });
 
-    // Find the Starter plan card specifically by its heading
-    const starterHeading = screen.getByRole("heading", { name: "Starter" });
+    // Find the Pro plan card specifically by its heading
+    const proHeading = screen.getByRole("heading", { name: "Pro" });
     // The heading is inside the card button — click the closest button ancestor
-    const starterCard = starterHeading.closest("button");
-    expect(starterCard).not.toBeNull();
-    fireEvent.click(starterCard!);
+    const proCard = proHeading.closest("button");
+    expect(proCard).not.toBeNull();
+    fireEvent.click(proCard!);
 
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /subscribe.*₱/i })).toBeInTheDocument();
@@ -138,7 +137,7 @@ describe("PlanStepForm — paid plan checkout", () => {
 
     const { initializePaddle } = await import("@paddle/paddle-js");
 
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
 
     // Wait for Paddle to init (useEffect + async initializePaddle)
     await waitFor(() => {
@@ -171,7 +170,7 @@ describe("PlanStepForm — paid plan checkout", () => {
       json: async () => ({ error: "Server error" }),
     });
 
-    renderForm({ currentPlan: "starter" });
+    renderForm({ currentPlan: "pro" });
 
     const cta = screen.getByRole("button", { name: /subscribe/i });
     fireEvent.click(cta);
@@ -211,3 +210,4 @@ describe("PlanStepForm — dev activate", () => {
     });
   });
 });
+

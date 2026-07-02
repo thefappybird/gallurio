@@ -222,7 +222,7 @@ export function PlanIllustration() {
             textAnchor="middle"
             fontFamily="inherit"
           >
-            {i === 0 ? "Starter" : "Pro"}
+            {i === 0 ? "Free" : "Pro"}
           </text>
           <text
             x={100 + i * 120}
@@ -233,7 +233,7 @@ export function PlanIllustration() {
             fontFamily="inherit"
             fontWeight="600"
           >
-            {i === 0 ? "$19" : "$49"}
+            {i === 0 ? "₱0" : "₱250"}
           </text>
           {[180, 200, 220].map((y) => (
             <rect

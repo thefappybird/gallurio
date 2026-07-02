@@ -33,9 +33,7 @@ export function PlanStepForm({
   const tPlans = useTranslations("plans");
   const errMsg = useActionError();
   const router = useRouter();
-  const [selected, setSelected] = useState<PlanTier>(
-    currentPlan === "pro" ? "pro" : currentPlan === "starter" ? "starter" : "free"
-  );
+  const [selected, setSelected] = useState<PlanTier>(currentPlan === "pro" ? "pro" : "free");
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -88,7 +86,7 @@ export function PlanStepForm({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: selected, onboarding: true }),
+        body: JSON.stringify({ plan: selected, cadence: "monthly", onboarding: true }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         priceId?: string;
@@ -155,7 +153,7 @@ export function PlanStepForm({
       illustration={<PlanIllustration />}
     >
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {PLAN_CATALOG.map((p) => {
             const active = selected === p.id;
             const price = formatPHP(p.amount);
