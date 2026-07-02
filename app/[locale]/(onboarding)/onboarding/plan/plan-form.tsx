@@ -15,6 +15,7 @@ import { useActionError } from "@/lib/i18n/actionError";
 import { StepShell, StepBackButton } from "../_components/step-shell";
 import { PlanIllustration } from "../_components/illustrations";
 import { Button } from "@/components/ui/button";
+import { SegmentedToggle } from "@/components/ui/segmented-toggle";
 import { cn } from "@/lib/utils";
 
 function formatPHP(amount: number): string {
@@ -34,6 +35,7 @@ export function PlanStepForm({
   const errMsg = useActionError();
   const router = useRouter();
   const [selected, setSelected] = useState<PlanTier>(currentPlan === "pro" ? "pro" : "free");
+  const [cadence, setCadence] = useState<"monthly" | "yearly">("monthly");
   const [loading, setLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -86,7 +88,7 @@ export function PlanStepForm({
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: selected, cadence: "monthly", onboarding: true }),
+        body: JSON.stringify({ plan: selected, cadence, onboarding: true }),
       });
       const data = (await res.json().catch(() => ({}))) as {
         priceId?: string;
@@ -136,7 +138,9 @@ export function PlanStepForm({
   const isDev = process.env.NODE_ENV !== "production";
   const busy = loading || pending;
   const selectedEntry = PLAN_CATALOG.find((p) => p.id === selected);
-  const selectedPrice = selectedEntry ? formatPHP(selectedEntry.amount) : "";
+  const selectedPrice = selectedEntry
+    ? formatPHP(cadence === "yearly" && selectedEntry.yearlyAmount ? selectedEntry.yearlyAmount : selectedEntry.amount)
+    : "";
   const selectedName = selectedEntry ? tPlans(`${selected}.name`) : "";
 
   const cta =
@@ -153,11 +157,34 @@ export function PlanStepForm({
       illustration={<PlanIllustration />}
     >
       <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <SegmentedToggle
+            value={cadence}
+            onChange={setCadence}
+            ariaLabel={`${t("cadenceToggle.monthly")} / ${t("cadenceToggle.yearly")}`}
+            options={[
+              { key: "monthly", label: t("cadenceToggle.monthly") },
+              { key: "yearly", label: t("cadenceToggle.yearly") },
+            ]}
+          />
+          {cadence === "yearly" && (
+            <span className="bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+              {t("cadenceToggle.savePill")}
+            </span>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {PLAN_CATALOG.map((p) => {
             const active = selected === p.id;
-            const price = formatPHP(p.amount);
-            const cadence = p.amount === 0 ? t("cadence.forever") : t("cadence.monthly");
+            const priceAmount = cadence === "yearly" && p.yearlyAmount ? p.yearlyAmount : p.amount;
+            const price = formatPHP(priceAmount);
+            const cadenceLabel =
+              p.amount === 0
+                ? t("cadence.forever")
+                : cadence === "yearly"
+                  ? t("cadence.yearly")
+                  : t("cadence.monthly");
             return (
               <motion.button
                 key={p.id}
@@ -188,7 +215,7 @@ export function PlanStepForm({
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="font-heading text-2xl font-semibold">{price}</span>
-                  <span className="text-xs text-muted-foreground">{cadence}</span>
+                  <span className="text-xs text-muted-foreground">{cadenceLabel}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{tPlans(`${p.id}.tagline`)}</p>
                 <ul className="mt-1 flex flex-col gap-1.5 text-xs">

@@ -7,7 +7,7 @@
  * @/lib/i18n/navigation: aliased to stub via vitest.config.ts.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { screen, fireEvent, waitFor, act, within } from "@testing-library/react";
 import { renderWithProviders } from "@/test-utils/render";
 import { PlanStepForm } from "./plan-form";
 
@@ -163,6 +163,39 @@ describe("PlanStepForm — paid plan checkout", () => {
     });
   });
 
+  it("sends the selected cadence in the checkout request body", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        priceId: "pri_test_123",
+        customerEmail: "test@example.com",
+        workspaceId: "ws_abc",
+      }),
+    });
+
+    const { initializePaddle } = await import("@paddle/paddle-js");
+
+    renderForm({ currentPlan: "pro" });
+
+    await waitFor(() => {
+      expect(initializePaddle).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+
+    const cta = screen.getByRole("button", { name: /subscribe/i });
+    fireEvent.click(cta);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/billing/checkout",
+        expect.objectContaining({
+          body: JSON.stringify({ plan: "pro", cadence: "yearly", onboarding: true }),
+        })
+      );
+    });
+  });
+
   it("shows an inline error and re-enables button when checkout API fails", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: false,
@@ -208,6 +241,23 @@ describe("PlanStepForm — dev activate", () => {
     await waitFor(() => {
       expect(devActivatePlanAction).toHaveBeenCalledWith("free");
     });
+  });
+});
+
+describe("PlanStepForm — cadence toggle", () => {
+  it("toggling to yearly updates the Pro card price and shows the save badge", async () => {
+    renderForm({ currentPlan: "pro" });
+
+    const proCard = screen.getByRole("heading", { name: "Pro" }).closest("button")!;
+    expect(within(proCard).getByText("₱250")).toBeInTheDocument();
+    expect(screen.queryByText(/save 2 months/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /yearly/i }));
+
+    await waitFor(() => {
+      expect(within(proCard).getByText("₱2,500")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/save 2 months/i)).toBeInTheDocument();
   });
 });
 

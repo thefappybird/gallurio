@@ -1,0 +1,76 @@
+/**
+ * Smoke tests for BusinessStepForm: icon-grid business-type picker and the
+ * live slug URL preview.
+ */
+import { describe, it, expect, vi } from "vitest";
+import { screen, fireEvent } from "@testing-library/react";
+import { renderWithProviders } from "@/test-utils/render";
+import { BusinessStepForm } from "./business-form";
+import type { BusinessStepInput } from "@/lib/validators/workspace";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
+vi.mock("@/lib/actions/onboarding", () => ({
+  businessStepAction: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock("@/hooks/useSlugAvailability", () => ({
+  useSlugAvailability: () => ({ status: "idle" }),
+}));
+
+const defaults: BusinessStepInput = {
+  firstName: "Sarah",
+  lastName: "Bell",
+  name: "Sarah Bell Photography",
+  slug: "",
+  businessType: "photographer",
+  country: "PH",
+  currency: "PHP",
+  timezone: "Asia/Manila",
+};
+
+function renderForm(overrides: Partial<BusinessStepInput> = {}) {
+  return renderWithProviders(
+    <BusinessStepForm defaults={{ ...defaults, ...overrides }} furthestStep="business" />
+  );
+}
+
+describe("BusinessStepForm — business type icon grid", () => {
+  it("renders a button card for every business type with the default selected", () => {
+    renderForm();
+
+    const photographerCard = screen.getByRole("button", { name: /photographer/i });
+    expect(photographerCard).toHaveAttribute("aria-pressed", "true");
+
+    const venueCard = screen.getByRole("button", { name: /venue/i });
+    expect(venueCard).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("selects a card on click and updates aria-pressed", () => {
+    renderForm();
+
+    const venueCard = screen.getByRole("button", { name: /venue/i });
+    fireEvent.click(venueCard);
+
+    expect(venueCard).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /photographer/i })).toHaveAttribute(
+      "aria-pressed",
+      "false"
+    );
+  });
+});
+
+describe("BusinessStepForm — slug preview", () => {
+  it("shows a live gallurio.com/w/<slug> preview as the slug input changes", () => {
+    renderForm({ slug: "sarah-bell" });
+
+    expect(screen.getByText(/gallurio\.com\/w\/sarah-bell/)).toBeInTheDocument();
+
+    const slugInput = screen.getByLabelText(/workspace url/i);
+    fireEvent.change(slugInput, { target: { value: "new-slug" } });
+
+    expect(screen.getByText(/gallurio\.com\/w\/new-slug/)).toBeInTheDocument();
+  });
+});

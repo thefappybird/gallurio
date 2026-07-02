@@ -5,7 +5,16 @@ import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  Camera,
+  Building2,
+  ClipboardList,
+  Scissors,
+  UtensilsCrossed,
+  Music,
+  Sparkles,
+} from "lucide-react";
 import { SlugStatusIndicator } from "@/components/app/slug-status-indicator";
 import { toast } from "sonner";
 import type { OnboardingStep } from "@/lib/db/models";
@@ -27,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { TIMEZONE_GROUPS } from "@/lib/utils/timezones";
 import { useSlugAvailability } from "@/hooks/useSlugAvailability";
 import { useActionError } from "@/lib/i18n/actionError";
+import { cn } from "@/lib/utils";
 
 const COUNTRY_LABELS: Record<SupportedCountry, string> = {
   PH: "Philippines",
@@ -110,6 +120,7 @@ export function BusinessStepForm({
 
   const slugValue = useWatch({ control, name: "slug" });
   const { status: slugStatus } = useSlugAvailability(slugValue);
+  const businessTypeValue = useWatch({ control, name: "businessType" });
 
   function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     setValue("name", e.target.value);
@@ -128,13 +139,13 @@ export function BusinessStepForm({
   }
 
   const businessTypes = [
-    { value: "photographer", label: t("businessTypes.photographer") },
-    { value: "venue", label: t("businessTypes.venue") },
-    { value: "planner", label: t("businessTypes.planner") },
-    { value: "stylist", label: t("businessTypes.stylist") },
-    { value: "catering", label: t("businessTypes.catering") },
-    { value: "entertainer", label: t("businessTypes.entertainer") },
-    { value: "other", label: t("businessTypes.other") },
+    { value: "photographer", label: t("businessTypes.photographer"), icon: Camera },
+    { value: "venue", label: t("businessTypes.venue"), icon: Building2 },
+    { value: "planner", label: t("businessTypes.planner"), icon: ClipboardList },
+    { value: "stylist", label: t("businessTypes.stylist"), icon: Scissors },
+    { value: "catering", label: t("businessTypes.catering"), icon: UtensilsCrossed },
+    { value: "entertainer", label: t("businessTypes.entertainer"), icon: Music },
+    { value: "other", label: t("businessTypes.other"), icon: Sparkles },
   ] as const;
 
   return (
@@ -194,28 +205,47 @@ export function BusinessStepForm({
             />
           </div>
           <SlugStatusIndicator status={slugStatus} t={t} />
+          {slugValue && (
+            <p className="text-xs text-muted-foreground">
+              {t("slugPreview")} <span className="font-mono">gallurio.com/w/{slugValue}</span>
+            </p>
+          )}
           {errors.slug && <p className="text-sm text-destructive">{errors.slug.message}</p>}
         </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="businessType">{t("businessType")}</Label>
-            <select
-              id="businessType"
-              className="flex h-9 w-full border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              {...register("businessType")}
-            >
-              {businessTypes.map((bt) => (
-                <option key={bt.value} value={bt.value}>
+        <div className="flex flex-col gap-1.5">
+          <Label>{t("businessType")}</Label>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {businessTypes.map((bt) => {
+              const Icon = bt.icon;
+              const active = businessTypeValue === bt.value;
+              return (
+                <button
+                  key={bt.value}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() =>
+                    setValue("businessType", bt.value, { shouldValidate: true, shouldDirty: true })
+                  }
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 border p-3 text-center text-xs font-medium transition-colors",
+                    active
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-border text-muted-foreground hover:border-foreground/40"
+                  )}
+                >
+                  <Icon className="h-5 w-5" aria-hidden="true" />
                   {bt.label}
-                </option>
-              ))}
-            </select>
-            {errors.businessType && (
-              <p className="text-sm text-destructive">{errors.businessType.message}</p>
-            )}
+                </button>
+              );
+            })}
           </div>
+          {errors.businessType && (
+            <p className="text-sm text-destructive">{errors.businessType.message}</p>
+          )}
+        </div>
 
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="country">{t("country")}</Label>
             <select
@@ -241,9 +271,7 @@ export function BusinessStepForm({
               <p className="text-sm text-destructive">{errors.country.message}</p>
             )}
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="currency">{t("currency")}</Label>
             <select
