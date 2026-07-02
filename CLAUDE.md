@@ -35,6 +35,16 @@ Delegation is a cost trade-off, not a reflex: every subagent pays a fixed contex
 - **Workflow two-phase pattern**: reader phase (`lean-reader` agent, haiku, parallel) returns raw excerpts → executor phase receives those excerpts inline. Executors never explore.
 - Never use Sonnet with 1M context. Prompt-polishing helpers live in `.claude/`.
 
+### Fixed team roster
+When dispatching the full team, use this fixed 7-seat roster only — one flat layer, no further fan-out:
+- `senior-backend-engineer` ×2 (sonnet) — server-only work.
+- `senior-frontend-engineer` ×2 (sonnet) — UI-only work.
+- `lean-reader` ×2 (haiku) — read-only context for the four engineers above.
+- `senior-reviewer` ×1 (opus) — reviews the team's output; applies no fixes itself (dispatch a follow-up executor for that, per established practice).
+- **Boundary is hard:** frontend agents never edit server files (Server Actions, Route Handlers, Mongoose, Zod schemas); backend agents never edit UI files (components, Tailwind, Puck config, locale copy). A side that needs the other's work stops and emits a self-contained handoff spec in its report (exact file/export name, input/output shape, error cases) instead of touching the file — relay that spec verbatim into the receiving engineer's prompt.
+- **No recursive spawning:** only this top-level session calls Agent or Workflow. Team-roster agents must never call Agent or Workflow themselves, even when a task looks bigger than their remit — they do the piece that fits their role and name what's left for you to route.
+- **Caveman default:** the backend/frontend/reviewer seats invoke the `caveman` skill at the start of every dispatch and keep using it through their final report, so their return text costs less of your context. `lean-reader` has no Skill tool by design (kept minimal/cheap) — its verbatim-only contract is already terser than caveman.
+
 ## Codebase memory (codebase-memory-mcp) — opt-in
 Use the graph index ONLY for large navigation/understanding tasks (multi-hop dependency tracing, architecture maps, broad fan-out where many agents share one index) — there it beats re-crawling and keeps subagents consistent. For routine few-file work, skip it; the token overhead isn't worth it.
 - When used: `index_repository` the worktree once (`base_branch: "dev"`), then point queries (`search_code`, `get_architecture`, `trace_path`, `query_graph`, `detect_changes` with base `dev`) at that shared project. Refresh after significant edits/pulls/branch switches.
