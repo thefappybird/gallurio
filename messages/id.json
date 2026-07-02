@@ -1960,6 +1960,34 @@
               "body": "Simpan perubahan kapan saja. Gunakan Draf untuk mengelola beberapa versi. Buka kembali tur ini melalui tombol Panduan."
             }
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Mari ceritakan kisah Anda",
+            "subtitle": "Empat langkah singkat untuk menjelaskan pekerjaan Anda dan memilih gaya Anda — lalu kami bantu Anda membangun halamannya.",
+            "cta": "Mulai"
+          },
+          "story": {
+            "title": "Ceritakan kisah Anda",
+            "subtitle": "Ini akan muncul di hasil pencarian Google dan saat halaman Anda dibagikan.",
+            "placeholder": "Satu kalimat singkat tentang siapa Anda dan apa yang Anda kerjakan…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Pratinjau pencarian"
+          },
+          "vibe": {
+            "title": "Gaya Anda",
+            "subtitle": "Pilih beberapa tag yang menggambarkan gaya Anda — atau tambahkan sendiri.",
+            "addPlaceholder": "Tambah tag"
+          },
+          "done": {
+            "title": "Halaman Anda siap untuk bersinar",
+            "subtitle": "Anda telah menyiapkan fondasinya. Mari buat tampilannya makin menarik.",
+            "continueWithGuide": "Lanjutkan dengan panduan",
+            "exploreSelf": "Saya jelajahi sendiri",
+            "footerNote": "Anda bisa mengeditnya kapan saja di Pengaturan → Halaman Publik."
+          },
+          "back": "Kembali",
+          "continue": "Lanjutkan"
         }
       },
       "wizard": {
@@ -2179,6 +2207,7 @@
       "workspaceUrl": "URL ruang kerja",
       "workspaceUrlNote": "(alamat halaman publik Anda)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Halaman Anda akan berada di",
       "businessType": "Jenis bisnis",
       "country": "Negara",
       "currency": "Mata uang",
@@ -2204,11 +2233,17 @@
       "popular": "Populer",
       "cadence": {
         "forever": "selamanya",
-        "monthly": "/ bulan"
+        "monthly": "/ bulan",
+        "yearly": "/ tahun"
+      },
+      "cadenceToggle": {
+        "monthly": "Bulanan",
+        "yearly": "Tahunan",
+        "savePill": "Hemat 2 bulan"
       },
       "checkoutNote": "Overlay pembayaran Paddle yang aman akan terbuka. Masukkan detail kartu Anda (Visa atau Mastercard). Siklus pertama akan ditagih segera dan diperbarui setiap bulan sampai Anda membatalkan.",
       "ctaFree": "Lanjutkan dengan Free",
-      "ctaPaid": "Berlangganan — {price} / bulan",
+      "ctaPaid": "Berlangganan — {price}",
       "settingUp": "Menyiapkan…",
       "opening": "Membuka pembayaran…",
       "checkoutFailed": "Pembayaran gagal. Silakan coba lagi.",

@@ -79,6 +79,10 @@ export function SandboxEditorGuide({ templates, onFinished, onSkipped }: Props) 
         templates={templates}
         currentTemplateId=""
         guideDismissed={false}
+        storyPromptCompleted={true}
+        initialSeoDescription=""
+        initialSeoKeywords={[]}
+        workspaceBusinessType=""
         initialSavedThemes={[]}
         initialDrafts={[]}
         initialActiveDraftId={null}

@@ -111,12 +111,14 @@ const dismissPortfolioGuideAction = vi.fn().mockResolvedValue({ ok: true });
 const saveThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
 const deleteThemeAction = vi.fn().mockResolvedValue({ ok: true });
 const updateThemeAction = vi.fn().mockResolvedValue({ ok: true, theme: { id: "t1", name: "Test", brandKit: {} } });
+const completeStoryPromptAction = vi.fn().mockResolvedValue({ ok: true });
 vi.mock("../_actions", () => ({
   dismissPortfolioGuideAction: (...a: unknown[]) => dismissPortfolioGuideAction(...a),
   saveThemeAction: (...a: unknown[]) => saveThemeAction(...a),
   deleteThemeAction: (...a: unknown[]) => deleteThemeAction(...a),
   updateThemeAction: (...a: unknown[]) => updateThemeAction(...a),
   updatePortfolioSlugAction: vi.fn().mockResolvedValue({ ok: true }),
+  completeStoryPromptAction: (...a: unknown[]) => completeStoryPromptAction(...a),
 }));
 
 const createDraftAction = vi.fn().mockResolvedValue({ ok: true, draft: { id: "d1", name: "New Draft", templateId: "minimal", updatedAt: new Date().toISOString() } });
@@ -180,6 +182,11 @@ const baseProps = {
   // Keep the first-run guide closed during these tests so its overlay doesn't
   // sit over the editor controls.
   guideDismissed: true,
+  // Keep the story prompt closed by default so existing guide/entry tests are unaffected.
+  storyPromptCompleted: true,
+  initialSeoDescription: "",
+  initialSeoKeywords: [],
+  workspaceBusinessType: "",
   initialSavedThemes: [],
   // Provide an active draft so the editor starts in a clean (non-dirty) state.
   initialActiveDraftId: "d1",
@@ -980,6 +987,16 @@ describe("EditorShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Guide" }));
     expect(await screen.findByText("Welcome to your portfolio editor")).toBeInTheDocument();
     expect(screen.getByText(/1 of \d+/)).toBeInTheDocument();
+  });
+
+  // ---- Story prompt ----
+
+  it("renders the story prompt on load when storyPromptCompleted=false and guideDismissed=false, and hides the guide until it's done", async () => {
+    renderWithProviders(
+      <EditorShell {...baseProps} storyPromptCompleted={false} guideDismissed={false} />
+    );
+    expect(await screen.findByText("Let's tell your story")).toBeInTheDocument();
+    expect(screen.queryByText("Welcome to your portfolio editor")).not.toBeInTheDocument();
   });
 
   // ---- First-load sequencing (#4) ----

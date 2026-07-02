@@ -1960,6 +1960,34 @@
               "body": "Mag-save ng mga pagbabago kahit kailan. Gamitin ang Mga Draft para pamahalaan ang maraming bersyon. Muling buksan ang tour na ito sa pamamagitan ng button na Gabay."
             }
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Ikwento natin ang iyong sarili",
+            "subtitle": "Apat na mabilisang hakbang para ilarawan ang iyong trabaho at piliin ang iyong estilo — pagkatapos, tutulungan ka naming buuin ang pahina.",
+            "cta": "Simulan na"
+          },
+          "story": {
+            "title": "Ikwento ang iyong sarili",
+            "subtitle": "Ipapakita ito sa mga resulta ng paghahanap sa Google at kapag na-share ang iyong pahina.",
+            "placeholder": "Isang maikling linya tungkol sa kung sino ka at ano ang iyong ginagawa…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Preview ng paghahanap"
+          },
+          "vibe": {
+            "title": "Ang iyong vibe",
+            "subtitle": "Pumili ng ilang tag na naglalarawan sa iyong estilo — o magdagdag ng sarili mo.",
+            "addPlaceholder": "Magdagdag ng tag"
+          },
+          "done": {
+            "title": "Handa nang magningning ang iyong pahina",
+            "subtitle": "Naitakda mo na ang pundasyon. Gawin natin itong mas maganda.",
+            "continueWithGuide": "Ituloy kasama ang gabay",
+            "exploreSelf": "Gagalugarin ko na lang mag-isa",
+            "footerNote": "Puwede mo itong i-edit anumang oras sa Mga Setting → Pampublikong Pahina."
+          },
+          "back": "Bumalik",
+          "continue": "Magpatuloy"
         }
       },
       "wizard": {
@@ -2179,6 +2207,7 @@
       "workspaceUrl": "URL ng workspace",
       "workspaceUrlNote": "(ang address ng iyong pampublikong pahina)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Mapupunta ang iyong pahina sa",
       "businessType": "Uri ng negosyo",
       "country": "Bansa",
       "currency": "Currency",
@@ -2204,11 +2233,17 @@
       "popular": "Popular",
       "cadence": {
         "forever": "habambuhay",
-        "monthly": "/ buwan"
+        "monthly": "/ buwan",
+        "yearly": "/ taon"
+      },
+      "cadenceToggle": {
+        "monthly": "Buwanan",
+        "yearly": "Taunan",
+        "savePill": "Makatipid ng 2 buwan"
       },
       "checkoutNote": "Magbubukas ang secure na Paddle checkout overlay. Ilagay ang iyong card details (Visa o Mastercard). Ang unang cycle ay sisingilin agad at magre-renew kada buwan hanggang sa kanselahin mo.",
       "ctaFree": "Magpatuloy sa Free",
-      "ctaPaid": "Mag-subscribe — {price} / buwan",
+      "ctaPaid": "Mag-subscribe — {price}",
       "settingUp": "Sine-set up…",
       "opening": "Binubuksan ang checkout…",
       "checkoutFailed": "Nabigo ang checkout. Pakisubukan muli.",

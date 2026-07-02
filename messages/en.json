@@ -1960,6 +1960,34 @@
             "dontShow": "Don't show again",
             "skip": "Skip Guide"
           }
+        },
+        "storyPrompt": {
+          "welcome": {
+            "title": "Let's tell your story",
+            "subtitle": "Four quick steps to describe your work and pick your style — then we'll help you build the page.",
+            "cta": "Let's go"
+          },
+          "story": {
+            "title": "Tell your story",
+            "subtitle": "This shows up in Google search results and when your page gets shared.",
+            "placeholder": "A short line about who you are and what you do…",
+            "charCount": "{count}/{max}",
+            "previewLabel": "Search preview"
+          },
+          "vibe": {
+            "title": "Your vibe",
+            "subtitle": "Pick a few tags that capture your style — or add your own.",
+            "addPlaceholder": "Add a tag"
+          },
+          "done": {
+            "title": "Your page is ready to shine",
+            "subtitle": "You've set the foundation. Let's make it look great.",
+            "continueWithGuide": "Continue with guide",
+            "exploreSelf": "I'll explore myself",
+            "footerNote": "You can edit this anytime in Settings → Public Page."
+          },
+          "back": "Back",
+          "continue": "Continue"
         }
       },
       "wizard": {
@@ -2179,6 +2207,7 @@
       "workspaceUrl": "Workspace URL",
       "workspaceUrlNote": "(your public page address)",
       "slugPlaceholder": "sarah-bell-photo",
+      "slugPreview": "Your page will live at",
       "businessType": "Business type",
       "country": "Country",
       "currency": "Currency",
@@ -2204,11 +2233,17 @@
       "popular": "Popular",
       "cadence": {
         "forever": "forever",
-        "monthly": "/ month"
+        "monthly": "/ month",
+        "yearly": "/ year"
+      },
+      "cadenceToggle": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "savePill": "Save 2 months"
       },
       "checkoutNote": "A secure Paddle checkout overlay will open. Enter your card details (Visa or Mastercard). The first cycle bills immediately and renews monthly until you cancel.",
       "ctaFree": "Continue with Free",
-      "ctaPaid": "Subscribe — {price} / month",
+      "ctaPaid": "Subscribe — {price}",
       "settingUp": "Setting up…",
       "opening": "Opening checkout…",
       "checkoutFailed": "Checkout failed. Please try again.",
