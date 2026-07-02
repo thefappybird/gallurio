@@ -32,8 +32,8 @@ vi.mock("workflow/api", () => ({
 // Env vars — must be set before the route module is imported so planForPriceId
 // resolves correctly.
 // ---------------------------------------------------------------------------
-process.env.PADDLE_PRICE_STARTER_ID = "pri_test_starter";
 process.env.PADDLE_PRICE_PRO_ID = "pri_test_pro";
+process.env.PADDLE_PRICE_PRO_YEARLY_ID = "pri_test_pro_yearly";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +61,7 @@ function makeSubscriptionData(overrides: Record<string, unknown> = {}) {
     status: "active",
     customerId: `ctm_${Math.random().toString(36).slice(2, 10)}`,
     currentBillingPeriod: { startsAt: "2026-06-01T00:00:00Z", endsAt: "2026-07-01T00:00:00Z" },
-    items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+    items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
     customData: null,
     ...overrides,
   };
@@ -165,14 +165,14 @@ describe("paddle webhook — invalid signature", () => {
 });
 
 describe("paddle webhook — subscription.activated", () => {
-  it("sets plan to starter, status active, subscription id, and calls resumeHook", async () => {
+  it("sets plan to pro, status active, subscription id, and calls resumeHook", async () => {
     const wsId = await seedWorkspace({ plan: "free" });
     const subId = "sub_activated_test";
 
     const data = makeSubscriptionData({
       id: subId,
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: { workspaceId: wsId.toString() },
     });
 
@@ -186,7 +186,7 @@ describe("paddle webhook — subscription.activated", () => {
     expect(resBody).toEqual({ received: true });
 
     const after = await Workspace.findById(wsId).lean();
-    expect(after?.plan).toBe("starter");
+    expect(after?.plan).toBe("pro");
     expect(after?.paddleSubscriptionStatus).toBe("active");
     expect(after?.paddleSubscriptionId).toBe(subId);
     expect(after?.paddleCurrentPeriodEnd).toBeInstanceOf(Date);
@@ -199,6 +199,28 @@ describe("paddle webhook — subscription.activated", () => {
         status: "active",
       })
     );
+  });
+
+  it("resolves plan to pro when the item price is the yearly pro price id", async () => {
+    const wsId = await seedWorkspace({ plan: "free" });
+    const subId = "sub_activated_yearly";
+
+    const data = makeSubscriptionData({
+      id: subId,
+      status: "active",
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_YEARLY_ID } }],
+      customData: { workspaceId: wsId.toString() },
+    });
+
+    mockVerify.mockResolvedValue(makeEvent(EventName.SubscriptionActivated, data) as never);
+
+    const { POST } = await loadRoute();
+    const res = await POST(makeReq());
+
+    expect(res.status).toBe(200);
+    const after = await Workspace.findById(wsId).lean();
+    expect(after?.plan).toBe("pro");
+    expect(after?.paddleSubscriptionId).toBe(subId);
   });
 
   it("does NOT call resumeHook when customData.workspaceId is absent", async () => {
@@ -270,19 +292,19 @@ describe("paddle webhook — subscription.canceled", () => {
 });
 
 describe("paddle webhook — team-cap guard on subscription.updated", () => {
-  it("refuses a pro→starter downgrade when workspace exceeds starter's team cap", async () => {
-    // starter allows 3 teams; workspace has 5 — plan must stay pro.
+  it("refuses promoting to pro when workspace exceeds pro's team cap", async () => {
+    // pro allows 15 teams; workspace has 20 — plan must not change.
     const subId = "sub_tier_swap_over_cap";
     const wsId = await seedWorkspace({
-      plan: "pro",
+      plan: "free",
       paddleSubscriptionId: subId,
-      teamCount: 5,
+      teamCount: 20,
     });
 
     const data = makeSubscriptionData({
       id: subId,
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: null,
     });
 
@@ -293,25 +315,25 @@ describe("paddle webhook — team-cap guard on subscription.updated", () => {
     expect(res.status).toBe(200);
 
     const after = await Workspace.findById(wsId).lean();
-    // Plan is unchanged — the swap was refused.
-    expect(after?.plan).toBe("pro");
+    // Plan is unchanged — the promotion was refused.
+    expect(after?.plan).toBe("free");
     // Other fields are still updated.
     expect(after?.paddleSubscriptionStatus).toBe("active");
     expect(after?.paddleSubscriptionId).toBe(subId);
   });
 
-  it("allows a pro→starter downgrade when workspace is within the team cap", async () => {
+  it("allows promoting to pro when workspace is within the team cap", async () => {
     const subId = "sub_tier_swap_allowed";
     const wsId = await seedWorkspace({
-      plan: "pro",
+      plan: "free",
       paddleSubscriptionId: subId,
-      teamCount: 2, // starter allows 3
+      teamCount: 5, // pro allows 15
     });
 
     const data = makeSubscriptionData({
       id: subId,
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: null,
     });
 
@@ -321,7 +343,7 @@ describe("paddle webhook — team-cap guard on subscription.updated", () => {
     await POST(makeReq());
 
     const after = await Workspace.findById(wsId).lean();
-    expect(after?.plan).toBe("starter");
+    expect(after?.plan).toBe("pro");
     expect(after?.paddleSubscriptionStatus).toBe("active");
   });
 });
@@ -437,7 +459,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
     // The webhook must detect the mismatch and NOT overwrite B's subscription.
     const subBExisting = "sub_b_existing";
     const wsIdB = await seedWorkspace({
-      plan: "starter",
+      plan: "pro",
       paddleSubscriptionId: subBExisting,
       paddleCustomerId: "ctm_b",
     });
@@ -445,7 +467,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
     const data = makeSubscriptionData({
       id: "sub_new_different",
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: { workspaceId: wsIdB.toString() },
     });
 
@@ -459,7 +481,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
     const after = await Workspace.findById(wsIdB).lean();
     expect(after?.paddleSubscriptionId).toBe(subBExisting);
     // plan and customerId must also be unchanged
-    expect(after?.plan).toBe("starter");
+    expect(after?.plan).toBe("pro");
     expect(after?.paddleCustomerId).toBe("ctm_b");
   });
 
@@ -469,7 +491,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
     const data = makeSubscriptionData({
       id: "sub_fresh_activation",
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: { workspaceId: wsId.toString() },
     });
 
@@ -481,7 +503,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.paddleSubscriptionId).toBe("sub_fresh_activation");
-    expect(after?.plan).toBe("starter");
+    expect(after?.plan).toBe("pro");
   });
 
   it("allows activation when customData.workspaceId points at a workspace whose subscription id MATCHES the event", async () => {
@@ -495,7 +517,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
     const data = makeSubscriptionData({
       id: subId,
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: { workspaceId: wsId.toString() },
     });
 
@@ -507,7 +529,7 @@ describe("paddle webhook — customData.workspaceId mis-routing defence", () => 
 
     const after = await Workspace.findById(wsId).lean();
     expect(after?.paddleSubscriptionId).toBe(subId);
-    expect(after?.plan).toBe("starter");
+    expect(after?.plan).toBe("pro");
   });
 });
 
@@ -525,7 +547,7 @@ describe("paddle webhook — handler exception returns 500", () => {
     const data = makeSubscriptionData({
       id: subId,
       status: "active",
-      items: [{ price: { id: process.env.PADDLE_PRICE_STARTER_ID } }],
+      items: [{ price: { id: process.env.PADDLE_PRICE_PRO_ID } }],
       customData: null,
     });
     mockVerify.mockResolvedValue(makeEvent(EventName.SubscriptionUpdated, data) as never);
