@@ -27,6 +27,7 @@ import {
   updateCollectionsPopupConfigAction,
   switchTemplateAction,
   dismissPortfolioGuideAction,
+  completeStoryPromptAction,
   saveThemeAction,
   updateThemeAction,
   updatePortfolioSlugAction,
@@ -268,6 +269,63 @@ describe("dismissPortfolioGuideAction", () => {
     expect(res).toEqual({ error: "owner_only" });
     const ws = await Workspace.findById(workspaceId).lean();
     expect(ws!.publicPage!.guideDismissedAt ?? null).toBeNull();
+  });
+});
+
+describe("completeStoryPromptAction", () => {
+  it("is owner-only", async () => {
+    mockCtx.role = "staff";
+    const res = await completeStoryPromptAction({ description: "Bali wedding studio", keywords: ["wedding"] });
+    expect(res).toEqual({ error: "owner_only" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
+  });
+
+  it("happy path: persists description, keywords, and completion timestamp", async () => {
+    const res = await completeStoryPromptAction({
+      description: "Bali wedding studio capturing candid moments.",
+      keywords: ["wedding", "bali", "candid"],
+    });
+    expect(res).toEqual({ ok: true });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.seoDescription).toBe("Bali wedding studio capturing candid moments.");
+    expect(ws!.publicPage!.seo!.keywords).toEqual(["wedding", "bali", "candid"]);
+    expect(ws!.publicPage!.storyPromptCompletedAt).toBeTruthy();
+  });
+
+  it("rejects a description over 300 chars", async () => {
+    const res = await completeStoryPromptAction({ description: "x".repeat(301), keywords: [] });
+    expect(res).toEqual({ error: "invalid_request" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
+  });
+
+  it("rejects more than 10 keywords", async () => {
+    const res = await completeStoryPromptAction({
+      description: "Studio",
+      keywords: Array.from({ length: 11 }, (_, i) => `kw${i}`),
+    });
+    expect(res).toEqual({ error: "invalid_request" });
+    const ws = await Workspace.findById(workspaceId).lean();
+    expect(ws!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
+  });
+
+  it("tenant isolation — only updates the caller's workspace", async () => {
+    const otherWs = await Workspace.create({
+      slug: "other-studio",
+      name: "Other Studio",
+      ownerUserId: "user_other",
+      clerkOrgId: `org_${Math.round(Math.random() * 1e9)}`,
+      currency: "PHP",
+      publicPage: {
+        data: { home: { content: [], root: {} }, gallery: { content: [], root: {} } },
+        latestVersion: 0,
+      },
+    });
+    await completeStoryPromptAction({ description: "Mine", keywords: ["mine"] });
+    const other = await Workspace.findById(otherWs._id).lean();
+    expect(other!.publicPage!.storyPromptCompletedAt ?? null).toBeNull();
+    expect(other!.publicPage!.seoDescription ?? "").toBe("");
   });
 });
 

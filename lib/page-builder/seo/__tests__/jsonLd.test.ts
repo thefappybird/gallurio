@@ -36,6 +36,16 @@ describe("buildHomeJsonLd", () => {
     const [lb] = buildHomeJsonLd({ name: "X", slug: "x", email: "hi@studio.com" });
     expect(lb.email).toBe("hi@studio.com");
   });
+  it("joins keywords into a comma-delimited string when provided", () => {
+    const [lb] = buildHomeJsonLd({ name: "X", slug: "x", keywords: ["wedding", "bali"] });
+    expect(lb.keywords).toBe("wedding, bali");
+  });
+  it("omits keywords when absent or empty", () => {
+    const [lb] = buildHomeJsonLd({ name: "X", slug: "x" });
+    expect(lb).not.toHaveProperty("keywords");
+    const [lb2] = buildHomeJsonLd({ name: "X", slug: "x", keywords: [] });
+    expect(lb2).not.toHaveProperty("keywords");
+  });
 });
 
 import { buildGalleryJsonLd, safeJsonLd } from "../jsonLd";

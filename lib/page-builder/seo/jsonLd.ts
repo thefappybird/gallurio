@@ -29,6 +29,7 @@ export type JsonLdInput = {
   image?: string;
   address?: string;
   sameAs?: string[];
+  keywords?: string[];
 };
 
 function defined<T>(v: T | undefined): v is T {
@@ -50,6 +51,7 @@ export function buildHomeJsonLd(input: JsonLdInput): [Record<string, unknown>, R
   if (defined(input.email)) lb.email = input.email;
   if (defined(input.address)) lb.address = { "@type": "PostalAddress", streetAddress: input.address };
   if (input.sameAs && input.sameAs.length > 0) lb.sameAs = input.sameAs;
+  if (input.keywords && input.keywords.length > 0) lb.keywords = input.keywords.join(", ");
   const website: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "WebSite",

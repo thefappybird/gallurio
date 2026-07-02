@@ -90,6 +90,10 @@ export default async function PageBuilderEntry({
   const initialFormDir = toPlain<string>(pp?.formDir, "");
   const guideDismissed = Boolean(pp?.guideDismissedAt);
   const initialSavedThemes = toPlain<PortfolioSavedTheme[]>(pp?.savedThemes, []);
+  const storyPromptCompleted = Boolean(pp?.storyPromptCompletedAt);
+  const initialSeoDescription = pp?.seoDescription ?? "";
+  const initialSeoKeywords = toPlain<string[]>(pp?.seo?.keywords, []);
+  const workspaceBusinessType = workspace.businessType ?? "";
 
   // Migrate legacy publicPage.data into a draft if this workspace has no drafts yet.
   await ensureLegacyDraftMigrated(workspace._id);
@@ -134,6 +138,10 @@ export default async function PageBuilderEntry({
         currentTemplateId={templateId}
         guideDismissed={guideDismissed}
         initialSavedThemes={initialSavedThemes}
+        storyPromptCompleted={storyPromptCompleted}
+        initialSeoDescription={initialSeoDescription}
+        initialSeoKeywords={initialSeoKeywords}
+        workspaceBusinessType={workspaceBusinessType}
         initialDrafts={initialDrafts}
         initialActiveDraftId={initialActiveDraftId}
         initialActiveDraftName={initialActiveDraftName}

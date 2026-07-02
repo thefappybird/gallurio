@@ -241,6 +241,39 @@ export async function dismissPortfolioGuideAction(): Promise<EditorActionResult>
   return { ok: true };
 }
 
+const completeStoryPromptSchema = z.object({
+  description: z.string().max(300).trim(),
+  keywords: z.array(z.string().trim().min(1).max(40)).max(10),
+});
+
+/**
+ * Persist the owner's first-visit "story prompt" answers (SEO description +
+ * style tags), captured before the editor's Guide tour opens. Owner-only.
+ * Idempotent — re-submitting just rewrites the fields and the timestamp.
+ * Not surfaced on the public page until the owner opens Settings → Public
+ * Page, so no revalidatePath (mirrors dismissPortfolioGuideAction).
+ */
+export async function completeStoryPromptAction(input: unknown): Promise<EditorActionResult> {
+  const ctx = await requireOrg();
+  if (ctx.role !== "owner") return { error: "owner_only" };
+
+  const parsed = completeStoryPromptSchema.safeParse(input);
+  if (!parsed.success) return { error: "invalid_request" };
+
+  await connectDB();
+  await Workspace.updateOne(
+    { _id: ctx.workspace._id },
+    {
+      $set: {
+        "publicPage.seoDescription": parsed.data.description,
+        "publicPage.seo.keywords": parsed.data.keywords,
+        "publicPage.storyPromptCompletedAt": new Date(),
+      },
+    }
+  );
+  return { ok: true };
+}
+
 // "" = auto (locale derived from the workspace country).
 const formLocaleSchema = z.enum(["", "en", "fil", "ms", "id"]);
 

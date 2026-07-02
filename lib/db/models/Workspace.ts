@@ -114,6 +114,11 @@ const workspaceSchema = new Schema(
       // show again"). Null → the guide auto-opens on load. Stored per workspace
       // (one owner per workspace in MVP) so the choice survives across devices.
       guideDismissedAt: { type: Date, default: null },
+      // When the owner completed the first-visit "story prompt" modal (SEO
+      // description + style tags), captured before the Guide tour opens.
+      // Null → the modal auto-opens on load. Separate flag from the Guide's
+      // own dismissal so the two first-run surfaces gate independently.
+      storyPromptCompletedAt: { type: Date, default: null },
       seoTitle: { type: String, default: "" },
       seoDescription: { type: String, default: "" },
       inquiryRecipientEmail: { type: String, default: "" },
@@ -222,6 +227,7 @@ const workspaceSchema = new Schema(
         ogImageAssetId: { type: String, default: "" },
         galleryDescription: { type: String, default: "" },
         noindex: { type: Boolean, default: false },
+        keywords: { type: [String], default: [] },
       },
     },
     plan: { type: String, enum: PLAN_TIERS, default: "free", index: true },
