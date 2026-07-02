@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 
 // Env vars must be set before the module is imported so the PLAN_CATALOG
 // array captures the values at module-evaluation time.
-const STARTER_PRICE_ID = "pri_test_starter_01";
 const PRO_PRICE_ID = "pri_test_pro_01";
+const PRO_YEARLY_PRICE_ID = "pri_test_pro_yearly_01";
 
 let planForPriceId: (id: string) => import("@/lib/db/models").PlanTier;
 let PLAN_CATALOG: ReadonlyArray<import("@/lib/paddle/plans").PlanCatalogEntry>;
@@ -13,8 +13,8 @@ let getPlanCatalog: (
 ) => import("@/lib/paddle/plans").PlanCatalogEntry;
 
 beforeAll(async () => {
-  process.env.PADDLE_PRICE_STARTER_ID = STARTER_PRICE_ID;
   process.env.PADDLE_PRICE_PRO_ID = PRO_PRICE_ID;
+  process.env.PADDLE_PRICE_PRO_YEARLY_ID = PRO_YEARLY_PRICE_ID;
 
   const mod = await import("@/lib/paddle/plans");
   planForPriceId = mod.planForPriceId;
@@ -24,12 +24,12 @@ beforeAll(async () => {
 });
 
 describe("planForPriceId", () => {
-  it("returns 'starter' for the starter price id", () => {
-    expect(planForPriceId(STARTER_PRICE_ID)).toBe("starter");
+  it("returns 'pro' for the monthly pro price id", () => {
+    expect(planForPriceId(PRO_PRICE_ID)).toBe("pro");
   });
 
-  it("returns 'pro' for the pro price id", () => {
-    expect(planForPriceId(PRO_PRICE_ID)).toBe("pro");
+  it("returns 'pro' for the yearly pro price id", () => {
+    expect(planForPriceId(PRO_YEARLY_PRICE_ID)).toBe("pro");
   });
 
   it("returns 'free' for an unknown price id", () => {
@@ -42,9 +42,9 @@ describe("planForPriceId", () => {
 });
 
 describe("PLAN_CATALOG shape", () => {
-  it("has exactly three entries: free, starter, pro", () => {
+  it("has exactly two entries: free, pro", () => {
     const ids = PLAN_CATALOG.map((p) => p.id);
-    expect(ids).toEqual(["free", "starter", "pro"]);
+    expect(ids).toEqual(["free", "pro"]);
   });
 
   it("free plan has amount 0 and no priceId", () => {
@@ -53,16 +53,12 @@ describe("PLAN_CATALOG shape", () => {
     expect(free.priceId).toBeUndefined();
   });
 
-  it("starter plan has amount 250 and correct priceId", () => {
-    const starter = PLAN_CATALOG.find((p) => p.id === "starter")!;
-    expect(starter.amount).toBe(250);
-    expect(starter.priceId).toBe(STARTER_PRICE_ID);
-  });
-
-  it("pro plan has amount 500 and correct priceId", () => {
+  it("pro plan has monthly amount 250, yearly amount 2500, and correct price ids", () => {
     const pro = PLAN_CATALOG.find((p) => p.id === "pro")!;
-    expect(pro.amount).toBe(500);
+    expect(pro.amount).toBe(250);
+    expect(pro.yearlyAmount).toBe(2500);
     expect(pro.priceId).toBe(PRO_PRICE_ID);
+    expect(pro.yearlyPriceId).toBe(PRO_YEARLY_PRICE_ID);
   });
 
   it("pro plan is highlighted", () => {
@@ -85,8 +81,8 @@ describe("PLAN_CATALOG shape", () => {
 });
 
 describe("isPaidPlan", () => {
-  it("returns true for starter", () => {
-    expect(isPaidPlan("starter")).toBe(true);
+  it("returns false for starter (merged away)", () => {
+    expect(isPaidPlan("starter")).toBe(false);
   });
 
   it("returns true for pro", () => {

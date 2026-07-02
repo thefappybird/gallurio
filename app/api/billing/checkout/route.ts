@@ -29,7 +29,8 @@ async function cancelInFlightCheckout(token: string): Promise<void> {
 }
 
 const bodySchema = z.object({
-  plan: z.enum(["starter", "pro"]),
+  plan: z.enum(["pro"]),
+  cadence: z.enum(["monthly", "yearly"]).default("monthly"),
   onboarding: z.boolean().optional(),
 });
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
-  const { plan } = parsed.data;
+  const { plan, cadence } = parsed.data;
 
   if (!isPaidPlan(plan)) {
     return NextResponse.json(
@@ -51,7 +52,8 @@ export async function POST(req: Request) {
   }
 
   const catalog = getPlanCatalog(plan);
-  if (!catalog.priceId) {
+  const priceId = cadence === "yearly" ? catalog.yearlyPriceId : catalog.priceId;
+  if (!priceId) {
     return NextResponse.json(
       { error: "paddle_price_not_configured" },
       { status: 500 },
@@ -104,7 +106,7 @@ export async function POST(req: Request) {
   );
 
   return NextResponse.json({
-    priceId: catalog.priceId,
+    priceId,
     customerEmail: email,
     workspaceId: ctx.workspace._id.toString(),
   });
