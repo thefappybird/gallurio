@@ -12,6 +12,8 @@ import {
   type SerializedNotification,
 } from "@/app/[locale]/(app)/notifications/_load-more-action";
 import { formatRelativeTime } from "@/lib/i18n/relativeTime";
+import { useNotifications } from "@/lib/hooks/useNotifications";
+import { useNotificationBurstToast } from "@/lib/hooks/useNotificationBurstToast";
 
 function notificationIcon(type: string) {
   if (type.startsWith("inquiry")) return <MessageSquare className="size-4 shrink-0" />;
@@ -40,10 +42,13 @@ export function NotificationsListPage({
 }: Props) {
   const router = useRouter();
   const tt = useTranslations("app.notifications.types");
+  const tNotif = useTranslations("app.notifications");
   const [items, setItems] = useState<SerializedNotification[]>(initialItems);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { liveArrivalTick } = useNotifications();
+  const { showToast: showArrivalToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
 
   function handleMarkRead(item: SerializedNotification) {
     if (!item.read) {
@@ -85,7 +90,14 @@ export function NotificationsListPage({
   return (
     <div className="flex flex-col gap-0">
       <div className="flex items-center justify-between border-b px-4 py-3">
-        <h1 className="text-xl font-semibold tracking-tight">{messages.pageTitle}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-semibold tracking-tight">{messages.pageTitle}</h1>
+          {showArrivalToast && (
+            <span role="status" aria-live="polite" className="text-xs font-medium text-primary">
+              {tNotif("newNotifications", { count: bundledCount })}
+            </span>
+          )}
+        </div>
         {hasUnread && (
           <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
             {messages.markAllRead}
@@ -128,12 +140,17 @@ export function NotificationsListPage({
                     <p
                       className={[
                         "text-sm leading-snug",
-                        !item.read ? "font-semibold" : "font-medium",
+                        !item.read ? "font-semibold text-accent-foreground" : "font-medium",
                       ].join(" ")}
                     >
                       {displayTitle}
                     </p>
-                    <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                    <p
+                      className={[
+                        "mt-0.5 line-clamp-2 text-xs",
+                        !item.read ? "text-accent-foreground" : "text-muted-foreground",
+                      ].join(" ")}
+                    >
                       {displayBody.length > 80 ? `${displayBody.slice(0, 80)}…` : displayBody}
                     </p>
                   </div>

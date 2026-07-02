@@ -468,6 +468,33 @@ describe("CollectionPopup", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // brandVars: re-applied on the portaled shell (fixes transparent public popup)
+  // ---------------------------------------------------------------------------
+
+  it("re-applies brandVars as custom properties on the portaled shell", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(
+      <CollectionPopup
+        {...defaultProps({ brandVars: { "--pf-color-bg": "#ff00aa", "--pf-color-fg": "#111111" } })}
+      />
+    );
+
+    await screen.findByRole("heading", { name: /wedding 2024/i });
+    const popup = document.querySelector("[data-popup-shell]") as HTMLElement;
+    expect(popup).not.toBeNull();
+    expect(popup.style.getPropertyValue("--pf-color-bg")).toBe("#ff00aa");
+    expect(popup.style.getPropertyValue("--pf-color-fg")).toBe("#111111");
+  });
+
+  it("renders without brandVars (optional prop, no crash)", async () => {
+    vi.stubGlobal("fetch", makeFetch(null));
+    render(<CollectionPopup {...defaultProps({ brandVars: undefined })} />);
+
+    const heading = await screen.findByRole("heading", { name: /wedding 2024/i });
+    expect(heading).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
   // Focus-visible data attributes and scoped style presence
   // ---------------------------------------------------------------------------
 

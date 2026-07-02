@@ -19,6 +19,7 @@ export const PRESET_BLOCK_KEYS = [
   "GalleryMasonryPreset",
   "FeaturedWorkPreset",
   "GalleryLandingPreset",
+  "VideoPreset",
 ] as const;
 
 // Manual blocks: barebones primitives + the styleable Container/Columns

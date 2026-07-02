@@ -18,7 +18,7 @@ import type { Field } from "@measured/puck";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import { FONT_PAIR_MAP } from "./resolveBrandKit";
 import type { BrandKitFontPair, BrandKitButtonStyle } from "./types";
-import { fontFamilyValue, type PortfolioFontKey } from "./fonts";
+import { fontFamilyValue, type PortfolioFontSelection } from "./fonts";
 export { fontFamilyValue };
 
 // The `_style` field key — the per-block style toolkit lives here, as the first
@@ -96,9 +96,13 @@ export type BlockStyle = {
   // Background
   bgColorToken?: StyleColorToken | string;
   bgImagePublicId?: string;
+  // Opacity (0-100) of the background-image layer only — content/text stays full
+  // opacity. Applied by the consuming block (Container/Image) via a dedicated
+  // layered div, not resolveBlockStyle (see manualBlocks.tsx). Unset = 100.
+  bgImageOpacity?: number;
   // Typography (applied SECTION-WIDE — to the whole block via resolveBlockStyle)
   fontPair?: BrandKitFontPair; // legacy; kept for back-compat reads
-  fontFamily?: PortfolioFontKey;
+  fontFamily?: PortfolioFontSelection;
   fontSize?: number; // px
   textColorToken?: StyleColorToken | string;
   // Button fill color (Button block only) — applied by ButtonBlock to the <a>.
@@ -131,7 +135,7 @@ export type BlockStyle = {
   headingUnderline?: boolean;
   headingAlign?: TextAlign;
   headingColorToken?: StyleColorToken | string;
-  headingFontFamily?: PortfolioFontKey;
+  headingFontFamily?: PortfolioFontSelection;
   headingLevel?: HeadingLevel;
   headingHighlight?: boolean;
   headingHighlightToken?: StyleColorToken | string;
@@ -143,7 +147,7 @@ export type BlockStyle = {
   descriptionUnderline?: boolean;
   descriptionAlign?: TextAlign;
   descriptionColorToken?: StyleColorToken | string;
-  descriptionFontFamily?: PortfolioFontKey;
+  descriptionFontFamily?: PortfolioFontSelection;
   descriptionFontSize?: number; // px
   descriptionHighlight?: boolean;
   descriptionHighlightToken?: StyleColorToken | string;
@@ -164,14 +168,14 @@ export type BlockStyle = {
   labelItalic?: boolean;
   labelUnderline?: boolean;
   labelAlign?: TextAlign;
-  labelFontFamily?: PortfolioFontKey;
+  labelFontFamily?: PortfolioFontSelection;
   labelFontSize?: number; // px
   labelColorToken?: StyleColorToken | string;
   valueBold?: boolean;
   valueItalic?: boolean;
   valueUnderline?: boolean;
   valueAlign?: TextAlign;
-  valueFontFamily?: PortfolioFontKey;
+  valueFontFamily?: PortfolioFontSelection;
   valueFontSize?: number; // px
   valueColorToken?: StyleColorToken | string;
   // ContactDetails — social icon controls

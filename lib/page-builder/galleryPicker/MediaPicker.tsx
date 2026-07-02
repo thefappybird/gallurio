@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { usePickerData } from "./usePickerData";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
@@ -52,7 +52,7 @@ const L = {
   uploading: "Uploading…",
   dropActive: "Drop to upload",
   errType: "Only JPEG, PNG, WebP, and AVIF photos are accepted.",
-  errSize: "Each photo must be under 10 MB.",
+  errSize: "Each photo must be under 15 MB.",
   errDim: "Photos must be at least 600×600px — both width and height must be 600px or more.",
   errUpload: "Some photos failed to upload.",
 };
@@ -351,7 +351,7 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     let typeErr = false;
     let sizeErr = false;
     Array.from(files).forEach((f) => {
-      const check = validatePhotoFile(f);
+      const check = validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES);
       if (!check.ok) {
         if (check.reason === "type_not_accepted") typeErr = true;
         else sizeErr = true;
@@ -368,7 +368,9 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
     setUploading(true);
     setUploadError(null);
     const results = await Promise.allSettled(
-      valid.map((file) => uploadImage(file, { subfolder: "portfolio" }))
+      valid.map((file) =>
+        uploadImage(file, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES })
+      )
     );
 
     let dimErr = false;
@@ -466,14 +468,22 @@ export function MediaPicker({ mode, value, onChange, max, open, onOpenChange }: 
   const collectionOrderOf = (id: string) =>
     collectionSelection.findIndex((s) => s.id === id) + 1;
 
+  // Workspace-wide overview map — recomputes whenever `state` settles, so a
+  // fresh-load selection resolves immediately without waiting for the (ref-only,
+  // non-rerendering) `remember()` effect below to be observed by a later render.
+  const byPickerId = useMemo(
+    () => (state.status === "ok" ? new Map(state.data.items.map((it) => [it.id, it])) : null),
+    [state]
+  );
+
   const selectionItems = useMemo(
     () =>
-      // eslint-disable-next-line react-hooks/refs -- intentional: the seen-map is a write-only accumulator of resolved thumbnails; recomputation is driven by `selection`, and a missing entry renders a placeholder
+      // eslint-disable-next-line react-hooks/refs -- intentional: `seen` is a write-only fallback accumulator (covers items paginated in from a collection but past the workspace-overview cap); recomputation is driven by `selection`/`byPickerId`, and a missing entry renders a placeholder
       selection.map((s) => ({
         ...s,
-        item: seen.current.get(s.id) ?? null,
+        item: byPickerId?.get(s.id) ?? seen.current.get(s.id) ?? null,
       })),
-    [selection]
+    [selection, byPickerId]
   );
 
   return (

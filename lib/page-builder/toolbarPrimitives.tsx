@@ -15,6 +15,14 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { STYLE_COLOR_TOKENS, type StyleColorToken } from "./styleToolkit";
 import { useBrandColors } from "./brandColors";
+import {
+  PORTFOLIO_FONT_KEYS,
+  PORTFOLIO_FONTS,
+  GOOGLE_FONT_SHORTLIST,
+  googleFontFamilyName,
+  toGoogleFontSelection,
+  type PortfolioFontSelection,
+} from "./fonts";
 
 export const COLOR_LABEL: Record<StyleColorToken, string> = {
   primary: "Primary",
@@ -215,6 +223,107 @@ export function ColorSwatchRow({
           />
         )}
       </label>
+    </div>
+  );
+}
+
+/**
+ * The block-level font-family control: a curated-key + Google Fonts dropdown,
+ * plus a free-text field for any other Google Fonts family name — both write
+ * to the same `PortfolioFontSelection` value (see lib/page-builder/fonts.ts).
+ * Shared by the 3 font pickers in StyleToolkitField (fontFamily, labelFontFamily,
+ * valueFontFamily) so they can't drift.
+ *
+ * `effectiveValue` — when provided and value is unset, shown as the selected
+ * option (lighter/opacity — "following theme"). Display-only, same convention
+ * as the other toolkit rows.
+ */
+/** Curated font label -> key, for resolving a typed/picked datalist suggestion back to its curated key. */
+const CURATED_LABEL_TO_KEY = new Map(
+  PORTFOLIO_FONT_KEYS.map((key) => [PORTFOLIO_FONTS[key].label.toLowerCase(), key])
+);
+
+/** Displayed text for a font selection: curated label, Google Fonts family name, or "". */
+function fontDisplayText(selection: PortfolioFontSelection | undefined): string {
+  if (!selection) return "";
+  if (selection in PORTFOLIO_FONTS) return PORTFOLIO_FONTS[selection as keyof typeof PORTFOLIO_FONTS].label;
+  return googleFontFamilyName(selection) ?? "";
+}
+
+/** Resolves typed/picked text back to a PortfolioFontSelection — a curated label match wins, else free-text Google Fonts. */
+function resolveFontText(text: string): PortfolioFontSelection | undefined {
+  const trimmed = text.trim();
+  if (trimmed === "") return undefined;
+  const curated = CURATED_LABEL_TO_KEY.get(trimmed.toLowerCase());
+  return curated ?? toGoogleFontSelection(trimmed);
+}
+
+export function FontFamilyRow({
+  label = "Font",
+  value,
+  effectiveValue,
+  onChange,
+}: {
+  label?: string;
+  value: PortfolioFontSelection | undefined;
+  effectiveValue?: PortfolioFontSelection;
+  onChange: (next: PortfolioFontSelection | undefined) => void;
+}) {
+  const isEffective = value === undefined && effectiveValue !== undefined;
+  const displayText = fontDisplayText(value ?? effectiveValue);
+  const listId = useId();
+
+  // Local draft of the typed text — the field only commits to the real
+  // onChange on blur/Enter (not per keystroke), so it can't stay a plain
+  // controlled input off `displayText`. Re-syncs from the prop when it changes
+  // externally (datalist pick, Reset button) via the render-time "adjust
+  // state" pattern — never mid-typing, since `displayText` itself doesn't
+  // change until a commit happens.
+  const [draftText, setDraftText] = useState(displayText);
+  const [prevDisplayText, setPrevDisplayText] = useState(displayText);
+  if (displayText !== prevDisplayText) {
+    setPrevDisplayText(displayText);
+    setDraftText(displayText);
+  }
+
+  function commit(text: string) {
+    onChange(resolveFontText(text));
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className={cn("shrink-0 text-xs", isEffective ? "text-muted-foreground/60" : "text-muted-foreground")}>
+          {label}
+        </span>
+        <div className="flex items-center gap-1">
+          <input
+            type="text"
+            list={listId}
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            onBlur={(e) => commit(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit(e.currentTarget.value);
+            }}
+            placeholder="Type or choose a font…"
+            aria-label={`${label} — type or choose a font`}
+            className={cn(
+              "h-7 w-40 border border-border bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+              isEffective && "opacity-60"
+            )}
+          />
+          <datalist id={listId}>
+            {PORTFOLIO_FONT_KEYS.map((key) => (
+              <option key={key} value={PORTFOLIO_FONTS[key].label} />
+            ))}
+            {GOOGLE_FONT_SHORTLIST.map((entry) => (
+              <option key={entry.name} value={entry.name} />
+            ))}
+          </datalist>
+          <ResetButton onClick={() => onChange(undefined)} label={label} />
+        </div>
+      </div>
     </div>
   );
 }

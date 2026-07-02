@@ -49,8 +49,10 @@ vi.mock("@/lib/page-builder/seo/jsonLd", () => ({
 }));
 
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 
 const mockFind = vi.mocked(findPublishedWorkspaceBySlug);
+const mockResolvePublicChromeLocale = vi.mocked(resolvePublicChromeLocale);
 type LeanWorkspace = NonNullable<Awaited<ReturnType<typeof findPublishedWorkspaceBySlug>>>;
 
 function makePublishedWorkspace(overrides: Partial<WorkspaceDoc> = {}): LeanWorkspace {
@@ -195,6 +197,18 @@ describe("gallery generateMetadata", () => {
     });
 
     expect(result.icons).toBeUndefined();
+  });
+
+  it("sets openGraph.locale from the workspace's resolved public-page locale", async () => {
+    const workspace = makePublishedWorkspace();
+    mockFind.mockResolvedValueOnce(workspace);
+    mockResolvePublicChromeLocale.mockReturnValueOnce("fil");
+
+    const result = await generateMetadata({
+      params: Promise.resolve({ orgSlug: "luna-studio" }),
+    });
+
+    expect(result.openGraph?.locale).toBe("fil");
   });
 });
 

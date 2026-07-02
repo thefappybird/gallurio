@@ -462,6 +462,11 @@ export function EditorShell({
   // and can be reopened on demand via the Guide button for the session.
   const [guideOpen, setGuideOpen] = useState(!guideDismissed);
   const [spotlightStepIndex, setSpotlightStepIndex] = useState(0);
+  function handleFormLocaleChange(next: string) {
+    setFormLocale(next);
+    if (next === "ar") setFormDir("rtl");
+  }
+
   // Puck gate state (populated by PuckGateReader when Puck is mounted)
   const [puckContentCount, setPuckContentCount] = useState(0);
   // Baseline content count captured when the drag-block step becomes active
@@ -1371,6 +1376,21 @@ export function EditorShell({
           <BlockActionsToolbar />
         </div>
       ),
+      // Tour anchor for the precise canvas VIEWPORT only (Puck's `preview` slot,
+      // scoped to the grid's "editor" column) — unlike `data-tour-id="canvas"`
+      // above (Puck's `puck` slot, which wraps the entire UI: header/drawer/
+      // editor/fields), this wrapper is tightly bounded to just the drop-target
+      // surface. Used by the "drag-block" spotlight step's secondary cutout so
+      // it doesn't highlight the whole editor.
+      // `h-full w-full` (not `display: contents`) is required: the wrapper must
+      // have a real, measurable box for the tour's getBoundingClientRect to read,
+      // and Puck's preview surface expects a definite-height ancestor for its own
+      // `height: 100%` to resolve against.
+      preview: ({ children }: { children: ReactNode }) => (
+        <div data-tour-id="canvas-viewport" className="h-full w-full">
+          {children}
+        </div>
+      ),
       // Left sidebar drawer — tour anchor for the "drag a block" spotlight step.
       drawer: ({ children }: { children: ReactNode }) => (
         <div data-tour-id="blocks-panel" className="flex min-h-0 flex-1 flex-col">
@@ -1538,6 +1558,22 @@ export function EditorShell({
   }
 
   // Three-section top bar: nav (left) · device toggle (center) · tools (right).
+  function previewControlsCluster() {
+    return (
+      <div className="flex items-center gap-1">
+        {!sidePanelOpen ? (
+          <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
+        ) : null}
+        <PortfolioLanguageControl
+          value={formLocale as Parameters<typeof PortfolioLanguageControl>[0]["value"]}
+          onChange={handleFormLocaleChange}
+          dir={resolveEffectiveDir(formDir, formLocale)}
+          onDirChange={setFormDir}
+        />
+      </div>
+    );
+  }
+
   function topBar(center: ReactNode, publishSlot: ReactNode) {
     return (
       <div className="flex w-full flex-wrap items-center gap-2">
@@ -1597,6 +1633,7 @@ export function EditorShell({
                 slug,
                 editorPreview: true,
                 publicPage: { collectionsPopup },
+                brandVars: cssVars,
               },
             }}
             viewports={[
@@ -1625,7 +1662,7 @@ export function EditorShell({
                     <EditCanvasControls
                       formLocale={formLocale}
                       formDir={formDir}
-                      onFormLocaleChange={setFormLocale}
+                      onFormLocaleChange={handleFormLocaleChange}
                       onFormDirChange={setFormDir}
                     />,
                     <Button
@@ -1651,10 +1688,7 @@ export function EditorShell({
           <div className="flex h-full flex-col">
             <div className="border-b border-border bg-card px-3 py-2">
               {topBar(
-                // Hide device toggle when a sidebar panel is open (inline preview, not resizable iframe).
-                sidePanelOpen ? null : (
-                  <DeviceTogglePreview value={previewDevice} onChange={setPreviewDevice} />
-                ),
+                previewControlsCluster(),
                 <Button type="button" size="sm" data-tour-id="publish" onClick={() => void handlePublish()}>
                   {t("publish")}
                 </Button>
@@ -1870,7 +1904,7 @@ export function EditorShell({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setFeaturedWorkWarningOpen(false)}>
-              {t("cancel")}
+              {t("featuredPopupWarningCancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {

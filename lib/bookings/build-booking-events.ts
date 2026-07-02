@@ -22,6 +22,9 @@ type BuildOptions = {
   today: Date;
   /** Maps client._id.toString() → email (nullable). */
   emailByClientId: Map<string, string | null>;
+  /** Workspace IANA timezone — used to split sessions on the correct wall-clock
+   *  day boundary and to format each candle's displayed time label correctly. */
+  tz: string;
 };
 
 /**
@@ -38,7 +41,7 @@ export function buildBookingCalendarEvents(
   bookings: BookingEventInput[],
   opts: BuildOptions
 ): CalendarEvent[] {
-  const { today, emailByClientId } = opts;
+  const { today, emailByClientId, tz } = opts;
 
   return bookings.flatMap((b) => {
     const bookingId = b._id.toString();
@@ -50,7 +53,8 @@ export function buildBookingCalendarEvents(
 
       const result = splitSessionIntoCandles(
         { startAt: sessionStart, endAt: sessionEnd },
-        today
+        today,
+        tz
       );
 
       return result.candles.map((candle) => ({
@@ -72,6 +76,7 @@ export function buildBookingCalendarEvents(
         sessionEndAt: sessionEnd,
         sessionDayCount: result.totalShiftDays,
         sessionPastDayCount: result.pastShiftDays,
+        workspaceTz: tz,
       }));
     });
   });

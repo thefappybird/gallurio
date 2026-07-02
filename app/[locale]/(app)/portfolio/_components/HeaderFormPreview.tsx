@@ -107,7 +107,7 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
   const navbarSize = NAVBAR_SIZE_MAP[header.navbarSize || "balanced"];
 
   const linkColor = resolveColor(header.linkColor, brandKit, brandKit.foregroundColor);
-  const brandTextColor = resolveColor(header.brandTextColor, brandKit, linkColor);
+  const brandTextColor = resolveColor(header.brandTextColor, brandKit, brandKit.foregroundColor);
   const activeLinkColor = resolveColor(header.activeLinkColor, brandKit, brandKit.foregroundColor);
 
   function getActiveLinkStyle(): React.CSSProperties {
@@ -120,14 +120,18 @@ export function HeaderFormPreview({ header, brandKit, workspaceName }: Props) {
       style.fontWeight = 700;
     }
     if (header.activeLinkHighlight) {
-      const highlightColor = resolveColor(header.highlightColor, brandKit, brandKit.accentColor);
+      const highlightColor = resolveColor(header.highlightColor, brandKit, brandKit.foregroundColor);
       style.backgroundColor = withOpacity(highlightColor, header.highlightOpacity ?? 100);
       style.borderRadius = header.activeLinkRadius
         ? (RADIUS_MAP[header.activeLinkRadius] ?? brandRadius)
         : brandRadius;
     }
-    if (header.activeLinkUnderline) {
-      style.borderBottom = `3px solid ${resolveColor(header.underlineColor, brandKit, brandKit.accentColor)}`;
+    // Effective default ON: underline shows unless explicitly disabled (=== false).
+    // Mirrors HeaderPanelDialog's toggleUnderline cycle (undefined/true → false → undefined),
+    // which never sets this to an explicit `true` — a strict-truthy check here would
+    // never render the underline.
+    if (header.activeLinkUnderline !== false) {
+      style.borderBottom = `3px solid ${resolveColor(header.underlineColor, brandKit, brandKit.foregroundColor)}`;
     }
     return style;
   }

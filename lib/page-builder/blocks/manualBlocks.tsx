@@ -206,36 +206,101 @@ export const textBlockConfig: ComponentConfig<TextBlockProps> = {
 };
 
 // ---------------------------------------------------------------------------
-// Image
+// Image — a resizable container with a BACKGROUND image (not an <img>
+// element). Modeled on Container: the picked image lives in `_style.bgImagePublicId`
+// and is resolved to CSS via resolveBlockStyle (same mechanism Container/Gallery
+// blocks use), explicit width/height + colSpan/rowSpan come from the Layout tab,
+// and bgImageOpacity (F4) fades only the image layer, never the placeholder.
 // ---------------------------------------------------------------------------
 
 export type ImageBlockProps = {
   _style?: BlockStyle;
-  imagePublicId?: string;
-  imageUrl?: string;
   alt: string;
-  fit: "cover" | "contain";
 };
 
-export const imageDefaultProps: ImageBlockProps = { imagePublicId: "", imageUrl: "", alt: "", fit: "cover" };
+// Back-compat only: the pre-redesign Image block (before commit ee5084d)
+// stored the picture as these top-level props instead of `_style.bgImagePublicId`.
+// Not part of the current schema/fields — read defensively in render so
+// already-saved data (DB `publicPage.data`, a `PortfolioDraft`, or a stale
+// browser localStorage draft) keeps showing its image after the redesign.
+type LegacyImageBlockProps = {
+  imagePublicId?: string;
+  imageUrl?: string;
+};
 
-export function ImageBlock({ _style, imagePublicId, imageUrl, alt, fit, puck }: ImageBlockProps & { puck?: BlockPuck }) {
-  const src = (imagePublicId ? cfImageUrl(imagePublicId) : null) || imageUrl || null;
+export const imageDefaultProps: ImageBlockProps = { alt: "" };
+
+export function ImageBlock({
+  _style,
+  alt,
+  puck,
+  imagePublicId,
+  imageUrl,
+}: ImageBlockProps & LegacyImageBlockProps & { puck?: BlockPuck }) {
+  // Migrate a legacy Cloudflare asset id into the shape resolveBlockStyle
+  // understands, so it resolves through the exact same bgImageUrl() path a
+  // freshly-migrated `_style.bgImagePublicId` would. Only applies when the
+  // new field wasn't already set (never overwrite a real pick).
+  const legacyAssetId = !_style?.bgImagePublicId && imagePublicId ? imagePublicId : undefined;
+  const effectiveStyle = legacyAssetId ? { ..._style, bgImagePublicId: legacyAssetId } : _style;
+
+  const opacity = Math.min(100, Math.max(0, effectiveStyle?.bgImageOpacity ?? 100)) / 100;
+  const resolved = resolveBlockStyle(effectiveStyle) as Record<string, string | number | undefined>;
+  // Legacy raw-URL fallback (no Cloudflare asset id) — resolveBlockStyle's
+  // bgImagePublicId always resolves through the CF delivery URL builder, so a
+  // bare external URL can't go through it. Apply it directly, same as the
+  // pre-redesign `<img src>` fallback (`imagePublicId ? cfImageUrl(...) : imageUrl`).
+  if (!resolved.backgroundImage && !legacyAssetId && imageUrl) {
+    resolved.backgroundImage = `url(${imageUrl})`;
+    resolved.backgroundSize = "cover";
+    resolved.backgroundPosition = "center";
+  }
+  // backgroundImage/backgroundSize/backgroundPosition come from resolveBlockStyle's
+  // existing bgImagePublicId handling (styleToolkit.ts) but land on a dedicated
+  // layer div (below), not the root, so bgImageOpacity can fade just the image —
+  // never the placeholder or the block's frame (border/shadow/radius).
+  const { backgroundImage, backgroundSize, backgroundPosition, ...rootStyle } = resolved;
+  // Depend on whether resolveBlockStyle actually resolved a URL (not just whether
+  // bgImagePublicId is set) — a publicId that fails to resolve (e.g. no cloud name
+  // configured) must fall through to the placeholder, same as Container's banner.
+  const hasImage = Boolean(backgroundImage);
+  const a11yProps = hasImage
+    ? alt
+      ? { role: "img" as const, "aria-label": alt }
+      : { "aria-hidden": "true" as const }
+    : {};
+
   return (
-    <div ref={puck?.dragRef ?? undefined} style={{ padding: "1rem 1.5rem", ...resolveBlockStyle(_style) }} {...resolveBlockAttrs(_style)}>
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt={alt}
-          loading="lazy"
-          style={{ width: "100%", height: "auto", display: "block", objectFit: fit }}
+    <div
+      ref={puck?.dragRef ?? undefined}
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        width: "100%",
+        aspectRatio: effectiveStyle?.height ? undefined : "3 / 2",
+        ...rootStyle,
+      }}
+      {...a11yProps}
+      {...resolveBlockAttrs(effectiveStyle)}
+    >
+      {hasImage ? (
+        <div
+          data-bg-opacity-layer
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: backgroundImage as string | undefined,
+            backgroundSize: backgroundSize as string | undefined,
+            backgroundPosition: backgroundPosition as string | undefined,
+            opacity,
+          }}
         />
       ) : (
         <div
           style={{
-            width: "100%",
-            aspectRatio: "3 / 2",
+            position: "absolute",
+            inset: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -259,17 +324,7 @@ export const imageBlockConfig: ComponentConfig<ImageBlockProps> = {
   defaultProps: imageDefaultProps,
   fields: {
     _style: productionStyleField,
-    imagePublicId: { type: "text", label: "Image (asset ID)" },
-    imageUrl: { type: "text", label: "Image URL (fallback)" },
     alt: { type: "text", label: "Alt text" },
-    fit: {
-      type: "select",
-      label: "Fit",
-      options: [
-        { label: "Cover", value: "cover" },
-        { label: "Contain", value: "contain" },
-      ],
-    },
   },
   render: ImageBlock,
 };
@@ -804,6 +859,9 @@ export function ContainerBlock({
     .filter((l): l is { id: string; src: string } => Boolean(l.src));
   const hasBg = layers.length > 0;
   const overlayAlpha = Math.min(100, Math.max(0, overlayOpacity ?? 0)) / 100;
+  // F4: bgImageOpacity fades only the image layer (the wrapper div below), never
+  // the dark scrim or the content slot — both render outside this wrapper.
+  const bgImageAlpha = Math.min(100, Math.max(0, s.bgImageOpacity ?? 100)) / 100;
 
   // Vertical positioning of the content block within the section height.
   const effectiveJustify = s.justifyContent
@@ -864,21 +922,25 @@ export function ContainerBlock({
       {hasBg && overlayAlpha > 0 && (
         <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, backgroundColor: `rgba(0,0,0,${overlayAlpha})` }} />
       )}
-      {layers.length === 1 && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={layers[0].src}
-          alt=""
-          aria-hidden="true"
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      )}
-      {layers.length >= 2 && (
-        <ContainerBackgroundSlideshow
-          images={layers}
-          animation={bgAnimation ?? "crossfade"}
-          speed={bgSpeed ?? "medium"}
-        />
+      {hasBg && (
+        <div data-bg-opacity-layer aria-hidden="true" style={{ position: "absolute", inset: 0, opacity: bgImageAlpha }}>
+          {layers.length === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={layers[0].src}
+              alt=""
+              aria-hidden="true"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
+          {layers.length >= 2 && (
+            <ContainerBackgroundSlideshow
+              images={layers}
+              animation={bgAnimation ?? "crossfade"}
+              speed={bgSpeed ?? "medium"}
+            />
+          )}
+        </div>
       )}
       {Content({
         style: {

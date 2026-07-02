@@ -412,6 +412,7 @@
           "total": "Kabuuan",
           "deposit": "Deposito",
           "depositExceedsTotal": "Hindi maaaring mas malaki ang deposito kaysa sa kabuuan.",
+          "depositRequiresTotal": "Hindi ka maaaring maglagay ng deposito nang hindi muna nagtatakda ng presyo.",
           "currency": "Currency",
           "outstanding": "Natitirang balanse",
           "notes": "Mga tala",
@@ -1433,7 +1434,9 @@
           "slugChecking": "Sinusuri...",
           "slugAvailable": "Available",
           "slugTaken": "Nakuha na",
-          "slugInvalid": "Hindi wastong format"
+          "slugInvalid": "Hindi wastong format",
+          "qrCodeAlt": "QR code papunta sa iyong portfolio",
+          "downloadQr": "I-download ang QR"
         },
         "themeDialog": {
           "title": "Tema at brand"
@@ -1630,6 +1633,7 @@
         "featuredPopupWarningTitle": "Hindi nahanap ang Featured Work block",
         "featuredPopupWarningBody": "Ang mga estilo na ito ay naaangkop lamang kapag gumagamit ng Featured Work block.",
         "featuredPopupWarningProceed": "Buksan pa rin",
+        "featuredPopupWarningCancel": "Kanselahin",
         "draftNameLabel": "Pangalan ng draft",
         "draftsDialog": {
           "title": "Ang iyong mga draft",
@@ -1748,6 +1752,7 @@
             "galleryMasonryPreset": "Gallery Masonry",
             "featuredWorkPreset": "Mga Itinatampok na Gawa",
             "galleryLandingPreset": "Gallery landing",
+            "videoPreset": "Video Highlight",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Mga Highlight",
@@ -1778,8 +1783,6 @@
             "headingLevel": "Antas",
             "textContent": "Teksto",
             "videoUrl": "URL ng YouTube o Vimeo",
-            "videoDescription": "Paglalarawan (opsyonal)",
-            "videoFooter": "Footer (opsyonal)",
             "imageField": "Larawan",
             "imageUrl": "URL ng larawan (fallback)",
             "imageAlt": "Alt na teksto",
@@ -2034,6 +2037,7 @@
       "popoverTitle": "Mga Kamakailan",
       "markAllRead": "Markahan lahat na nabasa",
       "newNotification": "May bago kang abiso",
+      "newNotifications": "{count, plural, one {May bago kang abiso} other {May # bagong abiso}}",
       "seeAll": "Tingnan lahat ng abiso",
       "empty": "Wala kang mga bagong abiso",
       "pageTitle": "Mga Abiso",

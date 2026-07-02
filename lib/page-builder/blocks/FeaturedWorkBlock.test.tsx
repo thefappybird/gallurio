@@ -5,8 +5,8 @@
  * context, just rendering from props with NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH set.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { puckConfig } from "@/lib/page-builder/config";
 import { FeaturedWorkBlock, featuredWorkDefaultProps, type FeaturedCollectionRef } from "./FeaturedWorkBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -231,6 +231,46 @@ describe("FeaturedWorkBlock — client safety", () => {
 describe("FeaturedWorkBlock — defaultProps", () => {
   it("featuredWorkDefaultProps has minHeight === 'medium'", () => {
     expect(featuredWorkDefaultProps.minHeight).toBe("medium");
+  });
+});
+
+describe("FeaturedWorkBlock — brand vars reach the popup (portal fix)", () => {
+  it("threads puck.metadata.workspace.brandVars onto the opened popup's portaled shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ items: [], nextCursor: null }),
+        })
+      )
+    );
+
+    render(
+      <FeaturedWorkBlock
+        {...featuredWorkDefaultProps}
+        collections={[makeCollection()]}
+        puck={{
+          metadata: {
+            workspace: {
+              _id: "ws1",
+              name: "Studio",
+              slug: "studio",
+              publicPage: { collectionsPopup: {} },
+              brandVars: { "--pf-color-bg": "#ff00aa" },
+            },
+          },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+
+    const shell = await screen.findByRole("heading", { level: 2 }).then((h) => h.closest("[data-popup-shell]"));
+    expect(shell).not.toBeNull();
+    expect((shell as HTMLElement).style.getPropertyValue("--pf-color-bg")).toBe("#ff00aa");
+
+    vi.unstubAllGlobals();
   });
 });
 

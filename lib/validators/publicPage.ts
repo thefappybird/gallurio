@@ -9,7 +9,7 @@ import {
   HEADER_FONT_SIZES,
   HEADER_NAVBAR_SIZES,
 } from "@/lib/page-builder/types";
-import { PORTFOLIO_FONT_KEYS } from "@/lib/page-builder/fonts";
+import { PORTFOLIO_FONT_KEYS, isPortfolioFontKey, type PortfolioFontSelection } from "@/lib/page-builder/fonts";
 
 // ---------------------------------------------------------------------------
 // Primitive helpers
@@ -19,6 +19,19 @@ const hexColorSchema = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "Use a 6-digit hex color like #1a1a1a");
 
+// A curated self-hosted key OR a `google:<Family Name>` selection (see
+// lib/page-builder/fonts.ts — PortfolioFontSelection). The family name is
+// restricted to a safe character set + length bound (not full font-name
+// validation) since it's only ever used to build a Google Fonts CSS2 URL and
+// set a CSS `font-family` value, never interpolated into raw CSS/HTML text.
+// `z.custom` (not `z.union` with a plain regex `.string()`) so the inferred
+// TS type is the branded `PortfolioFontSelection`, not a widened `string`.
+const GOOGLE_FONT_SELECTION_RE = /^google:[A-Za-z0-9][A-Za-z0-9 '-]{0,59}$/;
+const portfolioFontSelectionSchema = z.custom<PortfolioFontSelection>(
+  (value) => isPortfolioFontKey(value) || (typeof value === "string" && GOOGLE_FONT_SELECTION_RE.test(value)),
+  { message: "Invalid font selection" }
+);
+
 // ---------------------------------------------------------------------------
 // brandKitSchema
 // ---------------------------------------------------------------------------
@@ -27,8 +40,8 @@ export const brandKitSchema = z.object({
   themePreset: z.enum(BRAND_KIT_THEME_PRESETS),
   // Legacy pairing kept for back-compat; new saves also carry independent fonts.
   fontPair: z.enum(BRAND_KIT_FONT_PAIRS),
-  headingFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
-  bodyFont: z.enum(PORTFOLIO_FONT_KEYS).optional(),
+  headingFont: portfolioFontSelectionSchema.optional(),
+  bodyFont: portfolioFontSelectionSchema.optional(),
   primaryColor: hexColorSchema,
   secondaryColor: hexColorSchema,
   accentColor: hexColorSchema,

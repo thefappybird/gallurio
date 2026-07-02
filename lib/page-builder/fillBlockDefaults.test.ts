@@ -67,4 +67,18 @@ describe("fillBlockDefaults", () => {
     const result = fillBlockDefaults(data);
     expect(result.content[0].props.foo).toBe("bar");
   });
+
+  it("migrates a legacy Image block's imagePublicId into _style.bgImagePublicId", () => {
+    const data = {
+      content: [
+        { type: "Image", props: { id: "img1", imagePublicId: "ws/legacy.jpg", imageUrl: "", alt: "A photo", fit: "cover" } },
+      ],
+    };
+    const result = fillBlockDefaults(data);
+    const props = result.content[0].props as Record<string, unknown>;
+    expect((props._style as Record<string, unknown>).bgImagePublicId).toBe("ws/legacy.jpg");
+    expect(props.imagePublicId).toBeUndefined();
+    expect(props.fit).toBeUndefined();
+    expect(props.alt).toBe("A photo");
+  });
 });

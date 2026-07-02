@@ -205,6 +205,11 @@ describe("resolveBrandKit — independent headingFont/bodyFont keys", () => {
     expect(cssVars["--pf-font-heading"]).toContain("dm-serif");
     expect(cssVars["--pf-font-body"]).toContain("dm-sans");
   });
+
+  it("uses the Google Fonts family when headingFont is a google: selection", () => {
+    const { cssVars } = resolveBrandKit(kit({ headingFont: "google:Poppins" as never, bodyFont: "inter" }));
+    expect(cssVars["--pf-font-heading"]).toBe('"Poppins", sans-serif');
+  });
 });
 
 // ---------------------------------------------------------------------------

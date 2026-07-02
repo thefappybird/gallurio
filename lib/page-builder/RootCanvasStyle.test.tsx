@@ -2,14 +2,35 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, act, cleanup } from "@testing-library/react";
 import { rootCanvasCssText, buildCanvasCss, RootCanvasStyle } from "./RootCanvasStyle";
 import { setCanvasDevice } from "./canvasViewportStore";
+import { usePuckStore } from "./puckHooks";
+import { BrandColorsContext } from "./brandColors";
+import type { BrandColorMap } from "./brandColors";
+
+const DEFAULT_COLORS: BrandColorMap = {
+  primary: "#111",
+  secondary: "#f5f5f5",
+  accent: "#2f5d56",
+  background: "#fff",
+  foreground: "#111",
+};
 
 // RootCanvasStyle reads Puck state via usePuckStore; stub it out (no Puck context
 // in this unit test) so the component renders and we can assert its injected CSS.
+// Default returns undefined for any selector (no Puck data); individual tests can
+// override via mockImplementation to exercise data-driven behavior.
 vi.mock("./puckHooks", () => ({
-  usePuckStore: () => undefined,
+  usePuckStore: vi.fn(() => undefined),
 }));
 
-afterEach(cleanup);
+// happy-dom actually attempts to fetch <link rel="stylesheet"> hrefs injected by
+// GoogleFontLoader — stub fetch so tests never hit the real network.
+vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("")));
+
+afterEach(() => {
+  cleanup();
+  vi.mocked(usePuckStore).mockReset();
+  document.querySelectorAll("link[data-google-font]").forEach((el) => el.remove());
+});
 
 describe("rootCanvasCssText", () => {
   it("produces a CSS text block for the canvas surface", () => {
@@ -90,9 +111,16 @@ describe("buildCanvasCss", () => {
     // target that wrapper by its STABLE relationship — it is the direct parent of
     // [data-puck-preview] — and override to position:relative + height:auto so the
     // surface grows with content. (A fixed-depth `> * > *` selector missed it: Puck
-    // nests the surface several levels deep, not two.)
+    // nests the surface several levels deep, not two.) Two selector alternatives are
+    // joined by a comma: the spotlight tour's `preview:` Puck override wraps the
+    // surface in a `[data-tour-id="canvas-viewport"]` marker div (for anchor
+    // measurement), making [data-puck-preview] a grandchild in that case instead of
+    // a direct child.
     expect(css).toContain(":has(> [data-puck-preview])");
-    expect(css).toMatch(/:has\(> \[data-puck-preview\]\)\s*{[^}]*position: relative/);
+    expect(css).toContain(':has(> [data-tour-id="canvas-viewport"] > [data-puck-preview])');
+    expect(css).toMatch(
+      /:has\(> \[data-puck-preview\]\), :has\(> \[data-tour-id="canvas-viewport"\] > \[data-puck-preview\]\)\s*{[^}]*position: relative/
+    );
   });
 
   it("clamps the canvas surface width to the selected device width (non-desktop)", () => {
@@ -107,6 +135,29 @@ describe("buildCanvasCss", () => {
     const tag = document.getElementById("pf-root-canvas-style");
     expect(tag?.textContent).toContain("width: 390px");
     act(() => setCanvasDevice("desktop")); // reset shared store
+  });
+
+  it("loads the brand kit's Google Font heading selection via useEffectiveBrandFont", () => {
+    render(
+      <BrandColorsContext.Provider value={{ ...DEFAULT_COLORS, headingFont: "google:Lora" }}>
+        <RootCanvasStyle />
+      </BrandColorsContext.Provider>
+    );
+    expect(document.getElementById("pf-google-font-lora")).toBeTruthy();
+  });
+
+  it("loads a Google Font found in the puck block data (canvas/public parity, no EditorShell touch)", () => {
+    vi.mocked(usePuckStore).mockImplementation((selector: Parameters<typeof usePuckStore>[0]) =>
+      selector({
+        appState: {
+          data: {
+            content: [{ type: "Heading", props: { _style: { fontFamily: "google:Poppins" } } }],
+          },
+        },
+      } as Parameters<Parameters<typeof usePuckStore>[0]>[0])
+    );
+    render(<RootCanvasStyle />);
+    expect(document.getElementById("pf-google-font-poppins")).toBeTruthy();
   });
 
   // C6: canvas must materialize the brand background so Luxury theme shows correctly

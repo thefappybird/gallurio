@@ -70,13 +70,18 @@ function NotificationRow({
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span
           className={[
-            'truncate text-sm text-foreground',
-            !notification.read ? 'font-semibold' : 'font-normal',
+            'truncate text-sm',
+            !notification.read ? 'font-semibold text-accent-foreground' : 'font-normal text-foreground',
           ].join(' ')}
         >
           {title}
         </span>
-        <span className="line-clamp-2 text-xs text-muted-foreground">
+        <span
+          className={[
+            'line-clamp-2 text-xs',
+            !notification.read ? 'text-accent-foreground' : 'text-muted-foreground',
+          ].join(' ')}
+        >
           {body}
         </span>
       </span>

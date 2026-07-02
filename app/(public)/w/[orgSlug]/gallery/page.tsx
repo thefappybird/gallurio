@@ -3,12 +3,15 @@ import { notFound } from "next/navigation";
 import { Render } from "@measured/puck/rsc";
 import { puckConfig } from "@/lib/page-builder/config";
 import { buildRenderWorkspace, runWithRenderWorkspace } from "@/lib/page-builder/serverContext";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
+import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "../_components/ComingSoonFallback";
-import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildGalleryJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
@@ -33,6 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const iconUrl = publicPage?.siteIcon?.url || undefined;
   const ogImageUrl = seo.ogImageUrl || undefined;
   const galleryUrl = `${portfolioPublicUrl(workspace.slug)}/gallery`;
+  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -44,6 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: galleryUrl,
       type: "website",
       siteName: name,
+      locale,
       images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
     twitter: {
@@ -93,9 +98,12 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     );
   }
 
+  const { cssVars: brandVars } = resolveBrandKit(workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT);
+
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    brandVars,
     chrome: {
       startingFrom: t("startingFrom", { price: "{price}" }),
       socialLinkConfirm: t("socialLinkConfirm", { url: "{url}" }),
@@ -116,6 +124,9 @@ export default async function PortfolioGalleryPage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(galleryLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }} />
+      {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
+          kit's own heading/body Google Font is loaded by the layout. */}
+      <GoogleFontLoader families={collectGoogleFontFamilies(galleryData)} />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Render data={galleryData as any} config={puckConfig as any} metadata={{ workspace: renderWorkspace }} />
     </>

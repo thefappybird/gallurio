@@ -187,7 +187,7 @@ export default async function InquiriesPage({
       (b) => b.status === "booked" || b.status === "completed"
     );
 
-    const bookingEvents = buildBookingCalendarEvents(activeBookings, { today, emailByClientId });
+    const bookingEvents = buildBookingCalendarEvents(activeBookings, { today, emailByClientId, tz });
     events = [...inquiryEvents, ...bookingEvents];
   }
 

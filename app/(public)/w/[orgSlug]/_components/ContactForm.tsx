@@ -20,6 +20,7 @@ import {
   type ButtonAppearance,
 } from "./contactButtonAppearance";
 import { colorTokenToVar } from "@/lib/page-builder/styleToolkit";
+import { DEFAULT_TIME_MODE, TIME_INPUT_LANG, type TimeMode } from "@/lib/utils/time-format";
 import type { PortfolioContactConfig } from "@/lib/page-builder/types";
 
 export type InquiryFormLabels = {
@@ -158,7 +159,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   if (config?.activeTabHighlight) {
     const highlightColor = resolveTabColor(
       config.tabHighlightColor,
-      "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)",
+      "var(--pf-color-fg)",
     );
     style.backgroundColor = buildTabColorWithOpacity(highlightColor, config.tabHighlightOpacity ?? 100);
     style.borderRadius = config.activeTabRadius
@@ -167,7 +168,7 @@ export function getActiveTabExtraStyle(config: PortfolioContactConfig | null | u
   }
   // Effective default ON: underline shows unless explicitly disabled (=== false).
   if (config?.activeTabUnderline !== false) {
-    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-accent)")}`;
+    style.borderBottom = `3px solid ${resolveTabColor(config?.tabUnderlineColor, "var(--pf-color-fg)")}`;
   }
   return style;
 }
@@ -182,6 +183,7 @@ export function ContactForm({
   compactLocationPicker = false,
   scrollable = false,
   contactConfig,
+  timeMode = DEFAULT_TIME_MODE,
 }: {
   workspaceSlug: string;
   labels: InquiryFormLabels;
@@ -192,6 +194,9 @@ export function ContactForm({
   compactLocationPicker?: boolean;
   scrollable?: boolean;
   contactConfig?: PortfolioContactConfig | null;
+  /** Workspace owner's saved time-format preference — keeps the time picker's
+   *  hour cycle consistent with the calendar candles the owner sees in-app. */
+  timeMode?: TimeMode;
 }) {
   const form = useForm<InquirySubmissionInput>({
     resolver: zodResolver(inquirySubmissionSchema),
@@ -446,7 +451,10 @@ export function ContactForm({
                       : null
                   }
                   defaultOpen={index === fields.length - 1}
-                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)]"
+                  // CollapsibleDrawer's base classes (bg-card text-card-foreground) are CRM
+                  // app-shell tokens — override with transparent/inherit so the session card
+                  // picks up the portfolio's --pf-* brand colors from its ancestor instead.
+                  className="rounded-[var(--pf-radius)] border-[color:color-mix(in_srgb,var(--pf-color-fg)_18%,transparent)] bg-transparent text-inherit"
                   bodyClassName="flex max-h-80 flex-col gap-2 overflow-y-auto"
                 >
                   {fields.length > 1 && (
@@ -488,13 +496,14 @@ export function ContactForm({
                   <div className="pf-cf-times" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <div>
                       <label htmlFor={`cf-stime-${index}`} style={labelStyle}>{labels.startTime}</label>
-                      <input id={`cf-stime-${index}`} type="time" style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
+                      <input id={`cf-stime-${index}`} type="time" lang={TIME_INPUT_LANG[timeMode]} style={fieldStyle} {...register(`sessions.${index}.startTime` as const)} />
                     </div>
                     <div>
                       <label htmlFor={`cf-etime-${index}`} style={labelStyle}>{labels.endTime}</label>
                       <input
                         id={`cf-etime-${index}`}
                         type="time"
+                        lang={TIME_INPUT_LANG[timeMode]}
                         style={fieldStyle}
                         aria-invalid={errors.sessions?.[index]?.endTime ? "true" : undefined}
                         {...register(`sessions.${index}.endTime` as const)}

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Types } from "mongoose";
-import { PHOTO_SPEC } from "@/lib/page-builder/photoSpec";
+import { PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 
 type MockResp = { body: unknown; status: number };
 
@@ -173,11 +173,11 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(await GalleryItem.countDocuments({})).toBe(0);
   });
 
-  it("rejects a starter item over the 10 MB cap — file_too_large", async () => {
+  it("rejects a starter item over the 15 MB portfolio cap — file_too_large", async () => {
     const res = (await POST(
       makeReq({
         name: "Big File",
-        items: [{ assetId: "img_huge", url: "https://imagedelivery.net/hash/img_huge/public", format: "jpg", sizeBytes: PHOTO_SPEC.maxBytes + 1, width: 1200, height: 800 }],
+        items: [{ assetId: "img_huge", url: "https://imagedelivery.net/hash/img_huge/public", format: "jpg", sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES + 1, width: 1200, height: 800 }],
       })
     )) as unknown as MockResp;
     expect(res.status).toBe(400);
@@ -185,11 +185,21 @@ describe("POST /api/portfolio/gallery/collections", () => {
     expect(await GalleryCollection.countDocuments({})).toBe(0);
   });
 
-  it("accepts a starter item exactly at the 10 MB cap", async () => {
+  it("accepts a starter item exactly at the 15 MB portfolio cap", async () => {
     const res = (await POST(
       makeReq({
         name: "Max Size",
-        items: [{ assetId: "img_max", url: "https://imagedelivery.net/hash/img_max/public", format: "jpg", sizeBytes: PHOTO_SPEC.maxBytes, width: 1200, height: 800 }],
+        items: [{ assetId: "img_max", url: "https://imagedelivery.net/hash/img_max/public", format: "jpg", sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES, width: 1200, height: 800 }],
+      })
+    )) as unknown as MockResp;
+    expect(res.status).toBe(201);
+  });
+
+  it("accepts a starter item at 12 MB — above the shared 10 MB avatar default but within the 15 MB portfolio cap", async () => {
+    const res = (await POST(
+      makeReq({
+        name: "Mid Size",
+        items: [{ assetId: "img_mid", url: "https://imagedelivery.net/hash/img_mid/public", format: "jpg", sizeBytes: 12 * 1024 * 1024, width: 1200, height: 800 }],
       })
     )) as unknown as MockResp;
     expect(res.status).toBe(201);

@@ -140,7 +140,7 @@ function RadiusRow({
               className={cn(
                 "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isExplicit && "bg-foreground text-background hover:bg-foreground",
-                isEffective && "border-foreground opacity-70",
+                isEffective && "bg-foreground text-background hover:bg-foreground opacity-70",
               )}
             >
               {getLabel(r)}
@@ -172,8 +172,7 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        active && !isEffective && "bg-foreground text-background hover:bg-foreground",
-        isEffective && "border-foreground opacity-70",
+        (active || isEffective) && "bg-foreground text-background hover:bg-foreground",
       )}
     >
       {children}
@@ -660,7 +659,7 @@ function ButtonControlsSection({
                 className={cn(
                   "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                   isActive && "bg-foreground text-background hover:bg-foreground",
-                  isEffective && "border-foreground opacity-70",
+                  isEffective && "bg-foreground text-background hover:bg-foreground opacity-70",
                 )}
               >
                 {t(`buttonStyles.${style}`)}

@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { usePuckStore } from "./puckHooks";
 import { resolveRootStyle, type RootPageStyle } from "./rootStyle";
 import { PF_CONTAINER_NAME, PF_RESPONSIVE_CSS } from "./responsive";
 import { CANVAS_DEVICE_WIDTHS, useCanvasViewport } from "./canvasViewportStore";
+import { collectGoogleFontFamilies } from "./fonts";
+import { useEffectiveBrandFont } from "./brandColors";
+import { GoogleFontLoader } from "./GoogleFontLoader";
 
 const CANVAS_STYLE_ID = "pf-root-canvas-style";
 
@@ -80,14 +83,19 @@ const CANVAS_PUCK_LAYOUT_GROWTH_CSS =
 // content — so a page background set on the surface stops at the viewport height
 // and taller content spills outside the colored frame.
 //
-// We target that wrapper by its STABLE structural relationship — it is the direct
-// parent of `[data-puck-preview]` — via `:has(> [data-puck-preview])`. (An earlier
-// fixed-depth selector `[data-tour-id="canvas"] > * > *` missed it: Puck nests the
-// surface ~5 levels deep, not 2.) Overriding to `position: relative` + `height: auto`
-// makes the surface content-driven so the page background wraps the tallest content;
-// `min-height: 100dvh` keeps the blank canvas filling the viewport.
+// We target that wrapper by its STABLE structural relationship to `[data-puck-preview]`
+// via `:has()`. (An earlier fixed-depth selector `[data-tour-id="canvas"] > * > *`
+// missed it: Puck nests the surface ~5 levels deep, not 2.) Two alternatives are
+// listed because the spotlight tour's `preview:` Puck override (EditorShell.tsx)
+// wraps the surface in a `[data-tour-id="canvas-viewport"]` marker div for anchor
+// measurement, making `[data-puck-preview]` a grandchild instead of a direct child:
+//   - `:has(> [data-puck-preview])` — no tour wrapper present (e.g. iframe mode).
+//   - `:has(> [data-tour-id="canvas-viewport"] > [data-puck-preview])` — current case.
+// Overriding to `position: relative` + `height: auto` makes the surface content-driven
+// so the page background wraps the tallest content; `min-height: 100dvh` keeps the
+// blank canvas filling the viewport.
 const CANVAS_PUCK_CANVAS_ROOT_CSS =
-  `:has(> [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
+  `:has(> [data-puck-preview]), :has(> [data-tour-id="canvas-viewport"] > [data-puck-preview]) { position: relative; top: auto; bottom: auto; height: auto; min-height: 100dvh; }`;
 
 // The root page drop zone carries data-puck-dropzone="root:default-zone" (Puck's
 // hardcoded rootAreaId "root" + rootZone "default-zone"). All nested Container /
@@ -158,8 +166,19 @@ export function RootCanvasStyle() {
     (s) =>
       (s.appState?.data?.root?.props as { _rootStyle?: RootPageStyle } | undefined)?._rootStyle,
   );
+  // Whole Puck data tree — walked below for any per-block Google Font
+  // selections so the canvas loads exactly the fonts the page actually uses,
+  // matching the public page (see GoogleFontLoader.tsx / fonts.ts).
+  const puckData = usePuckStore((s) => s.appState?.data);
+  const headingFont = useEffectiveBrandFont("heading");
+  const bodyFont = useEffectiveBrandFont("body");
   const { device, zoom } = useCanvasViewport();
   const deviceWidth = CANVAS_DEVICE_WIDTHS[device];
+
+  const googleFamilies = useMemo(
+    () => collectGoogleFontFamilies({ puckData, headingFont, bodyFont }),
+    [puckData, headingFont, bodyFont]
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -175,5 +194,5 @@ export function RootCanvasStyle() {
     };
   }, [rootStyle, deviceWidth, zoom]);
 
-  return null;
+  return <GoogleFontLoader families={googleFamilies} />;
 }

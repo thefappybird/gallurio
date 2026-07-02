@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { GalleryMasonryBlock, galleryMasonryDefaultProps } from "./GalleryMasonryBlock";
 import type { GalleryMasonryProps } from "./GalleryMasonryBlock";
 import type { GalleryImage } from "./GalleryGridBlock";
@@ -100,5 +100,18 @@ describe("GalleryMasonryBlock — CLS / dimension reservation", () => {
     expect(img.getAttribute("height")).toBeNull();
     expect(img.style.aspectRatio).toBe("");
     expect(img.style.height).toBe("auto");
+  });
+});
+
+describe("GalleryMasonryBlock — lightbox", () => {
+  it("clicking an image opens the shared Lightbox with that image's data", () => {
+    render(GalleryMasonryBlock({ ...base, images: imgs(2) }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Alt 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByAltText("Alt 1")).toHaveAttribute("src", expect.stringContaining("pid1"));
   });
 });

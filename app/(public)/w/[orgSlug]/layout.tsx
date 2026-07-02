@@ -1,13 +1,20 @@
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
-import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
+import {
+  findPublishedWorkspaceBySlug,
+  resolveWorkspaceOwnerBySlug,
+  getOwnerTimeFormat,
+} from "@/lib/db/queries/publicPage";
 import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
+import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { DEFAULT_BRAND_KIT } from "@/lib/page-builder/types";
 import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { resolveEffectiveDir } from "@/lib/i18n/rtl";
 import { notFound } from "next/navigation";
 import { PortfolioHeader } from "./_components/PortfolioHeader";
 import { ContactModal } from "./_components/ContactModal";
+import { SyncDocumentLang } from "./_components/SyncDocumentLang";
 import { MotionObserver } from "@/lib/page-builder/MotionObserver.client";
 import { PageViewBeacon } from "./_components/PageViewBeacon";
 import { buildContactLabels } from "./_components/buildContactLabels";
@@ -52,6 +59,8 @@ export default async function PublicPortfolioLayout({
   });
 
   const contactLabels = buildContactLabels(tContact, tLocationPicker);
+  const ownerUserId = await resolveWorkspaceOwnerBySlug(orgSlug);
+  const timeMode = ownerUserId ? await getOwnerTimeFormat(ownerUserId) : undefined;
   const contactConfig = (workspace.publicPage?.contact ?? null) as PortfolioContactConfig | null;
   const headerConfig = (workspace.publicPage?.header ?? null) as PortfolioHeaderConfig | null;
 
@@ -65,6 +74,12 @@ export default async function PublicPortfolioLayout({
       style={{ ...cssVars, color: "var(--pf-color-fg)", fontFamily: "var(--pf-font-body)" } as React.CSSProperties}
       className={`${className} min-h-svh`}
     >
+      <SyncDocumentLang locale={locale} />
+      {/* Brand kit heading/body may be a Google Font (see fonts.ts) — next/font/google
+          can't be used since the choice is per-workspace runtime data, not known at
+          build time. Loads via a dynamically-injected CSS2 <link>; per-block Google
+          Font overrides are loaded by the page (page.tsx / gallery/page.tsx). */}
+      <GoogleFontLoader families={collectGoogleFontFamilies(brandKit)} />
       <PortfolioHeader
         slug={workspace.slug}
         labels={{
@@ -87,6 +102,7 @@ export default async function PublicPortfolioLayout({
         contact={contactConfig}
         labels={contactLabels}
         brandVars={cssVars}
+        timeMode={timeMode}
       />
     </div>
   );

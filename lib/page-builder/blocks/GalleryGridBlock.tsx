@@ -26,6 +26,7 @@ import {
 } from "@/lib/page-builder/blockContext";
 import { padVar, gridColsVar } from "@/lib/page-builder/responsive";
 import { ContainerBackgroundSlideshow } from "./ContainerBackgroundSlideshow";
+import { GalleryLightboxTrigger } from "./GalleryLightboxTrigger";
 import type { ContainerHeight } from "./manualBlocks";
 
 // ---------------------------------------------------------------------------
@@ -248,15 +249,17 @@ export function GalleryGridBlock({
             if (!src) return null;
             return (
               <figure key={img.id} style={{ margin: 0, padding: 0 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={src}
-                  alt={img.alt ?? ""}
-                  loading="lazy"
-                  width={img.width}
-                  height={img.height}
-                  style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
-                />
+                <GalleryLightboxTrigger image={{ id: img.id, publicId: img.publicId, alt: img.alt ?? "" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={img.alt ?? ""}
+                    loading="lazy"
+                    width={img.width}
+                    height={img.height}
+                    style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }}
+                  />
+                </GalleryLightboxTrigger>
               </figure>
             );
           })}

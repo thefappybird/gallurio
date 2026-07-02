@@ -91,14 +91,43 @@ function deepFillMissing(
 export type BlockEntry = { type: string; props: Record<string, unknown> };
 
 /**
+ * Back-compat: an Image block saved before the background-image redesign
+ * (commit ee5084d) stored the picture as top-level `imagePublicId`/`imageUrl`
+ * instead of `_style.bgImagePublicId`. Synthesize the new shape here so the
+ * editor's Design-tab image picker (which reads `_style.bgImagePublicId`)
+ * reflects the already-saved image instead of showing "no image chosen".
+ * Handles the common Cloudflare-asset-id case; a raw `imageUrl` fallback with
+ * no asset id has no Design-tab equivalent in the new schema and is left to
+ * ImageBlock's own render-time fallback (still renders correctly, just isn't
+ * "picked" in the panel).
+ */
+function migrateLegacyImageProps(block: BlockEntry): BlockEntry {
+  if (block.type !== "Image") return block;
+  const props = block.props;
+  const style = (props._style ?? {}) as Record<string, unknown>;
+  if (style.bgImagePublicId) return block; // already on the new shape
+  const legacyId = props.imagePublicId;
+  if (typeof legacyId !== "string" || !legacyId) return block;
+  const rest = { ...props };
+  delete rest.imagePublicId;
+  delete rest.imageUrl;
+  delete rest.fit;
+  return {
+    ...block,
+    props: { ...rest, _style: { ...style, bgImagePublicId: legacyId } },
+  };
+}
+
+/**
  * Fill defaults for a single block entry (mutates a shallow clone of props).
  */
 function fillEntry(block: BlockEntry): BlockEntry {
-  const defaults = BLOCK_DEFAULTS[block.type];
-  if (!defaults) return block;
-  const props = { ...block.props };
+  const migrated = migrateLegacyImageProps(block);
+  const defaults = BLOCK_DEFAULTS[migrated.type];
+  if (!defaults) return migrated;
+  const props = { ...migrated.props };
   deepFillMissing(props, defaults);
-  return { ...block, props };
+  return { ...migrated, props };
 }
 
 /**

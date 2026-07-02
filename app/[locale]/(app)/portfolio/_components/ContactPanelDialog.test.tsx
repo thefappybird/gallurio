@@ -107,7 +107,7 @@ describe("ContactPanelDialog", () => {
   });
 
   // Item 4c: active tab underline toggle shows effective default ON when unset
-  it("Underline toggle appears lighter-active when activeTabUnderline is unset (effective default ON)", () => {
+  it("Underline toggle uses same selected fill when activeTabUnderline effective default is on", () => {
     renderWithProviders(<ContactPanelDialog {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
@@ -116,10 +116,13 @@ describe("ContactPanelDialog", () => {
     const underlineBtn = screen.getByRole("button", { name: /underline/i });
     // Effective default ON → aria-pressed should be true even when unset
     expect(underlineBtn).toHaveAttribute("aria-pressed", "true");
+    expect(underlineBtn).toHaveClass("bg-foreground");
+    expect(underlineBtn).toHaveClass("text-background");
+    expect(underlineBtn).not.toHaveClass("opacity-70");
   });
 
   // C3: Subtle toggle (effective default ON) shows in inactive tabs section
-  it("Subtle toggle appears lighter-active when inactiveTabSubtle is unset (effective default ON)", () => {
+  it("Subtle toggle uses same selected fill when inactiveTabSubtle effective default is on", () => {
     renderWithProviders(<ContactPanelDialog {...baseProps} />);
     fireEvent.click(screen.getByRole("button", { name: "Design" }));
     fireEvent.click(screen.getByRole("button", { name: "Tabs" }));
@@ -128,6 +131,9 @@ describe("ContactPanelDialog", () => {
     const subtleBtn = screen.getByRole("button", { name: /subtle/i });
     // aria-pressed should reflect the effective default (ON)
     expect(subtleBtn).toHaveAttribute("aria-pressed", "true");
+    expect(subtleBtn).toHaveClass("bg-foreground");
+    expect(subtleBtn).toHaveClass("text-background");
+    expect(subtleBtn).not.toHaveClass("opacity-70");
   });
 
   // Task 12: active tab size toggle must use charcoal (bg-foreground) not brand/teal

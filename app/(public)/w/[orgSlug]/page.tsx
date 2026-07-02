@@ -7,8 +7,11 @@ import { resolvePublicChromeLocale } from "@/lib/i18n/localeForCountry";
 import { getTranslations } from "next-intl/server";
 import { findPublishedWorkspaceBySlug } from "@/lib/db/queries/publicPage";
 import { normalizePublicPageData } from "@/lib/page-builder/normalizePublicPageData";
+import { collectGoogleFontFamilies } from "@/lib/page-builder/fonts";
+import { GoogleFontLoader } from "@/lib/page-builder/GoogleFontLoader";
 import { ComingSoonFallback } from "./_components/ComingSoonFallback";
-import type { PublicPageSeo } from "@/lib/page-builder/types";
+import { resolveBrandKit } from "@/lib/page-builder/resolveBrandKit";
+import { DEFAULT_BRAND_KIT, type PublicPageSeo } from "@/lib/page-builder/types";
 import { portfolioPublicUrl } from "@/lib/portfolio/publicUrl";
 import { buildHomeJsonLd, safeJsonLd } from "@/lib/page-builder/seo/jsonLd";
 
@@ -37,6 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const ogImageUrl = seo.ogImageUrl || undefined;
   const iconUrl = publicPage?.siteIcon?.url || undefined;
   const canonical = portfolioPublicUrl(orgSlug);
+  const locale = resolvePublicChromeLocale(workspace);
 
   const result: Metadata = {
     title,
@@ -48,6 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "website",
       url: canonical,
       siteName: name,
+      locale,
       images: ogImageUrl ? [{ url: ogImageUrl }] : undefined,
     },
     twitter: {
@@ -127,10 +132,13 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     );
   }
 
+  const { cssVars: brandVars } = resolveBrandKit(workspace.publicPage?.brandKit ?? DEFAULT_BRAND_KIT);
+
   // buildRenderWorkspace copies workspace-level fields (contact, etc.).
   const renderWorkspace = {
     ...buildRenderWorkspace(workspace),
     locale,
+    brandVars,
     // Pass the ICU template with "{price}" preserved for per-item substitution
     // in ServicesListBlock — ICU substitutes price: "{price}" → literal token.
     chrome: {
@@ -168,6 +176,9 @@ export default async function PortfolioHomePage({ params }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(businessLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(websiteLd) }} />
+      {/* Per-block Google Font overrides (see lib/page-builder/fonts.ts) — the brand
+          kit's own heading/body Google Font is loaded by the layout. */}
+      <GoogleFontLoader families={collectGoogleFontFamilies(homeData)} />
       {/* metadata threads workspace context to every block via props.puck.metadata —
           the RSC-safe path (AsyncLocalStorage doesn't survive into async block render). */}
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

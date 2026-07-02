@@ -412,6 +412,7 @@
           "total": "Total",
           "deposit": "Deposit",
           "depositExceedsTotal": "Deposit can't exceed total.",
+          "depositRequiresTotal": "Cannot add a deposit without setting a price.",
           "currency": "Currency",
           "outstanding": "Outstanding balance",
           "notes": "Notes",
@@ -1433,7 +1434,9 @@
           "slugChecking": "Checking...",
           "slugAvailable": "Available",
           "slugTaken": "Already taken",
-          "slugInvalid": "Invalid format"
+          "slugInvalid": "Invalid format",
+          "qrCodeAlt": "QR code linking to your portfolio",
+          "downloadQr": "Download QR"
         },
         "themeDialog": {
           "title": "Theme & brand"
@@ -1630,6 +1633,7 @@
         "featuredPopupWarningTitle": "Featured Work block not found",
         "featuredPopupWarningBody": "These styles only apply if you're using the Featured Work block.",
         "featuredPopupWarningProceed": "Open anyway",
+        "featuredPopupWarningCancel": "Cancel",
         "draftNameLabel": "Draft name",
         "draftsDialog": {
           "title": "Your drafts",
@@ -1748,6 +1752,7 @@
             "galleryMasonryPreset": "Gallery Masonry",
             "featuredWorkPreset": "Featured Work",
             "galleryLandingPreset": "Gallery landing",
+            "videoPreset": "Video Highlight",
             "galleryGrid": "Photo Grid",
             "galleryMasonry": "Masonry",
             "featuredWork": "Highlights",
@@ -1778,8 +1783,6 @@
             "headingLevel": "Level",
             "textContent": "Text",
             "videoUrl": "YouTube or Vimeo URL",
-            "videoDescription": "Description (optional)",
-            "videoFooter": "Footer (optional)",
             "imageField": "Image",
             "imageUrl": "Image URL (fallback)",
             "imageAlt": "Alt text",
@@ -2034,6 +2037,7 @@
       "popoverTitle": "Recent Notifications",
       "markAllRead": "Mark all read",
       "newNotification": "You have a new notification",
+      "newNotifications": "{count, plural, one {You have a new notification} other {You have # new notifications}}",
       "seeAll": "See all notifications",
       "empty": "You're all caught up",
       "pageTitle": "Notifications",

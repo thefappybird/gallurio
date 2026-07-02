@@ -39,6 +39,7 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     GalleryMasonryPreset: SECTION_PRESETS.GalleryMasonryPreset.defaultProps,
     FeaturedWorkPreset: SECTION_PRESETS.FeaturedWorkPreset.defaultProps,
     GalleryLandingPreset: SECTION_PRESETS.GalleryLandingPreset.defaultProps,
+    VideoPreset: SECTION_PRESETS.VideoPreset.defaultProps,
     GalleryGrid: galleryGridDefaultProps,
     GalleryMasonry: galleryMasonryDefaultProps,
     FeaturedWork: featuredWorkDefaultProps,
@@ -80,8 +81,13 @@ describe("editorPuckConfig parity with production puckConfig", () => {
     expect(fieldOf("Heading", "text")?.contentEditable).toBe(true);
     expect(fieldOf("Text", "text")?.contentEditable).toBe(true);
     expect(fieldOf("Button", "label")?.contentEditable).toBe(true);
-    expect(fieldOf("Video", "description")?.contentEditable).toBe(true);
-    expect(fieldOf("Video", "footer")?.contentEditable).toBe(true);
+  });
+
+  it("keeps Video as a video-only manual block", () => {
+    const editorFields = Object.keys(editorPuckConfig.components.Video.fields ?? {});
+    const prodFields = Object.keys(puckConfig.components.Video.fields ?? {});
+    expect(editorFields).toEqual(["_style", "videoUrl"]);
+    expect(prodFields).toEqual(["_style", "videoUrl"]);
   });
 
   it("removes gallery copy inputs from GalleryGrid field keys", () => {
@@ -132,6 +138,10 @@ describe("editorPuckConfig parity with production puckConfig", () => {
 
   it("registers GalleryLandingPreset in editorPuckConfig", () => {
     expect(editorPuckConfig.components).toHaveProperty("GalleryLandingPreset");
+  });
+
+  it("registers VideoPreset (F3 composite block) in editorPuckConfig", () => {
+    expect(editorPuckConfig.components).toHaveProperty("VideoPreset");
   });
 });
 
@@ -200,6 +210,7 @@ describe("preset section blocks are inline so grid placement applies", () => {
     "GalleryMasonryPreset",
     "FeaturedWorkPreset",
     "GalleryLandingPreset",
+    "VideoPreset",
   ] as const;
 
   for (const key of PRESET_KEYS) {

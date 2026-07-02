@@ -117,8 +117,7 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-        active && !isEffective && "bg-foreground text-background hover:bg-foreground",
-        isEffective && "border-foreground opacity-70",
+        (active || isEffective) && "bg-foreground text-background hover:bg-foreground",
       )}
     >
       {children}
@@ -156,7 +155,7 @@ function RadiusRow({
               className={cn(
                 "inline-flex h-7 flex-1 cursor-pointer items-center justify-center border border-border bg-background text-xs font-medium text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 isExplicit && "bg-foreground text-background hover:bg-foreground",
-                isEffective && "border-foreground opacity-70",
+                isEffective && "bg-foreground text-background hover:bg-foreground opacity-70",
               )}
             >
               {getLabel(radius)}
@@ -496,80 +495,81 @@ export function HeaderPanelDialog({
                   effectiveValue="foreground"
                 />
               </EditorDrawerSection>
-            </EditorDrawerSection>
 
-            {/* ── Active link style ──────────────────── */}
-            <EditorDrawerSection title={t("sectionActiveStyle")}>
-              {/* Multi-select: Scale / Highlight / Underline */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs text-muted-foreground">{t("activeStyleLabel")}</span>
-                <div className="flex">
-                  <ToggleButton active={!!header.activeLinkScale} onClick={() => toggleBool("activeLinkScale")}>
-                    {t("activeStyleScale")}
-                  </ToggleButton>
-                  <ToggleButton active={!!header.activeLinkHighlight} onClick={() => toggleBool("activeLinkHighlight")}>
-                    {t("activeStyleHighlight")}
-                  </ToggleButton>
-                  <ToggleButton
-                    active={header.activeLinkUnderline !== false}
-                    isEffective={header.activeLinkUnderline === undefined}
-                    onClick={toggleUnderline}
-                  >
-                    {t("activeStyleUnderline")}
-                  </ToggleButton>
+              {/* Active link style sub-section */}
+              <EditorDrawerSection title={t("sectionActiveStyle")}>
+                {/* Multi-select: Scale / Highlight / Underline */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">{t("activeStyleLabel")}</span>
+                  <div className="flex">
+                    <ToggleButton active={!!header.activeLinkScale} onClick={() => toggleBool("activeLinkScale")}>
+                      {t("activeStyleScale")}
+                    </ToggleButton>
+                    <ToggleButton active={!!header.activeLinkHighlight} onClick={() => toggleBool("activeLinkHighlight")}>
+                      {t("activeStyleHighlight")}
+                    </ToggleButton>
+                    <ToggleButton
+                      active={header.activeLinkUnderline !== false}
+                      isEffective={header.activeLinkUnderline === undefined}
+                      onClick={toggleUnderline}
+                    >
+                      {t("activeStyleUnderline")}
+                    </ToggleButton>
+                  </div>
                 </div>
-              </div>
 
-              {/* activeLinkColor: moved from Links section; fallback = var(--pf-color-fg) → "foreground" */}
-              <LabeledSwatchRow
-                label={t("activeLinkColorLabel")}
-                value={header.activeLinkColor}
-                onChange={(c) => set("activeLinkColor", c)}
-                effectiveValue="foreground"
-              />
-
-              {/* Conditional: highlight bg color */}
-              {header.activeLinkHighlight && (
-                // highlightColor fallback = "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)"
-                // — no clean single token; leave effectiveValue unset
+                {/* activeLinkColor: fallback = var(--pf-color-fg) → "foreground" */}
                 <LabeledSwatchRow
-                  label={t("highlightColorLabel")}
-                  value={header.highlightColor}
-                  onChange={(c) => set("highlightColor", c)}
+                  label={t("activeLinkColorLabel")}
+                  value={header.activeLinkColor}
+                  onChange={(c) => set("activeLinkColor", c)}
+                  effectiveValue="foreground"
                 />
-              )}
-              {header.activeLinkHighlight && (
-                // highlightOpacity: PortfolioHeader fallback = 100
-                <NumberInputRow
-                  label={t("highlightOpacityLabel")}
-                  value={header.highlightOpacity}
-                  min={0}
-                  max={100}
-                  suffix="%"
-                  onChange={(v) => set("highlightOpacity", v)}
-                  effectiveValue={100}
-                />
-              )}
-              {header.activeLinkHighlight && (
-                <RadiusRow
-                  label={t("cornerRadiusLabel")}
-                  active={header.activeLinkRadius}
-                  onToggle={(radius) => set("activeLinkRadius", radius)}
-                  getLabel={(radius) => t(`radius.${radius}`)}
-                  effectiveValue={effectiveBrandRadius}
-                />
-              )}
 
-              {/* Conditional: underline color — visible when underline is on (undefined = default ON) */}
-              {header.activeLinkUnderline !== false && (
-                // underlineColor: PortfolioHeader fallback = var(--pf-color-accent) → "accent"
-                <LabeledSwatchRow
-                  label={t("underlineColorLabel")}
-                  value={header.underlineColor}
-                  onChange={(c) => set("underlineColor", c)}
-                  effectiveValue="accent"
-                />
-              )}
+                {/* Conditional: highlight bg color */}
+                {header.activeLinkHighlight && (
+                  // highlightColor fallback = "color-mix(in srgb, var(--pf-color-fg) 8%, transparent)"
+                  // — no clean single token; leave effectiveValue unset
+                  <LabeledSwatchRow
+                    label={t("highlightColorLabel")}
+                    value={header.highlightColor}
+                    onChange={(c) => set("highlightColor", c)}
+                    effectiveValue="foreground"
+                  />
+                )}
+                {header.activeLinkHighlight && (
+                  // highlightOpacity: PortfolioHeader fallback = 100
+                  <NumberInputRow
+                    label={t("highlightOpacityLabel")}
+                    value={header.highlightOpacity}
+                    min={0}
+                    max={100}
+                    suffix="%"
+                    onChange={(v) => set("highlightOpacity", v)}
+                    effectiveValue={100}
+                  />
+                )}
+                {header.activeLinkHighlight && (
+                  <RadiusRow
+                    label={t("cornerRadiusLabel")}
+                    active={header.activeLinkRadius}
+                    onToggle={(radius) => set("activeLinkRadius", radius)}
+                    getLabel={(radius) => t(`radius.${radius}`)}
+                    effectiveValue={effectiveBrandRadius}
+                  />
+                )}
+
+                {/* Conditional: underline color — visible when underline is on (undefined = default ON) */}
+                {header.activeLinkUnderline !== false && (
+                  // underlineColor: PortfolioHeader fallback = var(--pf-color-accent) → "accent"
+                  <LabeledSwatchRow
+                    label={t("underlineColorLabel")}
+                    value={header.underlineColor}
+                    onChange={(c) => set("underlineColor", c)}
+                    effectiveValue="foreground"
+                  />
+                )}
+              </EditorDrawerSection>
             </EditorDrawerSection>
 
             {/* ── Contact button ──────────────────────── */}

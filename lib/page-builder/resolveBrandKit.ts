@@ -8,7 +8,7 @@
  */
 
 import type { PortfolioBrandKit, BrandKitFontPair, BrandKitRadius } from "./types";
-import { PORTFOLIO_FONTS, resolveEffectiveFonts } from "./fonts";
+import { fontFamilyValue, resolveEffectiveFonts } from "./fonts";
 
 // ---------------------------------------------------------------------------
 // Font-pair → CSS family string mapping
@@ -84,8 +84,8 @@ export function resolveBrandKit(brandKit: PortfolioBrandKit): ResolvedBrandKit {
     "--pf-color-bg": brandKit.backgroundColor,
     "--pf-color-fg": brandKit.foregroundColor,
     "--pf-radius": RADIUS_MAP[brandKit.radius],
-    "--pf-font-heading": PORTFOLIO_FONTS[headingKey].family,
-    "--pf-font-body": PORTFOLIO_FONTS[bodyKey].family,
+    "--pf-font-heading": fontFamilyValue(headingKey) ?? "",
+    "--pf-font-body": fontFamilyValue(bodyKey) ?? "",
   };
 
   const className = `pf-theme-${brandKit.themePreset} pf-button-${brandKit.buttonStyle}`;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import React from "react";
-import { CollectionPopupChrome } from "./CollectionPopupChrome";
+import { CollectionPopupChrome, resolvePopupBackground } from "./CollectionPopupChrome";
 
 describe("CollectionPopupChrome", () => {
   it("shows the collection name when no title override", () => {
@@ -43,26 +43,16 @@ describe("CollectionPopupChrome", () => {
 
   // ── Field (a): popup background color effective-default ────────────────────
 
-  it("uses var(--pf-color-bg) as shell background when backgroundColor is unset", () => {
-    const { container } = render(
-      <CollectionPopupChrome collectionName="W" config={{}} onClose={() => {}}>
-        <div>body</div>
-      </CollectionPopupChrome>,
-    );
-    const shellDiv = container.firstElementChild as HTMLElement;
-    expect(shellDiv.style.backgroundColor).toContain("pf-color-bg");
+  // Note: happy-dom's CSSStyleDeclaration does not support the two-argument
+  // var(--x, fallback) syntax (it silently drops the whole declaration), so the
+  // background resolution is tested as a pure function rather than via DOM style
+  // introspection. See resolvePopupBackground in CollectionPopupChrome.tsx.
+  it("resolves to var(--pf-color-primary) with a literal fallback when backgroundColor is unset", () => {
+    expect(resolvePopupBackground(undefined)).toBe("var(--pf-color-primary, #111111)");
   });
 
-  it("applies an explicit backgroundColor token over the var(--pf-color-bg) fallback", () => {
-    const { container } = render(
-      <CollectionPopupChrome collectionName="W" config={{ backgroundColor: "accent" }} onClose={() => {}}>
-        <div>body</div>
-      </CollectionPopupChrome>,
-    );
-    const shellDiv = container.firstElementChild as HTMLElement;
-    // colorTokenToVar("accent") = "var(--pf-color-accent)" — not the bg fallback
-    expect(shellDiv.style.backgroundColor).toContain("pf-color-accent");
-    expect(shellDiv.style.backgroundColor).not.toContain("pf-color-bg");
+  it("resolves an explicit backgroundColor token over the primary fallback", () => {
+    expect(resolvePopupBackground("accent")).toBe("var(--pf-color-accent)");
   });
 
   // ── Field (c): close button radius effective-default (rounded) ─────────────

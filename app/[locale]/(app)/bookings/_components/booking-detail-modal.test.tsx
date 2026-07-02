@@ -25,7 +25,18 @@ import {
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import enMessages from "@/messages/en.json";
+import type { TimeMode } from "@/lib/utils/time-format";
 import { BookingDetailModal } from "./booking-detail-modal";
+
+// ── Time-format context stub ─────────────────────────────────────────────────
+// Lets individual tests flip the saved time-format preference (mirrors the
+// pattern used in booking-draft-card.test.tsx).
+let _timeMode: TimeMode = "24h";
+vi.mock("@/lib/time-format/context", () => ({
+  useTimeFormat: vi.fn(() => _timeMode),
+  useTimeFormatContext: vi.fn(() => ({ timeMode: _timeMode, setTimeMode: vi.fn() })),
+  TimeFormatProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 // ── Navigation stubs ─────────────────────────────────────────────────────────
 vi.mock("next/navigation", () => ({
@@ -86,6 +97,7 @@ vi.mock("sonner", () => ({
 // (the picker has its own test).
 vi.mock("@/components/ui/location-picker", () => ({
   LocationPicker: () => null,
+  LocationDisplay: () => null,
 }));
 
 // ── Fixture data ─────────────────────────────────────────────────────────────
@@ -182,6 +194,15 @@ function renderModal() {
   );
 }
 
+function renderReadOnlyModal(booking = MOCK_BOOKING) {
+  vi.stubGlobal("fetch", makeFetch({ booking }));
+  return render(
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <BookingDetailModal bookingId={BOOKING_ID} locale="en" readOnly />
+    </NextIntlClientProvider>
+  );
+}
+
 beforeEach(() => {
   vi.stubGlobal("fetch", makeFetch());
   vi.stubGlobal("confirm", vi.fn(() => true));
@@ -189,6 +210,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  _timeMode = "24h";
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -907,6 +929,21 @@ describe("Pill tabs — four tabs render and switch panels", () => {
       // Currency field label renders in the eventPricing tab panel
       expect(screen.getByText("Currency")).toBeInTheDocument();
     });
+  });
+});
+
+describe("Read-only notes", () => {
+  it("shows notes content but no edit control in read-only mode", async () => {
+    renderReadOnlyModal({ ...MOCK_BOOKING, notes: "Inquiry note stays visible" });
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Test Wedding" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("tab", { name: /notes/i }));
+
+    expect(screen.getByText("Inquiry note stays visible")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /edit notes/i })).not.toBeInTheDocument();
   });
 });
 
@@ -1739,6 +1776,54 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
     expect(screen.getByRole("spinbutton")).toBeInTheDocument();
   });
 
+  it("EF-5: submitting with an open Deposit editor while Total is 0 is blocked with 'Cannot add a deposit without setting a price'", async () => {
+    const fetchMock = makeFetch();
+    vi.stubGlobal("fetch", fetchMock);
+    const { toast } = await import("sonner");
+    renderModal();
+    await waitForLoad();
+
+    // Draft Total down to 0 via ✓ (creates a pending edit so "Save changes"
+    // renders — hasPending is only true once at least one field is
+    // confirmed, an open-but-uncommitted editor alone doesn't trigger it,
+    // same reason EF-1/EF-4 draft Total first).
+    fireEvent.click(screen.getByRole("tab", { name: /event & location/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /edit total/i })).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /edit total/i }));
+    await waitFor(() => expect(screen.getAllByRole("spinbutton").length).toBeGreaterThan(0));
+    fireEvent.change(screen.getAllByRole("spinbutton")[0], { target: { value: "0" } });
+    fireEvent.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /save changes/i })).toBeInTheDocument()
+    );
+
+    // Open Deposit editor with a value while (pending) Total is 0.
+    await openDepositEditorWithoutConfirm("500");
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Unconfirmed changes")).toBeInTheDocument()
+    );
+    fireEvent.click(screen.getByRole("button", { name: /submit all changes/i }));
+
+    // No PATCH should fire
+    await waitFor(() => {
+      const patchCalls = (fetchMock as Mock).mock.calls.filter(
+        (args: unknown[]) => {
+          const [url, init] = args as [string, RequestInit | undefined];
+          return url === `/api/bookings/${BOOKING_ID}` && init?.method === "PATCH";
+        }
+      );
+      expect(patchCalls).toHaveLength(0);
+    });
+
+    expect(toast.error).toHaveBeenCalled();
+    // The Deposit editor should still be open (spinbutton still visible)
+    expect(screen.getByRole("spinbutton")).toBeInTheDocument();
+  });
+
   it("clicking Save with an open (uncommitted) existing-session inline editor shows the warning dialog", async () => {
     // This test verifies that an open inline editor on an EXISTING session
     // (✓/✗ buttons visible, edit not yet confirmed) also counts as undrafted,
@@ -1787,5 +1872,25 @@ describe("Item 7 — Unconfirmed drafts warning before Save", () => {
       }
     );
     expect(patchCalls).toHaveLength(0);
+  });
+});
+
+describe("BookingDetailModal — time-format preference", () => {
+  it("renders session timestamps in 12h AM/PM when the saved preference is 12h", async () => {
+    _timeMode = "12h";
+    renderModal();
+    await waitForLoad();
+
+    const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
+    expect(within(sessionPanel).getAllByText(/\b(AM|PM)\b/).length).toBeGreaterThan(0);
+  });
+
+  it("renders session timestamps in 24h (no AM/PM) when the saved preference is 24h", async () => {
+    _timeMode = "24h";
+    renderModal();
+    await waitForLoad();
+
+    const sessionPanel = screen.getByRole("tabpanel", { name: "Sessions" });
+    expect(within(sessionPanel).queryByText(/\b(AM|PM)\b/)).not.toBeInTheDocument();
   });
 });

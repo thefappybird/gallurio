@@ -31,6 +31,8 @@ import { useTimeFormat } from "@/lib/time-format/context";
 import { STATUS_COLOR_VAR as STATUS_COLOR, CONFLICT_COLOR_VAR } from "@/lib/bookings/status-style";
 import { INACTIVE_TEAM_COLOR } from "@/lib/teams/team-colors";
 import { escapeHtml } from "@/lib/email/escapeHtml";
+import { FALLBACK_TZ } from "@/lib/utils/timezone";
+import { toCalendarGridDate, fromCalendarGridDate } from "./_helpers/calendar-helpers";
 import type { BookingStatus } from "@/lib/validators/booking";
 
 export type OverflowEvent = {
@@ -150,6 +152,11 @@ type Props = {
   /** Gate which events are draggable. When absent, all events are draggable
    *  (preserves current bookings-calendar behavior). */
   draggableAccessor?: (event: AnyCalendarEvent) => boolean;
+  /** Workspace IANA timezone. Used as the fallback grid/positioning timezone
+   *  for events that don't carry their own `workspaceTz` (e.g. booking-kind
+   *  candles), and as the timezone used to translate react-big-calendar's
+   *  drag/resize grid positions back to a real UTC instant. */
+  workspaceTimezone?: string;
 };
 
 /**
@@ -745,7 +752,10 @@ function CalendarToolbar({
  * Only applied in month view — week/day views have time-slot rows and can
  * display overlapping events without a cell-height cap.
  */
-export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[] {
+export function groupEventsForMonth(
+  events: CalendarEvent[],
+  workspaceTimezone?: string
+): AnyCalendarEvent[] {
   // Local helpers — not exported so they stay scoped to this function.
   function startOfMonthDay(d: Date): Date {
     const out = new Date(d);
@@ -755,6 +765,14 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   function dayKey(d: Date): string {
     return format(d, "yyyy-MM-dd");
   }
+  // Same "grid display" Date used by gridStartAccessor/gridEndAccessor: its
+  // native LOCAL getters encode the event's workspace wall clock rather than
+  // the viewer's browser-local timezone, so day-bucketing agrees with the
+  // day/week grid regardless of the viewer's own timezone.
+  function gridDate(ev: CalendarEvent, which: "start" | "end"): Date {
+    const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+    return toCalendarGridDate(which === "start" ? ev.start : ev.end, tz);
+  }
 
   // Pass 1 — identify days that have an inbound overnight/multi-day bleed-over.
   // For every event that crosses a day boundary, every calendar day strictly
@@ -762,8 +780,8 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   // receives a bleed-in marker.
   const bleedInDays = new Set<string>();
   for (const ev of events) {
-    const startDay = startOfMonthDay(ev.start);
-    const endDay = startOfMonthDay(ev.end);
+    const startDay = startOfMonthDay(gridDate(ev, "start"));
+    const endDay = startOfMonthDay(gridDate(ev, "end"));
     if (endDay > startDay) {
       // Walk each day strictly after startDay through endDay.
       const cursor = new Date(startDay);
@@ -778,7 +796,7 @@ export function groupEventsForMonth(events: CalendarEvent[]): AnyCalendarEvent[]
   // Pass 2 — bucket events by their start-day (same as before).
   const byDay = new Map<string, CalendarEvent[]>();
   for (const ev of events) {
-    const key = dayKey(ev.start);
+    const key = dayKey(gridDate(ev, "start"));
     const bucket = byDay.get(key);
     if (bucket) {
       bucket.push(ev);
@@ -847,6 +865,7 @@ export function BookingCalendar({
   teamColorMap,
   toolbarTrailing,
   draggableAccessor,
+  workspaceTimezone,
 }: Props) {
   const isRtl = useIsRtl();
   function eventColor(ev: { status: BookingStatus; teamId: string | null; colorOverride?: string }): string {
@@ -942,9 +961,9 @@ export function BookingCalendar({
   // - month: cap each day at 1 pill + overflow placeholder.
   // - week/day: pass events directly (overnight sessions are represented as-is).
   const displayEvents = useMemo<AnyCalendarEvent[]>(() => {
-    if (view === Views.MONTH) return groupEventsForMonth(events);
+    if (view === Views.MONTH) return groupEventsForMonth(events, workspaceTimezone);
     return events;
-  }, [view, events]);
+  }, [view, events, workspaceTimezone]);
 
   // Build the components object here so we can bind onSelectEvent and the
   // external-drag callbacks to MonthBookingEvent without stale closures.
@@ -967,6 +986,72 @@ export function BookingCalendar({
     [onSelectEvent, onExternalDragStart, onExternalDragEnd]
   );
 
+  const gridStartAccessor = useCallback(
+    (event: AnyCalendarEvent): Date => {
+      const ev = event as CalendarEvent;
+      const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+      return toCalendarGridDate(event.start, tz);
+    },
+    [workspaceTimezone]
+  );
+  const gridEndAccessor = useCallback(
+    (event: AnyCalendarEvent): Date => {
+      const ev = event as CalendarEvent;
+      const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+      return toCalendarGridDate(event.end, tz);
+    },
+    [workspaceTimezone]
+  );
+
+  // react-big-calendar's drag/resize addon computes the dropped position by
+  // reading the SAME accessors used for rendering, then doing ms-based delta
+  // math on top — so the start/end it hands back to onEventDrop/onEventResize
+  // live in the same "grid display" domain as gridStartAccessor/gridEndAccessor.
+  // Convert back to true UTC here before forwarding to the caller, so
+  // calendar-view.tsx's reschedule logic keeps receiving real UTC instants —
+  // event.start/event.end on the event objects themselves are untouched.
+  const handleGridEventDrop = useCallback(
+    (args: EventInteractionArgs<AnyCalendarEvent>) => {
+      if (!onEventDrop) return;
+      const ev = args.event as CalendarEvent;
+      const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+      onEventDrop({
+        ...args,
+        start: fromCalendarGridDate(new Date(args.start), tz),
+        end: fromCalendarGridDate(new Date(args.end), tz),
+      });
+    },
+    [onEventDrop, workspaceTimezone]
+  );
+  const handleGridEventResize = useCallback(
+    (args: EventInteractionArgs<AnyCalendarEvent>) => {
+      if (!onEventResize) return;
+      const ev = args.event as CalendarEvent;
+      const tz = ev.workspaceTz ?? workspaceTimezone ?? FALLBACK_TZ;
+      onEventResize({
+        ...args,
+        start: fromCalendarGridDate(new Date(args.start), tz),
+        end: fromCalendarGridDate(new Date(args.end), tz),
+      });
+    },
+    [onEventResize, workspaceTimezone]
+  );
+  // The externally-dragged event (from the overflow popover) isn't available
+  // here — all candles in one workspace share the same workspace timezone, so
+  // the calendar-level fallback is accurate.
+  const handleGridDropFromOutside = useCallback(
+    (args: DragFromOutsideItemArgs) => {
+      if (!onDropFromOutside) return;
+      const tz = workspaceTimezone ?? FALLBACK_TZ;
+      onDropFromOutside({
+        ...args,
+        start: fromCalendarGridDate(new Date(args.start), tz),
+        end: fromCalendarGridDate(new Date(args.end), tz),
+      });
+    },
+    [onDropFromOutside, workspaceTimezone]
+  );
+
   return (
     <CalendarToolbarCtx.Provider value={toolbarCtx}>
       <div ref={containerRef} className="h-[calc(100vh-14rem)] min-h-112 w-full">
@@ -974,8 +1059,8 @@ export function BookingCalendar({
           rtl={isRtl}
           localizer={localizer}
           events={displayEvents}
-          startAccessor="start"
-          endAccessor="end"
+          startAccessor={gridStartAccessor}
+          endAccessor={gridEndAccessor}
           view={view}
           onView={handleViewChange}
           date={date}
@@ -998,9 +1083,9 @@ export function BookingCalendar({
             const isTimeView = view === Views.WEEK || view === Views.DAY;
             onSelectSlot?.(d, isTimeView ? slotTime(d) : undefined);
           }}
-          onEventDrop={onEventDrop}
-          onEventResize={onEventResize}
-          onDropFromOutside={onDropFromOutside}
+          onEventDrop={handleGridEventDrop}
+          onEventResize={handleGridEventResize}
+          onDropFromOutside={handleGridDropFromOutside}
           dragFromOutsideItem={
             (dragFromOutsideItem ?? undefined) as (() => AnyCalendarEvent) | undefined
           }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { parseVideoEmbed, VideoBlock } from "./VideoBlock";
 
 // ---------------------------------------------------------------------------
@@ -122,8 +123,6 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl=""
-        description=""
-        footer=""
       />
     );
     expect(screen.getByText(/Paste a YouTube or Vimeo link/i)).toBeTruthy();
@@ -134,8 +133,6 @@ describe("VideoBlock — empty state", () => {
     render(
       <VideoBlock
         videoUrl="https://example.com"
-        description=""
-        footer=""
       />
     );
     expect(document.querySelector("iframe")).toBeNull();
@@ -147,8 +144,6 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        description=""
-        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -160,8 +155,6 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://vimeo.com/123456789"
-        description=""
-        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -173,66 +166,28 @@ describe("VideoBlock — populated state", () => {
     render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        description=""
-        footer=""
       />
     );
     expect(screen.queryByText(/Paste a YouTube or Vimeo link/i)).toBeNull();
   });
 });
 
-describe("VideoBlock — text fields", () => {
-  it("renders description text when provided", () => {
-    render(
-      <VideoBlock
-        videoUrl=""
-        description="Watch this beautiful clip"
-        footer=""
-      />
-    );
-    expect(screen.getByText("Watch this beautiful clip")).toBeTruthy();
-  });
-
-  it("renders footer text when provided", () => {
-    render(
-      <VideoBlock
-        videoUrl=""
-        description=""
-        footer="Footer caption here"
-      />
-    );
-    expect(screen.getByText("Footer caption here")).toBeTruthy();
-  });
-
-  it("tolerates legacy {text} object props via asText back-compat", () => {
-    render(
-      <VideoBlock
-        videoUrl=""
-        description={"Legacy description string"}
-        footer={"Legacy footer string"}
-      />
-    );
-    expect(screen.getByText("Legacy description string")).toBeTruthy();
-    expect(screen.getByText("Legacy footer string")).toBeTruthy();
-  });
-
-  it("renders a React element description directly (Puck inline-edit injection)", () => {
-    render(
-      <VideoBlock
-        videoUrl=""
-        description={(<span data-testid="inline-desc">Edit me</span>) as unknown as string}
-        footer=""
-      />
-    );
-    expect(screen.getByTestId("inline-desc")).toBeTruthy();
+describe("VideoBlock — manual block contract", () => {
+  it("ignores legacy description and footer props", () => {
+    const legacyProps = {
+      videoUrl: "",
+      description: "Legacy description",
+      footer: "Legacy footer",
+    } as unknown as Parameters<typeof VideoBlock>[0];
+    render(<VideoBlock {...legacyProps} />);
+    expect(screen.queryByText("Legacy description")).toBeNull();
+    expect(screen.queryByText("Legacy footer")).toBeNull();
   });
 
   it("always uses 'Embedded video' as iframe title", () => {
     render(
       <VideoBlock
         videoUrl="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        description=""
-        footer=""
       />
     );
     const iframe = document.querySelector("iframe");
@@ -245,8 +200,6 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl=""
-        description=""
-        footer=""
       />
     );
     const section = container.querySelector("[data-block='video']");
@@ -257,11 +210,20 @@ describe("VideoBlock — data-empty attribute", () => {
     const { container } = render(
       <VideoBlock
         videoUrl="https://youtu.be/dQw4w9WgXcQ"
-        description=""
-        footer=""
       />
     );
     const section = container.querySelector("[data-block='video']");
     expect(section?.getAttribute("data-empty")).toBeNull();
+  });
+});
+
+describe("VideoBlock — default spacing", () => {
+  it("imposes no section-level padding or background of its own — no framing box", () => {
+    // A Container preset (or standalone wrap) supplies spacing; the block itself
+    // must not also pad/background its section, or nesting the two double-frames.
+    const html = renderToStaticMarkup(<VideoBlock videoUrl="" />);
+    expect(html).not.toContain("padding");
+    expect(html).not.toContain("max-width");
+    expect(html).not.toContain("var(--pf-color-bg)");
   });
 });

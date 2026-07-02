@@ -460,6 +460,77 @@ describe("GalleryLayoutControls — writes _style.galleryColumns on click", () =
   });
 });
 
+describe("StyleToolkitField — Image block (F1 redesign)", () => {
+  it("ContentInputs for Image shows an Alt text input wired to setProp", () => {
+    const setProp = vi.fn();
+    render(<ContentInputs type="Image" props={{ alt: "" }} setProp={setProp} />);
+    const input = screen.getByLabelText("Alt text") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "A nice photo" } });
+    expect(setProp).toHaveBeenCalledWith("alt", "A nice photo");
+  });
+
+  it("LayoutTabBody for Image shows Width and Height resize controls", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Image" />);
+    expect(screen.getByText("Width")).toBeTruthy();
+    expect(screen.getByText("Height")).toBeTruthy();
+  });
+
+  it("LayoutTabBody for Image shows Column span / Row span when it is a Columns grid child", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={true} showJustify={false} blockType="Image" />);
+    expect(screen.getByText("Column span")).toBeTruthy();
+    expect(screen.getByText("Row span")).toBeTruthy();
+  });
+
+  it("LayoutTabBody for Image does NOT show Background image opacity when no image is set", () => {
+    render(<LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Image" />);
+    expect(screen.queryByText("Background image opacity")).toBeNull();
+  });
+
+  it("LayoutTabBody for Image shows Background image opacity once a background image is set", () => {
+    render(
+      <LayoutTabBody
+        s={{ bgImagePublicId: "ws/photo.jpg" }}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Image"
+      />
+    );
+    expect(screen.getByText("Background image opacity")).toBeTruthy();
+  });
+
+  it("DesignTab for Image hides the Typography section (no on-page text)", () => {
+    render(<DesignTab s={{}} set={vi.fn()} blockType="Image" />);
+    expect(screen.queryByText("Typography")).toBeNull();
+  });
+});
+
+describe("StyleToolkitField — Container background image opacity (F4)", () => {
+  it("does NOT show Background image opacity when Container has no backgroundImages", () => {
+    render(
+      <LayoutTabBody s={{}} set={vi.fn()} isGridChild={false} showJustify={false} blockType="Container" p={{ backgroundImages: [] }} setProp={vi.fn()} />
+    );
+    expect(screen.queryByText("Background image opacity")).toBeNull();
+  });
+
+  it("shows Background image opacity once Container has a backgroundImages entry", () => {
+    render(
+      <LayoutTabBody
+        s={{}}
+        set={vi.fn()}
+        isGridChild={false}
+        showJustify={false}
+        blockType="Container"
+        p={{ backgroundImages: [{ id: "a", publicId: "ws/a" }] }}
+        setProp={vi.fn()}
+      />
+    );
+    // "Spacing" is the first drawer (auto-open); "Layout" must be expanded explicitly.
+    fireEvent.click(screen.getByRole("button", { name: "Layout", expanded: false }));
+    expect(screen.getByText("Background image opacity")).toBeTruthy();
+  });
+});
+
 describe("BRAND_RADIUS_TO_PRESET mapping", () => {
   it("maps sharp to 0 (None preset)", () => {
     expect(BRAND_RADIUS_TO_PRESET.sharp).toBe(0);
@@ -627,10 +698,10 @@ describe("DesignTab — font family dropdown pre-selects effective brand font wh
         <DesignTab s={{}} set={vi.fn()} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    // The font select should show "playfair" as the selected value (effective heading font).
+    // The font field should show "Playfair Display" as its value (effective heading font).
     // Typography drawer is auto-open (first drawer).
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("playfair");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Playfair Display");
   });
 
   it("explicit fontFamily on the block wins over the effective brand font", () => {
@@ -639,8 +710,8 @@ describe("DesignTab — font family dropdown pre-selects effective brand font wh
         <DesignTab s={{ fontFamily: "cormorant" }} set={vi.fn()} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("cormorant");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Cormorant Garamond");
   });
 });
 
@@ -1018,6 +1089,18 @@ describe("B2a: Container padding — effective-default display (placeholder)", (
   });
 });
 
+describe("Font select — Google Fonts", () => {
+  it("selecting a Google Fonts shortlist entry calls the setter with a google: selection", () => {
+    const set = vi.fn();
+    render(<DesignTab s={{}} set={set} blockType="Heading" />);
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(fontInput, { target: { value: "Poppins" } });
+    fireEvent.blur(fontInput);
+    const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
+    expect(lastCall.fontFamily).toBe("google:Poppins");
+  });
+});
+
 describe("Font select — edit writes real selected font key", () => {
   it("selecting a font from the dropdown calls the setter with the real fontFamily key", () => {
     const set = vi.fn();
@@ -1026,9 +1109,10 @@ describe("Font select — edit writes real selected font key", () => {
         <DesignTab s={{}} set={set} blockType="Heading" />
       </BrandColorsContext.Provider>
     );
-    // Typography drawer is auto-open; font select shows effective heading font (playfair)
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    fireEvent.change(fontSelect, { target: { value: "cormorant" } });
+    // Typography drawer is auto-open; font field shows effective heading font (Playfair Display)
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…");
+    fireEvent.change(fontInput, { target: { value: "Cormorant Garamond" } });
+    fireEvent.blur(fontInput);
     // setter is called with the real selected key, not the effective default
     expect(set).toHaveBeenCalled();
     const lastCall = set.mock.calls[set.mock.calls.length - 1][0] as Record<string, unknown>;
@@ -1043,8 +1127,8 @@ describe("Font select — edit writes real selected font key", () => {
       </BrandColorsContext.Provider>
     );
     // Typography drawer is auto-open; explicit cormorant is set
-    const fontSelect = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(fontSelect.value).toBe("cormorant");
+    const fontInput = screen.getByPlaceholderText("Type or choose a font…") as HTMLInputElement;
+    expect(fontInput.value).toBe("Cormorant Garamond");
     // Click the Reset Font button
     fireEvent.click(screen.getByRole("button", { name: /Reset Font/i }));
     // setter is called with fontFamily: undefined — effective heading font re-shows

@@ -30,7 +30,7 @@
  */
 
 import type { Config, ComponentConfig, Field, Fields } from "@measured/puck";
-import { SingleImageControl, MultiImageControl } from "./galleryPicker/MediaField";
+import { MultiImageControl } from "./galleryPicker/MediaField";
 import type { MediaPickerSelection } from "./galleryPicker/MediaPicker";
 import { StyleToolkitField } from "./StyleToolkitField";
 import { RootStyleField } from "./RootStyleField";
@@ -110,6 +110,7 @@ type EditorComponents = {
   GalleryMasonryPreset: ContainerBlockProps;
   FeaturedWorkPreset: ContainerBlockProps;
   GalleryLandingPreset: ContainerBlockProps;
+  VideoPreset: ContainerBlockProps;
   // Data blocks
   GalleryGrid: GalleryGridProps;
   GalleryMasonry: GalleryMasonryProps;
@@ -200,17 +201,6 @@ function Preview({
 // independent of sidebar visibility).
 function richTextField(label: string, multiline = false): Field<string> {
   return { type: multiline ? "textarea" : "text", label, contentEditable: true } as Field<string>;
-}
-
-/** Single-image Puck custom field backed by the unified MediaPicker. */
-function imageField(label: string): Field<string | undefined> {
-  return {
-    type: "custom",
-    label,
-    render: ({ value, onChange }: { value: unknown; onChange: (v: unknown) => void }) => (
-      <SingleImageControl value={(value as string) ?? ""} onChange={onChange as (v: string) => void} />
-    ),
-  } as unknown as Field<string | undefined>;
 }
 
 /** Multi-image Puck custom field backed by the unified MediaPicker. Wired to the
@@ -318,6 +308,7 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.blocks.galleryMasonryPreset": "Gallery Masonry",
   "puckConfig.blocks.featuredWorkPreset": "Featured Work",
   "puckConfig.blocks.galleryLandingPreset": "Gallery landing",
+  "puckConfig.blocks.videoPreset": "Video Highlight",
   "puckConfig.blocks.galleryGrid": "Photo Grid",
   "puckConfig.blocks.galleryMasonry": "Masonry",
   "puckConfig.blocks.featuredWork": "Highlights",
@@ -346,12 +337,7 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.fields.headingLevel": "Level",
   "puckConfig.fields.textContent": "Text",
   "puckConfig.fields.videoUrl": "YouTube or Vimeo URL",
-  "puckConfig.fields.videoDescription": "Description (optional)",
-  "puckConfig.fields.videoFooter": "Footer (optional)",
-  "puckConfig.fields.imageField": "Image",
-  "puckConfig.fields.imageUrl": "Image URL (fallback)",
   "puckConfig.fields.imageAlt": "Alt text",
-  "puckConfig.fields.imageFit": "Fit",
   "puckConfig.fields.buttonLabel": "Button label",
   "puckConfig.fields.buttonSize": "Size",
   "puckConfig.fields.buttonAction": "Action",
@@ -389,8 +375,6 @@ const ENGLISH_PUCK_T: Record<string, string> = {
   "puckConfig.options.headingLevel.h4": "Subheading",
   "puckConfig.options.headingLevel.h5": "Caption",
   "puckConfig.options.headingLevel.h6": "Label",
-  "puckConfig.options.imageFit.cover": "Cover",
-  "puckConfig.options.imageFit.contain": "Contain",
   "puckConfig.options.buttonSize.sm": "Small",
   "puckConfig.options.buttonSize.md": "Medium",
   "puckConfig.options.buttonSize.lg": "Large",
@@ -589,6 +573,15 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     },
   };
 
+  const videoPreset: ComponentConfig<ContainerBlockProps> = {
+    label: t("puckConfig.blocks.videoPreset"),
+    inline: true,
+    fields: editorContainerFields,
+    resolveFields: resolveContainerFieldsTyped,
+    defaultProps: SECTION_PRESETS.VideoPreset.defaultProps,
+    render: ContainerBlock,
+  };
+
   // ---- Gallery data blocks -------------------------------------------------
 
   const galleryGrid: ComponentConfig<GalleryGridProps> = {
@@ -666,13 +659,11 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: videoDefaultProps,
     fields: {
       _style: styleField,
-      description: { ...richTextField(t("puckConfig.fields.videoDescription"), true), visible: false } as unknown as Field<string>,
       videoUrl: { type: "text", label: t("puckConfig.fields.videoUrl"), visible: false } as unknown as Field<string>,
-      footer: { ...richTextField(t("puckConfig.fields.videoFooter"), true), visible: false } as unknown as Field<string>,
     },
     resolveFields: (_data, { fields }) => {
-      // videoUrl, description, and footer are managed by the Content tab in StyleToolkitField
-      const { videoUrl: _v, description: _d, footer: _f, ...rest } = fields as Record<string, unknown>;
+      // videoUrl is managed by the Content tab in StyleToolkitField.
+      const { videoUrl: _v, ...rest } = fields as Record<string, unknown>;
       return rest as typeof fields;
     },
     render: VideoBlock,
@@ -820,21 +811,14 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
     defaultProps: imageDefaultProps,
     fields: {
       _style: styleField,
-      imagePublicId: imageField(t("puckConfig.fields.imageField")),
-      imageUrl: { type: "text", label: t("puckConfig.fields.imageUrl") },
       alt: { type: "text", label: t("puckConfig.fields.imageAlt") },
-      fit: {
-        type: "select",
-        label: t("puckConfig.fields.imageFit"),
-        options: [
-          { label: t("puckConfig.options.imageFit.cover"), value: "cover" },
-          { label: t("puckConfig.options.imageFit.contain"), value: "contain" },
-        ],
-      },
     },
     resolveFields: (_data, { fields }) => {
-      // imagePublicId, imageUrl, alt, and fit are all managed by the ImagePanel in StyleToolkitField
-      return { _style: (fields as Record<string, unknown>)._style } as typeof fields;
+      // alt is managed by the Content tab; the background image lives in _style
+      // (bgImagePublicId, via the Banner picker) and resize/colSpan/rowSpan in
+      // the Layout tab — see StyleToolkitField.tsx.
+      const { alt: _a, ...rest } = fields as Record<string, unknown>;
+      return rest as typeof fields;
     },
     render: ImageBlock,
   };
@@ -973,6 +957,7 @@ export function createEditorConfig(t: PuckTranslate): Config<EditorComponents> {
       GalleryMasonryPreset: galleryMasonryPreset,
       FeaturedWorkPreset: featuredWorkPreset,
       GalleryLandingPreset: galleryLandingPreset,
+      VideoPreset: videoPreset,
       GalleryGrid: galleryGrid,
       GalleryMasonry: galleryMasonry,
       FeaturedWork: featuredWork,

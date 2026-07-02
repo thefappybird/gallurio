@@ -4,6 +4,7 @@ import {
   validatePhotoDimensions,
   validatePhotoMeta,
   PHOTO_SPEC,
+  PORTFOLIO_PHOTO_MAX_BYTES,
   ACCEPTED_MIME,
   ACCEPTED_FORMATS,
 } from "./photoSpec";
@@ -60,6 +61,25 @@ describe("validatePhotoFile", () => {
       ok: false,
       reason: "type_not_accepted",
     });
+  });
+
+  it("defaults to PHOTO_SPEC.maxBytes (10 MB) when no override is passed", () => {
+    expect(validatePhotoFile(makeFile("image/jpeg", PORTFOLIO_PHOTO_MAX_BYTES))).toEqual({
+      ok: false,
+      reason: "file_too_large",
+    });
+  });
+
+  it("accepts a file above the default 10 MB limit when an explicit maxBytes override allows it", () => {
+    expect(
+      validatePhotoFile(makeFile("image/jpeg", PORTFOLIO_PHOTO_MAX_BYTES), PORTFOLIO_PHOTO_MAX_BYTES)
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects a file over an explicit maxBytes override", () => {
+    expect(
+      validatePhotoFile(makeFile("image/jpeg", PORTFOLIO_PHOTO_MAX_BYTES + 1), PORTFOLIO_PHOTO_MAX_BYTES)
+    ).toEqual({ ok: false, reason: "file_too_large" });
   });
 });
 
@@ -256,5 +276,30 @@ describe("validatePhotoMeta", () => {
   // completely empty meta is fine (all checks skipped)
   it("accepts empty meta (all fields undefined)", () => {
     expect(validatePhotoMeta({})).toEqual({ ok: true });
+  });
+
+  // --- maxBytes override ---
+  it("defaults to PHOTO_SPEC.maxBytes (10 MB) when no override is passed", () => {
+    expect(
+      validatePhotoMeta({ format: "jpg", sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES })
+    ).toEqual({ ok: false, reason: "file_too_large" });
+  });
+
+  it("accepts sizeBytes above the default 10 MB limit when an explicit maxBytes override allows it", () => {
+    expect(
+      validatePhotoMeta(
+        { format: "jpg", sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES },
+        PORTFOLIO_PHOTO_MAX_BYTES
+      )
+    ).toEqual({ ok: true });
+  });
+
+  it("rejects sizeBytes over an explicit maxBytes override", () => {
+    expect(
+      validatePhotoMeta(
+        { format: "jpg", sizeBytes: PORTFOLIO_PHOTO_MAX_BYTES + 1 },
+        PORTFOLIO_PHOTO_MAX_BYTES
+      )
+    ).toEqual({ ok: false, reason: "file_too_large" });
   });
 });

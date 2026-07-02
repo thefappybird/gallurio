@@ -127,6 +127,7 @@ export function FeaturedWorkBlock({
   const editorPreview = ws?.editorPreview ?? false;
   const mode = editorPreview ? "owner" : "public";
   const popupConfig = ws?.publicPage?.collectionsPopup ?? {};
+  const brandVars = ws?.brandVars;
 
   const labels = getGalleryChromeLabelsFrom(puck);
   const popupLabels = puck?.metadata?.collectionPopupLabels as CollectionPopupLabels | undefined;
@@ -184,6 +185,7 @@ export function FeaturedWorkBlock({
             slug={slug}
             popupConfig={popupConfig}
             popupLabels={popupLabels}
+            brandVars={brandVars}
           />
         )}
       </div>

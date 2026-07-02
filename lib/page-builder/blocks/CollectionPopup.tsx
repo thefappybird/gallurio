@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { XIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { imageDeliveryUrl } from "@/lib/storage/imageDelivery.client";
 import type { PortfolioCollectionsPopupConfig, BrandKitRadius } from "@/lib/page-builder/types";
 import { CollectionPopupChrome } from "./CollectionPopupChrome";
 import { applyCollectionPopupDefaults, type CollectionPopupLabels } from "@/lib/page-builder/blockContext";
+import { Lightbox, type LightboxImage } from "./Lightbox";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -22,9 +23,13 @@ export type CollectionPopupProps = {
   onClose: () => void;
   /** Localized strings; falls back to English literals when absent (editor canvas). */
   labels?: CollectionPopupLabels;
+  /** Brand-kit CSS vars (--pf-color-*, --pf-font-*, --pf-radius). The popup
+   *  renders through a Portal at document.body, escaping the page wrapper that
+   *  sets these — so we re-apply them here or the popup has no background. */
+  brandVars?: Record<string, string>;
 };
 
-type PopupImage = { id: string; publicId: string; alt: string };
+type PopupImage = LightboxImage;
 
 type FetchState =
   | { status: "idle" }
@@ -111,139 +116,11 @@ function normalizeItem(item: {
 
 const FOCUS_VISIBLE_STYLES = `
 [data-popup-close]:focus-visible,
-[data-popup-thumb]:focus-visible,
-[data-lightbox-close]:focus-visible {
+[data-popup-thumb]:focus-visible {
   outline: 2px solid var(--pf-color-foreground, #111);
   outline-offset: 2px;
 }
 `;
-
-// ---------------------------------------------------------------------------
-// Floating close button (shared between popup and lightbox)
-// ---------------------------------------------------------------------------
-
-function FloatingCloseButton({
-  onClick,
-  label = "Close",
-  dataAttr,
-}: {
-  onClick: () => void;
-  label?: string;
-  dataAttr: "data-popup-close" | "data-lightbox-close";
-}) {
-  const dataProps =
-    dataAttr === "data-popup-close"
-      ? { "data-popup-close": "" }
-      : { "data-lightbox-close": "" };
-
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      {...dataProps}
-      style={{
-        position: "absolute",
-        top: "10px",
-        right: "10px",
-        zIndex: 10,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "36px",
-        height: "36px",
-        borderRadius: "50%",
-        border: "1px solid var(--pf-color-foreground, rgba(0,0,0,0.2))",
-        background: "var(--pf-color-surface, #fff)",
-        color: "var(--pf-color-foreground, #111)",
-        cursor: "pointer",
-        transition: "background 0.15s, color 0.15s",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background =
-          "var(--pf-color-foreground, #111)";
-        (e.currentTarget as HTMLButtonElement).style.color =
-          "var(--pf-color-surface, #fff)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background =
-          "var(--pf-color-surface, #fff)";
-        (e.currentTarget as HTMLButtonElement).style.color =
-          "var(--pf-color-foreground, #111)";
-      }}
-    >
-      <XIcon aria-hidden style={{ width: "16px", height: "16px" }} />
-    </button>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Nested lightbox
-// ---------------------------------------------------------------------------
-
-function Lightbox({
-  image,
-  onClose,
-  closeLabel = "Close",
-  fullSizeAlt = "Full size photo",
-}: {
-  image: PopupImage;
-  onClose: () => void;
-  closeLabel?: string;
-  fullSizeAlt?: string;
-}) {
-  const src = imageDeliveryUrl(image.publicId, { width: 2000, fit: "scale-down" });
-
-  return (
-    <DialogPrimitive.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 200,
-            background: "rgba(0,0,0,0.85)",
-          }}
-        />
-        <DialogPrimitive.Popup
-          aria-label={image.alt || fullSizeAlt}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 201,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <style>{FOCUS_VISIBLE_STYLES}</style>
-          <FloatingCloseButton onClick={onClose} label={closeLabel} dataAttr="data-lightbox-close" />
-          {src ? (
-            <img
-              src={src}
-              alt={image.alt}
-              style={{
-                maxWidth: "95vw",
-                maxHeight: "95vh",
-                objectFit: "contain",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                color: "#fff",
-                padding: "2rem",
-                textAlign: "center",
-              }}
-            >
-              {image.alt || "Photo"}
-            </div>
-          )}
-        </DialogPrimitive.Popup>
-      </DialogPrimitive.Portal>
-    </DialogPrimitive.Root>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -258,6 +135,7 @@ export function CollectionPopup({
   open,
   onClose,
   labels: labelsProp,
+  brandVars,
 }: CollectionPopupProps) {
   const L = applyCollectionPopupDefaults(labelsProp);
   const [state, setState] = useState<FetchState>({ status: "idle" });
@@ -357,6 +235,8 @@ export function CollectionPopup({
   // ---------------------------------------------------------------------------
 
   const shellStyle: React.CSSProperties = {
+    // Re-apply brand vars: the Portal escapes the page wrapper that sets them.
+    ...(brandVars as React.CSSProperties),
     position: "fixed",
     top: "50%",
     left: "50%",

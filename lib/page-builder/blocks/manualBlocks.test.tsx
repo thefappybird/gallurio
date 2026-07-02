@@ -238,56 +238,126 @@ describe("TextBlock", () => {
 // ---------------------------------------------------------------------------
 
 describe("ImageBlock — no image", () => {
-  it("renders the 'Pick an image' placeholder when no image is provided", () => {
-    render(<ImageBlock imagePublicId="" imageUrl="" alt="" fit="cover" />);
+  it("renders the 'Pick an image' placeholder when no background image is set", () => {
+    render(<ImageBlock alt="" />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
   });
 
-  it("does NOT render an <img> when no image is provided", () => {
-    render(<ImageBlock imagePublicId="" imageUrl="" alt="" fit="cover" />);
-    expect(document.querySelector("img")).toBeNull();
+  it("does NOT render a background-image layer when no background image is set", () => {
+    const { container } = render(<ImageBlock alt="" />);
+    expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
   });
 
-  it("shows placeholder when imagePublicId and imageUrl are both undefined", () => {
-    render(<ImageBlock alt="" fit="cover" />);
+  it("falls back to the placeholder when bgImagePublicId is set but cloud name is unset (test env)", () => {
+    // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is not set in test env → bgImageUrl returns null,
+    // so resolveBlockStyle never sets backgroundImage and hasImage stays false.
+    render(<ImageBlock alt="" _style={{ bgImagePublicId: "gallurio/ws/img.jpg" }} />);
     expect(screen.getByText(/Pick an image/i)).toBeTruthy();
   });
 });
 
-describe("ImageBlock — with imageUrl (no cloud env)", () => {
-  it("renders an <img> when a direct imageUrl is provided", () => {
-    render(
-      <ImageBlock imagePublicId="" imageUrl="https://example.com/photo.jpg" alt="A photo" fit="cover" />
-    );
-    const img = document.querySelector("img") as HTMLImageElement;
-    expect(img).not.toBeNull();
-    expect(img.src).toBe("https://example.com/photo.jpg");
+describe("ImageBlock — with a background image (_style.bgImagePublicId)", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it("uses the provided alt text on the <img>", () => {
-    render(
-      <ImageBlock imagePublicId="" imageUrl="https://example.com/photo.jpg" alt="My alt text" fit="cover" />
-    );
-    const img = document.querySelector("img") as HTMLImageElement;
-    expect(img.alt).toBe("My alt text");
+  it("renders a background-image layer (not an <img>) when bgImagePublicId is set", () => {
+    const { container } = render(<ImageBlock alt="A photo" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(document.querySelector("img")).toBeNull();
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.backgroundImage).toContain("photo.jpg");
   });
 
-  it("does NOT show placeholder when imageUrl is provided", () => {
-    render(
-      <ImageBlock imagePublicId="" imageUrl="https://example.com/photo.jpg" alt="" fit="cover" />
-    );
+  it("does NOT show the placeholder when a background image is set", () => {
+    render(<ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
     expect(screen.queryByText(/Pick an image/i)).toBeNull();
   });
-});
 
-describe("ImageBlock — imagePublicId without cloud name (test env)", () => {
-  it("falls back to showing placeholder when imagePublicId is set but cloud name is unset", () => {
-    // NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH is not set in test env → imageDeliveryUrl returns ""
-    render(<ImageBlock imagePublicId="gallurio/ws/img.jpg" imageUrl="" alt="" fit="cover" />);
-    // Falls through to placeholder since cfImageUrl → null and imageUrl is empty
-    expect(screen.getByText(/Pick an image/i)).toBeTruthy();
+  it("uses alt text as an aria-label on the image container", () => {
+    render(<ImageBlock alt="My alt text" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    expect(screen.getByRole("img", { name: "My alt text" })).toBeTruthy();
+  });
+
+  it("defaults the background-image layer to full opacity when bgImageOpacity is unset", () => {
+    const { container } = render(<ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg" }} />);
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.opacity).toBe("1");
+  });
+
+  it("applies _style.bgImageOpacity to the background-image layer", () => {
+    const { container } = render(
+      <ImageBlock alt="" _style={{ bgImagePublicId: "ws/photo.jpg", bgImageOpacity: 30 }} />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.opacity).toBe("0.3");
   });
 });
+
+describe("ImageBlock — legacy prop back-compat (pre-ee5084d shape)", () => {
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_CF_IMAGES_ACCOUNT_HASH", "test-hash");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("renders the image from a legacy top-level imagePublicId with no _style.bgImagePublicId", () => {
+    const { container } = render(<ImageBlock alt="A photo" imagePublicId="ws/legacy-asset.jpg" />);
+    expect(screen.queryByText(/Pick an image/i)).toBeNull();
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
+  });
+
+  it("renders the image from a legacy raw imageUrl when there is no imagePublicId", () => {
+    const { container } = render(
+      <ImageBlock alt="A photo" imageUrl="https://example.com/legacy.jpg" />
+    );
+    expect(screen.queryByText(/Pick an image/i)).toBeNull();
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.backgroundImage).toContain("https://example.com/legacy.jpg");
+  });
+
+  it("prefers legacy imagePublicId over legacy imageUrl when both are present", () => {
+    const { container } = render(
+      <ImageBlock alt="" imagePublicId="ws/legacy-asset.jpg" imageUrl="https://example.com/legacy.jpg" />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("legacy-asset.jpg");
+    expect(layer.style.backgroundImage).not.toContain("example.com");
+  });
+
+  it("never lets a legacy prop override an already-migrated _style.bgImagePublicId", () => {
+    const { container } = render(
+      <ImageBlock alt="" _style={{ bgImagePublicId: "ws/current.jpg" }} imagePublicId="ws/legacy-asset.jpg" />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer.style.backgroundImage).toContain("current.jpg");
+    expect(layer.style.backgroundImage).not.toContain("legacy-asset.jpg");
+  });
+});
+
+describe("ImageBlock — resize + grid placement", () => {
+  it("applies an explicit width/height from _style", () => {
+    const { container } = render(<ImageBlock alt="" _style={{ width: "320px", height: "240px" }} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.width).toBe("320px");
+    expect(root.style.height).toBe("240px");
+  });
+
+  it("applies colSpan/rowSpan as grid-column/grid-row span", () => {
+    const { container } = render(<ImageBlock alt="" _style={{ colSpan: 2, rowSpan: 3 }} />);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.style.gridColumn).toBe("span 2");
+    expect(root.style.gridRow).toBe("span 3");
+  });
+});
+
 
 // ---------------------------------------------------------------------------
 // ButtonBlock
@@ -1153,8 +1223,9 @@ describe("ContainerBlock background images", () => {
   it("renders no background layer when backgroundImages is empty", () => {
     const { container } = render(<ContainerBlock content={Slot} backgroundImages={[]} />);
     expect(container.querySelector("[data-bg-slideshow]")).toBeNull();
-    // No absolutely-positioned background <img> either.
-    expect(container.querySelector('section > img')).toBeNull();
+    // No background <img> either (no opacity layer, no <img>).
+    expect(container.querySelector("[data-bg-opacity-layer]")).toBeNull();
+    expect(container.querySelector('section img')).toBeNull();
   });
 
   it("renders a single static <img> (no slideshow island) for exactly one image", () => {
@@ -1162,7 +1233,8 @@ describe("ContainerBlock background images", () => {
       <ContainerBlock content={Slot} backgroundImages={[{ id: "a", publicId: "ws/a" }]} />
     );
     expect(container.querySelector("[data-bg-slideshow]")).toBeNull();
-    const img = container.querySelector("section > img") as HTMLImageElement | null;
+    // The <img> now lives inside the [data-bg-opacity-layer] wrapper (F4).
+    const img = container.querySelector("section img") as HTMLImageElement | null;
     expect(img).not.toBeNull();
     expect(img!.getAttribute("aria-hidden")).toBe("true");
     expect(img!.src).toContain("ws/a");
@@ -1205,6 +1277,21 @@ describe("ContainerBlock background images", () => {
     );
     const inner = screen.getByTestId("slot-inner");
     expect(inner.style.zIndex).toBe("1");
+  });
+
+  it("applies _style.bgImageOpacity to the background-image layer only (content stays full opacity)", () => {
+    const { container } = render(
+      <ContainerBlock
+        content={Slot}
+        backgroundImages={[{ id: "a", publicId: "ws/a" }]}
+        _style={{ bgImageOpacity: 40 }}
+      />
+    );
+    const layer = container.querySelector("[data-bg-opacity-layer]") as HTMLElement;
+    expect(layer).not.toBeNull();
+    expect(layer.style.opacity).toBe("0.4");
+    const inner = screen.getByTestId("slot-inner");
+    expect(inner.style.opacity).toBe("");
   });
 });
 

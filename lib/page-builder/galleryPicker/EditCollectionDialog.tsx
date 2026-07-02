@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { validatePhotoFile } from "@/lib/page-builder/photoSpec";
+import { validatePhotoFile, PORTFOLIO_PHOTO_MAX_BYTES } from "@/lib/page-builder/photoSpec";
 import { uploadImage } from "@/lib/storage/uploadImage.client";
 import { ExistingPhotosPicker } from "./ExistingPhotosPicker";
 import type { PickerCollection, PickerItem } from "./types";
@@ -203,10 +203,12 @@ export function EditCollectionDialog({
 
   function handleFiles(files: FileList | null) {
     if (!files || !colId) return;
-    const valid = Array.from(files).filter((f) => validatePhotoFile(f).ok);
+    const valid = Array.from(files).filter((f) => validatePhotoFile(f, PORTFOLIO_PHOTO_MAX_BYTES).ok);
     if (valid.length === 0) return;
     setUploading(true);
-    Promise.allSettled(valid.map((f) => uploadImage(f, { subfolder: "portfolio" }))).then(async (results) => {
+    Promise.allSettled(
+      valid.map((f) => uploadImage(f, { subfolder: "portfolio", maxBytes: PORTFOLIO_PHOTO_MAX_BYTES }))
+    ).then(async (results) => {
       const ok = results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
       for (const up of ok) {
         try {

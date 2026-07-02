@@ -143,6 +143,18 @@ describe("ContactForm", () => {
     expect(honeypot.tabIndex).toBe(-1);
   });
 
+  it("session cards inherit portfolio theme instead of the CRM card tokens", () => {
+    // CollapsibleDrawer (shared with the CRM booking wizard) defaults to bg-card
+    // text-card-foreground — CRM app-shell tokens. The public contact form must
+    // override these so the session card picks up --pf-* brand colors instead.
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
+    goToEventDetails();
+    const sessionCard = screen.getByText("Day 1").closest("section");
+    expect(sessionCard).toBeTruthy();
+    expect(sessionCard?.className).not.toContain("bg-card");
+    expect(sessionCard?.className).not.toContain("text-card-foreground");
+  });
+
   it("adds and removes session rows", () => {
     render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} />);
     goToEventDetails();
@@ -385,7 +397,7 @@ describe("getActiveTabExtraStyle", () => {
     expect(style.transform).toBeUndefined();
     expect(style.backgroundColor).toBeUndefined();
     // Underline effective default = ON: null config means activeTabUnderline is unset, not false
-    expect(style.borderBottom).toBe("3px solid var(--pf-color-accent)");
+    expect(style.borderBottom).toBe("3px solid var(--pf-color-fg)");
   });
 
   it("includes transform when activeTabScale is true", () => {
@@ -495,7 +507,7 @@ describe("getActiveTabExtraStyle — underline effective default ON (item 4c)", 
   it("includes borderBottom when activeTabUnderline is undefined (effective default ON)", () => {
     const style = getActiveTabExtraStyle({});
     expect(style.borderBottom).toBeDefined();
-    expect(style.borderBottom).toContain("var(--pf-color-accent");
+    expect(style.borderBottom).toContain("var(--pf-color-fg");
   });
 });
 
@@ -521,5 +533,19 @@ describe("ContactForm — inactive tab foreground color effective default (item 
     const eventTab = screen.getByRole("tab", { name: "Event details" });
     // Effective default: fg color (not empty, prevents inherit-only color in canvas)
     expect(eventTab.style.color).toContain("--pf-color-fg");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Time-format parity — the public form's time inputs match the workspace
+// owner's saved hour-cycle preference (see calendar candles in the app).
+// ---------------------------------------------------------------------------
+
+describe("ContactForm — time-format parity", () => {
+  it("sets lang=en-US on the time inputs when timeMode is 12h", () => {
+    render(<ContactForm workspaceSlug="luna" labels={labels} onSuccess={() => {}} timeMode="12h" />);
+    goToEventDetails();
+    expect(screen.getByLabelText("Start time")).toHaveAttribute("lang", "en-US");
+    expect(screen.getByLabelText("End time")).toHaveAttribute("lang", "en-US");
   });
 });

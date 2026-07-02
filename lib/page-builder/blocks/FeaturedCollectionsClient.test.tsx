@@ -17,15 +17,21 @@ vi.mock("./CollectionPopup", () => ({
     collectionName,
     open,
     onClose,
+    brandVars,
   }: {
     collectionId: string;
     collectionName: string;
     open: boolean;
     onClose: () => void;
+    brandVars?: Record<string, string>;
   }) => {
     if (!open) return null;
     return (
-      <div data-testid="collection-popup" data-collection-id={collectionId}>
+      <div
+        data-testid="collection-popup"
+        data-collection-id={collectionId}
+        data-brand-vars={brandVars ? JSON.stringify(brandVars) : undefined}
+      >
         <span>{collectionName}</span>
         <button type="button" onClick={onClose} data-testid="popup-close">
           Close
@@ -184,6 +190,18 @@ describe("FeaturedCollectionsClient", () => {
       const popups = screen.getAllByTestId("collection-popup");
       expect(popups).toHaveLength(1);
       expect(popups[0].getAttribute("data-collection-id")).toBe("col-2");
+    });
+
+    it("passes brandVars through to CollectionPopup", () => {
+      render(
+        <FeaturedCollectionsClient
+          {...baseProps}
+          brandVars={{ "--pf-color-bg": "#ff00aa" }}
+        />
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Weddings/i }));
+      const popup = screen.getByTestId("collection-popup");
+      expect(popup.getAttribute("data-brand-vars")).toBe(JSON.stringify({ "--pf-color-bg": "#ff00aa" }));
     });
 
     it("passes mode, slug, and popupConfig to CollectionPopup", () => {

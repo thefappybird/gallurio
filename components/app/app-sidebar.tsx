@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { NotificationPopover } from "@/components/notifications/NotificationPopover";
 import { useNotifications } from "@/lib/hooks/useNotifications";
+import { useNotificationBurstToast } from "@/lib/hooks/useNotificationBurstToast";
 import NextImage from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SignOutConfirmDialog } from "@/components/app/sign-out-confirm";
@@ -82,40 +83,27 @@ export function AppSidebar({
   userAvatarUrl,
 }: AppSidebarProps) {
   const pathname = usePathname();
+  const isRtl = useIsRtl();
   // RTL locales anchor the sidebar to the inline-start edge (the right side).
   // The Sidebar primitive already positions side="right" correctly.
-  const side = useIsRtl() ? "right" : "left";
+  const side = isRtl ? "right" : "left";
   const t = useTranslations("app.sidebar");
   const tNotif = useTranslations("app.notifications");
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNudge, setBellNudge] = useState(false);
-  const [showBellToast, setShowBellToast] = useState(false);
   const { isMobile, setOpenMobile } = useSidebar();
-  const { unreadCount } = useNotifications();
-  const prevUnreadRef = useRef(unreadCount);
-  const bellToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { unreadCount, liveArrivalTick } = useNotifications();
+  const prevTickRef = useRef(liveArrivalTick);
+  // Bell nudge must fire ONLY for live socket arrivals, never for the initial
+  // unread-count fetch or other non-live unreadCount changes.
   useEffect(() => {
-    if (unreadCount > prevUnreadRef.current) {
-      setBellNudge(true);
-      setShowBellToast(true);
-      if (bellToastTimerRef.current) {
-        clearTimeout(bellToastTimerRef.current);
-      }
-      bellToastTimerRef.current = setTimeout(() => {
-        setShowBellToast(false);
-        bellToastTimerRef.current = null;
-      }, 2000);
-    }
-    prevUnreadRef.current = unreadCount;
-  }, [unreadCount]);
-  useEffect(() => {
-    return () => {
-      if (bellToastTimerRef.current) {
-        clearTimeout(bellToastTimerRef.current);
-      }
-    };
-  }, []);
+    if (liveArrivalTick === prevTickRef.current) return;
+    prevTickRef.current = liveArrivalTick;
+    setBellNudge(true);
+  }, [liveArrivalTick]);
+  // Toast text bundles arrivals into one message across a 5s window.
+  const { showToast: showBellToast, count: bundledCount } = useNotificationBurstToast(liveArrivalTick);
   const closeOnNav = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -123,6 +111,7 @@ export function AppSidebar({
   };
   const isOwner = role === "owner";
   const nav = isOwner ? OWNER_NAV : MEMBER_NAV;
+  const bellToastSideClass = isRtl ? "end-full me-2" : "start-full ms-2";
 
   const initial = workspaceName[0]?.toUpperCase() ?? "W";
   const accountInitials = getInitials(userName, userEmail);
@@ -184,23 +173,26 @@ export function AppSidebar({
                     {unreadCount > 0 && (
                       <span
                         aria-hidden="true"
-                        className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-destructive-foreground"
+                        className="absolute -top-1 -end-1 flex h-4 min-w-4 items-center justify-center bg-destructive px-1 text-[10px] leading-none font-medium text-white"
                       >
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
-                    {showBellToast ? (
-                      <span
-                        role="status"
-                        aria-live="polite"
-                        className="pointer-events-none absolute top-1/2 start-full z-10 ms-2 hidden -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground md:inline-flex"
-                      >
-                        {tNotif("newNotification")}
-                      </span>
-                    ) : null}
                   </span>
                   <span>{tNotif("bell")}</span>
                 </SidebarMenuButton>
+                {showBellToast ? (
+                  <span
+                    role="status"
+                    aria-live="polite"
+                    className={cn(
+                      "pointer-events-none absolute top-1/2 z-20 inline-flex -translate-y-1/2 whitespace-nowrap border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground",
+                      bellToastSideClass
+                    )}
+                  >
+                    {tNotif("newNotifications", { count: bundledCount })}
+                  </span>
+                ) : null}
               </SidebarMenuItem>
               {nav.map(({ href, labelKey, icon: Icon }) => {
                 const label = t(labelKey);
