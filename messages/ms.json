@@ -466,6 +466,7 @@
         },
         "cancel": "Batalkan tempahan",
         "restore": "Pulihkan tempahan",
+        "invoice": "Muat turun invois",
         "discardChanges": "Buang perubahan",
         "saveChanges": "Simpan perubahan",
         "pendingBadge": "{count} belum disimpan",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Akaun",
         "customize": "Sesuaikan",
-        "workspace": "Ruang kerja",
+        "workspace": "Butiran Perniagaan",
         "teams": "Pasukan",
         "publicPage": "Halaman awam",
         "billing": "Bil",
@@ -794,7 +795,24 @@
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja dikemas kini.",
-        "currencyWarning": "Terpakai untuk tempahan baru. Amaun sedia ada mengekalkan mata wang asal mereka."
+        "currencyWarning": "Terpakai untuk tempahan baru. Amaun sedia ada mengekalkan mata wang asal mereka.",
+        "contactEmail": "E-mel hubungan",
+        "contactEmailPlaceholder": "anda@contoh.com",
+        "contactAddress": "Alamat perniagaan",
+        "contactAddressPlaceholder": "123 Jalan Utama, Bandar, Negara",
+        "logoSection": "Logo perniagaan",
+        "logoHint": "Dipaparkan pada invois dan pengepala halaman portfolio awam anda.",
+        "logoLabel": "Muat naik logo",
+        "logoUploading": "Sedang memuat naik…",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 2 MB · sehingga 2000 × 2000 px",
+        "logoRemove": "Buang",
+        "logoErrors": {
+          "type": "Hanya fail PNG, JPEG, WebP atau SVG diterima.",
+          "size": "Fail mestilah 2 MB atau lebih kecil.",
+          "dimensions": "Imej mestilah 2000 × 2000 px atau lebih kecil.",
+          "image": "Tidak dapat membaca imej. Sila cuba fail lain.",
+          "upload": "Muat naik gagal. Sila cuba lagi."
+        }
       },
       "customize": {
         "themeSection": "Tema",

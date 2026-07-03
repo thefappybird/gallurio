@@ -466,6 +466,7 @@
         },
         "cancel": "إلغاء الحجز",
         "restore": "استعادة الحجز",
+        "invoice": "تنزيل الفاتورة",
         "discardChanges": "تجاهل التغييرات",
         "saveChanges": "حفظ التغييرات",
         "pendingBadge": "{count} غير محفوظ",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "الحساب",
         "customize": "التخصيص",
-        "workspace": "مساحة العمل",
+        "workspace": "تفاصيل العمل",
         "teams": "الفِرق",
         "publicPage": "الصفحة العامة",
         "billing": "الفوترة",
@@ -794,7 +795,24 @@
         "save": "حفظ التغييرات",
         "saving": "جارٍ الحفظ…",
         "savedToast": "تم تحديث مساحة العمل.",
-        "currencyWarning": "ينطبق على الحجوزات الجديدة. تحتفظ المبالغ الموجودة بعملتها الأصلية."
+        "currencyWarning": "ينطبق على الحجوزات الجديدة. تحتفظ المبالغ الموجودة بعملتها الأصلية.",
+        "contactEmail": "البريد الإلكتروني للتواصل",
+        "contactEmailPlaceholder": "you@example.com",
+        "contactAddress": "عنوان العمل",
+        "contactAddressPlaceholder": "١٢٣ الشارع الرئيسي، المدينة، الدولة",
+        "logoSection": "شعار العمل",
+        "logoHint": "يظهر على الفواتير وفي رأس صفحة معرض أعمالك العامة.",
+        "logoLabel": "رفع الشعار",
+        "logoUploading": "جارٍ الرفع…",
+        "logoRequirements": "PNG أو JPEG أو WebP أو SVG · 2 ميغابايت كحد أقصى · حتى 2000 × 2000 بكسل",
+        "logoRemove": "إزالة",
+        "logoErrors": {
+          "type": "يُقبل فقط ملفات PNG أو JPEG أو WebP أو SVG.",
+          "size": "يجب ألا يتجاوز حجم الملف 2 ميغابايت.",
+          "dimensions": "يجب ألا تتجاوز أبعاد الصورة 2000 × 2000 بكسل.",
+          "image": "تعذّرت قراءة الصورة. يرجى تجربة ملف آخر.",
+          "upload": "فشل الرفع. يرجى المحاولة مرة أخرى."
+        }
       },
       "customize": {
         "themeSection": "السمة",

@@ -466,6 +466,7 @@
         },
         "cancel": "Cancel booking",
         "restore": "Restore booking",
+        "invoice": "Download invoice",
         "discardChanges": "Discard changes",
         "saveChanges": "Save changes",
         "pendingBadge": "{count} unsaved",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Account",
         "customize": "Customize",
-        "workspace": "Workspace",
+        "workspace": "Business Details",
         "teams": "Teams",
         "publicPage": "Public page",
         "billing": "Billing",
@@ -794,7 +795,24 @@
         "save": "Save changes",
         "saving": "Saving…",
         "savedToast": "Workspace updated.",
-        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency."
+        "currencyWarning": "Applies to new bookings. Existing amounts keep their original currency.",
+        "contactEmail": "Contact email",
+        "contactEmailPlaceholder": "you@example.com",
+        "contactAddress": "Business address",
+        "contactAddressPlaceholder": "123 Main St, City, Country",
+        "logoSection": "Business logo",
+        "logoHint": "Shown on invoices and your public portfolio header.",
+        "logoLabel": "Upload logo",
+        "logoUploading": "Uploading…",
+        "logoRequirements": "PNG, JPEG, WebP or SVG · max 2 MB · up to 2000 × 2000 px",
+        "logoRemove": "Remove",
+        "logoErrors": {
+          "type": "Only PNG, JPEG, WebP or SVG files are accepted.",
+          "size": "File must be 2 MB or smaller.",
+          "dimensions": "Image must be 2000 × 2000 px or smaller.",
+          "image": "Could not read the image. Please try another file.",
+          "upload": "Upload failed. Please try again."
+        }
       },
       "customize": {
         "themeSection": "Theme",

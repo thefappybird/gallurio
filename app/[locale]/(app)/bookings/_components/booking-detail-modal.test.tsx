@@ -331,6 +331,40 @@ describe("BookingDetailModal — render", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Piece A — Download invoice button on completed bookings
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Download invoice button", () => {
+  it("renders and opens the invoice route when the booking is completed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      makeFetch({ booking: { ...MOCK_BOOKING, status: "completed" } })
+    );
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    renderModal();
+    await waitForLoad();
+
+    const btn = screen.getByRole("button", { name: "Download invoice" });
+    fireEvent.click(btn);
+    expect(openSpy).toHaveBeenCalledWith(
+      `/api/bookings/${BOOKING_ID}/invoice`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+    openSpy.mockRestore();
+  });
+
+  it("does not render when the booking is not completed", async () => {
+    renderModal();
+    await waitForLoad();
+
+    expect(
+      screen.queryByRole("button", { name: "Download invoice" })
+    ).not.toBeInTheDocument();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Issue 1 — per-session conflict check
 // ─────────────────────────────────────────────────────────────────────────────
 

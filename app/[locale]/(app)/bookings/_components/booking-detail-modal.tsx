@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   ArrowUpRightIcon,
   CheckIcon,
+  DownloadIcon,
   EyeIcon,
   EyeOffIcon,
   Loader2Icon,
@@ -1263,6 +1264,8 @@ export function BookingDetailModal({ bookingId, locale, teams = [], writableTeam
         {booking && !readOnly ? (
           <DialogFooterBar
             cancelled={booking.status === "cancelled"}
+            completed={booking.status === "completed"}
+            bookingId={bookingId}
             hasPending={hasPending}
             pendingCount={pendingCount}
             saving={saving}
@@ -3281,6 +3284,8 @@ function SectionHeader({ label }: { label: string }) {
 
 function DialogFooterBar({
   cancelled,
+  completed,
+  bookingId,
   hasPending,
   pendingCount,
   saving,
@@ -3291,6 +3296,8 @@ function DialogFooterBar({
   onSave,
 }: {
   cancelled: boolean;
+  completed: boolean;
+  bookingId: string;
   hasPending: boolean;
   pendingCount: number;
   saving: boolean;
@@ -3317,6 +3324,24 @@ function DialogFooterBar({
           {cancelled ? t("restore") : t("cancel")}
         </Button>
         <div className="flex items-center gap-2">
+          {completed ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                window.open(
+                  `/api/bookings/${bookingId}/invoice`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              disabled={saving}
+            >
+              <DownloadIcon className="size-4" />
+              {t("invoice")}
+            </Button>
+          ) : null}
           {hasPending ? (
             <>
               <span className="text-xs text-muted-foreground">

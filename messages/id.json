@@ -466,6 +466,7 @@
         },
         "cancel": "Batalkan pemesanan",
         "restore": "Pulihkan pemesanan",
+        "invoice": "Unduh faktur",
         "discardChanges": "Buang perubahan",
         "saveChanges": "Simpan perubahan",
         "pendingBadge": "{count} belum disimpan",
@@ -745,7 +746,7 @@
       "tabs": {
         "account": "Akun",
         "customize": "Sesuaikan",
-        "workspace": "Ruang kerja",
+        "workspace": "Detail Bisnis",
         "teams": "Tim",
         "publicPage": "Halaman publik",
         "billing": "Tagihan",
@@ -794,7 +795,24 @@
         "save": "Simpan perubahan",
         "saving": "Menyimpan…",
         "savedToast": "Ruang kerja diperbarui.",
-        "currencyWarning": "Berlaku untuk pemesanan baru. Jumlah yang sudah ada tetap menggunakan mata uang aslinya."
+        "currencyWarning": "Berlaku untuk pemesanan baru. Jumlah yang sudah ada tetap menggunakan mata uang aslinya.",
+        "contactEmail": "Email kontak",
+        "contactEmailPlaceholder": "anda@contoh.com",
+        "contactAddress": "Alamat bisnis",
+        "contactAddressPlaceholder": "Jl. Utama 123, Kota, Negara",
+        "logoSection": "Logo bisnis",
+        "logoHint": "Ditampilkan pada faktur dan header halaman portofolio publik Anda.",
+        "logoLabel": "Unggah logo",
+        "logoUploading": "Mengunggah…",
+        "logoRequirements": "PNG, JPEG, WebP atau SVG · maks 2 MB · hingga 2000 × 2000 px",
+        "logoRemove": "Hapus",
+        "logoErrors": {
+          "type": "Hanya file PNG, JPEG, WebP atau SVG yang diterima.",
+          "size": "Ukuran file harus 2 MB atau lebih kecil.",
+          "dimensions": "Gambar harus 2000 × 2000 px atau lebih kecil.",
+          "image": "Tidak dapat membaca gambar. Coba file lain.",
+          "upload": "Unggah gagal. Silakan coba lagi."
+        }
       },
       "customize": {
         "themeSection": "Tema",
