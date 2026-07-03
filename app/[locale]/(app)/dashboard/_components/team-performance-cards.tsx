@@ -85,7 +85,7 @@ export function TeamPerformanceCards({
   const barData = rows.map((r) => ({ name: r.name, bookings: r.bookings, color: r.color }));
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
       <Card className="rounded-[var(--radius)] lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle className="text-sm font-medium">
@@ -134,7 +134,7 @@ export function TeamPerformanceCards({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[var(--radius)]">
+      <Card className="rounded-[var(--radius)] lg:col-span-2">
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle className="text-sm font-medium">
             {t("sections.bookingsPerTeam")}

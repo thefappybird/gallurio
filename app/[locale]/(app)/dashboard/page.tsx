@@ -227,12 +227,14 @@ async function BookingsTab({
             title={t("sections.revenueTrend")}
           />
         </div>
-        <UpcomingWeekList
-          bookings={upcoming as BookingDoc[]}
-          locale={locale}
-          title={t("sections.upcomingWeek")}
-          empty={t("empty")}
-          viewAll={t("viewAll")}
+
+        <QuickAdd
+          title={t("quickAdd.title")}
+          labels={{
+            booking: t("quickAdd.booking"),
+            client: t("quickAdd.client"),
+            inquiry: t("quickAdd.inquiry"),
+          }}
         />
       </div>
 
@@ -246,22 +248,24 @@ async function BookingsTab({
             timeMode={timeMode}
           />
         </div>
-        <QuickAdd
-          title={t("quickAdd.title")}
-          labels={{
-            booking: t("quickAdd.booking"),
-            client: t("quickAdd.client"),
-            inquiry: t("quickAdd.inquiry"),
-          }}
-        />
+        <div className="h-full lg:row-span-2">
+          <UpcomingWeekList
+            bookings={upcoming as BookingDoc[]}
+            locale={locale}
+            title={t("sections.upcomingWeek")}
+            empty={t("empty")}
+            viewAll={t("viewAll")}
+          />
+        </div>
+        <div className="lg:col-span-2 h-full">
+          <ActivityFeed
+            activity={activity}
+            locale={locale}
+            title={t("sections.activity")}
+            empty={t("empty")}
+          />
+        </div>
       </div>
-
-      <ActivityFeed
-        activity={activity}
-        locale={locale}
-        title={t("sections.activity")}
-        empty={t("empty")}
-      />
     </div>
   );
 }
